@@ -1,4 +1,4 @@
-# 🎯 Peer-Review Platform
+# 🎯 Peer lens
 
 **AI-Powered Technical Writing Assistant with Local Ollama Integration**
 

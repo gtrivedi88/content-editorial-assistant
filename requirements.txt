@@ -1,5 +1,5 @@
 # ===================================================================
-# Peer-review platform - Cross-Platform Requirements
+# Peer lens - Cross-Platform Requirements
 # Compatible with: Windows, macOS, Linux, Unix, Fedora, Ubuntu, etc.
 # Python 3.8+ required
 # ===================================================================

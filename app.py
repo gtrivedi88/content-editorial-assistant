@@ -289,7 +289,7 @@ def index():
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Peer-review platform</title>
+            <title>Peer lens</title>
             <style>
                 body { font-family: Arial, sans-serif; margin: 40px; background: #f8f9fa; }
                 .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
@@ -309,7 +309,7 @@ def index():
         </head>
         <body>
             <div class="container">
-                <h1>🎯 Peer-review platform</h1>
+                <h1>🎯 Peer lens</h1>
                 <p>AI-powered writing assistant with local Ollama integration</p>
                 
                 <div class="features">
@@ -754,7 +754,7 @@ def internal_error(error):
         return jsonify({'error': 'Internal server error'}), 500
 
 if __name__ == '__main__':
-    print("🚀 Starting Peer-review platform...")
+    print("🚀 Starting Peer lens...")
     print("📊 Style Analysis: ✅ Available" if STYLE_ANALYZER_AVAILABLE else "📊 Style Analysis: ⚠️ Using fallback")
     print("📁 Document Processing: ✅ Available" if DOCUMENT_PROCESSOR_AVAILABLE else "📁 Document Processing: ⚠️ Using fallback")
     print("🤖 AI Rewriting: ✅ Available" if AI_REWRITER_AVAILABLE else "🤖 AI Rewriting: ⚠️ Using fallback")

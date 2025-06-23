@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Complete Setup Script for Peer-Review Platform
+Complete Setup Script for Peer lens
 Handles ALL dependencies and setup in virtual environment.
 Run this ONCE after creating your venv and installing requirements.txt
 """
@@ -318,7 +318,7 @@ def print_success_message():
 
 def main():
     """Main setup function."""
-    logger.info("🚀 Starting Peer-Review Platform Complete Setup...")
+    logger.info("🚀 Starting Peer lens Complete Setup...")
     logger.info(f"Platform: {platform.platform()}")
     logger.info(f"Python: {sys.version}")
     logger.info(f"Working Directory: {os.getcwd()}")
