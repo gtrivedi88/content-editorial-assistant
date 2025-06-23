@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}Peer-review platform{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="row mb-5">
+    <div class="col-lg-12 text-center">
+        <h1 class="display-4 fw-bold text-primary mb-3">
+            <i class="fas fa-pen-fancy me-3"></i>
+            Peer-review platform
+        </h1>
+        <p class="lead text-muted mb-4">
+            Upload your documents and get instant feedback on writing style, grammar, and clarity.
+            This AI-powered tool analyzes your content against professional writing standards.
+        </p>
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="d-flex flex-wrap justify-content-center gap-3">
+                    <span class="badge bg-primary rounded-pill px-3 py-2">
+                        <i class="fas fa-file-pdf me-2"></i>PDF
+                    </span>
+                    <span class="badge bg-info rounded-pill px-3 py-2">
+                        <i class="fas fa-file-word me-2"></i>DOCX
+                    </span>
+                    <span class="badge bg-success rounded-pill px-3 py-2">
+                        <i class="fab fa-markdown me-2"></i>Markdown
+                    </span>
+                    <span class="badge bg-warning rounded-pill px-3 py-2">
+                        <i class="fas fa-file-code me-2"></i>AsciiDoc
+                    </span>
+                    <span class="badge bg-secondary rounded-pill px-3 py-2">
+                        <i class="fas fa-file-alt me-2"></i>DITA
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Section -->
+<div class="row mb-5">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title mb-0">
+                    <i class="fas fa-cloud-upload-alt me-2"></i>
+                    Upload Your Document
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()">
+                    <div class="upload-content">
+                        <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
+                        <h4 class="mb-3">Drop your file here or click to browse</h4>
+                        <p class="text-muted mb-3">
+                            Supported formats: PDF, DOCX, Markdown, AsciiDoc, DITA
+                        </p>
+                        <p class="text-muted small">
+                            Maximum file size: 16MB
+                        </p>
+                    </div>
+                    <input type="file" id="file-input" class="d-none" accept=".pdf,.docx,.md,.adoc,.dita,.txt">
+                </div>
+                
+                <!-- Alternative Text Input -->
+                <div class="mt-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <hr class="flex-grow-1">
+                        <span class="px-3 text-muted">OR</span>
+                        <hr class="flex-grow-1">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="text-input" class="form-label">
+                            <i class="fas fa-keyboard me-2"></i>
+                            Paste your text directly
+                        </label>
+                        <textarea 
+                            class="form-control" 
+                            id="text-input" 
+                            rows="6" 
+                            placeholder="Paste your content here for immediate analysis..."
+                        ></textarea>
+                    </div>
+                    
+                    <div class="text-center">
+                        <button class="btn btn-primary" onclick="analyzeDirectText()">
+                            <i class="fas fa-search me-2"></i>
+                            Analyze Text
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Results Section -->
+<div class="row">
+    <div class="col-12">
+        <div id="analysis-results">
+            <!-- Analysis results will be displayed here -->
+        </div>
+        <div id="rewrite-results">
+            <!-- Rewrite results will be displayed here -->
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // File upload handling
+    const uploadArea = document.getElementById('upload-area');
+    const fileInput = document.getElementById('file-input');
+    const textInput = document.getElementById('text-input');
+
+    // Drag and drop functionality
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+    });
+
+    uploadArea.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            handleFileUpload(files[0]);
+            // Hide sample section when analysis starts
+            document.getElementById('sample-section').style.display = 'none';
+        }
+    });
+
+    // File input change handler
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            handleFileUpload(e.target.files[0]);
+            // Hide sample section when analysis starts
+            document.getElementById('sample-section').style.display = 'none';
+        }
+    });
+
+    // Direct text analysis
+    function analyzeDirectText() {
+        const text = textInput.value.trim();
+        if (!text) {
+            alert('Please enter some text to analyze');
+            return;
+        }
+
+        currentContent = text;
+        analyzeContent(text);
+        // Hide sample section when analysis starts
+        document.getElementById('sample-section').style.display = 'none';
+    }
+
+    // Sample text analysis
+    function analyzeSampleText() {
+        const sampleText = `The implementation of the new system was facilitated by the team in order to optimize performance metrics. Due to the fact that the previous system was inefficient, a large number of users were experiencing difficulties. The decision was made by management to utilize advanced technologies for the purpose of enhancing user experience and improving overall system reliability.`;
+        
+        currentContent = sampleText;
+        analyzeContent(sampleText);
+        // Hide sample section when analysis starts
+        document.getElementById('sample-section').style.display = 'none';
+    }
+
+    // Clear text input when file is selected
+    fileInput.addEventListener('change', () => {
+        textInput.value = '';
+    });
+
+    // Clear file input when text is entered
+    textInput.addEventListener('input', () => {
+        fileInput.value = '';
+    });
+
+    // Auto-resize textarea
+    textInput.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = this.scrollHeight + 'px';
+    });
+
+    // Show welcome message on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add some interactive elements
+        const cards = document.querySelectorAll('.card');
+        cards.forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-5px)';
+            });
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
+        });
+    });
+</script>
+{% endblock %} 

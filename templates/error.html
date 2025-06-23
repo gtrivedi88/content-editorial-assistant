@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Error - Peer-review platform{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-exclamation-triangle fa-4x text-danger mb-4"></i>
+                <h2 class="card-title text-danger">Oops! Something went wrong</h2>
+                <p class="card-text text-muted mb-4">
+                    {{ error or "An unexpected error occurred. Please try again." }}
+                </p>
+                <a href="{{ url_for('index') }}" class="btn btn-primary">
+                    <i class="fas fa-home me-2"></i>
+                    Go Back Home
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

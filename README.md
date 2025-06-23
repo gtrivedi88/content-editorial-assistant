@@ -1,0 +1,305 @@
+# 🎯 Peer-Review Platform
+
+**AI-Powered Technical Writing Assistant with Local Ollama Integration**
+
+Transform your technical documentation with comprehensive style analysis, readability scoring, and AI-powered iterative rewriting. Designed for technical writers targeting 9th-11th grade readability standards.
+
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Cross-Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-green.svg)](https://github.com/yourusername/peer-review-platform)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+---
+
+## 🚀 Quick Setup (3 Steps Only!)
+
+### 📋 Prerequisites
+- **Python 3.8+** ([Download here](https://www.python.org/downloads/))
+
+### 🔧 Step 1: Create Virtual Environment
+
+**Windows:**
+```batch
+# Navigate to project folder
+cd C:\path\to\Peer-Review-Platform
+
+# Create and activate virtual environment
+python -m venv venv
+venv\Scripts\activate
+```
+
+**Linux/macOS:**
+```bash
+# Navigate to project folder
+cd ~/path/to/Peer-Review-Platform
+
+# Create and activate virtual environment
+python3 -m venv venv
+source venv/bin/activate
+```
+
+**✅ You should see `(venv)` at the start of your command prompt**
+
+### 📦 Step 2: Install Requirements
+```bash
+# Install all Python packages
+pip install -r requirements.txt
+```
+
+### ⚙️ Step 3: Complete Setup
+```bash
+# Run the comprehensive setup script
+python setup.py
+```
+
+This automatically handles:
+- ✅ SpaCy language models
+- ✅ NLTK data downloads  
+- ✅ Directory creation
+- ✅ Ollama detection & setup instructions
+- ✅ Installation testing
+
+### 🎯 Step 4: Start the Application
+```bash
+python app.py
+```
+
+**Then visit:** [http://localhost:5000](http://localhost:5000) 🌐
+
+---
+
+## 🔄 Daily Usage
+
+**Always activate your virtual environment first:**
+
+**Windows:**
+```batch
+cd C:\path\to\Peer-Review-Platform
+venv\Scripts\activate
+python app.py
+```
+
+**Linux/macOS:**
+```bash
+cd ~/path/to/Peer-Review-Platform
+source venv/bin/activate
+python app.py
+```
+
+---
+
+## ✨ Key Features
+
+### 🧠 **Iterative AI Rewriting**
+- **Two-Pass Process:** AI reviews and refines its own output
+- **Local Ollama Integration:** Privacy-first with Llama models
+- **Real-Time Progress:** Watch the AI improvement process step-by-step
+- **Smart Confidence Scoring:** Know how much the AI improved your text
+
+### 📊 **Comprehensive Analysis**
+- **Grade Level Assessment:** Targets 9th-11th grade readability
+- **Multiple Readability Scores:** Flesch, Gunning Fog, SMOG, Coleman-Liau, ARI
+- **Style Issues Detection:** Passive voice, sentence length, wordiness
+- **Technical Writing Metrics:** Custom scoring for documentation
+
+### 📁 **Multi-Format Support**
+- **Text Files:** .txt, .md (Markdown)
+- **Documents:** .docx (Microsoft Word)
+- **Technical Formats:** .adoc (AsciiDoc), .dita (DITA)
+- **PDFs:** Extract and analyze existing documents
+- **Direct Input:** Paste text directly into the interface
+
+### 🎨 **Modern Interface**
+- **Real-Time Analysis:** Instant feedback on text quality
+- **Interactive Error Highlighting:** Click to see specific issues
+- **Progress Transparency:** No fake spinners - see actual AI work
+- **Responsive Design:** Works on desktop, tablet, and mobile
+
+---
+
+## 🤖 AI Features (Optional)
+
+For the best AI rewriting experience, install **Ollama** with our recommended model:
+
+### Windows
+1. Download from: https://ollama.com/download/windows
+2. Run installer
+3. Open Command Prompt: `ollama pull llama3:8b`
+
+### macOS
+1. Download from: https://ollama.com/download/mac
+2. Install .dmg file
+3. Open Terminal: `ollama pull llama3:8b`
+
+### Linux
+```bash
+curl -fsSL https://ollama.com/install.sh | sh
+ollama serve
+ollama pull llama3:8b
+```
+
+**Recommended Model:**
+- `llama3:8b` - **Superior writing quality and reasoning (4.7GB)** ⭐ **Recommended**
+
+**Alternative Models (if needed):**
+- `llama3.2:3b` - Good balance of speed and quality (2GB)
+
+**Why llama3:8b?**
+- ✅ Superior writing quality and reasoning capabilities
+- ✅ Excellent for complex technical writing improvements
+- ✅ Better understanding of context and nuance
+- ✅ Optimal performance with our two-pass iterative process
+
+### 🔧 Using a Different Model (Optional)
+
+If you prefer to use a different model than our recommended `llama3:8b`, you can easily customize it:
+
+**Step 1: Update Configuration**
+Edit `src/config.py` and change line 45:
+```python
+# Change this line:
+OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'llama3:8b')
+
+# To your preferred model, for example:
+OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'llama3.2:3b')
+```
+
+**Step 2: Pull Your Chosen Model**
+```bash
+# For llama3.2:3b (faster, smaller)
+ollama pull llama3.2:3b
+
+# Or any other compatible model
+ollama pull your-chosen-model
+```
+
+**Step 3: Restart the Application**
+```bash
+python app.py
+```
+
+**Popular Alternative Models:**
+- `llama3.2:3b` - Good balance of speed and quality (2GB)
+- `llama3.2:1b` - Very fast, basic quality (1.3GB)
+- `llama3:70b` - Highest quality, requires powerful hardware (40GB)
+- `codellama:7b` - Optimized for technical/code documentation (3.8GB)
+
+---
+
+## 🔧 Troubleshooting
+
+### Virtual Environment Issues
+```bash
+# If you see import errors, make sure venv is activated
+# You should see (venv) in your prompt
+
+# Windows
+venv\Scripts\activate
+
+# Linux/macOS  
+source venv/bin/activate
+```
+
+### Package Installation Issues
+```bash
+# Upgrade pip first
+python -m pip install --upgrade pip
+
+# Reinstall requirements
+pip install -r requirements.txt --upgrade --no-cache-dir
+```
+
+### SpaCy Model Issues
+```bash
+# Manual SpaCy model installation
+python -m spacy download en_core_web_sm
+```
+
+### Ollama Connection Issues
+```bash
+# Check if Ollama is running
+ollama --version
+
+# Start Ollama service (Linux/macOS)
+ollama serve
+
+# Install our recommended model
+ollama pull llama3:8b
+
+# Test connection
+curl http://localhost:11434/api/tags
+```
+
+---
+
+## 📊 Example Analysis
+
+**Input Text:**
+> "In order to facilitate the implementation of the new system, it was decided by the team that the best approach would be to utilize a modular architecture."
+
+**AI Analysis Detects:**
+- ❌ Passive voice: "it was decided"
+- ❌ Wordy phrases: "in order to", "utilize"
+- ❌ Long sentence: 25 words (target: 15-20)
+- ❌ Grade level: 14th (target: 9th-11th)
+
+**AI Rewrite (Pass 1):**
+> "To implement the new system, the team decided to use a modular architecture."
+
+**AI Rewrite (Pass 2 - Final):**
+> "The team chose a modular architecture to implement the new system."
+
+**Improvements:**
+- ✅ Reduced from 25 to 10 words
+- ✅ Converted to active voice
+- ✅ Removed wordy phrases
+- ✅ Lowered to 9th grade level
+- ✅ Improved clarity and flow
+
+---
+
+## 🏗️ Architecture
+
+```
+Peer-Review-Platform/
+├── app.py                 # Main Flask application
+├── setup.py              # Complete setup script
+├── requirements.txt      # All dependencies
+├── src/
+│   ├── style_analyzer.py # SpaCy-based analysis
+│   ├── ai_rewriter.py    # Iterative AI rewriting
+│   ├── document_processor.py # Multi-format support
+│   └── config.py         # Configuration management
+├── templates/            # Web interface
+├── static/              # CSS, JS, images
+├── uploads/             # File upload storage
+└── logs/               # Application logs
+```
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch: `git checkout -b feature/amazing-feature`
+3. Commit your changes: `git commit -m 'Add amazing feature'`
+4. Push to the branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🙏 Acknowledgments
+
+- **SpaCy** for advanced NLP processing
+- **Ollama** for local AI model serving
+- **Flask** for the web framework
+- **Bootstrap** for responsive UI components
+
+---
+
+**Made with ❤️ for technical writers who value privacy and quality.** 
