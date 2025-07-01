@@ -93,7 +93,7 @@ class RulesRegistry:
                                     else:
                                         self.rules[rule_type] = rule_instance
                                         self.rule_locations[rule_type] = display_location
-                                        print(f"✅ Loaded rule: {rule_type} (from {display_location})")
+                                    print(f"✅ Loaded rule: {rule_type} (from {display_location})")
                                 else:
                                     print(f"⚠️ No valid rule class found in {import_path}")
                             else:
@@ -122,9 +122,9 @@ class RulesRegistry:
                 module = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(module)
                 return module
-            
-            raise ImportError(f"Could not create spec for {import_path}")
-            
+            else:
+                raise ImportError(f"Could not create spec for {import_path}")
+                    
         except Exception as e:
             print(f"🔄 Direct import failed for {import_path}, trying fallback methods: {e}")
             # Fallback to original methods
@@ -156,12 +156,10 @@ class RulesRegistry:
                 return module
             
             raise ImportError(f"All fallback methods failed for {import_path}")
-                    
+                
         except Exception as e:
             print(f"🚫 All import methods failed for {import_path}: {e}")
             return None
-    
-
     
     def _find_and_instantiate_rule_class(self, module, module_name: str):
         """Find the rule class in the module and instantiate it."""
