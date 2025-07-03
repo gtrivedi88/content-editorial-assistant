@@ -8,7 +8,8 @@ import requests
 from typing import Optional, Any
 
 try:
-    from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM
+    from transformers.pipelines import pipeline
+    from transformers import AutoTokenizer, AutoModelForCausalLM
     import torch
     HF_AVAILABLE = True
 except ImportError:

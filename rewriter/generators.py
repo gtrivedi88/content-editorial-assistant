@@ -69,16 +69,32 @@ class TextGenerator:
             return original_text
             
         try:
+            # Check if tokenizer is available for eos_token_id
+            pad_token_id = None
+            if self.model_manager.tokenizer and hasattr(self.model_manager.tokenizer, 'eos_token_id'):
+                pad_token_id = self.model_manager.tokenizer.eos_token_id
+            
+            # Generate text using the pipeline
             response = self.model_manager.generator(
                 prompt,
                 max_length=len(prompt.split()) + 100,
                 num_return_sequences=1,
                 temperature=0.7,
                 do_sample=True,
-                pad_token_id=self.model_manager.tokenizer.eos_token_id
+                pad_token_id=pad_token_id
             )
             
-            generated_text = response[0]['generated_text']
+            # Handle the response - it should be a list of dictionaries
+            if not response or not isinstance(response, list) or len(response) == 0:
+                logger.warning("Empty or invalid response from HuggingFace model")
+                return original_text
+                
+            generated_text = response[0].get('generated_text', '')
+            
+            # Ensure we have a string
+            if not isinstance(generated_text, str):
+                logger.warning("Generated text is not a string")
+                return original_text
             
             if "Improved text:" in generated_text:
                 rewritten = generated_text.split("Improved text:")[-1].strip()
