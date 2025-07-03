@@ -1,6 +1,9 @@
 # IBM Style Guide - Punctuation Rules
 
 rules:
+  # PRIMARY COMMAND for critical punctuation fixes
+  punctuation_priority:
+    primary_command: "FIRST, apply these CRITICAL punctuation fixes: 1) Remove ALL exclamation points and replace with periods, 2) Fix ALL hyphenation by removing hyphens from prefixes like 'pre-', 3) Convert ALL passive voice to active voice."
   punctuation_and_symbols:
     instruction: "Do not use symbols like '&' or '+' in place of words like 'and'."
   
@@ -17,10 +20,10 @@ rules:
     instruction: "Remove ellipses (...) from the text."
 
   exclamation_points:
-    instruction: "Remove all exclamation points and replace them with periods."
+    instruction: "CRITICAL: Remove ALL exclamation points (!) and replace them with periods (.). Example: 'update!' becomes 'update.'"
 
   hyphens:
-    instruction: "Fix hyphenation errors, especially with common prefixes like 'pre', 'multi', and 'non'."
+    instruction: "CRITICAL: Fix ALL hyphenation errors. Remove hyphens from prefixes like 'pre-configure' → 'preconfigure', 'multi-factor' → 'multifactor', 'non-standard' → 'nonstandard'."
   
   parentheses:
     instruction: "Correct punctuation placement around parentheses."

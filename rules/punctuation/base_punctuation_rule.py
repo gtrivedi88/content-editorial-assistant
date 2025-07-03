@@ -11,13 +11,16 @@ import re
 # in a real application. The # type: ignore comments prevent the
 # static type checker from getting confused by the fallback class.
 try:
-    from ..base_rule import BaseRule  # type: ignore
+    from rules.base_rule import BaseRule  # type: ignore
 except ImportError:
-    class BaseRule:  # type: ignore
-        def _get_rule_type(self) -> str:
-            return 'base'
-        def _create_error(self, **kwargs) -> Dict[str, Any]:
-            return kwargs
+    try:
+        from ..base_rule import BaseRule  # type: ignore
+    except ImportError:
+        class BaseRule:  # type: ignore
+            def _get_rule_type(self) -> str:
+                return 'base'
+            def _create_error(self, **kwargs) -> Dict[str, Any]:
+                return kwargs
 
 
 class BasePunctuationRule(BaseRule):

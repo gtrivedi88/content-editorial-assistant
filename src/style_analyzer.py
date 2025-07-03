@@ -15,7 +15,7 @@ from collections import defaultdict, Counter
 
 # Import the modular rules system
 try:
-    from .rules import registry
+    from rules import registry
     RULES_AVAILABLE = True
     print("✅ Modular rules system loaded successfully")
 except ImportError:
@@ -24,16 +24,19 @@ except ImportError:
         import sys
         import os
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        rules_path = os.path.join(current_dir, 'rules')
+        rules_path = os.path.join(os.path.dirname(current_dir), 'rules')
         sys.path.insert(0, rules_path)
         
         # Import the registry module directly
         import importlib.util
         registry_path = os.path.join(rules_path, '__init__.py')
         spec = importlib.util.spec_from_file_location("rules", registry_path)
-        rules_module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(rules_module)
-        registry = rules_module.registry
+        if spec and spec.loader:
+            rules_module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(rules_module)
+            registry = rules_module.registry
+        else:
+            raise ImportError("Could not create spec for rules module")
         
         RULES_AVAILABLE = True
         print("✅ Modular rules system loaded successfully (standalone)")
@@ -204,7 +207,7 @@ class StyleAnalyzer:
         """Check readability scores."""
         errors = []
         try:
-            flesch_score = textstat.flesch_reading_ease(text)
+            flesch_score = textstat.flesch_reading_ease(text)  # type: ignore
             if flesch_score < self.rules['min_readability_score']:
                 errors.append({
                     'type': 'readability',
@@ -221,7 +224,7 @@ class StyleAnalyzer:
         """Check grade level of the text."""
         errors = []
         try:
-            grade_level = textstat.text_standard(text, float_output=True)
+            grade_level = textstat.text_standard(text, float_output=True)  # type: ignore
             if grade_level < self.rules['target_grade_level'][0] or grade_level > self.rules['target_grade_level'][1]:
                 errors.append({
                     'type': 'grade_level',
@@ -474,17 +477,17 @@ class StyleAnalyzer:
                 stats['avg_syllables_per_word'] = total_syllables / len(words) if words else 0
             
             # Comprehensive readability analysis
-            stats['flesch_reading_ease'] = textstat.flesch_reading_ease(text)
-            stats['flesch_kincaid_grade'] = textstat.flesch_kincaid_grade(text)
-            stats['gunning_fog_index'] = textstat.gunning_fog(text)
-            stats['smog_index'] = textstat.smog_index(text)
-            stats['coleman_liau_index'] = textstat.coleman_liau_index(text)
-            stats['automated_readability_index'] = textstat.automated_readability_index(text)
-            stats['dale_chall_readability'] = textstat.dale_chall_readability_score(text)
-            stats['linsear_write_formula'] = textstat.linsear_write_formula(text)
+            stats['flesch_reading_ease'] = textstat.flesch_reading_ease(text)  # type: ignore
+            stats['flesch_kincaid_grade'] = textstat.flesch_kincaid_grade(text)  # type: ignore
+            stats['gunning_fog_index'] = textstat.gunning_fog(text)  # type: ignore
+            stats['smog_index'] = textstat.smog_index(text)  # type: ignore
+            stats['coleman_liau_index'] = textstat.coleman_liau_index(text)  # type: ignore
+            stats['automated_readability_index'] = textstat.automated_readability_index(text)  # type: ignore
+            stats['dale_chall_readability'] = textstat.dale_chall_readability_score(text)  # type: ignore
+            stats['linsear_write_formula'] = textstat.linsear_write_formula(text)  # type: ignore
             
             # Grade level assessment
-            grade_level = textstat.text_standard(text, float_output=True)
+            grade_level = textstat.text_standard(text, float_output=True)  # type: ignore
             stats['grade_level_assessment'] = f"{grade_level:.1f}"
             stats['readability_grade_target_met'] = (
                 self.rules['target_grade_level'][0] <= grade_level <= self.rules['target_grade_level'][1]
@@ -570,16 +573,16 @@ class StyleAnalyzer:
         
         try:
             # Calculate all readability metrics
-            metrics['flesch_reading_ease'] = textstat.flesch_reading_ease(text)
-            metrics['flesch_kincaid_grade'] = textstat.flesch_kincaid_grade(text)
-            metrics['gunning_fog_index'] = textstat.gunning_fog(text)
-            metrics['smog_index'] = textstat.smog_index(text)
-            metrics['coleman_liau_index'] = textstat.coleman_liau_index(text)
-            metrics['automated_readability_index'] = textstat.automated_readability_index(text)
-            metrics['dale_chall_readability'] = textstat.dale_chall_readability_score(text)
+            metrics['flesch_reading_ease'] = textstat.flesch_reading_ease(text)  # type: ignore
+            metrics['flesch_kincaid_grade'] = textstat.flesch_kincaid_grade(text)  # type: ignore
+            metrics['gunning_fog_index'] = textstat.gunning_fog(text)  # type: ignore
+            metrics['smog_index'] = textstat.smog_index(text)  # type: ignore
+            metrics['coleman_liau_index'] = textstat.coleman_liau_index(text)  # type: ignore
+            metrics['automated_readability_index'] = textstat.automated_readability_index(text)  # type: ignore
+            metrics['dale_chall_readability'] = textstat.dale_chall_readability_score(text)  # type: ignore
             
             # Grade level assessment
-            grade_level = textstat.text_standard(text, float_output=True)
+            grade_level = textstat.text_standard(text, float_output=True)  # type: ignore
             metrics['estimated_grade_level'] = grade_level
             metrics['meets_target_grade'] = (
                 self.rules['target_grade_level'][0] <= grade_level <= self.rules['target_grade_level'][1]
@@ -1122,7 +1125,7 @@ class StyleAnalyzer:
             'prior': 'before', 'initiate': 'start', 'finalize': 'finish',
             'approximately': 'about', 'sufficient': 'enough', 'numerous': 'many'
         }
-        return alternatives.get(word)
+        return alternatives.get(word, word)
     
     def _generate_conciseness_suggestions_from_syntax(self, doc, sentence: str, elements: List[Dict]) -> List[str]:
         """Generate conciseness suggestions using syntactic analysis."""

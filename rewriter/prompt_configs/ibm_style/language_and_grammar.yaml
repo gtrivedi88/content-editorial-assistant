@@ -2,7 +2,7 @@
 
 rules:
   passive_voice:
-    instruction: "Convert ALL passive voice to active voice. Identify who performs each action and make them the subject."
+    instruction: "CRITICAL: Convert ALL passive voice to active voice. Find who performs the action and make them the subject. Example: 'users must be added to' → 'an administrator must add users to' or 'you must add users to'."
     # The prompt generator will dynamically add specific sentence examples for this rule.
 
   sentence_length:
@@ -13,3 +13,6 @@ rules:
   
   clarity:
     instruction: "Replace complex words with simpler alternatives."
+  
+  article_usage:
+    instruction: "Correct article usage (a, an, the). Use 'a' before consonant sounds, 'an' before vowel sounds, and 'the' for specific references."
