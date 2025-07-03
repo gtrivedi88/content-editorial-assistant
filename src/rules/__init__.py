@@ -41,7 +41,7 @@ class RulesRegistry:
                 rel_path = os.path.relpath(root, rules_dir)
                 
                 # Skip __pycache__ directories and hidden directories
-                if '__pycache__' in root or any(part.startswith('.') for part in rel_path.split(os.sep)):
+                if '__pycache__' in root or (rel_path != '.' and any(part.startswith('.') for part in rel_path.split(os.sep))):
                     continue
                 
                 # Calculate nesting depth

@@ -264,7 +264,7 @@ def test_installation():
             logger.warning(f"⚠️ Style analyzer test failed: {e}")
             
         try:
-            from src.ai_rewriter import AIRewriter
+            from rewriter import AIRewriter
             rewriter = AIRewriter()
             logger.info("✅ AI rewriter initialized")
         except Exception as e:
