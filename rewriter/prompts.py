@@ -75,6 +75,44 @@ class PromptGenerator:
                 for sentence in list(passive_sentences)[:3]:  # Limit examples
                     specific_instructions.append(f"  Example: '{sentence[:50]}...' needs active voice")
         
+        # --- Instructions for all the new punctuation rules ---
+        
+        if 'punctuation_and_symbols' in error_groups:
+            specific_instructions.append("Do not use symbols like '&' or '+' in place of words like 'and'.")
+
+        if 'colons' in error_groups:
+            specific_instructions.append("Fix incorrect colon usage. Do not place a colon directly after a verb.")
+
+        if 'commas' in error_groups:
+            specific_instructions.append("Ensure all lists of three or more items use a serial (Oxford) comma before the final conjunction.")
+
+        if 'dashes' in error_groups:
+            specific_instructions.append("Do not use em dashes (—) in technical writing; rewrite the sentence using other punctuation.")
+
+        if 'ellipses' in error_groups:
+            specific_instructions.append("Remove ellipses (...) from the text.")
+
+        if 'exclamation_points' in error_groups:
+            specific_instructions.append("Remove all exclamation points and replace them with periods.")
+
+        if 'hyphens' in error_groups:
+            specific_instructions.append("Fix hyphenation errors, especially with common prefixes like 'pre', 'multi', and 'non'.")
+        
+        if 'parentheses' in error_groups:
+            specific_instructions.append("Correct punctuation placement around parentheses.")
+
+        if 'periods' in error_groups:
+            specific_instructions.append("Remove periods from within uppercase abbreviations (e.g., change 'U.S.' to 'US').")
+
+        if 'quotation_marks' in error_groups:
+            specific_instructions.append("Ensure punctuation (like periods and commas) is placed inside closing quotation marks.")
+
+        if 'semicolons' in error_groups:
+            specific_instructions.append("Avoid semicolons; rewrite complex sentences into shorter, separate sentences.")
+
+        if 'slashes' in error_groups:
+            specific_instructions.append("Do not use a slash (/) to mean 'and/or'; rewrite to clarify the meaning.")
+        
         if 'sentence_length' in error_groups:
             specific_instructions.append("Break overly long sentences into shorter, clearer ones (15-20 words each).")
         
