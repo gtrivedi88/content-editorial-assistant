@@ -3,7 +3,7 @@
 rules:
   # PRIMARY COMMAND for critical punctuation fixes
   punctuation_priority:
-    primary_command: "FIRST, apply these CRITICAL punctuation fixes: 1) Remove ALL exclamation points and replace with periods, 2) Fix ALL hyphenation by removing hyphens from prefixes like 'pre-', 3) Convert ALL passive voice to active voice."
+    primary_command: "FIRST, apply these CRITICAL punctuation fixes: 1) Remove ALL exclamation points and replace with periods, 2) Fix ALL hyphenation by removing hyphens from prefixes like 'pre-'"
   
   punctuation_and_symbols:
     instruction: "Do not use symbols like '&' or '+' in place of words like 'and'."
