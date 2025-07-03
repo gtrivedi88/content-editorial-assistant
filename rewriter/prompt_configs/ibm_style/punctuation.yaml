@@ -1,0 +1,38 @@
+# IBM Style Guide - Punctuation Rules
+
+rules:
+  punctuation_and_symbols:
+    instruction: "Do not use symbols like '&' or '+' in place of words like 'and'."
+  
+  colons:
+    instruction: "Fix incorrect colon usage. Do not place a colon directly after a verb."
+
+  commas:
+    instruction: "Ensure all lists of three or more items use a serial (Oxford) comma before the final conjunction."
+
+  dashes:
+    instruction: "Do not use em dashes (—) in technical writing; rewrite the sentence using other punctuation."
+
+  ellipses:
+    instruction: "Remove ellipses (...) from the text."
+
+  exclamation_points:
+    instruction: "Remove all exclamation points and replace them with periods."
+
+  hyphens:
+    instruction: "Fix hyphenation errors, especially with common prefixes like 'pre', 'multi', and 'non'."
+  
+  parentheses:
+    instruction: "Correct punctuation placement around parentheses."
+
+  periods:
+    instruction: "Remove periods from within uppercase abbreviations (e.g., change 'U.S.' to 'US')."
+
+  quotation_marks:
+    instruction: "Ensure punctuation (like periods and commas) is placed inside closing quotation marks."
+
+  semicolons:
+    instruction: "Avoid semicolons; rewrite complex sentences into shorter, separate sentences."
+
+  slashes:
+    instruction: "Do not use a slash (/) to mean 'and/or'; rewrite to clarify the meaning."

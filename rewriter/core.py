@@ -26,7 +26,7 @@ class AIRewriter:
         
         # Initialize all components
         self.model_manager = ModelManager(model_name, use_ollama, ollama_model)
-        self.prompt_generator = PromptGenerator(use_ollama)
+        self.prompt_generator = PromptGenerator(style_guide='ibm_style', use_ollama=use_ollama)
         self.text_generator = TextGenerator(self.model_manager)
         self.text_processor = TextProcessor()
         self.evaluator = RewriteEvaluator()

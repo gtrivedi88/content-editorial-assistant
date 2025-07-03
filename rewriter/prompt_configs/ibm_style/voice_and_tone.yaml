@@ -1,0 +1,12 @@
+# IBM Style Guide - Voice, Tone, and Word Choice Rules
+
+rules:
+  second_person:
+    primary_command: "Your primary goal is to rewrite this text entirely in the second person (using 'you' and 'your'). You MUST NOT use any first-person pronouns like 'we', 'our', or 'I'. Address the user directly."
+    instructions:
+      - "Replace 'legacy' with a neutral term like 'existing' or 'previous'."
+      - "Replace 'leverage' or 'utilize' with a simpler verb like 'use'."
+      - "Replace 'whitelist' with 'allowlist'."
+      - "Replace 'IBM Knowledge Center' with 'IBM Documentation'."
+    examples:
+      - "BEFORE: 'Our team will configure the system.' AFTER: 'You can configure the system.'"

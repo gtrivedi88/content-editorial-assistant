@@ -1,0 +1,15 @@
+# IBM Style Guide - Language and Grammar Rules
+
+rules:
+  passive_voice:
+    instruction: "Convert ALL passive voice to active voice. Identify who performs each action and make them the subject."
+    # The prompt generator will dynamically add specific sentence examples for this rule.
+
+  sentence_length:
+    instruction: "Break overly long sentences into shorter, clearer ones (15-20 words each)."
+  
+  conciseness:
+    instruction: "Remove wordy phrases and unnecessary words."
+  
+  clarity:
+    instruction: "Replace complex words with simpler alternatives."

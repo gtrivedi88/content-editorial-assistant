@@ -1,9 +1,11 @@
 """
-Prompt Generation Module
-Handles different prompt generation strategies for various AI models.
+Handles prompt generation by loading instructions from style guide
+configuration files. This separates the prompt logic from the prompt content.
 """
 
 import logging
+import yaml
+import os
 from typing import List, Dict, Any
 from collections import defaultdict
 
@@ -12,117 +14,91 @@ logger = logging.getLogger(__name__)
 
 class PromptGenerator:
     """
-    Generates context-aware prompts based on detected errors and model type.
-    This class acts as a translator, converting structured error data from the
-    analyzer into clear, human-readable instructions for the AI model.
+    Generates prompts by dynamically loading instructions from a directory
+    of configuration files (e.g., /ibm_style/*.yaml).
     """
     
-    def __init__(self, use_ollama: bool = True):
-        """Initialize the prompt generator."""
-        self.use_ollama = use_ollama
-    
-    def generate_prompt(self, content: str, errors: List[Dict[str, Any]], context: str) -> str:
+    def __init__(self, style_guide: str = 'ibm_style', use_ollama: bool = True):
         """
-        Generate a context-aware prompt for the first rewrite pass.
-
-        This method synthesizes a set of instructions from the detected errors.
-        It identifies high-priority issues (like voice) to create a "primary command"
-        and then lists other specific fixes, creating a highly targeted prompt.
+        Initialize the prompt generator by loading a specific style guide config.
         
         Args:
-            content: Original text content.
-            errors: A list of error dictionaries from the analyzer.
-            context: The context level ('sentence' or 'paragraph').
-            
-        Returns:
-            A formatted prompt string ready for the AI model.
+            style_guide: The name of the style guide directory.
+            use_ollama: Flag to determine which model to use.
         """
-        # Group errors by their 'type' for easier processing.
+        self.use_ollama = use_ollama
+        self.style_guide_name = style_guide
+        self.prompt_config = self._load_prompt_config()
+
+    def _load_prompt_config(self) -> Dict[str, Any]:
+        """
+        Loads and merges all YAML configuration files from a style guide's
+        directory.
+        """
+        # Define the path to the specific style guide's directory
+        style_guide_dir = os.path.join(os.path.dirname(__file__), 'prompt_configs', self.style_guide_name)
+        
+        if not os.path.isdir(style_guide_dir):
+            logger.error(f"❌ Prompt configuration directory not found: {style_guide_dir}")
+            return {}
+
+        merged_config = {}
+        try:
+            # Iterate over all .yaml files in the directory
+            for filename in os.listdir(style_guide_dir):
+                if filename.endswith('.yaml') or filename.endswith('.yml'):
+                    config_path = os.path.join(style_guide_dir, filename)
+                    with open(config_path, 'r') as f:
+                        config = yaml.safe_load(f)
+                        if config and 'rules' in config:
+                            # Merge the rules from this file into the main config
+                            merged_config.update(config['rules'])
+            
+            logger.info(f"✅ Successfully loaded and merged prompt configurations for '{self.style_guide_name}'.")
+            return merged_config
+        except Exception as e:
+            logger.error(f"❌ Error loading prompt configurations from {style_guide_dir}: {e}")
+            return {}
+
+    def generate_prompt(self, content: str, errors: List[Dict[str, Any]], context: str) -> str:
+        """
+        Generate a context-aware prompt by looking up instructions in the
+        loaded configuration file based on the detected errors.
+        """
+        if not self.prompt_config:
+            logger.warning("No prompt configuration loaded. Using a generic prompt.")
+            return f"Improve this text for clarity and conciseness:\n\n{content}"
+
         error_groups = defaultdict(list)
         for error in errors:
             error_groups[error.get('type', 'unknown')].append(error)
-        
+
         primary_command = ""
         specific_instructions = []
-        
-        # --- Forceful and Specific Prompting Logic ---
-        # This section creates a hierarchy of instructions to guide the AI.
 
-        # If a 'second_person' error is found, it's treated as a high-priority
-        # IBM Style rule. A strong primary command is created, and other
-        # specific IBM style rules are added as explicit instructions.
-        if 'second_person' in error_groups:
-            primary_command = "Your primary goal is to rewrite this text entirely in the second person (using 'you' and 'your'). You MUST NOT use any first-person pronouns like 'we', 'our', or 'I'. Address the user directly."
-            
-            # Add other specific IBM Style word replacements to enforce consistency.
-            specific_instructions.append("Replace 'legacy' with a neutral term like 'existing' or 'previous'.")
-            specific_instructions.append("Replace 'leverage' or 'utilize' with a simpler verb like 'use'.")
-            specific_instructions.append("Replace 'whitelist' with 'allowlist'.")
-            specific_instructions.append("Replace 'IBM Knowledge Center' with 'IBM Documentation'.")
-            specific_instructions.append("Do not use em dashes (—).")
+        # Dynamically build instructions from the merged config file
+        for error_type, error_list in error_groups.items():
+            rule_config = self.prompt_config.get(error_type)
+            if rule_config:
+                if 'primary_command' in rule_config and not primary_command:
+                    primary_command = rule_config['primary_command']
+                
+                if 'instruction' in rule_config:
+                    specific_instructions.append(rule_config['instruction'])
+                
+                if 'instructions' in rule_config:
+                    specific_instructions.extend(rule_config['instructions'])
+                
+                if 'examples' in rule_config:
+                    specific_instructions.extend(rule_config['examples'])
 
-        # Handle passive voice errors by providing specific examples from the analyzer.
-        if 'passive_voice' in error_groups:
-            passive_errors = error_groups['passive_voice']
-            passive_sentences = set()
-            for error in passive_errors:
-                sentence = error.get('sentence', '')
-                if sentence:
-                    passive_sentences.add(sentence)
-            
-            if passive_sentences:
-                specific_instructions.append("Convert ALL passive voice to active voice - identify who performs each action and make them the subject")
-                for sentence in list(passive_sentences)[:3]:  # Limit examples
-                    specific_instructions.append(f"  Example: '{sentence[:50]}...' needs active voice")
-        
-        # --- Instructions for all the new punctuation rules ---
-        
-        if 'punctuation_and_symbols' in error_groups:
-            specific_instructions.append("Do not use symbols like '&' or '+' in place of words like 'and'.")
+                # Special handling for passive voice to add dynamic sentence examples
+                if error_type == 'passive_voice':
+                    passive_sentences = {e.get('sentence', '') for e in error_list if e.get('sentence')}
+                    for sentence in list(passive_sentences)[:3]:
+                        specific_instructions.append(f"  Example: '{sentence[:50]}...' needs active voice")
 
-        if 'colons' in error_groups:
-            specific_instructions.append("Fix incorrect colon usage. Do not place a colon directly after a verb.")
-
-        if 'commas' in error_groups:
-            specific_instructions.append("Ensure all lists of three or more items use a serial (Oxford) comma before the final conjunction.")
-
-        if 'dashes' in error_groups:
-            specific_instructions.append("Do not use em dashes (—) in technical writing; rewrite the sentence using other punctuation.")
-
-        if 'ellipses' in error_groups:
-            specific_instructions.append("Remove ellipses (...) from the text.")
-
-        if 'exclamation_points' in error_groups:
-            specific_instructions.append("Remove all exclamation points and replace them with periods.")
-
-        if 'hyphens' in error_groups:
-            specific_instructions.append("Fix hyphenation errors, especially with common prefixes like 'pre', 'multi', and 'non'.")
-        
-        if 'parentheses' in error_groups:
-            specific_instructions.append("Correct punctuation placement around parentheses.")
-
-        if 'periods' in error_groups:
-            specific_instructions.append("Remove periods from within uppercase abbreviations (e.g., change 'U.S.' to 'US').")
-
-        if 'quotation_marks' in error_groups:
-            specific_instructions.append("Ensure punctuation (like periods and commas) is placed inside closing quotation marks.")
-
-        if 'semicolons' in error_groups:
-            specific_instructions.append("Avoid semicolons; rewrite complex sentences into shorter, separate sentences.")
-
-        if 'slashes' in error_groups:
-            specific_instructions.append("Do not use a slash (/) to mean 'and/or'; rewrite to clarify the meaning.")
-        
-        if 'sentence_length' in error_groups:
-            specific_instructions.append("Break overly long sentences into shorter, clearer ones (15-20 words each).")
-        
-        if 'conciseness' in error_groups:
-            specific_instructions.append("Remove wordy phrases and unnecessary words.")
-        
-        if 'clarity' in error_groups:
-            specific_instructions.append("Replace complex words with simpler alternatives.")
-
-        # Build the final prompt using a helper method that structures the commands.
+        # Build the final prompt using a helper method
         if self.use_ollama:
             prompt = self._build_ollama_prompt_v3(content, primary_command, specific_instructions)
         else:
@@ -133,19 +109,7 @@ class PromptGenerator:
     def generate_self_review_prompt(self, first_rewrite: str, original_errors: List[Dict[str, Any]]) -> str:
         """
         Generate a prompt for the AI's second pass (self-review and refinement).
-
-        This prompt asks the model to act as a senior editor reviewing its own
-        work, encouraging it to find further opportunities for improvement beyond
-        the initial error-fixing pass.
-        
-        Args:
-            first_rewrite: The text generated during the first pass.
-            original_errors: The list of errors from the initial analysis.
-            
-        Returns:
-            A formatted prompt for the second rewrite pass.
         """
-        
         error_types = [error.get('type', '') for error in original_errors]
         error_summary = ', '.join(set(error_types))
         
@@ -171,10 +135,7 @@ FINAL POLISHED VERSION:"""
     def _build_ollama_prompt_v3(self, content: str, primary_command: str, specific_instructions: List[str]) -> str:
         """
         Builds a more forceful, structured prompt for Ollama/Llama models.
-        This structured format with clear headings helps the model better
-        understand the hierarchy and importance of the instructions.
         """
-        
         instructions_text = "\n".join(f"- {instruction}" for instruction in specific_instructions)
 
         prompt = f"""You are a professional technical editor following a strict corporate style guide.
@@ -202,10 +163,7 @@ Improved text:"""
     def _build_hf_prompt_v3(self, content: str, primary_command: str, specific_instructions: List[str]) -> str:
         """
         Builds a more forceful, structured prompt for Hugging Face models.
-        This format is similar to the Ollama version but adapted for general
-        Hugging Face model conventions.
         """
-        
         instructions_text = "\n".join(f"- {instruction}" for instruction in specific_instructions)
 
         prompt_parts = [
