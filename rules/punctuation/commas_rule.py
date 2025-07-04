@@ -3,7 +3,14 @@ Commas Rule
 Based on IBM Style Guide topic: "Commas"
 """
 from typing import List, Dict, Any
-from .base_punctuation_rule import BasePunctuationRule
+# Fix relative import issue by using absolute import
+try:
+    from .base_punctuation_rule import BasePunctuationRule
+except ImportError:
+    try:
+        from rules.punctuation.base_punctuation_rule import BasePunctuationRule
+    except ImportError:
+        from base_punctuation_rule import BasePunctuationRule
 
 class CommasRule(BasePunctuationRule):
     """

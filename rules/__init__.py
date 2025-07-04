@@ -109,9 +109,22 @@ class RulesRegistry:
         print(f"📊 Rules discovery complete. Loaded {len(self.rules)} rules from {len(set(self.rule_locations.values()))} locations.")
     
     def _import_rule_module_enhanced(self, import_path: str, file_dir: str, filename: str, depth: int):
-        """Enhanced import method with better handling for deeply nested modules (up to 4 levels)."""
+        """Enhanced import method with proper Python imports as primary method."""
         try:
-            # Method 1: Try direct file-based import (most reliable for nested modules)
+            # Method 1: Try proper Python module import (most reliable)
+            absolute_import_path = f"rules.{import_path}"
+            try:
+                module = importlib.import_module(absolute_import_path)
+                return module
+            except ImportError:
+                # Try without the rules prefix in case we're already in the rules context
+                try:
+                    module = importlib.import_module(import_path)
+                    return module
+                except ImportError:
+                    pass
+            
+            # Method 2: Try direct file-based import as fallback
             file_path = os.path.join(file_dir, filename)
             
             # Create a unique module name to avoid conflicts
@@ -135,15 +148,15 @@ class RulesRegistry:
         return self._import_rule_module_enhanced(import_path, file_dir, filename, 0)
     
     def _import_rule_module_fallback(self, import_path: str, file_dir: str, filename: str):
-        """Fallback import methods for edge cases."""
+        """Simplified fallback import methods."""
         try:
-            # Method 1: Try package-based import if we're in a package context
+            # Method 1: Try relative package import
             if __package__:
                 full_import_path = f'.{import_path}' if not import_path.startswith('.') else import_path
                 try:
                     return importlib.import_module(full_import_path, __package__)
-                except ImportError as package_error:
-                    print(f"Package import failed: {package_error}")
+                except ImportError:
+                    pass
             
             # Method 2: Direct file import with simple name
             file_path = os.path.join(file_dir, filename)
@@ -155,10 +168,9 @@ class RulesRegistry:
                 spec.loader.exec_module(module)
                 return module
             
-            raise ImportError(f"All fallback methods failed for {import_path}")
+            return None
                 
-        except Exception as e:
-            print(f"🚫 All import methods failed for {import_path}: {e}")
+        except Exception:
             return None
     
     def _find_and_instantiate_rule_class(self, module, module_name: str):
@@ -189,10 +201,14 @@ class RulesRegistry:
             return None
     
     def _is_rule_class(self, cls) -> bool:
-        """Check if a class is a rule class by examining its inheritance chain and interface."""
+        """Check if a class is a concrete rule class by examining its inheritance chain and interface."""
         try:
             # Check if it's a class
             if not isinstance(cls, type):
+                return False
+            
+            # Skip abstract base classes
+            if cls.__name__ in ['BaseRule', 'BaseLanguageRule', 'BasePunctuationRule']:
                 return False
             
             # Check if class name suggests it's a rule
@@ -204,15 +220,20 @@ class RulesRegistry:
             if not all(hasattr(cls, method) for method in required_methods):
                 return False
             
-            # Check inheritance chain for BaseRule (flexible matching)
-            for base in cls.__mro__:
-                if (hasattr(base, '__name__') and 
-                    base.__name__ == 'BaseRule' and
-                    hasattr(base, 'analyze') and
-                    hasattr(base, '_get_rule_type')):
-                    return True
-            
-            return False
+            # Try to instantiate to check if it's abstract
+            try:
+                # Test if we can call _get_rule_type on a temporary instance
+                temp_instance = cls()
+                temp_instance._get_rule_type()
+                return True
+            except TypeError as e:
+                # If we get a TypeError about abstract methods, it's an abstract class
+                if "abstract" in str(e).lower():
+                    return False
+                return True
+            except Exception:
+                # If any other error occurs during instantiation, skip it
+                return False
             
         except Exception:
             return False

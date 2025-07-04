@@ -19,7 +19,7 @@ language-tool-python>=2.7.0,<3.0.0
 textdistance>=4.6.0,<5.0.0
 
 # Document Processing (Cross-platform)
-PyPDF2>=3.0.1,<4.0.0
+PyMuPDF>=1.23.0,<2.0.0
 python-docx>=1.1.0,<2.0.0
 python-magic>=0.4.27,<1.0.0; sys_platform != "win32"
 python-magic-bin>=0.4.14,<1.0.0; sys_platform == "win32"

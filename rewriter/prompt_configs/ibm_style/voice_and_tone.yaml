@@ -4,8 +4,9 @@ rules:
   second_person:
     # This more nuanced command tells the AI to distinguish between instructions
     # (which should be second person) and descriptions (which should be third person).
-    # This prevents the AI from over-correcting and changing the meaning of the text.
-    primary_command: "Your primary goal is to rewrite the text to address the user directly. Use the second person ('you') for all instructions or actions the user should take. For descriptive statements about how a system or framework behaves on its own, maintain the third person. You MUST NOT use any first-person pronouns like 'we' or 'our'."
+    # It also explicitly tells the AI to use active voice to prevent over-correction.
+    primary_command: "Your primary goal is to rewrite the text to address the user directly. Use the second person ('you') for all instructions or actions the user should take. For descriptive statements about how a system or framework behaves on its own, maintain the third person. You MUST NOT use any first-person pronouns like 'we' or 'our', and you MUST use the active voice."
+    
     instructions:
       - "Replace 'legacy' with a neutral term like 'existing' or 'previous'."
       - "Replace 'leverage' or 'utilize' with a simpler verb like 'use'."

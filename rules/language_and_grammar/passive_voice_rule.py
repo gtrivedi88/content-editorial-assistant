@@ -3,7 +3,14 @@ Passive Voice Rule
 Based on IBM Style Guide topic: "Verbs: Voice"
 """
 from typing import List, Dict, Any
-from .base_language_rule import BaseLanguageRule
+# Fix relative import issue by using absolute import
+try:
+    from .base_language_rule import BaseLanguageRule
+except ImportError:
+    try:
+        from rules.language_and_grammar.base_language_rule import BaseLanguageRule
+    except ImportError:
+        from base_language_rule import BaseLanguageRule
 
 class PassiveVoiceRule(BaseLanguageRule):
     """

@@ -4,12 +4,36 @@ Uses pure SpaCy syntactic and morphological analysis with zero hardcoded pattern
 """
 
 from typing import List, Dict, Any
+import os
+import sys
 
-# Handle imports for different contexts
+# Handle imports for different contexts - simplified approach
+BaseRule = None
+
 try:
     from .base_rule import BaseRule
 except ImportError:
-    from base_rule import BaseRule
+    try:
+        from base_rule import BaseRule
+    except ImportError:
+        try:
+            from rules.base_rule import BaseRule
+        except ImportError:
+            # Add current directory to path and try again
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            if current_dir not in sys.path:
+                sys.path.insert(0, current_dir)
+            try:
+                from base_rule import BaseRule
+            except ImportError:
+                # Create a minimal fallback
+                class BaseRule:
+                    def __init__(self):
+                        self.rule_type = self._get_rule_type()
+                    def _get_rule_type(self):
+                        return 'base'
+                    def _create_error(self, **kwargs):
+                        return kwargs
 
 class SentenceLengthRule(BaseRule):
     """Rule to analyze sentence complexity using pure SpaCy linguistic analysis."""
@@ -43,7 +67,7 @@ class SentenceLengthRule(BaseRule):
                             errors.append(self._create_error(
                                 sentence=sentence,
                                 sentence_index=i,
-                                message=f'Flow issue: {flow_issue.get("type").replace("_", " ").title()}',
+                                message=f'Flow issue: {flow_issue.get("type", "unknown").replace("_", " ").title()}',
                                 suggestions=flow_suggestions,
                                 severity='medium',
                                 complexity_analysis=flow_issue

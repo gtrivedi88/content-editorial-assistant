@@ -256,7 +256,7 @@ def test_installation():
             
         # Test application modules
         try:
-            from src.style_analyzer import StyleAnalyzer
+            from style_analyzer import StyleAnalyzer
             analyzer = StyleAnalyzer()
             test_result = analyzer.analyze("This is a test sentence for analysis.")
             logger.info("✅ Style analyzer working correctly")
