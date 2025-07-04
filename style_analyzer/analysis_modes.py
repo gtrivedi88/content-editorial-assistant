@@ -48,19 +48,20 @@ class AnalysisModeExecutor:
             )
             errors.extend(sentence_errors)
             
-            # Integrate modular rules analysis
+            # Integrate modular rules analysis with context-aware rule selection
             if self.rules_registry:
                 try:
-                    rules_errors = self.rules_registry.analyze_with_all_rules(
+                    # Use context-aware rule analysis to prevent false positives
+                    rules_errors = self.rules_registry.analyze_with_context_aware_rules(
                         text, sentences, self.nlp, block_context
                     )
                     # Convert rules errors to our error format
                     for error in rules_errors:
                         converted_error = self.error_converter.convert_rules_error(error)
                         errors.append(converted_error)
-                    logger.info(f"Modular rules analysis found {len(rules_errors)} issues")
+                    logger.info(f"Context-aware modular rules analysis found {len(rules_errors)} issues")
                 except Exception as e:
-                    logger.error(f"Modular rules analysis failed: {e}")
+                    logger.error(f"Context-aware modular rules analysis failed: {e}")
             
         except Exception as e:
             logger.error(f"SpaCy with modular rules analysis failed: {e}")
@@ -83,19 +84,20 @@ class AnalysisModeExecutor:
             sentence_errors = self.sentence_analyzer.analyze_sentence_length_conservative(sentences)
             errors.extend(sentence_errors)
             
-            # Integrate modular rules analysis
+            # Integrate modular rules analysis with context-aware rule selection
             if self.rules_registry:
                 try:
-                    rules_errors = self.rules_registry.analyze_with_all_rules(
+                    # Use context-aware rule analysis to prevent false positives
+                    rules_errors = self.rules_registry.analyze_with_context_aware_rules(
                         text, sentences, self.nlp, block_context
                     )
                     # Convert rules errors to our error format
                     for error in rules_errors:
                         converted_error = self.error_converter.convert_rules_error(error)
                         errors.append(converted_error)
-                    logger.info(f"Modular rules analysis found {len(rules_errors)} issues")
+                    logger.info(f"Context-aware modular rules analysis found {len(rules_errors)} issues")
                 except Exception as e:
-                    logger.error(f"Modular rules analysis failed: {e}")
+                    logger.error(f"Context-aware modular rules analysis failed: {e}")
             
         except Exception as e:
             logger.error(f"Modular rules with fallbacks analysis failed: {e}")

@@ -27,6 +27,75 @@ class RulesRegistry:
         self.rules = {}
         self.rule_locations = {}  # Track where each rule was found
         self._load_all_rules()
+        
+        # Define block type to rule mapping for context-aware analysis
+        self.block_type_rules = {
+            # Heading blocks - only apply heading-specific rules
+            'heading': ['headings', 'capitalization', 'pronouns', 'second_person', 'slashes', 'hyphens', 'colons', 'commas', 'dashes', 'ellipses', 'exclamation_points', 'hyphens', 'parentheses', 'periods', 'punctuation_and_symbols', 'quotation_marks', 'semicolons'],
+            
+            # Paragraph blocks - apply general language and grammar rules but exclude structure-specific rules
+            'paragraph': [
+                # Language and grammar rules
+                'abbreviations', 'adverbs_only', 'anthropomorphism', 'articles', 'capitalization',
+                'conjunctions', 'contractions', 'inclusive_language', 'passive_voice', 'plurals',
+                'possessives', 'prepositions', 'pronouns', 'spelling', 'terminology', 'verbs',
+                # Punctuation rules
+                'colons', 'commas', 'dashes', 'ellipses', 'exclamation_points', 'hyphens',
+                'parentheses', 'periods', 'punctuation_and_symbols', 'quotation_marks',
+                'semicolons', 'slashes',
+                # General rules
+                'second_person', 'sentence_length'
+            ],
+            
+            # List items - apply list-specific rules plus general content rules
+            'list_item': ['lists', 'procedures', 'capitalization', 'punctuation_and_symbols'],
+            'list_item_ordered': ['lists', 'procedures', 'capitalization', 'punctuation_and_symbols'],
+            'list_item_unordered': ['lists', 'capitalization', 'punctuation_and_symbols'],
+            'list_title': ['lists', 'capitalization'],
+            
+            # Special blocks - apply specific rules
+            'admonition': ['admonitions', 'capitalization'],
+            'quote': ['punctuation_and_symbols', 'quotation_marks', 'capitalization'],
+            'sidebar': ['capitalization'],
+            
+            # Code blocks - skip all analysis
+            'listing': [],
+            'literal': [],
+            'code_block': [],
+            'inline_code': [],
+            'pass': [],
+            
+            # Other blocks that should be skipped
+            'attribute_entry': [],
+            'html_block': [],
+            'html_inline': [],
+            'horizontal_rule': [],
+            'softbreak': [],
+            'hardbreak': [],
+            
+            # Table cells - basic content analysis
+            'table_cell': ['capitalization', 'punctuation_and_symbols'],
+            
+            # Blockquotes - similar to paragraphs but more limited
+            'blockquote': [
+                'capitalization', 'punctuation_and_symbols', 'quotation_marks',
+                'passive_voice', 'sentence_length'
+            ]
+        }
+        
+        # Define rules that should never be applied to certain block types
+        self.rule_exclusions = {
+            # Headings should never have list or procedure rules
+            'heading': ['lists', 'procedures'],
+            # Paragraphs should never have heading or list-specific rules
+            'paragraph': ['headings', 'lists', 'procedures', 'admonitions'],
+            # List items should never have heading or paragraph-specific rules
+            'list_item': ['headings', 'admonitions'],
+            'list_item_ordered': ['headings', 'admonitions'],
+            'list_item_unordered': ['headings', 'admonitions'],
+            # Admonitions should never have heading or list rules
+            'admonition': ['headings', 'lists', 'procedures'],
+        }
     
     def _load_all_rules(self):
         """Automatically discover and load all rule modules from main directory and nested subdirectories (up to 4 levels deep)."""
@@ -312,6 +381,90 @@ class RulesRegistry:
             'locations': list(set(self.rule_locations.values()))
         }
     
+    def analyze_with_context_aware_rules(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
+        """Run analysis with context-aware rule selection based on block type."""
+        all_errors = []
+        
+        # Get block type from context
+        block_type = self._get_block_type_from_context(context)
+        
+        # Skip analysis for code blocks and other non-content blocks
+        if self._should_skip_analysis(block_type):
+            return all_errors
+        
+        # Get applicable rules for this block type
+        applicable_rules = self._get_applicable_rules(block_type)
+        
+        # Apply only the relevant rules
+        for rule_type in applicable_rules:
+            rule = self.rules.get(rule_type)
+            if rule:
+                try:
+                    rule_errors = rule.analyze(text, sentences, nlp, context)
+                    
+                    # Ensure all errors are JSON serializable
+                    serializable_errors = []
+                    for error in rule_errors:
+                        # Use base rule's serialization method
+                        serializable_error = rule._make_serializable(error)
+                        serializable_errors.append(serializable_error)
+                    
+                    all_errors.extend(serializable_errors)
+                    
+                except Exception as e:
+                    print(f"❌ Error in rule {rule.__class__.__name__}: {e}")
+                    # Add a system error that is guaranteed to be serializable
+                    all_errors.append({
+                        'type': 'system_error',
+                        'message': f'Rule {rule.__class__.__name__} failed: {str(e)}',
+                        'suggestions': ['Check rule implementation'],
+                        'sentence': '',
+                        'sentence_index': -1,
+                        'severity': 'low'
+                    })
+        
+        return all_errors
+    
+    def _get_block_type_from_context(self, context: Optional[dict]) -> str:
+        """Extract block type from context information."""
+        if not context:
+            return 'paragraph'  # Default to paragraph if no context
+        
+        # Try multiple ways to get block type
+        block_type = (
+            context.get('block_type') or
+            context.get('type') or
+            context.get('blockType') or
+            'paragraph'
+        )
+        
+        return str(block_type).lower()
+    
+    def _should_skip_analysis(self, block_type: str) -> bool:
+        """Check if analysis should be skipped for this block type."""
+        skip_types = {
+            'listing', 'literal', 'code_block', 'inline_code', 'pass',
+            'attribute_entry', 'html_block', 'html_inline', 'horizontal_rule',
+            'softbreak', 'hardbreak'
+        }
+        return block_type in skip_types
+    
+    def _get_applicable_rules(self, block_type: str) -> List[str]:
+        """Get list of rule types that should be applied to this block type."""
+        # Get base rules for this block type
+        applicable_rules = self.block_type_rules.get(block_type, [])
+        
+        # If no specific rules defined, use paragraph rules as default
+        if not applicable_rules and block_type not in self.block_type_rules:
+            applicable_rules = self.block_type_rules.get('paragraph', [])
+        
+        # Apply exclusions
+        exclusions = self.rule_exclusions.get(block_type, [])
+        applicable_rules = [rule for rule in applicable_rules if rule not in exclusions]
+        
+        # Filter to only include rules that are actually loaded
+        return [rule for rule in applicable_rules if rule in self.rules]
+
     def analyze_with_all_rules(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         """Run analysis with all discovered rules from all directories."""
         all_errors = []
