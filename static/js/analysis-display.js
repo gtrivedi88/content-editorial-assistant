@@ -2,9 +2,44 @@
 
 // Display structural blocks (ideal UI)
 function displayStructuralBlocks(blocks) {
+    if (!blocks || blocks.length === 0) {
+        return null;
+    }
+    
     return `
-        <div class="mb-3">
-            <h6>Document Structure:</h6>
+        <div class="mb-4">
+            <div class="d-flex align-items-center mb-4" style="
+                padding: 20px;
+                background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+                border-radius: 16px;
+                border: 1px solid #e2e8f0;
+            ">
+                <div class="me-3 d-flex align-items-center justify-content-center" style="
+                    width: 40px;
+                    height: 40px;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    border-radius: 12px;
+                ">
+                    <i class="fas fa-sitemap" style="color: white; font-size: 16px;"></i>
+                </div>
+                <div>
+                    <h6 class="mb-1 fw-bold" style="color: #1e293b; font-size: 16px; letter-spacing: 0.5px;">Document Structure Analysis</h6>
+                    <small style="color: #64748b; font-size: 13px;">Content organized by structural elements with context-aware style checking</small>
+                </div>
+                <div class="ms-auto">
+                    <div class="badge" style="
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        padding: 6px 12px;
+                        border-radius: 8px;
+                        font-size: 11px;
+                        font-weight: 600;
+                        letter-spacing: 0.5px;
+                    ">
+                        ${blocks.length} BLOCKS
+                    </div>
+                </div>
+            </div>
             <div class="structural-blocks">
                 ${blocks.map(block => createStructuralBlock(block)).join('')}
             </div>
@@ -33,69 +68,216 @@ function displayFlatContent(content, errors) {
     `;
 }
 
-// Create a structural block display
+// Create a structural block display with world-class design
 function createStructuralBlock(block) {
-    const blockTypeColors = {
-        'heading': 'primary',
-        'paragraph': 'secondary',
-        'list': 'info',
-        'admonition': 'warning',
-        'code': 'dark',
-        'literal': 'dark',
-        'listing': 'dark',
-        'quote': 'success',
-        'sidebar': 'info',
-        'attribute_entry': 'light'
+    // World-class color palette - professional and accessible
+    const blockTypeStyles = {
+        'heading': {
+            gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            bgColor: '#f8fafc',
+            borderColor: '#e2e8f0',
+            textColor: '#1e293b',
+            accentColor: '#667eea'
+        },
+        'paragraph': {
+            gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+            bgColor: '#f0f9ff',
+            borderColor: '#e0f2fe',
+            textColor: '#0f172a',
+            accentColor: '#0ea5e9'
+        },
+        'list': {
+            gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+            bgColor: '#f0fdfa',
+            borderColor: '#ccfbf1',
+            textColor: '#134e4a',
+            accentColor: '#0d9488'
+        },
+        'admonition': {
+            gradient: 'linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)',
+            bgColor: '#eff6ff',
+            borderColor: '#dbeafe',
+            textColor: '#1e293b',
+            accentColor: '#3b82f6'
+        },
+        'code': {
+            gradient: 'linear-gradient(135deg, #374151 0%, #1f2937 100%)',
+            bgColor: '#f9fafb',
+            borderColor: '#e5e7eb',
+            textColor: '#111827',
+            accentColor: '#374151'
+        },
+        'literal': {
+            gradient: 'linear-gradient(135deg, #374151 0%, #1f2937 100%)',
+            bgColor: '#f9fafb',
+            borderColor: '#e5e7eb',
+            textColor: '#111827',
+            accentColor: '#374151'
+        },
+        'listing': {
+            gradient: 'linear-gradient(135deg, #374151 0%, #1f2937 100%)',
+            bgColor: '#f9fafb',
+            borderColor: '#e5e7eb',
+            textColor: '#111827',
+            accentColor: '#374151'
+        },
+        'quote': {
+            gradient: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+            bgColor: '#f0fdfa',
+            borderColor: '#ccfbf1',
+            textColor: '#0f172a',
+            accentColor: '#059669'
+        },
+        'sidebar': {
+            gradient: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+            bgColor: '#fef2f2',
+            borderColor: '#fecaca',
+            textColor: '#1f2937',
+            accentColor: '#dc2626'
+        },
+        'attribute_entry': {
+            gradient: 'linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%)',
+            bgColor: '#f9fafb',
+            borderColor: '#e5e7eb',
+            textColor: '#6b7280',
+            accentColor: '#9ca3af'
+        }
     };
     
     const blockTypeIcons = {
         'heading': 'fas fa-heading',
         'paragraph': 'fas fa-paragraph',
-        'list': 'fas fa-list',
-        'admonition': 'fas fa-exclamation-triangle',
+        'list': 'fas fa-list-ul',
+        'admonition': 'fas fa-info-circle',
         'code': 'fas fa-code',
         'literal': 'fas fa-terminal',
         'listing': 'fas fa-code',
         'quote': 'fas fa-quote-left',
-        'sidebar': 'fas fa-window-maximize',
+        'sidebar': 'fas fa-sidebar',
         'attribute_entry': 'fas fa-cog'
     };
     
-    const color = blockTypeColors[block.block_type] || 'secondary';
+    const style = blockTypeStyles[block.block_type] || blockTypeStyles['paragraph'];
     const icon = blockTypeIcons[block.block_type] || 'fas fa-file-alt';
     
     const blockTitle = block.block_type.toUpperCase() + 
         (block.level > 0 ? ` (Level ${block.level})` : '') +
         (block.admonition_type ? ` - ${block.admonition_type.toUpperCase()}` : '');
     
+    const issueCount = block.errors ? block.errors.length : 0;
+    
     return `
-        <div class="structural-block mb-3 border rounded">
-            <div class="block-header bg-${color} text-white p-2 d-flex justify-content-between align-items-center">
-                <div>
-                    <i class="${icon} me-2"></i>
-                    <strong>BLOCK ${block.block_id + 1}: ${blockTitle}</strong>
+        <div class="structural-block mb-4" style="
+            border-radius: 16px;
+            overflow: hidden;
+            background: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            border: 1px solid ${style.borderColor};
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        ">
+            <!-- World-class header design -->
+            <div class="block-header d-flex justify-content-between align-items-center p-3" style="
+                background: ${style.gradient};
+                color: white;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            ">
+                <div class="d-flex align-items-center">
+                    <div class="me-3 d-flex align-items-center justify-content-center" style="
+                        width: 40px;
+                        height: 40px;
+                        background: rgba(255, 255, 255, 0.15);
+                        border-radius: 12px;
+                        backdrop-filter: blur(10px);
+                    ">
+                        <i class="${icon}" style="font-size: 18px;"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0 fw-bold" style="font-size: 14px; letter-spacing: 0.5px;">
+                            BLOCK ${block.block_id + 1}: ${blockTitle}
+                        </h6>
+                        <small class="opacity-90" style="font-size: 12px;">
+                            ${block.should_skip_analysis ? 'Analysis skipped for this block type' : 
+                              `${issueCount} ${issueCount === 1 ? 'issue' : 'issues'} found`}
+                        </small>
+                    </div>
                 </div>
-                <small class="opacity-75">
-                    ${block.should_skip_analysis ? 'Analysis skipped' : (block.errors ? block.errors.length : 0) + ' issues'}
-                </small>
+                <div class="d-flex align-items-center">
+                    ${!block.should_skip_analysis ? `
+                        <div class="badge" style="
+                            background: ${issueCount > 0 ? 'rgba(239, 68, 68, 0.9)' : 'rgba(34, 197, 94, 0.9)'};
+                            color: white;
+                            padding: 6px 12px;
+                            border-radius: 20px;
+                            font-size: 11px;
+                            font-weight: 600;
+                            letter-spacing: 0.5px;
+                        ">
+                            ${issueCount > 0 ? `${issueCount} ${issueCount === 1 ? 'ISSUE' : 'ISSUES'}` : 'CLEAN'}
+                        </div>
+                    ` : `
+                        <div class="badge" style="
+                            background: rgba(156, 163, 175, 0.9);
+                            color: white;
+                            padding: 6px 12px;
+                            border-radius: 20px;
+                            font-size: 11px;
+                            font-weight: 600;
+                            letter-spacing: 0.5px;
+                        ">
+                            SKIPPED
+                        </div>
+                    `}
+                </div>
             </div>
             
-            <div class="block-content p-3">
+            <!-- Premium content area -->
+            <div class="block-content p-4" style="background: ${style.bgColor};">
                 ${block.should_skip_analysis ? 
-                    `<div class="text-muted fst-italic">
-                        <i class="fas fa-info-circle me-2"></i>Analysis skipped for this block type.
-                    </div>` : 
-                    `<div class="block-text bg-light p-3 rounded mb-3" style="white-space: pre-wrap; font-family: monospace;">
-                        ${escapeHtml(block.content)}
-                    </div>`
+                                         `<div class="d-flex align-items-center justify-content-center py-4" style="
+                         color: #374151;
+                         font-style: italic;
+                     ">
+                         <i class="fas fa-info-circle me-3" style="font-size: 24px; color: ${style.accentColor};"></i>
+                         <div>
+                             <div class="fw-medium">Analysis skipped for this block type</div>
+                             <small style="color: #6b7280;">Code blocks and attributes are not analyzed for style issues</small>
+                         </div>
+                     </div>` : 
+                                         `<div class="block-text mb-3" style="
+                         background: white;
+                         border: 1px solid ${style.borderColor};
+                         border-radius: 12px;
+                         padding: 20px;
+                         font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace;
+                         font-size: 14px;
+                         line-height: 1.6;
+                         color: #1f2937;
+                         white-space: pre-wrap;
+                         word-wrap: break-word;
+                         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+                     ">
+${escapeHtml(block.content)}
+                     </div>`
                 }
                 
                 ${!block.should_skip_analysis && block.errors && block.errors.length > 0 ? `
                 <div class="block-errors">
-                    <h6 class="text-danger">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        ${block.errors.length} Issue${block.errors.length > 1 ? 's' : ''} Found:
-                    </h6>
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="me-3 d-flex align-items-center justify-content-center" style="
+                            width: 32px;
+                            height: 32px;
+                            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+                            border-radius: 8px;
+                        ">
+                            <i class="fas fa-exclamation-triangle" style="color: #dc2626; font-size: 14px;"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0 fw-bold" style="color: #dc2626; font-size: 14px;">
+                                ${block.errors.length} Issue${block.errors.length > 1 ? 's' : ''} Found
+                            </h6>
+                            <small style="color: #6b7280;">Review the following suggestions</small>
+                        </div>
+                    </div>
                     <div class="error-list">
                         ${block.errors.map(error => createInlineError(error)).join('')}
                     </div>
@@ -103,8 +285,17 @@ function createStructuralBlock(block) {
                 ` : ''}
                 
                 ${!block.should_skip_analysis && (!block.errors || block.errors.length === 0) ? `
-                <div class="alert alert-success alert-sm mb-0">
-                    <i class="fas fa-check-circle me-2"></i>No issues found in this block.
+                <div class="d-flex align-items-center justify-content-center py-3" style="
+                    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+                    border: 1px solid #bbf7d0;
+                    border-radius: 12px;
+                    color: #166534;
+                ">
+                    <i class="fas fa-check-circle me-3" style="color: #22c55e; font-size: 20px;"></i>
+                    <div>
+                        <div class="fw-medium">No issues found in this block</div>
+                        <small style="opacity: 0.8;">This content follows style guidelines perfectly</small>
+                    </div>
                 </div>
                 ` : ''}
             </div>
@@ -112,22 +303,77 @@ function createStructuralBlock(block) {
     `;
 }
 
-// Create inline error display for structural blocks
+// Create inline error display with premium design
 function createInlineError(error) {
+    const errorTypes = {
+        'STYLE': { color: '#dc2626', bg: '#fef2f2', icon: 'fas fa-exclamation-circle' },
+        'GRAMMAR': { color: '#b45309', bg: '#fefbeb', icon: 'fas fa-spell-check' },
+        'STRUCTURE': { color: '#1e40af', bg: '#eff6ff', icon: 'fas fa-sitemap' },
+        'PUNCTUATION': { color: '#6b21a8', bg: '#faf5ff', icon: 'fas fa-quote-right' },
+        'CAPITALIZATION': { color: '#059669', bg: '#ecfdf5', icon: 'fas fa-font' },
+        'TERMINOLOGY': { color: '#c2410c', bg: '#fff7ed', icon: 'fas fa-book' },
+        'PASSIVE_VOICE': { color: '#b45309', bg: '#fefbeb', icon: 'fas fa-exchange-alt' },
+        'READABILITY': { color: '#0e7490', bg: '#ecfeff', icon: 'fas fa-eye' },
+        'ADMONITIONS': { color: '#1e40af', bg: '#eff6ff', icon: 'fas fa-info-circle' },
+        'HEADINGS': { color: '#7c2d12', bg: '#fef7ed', icon: 'fas fa-heading' },
+        'LISTS': { color: '#059669', bg: '#ecfdf5', icon: 'fas fa-list' },
+        'PROCEDURES': { color: '#0e7490', bg: '#ecfeff', icon: 'fas fa-tasks' }
+    };
+    
+    const errorType = error.error_type || 'STYLE';
+    const typeStyle = errorTypes[errorType] || errorTypes['STYLE'];
+    
     return `
-        <div class="error-item mb-2 p-2 border-start border-danger border-3 bg-light">
+        <div class="error-item mb-3" style="
+            background: white;
+            border: 1px solid ${typeStyle.bg};
+            border-left: 4px solid ${typeStyle.color};
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            transition: all 0.2s ease;
+        " onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 16px rgba(0, 0, 0, 0.08)'" 
+           onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(0, 0, 0, 0.04)'">
             <div class="d-flex align-items-start">
-                <div class="me-3">
-                    <span class="badge bg-danger">${error.error_type || 'STYLE'}</span>
+                <div class="me-3 d-flex align-items-center justify-content-center" style="
+                    width: 36px;
+                    height: 36px;
+                    background: ${typeStyle.bg};
+                    border-radius: 10px;
+                    flex-shrink: 0;
+                ">
+                    <i class="${typeStyle.icon}" style="color: ${typeStyle.color}; font-size: 16px;"></i>
                 </div>
                 <div class="flex-grow-1">
-                    <div class="error-message">
-                        <strong>${error.message || 'Style issue detected'}</strong>
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="badge me-2" style="
+                            background: ${typeStyle.color};
+                            color: white;
+                            padding: 4px 10px;
+                            border-radius: 6px;
+                            font-size: 10px;
+                            font-weight: 600;
+                            letter-spacing: 0.5px;
+                        ">${errorType}</span>
+                        <div class="fw-semibold" style="color: #374151; font-size: 14px;">
+                            ${error.message || 'Style issue detected'}
+                        </div>
                     </div>
                     ${error.suggestion ? `
-                    <div class="error-suggestion mt-1 text-muted">
-                        <i class="fas fa-lightbulb me-1"></i>
-                        Suggestion: ${error.suggestion}
+                    <div class="d-flex align-items-start" style="
+                        background: ${typeStyle.bg};
+                        border-radius: 8px;
+                        padding: 12px;
+                        margin-top: 8px;
+                    ">
+                        <i class="fas fa-lightbulb me-2" style="
+                            color: ${typeStyle.color};
+                            margin-top: 2px;
+                            font-size: 14px;
+                        "></i>
+                        <div style="color: #4b5563; font-size: 13px; line-height: 1.5;">
+                            <strong style="color: ${typeStyle.color};">Suggestion:</strong> ${error.suggestion}
+                        </div>
                     </div>
                     ` : ''}
                 </div>
@@ -144,15 +390,52 @@ function displayAnalysisResults(analysis, content, structuralBlocks = null) {
     let html = `
         <div class="row">
             <div class="col-md-8">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0"><i class="fas fa-file-alt me-2"></i>Content Analysis</h5>
-                        <span class="badge ${analysis.overall_score >= 80 ? 'bg-success' : analysis.overall_score >= 60 ? 'bg-warning' : 'bg-danger'}">
-                            Score: ${analysis.overall_score.toFixed(1)}%
-                        </span>
+                <div class="card border-0" style="
+                    border-radius: 20px;
+                    overflow: hidden;
+                    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+                    background: white;
+                ">
+                    <div class="card-header border-0 d-flex justify-content-between align-items-center" style="
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        padding: 24px;
+                    ">
+                        <div class="d-flex align-items-center">
+                            <div class="me-3 d-flex align-items-center justify-content-center" style="
+                                width: 48px;
+                                height: 48px;
+                                background: rgba(255, 255, 255, 0.15);
+                                border-radius: 16px;
+                                backdrop-filter: blur(10px);
+                            ">
+                                <i class="fas fa-file-alt" style="font-size: 20px;"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-1 fw-bold" style="font-size: 18px; letter-spacing: 0.5px;">Content Analysis</h5>
+                                <small class="opacity-90" style="font-size: 14px;">Structural document review and style assessment</small>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <div class="text-end me-3">
+                                <div class="small opacity-75" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Quality Score</div>
+                                <div class="fw-bold" style="font-size: 24px;">${analysis.overall_score.toFixed(1)}%</div>
+                            </div>
+                            <div class="badge" style="
+                                background: ${analysis.overall_score >= 80 ? 'rgba(34, 197, 94, 0.9)' : analysis.overall_score >= 60 ? 'rgba(245, 158, 11, 0.9)' : 'rgba(239, 68, 68, 0.9)'};
+                                color: white;
+                                padding: 8px 16px;
+                                border-radius: 12px;
+                                font-size: 12px;
+                                font-weight: 600;
+                                letter-spacing: 0.5px;
+                            ">
+                                ${analysis.overall_score >= 80 ? 'EXCELLENT' : analysis.overall_score >= 60 ? 'GOOD' : 'NEEDS WORK'}
+                            </div>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        ${structuralBlocks ? displayStructuralBlocks(structuralBlocks) : displayFlatContent(content, analysis.errors)}
+                    <div class="card-body" style="padding: 32px;">
+                        ${structuralBlocks ? (displayStructuralBlocks(structuralBlocks) || displayFlatContent(content, analysis.errors)) : displayFlatContent(content, analysis.errors)}
                         
                         ${analysis.errors.length > 0 ? `
                         <div class="text-center mt-4">
