@@ -136,60 +136,7 @@ function createErrorCard(error) {
     `;
 }
 
-// Generate statistics card (placeholder - to be implemented)
-function generateStatisticsCard(analysis) {
-    return `
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-chart-line me-2"></i>Statistics
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-6">
-                        <div class="text-center">
-                            <h3 class="text-primary">${analysis.statistics.word_count || 0}</h3>
-                            <small class="text-muted">Words</small>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="text-center">
-                            <h3 class="text-info">${analysis.statistics.sentence_count || 0}</h3>
-                            <small class="text-muted">Sentences</small>
-                        </div>
-                    </div>
-                </div>
-                
-                <hr>
-                
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between">
-                        <small>Readability Score</small>
-                        <small>${(analysis.statistics.flesch_reading_ease || 0).toFixed(1)}</small>
-                    </div>
-                    <div class="progress">
-                        <div class="progress-bar" style="width: ${Math.min(100, analysis.statistics.flesch_reading_ease || 0)}%"></div>
-                    </div>
-                </div>
-                
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between">
-                        <small>Avg. Sentence Length</small>
-                        <small>${(analysis.statistics.avg_sentence_length || 0).toFixed(1)} words</small>
-                    </div>
-                </div>
-                
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between">
-                        <small>Passive Voice</small>
-                        <small>${(analysis.statistics.passive_voice_percentage || 0).toFixed(1)}%</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-}
+// Note: generateStatisticsCard is implemented in analysis-display.js with full functionality
 
 // Display rewrite results (placeholder)
 function displayRewriteResults(data) {

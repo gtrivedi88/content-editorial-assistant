@@ -136,7 +136,7 @@
         if (files.length > 0) {
             handleFileUpload(files[0]);
             // Hide sample section when analysis starts
-            document.getElementById('sample-section').style.display = 'none';
+            hideSampleSection();
         }
     });
 
@@ -145,7 +145,7 @@
         if (e.target.files.length > 0) {
             handleFileUpload(e.target.files[0]);
             // Hide sample section when analysis starts
-            document.getElementById('sample-section').style.display = 'none';
+            hideSampleSection();
         }
     });
 
@@ -160,7 +160,7 @@
         currentContent = text;
         analyzeContent(text);
         // Hide sample section when analysis starts
-        document.getElementById('sample-section').style.display = 'none';
+        hideSampleSection();
     }
 
     // Sample text analysis
@@ -170,7 +170,7 @@
         currentContent = sampleText;
         analyzeContent(sampleText);
         // Hide sample section when analysis starts
-        document.getElementById('sample-section').style.display = 'none';
+        hideSampleSection();
     }
 
     // Clear text input when file is selected
