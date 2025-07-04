@@ -1,9 +1,59 @@
 # IBM Style Guide - Language and Grammar Rules
+# This file maps error types from the analyzer to specific, human-readable
+# instructions for the AI Rewriter model, now with prioritization.
 
 rules:
-  passive_voice:
-    instruction: "CRITICAL: Convert ALL passive voice to active voice. Find who performs the action and make them the subject. Example: 'users must be added to' → 'an administrator must add users to' or 'you must add users to'."
-    # The prompt generator will dynamically add specific sentence examples for this rule.
+  # PRIMARY COMMAND for critical language and grammar fixes
+  language_priority:
+    # This more nuanced command tells the AI to distinguish between instructions
+    # (which should be second person) and descriptions (which should be third person).
+    # This prevents the AI from over-correcting and changing the meaning of the text.
+    primary_command: "FIRST, apply these CRITICAL language and grammar fixes: 1) Rewrite the text to address the user directly. Use the second person ('you') for all instructions or actions the user should take. Remove first-person pronouns like 'we' and 'our'. For descriptive statements about how a system or framework behaves on its own, maintain the third person. 2) Convert all passive voice to active voice."
+
+  abbreviations:
+    instruction: "Fix issues with abbreviations. Do not use Latin abbreviations like 'e.g.' or 'i.e.'; use their English equivalents. Spell out unfamiliar abbreviations on first use."
+
+  adverbs_only:
+    instruction: "Review the placement of the word 'only' to ensure it modifies the correct word and the meaning is unambiguous."
+
+  anthropomorphism:
+    instruction: "Rewrite sentences to remove anthropomorphism. Do not give human-like actions or thoughts to inanimate objects like systems or applications. Focus on the user's actions."
+
+  articles:
+    instruction: "Correct any article errors, ensuring 'a' is used before consonant sounds and 'an' is used before vowel sounds."
+
+  capitalization:
+    instruction: "Apply sentence-style capitalization. Do not use headline-style capitalization for headings or titles. Only capitalize the first word and any proper nouns."
+
+  conjunctions:
+    instruction: "Ensure conjunctions are used correctly. For example, use 'since' only to refer to time (not as a replacement for 'because') and 'while' only to refer to a period of time (not as a replacement for 'although')."
+
+  contractions:
+    instruction: "For a formal tone, spell out contractions (e.g., use 'do not' instead of 'don't')."
+
+  inclusive_language:
+    instruction: "Replace non-inclusive terms with the preferred, modern alternatives (e.g., use 'allowlist' instead of 'whitelist')."
+
+  plurals:
+    instruction: "Fix pluralization errors. Do not use constructions like '(s)' to indicate a plural."
+
+  possessives:
+    instruction: "Correct errors in possessives. For example, do not use an apostrophe-'s' with an abbreviation; rewrite using a prepositional phrase (e.g., 'the properties of the API' instead of 'the API's properties')."
+
+  prepositions:
+    instruction: "Simplify sentences that contain too many prepositions to improve clarity."
+
+  pronouns:
+    instruction: "CRITICAL: Ensure pronouns are used correctly. The text must address the user directly with 'you' (second person). Avoid first-person ('we', 'our') and gender-specific ('he', 'she') pronouns."
+
+  spelling:
+    instruction: "Correct spelling to conform to US English, as required by the IBM Style Guide (e.g., use 'center' not 'centre')."
+
+  terminology:
+    instruction: "Replace non-preferred or outdated terminology with the correct terms specified in the IBM Style Guide (e.g., use 'uninstall' not 'de-install')."
+
+  verbs:
+    instruction: "CRITICAL: Use the present tense and active voice. Convert all passive sentences to active ones to be more direct and clear."
 
   sentence_length:
     instruction: "Break overly long sentences into shorter, clearer ones (15-20 words each)."

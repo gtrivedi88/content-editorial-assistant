@@ -1,9 +1,12 @@
 # IBM Style Guide - Punctuation Rules
+# This file maps error types from the analyzer to specific, human-readable
+# instructions for the AI Rewriter model, with prioritization.
 
 rules:
-  # PRIMARY COMMAND for critical punctuation fixes
+  # PRIMARY COMMAND for critical punctuation fixes. This gives the AI a
+  # high-priority, initial instruction to follow.
   punctuation_priority:
-    primary_command: "FIRST, apply these CRITICAL punctuation fixes: 1) Remove ALL exclamation points and replace with periods, 2) Fix ALL hyphenation by removing hyphens from prefixes like 'pre-'"
+    primary_command: "FIRST, apply these CRITICAL punctuation fixes to ensure the text follows the corporate style guide."
   
   punctuation_and_symbols:
     instruction: "Do not use symbols like '&' or '+' in place of words like 'and'."
@@ -21,10 +24,10 @@ rules:
     instruction: "Remove ellipses (...) from the text."
 
   exclamation_points:
-    instruction: "CRITICAL: Remove ALL exclamation points (!) and replace them with periods (.). Example: 'update!' becomes 'update.'"
+    instruction: "CRITICAL: Remove ALL exclamation points (!) and replace them with periods (.)."
 
   hyphens:
-    instruction: "CRITICAL: Fix ALL hyphenation errors. Remove hyphens from prefixes like 'pre-configure' → 'preconfigure', 'multi-factor' → 'multifactor', 'non-standard' → 'nonstandard'."
+    instruction: "CRITICAL: Fix ALL hyphenation errors. Remove hyphens from prefixes like 'pre-configure' to 'preconfigure'."
   
   parentheses:
     instruction: "Correct punctuation placement around parentheses."
