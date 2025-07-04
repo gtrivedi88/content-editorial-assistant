@@ -3,7 +3,7 @@ Colons Rule
 Based on IBM Style Guide topic: "Colons"
 """
 from typing import List, Dict, Any
-from .base_punctuation_rule import BasePunctuationRule
+from rules.punctuation.base_punctuation_rule import BasePunctuationRule
 
 class ColonsRule(BasePunctuationRule):
     """

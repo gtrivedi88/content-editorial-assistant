@@ -1,11 +1,11 @@
 """
-Quotation Marks Rule
-Based on IBM Style Guide topic: "Quotation marks"
+Punctuation and Symbols Rule
+Based on IBM Style Guide topic: "Punctuation and symbols"
 """
 from typing import List, Dict, Any
-from .base_punctuation_rule import BasePunctuationRule
+from rules.punctuation.base_punctuation_rule import BasePunctuationRule
 
-class QuotationMarksRule(BasePunctuationRule):
+class PunctuationAndSymbolsRule(BasePunctuationRule):
     """
     Checks for incorrect placement of punctuation with quotation marks,
     specifically for periods and commas placed outside the closing quote,
@@ -13,7 +13,7 @@ class QuotationMarksRule(BasePunctuationRule):
     """
     def _get_rule_type(self) -> str:
         """Returns the unique identifier for this rule."""
-        return 'quotation_marks'
+        return 'punctuation_and_symbols'
 
     def analyze(self, text: str, sentences: List[str], nlp=None) -> List[Dict[str, Any]]:
         """

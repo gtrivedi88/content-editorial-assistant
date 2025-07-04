@@ -3,7 +3,7 @@ Dashes Rule
 Based on IBM Style Guide topic: "Dashes"
 """
 from typing import List, Dict, Any
-from .base_punctuation_rule import BasePunctuationRule
+from rules.punctuation.base_punctuation_rule import BasePunctuationRule
 
 class DashesRule(BasePunctuationRule):
     """

@@ -1,0 +1,24 @@
+# IBM Style Guide - Structure and Format Rules
+# This file maps error types from the analyzer to specific, human-readable
+# instructions for the AI Rewriter model, now with prioritization.
+
+rules:
+  # PRIMARY COMMAND for critical structure and format fixes.
+  structure_priority:
+    primary_command: "FIRST, apply these CRITICAL structure and format fixes: 1) Ensure all headings use sentence-style capitalization and have no ending period. 2) Ensure all procedural steps begin with a strong, imperative command verb."
+
+  headings:
+    instruction: "Fix issues in headings. Headings must use sentence-style capitalization (only the first word and proper nouns are capitalized) and must not end with a period."
+
+  lists:
+    instruction: "Ensure all items in a list are grammatically parallel. For example, if the first item starts with a verb, all subsequent items should also start with a verb."
+
+  messages:
+    instruction: "Rewrite messages to be clear and professional. Avoid using exaggerated or alarming adjectives like 'fatal' or 'catastrophic'. Focus on describing the problem and the solution."
+
+  notes:
+    instruction: "Format notes correctly. A note label (like 'Note', 'Important', or 'Restriction') must be followed by a colon."
+
+  procedures:
+    instruction: "Ensure all steps in a procedure begin with a strong, imperative verb (e.g., 'Click', 'Enter', 'Select'). Optional or conditional steps (starting with 'Optional' or 'If') are acceptable."
+

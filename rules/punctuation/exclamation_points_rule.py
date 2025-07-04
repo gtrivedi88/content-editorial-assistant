@@ -3,7 +3,7 @@ Exclamation Points Rule
 Based on IBM Style Guide topic: "Exclamation points"
 """
 from typing import List, Dict, Any
-from .base_punctuation_rule import BasePunctuationRule
+from rules.punctuation.base_punctuation_rule import BasePunctuationRule
 
 class ExclamationPointsRule(BasePunctuationRule):
     """

@@ -59,7 +59,9 @@ class RulesRegistry:
                 
                 # Process all Python files ending with '_rule.py' or '.py' (to be more flexible)
                 for filename in files:
-                    if filename.endswith('_rule.py') and filename != 'base_rule.py':
+                    if (filename.endswith('_rule.py') and 
+                        filename != 'base_rule.py' and 
+                        not filename.startswith('base_')):  # Skip all base rule files
                         module_name = filename[:-3]  # Remove .py extension
                         
                         try:
@@ -116,15 +118,22 @@ class RulesRegistry:
             try:
                 module = importlib.import_module(absolute_import_path)
                 return module
-            except ImportError:
-                # Try without the rules prefix in case we're already in the rules context
+            except ImportError as e1:
+                # Method 2: Try without the rules prefix in case we're already in the rules context
                 try:
                     module = importlib.import_module(import_path)
                     return module
-                except ImportError:
-                    pass
+                except ImportError as e2:
+                    # Method 3: Try relative import from rules package
+                    try:
+                        if '.' in import_path:
+                            # For nested modules, try importing from the rules package
+                            module = importlib.import_module(f".{import_path}", package="rules")
+                            return module
+                    except ImportError as e3:
+                        pass
             
-            # Method 2: Try direct file-based import as fallback
+            # Method 4: Direct file-based import as fallback
             file_path = os.path.join(file_dir, filename)
             
             # Create a unique module name to avoid conflicts
@@ -133,8 +142,21 @@ class RulesRegistry:
             spec = importlib.util.spec_from_file_location(unique_module_name, file_path)
             if spec and spec.loader:
                 module = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(module)
-                return module
+                
+                # Add the parent directory to sys.path temporarily to resolve relative imports
+                import sys
+                original_path = sys.path[:]
+                try:
+                    # Add the rules directory to sys.path
+                    rules_dir = os.path.dirname(os.path.dirname(file_path)) if depth > 0 else os.path.dirname(file_path)
+                    if rules_dir not in sys.path:
+                        sys.path.insert(0, rules_dir)
+                    
+                    spec.loader.exec_module(module)
+                    return module
+                finally:
+                    # Restore original sys.path
+                    sys.path[:] = original_path
             else:
                 raise ImportError(f"Could not create spec for {import_path}")
                     
@@ -207,8 +229,9 @@ class RulesRegistry:
             if not isinstance(cls, type):
                 return False
             
-            # Skip abstract base classes
-            if cls.__name__ in ['BaseRule', 'BaseLanguageRule', 'BasePunctuationRule']:
+            # Skip abstract base classes and base rule classes
+            base_class_names = ['BaseRule', 'BaseLanguageRule', 'BasePunctuationRule', 'BaseStructureRule']
+            if cls.__name__ in base_class_names:
                 return False
             
             # Check if class name suggests it's a rule
@@ -220,17 +243,30 @@ class RulesRegistry:
             if not all(hasattr(cls, method) for method in required_methods):
                 return False
             
+            # Additional check: make sure it's not an abstract class
+            # Check if the class or any of its methods are marked as abstract
+            if hasattr(cls, '__abstractmethods__') and cls.__abstractmethods__:
+                return False
+            
             # Try to instantiate to check if it's abstract
             try:
                 # Test if we can call _get_rule_type on a temporary instance
                 temp_instance = cls()
-                temp_instance._get_rule_type()
+                rule_type = temp_instance._get_rule_type()
+                
+                # Make sure rule_type is not empty or 'base'
+                if not rule_type or rule_type == 'base':
+                    return False
+                    
                 return True
             except TypeError as e:
                 # If we get a TypeError about abstract methods, it's an abstract class
                 if "abstract" in str(e).lower():
                     return False
                 return True
+            except NotImplementedError:
+                # If analyze method raises NotImplementedError, it's abstract
+                return False
             except Exception:
                 # If any other error occurs during instantiation, skip it
                 return False
