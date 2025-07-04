@@ -83,8 +83,9 @@ class StructuralAnalyzer:
                         continue
                     
                     # Apply context-specific analysis based on block type
+                    block_context = block.get_context_info() if hasattr(block, 'get_context_info') else {}
                     block_errors = self.mode_executor.analyze_block_content(
-                        block, block_content, analysis_mode
+                        block, block_content, analysis_mode, block_context
                     )
                     errors.extend(block_errors)
                 
@@ -250,7 +251,7 @@ class StructuralAnalyzer:
                 if not block_info['should_skip_analysis']:
                     try:
                         block_errors = self.mode_executor.analyze_block_content(
-                            block, block_info['content'], analysis_mode
+                            block, block_info['content'], analysis_mode, block_info['context']
                         )
                         block_info['errors'] = block_errors
                         logger.debug(f"Block {block_id} ({block.block_type.value}): {len(block_errors)} errors found")
