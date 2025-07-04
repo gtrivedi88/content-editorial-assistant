@@ -101,7 +101,7 @@ def initialize_services():
     
     # Initialize Document Processor
     try:
-        from src.document_processor import DocumentProcessor
+        from structural_parsing.extractors import DocumentProcessor
         services['document_processor'] = DocumentProcessor()
         services['document_processor_available'] = True
         logger.info("✅ DocumentProcessor imported successfully")
