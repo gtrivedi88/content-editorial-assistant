@@ -12,7 +12,7 @@ class TerminologyRule(BaseLanguageRule):
     def _get_rule_type(self) -> str:
         return 'terminology'
 
-    def analyze(self, text: str, sentences: List[str], nlp=None) -> List[Dict[str, Any]]:
+    def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         errors = []
         
         # Linguistic Anchor: A dictionary of non-preferred terms and their replacements.

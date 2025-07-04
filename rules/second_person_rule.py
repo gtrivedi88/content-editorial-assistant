@@ -45,7 +45,7 @@ class SecondPersonRule(BaseRule):
         """Returns the unique identifier for this rule."""
         return 'second_person'
     
-    def analyze(self, text: str, sentences: List[str], nlp=None) -> List[Dict[str, Any]]:
+    def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         """
         Analyzes text for opportunities to use the second person.
         """

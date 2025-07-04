@@ -14,7 +14,7 @@ class PeriodsRule(BasePunctuationRule):
         """Returns the unique identifier for this rule."""
         return 'periods'
 
-    def analyze(self, text: str, sentences: List[str], nlp=None) -> List[Dict[str, Any]]:
+    def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         """
         Analyzes sentences for periods within uppercase abbreviations.
         """

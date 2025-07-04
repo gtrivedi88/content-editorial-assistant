@@ -13,30 +13,47 @@ class ListsRule(BaseStructureRule):
     def _get_rule_type(self) -> str:
         return 'lists'
 
-    def analyze(self, text: str, sentences: List[str], nlp=None) -> List[Dict[str, Any]]:
+    def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         errors = []
-        if not nlp or len(sentences) < 2:
+        
+        # Context-aware analysis: Only analyze if we know this is a list item
+        if not context or context.get('block_type') not in ['list_item', 'list_item_ordered', 'list_item_unordered']:
+            return errors  # Skip analysis if not a list item
+            
+        if not nlp or len(sentences) < 1:
             return errors
 
-        # This rule assumes that a sequence of short, related sentences forms a list.
-        # A more advanced system would use document structure (like Markdown list markers).
+        # Since we know this is a list item, we can focus on analyzing the content
+        # rather than trying to detect if it's a list
         
-        # Check for parallelism by comparing the part-of-speech of the first word.
-        first_item_pos = nlp(sentences[0])[0].pos_
+        # For now, we'll store the first item's structure to compare with subsequent items
+        # This would ideally be done at the document level, but for now we'll implement
+        # a simplified version that works with the current sentence-by-sentence analysis
         
-        for i, sentence in enumerate(sentences[1:]):
+        # Rule: List items should be grammatically parallel
+        # This rule is most effective when applied across multiple list items
+        # Since we're analyzing individual list items, we'll focus on internal consistency
+        
+        for i, sentence in enumerate(sentences):
             doc = nlp(sentence)
             if not doc: continue
-            current_item_pos = doc[0].pos_
             
-            # Linguistic Anchor: Parallel items should start with the same part of speech
-            # (e.g., all verbs for a procedure, all nouns for a list of features).
-            if current_item_pos != first_item_pos:
-                errors.append(self._create_error(
-                    sentence=sentence,
-                    sentence_index=i + 1,
-                    message="List items may not be grammatically parallel.",
-                    suggestions=[f"Ensure all items in a list start with the same part of speech. The first item appears to be a '{first_item_pos}', while this item appears to be a '{current_item_pos}'."],
-                    severity='medium'
-                ))
+            # Check if list item has consistent structure
+            # For example, if it starts with a verb, it should maintain that pattern
+            first_token = doc[0]
+            
+            # Rule: List items should not mix different grammatical structures
+            # This is a simplified check - a full implementation would compare across all items
+            if first_token.pos_ == 'VERB' and first_token.dep_ == 'ROOT':
+                # This is an imperative-style list item
+                # Check if it maintains consistent imperative structure
+                if any(token.pos_ == 'PRON' and token.dep_ == 'nsubj' for token in doc):
+                    errors.append(self._create_error(
+                        sentence=sentence,
+                        sentence_index=i,
+                        message="List item mixes imperative and declarative styles.",
+                        suggestions=["Maintain consistent grammatical structure across list items. Use either all imperative verbs or all declarative statements."],
+                        severity='medium'
+                    ))
+        
         return errors

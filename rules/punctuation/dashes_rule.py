@@ -14,7 +14,7 @@ class DashesRule(BasePunctuationRule):
         """Returns the unique identifier for this rule."""
         return 'dashes'
 
-    def analyze(self, text: str, sentences: List[str], nlp=None) -> List[Dict[str, Any]]:
+    def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         """
         Analyzes sentences for the presence of em dashes.
         """

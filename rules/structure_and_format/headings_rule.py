@@ -13,33 +13,37 @@ class HeadingsRule(BaseStructureRule):
     def _get_rule_type(self) -> str:
         return 'headings'
 
-    def analyze(self, text: str, sentences: List[str], nlp=None) -> List[Dict[str, Any]]:
+    def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         errors = []
-        # This rule assumes that each "sentence" passed to it is a potential heading.
-        # A more advanced system would need metadata to know if a line is a heading.
-        for i, sentence in enumerate(sentences):
-            # Rule: Headings should not end with a period.
-            if sentence.strip().endswith('.'):
-                errors.append(self._create_error(
-                    sentence=sentence,
-                    sentence_index=i,
-                    message="Headings should not end with a period.",
-                    suggestions=["Remove the period from the end of the heading."],
-                    severity='medium'
-                ))
+        
+        # Context-aware analysis: Only analyze if we know this is a heading
+        if not context or context.get('block_type') != 'heading':
+            return errors  # Skip analysis if not a heading block
+            
+        # Now we know this is definitely a heading, so we can apply heading rules with confidence
+        heading_text = text.strip()
+        
+        # Rule: Headings should not end with a period.
+        if heading_text.endswith('.'):
+            errors.append(self._create_error(
+                sentence=heading_text,
+                sentence_index=0,
+                message="Headings should not end with a period.",
+                suggestions=["Remove the period from the end of the heading."],
+                severity='medium'
+            ))
 
-            # Rule: Use sentence-style capitalization, not headline-style.
-            words = sentence.split()
-            if len(words) > 2: # Ignore very short headings
-                title_cased_words = [word for word in words[1:] if word.istitle()]
-                # Heuristic: If more than a third of words (excluding the first) are capitalized,
-                # it might be incorrect headline style.
-                if len(title_cased_words) > len(words) / 3:
-                     errors.append(self._create_error(
-                        sentence=sentence,
-                        sentence_index=i,
-                        message="Headings should use sentence-style capitalization.",
-                        suggestions=["Capitalize only the first word and proper nouns in the heading."],
-                        severity='low'
-                    ))
+        # Rule: Use sentence-style capitalization, not headline-style.
+        words = heading_text.split()
+        if len(words) > 2: # Ignore very short headings
+            title_cased_words = [word for word in words[1:] if word.istitle()]
+            # Check if more than a third of words (excluding the first) are capitalized
+            if len(title_cased_words) > len(words) / 3:
+                 errors.append(self._create_error(
+                    sentence=heading_text,
+                    sentence_index=0,
+                    message="Headings should use sentence-style capitalization.",
+                    suggestions=["Capitalize only the first word and proper nouns in the heading."],
+                    severity='low'
+                ))
         return errors

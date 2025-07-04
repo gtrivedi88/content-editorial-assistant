@@ -13,7 +13,7 @@ class NotesRule(BaseStructureRule):
     def _get_rule_type(self) -> str:
         return 'notes'
 
-    def analyze(self, text: str, sentences: List[str], nlp=None) -> List[Dict[str, Any]]:
+    def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         errors = []
         
         # Linguistic Anchor: Common labels for notes.

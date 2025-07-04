@@ -15,7 +15,7 @@ class PronounsRule(BaseLanguageRule):
     def _get_rule_type(self) -> str:
         return 'pronouns'
 
-    def analyze(self, text: str, sentences: List[str], nlp=None) -> List[Dict[str, Any]]:
+    def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         errors = []
         if not nlp:
             return errors

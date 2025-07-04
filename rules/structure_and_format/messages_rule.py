@@ -12,7 +12,7 @@ class MessagesRule(BaseStructureRule):
     def _get_rule_type(self) -> str:
         return 'messages'
 
-    def analyze(self, text: str, sentences: List[str], nlp=None) -> List[Dict[str, Any]]:
+    def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         errors = []
         
         # Linguistic Anchor: Discouraged words in error messages.

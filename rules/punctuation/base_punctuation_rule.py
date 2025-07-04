@@ -25,7 +25,7 @@ class BasePunctuationRule(BaseRule):
     It defines the common interface for analyzing text.
     """
 
-    def analyze(self, text: str, sentences: List[str], nlp=None) -> List[Dict[str, Any]]:
+    def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         """
         Analyzes the text for a specific punctuation violation.
         This method must be implemented by all subclasses.

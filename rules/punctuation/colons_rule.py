@@ -16,11 +16,16 @@ class ColonsRule(BasePunctuationRule):
         """Returns the unique identifier for this rule."""
         return 'colons'
 
-    def analyze(self, text: str, sentences: List[str], nlp=None) -> List[Dict[str, Any]]:
+    def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         """
         Analyzes sentences for various colon usage violations.
         """
         errors = []
+        
+        # Context-aware analysis: Skip analysis for AsciiDoc attribute entries
+        if context and context.get('block_type') == 'attribute_entry':
+            return errors  # Skip analysis for attributes like :author: Jane Doe
+        
         if not nlp:
             # This rule requires dependency parsing, so NLP is essential.
             return errors

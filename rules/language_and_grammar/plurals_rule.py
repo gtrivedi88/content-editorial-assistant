@@ -12,7 +12,7 @@ class PluralsRule(BaseLanguageRule):
     def _get_rule_type(self) -> str:
         return 'plurals'
 
-    def analyze(self, text: str, sentences: List[str], nlp=None) -> List[Dict[str, Any]]:
+    def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         errors = []
         for i, sentence in enumerate(sentences):
             # Linguistic Anchor: The pattern "(s)" is explicitly forbidden.

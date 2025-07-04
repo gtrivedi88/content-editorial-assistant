@@ -45,7 +45,7 @@ class SentenceLengthRule(BaseRule):
     def _get_rule_type(self) -> str:
         return 'sentence_length'
     
-    def analyze(self, text: str, sentences: List[str], nlp=None) -> List[Dict[str, Any]]:
+    def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         """Analyze text for sentence length issues using advanced SpaCy syntactic analysis."""
         errors = []
         

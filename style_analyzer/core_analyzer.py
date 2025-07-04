@@ -220,14 +220,20 @@ class StyleAnalyzer:
                 # Use document's built-in method to get content blocks
                 content_blocks = parsed_document.get_content_blocks()
                 for block in content_blocks:
-                    if not block.should_skip_analysis():
+                    if hasattr(block, 'should_skip_analysis') and not block.should_skip_analysis():
+                        analyzable_blocks.append(block)
+                    elif not hasattr(block, 'should_skip_analysis'):
+                        # If should_skip_analysis doesn't exist, include the block
                         analyzable_blocks.append(block)
             else:
                 # Fall back to manual filtering
                 all_blocks = getattr(parsed_document, 'blocks', [])
                 for block in all_blocks:
                     if hasattr(block, 'is_content_block') and block.is_content_block():
-                        analyzable_blocks.append(block)
+                        if hasattr(block, 'should_skip_analysis') and not block.should_skip_analysis():
+                            analyzable_blocks.append(block)
+                        elif not hasattr(block, 'should_skip_analysis'):
+                            analyzable_blocks.append(block)
                         
         except Exception as e:
             logger.error(f"Error getting analyzable blocks: {e}")
@@ -245,12 +251,12 @@ class StyleAnalyzer:
             
             # Apply different analysis based on block type
             if self._is_asciidoc_block(block_type):
-                errors.extend(self._analyze_asciidoc_block(block, content, analysis_mode))
+                errors.extend(self._analyze_asciidoc_block(block, content, analysis_mode, block_context))
             elif self._is_markdown_block(block_type):
-                errors.extend(self._analyze_markdown_block(block, content, analysis_mode))
+                errors.extend(self._analyze_markdown_block(block, content, analysis_mode, block_context))
             else:
                 # Generic content analysis
-                errors.extend(self._analyze_generic_content(content, analysis_mode))
+                errors.extend(self._analyze_generic_content(content, analysis_mode, block_context))
                 
         except Exception as e:
             logger.error(f"Error analyzing block content: {e}")
@@ -275,7 +281,7 @@ class StyleAnalyzer:
         except:
             return False
     
-    def _analyze_asciidoc_block(self, block, content: str, analysis_mode: AnalysisMode) -> List[ErrorDict]:
+    def _analyze_asciidoc_block(self, block, content: str, analysis_mode: AnalysisMode, block_context: Optional[dict] = None) -> List[ErrorDict]:
         """Apply AsciiDoc-specific analysis rules."""
         errors = []
         
@@ -288,18 +294,18 @@ class StyleAnalyzer:
             
             # Apply special rules for admonitions
             if block_type == AsciiDocBlockType.ADMONITION:
-                errors.extend(self._analyze_admonition_content(block, content))
+                errors.extend(self._analyze_admonition_content(block, content, block_context))
             
             # Apply general content analysis for other blocks
             if block_type in [AsciiDocBlockType.PARAGRAPH, AsciiDocBlockType.HEADING, AsciiDocBlockType.QUOTE]:
-                errors.extend(self._analyze_generic_content(content, analysis_mode))
+                errors.extend(self._analyze_generic_content(content, analysis_mode, block_context))
                 
         except Exception as e:
             logger.error(f"Error in AsciiDoc block analysis: {e}")
             
         return errors
     
-    def _analyze_markdown_block(self, block, content: str, analysis_mode: AnalysisMode) -> List[ErrorDict]:
+    def _analyze_markdown_block(self, block, content: str, analysis_mode: AnalysisMode, block_context: Optional[dict] = None) -> List[ErrorDict]:
         """Apply Markdown-specific analysis rules."""
         errors = []
         
@@ -312,14 +318,14 @@ class StyleAnalyzer:
             
             # Apply general content analysis for text blocks
             if block_type in [MarkdownBlockType.PARAGRAPH, MarkdownBlockType.HEADING, MarkdownBlockType.BLOCKQUOTE]:
-                errors.extend(self._analyze_generic_content(content, analysis_mode))
+                errors.extend(self._analyze_generic_content(content, analysis_mode, block_context))
                 
         except Exception as e:
             logger.error(f"Error in Markdown block analysis: {e}")
             
         return errors
     
-    def _analyze_admonition_content(self, block, content: str) -> List[ErrorDict]:
+    def _analyze_admonition_content(self, block, content: str, block_context: Optional[dict] = None) -> List[ErrorDict]:
         """Special analysis for AsciiDoc admonition blocks."""
         errors = []
         
@@ -332,7 +338,7 @@ class StyleAnalyzer:
                         # Look for admonitions rule
                         admonition_rule = getattr(self.rules_registry, 'get_rule', lambda x: None)('admonitions')
                         if admonition_rule:
-                            rule_errors = admonition_rule.analyze(content, [content], self.nlp)
+                            rule_errors = admonition_rule.analyze(content, [content], self.nlp, block_context)
                             for error in rule_errors:
                                 converted_error = self._convert_rules_error(error)
                                 errors.append(converted_error)
@@ -344,7 +350,7 @@ class StyleAnalyzer:
             
         return errors
     
-    def _analyze_generic_content(self, content: str, analysis_mode: AnalysisMode) -> List[ErrorDict]:
+    def _analyze_generic_content(self, content: str, analysis_mode: AnalysisMode, block_context: Optional[dict] = None) -> List[ErrorDict]:
         """Apply general style analysis to content."""
         errors = []
         
@@ -352,13 +358,13 @@ class StyleAnalyzer:
             sentences = self._split_sentences(content)
             
             if analysis_mode == AnalysisMode.SPACY_WITH_MODULAR_RULES:
-                errors = self._analyze_spacy_with_modular_rules(content, sentences)
+                errors = self._analyze_spacy_with_modular_rules(content, sentences, block_context)
             elif analysis_mode == AnalysisMode.MODULAR_RULES_WITH_FALLBACKS:
-                errors = self._analyze_modular_rules_with_fallbacks(content, sentences)
+                errors = self._analyze_modular_rules_with_fallbacks(content, sentences, block_context)
             elif analysis_mode == AnalysisMode.SPACY_LEGACY_ONLY:
-                errors = self._analyze_spacy_legacy_only(content, sentences)
+                errors = self._analyze_spacy_legacy_only(content, sentences, block_context)
             elif analysis_mode == AnalysisMode.MINIMAL_SAFE_MODE:
-                errors = self._analyze_minimal_safe_mode(content, sentences)
+                errors = self._analyze_minimal_safe_mode(content, sentences, block_context)
                 
         except Exception as e:
             logger.error(f"Error in generic content analysis: {e}")
@@ -401,18 +407,20 @@ class StyleAnalyzer:
     def _extract_all_text(self, parsed_document) -> str:
         """Extract all text from the parsed document."""
         try:
-            if hasattr(parsed_document, 'get_all_text'):
-                return parsed_document.get_all_text()
-            else:
-                # Manual extraction
-                all_text = []
-                blocks = getattr(parsed_document, 'blocks', [])
-                for block in blocks:
-                    if hasattr(block, 'get_text_content'):
-                        text = block.get_text_content()
-                        if text.strip():
-                            all_text.append(text)
-                return '\n\n'.join(all_text)
+            all_text = []
+            blocks = getattr(parsed_document, 'blocks', [])
+            for block in blocks:
+                if hasattr(block, 'get_all_text'):
+                    # Use the block's get_all_text method which includes children
+                    text = block.get_all_text()
+                    if text.strip():
+                        all_text.append(text)
+                elif hasattr(block, 'get_text_content'):
+                    # Fallback to get_text_content
+                    text = block.get_text_content()
+                    if text.strip():
+                        all_text.append(text)
+            return '\n\n'.join(all_text)
         except Exception as e:
             logger.error(f"Error extracting all text: {e}")
             return ""
@@ -422,13 +430,13 @@ class StyleAnalyzer:
         errors = []
         
         if analysis_mode == AnalysisMode.SPACY_WITH_MODULAR_RULES:
-            errors = self._analyze_spacy_with_modular_rules(text, sentences)
+            errors = self._analyze_spacy_with_modular_rules(text, sentences, None)
         elif analysis_mode == AnalysisMode.MODULAR_RULES_WITH_FALLBACKS:
-            errors = self._analyze_modular_rules_with_fallbacks(text, sentences)
+            errors = self._analyze_modular_rules_with_fallbacks(text, sentences, None)
         elif analysis_mode == AnalysisMode.SPACY_LEGACY_ONLY:
-            errors = self._analyze_spacy_legacy_only(text, sentences)
+            errors = self._analyze_spacy_legacy_only(text, sentences, None)
         elif analysis_mode == AnalysisMode.MINIMAL_SAFE_MODE:
-            errors = self._analyze_minimal_safe_mode(text, sentences)
+            errors = self._analyze_minimal_safe_mode(text, sentences, None)
         else:
             # Error mode
             errors = [create_error(
@@ -450,7 +458,7 @@ class StyleAnalyzer:
         else:
             return AnalysisMode.MINIMAL_SAFE_MODE
     
-    def _analyze_spacy_with_modular_rules(self, text: str, sentences: List[str]) -> List[ErrorDict]:
+    def _analyze_spacy_with_modular_rules(self, text: str, sentences: List[str], block_context: Optional[dict] = None) -> List[ErrorDict]:
         """Analyze using SpaCy enhanced with modular rules (highest accuracy)."""
         errors = []
         
@@ -470,7 +478,7 @@ class StyleAnalyzer:
             # Integrate modular rules analysis
             if self.rules_registry:
                 try:
-                    rules_errors = self.rules_registry.analyze_with_all_rules(text, sentences, self.nlp)
+                    rules_errors = self.rules_registry.analyze_with_all_rules(text, sentences, self.nlp, block_context)
                     # Convert rules errors to our error format
                     for error in rules_errors:
                         converted_error = self._convert_rules_error(error)
@@ -482,11 +490,11 @@ class StyleAnalyzer:
         except Exception as e:
             logger.error(f"SpaCy with modular rules analysis failed: {e}")
             # Fall back to next best mode
-            return self._analyze_modular_rules_with_fallbacks(text, sentences)
+            return self._analyze_modular_rules_with_fallbacks(text, sentences, block_context)
         
         return errors
     
-    def _analyze_modular_rules_with_fallbacks(self, text: str, sentences: List[str]) -> List[ErrorDict]:
+    def _analyze_modular_rules_with_fallbacks(self, text: str, sentences: List[str], block_context: Optional[dict] = None) -> List[ErrorDict]:
         """Analyze using modular rules with conservative fallbacks."""
         errors = []
         
@@ -502,7 +510,7 @@ class StyleAnalyzer:
             # Integrate modular rules analysis
             if self.rules_registry:
                 try:
-                    rules_errors = self.rules_registry.analyze_with_all_rules(text, sentences, self.nlp)
+                    rules_errors = self.rules_registry.analyze_with_all_rules(text, sentences, self.nlp, block_context)
                     # Convert rules errors to our error format
                     for error in rules_errors:
                         converted_error = self._convert_rules_error(error)
@@ -514,11 +522,11 @@ class StyleAnalyzer:
         except Exception as e:
             logger.error(f"Modular rules with fallbacks analysis failed: {e}")
             # Fall back to next best mode
-            return self._analyze_spacy_legacy_only(text, sentences)
+            return self._analyze_spacy_legacy_only(text, sentences, block_context)
         
         return errors
     
-    def _analyze_spacy_legacy_only(self, text: str, sentences: List[str]) -> List[ErrorDict]:
+    def _analyze_spacy_legacy_only(self, text: str, sentences: List[str], block_context: Optional[dict] = None) -> List[ErrorDict]:
         """Analyze using only SpaCy (legacy mode)."""
         errors = []
         
@@ -538,11 +546,11 @@ class StyleAnalyzer:
         except Exception as e:
             logger.error(f"SpaCy legacy analysis failed: {e}")
             # Fall back to minimal safe mode
-            return self._analyze_minimal_safe_mode(text, sentences)
+            return self._analyze_minimal_safe_mode(text, sentences, block_context)
         
         return errors
     
-    def _analyze_minimal_safe_mode(self, text: str, sentences: List[str]) -> List[ErrorDict]:
+    def _analyze_minimal_safe_mode(self, text: str, sentences: List[str], block_context: Optional[dict] = None) -> List[ErrorDict]:
         """Analyze using minimal safe methods (most conservative)."""
         errors = []
         

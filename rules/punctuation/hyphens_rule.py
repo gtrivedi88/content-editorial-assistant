@@ -16,7 +16,7 @@ class HyphensRule(BasePunctuationRule):
         """Returns the unique identifier for this rule."""
         return 'hyphens'
 
-    def analyze(self, text: str, sentences: List[str], nlp=None) -> List[Dict[str, Any]]:
+    def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         """
         Analyzes sentences for incorrect hyphenation with common prefixes.
         """

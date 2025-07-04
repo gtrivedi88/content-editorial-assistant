@@ -14,7 +14,7 @@ class SlashesRule(BasePunctuationRule):
         """Returns the unique identifier for this rule."""
         return 'slashes'
 
-    def analyze(self, text: str, sentences: List[str], nlp=None) -> List[Dict[str, Any]]:
+    def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         """
         Analyzes sentences for the ambiguous use of the slash character.
         """

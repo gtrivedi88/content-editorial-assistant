@@ -87,6 +87,7 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter):
         try:
             data = request.get_json()
             content = data.get('content', '')
+            format_hint = data.get('format_hint', 'auto')
             session_id = data.get('session_id', '') if data else ''
             
             if not content:
@@ -102,14 +103,59 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter):
             emit_progress(session_id, 'analysis_start', 'Starting text analysis...',
                          'Initializing SpaCy NLP processor', 10)
             
+            # Perform structural parsing for structured display
+            emit_progress(session_id, 'structural_parsing', 'Parsing document structure...',
+                         'Identifying headings, paragraphs, code blocks, etc.', 20)
+            
+            structural_blocks = None
+            try:
+                from structural_parsing.parser_factory import StructuralParserFactory
+                parser_factory = StructuralParserFactory()
+                parse_result = parser_factory.parse(content, format_hint=format_hint)
+                if parse_result.success:
+                    structural_blocks = [
+                        {
+                            'block_id': i,
+                            'block_type': block.block_type.value,
+                            'content': block.get_text_content(),
+                            'raw_content': block.raw_content,
+                            'should_skip_analysis': block.should_skip_analysis() if hasattr(block, 'should_skip_analysis') else False,
+                            'context': block.get_context_info() if hasattr(block, 'get_context_info') else {},
+                            'level': getattr(block, 'level', 0),
+                            'admonition_type': getattr(getattr(block, 'admonition_type', None), 'value', None) if getattr(block, 'admonition_type', None) else None
+                        }
+                        for i, block in enumerate(parse_result.document.blocks)
+                        if block.get_text_content().strip()  # Only include blocks with content
+                    ]
+                    logger.info(f"Successfully parsed {len(structural_blocks)} content blocks")
+            except Exception as e:
+                logger.warning(f"Structural parsing failed: {e}")
+            
             # Perform analysis
             emit_progress(session_id, 'spacy_processing', 'Processing with SpaCy NLP...',
-                         'Detecting sentence structure and style issues', 30)
+                         'Detecting sentence structure and style issues', 40)
             
-            analysis = style_analyzer.analyze(content)
+            analysis = style_analyzer.analyze(content, format_hint=format_hint)
             
             emit_progress(session_id, 'metrics_calculation', 'Calculating readability metrics...',
                          'Computing Flesch, Fog, SMOG, and other scores', 60)
+            
+            # Map errors to blocks if we have structural information
+            if structural_blocks:
+                emit_progress(session_id, 'block_mapping', 'Mapping errors to document blocks...',
+                             'Organizing detected issues by content structure', 80)
+                
+                # Group errors by the blocks they belong to
+                for block in structural_blocks:
+                    block['errors'] = []
+                    block_content = block['content']
+                    
+                    if not block['should_skip_analysis']:
+                        # Find errors that match this block's content
+                        for error in analysis.get('errors', []):
+                            error_sentence = error.get('sentence', '')
+                            if error_sentence and error_sentence in block_content:
+                                block['errors'].append(error)
             
             # Add some processing time for metrics
             time.sleep(0.5)  # Small delay to show progress
@@ -117,11 +163,21 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter):
             emit_progress(session_id, 'analysis_complete', 'Analysis completed successfully!',
                          f'Found {len(analysis.get("errors", []))} style issues', 100)
             
-            return jsonify({
+            response_data = {
                 'success': True,
                 'analysis': analysis,
-                'session_id': session_id  # Return session_id to frontend
-            })
+                'session_id': session_id,
+                'content': content
+            }
+            
+            # Include structural blocks if available
+            if structural_blocks:
+                response_data['structural_blocks'] = structural_blocks
+                response_data['has_structure'] = True
+            else:
+                response_data['has_structure'] = False
+            
+            return jsonify(response_data)
             
         except Exception as e:
             logger.error(f"Analysis error: {str(e)}")

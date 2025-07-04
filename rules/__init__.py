@@ -312,13 +312,13 @@ class RulesRegistry:
             'locations': list(set(self.rule_locations.values()))
         }
     
-    def analyze_with_all_rules(self, text: str, sentences: List[str], nlp=None) -> List[Dict[str, Any]]:
+    def analyze_with_all_rules(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         """Run analysis with all discovered rules from all directories."""
         all_errors = []
         
         for rule in self.rules.values():
             try:
-                rule_errors = rule.analyze(text, sentences, nlp)
+                rule_errors = rule.analyze(text, sentences, nlp, context)
                 
                 # Ensure all errors are JSON serializable
                 serializable_errors = []

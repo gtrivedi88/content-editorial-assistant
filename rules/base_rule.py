@@ -26,7 +26,7 @@ class BaseRule(ABC):
         pass
     
     @abstractmethod
-    def analyze(self, text: str, sentences: List[str], nlp=None) -> List[Dict[str, Any]]:
+    def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         """
         Analyze text and return list of errors found.
         
@@ -34,6 +34,7 @@ class BaseRule(ABC):
             text: Full text to analyze
             sentences: List of sentences
             nlp: SpaCy nlp object (optional)
+            context: Optional context information about the block being analyzed
             
         Returns:
             List of error dictionaries with structure:

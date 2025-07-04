@@ -12,7 +12,7 @@ class ConjunctionsRule(BaseLanguageRule):
     def _get_rule_type(self) -> str:
         return 'conjunctions'
 
-    def analyze(self, text: str, sentences: List[str], nlp=None) -> List[Dict[str, Any]]:
+    def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         errors = []
         if not nlp:
             return errors

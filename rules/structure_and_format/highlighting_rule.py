@@ -13,7 +13,7 @@ class HighlightingRule(BaseStructureRule):
     def _get_rule_type(self) -> str:
         return 'highlighting'
 
-    def analyze(self, text: str, sentences: List[str], nlp=None) -> List[Dict[str, Any]]:
+    def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         # This rule is a placeholder. Analyzing highlighting (bold, italics, monospace)
         # requires parsing the source markup (like Markdown or HTML), not just the
         # raw text. A text-only analysis cannot reliably detect these formatting issues.

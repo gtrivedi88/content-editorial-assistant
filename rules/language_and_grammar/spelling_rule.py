@@ -12,7 +12,7 @@ class SpellingRule(BaseLanguageRule):
     def _get_rule_type(self) -> str:
         return 'spelling'
 
-    def analyze(self, text: str, sentences: List[str], nlp=None) -> List[Dict[str, Any]]:
+    def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         errors = []
         
         # Linguistic Anchor: A dictionary of UK/International vs. US spellings.
