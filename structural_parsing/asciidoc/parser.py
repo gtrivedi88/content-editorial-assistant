@@ -4,10 +4,13 @@ This parser leverages asciidoctor's Ruby server for high-performance structural 
 """
 
 import json
+import logging
 import tempfile
 from pathlib import Path
 from typing import List, Optional, Dict, Any, Union
 from dataclasses import dataclass
+
+logger = logging.getLogger(__name__)
 
 from .types import (
     AsciiDocDocument, 
@@ -123,41 +126,36 @@ class AsciiDocParser:
         Returns:
             AsciiDocBlock or None if conversion fails
         """
-        # Map asciidoctor contexts to our block types
-        context_map = {
-            'document': AsciiDocBlockType.DOCUMENT,
-            'preamble': AsciiDocBlockType.PREAMBLE,
-            'section': AsciiDocBlockType.SECTION,
-            'paragraph': AsciiDocBlockType.PARAGRAPH,
-            'heading': AsciiDocBlockType.HEADING,
-            'ulist': AsciiDocBlockType.UNORDERED_LIST,
-            'olist': AsciiDocBlockType.ORDERED_LIST,
-            'dlist': AsciiDocBlockType.DESCRIPTION_LIST,
-            'list_item': AsciiDocBlockType.LIST_ITEM,
-            'sidebar': AsciiDocBlockType.SIDEBAR,
-            'example': AsciiDocBlockType.EXAMPLE,
-            'listing': AsciiDocBlockType.LISTING,
-            'literal': AsciiDocBlockType.LITERAL,
-            'quote': AsciiDocBlockType.QUOTE,
-            'verse': AsciiDocBlockType.VERSE,
-            'pass': AsciiDocBlockType.PASS,
-            'open': AsciiDocBlockType.OPEN,
-            'admonition': AsciiDocBlockType.ADMONITION,
-            'table': AsciiDocBlockType.TABLE,
-            'image': AsciiDocBlockType.IMAGE,
-            'audio': AsciiDocBlockType.AUDIO,
-            'video': AsciiDocBlockType.VIDEO,
-            'attribute_entry': AsciiDocBlockType.ATTRIBUTE_ENTRY,
-            'comment': AsciiDocBlockType.COMMENT,
-            'toc': AsciiDocBlockType.TOC,
-            'page_break': AsciiDocBlockType.PAGE_BREAK,
-            'thematic_break': AsciiDocBlockType.THEMATIC_BREAK,
-        }
-        
+        # Get block context and map to enum type dynamically
         context = block_data.get('context', '')
-        block_type = context_map.get(context)
+        
+        # Try to map context to existing enum values dynamically
+        block_type = None
+        for enum_member in AsciiDocBlockType:
+            # Check exact match first
+            if enum_member.value == context:
+                block_type = enum_member
+                break
+            # Check if context matches enum name patterns
+            if context.upper().replace('_', '_') == enum_member.name:
+                block_type = enum_member
+                break
+        
+        # For unmapped contexts, try some common mappings
         if not block_type:
-            return None
+            mapping = {
+                'ulist': AsciiDocBlockType.UNORDERED_LIST,
+                'olist': AsciiDocBlockType.ORDERED_LIST,
+                'dlist': AsciiDocBlockType.DESCRIPTION_LIST,
+            }
+            block_type = mapping.get(context)
+        
+        # If still no mapping found, log it but don't skip the block
+        if not block_type:
+            # Create a fallback - treat unknown blocks as paragraphs for now
+            # This ensures we don't lose content
+            logger.warning(f"Unknown AsciiDoc block context '{context}' - treating as paragraph")
+            block_type = AsciiDocBlockType.PARAGRAPH
         
         # Extract source location
         source_loc = block_data.get('source_location', {})

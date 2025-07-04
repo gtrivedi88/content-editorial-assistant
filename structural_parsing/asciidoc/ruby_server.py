@@ -35,21 +35,103 @@ require 'asciidoctor'
 require 'json'
 require 'tempfile'
 
+def preprocess_content_for_lists(content)
+  # Split content into lines
+  lines = content.split('\n')
+  processed_lines = []
+  
+  i = 0
+  while i < lines.length
+    current_line = lines[i]
+    processed_lines << current_line
+    
+    # Check if this line is a paragraph (non-empty, not a special block)
+    if i < lines.length - 1 && !current_line.strip.empty?
+      next_line = lines[i + 1]
+      
+      # Check if current line is not already a special block or list item
+      unless current_line.strip.match(/^(=+\\s|\\.+\\s|\\*+\\s|\\[.*\\]|----|----|^\\s*$|:.*:)/)
+        # Check if next line is a list item (starts with *, -, or numbers)
+        if next_line.strip.match(/^(\\*+\\s+|-+\\s+|\\d+\\.\\s+)/)
+          # Insert a blank line to separate paragraph from list
+          processed_lines << ''
+        end
+      end
+    end
+    
+    i += 1
+  end
+  
+  processed_lines.join('\n')
+end
+
 def parse_document(content)
-  # Parse the document with source mapping
-  doc = Asciidoctor.load(content, sourcemap: true, safe: :unsafe)
+  # Preprocess content to handle paragraph-list separation
+  processed_content = preprocess_content_for_lists(content)
+  
+  # Parse the document with source mapping and full block parsing
+  doc = Asciidoctor.load(processed_content, 
+    sourcemap: true, 
+    safe: :unsafe,
+    parse_header_only: false,
+    standalone: false)
   
   # Extract block information recursively
   def extract_block_info(block, level = 0)
+    # Extract content preferring plain text over HTML - handle all block types dynamically
+    content = ''
+    
+    # Priority order for content extraction based on block context
+    case block.context
+    when :list_item
+      # For list items, use the text field which contains the plain content
+      content = block.respond_to?(:text) && !block.text.nil? ? block.text.to_s : ''
+    when :paragraph, :sidebar, :example, :quote, :verse, :literal, :admonition
+      # For content blocks, prefer source lines if available
+      if block.respond_to?(:lines) && block.lines && !block.lines.empty?
+        content = block.lines.join('\n')
+      elsif block.respond_to?(:source) && !block.source.nil?
+        content = block.source.to_s
+      elsif !block.content.nil?
+        content = block.content.to_s
+      end
+    when :listing
+      # For code blocks, preserve the source exactly
+      if block.respond_to?(:source) && !block.source.nil?
+        content = block.source.to_s
+      elsif block.respond_to?(:lines) && block.lines
+        content = block.lines.join('\n')
+      end
+    else
+      # For any other block type, try multiple extraction methods
+      if block.respond_to?(:source) && !block.source.nil?
+        content = block.source.to_s
+      elsif block.respond_to?(:lines) && block.lines && !block.lines.empty?
+        content = block.lines.join('\n')
+      elsif !block.content.nil?
+        content = block.content.to_s
+      elsif block.respond_to?(:text) && !block.text.nil?
+        content = block.text.to_s
+      end
+    end
+    
+    # Clean up HTML tags if present (but preserve structure for code blocks)
+    unless [:listing, :literal].include?(block.context)
+      if content.include?('<') && content.include?('>')
+        content = content.gsub(/<[^>]+>/, '').gsub(/\\s+/, ' ').strip
+      end
+    end
+    
     block_info = {
       'context' => block.context.to_s,
       'content_model' => block.content_model.to_s,
-      'content' => block.content.to_s,
+      'content' => content,
       'level' => level,
       'style' => block.style,
       'title' => block.title,
       'id' => block.id,
-      'attributes' => block.attributes.to_h
+      'attributes' => block.attributes.to_h,
+      'raw_content' => content  # Keep raw content for reference
     }
     
     # Get source location if available
@@ -81,12 +163,28 @@ def parse_document(content)
     end
     block_info['children'] = children
     
-    # Handle special block types
+    # Handle special block types dynamically
     case block.context
     when :admonition
-      block_info['admonition_name'] = block.attr('name')
+      block_info['admonition_name'] = block.attr('name') || block.attr('style') || 'NOTE'
     when :list_item
       block_info['text'] = block.text if block.respond_to?(:text)
+      block_info['marker'] = block.marker if block.respond_to?(:marker)
+    when :listing, :literal
+      block_info['language'] = block.attr('language') if block.attr('language')
+      block_info['linenums'] = block.attr('linenums') if block.attr('linenums')
+    when :table
+      block_info['cols'] = block.attr('cols') if block.attr('cols')
+      block_info['format'] = block.attr('format') if block.attr('format')
+    end
+    
+    # Add any additional attributes that might be useful
+    if block.respond_to?(:caption) && block.caption
+      block_info['caption'] = block.caption
+    end
+    
+    if block.respond_to?(:role) && block.role
+      block_info['role'] = block.role
     end
     
     block_info
@@ -148,7 +246,13 @@ def parse_document(content)
   
   # Extract all blocks from the document
   doc.blocks.each do |block|
-    result['blocks'] << extract_block_info(block)
+    block_info = extract_block_info(block)
+    if block_info
+      result['blocks'] << block_info
+    else
+      # Log unhandled block types for debugging
+      STDERR.puts "UNHANDLED BLOCK: context=#{block.context}, style=#{block.style}, content_model=#{block.content_model}"
+    end
   end
   
   result

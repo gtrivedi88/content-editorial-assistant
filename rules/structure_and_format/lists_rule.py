@@ -8,52 +8,54 @@ from .base_structure_rule import BaseStructureRule
 class ListsRule(BaseStructureRule):
     """
     Checks for style issues in lists, with a focus on ensuring
-    grammatical parallelism between list items.
+    grammatical parallelism between list items. This rule analyzes all
+    items in a list block to ensure they share a consistent structure.
     """
     def _get_rule_type(self) -> str:
+        """Returns the unique identifier for this rule."""
         return 'lists'
 
     def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
+        """
+        Analyzes a block of list items for grammatical parallelism.
+        
+        This method assumes it receives all items of a single list in the
+        `sentences` argument, which is made possible by the structural parser.
+        """
         errors = []
         
-        # Context-aware analysis: Only analyze if we know this is a list item
-        if not context or context.get('block_type') not in ['list_item', 'list_item_ordered', 'list_item_unordered']:
-            return errors  # Skip analysis if not a list item
-            
-        if not nlp or len(sentences) < 1:
+        # This rule requires at least two list items to compare for parallelism.
+        if not nlp or len(sentences) < 2:
             return errors
 
-        # Since we know this is a list item, we can focus on analyzing the content
-        # rather than trying to detect if it's a list
+        # --- Parallelism Analysis ---
         
-        # For now, we'll store the first item's structure to compare with subsequent items
-        # This would ideally be done at the document level, but for now we'll implement
-        # a simplified version that works with the current sentence-by-sentence analysis
+        # 1. Establish the grammatical pattern from the first list item.
+        #    The "pattern" is the Part-of-Speech of the first word (e.g., NOUN, VERB).
+        first_item_doc = nlp(sentences[0])
+        if not first_item_doc:
+            return errors # Cannot establish a pattern if the first item is empty.
         
-        # Rule: List items should be grammatically parallel
-        # This rule is most effective when applied across multiple list items
-        # Since we're analyzing individual list items, we'll focus on internal consistency
-        
-        for i, sentence in enumerate(sentences):
+        # Linguistic Anchor: The Part-of-Speech of the first token sets the pattern.
+        pattern_pos = first_item_doc[0].pos_
+
+        # 2. Iterate through the rest of the list items and compare them to the pattern.
+        for i, sentence in enumerate(sentences[1:]):
             doc = nlp(sentence)
             if not doc: continue
             
-            # Check if list item has consistent structure
-            # For example, if it starts with a verb, it should maintain that pattern
-            first_token = doc[0]
+            current_item_pos = doc[0].pos_
             
-            # Rule: List items should not mix different grammatical structures
-            # This is a simplified check - a full implementation would compare across all items
-            if first_token.pos_ == 'VERB' and first_token.dep_ == 'ROOT':
-                # This is an imperative-style list item
-                # Check if it maintains consistent imperative structure
-                if any(token.pos_ == 'PRON' and token.dep_ == 'nsubj' for token in doc):
-                    errors.append(self._create_error(
-                        sentence=sentence,
-                        sentence_index=i,
-                        message="List item mixes imperative and declarative styles.",
-                        suggestions=["Maintain consistent grammatical structure across list items. Use either all imperative verbs or all declarative statements."],
-                        severity='medium'
-                    ))
+            # 3. If the POS of the current item doesn't match the established pattern,
+            #    it's a parallelism error.
+            if current_item_pos != pattern_pos:
+                errors.append(self._create_error(
+                    sentence=sentence,
+                    # The sentence_index needs to be offset by 1 because we start from the second item.
+                    sentence_index=i + 1, 
+                    message="List items are not grammatically parallel.",
+                    suggestions=[f"This item appears to start with a '{current_item_pos}', but the list's pattern was established as '{pattern_pos}' by the first item. Please rewrite the items to have a consistent structure."],
+                    severity='medium'
+                ))
         
         return errors
