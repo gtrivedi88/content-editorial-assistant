@@ -26,6 +26,14 @@ class FormatDetector:
             r'^={4,}\s*$',  # Example delimiters
             r'^-{4,}\s*$',  # Listing delimiters
             r'^\+{4,}\s*$',  # Passthrough delimiters
+            r'^\.[A-Z]',  # Block titles (e.g., .Prerequisites)
+            r'^\+\s*$',  # Continuation markers
+            r'^\*{2,3}\s+',  # Multi-level list markers (** and ***)
+            r'^\.\s+',  # Ordered lists with dots
+            r'^\[\[.*\]\]',  # Anchors
+            r'^include::', # Include directives
+            r'^image::', # Image macros
+            r'^link::', # Link macros
         ]
         
         self.markdown_patterns = [
@@ -57,8 +65,10 @@ class FormatDetector:
         asciidoc_score = 0
         markdown_score = 0
         
-        # Check first 20 lines for format indicators
-        for line in lines[:20]:
+        # Check first 50 lines for format indicators (increased from 20)
+        # This helps catch indicators that appear later in the document
+        scan_lines = min(50, len(lines))
+        for line in lines[:scan_lines]:
             line = line.strip()
             if not line:
                 continue

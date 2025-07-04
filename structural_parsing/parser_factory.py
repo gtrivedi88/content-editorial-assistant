@@ -37,17 +37,41 @@ class StructuralParserFactory:
         Returns:
             ParseResult from the appropriate parser
         """
-        # Determine format
-        if format_hint == 'auto':
-            detected_format = self.format_detector.detect_format(content)
-        else:
-            detected_format = format_hint
-        
-        # Dispatch to appropriate parser
-        if detected_format == 'asciidoc':
+        # Handle explicit format hints
+        if format_hint == 'asciidoc':
             return self.asciidoc_parser.parse(content, filename)
-        else:
+        elif format_hint == 'markdown':
             return self.markdown_parser.parse(content, filename)
+        
+        # For 'auto' detection, use improved format detection first
+        # This ensures we don't incorrectly parse Markdown as AsciiDoc
+        detected_format = self.format_detector.detect_format(content)
+        
+        if detected_format == 'asciidoc':
+            # Format detector thinks it's AsciiDoc, try AsciiDoc parser
+            if self.asciidoc_parser.asciidoctor_available:
+                asciidoc_result = self.asciidoc_parser.parse(content, filename)
+                if asciidoc_result.success:
+                    return asciidoc_result
+                else:
+                    # AsciiDoc parsing failed, but detector thought it was AsciiDoc
+                    # Fall back to Markdown parser as last resort
+                    return self.markdown_parser.parse(content, filename)
+            else:
+                # Asciidoctor not available, fall back to Markdown
+                return self.markdown_parser.parse(content, filename)
+        else:
+            # Format detector thinks it's Markdown
+            markdown_result = self.markdown_parser.parse(content, filename)
+            
+            # If Markdown parsing fails and Asciidoctor is available,
+            # try AsciiDoc as fallback (in case format detection was wrong)
+            if not markdown_result.success and self.asciidoc_parser.asciidoctor_available:
+                asciidoc_result = self.asciidoc_parser.parse(content, filename)
+                if asciidoc_result.success:
+                    return asciidoc_result
+            
+            return markdown_result
     
     def get_available_parsers(self) -> dict:
         """Get information about available parsers."""
