@@ -185,6 +185,66 @@ python app.py
 
 ---
 
+## 📝 AsciiDoc Support (Optional)
+
+For **AsciiDoc** document parsing and analysis, install the **asciidoctor** Ruby gem:
+
+### Prerequisites: Ruby Installation
+
+**Windows:**
+1. Download from: https://rubyinstaller.org/
+2. Run the installer (includes Ruby + DevKit)
+3. Open Command Prompt and verify: `ruby --version`
+
+**macOS:**
+```bash
+# Ruby is usually pre-installed. If not:
+brew install ruby
+
+# Verify installation
+ruby --version
+```
+
+**Linux:**
+```bash
+# Ubuntu/Debian
+sudo apt-get update
+sudo apt-get install ruby-full
+
+# Fedora/RHEL
+sudo dnf install ruby ruby-devel
+
+# Verify installation
+ruby --version
+```
+
+### Install Asciidoctor Gem
+
+```bash
+# Install asciidoctor
+gem install asciidoctor
+
+# Or with sudo if needed
+sudo gem install asciidoctor
+
+# Verify installation
+asciidoctor --version
+```
+
+### Benefits of Asciidoctor
+
+- ✅ **High-Performance Parsing:** Uses persistent Ruby server (15x faster than subprocess)
+- ✅ **Full AsciiDoc Support:** Complete parsing of admonitions, tables, includes, etc.
+- ✅ **Accurate Structure Analysis:** Proper block-level content analysis
+- ✅ **Document Title Detection:** Correctly identifies and displays document titles
+
+**Without Asciidoctor:**
+- ⚠️ AsciiDoc parsing will be limited to basic text extraction
+- ⚠️ Document structure analysis may be incomplete
+- ⚠️ Style analysis won't recognize AsciiDoc-specific elements
+
+---
+
 ## 🔧 Troubleshooting
 
 ### Virtual Environment Issues

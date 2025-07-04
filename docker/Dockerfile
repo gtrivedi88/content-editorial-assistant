@@ -30,11 +30,17 @@ RUN apt-get update && apt-get install -y \
     libfreetype6-dev \
     pkg-config \
     ca-certificates \
+    ruby-full \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
 # Install Ollama (cached unless Ollama updates)
 RUN curl -fsSL https://ollama.ai/install.sh | sh
+
+# Install Ruby gems (cached unless gem versions change)
+RUN gem install asciidoctor --no-document && \
+    echo "✅ Asciidoctor gem installed successfully" && \
+    asciidoctor --version
 
 # Create app directory
 WORKDIR /app

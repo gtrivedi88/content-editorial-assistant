@@ -130,6 +130,14 @@ class StyleAnalyzer:
                 errors = self._analyze_with_structure(parsed_document, analysis_mode)
                 sentences = self._extract_content_sentences(parsed_document)
                 paragraphs = self._extract_content_paragraphs(parsed_document)
+                
+                # Check if structural parsing extracted meaningful content
+                # If not, fall back to direct text analysis
+                if not sentences and text.strip():
+                    logger.info("Structural parsing produced empty sentences, falling back to direct text analysis")
+                    sentences = self._split_sentences(text)
+                    paragraphs = self.statistics_calculator.split_paragraphs_safe(text)
+                    errors = self._analyze_without_structure(text, sentences, analysis_mode)
             else:
                 # Fall back to traditional text analysis
                 sentences = self._split_sentences(text)

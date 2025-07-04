@@ -6,6 +6,8 @@ Implements the application factory pattern for better testing and modularity.
 
 import os
 import logging
+import atexit
+import signal
 from flask import Flask
 from flask_cors import CORS
 from flask_socketio import SocketIO
@@ -56,6 +58,9 @@ def create_app(config_class=Config):
     
     # Log initialization status
     log_initialization_status(services)
+    
+    # Register cleanup handlers
+    register_cleanup_handlers()
     
     return app, socketio
 
@@ -269,4 +274,29 @@ def health_check_services(services):
         health_status['overall'] = 'unhealthy'
         health_status['error'] = str(e)
     
-    return health_status 
+    return health_status
+
+
+def register_cleanup_handlers():
+    """Register cleanup handlers for graceful shutdown."""
+    
+    def cleanup_ruby_server():
+        """Cleanup the Ruby server on shutdown."""
+        try:
+            from structural_parsing.asciidoc.ruby_server import shutdown_server
+            shutdown_server()
+            logger.info("Ruby server shut down successfully")
+        except Exception as e:
+            logger.error(f"Error shutting down Ruby server: {e}")
+    
+    # Register cleanup on normal exit
+    atexit.register(cleanup_ruby_server)
+    
+    # Register cleanup on signal termination
+    def signal_handler(signum, frame):
+        logger.info(f"Received signal {signum}, shutting down...")
+        cleanup_ruby_server()
+        exit(0)
+    
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler) 

@@ -217,6 +217,53 @@ def check_ollama_installation():
     
     return True  # Don't fail setup if Ollama is not available
 
+def check_asciidoctor_installation():
+    """Check if asciidoctor Ruby gem is installed."""
+    logger.info("Checking asciidoctor Ruby gem installation...")
+    
+    try:
+        # Check if Ruby is installed
+        result = subprocess.run("ruby --version", shell=True, capture_output=True, text=True)
+        if result.returncode != 0:
+            logger.warning("⚠️ Ruby not found. AsciiDoc parsing will be limited.")
+            logger.info("📥 To install Ruby:")
+            
+            system = platform.system().lower()
+            if system == "windows":
+                logger.info("   1. Download from: https://rubyinstaller.org/")
+                logger.info("   2. Run the installer")
+                logger.info("   3. Open Command Prompt and run: gem install asciidoctor")
+            elif system == "darwin":  # macOS
+                logger.info("   1. Ruby is usually pre-installed. If not:")
+                logger.info("      brew install ruby")
+                logger.info("   2. Install asciidoctor: gem install asciidoctor")
+            else:  # Linux
+                logger.info("   1. Install Ruby:")
+                logger.info("      sudo apt-get install ruby-full    # Ubuntu/Debian")
+                logger.info("      sudo dnf install ruby ruby-devel   # Fedora")
+                logger.info("   2. Install asciidoctor: gem install asciidoctor")
+            
+            return True  # Don't fail setup if Ruby is not available
+        
+        logger.info(f"✅ Ruby is installed: {result.stdout.strip()}")
+        
+        # Check if asciidoctor gem is installed
+        result = subprocess.run("asciidoctor --version", shell=True, capture_output=True, text=True)
+        if result.returncode == 0:
+            logger.info(f"✅ Asciidoctor is installed: {result.stdout.strip()}")
+            logger.info("✅ AsciiDoc parsing will use high-performance Ruby server")
+            return True
+        else:
+            logger.warning("⚠️ Asciidoctor gem not found. AsciiDoc parsing will be limited.")
+            logger.info("📥 To install asciidoctor:")
+            logger.info("   gem install asciidoctor")
+            logger.info("   # Or with sudo if needed: sudo gem install asciidoctor")
+            
+    except Exception as e:
+        logger.warning(f"⚠️ Could not check asciidoctor: {e}")
+    
+    return True  # Don't fail setup if asciidoctor is not available
+
 def test_installation():
     """Test if the installation was successful."""
     logger.info("Testing installation...")
@@ -334,6 +381,7 @@ def main():
         ("Setting up NLTK data", setup_nltk),
         ("Creating directories", create_directories),
         ("Checking Ollama installation", check_ollama_installation),
+        ("Checking asciidoctor Ruby gem installation", check_asciidoctor_installation),
         ("Testing installation", test_installation)
     ]
     
