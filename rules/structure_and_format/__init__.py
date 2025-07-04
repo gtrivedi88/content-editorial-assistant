@@ -13,6 +13,7 @@ from .messages_rule import MessagesRule
 from .notes_rule import NotesRule
 from .paragraphs_rule import ParagraphsRule
 from .procedures_rule import ProceduresRule
+from .admonitions_rule import AdmonitionsRule
 
 # Note: Rules for Books, Examples, Figures, Glossaries, Tables, and Type Size
 # are omitted as they relate to document-level structure and layout, which
@@ -26,4 +27,5 @@ __all__ = [
     'NotesRule',
     'ParagraphsRule',
     'ProceduresRule',
+    'AdmonitionsRule',
 ]

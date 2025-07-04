@@ -2,6 +2,7 @@
 Core Analyzer Module
 Main StyleAnalyzer class that coordinates all analysis with zero false positives.
 Implements mutually exclusive analysis paths to prevent conflicts.
+Supports structural parsing for context-aware analysis.
 """
 
 import logging
@@ -21,6 +22,14 @@ except ImportError:
     RULES_AVAILABLE = False
     get_registry = None
 
+try:
+    from structural_parsing.parser_factory import StructuralParserFactory
+    from structural_parsing.asciidoc.types import AsciiDocDocument, AsciiDocBlockType
+    from structural_parsing.markdown.types import MarkdownDocument, MarkdownBlockType
+    STRUCTURAL_PARSING_AVAILABLE = True
+except ImportError:
+    STRUCTURAL_PARSING_AVAILABLE = False
+
 from .base_types import (
     AnalysisResult, AnalysisMode, AnalysisMethod, ErrorDict,
     create_analysis_result, create_error
@@ -34,7 +43,7 @@ logger = logging.getLogger(__name__)
 
 
 class StyleAnalyzer:
-    """Main style analyzer with zero false positives design."""
+    """Main style analyzer with zero false positives design and structural parsing support."""
     
     def __init__(self, rules: Optional[dict] = None):
         """Initialize the style analyzer with components."""
@@ -45,6 +54,16 @@ class StyleAnalyzer:
         self.sentence_analyzer = SentenceAnalyzer(rules)
         self.statistics_calculator = StatisticsCalculator(rules)
         self.suggestion_generator = SuggestionGenerator(rules)
+        
+        # Initialize structural parser factory if available
+        self.parser_factory = None
+        if STRUCTURAL_PARSING_AVAILABLE:
+            try:
+                self.parser_factory = StructuralParserFactory()
+                logger.info("Structural parsing enabled - context-aware analysis available")
+            except Exception as e:
+                logger.warning(f"Failed to initialize structural parser: {e}")
+                self.parser_factory = None
         
         # Initialize rules registry
         self.rules_registry = None
@@ -70,8 +89,8 @@ class StyleAnalyzer:
             logger.warning("SpaCy model not found, using fallback methods")
             self.nlp = None
     
-    def analyze(self, text: str) -> AnalysisResult:
-        """Perform comprehensive style analysis with zero false positives."""
+    def analyze(self, text: str, format_hint: str = 'auto') -> AnalysisResult:
+        """Perform comprehensive style analysis with structural awareness."""
         if not text or not text.strip():
             return create_analysis_result(
                 errors=[],
@@ -88,33 +107,34 @@ class StyleAnalyzer:
             # Determine analysis mode based on available capabilities
             analysis_mode = self._determine_analysis_mode()
             
+            # Try structural parsing for context-aware analysis
+            parsed_document = None
+            if self.parser_factory:
+                try:
+                    # Ensure format_hint is a valid value and cast to Literal type
+                    from typing import cast, Literal
+                    if format_hint in ['asciidoc', 'markdown', 'auto']:
+                        validated_hint = cast(Literal['asciidoc', 'markdown', 'auto'], format_hint)
+                    else:
+                        validated_hint = 'auto'
+                    parse_result = self.parser_factory.parse(text, format_hint=validated_hint)
+                    if parse_result.success:
+                        parsed_document = parse_result.document
+                        logger.info(f"Successfully parsed as {type(parsed_document).__name__}")
+                except Exception as e:
+                    logger.warning(f"Structural parsing failed, falling back to text analysis: {e}")
+            
             # Prepare text for analysis
-            sentences = self._split_sentences(text)
-            paragraphs = self.statistics_calculator.split_paragraphs_safe(text)
-            
-            # COMPLETELY MUTUALLY EXCLUSIVE ANALYSIS PATHS
-            errors = []
-            
-            if analysis_mode == AnalysisMode.SPACY_WITH_MODULAR_RULES:
-                errors = self._analyze_spacy_with_modular_rules(text, sentences)
-            
-            elif analysis_mode == AnalysisMode.MODULAR_RULES_WITH_FALLBACKS:
-                errors = self._analyze_modular_rules_with_fallbacks(text, sentences)
-            
-            elif analysis_mode == AnalysisMode.SPACY_LEGACY_ONLY:
-                errors = self._analyze_spacy_legacy_only(text, sentences)
-            
-            elif analysis_mode == AnalysisMode.MINIMAL_SAFE_MODE:
-                errors = self._analyze_minimal_safe_mode(text, sentences)
-            
+            if parsed_document:
+                # Use structural parsing for context-aware analysis
+                errors = self._analyze_with_structure(parsed_document, analysis_mode)
+                sentences = self._extract_content_sentences(parsed_document)
+                paragraphs = self._extract_content_paragraphs(parsed_document)
             else:
-                # Error mode
-                errors = [create_error(
-                    error_type='system',
-                    message='Analysis system could not determine safe analysis mode.',
-                    suggestions=['Check system configuration and dependencies']
-                )]
-                analysis_mode = AnalysisMode.ERROR
+                # Fall back to traditional text analysis
+                sentences = self._split_sentences(text)
+                paragraphs = self.statistics_calculator.split_paragraphs_safe(text)
+                errors = self._analyze_without_structure(text, sentences, analysis_mode)
             
             # Calculate statistics and metrics
             statistics = self.statistics_calculator.calculate_safe_statistics(
@@ -162,6 +182,262 @@ class StyleAnalyzer:
                 spacy_available=SPACY_AVAILABLE,
                 modular_rules_available=RULES_AVAILABLE
             )
+    
+    def _analyze_with_structure(self, parsed_document, analysis_mode: AnalysisMode) -> List[ErrorDict]:
+        """Analyze document using structural information for context-aware analysis."""
+        errors = []
+        
+        try:
+            # Extract content blocks that should be analyzed
+            content_blocks = self._get_analyzable_blocks(parsed_document)
+            
+            for block in content_blocks:
+                block_content = block.get_text_content()
+                if not block_content.strip():
+                    continue
+                
+                # Apply context-specific analysis based on block type
+                block_errors = self._analyze_block_content(block, block_content, analysis_mode)
+                errors.extend(block_errors)
+            
+            logger.info(f"Structural analysis completed: {len(errors)} issues found across {len(content_blocks)} blocks")
+            
+        except Exception as e:
+            logger.error(f"Structural analysis failed: {e}")
+            # Fall back to text-based analysis
+            full_text = self._extract_all_text(parsed_document)
+            sentences = self._split_sentences(full_text)
+            errors = self._analyze_without_structure(full_text, sentences, analysis_mode)
+        
+        return errors
+    
+    def _get_analyzable_blocks(self, parsed_document):
+        """Get blocks that should be analyzed for style issues."""
+        analyzable_blocks = []
+        
+        try:
+            if hasattr(parsed_document, 'get_content_blocks'):
+                # Use document's built-in method to get content blocks
+                content_blocks = parsed_document.get_content_blocks()
+                for block in content_blocks:
+                    if not block.should_skip_analysis():
+                        analyzable_blocks.append(block)
+            else:
+                # Fall back to manual filtering
+                all_blocks = getattr(parsed_document, 'blocks', [])
+                for block in all_blocks:
+                    if hasattr(block, 'is_content_block') and block.is_content_block():
+                        analyzable_blocks.append(block)
+                        
+        except Exception as e:
+            logger.error(f"Error getting analyzable blocks: {e}")
+            
+        return analyzable_blocks
+    
+    def _analyze_block_content(self, block, content: str, analysis_mode: AnalysisMode) -> List[ErrorDict]:
+        """Analyze content within a specific block context."""
+        errors = []
+        
+        try:
+            # Get block-specific context
+            block_type = getattr(block, 'block_type', None)
+            block_context = getattr(block, 'get_context_info', lambda: {})()
+            
+            # Apply different analysis based on block type
+            if self._is_asciidoc_block(block_type):
+                errors.extend(self._analyze_asciidoc_block(block, content, analysis_mode))
+            elif self._is_markdown_block(block_type):
+                errors.extend(self._analyze_markdown_block(block, content, analysis_mode))
+            else:
+                # Generic content analysis
+                errors.extend(self._analyze_generic_content(content, analysis_mode))
+                
+        except Exception as e:
+            logger.error(f"Error analyzing block content: {e}")
+            
+        return errors
+    
+    def _is_asciidoc_block(self, block_type) -> bool:
+        """Check if block is an AsciiDoc block type."""
+        if not STRUCTURAL_PARSING_AVAILABLE:
+            return False
+        try:
+            return isinstance(block_type, AsciiDocBlockType)
+        except:
+            return False
+    
+    def _is_markdown_block(self, block_type) -> bool:
+        """Check if block is a Markdown block type."""
+        if not STRUCTURAL_PARSING_AVAILABLE:
+            return False
+        try:
+            return isinstance(block_type, MarkdownBlockType)
+        except:
+            return False
+    
+    def _analyze_asciidoc_block(self, block, content: str, analysis_mode: AnalysisMode) -> List[ErrorDict]:
+        """Apply AsciiDoc-specific analysis rules."""
+        errors = []
+        
+        try:
+            block_type = block.block_type
+            
+            # Skip code/literal blocks
+            if block_type in [AsciiDocBlockType.LISTING, AsciiDocBlockType.LITERAL, AsciiDocBlockType.PASS]:
+                return errors
+            
+            # Apply special rules for admonitions
+            if block_type == AsciiDocBlockType.ADMONITION:
+                errors.extend(self._analyze_admonition_content(block, content))
+            
+            # Apply general content analysis for other blocks
+            if block_type in [AsciiDocBlockType.PARAGRAPH, AsciiDocBlockType.HEADING, AsciiDocBlockType.QUOTE]:
+                errors.extend(self._analyze_generic_content(content, analysis_mode))
+                
+        except Exception as e:
+            logger.error(f"Error in AsciiDoc block analysis: {e}")
+            
+        return errors
+    
+    def _analyze_markdown_block(self, block, content: str, analysis_mode: AnalysisMode) -> List[ErrorDict]:
+        """Apply Markdown-specific analysis rules."""
+        errors = []
+        
+        try:
+            block_type = block.block_type
+            
+            # Skip code blocks
+            if block_type in [MarkdownBlockType.CODE_BLOCK, MarkdownBlockType.INLINE_CODE]:
+                return errors
+            
+            # Apply general content analysis for text blocks
+            if block_type in [MarkdownBlockType.PARAGRAPH, MarkdownBlockType.HEADING, MarkdownBlockType.BLOCKQUOTE]:
+                errors.extend(self._analyze_generic_content(content, analysis_mode))
+                
+        except Exception as e:
+            logger.error(f"Error in Markdown block analysis: {e}")
+            
+        return errors
+    
+    def _analyze_admonition_content(self, block, content: str) -> List[ErrorDict]:
+        """Special analysis for AsciiDoc admonition blocks."""
+        errors = []
+        
+        try:
+            admonition_type = getattr(block, 'admonition_type', None)
+            if admonition_type:
+                # Apply admonition-specific rules using the rules registry
+                if self.rules_registry:
+                    try:
+                        # Look for admonitions rule
+                        admonition_rule = getattr(self.rules_registry, 'get_rule', lambda x: None)('admonitions')
+                        if admonition_rule:
+                            rule_errors = admonition_rule.analyze(content, [content], self.nlp)
+                            for error in rule_errors:
+                                converted_error = self._convert_rules_error(error)
+                                errors.append(converted_error)
+                    except Exception as e:
+                        logger.warning(f"Admonition rule analysis failed: {e}")
+                        
+        except Exception as e:
+            logger.error(f"Error analyzing admonition content: {e}")
+            
+        return errors
+    
+    def _analyze_generic_content(self, content: str, analysis_mode: AnalysisMode) -> List[ErrorDict]:
+        """Apply general style analysis to content."""
+        errors = []
+        
+        try:
+            sentences = self._split_sentences(content)
+            
+            if analysis_mode == AnalysisMode.SPACY_WITH_MODULAR_RULES:
+                errors = self._analyze_spacy_with_modular_rules(content, sentences)
+            elif analysis_mode == AnalysisMode.MODULAR_RULES_WITH_FALLBACKS:
+                errors = self._analyze_modular_rules_with_fallbacks(content, sentences)
+            elif analysis_mode == AnalysisMode.SPACY_LEGACY_ONLY:
+                errors = self._analyze_spacy_legacy_only(content, sentences)
+            elif analysis_mode == AnalysisMode.MINIMAL_SAFE_MODE:
+                errors = self._analyze_minimal_safe_mode(content, sentences)
+                
+        except Exception as e:
+            logger.error(f"Error in generic content analysis: {e}")
+            
+        return errors
+    
+    def _extract_content_sentences(self, parsed_document) -> List[str]:
+        """Extract sentences from content blocks only."""
+        sentences = []
+        try:
+            content_blocks = self._get_analyzable_blocks(parsed_document)
+            for block in content_blocks:
+                block_content = block.get_text_content()
+                if block_content.strip():
+                    block_sentences = self._split_sentences(block_content)
+                    sentences.extend(block_sentences)
+        except Exception as e:
+            logger.error(f"Error extracting content sentences: {e}")
+            # Fall back to full text
+            full_text = self._extract_all_text(parsed_document)
+            sentences = self._split_sentences(full_text)
+        return sentences
+    
+    def _extract_content_paragraphs(self, parsed_document) -> List[str]:
+        """Extract paragraphs from content blocks only."""
+        paragraphs = []
+        try:
+            content_blocks = self._get_analyzable_blocks(parsed_document)
+            for block in content_blocks:
+                block_content = block.get_text_content()
+                if block_content.strip():
+                    paragraphs.append(block_content)
+        except Exception as e:
+            logger.error(f"Error extracting content paragraphs: {e}")
+            # Fall back to full text
+            full_text = self._extract_all_text(parsed_document)
+            paragraphs = self.statistics_calculator.split_paragraphs_safe(full_text)
+        return paragraphs
+    
+    def _extract_all_text(self, parsed_document) -> str:
+        """Extract all text from the parsed document."""
+        try:
+            if hasattr(parsed_document, 'get_all_text'):
+                return parsed_document.get_all_text()
+            else:
+                # Manual extraction
+                all_text = []
+                blocks = getattr(parsed_document, 'blocks', [])
+                for block in blocks:
+                    if hasattr(block, 'get_text_content'):
+                        text = block.get_text_content()
+                        if text.strip():
+                            all_text.append(text)
+                return '\n\n'.join(all_text)
+        except Exception as e:
+            logger.error(f"Error extracting all text: {e}")
+            return ""
+    
+    def _analyze_without_structure(self, text: str, sentences: List[str], analysis_mode: AnalysisMode) -> List[ErrorDict]:
+        """Fall back to traditional text-based analysis."""
+        errors = []
+        
+        if analysis_mode == AnalysisMode.SPACY_WITH_MODULAR_RULES:
+            errors = self._analyze_spacy_with_modular_rules(text, sentences)
+        elif analysis_mode == AnalysisMode.MODULAR_RULES_WITH_FALLBACKS:
+            errors = self._analyze_modular_rules_with_fallbacks(text, sentences)
+        elif analysis_mode == AnalysisMode.SPACY_LEGACY_ONLY:
+            errors = self._analyze_spacy_legacy_only(text, sentences)
+        elif analysis_mode == AnalysisMode.MINIMAL_SAFE_MODE:
+            errors = self._analyze_minimal_safe_mode(text, sentences)
+        else:
+            # Error mode
+            errors = [create_error(
+                error_type='system',
+                message='Analysis system could not determine safe analysis mode.',
+                suggestions=['Check system configuration and dependencies']
+            )]
+        
+        return errors
     
     def _determine_analysis_mode(self) -> AnalysisMode:
         """Determine the safest analysis mode based on available capabilities."""
