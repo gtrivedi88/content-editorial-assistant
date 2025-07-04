@@ -162,13 +162,23 @@ def log_initialization_status(services):
             status = "✅ Ready" if services.get(available_key, False) else "⚠️ Fallback"
             logger.info(f"{display_name}: {status}")
         
-        # Log AI configuration
+        # Log AI configuration with status
         try:
             ai_config = Config.get_ai_config()
             if ai_config['use_ollama']:
-                logger.info(f"AI Configuration: Ollama ({ai_config['ollama_model']})")
+                # Check if Ollama is actually available
+                ollama_status = "✅ Ready"
+                try:
+                    import requests
+                    response = requests.get(f"{ai_config['ollama_url'].replace('/api/generate', '/api/tags')}", timeout=5)
+                    if response.status_code != 200:
+                        ollama_status = "⚠️ Connection Issue"
+                except:
+                    ollama_status = "⚠️ Connection Issue"
+                
+                logger.info(f"AI Configuration: {ollama_status} - Ollama ({ai_config['ollama_model']})")
             else:
-                logger.info("AI Configuration: Rule-based fallback")
+                logger.info("AI Configuration: ✅ Rule-based fallback")
         except Exception as e:
             logger.warning(f"Could not determine AI configuration: {e}")
         
