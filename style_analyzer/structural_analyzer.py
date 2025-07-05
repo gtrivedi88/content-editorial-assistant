@@ -233,7 +233,7 @@ class StructuralAnalyzer:
                 # Determine block type (check for synthetic type first)
                 block_type = getattr(block, '_synthetic_block_type', block.block_type.value)
                 
-                # Create basic block info
+                # Create basic block info (children will be added after analysis)
                 block_info = {
                     'block_id': block_id,
                     'block_type': block_type,
@@ -243,7 +243,6 @@ class StructuralAnalyzer:
                     'context': block.get_context_info() if hasattr(block, 'get_context_info') else {},
                     'level': getattr(block, 'level', 0),
                     'admonition_type': getattr(getattr(block, 'admonition_type', None), 'value', None) if getattr(block, 'admonition_type', None) else None,
-                    'children': BlockProcessor.convert_children_to_dict(getattr(block, 'children', [])),
                     'errors': []
                 }
                 
@@ -257,6 +256,9 @@ class StructuralAnalyzer:
                         logger.debug(f"Block {block_id} ({block.block_type.value}): {len(block_errors)} errors found")
                     except Exception as e:
                         logger.error(f"Error analyzing block {block_id}: {e}")
+                
+                # Convert children to dict after analysis (so child errors are included)
+                block_info['children'] = BlockProcessor.convert_children_to_dict(getattr(block, 'children', []))
                 
                 structural_blocks.append(block_info)
                 block_id += 1

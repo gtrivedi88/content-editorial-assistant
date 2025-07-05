@@ -157,8 +157,18 @@ class AsciiDocBlock:
     
     def get_context_info(self) -> Dict[str, Any]:
         """Get contextual information for rule processing."""
+        # Determine specific block type based on context
+        block_type = self.block_type.value
+        
+        # For list items, provide more specific context based on parent
+        if self.block_type == AsciiDocBlockType.LIST_ITEM and self.parent:
+            if self.parent.block_type == AsciiDocBlockType.ORDERED_LIST:
+                block_type = 'list_item_ordered'
+            elif self.parent.block_type == AsciiDocBlockType.UNORDERED_LIST:
+                block_type = 'list_item_unordered'
+        
         return {
-            'block_type': self.block_type.value,
+            'block_type': block_type,
             'level': self.level,
             'title': self.title,
             'style': self.style,

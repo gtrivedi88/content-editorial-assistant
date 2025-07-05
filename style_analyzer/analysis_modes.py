@@ -209,8 +209,12 @@ class AnalysisModeExecutor:
             if block_type == AsciiDocBlockType.ADMONITION:
                 errors.extend(self._analyze_admonition_content(block, content, block_context))
             
+            # Apply special rules for ordered lists - analyze each list item individually
+            elif block_type == AsciiDocBlockType.ORDERED_LIST:
+                errors.extend(self._analyze_ordered_list_content(block, content, analysis_mode, block_context))
+            
             # Apply general content analysis for other blocks
-            if block_type in [AsciiDocBlockType.PARAGRAPH, AsciiDocBlockType.HEADING, AsciiDocBlockType.QUOTE]:
+            elif block_type in [AsciiDocBlockType.PARAGRAPH, AsciiDocBlockType.HEADING, AsciiDocBlockType.QUOTE, AsciiDocBlockType.LIST_ITEM]:
                 errors.extend(self._analyze_generic_content(content, analysis_mode, block_context))
                 
         except Exception as e:
@@ -262,6 +266,40 @@ class AnalysisModeExecutor:
         except Exception as e:
             logger.error(f"Error analyzing admonition content: {e}")
             
+        return errors
+    
+    def _analyze_ordered_list_content(self, block, content: str, analysis_mode: AnalysisMode, 
+                                    block_context: Optional[dict] = None) -> List[ErrorDict]:
+        """Analyze ordered list content by analyzing each list item individually and storing errors on children."""
+        errors = []
+        
+        try:
+            # Get the children (list items) from the block
+            children = getattr(block, 'children', [])
+            
+            for i, child in enumerate(children):
+                # Create context for the individual list item
+                child_context = child.get_context_info()
+                
+                # Add step number to context for procedures rule
+                if child_context:
+                    child_context['step_number'] = i + 1
+                    child_context['is_ordered_list_item'] = True
+                
+                child_content = child.content
+                
+                # Analyze this individual list item
+                child_errors = self._analyze_generic_content(child_content, analysis_mode, child_context)
+                
+                # Store errors on the child instead of returning them to parent
+                if not hasattr(child, '_analysis_errors'):
+                    child._analysis_errors = []
+                child._analysis_errors.extend(child_errors)
+        
+        except Exception as e:
+            logger.error(f"Error analyzing ordered list content: {e}")
+            
+        # Return empty errors for parent block since errors are stored on children
         return errors
     
     def _analyze_generic_content(self, content: str, analysis_mode: AnalysisMode, 

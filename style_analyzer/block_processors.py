@@ -404,13 +404,16 @@ class BlockProcessor:
                 # Check for synthetic block type first
                 child_block_type = getattr(child, '_synthetic_block_type', getattr(child.block_type, 'value', str(child.block_type)))
                 
+                # Get errors from child if they were stored there during analysis
+                child_errors = getattr(child, '_analysis_errors', [])
+                
                 child_dict = {
                     'block_type': child_block_type,
                     'content': BlockProcessor.get_block_display_content(child),
                     'raw_content': getattr(child, 'raw_content', ''),
                     'level': getattr(child, 'level', 0),
                     'children': BlockProcessor.convert_children_to_dict(getattr(child, 'children', [])),
-                    'errors': []  # Children will be analyzed separately if needed
+                    'errors': child_errors  # Include errors that were stored on the child
                 }
                 children_list.append(child_dict)
         except Exception as e:

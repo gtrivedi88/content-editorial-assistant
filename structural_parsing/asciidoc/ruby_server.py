@@ -51,8 +51,8 @@ def preprocess_content_for_lists(content)
       
       # Check if current line is not already a special block or list item
       unless current_line.strip.match(/^(=+\\s|\\.+\\s|\\*+\\s|\\[.*\\]|----|----|^\\s*$|:.*:)/)
-        # Check if next line is a list item (starts with *, -, or numbers)
-        if next_line.strip.match(/^(\\*+\\s+|-+\\s+|\\d+\\.\\s+)/)
+        # Check if next line is a list item (starts with *, -, numbers, or dots)
+        if next_line.strip.match(/^(\\*+\\s+|-+\\s+|\\d+\\.\\s+|\\.+\\s+)/)
           # Insert a blank line to separate paragraph from list
           processed_lines << ''
         end
