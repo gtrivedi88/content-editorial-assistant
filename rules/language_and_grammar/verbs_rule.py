@@ -8,7 +8,8 @@ from .base_language_rule import BaseLanguageRule
 class VerbsRule(BaseLanguageRule):
     """
     Checks for verb-related style issues. This version has been corrected
-    to reduce false positives in the tense-checking logic.
+    to eliminate false positives in the tense-checking logic by focusing on
+    clear, actionable violations of the style guide.
     """
     def _get_rule_type(self) -> str:
         """Returns the unique identifier for this rule."""
@@ -16,7 +17,7 @@ class VerbsRule(BaseLanguageRule):
 
     def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         """
-        Analyzes sentences for passive voice and incorrect tense.
+        Analyzes sentences for passive voice and specific, incorrect tense usage.
         """
         errors = []
         if not nlp:
@@ -26,7 +27,8 @@ class VerbsRule(BaseLanguageRule):
             doc = nlp(sentence)
             
             # --- Rule 1: Passive Voice Check (Robust) ---
-            # This logic is accurate and remains unchanged.
+            # This logic is accurate and remains unchanged. It correctly identifies
+            # true passive voice constructions.
             has_passive_subject = any(token.dep_ == 'nsubjpass' for token in doc)
             has_passive_aux = any(token.dep_ == 'auxpass' for token in doc)
 
@@ -39,28 +41,34 @@ class VerbsRule(BaseLanguageRule):
                     severity='medium'
                 ))
 
-            # --- Rule 2: Tense Check (Corrected Logic) ---
-            # This check now focuses only on the main verb of the sentence to avoid
-            # incorrectly flagging past participles in present-tense constructions.
-            root_verb = None
-            for token in doc:
-                # Find the root of the dependency tree, ensure it's a verb
-                if token.dep_ == 'ROOT' and token.pos_ == 'VERB':
-                    root_verb = token
-                    break
+            # --- Rule 2: Tense Check (Corrected and More Conservative Logic) ---
+            # This check now focuses on clear violations to avoid false positives.
             
-            has_past_tense = False
+            # Check for past tense on the main verb of the sentence.
+            has_past_tense_violation = False
+            root_verb = next((token for token in doc if token.dep_ == 'ROOT' and token.pos_ == 'VERB'), None)
             if root_verb and root_verb.morph.get("Tense") == ["Past"]:
-                has_past_tense = True
+                has_past_tense_violation = True
 
-            has_future_tense = any(token.lemma_ == "will" for token in doc)
+            # Check for future tense ONLY when used in a direct instruction to the user.
+            # This is the clearest violation of the guide's preference for imperative commands.
+            has_future_tense_violation = False
+            for token in doc:
+                # Find "will" used as an auxiliary verb.
+                if token.lemma_ == 'will' and token.pos_ == 'AUX':
+                    # Check if the subject of the verb it modifies is "you".
+                    main_verb = token.head
+                    subject = next((child for child in main_verb.children if child.dep_ == 'nsubj'), None)
+                    if subject and subject.lemma_.lower() == 'you':
+                        has_future_tense_violation = True
+                        break
             
-            if has_past_tense or has_future_tense:
+            if has_past_tense_violation or has_future_tense_violation:
                  errors.append(self._create_error(
                     sentence=sentence,
                     sentence_index=i,
                     message="Sentence may not be in the preferred present tense.",
-                    suggestions=["Use present tense to describe product behavior and instructions (e.g., 'The system processes data' instead of 'The system will process data')."],
+                    suggestions=["Use present tense for instructions and descriptions. For commands, use the imperative mood (e.g., 'Click the button' instead of 'You will click the button')."],
                     severity='low'
                 ))
         return errors
