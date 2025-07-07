@@ -1,0 +1,935 @@
+= How to Add a New Rule to Style Guide AI
+:toc: left
+:toc-title: Table of Contents
+:toclevels: 3
+:sectnums:
+:sectanchors:
+:source-highlighter: highlightjs
+
+== Overview
+
+This guide provides step-by-step instructions for adding a new rule to the Style Guide AI application. The rule system is designed for easy extensibility with automatic discovery, so adding a new rule requires updating several files but follows a clear pattern.
+
+[.lead]
+**What You'll Create:**
+
+* A new rule class implementing your style check
+* Configuration updates to specify when the rule applies
+* Package imports for automatic discovery
+* Tests to verify the rule works correctly
+
+== Understanding the Rule System
+
+=== Rule Categories
+
+Rules are organized into three main categories, each with its own base class:
+
+[cols="2,3,3"]
+|===
+|Category |Base Class |Purpose
+
+|**Language & Grammar** |`BaseLanguageRule` |Word usage, grammar, style issues
+|**Punctuation** |`BasePunctuationRule` |Punctuation marks and symbols
+|**Structure & Format** |`BaseStructureRule` |Document structure and formatting
+|===
+
+=== Rule Discovery
+
+The system automatically discovers rules using the `RulesRegistry` class, which:
+
+1. **Scans directories** up to 4 levels deep in the `rules/` folder
+2. **Finds rule files** ending with `_rule.py`
+3. **Instantiates rule classes** that inherit from `BaseRule`
+4. **Registers rules** by their unique rule type identifier
+
+=== Rule Application
+
+Rules are applied contextually based on:
+
+* **Block type** (paragraph, heading, list item, etc.)
+* **Rule mappings** defined in `rules/rule_mappings.yaml`
+* **Context information** from the structural parser
+
+== Step-by-Step Guide
+
+=== Step 1: Choose Rule Category and Location
+
+Determine which category your rule belongs to and create it in the appropriate directory:
+
+[source,bash]
+----
+rules/
+├── language_and_grammar/     # Language and grammar rules
+├── punctuation/              # Punctuation rules
+├── structure_and_format/     # Structure and format rules
+└── (root)                    # General rules (sentence_length, etc.)
+----
+
+**Examples:**
+
+* **Word choice rule** → `rules/language_and_grammar/word_choice_rule.py`
+* **Comma usage rule** → `rules/punctuation/comma_usage_rule.py`
+* **Table formatting rule** → `rules/structure_and_format/table_formatting_rule.py`
+* **General writing rule** → `rules/my_general_rule.py`
+
+=== Step 2: Create the Rule Class
+
+Create your rule file following the naming convention `<rule_name>_rule.py`.
+
+==== For Language & Grammar Rules
+
+[source,python]
+----
+"""
+My Custom Language Rule
+Based on [Style Guide Reference or Custom Requirement]
+"""
+from typing import List, Dict, Any
+from .base_language_rule import BaseLanguageRule
+
+class MyCustomLanguageRule(BaseLanguageRule):
+    """
+    Description of what this rule checks for.
+    Include any relevant style guide references.
+    """
+    
+    def _get_rule_type(self) -> str:
+        """Returns the unique identifier for this rule."""
+        return 'my_custom_language'  # Must be unique across all rules
+    
+    def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
+        """
+        Analyzes sentences for the specific issue this rule detects.
+        
+        Args:
+            text: Full text content
+            sentences: List of individual sentences
+            nlp: SpaCy nlp object (optional, required for linguistic analysis)
+            context: Block context information (optional)
+            
+        Returns:
+            List of error dictionaries
+        """
+        errors = []
+        
+        # Return early if dependencies not available
+        if not nlp:
+            # If your rule requires SpaCy, return empty list when not available
+            return errors
+        
+        # Analyze each sentence
+        for i, sentence in enumerate(sentences):
+            if not sentence.strip():
+                continue
+            
+            # Use SpaCy for linguistic analysis
+            doc = nlp(sentence)
+            
+            # Your detection logic here
+            for token in doc:
+                if self._should_flag_token(token):
+                    errors.append(self._create_error(
+                        sentence=sentence,
+                        sentence_index=i,
+                        message=f"Issue detected: {token.text}",
+                        suggestions=[
+                            "Suggestion 1 for fixing the issue",
+                            "Alternative suggestion"
+                        ],
+                        severity='medium'  # 'low', 'medium', 'high'
+                    ))
+        
+        return errors
+    
+    def _should_flag_token(self, token):
+        """Helper method for detection logic."""
+        # Your specific detection logic
+        return False
+----
+
+==== For Punctuation Rules
+
+[source,python]
+----
+"""
+My Custom Punctuation Rule
+Based on [Style Guide Reference]
+"""
+from typing import List, Dict, Any
+from .base_punctuation_rule import BasePunctuationRule
+
+class MyCustomPunctuationRule(BasePunctuationRule):
+    """
+    Description of punctuation issue this rule detects.
+    """
+    
+    def _get_rule_type(self) -> str:
+        """Returns the unique identifier for this rule."""
+        return 'my_custom_punctuation'
+    
+    def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
+        """
+        Analyzes sentences for punctuation issues.
+        """
+        errors = []
+        
+        for i, sentence in enumerate(sentences):
+            # Your punctuation detection logic
+            if self._has_punctuation_issue(sentence):
+                errors.append(self._create_error(
+                    sentence=sentence,
+                    sentence_index=i,
+                    message="Punctuation issue detected",
+                    suggestions=["Fix suggestion"],
+                    severity='low'
+                ))
+        
+        return errors
+    
+    def _has_punctuation_issue(self, sentence: str) -> bool:
+        """Detect punctuation issues."""
+        # Your logic here
+        return False
+----
+
+==== For Structure & Format Rules
+
+[source,python]
+----
+"""
+My Custom Structure Rule
+Based on [Style Guide Reference]
+"""
+from typing import List, Dict, Any
+from .base_structure_rule import BaseStructureRule
+
+class MyCustomStructureRule(BaseStructureRule):
+    """
+    Description of structural issue this rule detects.
+    """
+    
+    def _get_rule_type(self) -> str:
+        """Returns the unique identifier for this rule."""
+        return 'my_custom_structure'
+    
+    def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
+        """
+        Analyzes text for structural issues.
+        """
+        errors = []
+        
+        # Access block context if needed
+        block_type = context.get('block_type') if context else None
+        
+        # Your structural analysis logic
+        if block_type == 'heading' and self._has_heading_issue(text):
+            errors.append(self._create_error(
+                sentence=text,
+                sentence_index=0,
+                message="Structural issue in heading",
+                suggestions=["Structure improvement suggestion"],
+                severity='medium'
+            ))
+        
+        return errors
+    
+    def _has_heading_issue(self, text: str) -> bool:
+        """Detect heading structure issues."""
+        # Your logic here
+        return False
+----
+
+=== Step 3: Update Package Imports
+
+Add your rule to the appropriate package's `__init__.py` file to enable automatic discovery.
+
+==== For Language & Grammar Rules
+
+Edit `rules/language_and_grammar/__init__.py`:
+
+[source,python]
+----
+"""
+Language and Grammar Rules Package
+"""
+
+# ... existing imports ...
+from .my_custom_language_rule import MyCustomLanguageRule
+
+__all__ = [
+    # ... existing rules ...
+    'MyCustomLanguageRule'
+]
+----
+
+==== For Punctuation Rules
+
+Edit `rules/punctuation/__init__.py`:
+
+[source,python]
+----
+"""
+Punctuation Rules Package
+"""
+
+# ... existing imports ...
+from .my_custom_punctuation_rule import MyCustomPunctuationRule
+
+__all__ = [
+    # ... existing rules ...
+    'MyCustomPunctuationRule'
+]
+----
+
+==== For Structure & Format Rules
+
+Edit `rules/structure_and_format/__init__.py`:
+
+[source,python]
+----
+"""
+Structure and Format Rules Package
+"""
+
+# ... existing imports ...
+from .my_custom_structure_rule import MyCustomStructureRule
+
+__all__ = [
+    # ... existing rules ...
+    'MyCustomStructureRule'
+]
+----
+
+=== Step 4: Configure Rule Mappings
+
+Edit `rules/rule_mappings.yaml` to specify which block types your rule should analyze.
+
+==== Understanding Block Types
+
+Common block types include:
+
+* `paragraph` - Regular text paragraphs
+* `heading` - Document headings
+* `list_item` - Items in lists
+* `admonition` - Warning/note blocks
+* `code_block` - Code listings
+* `table_cell` - Table content
+
+==== Adding Rule Mappings
+
+Add your rule identifier to the appropriate block types:
+
+[source,yaml]
+----
+block_type_rules:
+  # Apply to paragraph blocks
+  paragraph:
+    # ... existing rules ...
+    - my_custom_language  # Add your rule identifier here
+    
+  # Apply to heading blocks
+  heading:
+    # ... existing rules ...
+    - my_custom_punctuation  # If applicable to headings
+    
+  # Apply to list items
+  list_item:
+    # ... existing rules ...
+    - my_custom_structure  # If applicable to lists
+
+# Optional: Exclude rule from specific block types
+rule_exclusions:
+  code_block:
+    - my_custom_language  # Don't apply language rules to code
+----
+
+==== Rule Mapping Guidelines
+
+[cols="2,3"]
+|===
+|Rule Type |Recommended Block Types
+
+|**Language Rules** |`paragraph`, `list_item`, `admonition`
+|**Punctuation Rules** |`paragraph`, `heading`, `list_item`, `admonition`
+|**Structure Rules** |Depends on what structure you're checking
+|===
+
+=== Step 5: Test Your Rule
+
+Create a test to verify your rule works correctly.
+
+==== Create Test File
+
+Create `test_my_custom_rule.py`:
+
+[source,python]
+----
+"""
+Tests for My Custom Rule
+"""
+import pytest
+import spacy
+from rules.language_and_grammar.my_custom_language_rule import MyCustomLanguageRule
+
+class TestMyCustomLanguageRule:
+    
+    def setup_method(self):
+        """Setup test fixtures."""
+        self.rule = MyCustomLanguageRule()
+        try:
+            self.nlp = spacy.load("en_core_web_sm")
+        except OSError:
+            self.nlp = None
+    
+    def test_rule_type(self):
+        """Test rule type identifier."""
+        assert self.rule._get_rule_type() == 'my_custom_language'
+    
+    def test_detects_issue(self):
+        """Test that rule detects the target issue."""
+        if not self.nlp:
+            pytest.skip("SpaCy model not available")
+        
+        # Text that should trigger the rule
+        text = "Text that contains the issue you're detecting"
+        sentences = [text]
+        
+        errors = self.rule.analyze(text, sentences, self.nlp)
+        
+        assert len(errors) > 0
+        assert errors[0]['type'] == 'my_custom_language'
+        assert 'message' in errors[0]
+        assert 'suggestions' in errors[0]
+    
+    def test_no_false_positives(self):
+        """Test that rule doesn't flag correct text."""
+        if not self.nlp:
+            pytest.skip("SpaCy model not available")
+        
+        # Text that should NOT trigger the rule
+        text = "Correct text that should pass the rule"
+        sentences = [text]
+        
+        errors = self.rule.analyze(text, sentences, self.nlp)
+        
+        assert len(errors) == 0
+    
+    def test_handles_empty_input(self):
+        """Test rule handles empty input gracefully."""
+        errors = self.rule.analyze("", [], self.nlp)
+        assert errors == []
+    
+    def test_works_without_spacy(self):
+        """Test rule handles missing SpaCy gracefully."""
+        # If your rule requires SpaCy, it should return empty list when not available
+        errors = self.rule.analyze("Some text", ["Some text"], None)
+        assert isinstance(errors, list)
+----
+
+==== Run Tests
+
+[source,bash]
+----
+# Run your specific test
+python -m pytest test_my_custom_rule.py -v
+
+# Run all rule tests
+python -m pytest rules/ -v
+----
+
+=== Step 6: Verify Integration
+
+==== Check Rule Discovery
+
+Test that your rule is discovered by the system:
+
+[source,python]
+----
+# Test script to verify rule discovery
+from rules import get_registry
+
+registry = get_registry()
+discovered = registry.list_discovered_rules()
+
+print("Discovered rules:")
+for location, rules in discovered['rules_by_location'].items():
+    print(f"  {location}: {rules}")
+
+# Check if your rule is in the list
+rule_types = discovered['all_rule_types']
+assert 'my_custom_language' in rule_types, "Rule not discovered!"
+print("✅ Rule successfully discovered!")
+----
+
+==== Test Rule Application
+
+Test that your rule is applied to the correct block types:
+
+[source,python]
+----
+# Test rule application
+from style_analyzer import StyleAnalyzer
+
+analyzer = StyleAnalyzer()
+
+# Test text that should trigger your rule
+test_text = """
+This is a test paragraph that contains issues your rule should detect.
+
+# This is a heading
+
+- This is a list item
+"""
+
+result = analyzer.analyze(test_text)
+errors = result.get('errors', [])
+
+# Check if your rule was applied
+rule_errors = [e for e in errors if e.get('type') == 'my_custom_language']
+print(f"Found {len(rule_errors)} errors from your rule")
+----
+
+== Advanced Topics
+
+=== Context-Aware Rules
+
+Use the `context` parameter to make rules aware of their block type:
+
+[source,python]
+----
+def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
+    errors = []
+    
+    # Get block type from context
+    block_type = context.get('block_type') if context else 'paragraph'
+    
+    # Apply different logic based on block type
+    if block_type == 'heading':
+        # Heading-specific analysis
+        errors.extend(self._analyze_heading(text, nlp))
+    elif block_type == 'list_item':
+        # List item-specific analysis
+        errors.extend(self._analyze_list_item(text, nlp))
+    else:
+        # Default paragraph analysis
+        errors.extend(self._analyze_paragraph(text, sentences, nlp))
+    
+    return errors
+----
+
+=== Performance Optimization
+
+For rules that might be expensive:
+
+[source,python]
+----
+def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
+    # Early exit for short text
+    if len(text) < 10:
+        return []
+    
+    # Cache expensive computations
+    if not hasattr(self, '_cached_patterns'):
+        self._cached_patterns = self._compile_patterns()
+    
+    # Use efficient algorithms
+    return self._fast_analysis(text, sentences, nlp)
+----
+
+=== Custom Error Types
+
+Create specialized error information:
+
+[source,python]
+----
+def _create_custom_error(self, sentence: str, sentence_index: int, 
+                        issue_type: str, problematic_text: str) -> Dict[str, Any]:
+    """Create error with custom fields."""
+    error = self._create_error(
+        sentence=sentence,
+        sentence_index=sentence_index,
+        message=f"{issue_type} issue: {problematic_text}",
+        suggestions=self._get_suggestions_for_type(issue_type),
+        severity=self._get_severity_for_type(issue_type)
+    )
+    
+    # Add custom fields
+    error['issue_type'] = issue_type
+    error['problematic_text'] = problematic_text
+    error['rule_category'] = 'language'
+    
+    return error
+----
+
+== Files Summary
+
+When adding a new rule, you'll typically update these files:
+
+[cols="1,3,2"]
+|===
+|File |Purpose |Required?
+
+|`rules/category/my_rule.py` |Your rule implementation |✅ Required
+|`rules/category/__init__.py` |Package imports |✅ Required
+|`rules/rule_mappings.yaml` |Block type configuration |✅ Required
+|`test_my_rule.py` |Unit tests |🔸 Recommended
+|===
+
+=== Optional Files (Advanced Cases)
+
+[cols="1,3,2"]
+|===
+|File |Purpose |When Needed
+
+|`rules/my_rule_config.yaml` |Rule-specific configuration |Complex rules with settings
+|`rules/base_my_category_rule.py` |New category base class |Creating new rule category
+|`rules/__init__.py` |Registry modifications |Advanced registry changes
+|===
+
+== Best Practices
+
+=== Rule Design
+
+1. **Single Responsibility**: Each rule should check for one specific issue
+2. **Clear Naming**: Use descriptive names that indicate what the rule checks
+3. **Robust Error Handling**: Handle missing dependencies gracefully
+4. **Informative Messages**: Provide clear, actionable error messages
+
+=== Error Messages
+
+Good error messages should:
+
+* **Explain the issue**: What style problem was detected?
+* **Provide context**: Where in the text is the problem?
+* **Offer solutions**: How can the user fix the issue?
+
+[source,python]
+----
+# Good error message
+self._create_error(
+    sentence=sentence,
+    sentence_index=i,
+    message=f"Passive voice without clear actor: '{problematic_phrase}'",
+    suggestions=[
+        "Identify who or what is performing the action",
+        "Rewrite in active voice: 'The system processes...' instead of 'Data is processed...'"
+    ],
+    severity='medium'
+)
+
+# Poor error message
+self._create_error(
+    sentence=sentence,
+    sentence_index=i,
+    message="Bad grammar",  # Too vague
+    suggestions=["Fix it"],  # Not helpful
+    severity='high'  # Probably too severe
+)
+----
+
+=== Testing Strategy
+
+1. **Positive Tests**: Verify the rule detects issues it should catch
+2. **Negative Tests**: Ensure the rule doesn't flag correct text
+3. **Edge Cases**: Test with empty text, single words, very long sentences
+4. **Dependency Tests**: Test behavior when SpaCy or other dependencies are unavailable
+
+=== Performance Considerations
+
+1. **Early Exit**: Return quickly for text that doesn't need analysis
+2. **Efficient Algorithms**: Use appropriate data structures and algorithms
+3. **Cache Expensive Operations**: Store compiled patterns or models
+4. **Limit Scope**: Only analyze relevant parts of the text
+
+== Troubleshooting
+
+=== Common Issues
+
+==== Rule Not Discovered
+
+**Problem**: Rule doesn't appear in the discovered rules list.
+
+**Solutions**:
+
+1. Check file naming: Must end with `_rule.py`
+2. Verify class inheritance: Must inherit from appropriate base class
+3. Implement required methods: `_get_rule_type()` and `analyze()`
+4. Check `__init__.py`: Ensure rule is imported
+5. Verify rule type uniqueness: Rule type must be unique across all rules
+
+==== Rule Not Applied
+
+**Problem**: Rule is discovered but doesn't run on text.
+
+**Solutions**:
+
+1. Check `rule_mappings.yaml`: Ensure rule is mapped to appropriate block types
+2. Verify block type matching: Rule identifier must match exactly
+3. Check exclusions: Ensure rule isn't excluded for the block type you're testing
+
+==== Import Errors
+
+**Problem**: Import errors when loading the rule.
+
+**Solutions**:
+
+1. Check import paths: Use relative imports in rule files
+2. Verify base class imports: Ensure base class is available
+3. Check circular imports: Avoid importing from rules that import your rule
+
+==== SpaCy Issues
+
+**Problem**: Rule fails when SpaCy is required but not available.
+
+**Solutions**:
+
+1. Add dependency check: Return empty list when SpaCy is not available
+2. Graceful degradation: Provide simpler analysis when NLP is unavailable
+3. Clear documentation: Document SpaCy requirements
+
+== Example: Complete Implementation
+
+Here's a complete example implementing a rule that detects overuse of the word "very":
+
+=== File: `rules/language_and_grammar/intensity_modifiers_rule.py`
+
+[source,python]
+----
+"""
+Intensity Modifiers Rule
+Detects overuse of weak intensity modifiers like "very", "really", "quite"
+Based on best practices for clear, direct writing
+"""
+from typing import List, Dict, Any, Set
+from .base_language_rule import BaseLanguageRule
+
+class IntensityModifiersRule(BaseLanguageRule):
+    """
+    Flags overuse of weak intensity modifiers that often weaken writing.
+    Suggests stronger alternatives or removal of unnecessary intensifiers.
+    """
+    
+    def __init__(self):
+        super().__init__()
+        # Common weak intensity modifiers
+        self.weak_intensifiers: Set[str] = {
+            'very', 'really', 'quite', 'rather', 'extremely', 
+            'incredibly', 'tremendously', 'absolutely', 'totally'
+        }
+        
+        # Suggested alternatives
+        self.alternatives = {
+            'very big': 'huge, enormous, massive',
+            'very small': 'tiny, minuscule',
+            'very good': 'excellent, outstanding',
+            'very bad': 'terrible, awful',
+            'very fast': 'rapid, swift',
+            'very slow': 'sluggish, gradual'
+        }
+    
+    def _get_rule_type(self) -> str:
+        """Returns the unique identifier for this rule."""
+        return 'intensity_modifiers'
+    
+    def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
+        """
+        Analyzes sentences for overuse of weak intensity modifiers.
+        """
+        errors = []
+        
+        if not nlp:
+            # Fallback to simple word matching without SpaCy
+            return self._analyze_without_nlp(sentences)
+        
+        for i, sentence in enumerate(sentences):
+            if not sentence.strip():
+                continue
+            
+            doc = nlp(sentence)
+            
+            for token in doc:
+                # Check if token is a weak intensifier
+                if (token.text.lower() in self.weak_intensifiers and 
+                    token.pos_ in ['ADV', 'PART']):  # Adverb or particle
+                    
+                    # Get the word being modified
+                    modified_word = self._get_modified_word(token)
+                    
+                    # Create error with context-aware suggestions
+                    suggestions = self._generate_suggestions(token.text.lower(), modified_word)
+                    
+                    errors.append(self._create_error(
+                        sentence=sentence,
+                        sentence_index=i,
+                        message=f"Weak intensifier '{token.text}' may weaken your writing",
+                        suggestions=suggestions,
+                        severity='low'
+                    ))
+        
+        return errors
+    
+    def _analyze_without_nlp(self, sentences: List[str]) -> List[Dict[str, Any]]:
+        """Fallback analysis without SpaCy."""
+        errors = []
+        
+        for i, sentence in enumerate(sentences):
+            words = sentence.lower().split()
+            
+            for word in words:
+                if word in self.weak_intensifiers:
+                    errors.append(self._create_error(
+                        sentence=sentence,
+                        sentence_index=i,
+                        message=f"Consider removing or replacing '{word}'",
+                        suggestions=[
+                            "Remove the intensifier for more direct writing",
+                            "Use a more specific adjective instead"
+                        ],
+                        severity='low'
+                    ))
+        
+        return errors
+    
+    def _get_modified_word(self, token) -> str:
+        """Get the word being modified by the intensifier."""
+        # Look for adjacent adjectives or verbs
+        for child in token.children:
+            if child.pos_ in ['ADJ', 'VERB']:
+                return child.text
+        
+        # Look at the next token
+        if token.i + 1 < len(token.doc):
+            next_token = token.doc[token.i + 1]
+            if next_token.pos_ in ['ADJ', 'VERB']:
+                return next_token.text
+        
+        return ""
+    
+    def _generate_suggestions(self, intensifier: str, modified_word: str) -> List[str]:
+        """Generate context-aware suggestions."""
+        suggestions = []
+        
+        # Check for specific combinations we have alternatives for
+        combination = f"{intensifier} {modified_word.lower()}"
+        if combination in self.alternatives:
+            suggestions.append(f"Consider: {self.alternatives[combination]}")
+        
+        # General suggestions
+        suggestions.extend([
+            f"Remove '{intensifier}' for more direct writing",
+            "Use a more specific adjective instead of an intensifier",
+            "Consider if the intensifier adds meaningful information"
+        ])
+        
+        return suggestions
+----
+
+=== File: Update `rules/language_and_grammar/__init__.py`
+
+[source,python]
+----
+"""
+Language and Grammar Rules Package
+"""
+
+# ... existing imports ...
+from .intensity_modifiers_rule import IntensityModifiersRule
+
+__all__ = [
+    # ... existing rules ...
+    'IntensityModifiersRule'
+]
+----
+
+=== File: Update `rules/rule_mappings.yaml`
+
+[source,yaml]
+----
+block_type_rules:
+  paragraph:
+    # ... existing rules ...
+    - intensity_modifiers
+    
+  list_item:
+    # ... existing rules ...
+    - intensity_modifiers
+    
+  admonition:
+    # ... existing rules ...
+    - intensity_modifiers
+----
+
+=== File: `test_intensity_modifiers_rule.py`
+
+[source,python]
+----
+"""
+Tests for Intensity Modifiers Rule
+"""
+import pytest
+import spacy
+from rules.language_and_grammar.intensity_modifiers_rule import IntensityModifiersRule
+
+class TestIntensityModifiersRule:
+    
+    def setup_method(self):
+        self.rule = IntensityModifiersRule()
+        try:
+            self.nlp = spacy.load("en_core_web_sm")
+        except OSError:
+            self.nlp = None
+    
+    def test_rule_type(self):
+        assert self.rule._get_rule_type() == 'intensity_modifiers'
+    
+    def test_detects_very(self):
+        text = "This is very good software."
+        sentences = [text]
+        
+        errors = self.rule.analyze(text, sentences, self.nlp)
+        
+        assert len(errors) > 0
+        assert any('very' in error['message'] for error in errors)
+    
+    def test_detects_multiple_intensifiers(self):
+        text = "This is really very incredibly good."
+        sentences = [text]
+        
+        errors = self.rule.analyze(text, sentences, self.nlp)
+        
+        # Should detect multiple intensifiers
+        assert len(errors) >= 2
+    
+    def test_no_false_positives(self):
+        text = "This is excellent software with outstanding performance."
+        sentences = [text]
+        
+        errors = self.rule.analyze(text, sentences, self.nlp)
+        
+        assert len(errors) == 0
+    
+    def test_works_without_spacy(self):
+        text = "This is very good."
+        sentences = [text]
+        
+        errors = self.rule.analyze(text, sentences, None)
+        
+        assert len(errors) > 0
+        assert isinstance(errors, list)
+----
+
+This complete example demonstrates all the concepts covered in this guide and provides a working rule that can be integrated into the system immediately.
+
+== Conclusion
+
+Adding a new rule to Style Guide AI involves creating a rule class, updating configuration files, and testing the integration. The modular architecture makes this process straightforward while providing powerful capabilities for sophisticated style analysis.
+
+**Key Takeaways:**
+
+1. **Follow the patterns**: Use existing rules as templates
+2. **Update all required files**: Implementation, imports, configuration
+3. **Test thoroughly**: Verify discovery, application, and correctness
+4. **Handle dependencies gracefully**: Provide fallbacks when tools unavailable
+5. **Write clear error messages**: Help users understand and fix issues
+
+The automatic discovery system means that once you've created and configured your rule correctly, it will be immediately available throughout the application without requiring changes to the core analysis engine. 

@@ -1,0 +1,7 @@
+name: style-guide-ai
+title: Style Guide AI
+version: ~
+nav:
+- modules/ROOT/nav.adoc
+- modules/architecture/nav.adoc
+- modules/how-to/nav.adoc 

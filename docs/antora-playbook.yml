@@ -1,0 +1,40 @@
+site:
+  title: Style Guide AI Documentation
+  url: https://gtrivedi.github.io/style-guide-ai
+  start_page: style-guide-ai::index.adoc
+
+content:
+  sources:
+  - url: .
+    branches: HEAD
+    edit_url: 'https://github.com/gtrivedi/style-guide-ai/blob/main/{path}'
+    start_path: docs
+
+ui:
+  bundle:
+    url: https://gitlab.com/antora/antora-ui-default/-/jobs/artifacts/master/raw/build/ui-bundle.zip?job=bundle-stable
+    snapshot: true
+  supplemental_files: ./antora-lunr-ui
+
+antora:
+  extensions:
+  - '@antora/lunr-extension'
+
+runtime:
+  log:
+    failure_level: warn
+
+asciidoc:
+  attributes:
+    source-highlighter: highlight.js
+    kroki-server-url: https://kroki.io
+    kroki-fetch-diagram: true
+    page-mermaid: true
+    experimental: ''
+    icons: font
+    sectanchors: ''
+    sectlinks: ''
+    stem: latexmath
+
+output:
+  dir: ./dist

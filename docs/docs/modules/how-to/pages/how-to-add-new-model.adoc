@@ -1,0 +1,980 @@
+= How to Add a New AI Model to Style Guide AI
+:toc: left
+:toc-title: Table of Contents
+:toclevels: 3
+:sectnums:
+:sectanchors:
+:source-highlighter: highlightjs
+
+== Overview
+
+This guide provides step-by-step instructions for adding new AI models to the Style Guide AI application. The system supports multiple model types and integration patterns, making it flexible for different AI backends.
+
+[.lead]
+**Supported Model Types:**
+
+* **Ollama Models**: Local LLM serving (recommended for privacy and performance)
+* **Hugging Face Models**: Transformers library integration
+* **OpenAI Models**: API-based integration
+* **Custom Models**: Extensible architecture for other providers
+
+== Understanding the Model Architecture
+
+=== Model Integration Layers
+
+The Style Guide AI uses a layered architecture for model integration:
+
+```
+┌─────────────────────────────────────────┐
+│           Application Layer              │
+│        (app.py, app_factory.py)         │
+├─────────────────────────────────────────┤
+│          Configuration Layer            │
+│            (src/config.py)              │
+├─────────────────────────────────────────┤
+│           Rewriter Core                 │
+│          (rewriter/core.py)             │
+├─────────────────────────────────────────┤
+│    Model Management & Text Generation   │
+│   (rewriter/models.py, generators.py)   │
+├─────────────────────────────────────────┤
+│        Prompt & Processing              │
+│ (rewriter/prompts.py, processors.py)    │
+└─────────────────────────────────────────┘
+```
+
+=== Current Model Support
+
+[cols="1,2,1,2"]
+|===
+|Model Type |Integration Method |Local/Remote |Configuration
+
+|Ollama
+|HTTP API calls to local server
+|Local
+|URL, model name, timeout
+
+|Hugging Face
+|Transformers library pipeline
+|Local
+|Model name, cache directory
+
+|OpenAI
+|API key and HTTP requests
+|Remote
+|API key, model name
+
+|Custom
+|Extensible interface
+|Either
+|Provider-specific
+|===
+
+== Step-by-Step Implementation
+
+=== Step 1: Update Configuration
+
+Add your new model configuration to the main config file.
+
+**File:** `src/config.py`
+
+[source,python]
+----
+class Config:
+    """Application configuration class."""
+    
+    # ... existing configuration ...
+    
+    # Your New Model Configuration
+    YOUR_MODEL_TYPE = os.environ.get('YOUR_MODEL_TYPE', 'your_provider')
+    YOUR_MODEL_NAME = os.environ.get('YOUR_MODEL_NAME', 'your-model-name')
+    YOUR_MODEL_API_KEY = os.environ.get('YOUR_MODEL_API_KEY')
+    YOUR_MODEL_BASE_URL = os.environ.get('YOUR_MODEL_BASE_URL', 'https://api.yourprovider.com')
+    YOUR_MODEL_TIMEOUT = int(os.environ.get('YOUR_MODEL_TIMEOUT', '30'))
+    
+    @classmethod
+    def get_ai_config(cls) -> Dict[str, Any]:
+        """Get AI model configuration based on current settings."""
+        config = {
+            'model_type': cls.AI_MODEL_TYPE,
+            'use_ollama': cls.AI_MODEL_TYPE == 'ollama',
+            'ollama_model': cls.OLLAMA_MODEL,
+            'ollama_url': f"{cls.OLLAMA_BASE_URL}/api/generate",
+            'ollama_timeout': cls.OLLAMA_TIMEOUT,
+            'hf_model_name': cls.HF_MODEL_NAME,
+            'hf_cache_dir': cls.HF_CACHE_DIR,
+            
+            # Add your model configuration
+            'use_your_model': cls.AI_MODEL_TYPE == 'your_provider',
+            'your_model_name': cls.YOUR_MODEL_NAME,
+            'your_model_api_key': cls.YOUR_MODEL_API_KEY,
+            'your_model_base_url': cls.YOUR_MODEL_BASE_URL,
+            'your_model_timeout': cls.YOUR_MODEL_TIMEOUT
+        }
+        return config
+    
+    @classmethod
+    def is_your_model_enabled(cls) -> bool:
+        """Check if your model is configured as the AI model."""
+        return cls.AI_MODEL_TYPE.lower() == 'your_provider'
+----
+
+**Example: Adding Anthropic Claude Support**
+
+[source,python]
+----
+class Config:
+    # ... existing configuration ...
+    
+    # Anthropic Claude Configuration
+    ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY')
+    ANTHROPIC_MODEL = os.environ.get('ANTHROPIC_MODEL', 'claude-3-sonnet-20240229')
+    ANTHROPIC_BASE_URL = os.environ.get('ANTHROPIC_BASE_URL', 'https://api.anthropic.com')
+    ANTHROPIC_TIMEOUT = int(os.environ.get('ANTHROPIC_TIMEOUT', '30'))
+    
+    @classmethod
+    def get_ai_config(cls) -> Dict[str, Any]:
+        config = {
+            # ... existing config ...
+            
+            # Add Anthropic configuration
+            'use_anthropic': cls.AI_MODEL_TYPE == 'anthropic',
+            'anthropic_model': cls.ANTHROPIC_MODEL,
+            'anthropic_api_key': cls.ANTHROPIC_API_KEY,
+            'anthropic_base_url': cls.ANTHROPIC_BASE_URL,
+            'anthropic_timeout': cls.ANTHROPIC_TIMEOUT
+        }
+        return config
+    
+    @classmethod
+    def is_anthropic_enabled(cls) -> bool:
+        """Check if Anthropic is configured as the AI model."""
+        return cls.AI_MODEL_TYPE.lower() == 'anthropic'
+----
+
+=== Step 2: Update Model Manager
+
+Extend the model manager to support your new model type.
+
+**File:** `rewriter/models.py`
+
+[source,python]
+----
+class ModelManager:
+    """Manages AI model initialization and connectivity."""
+    
+    def __init__(self, model_name: str = "microsoft/DialoGPT-medium", 
+                 use_ollama: bool = False, ollama_model: str = "llama3:8b",
+                 use_your_model: bool = False, your_model_name: str = "your-model"):
+        """Initialize the model manager."""
+        self.model_name = model_name
+        self.use_ollama = use_ollama
+        self.ollama_model = ollama_model
+        self.ollama_url = "http://localhost:11434/api/generate"
+        
+        # Add your model properties
+        self.use_your_model = use_your_model
+        self.your_model_name = your_model_name
+        self.your_model_client = None
+        
+        self.model = None
+        self.tokenizer = None
+        self.generator = None
+        
+        # Initialize the appropriate model
+        if use_ollama:
+            self._test_ollama_connection()
+        elif use_your_model:
+            self._initialize_your_model()
+        else:
+            self._initialize_hf_model()
+    
+    def _initialize_your_model(self):
+        """Initialize your custom model."""
+        try:
+            # Add your model initialization logic here
+            # Example for API-based models:
+            from src.config import Config
+            
+            api_key = Config.YOUR_MODEL_API_KEY
+            if not api_key:
+                logger.warning("Your model API key not provided")
+                self.use_your_model = False
+                return
+            
+            # Initialize your model client
+            # self.your_model_client = YourModelClient(
+            #     api_key=api_key,
+            #     model=self.your_model_name,
+            #     base_url=Config.YOUR_MODEL_BASE_URL
+            # )
+            
+            logger.info(f"✅ Your model initialized successfully: {self.your_model_name}")
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to initialize your model: {e}")
+            self.your_model_client = None
+            self.use_your_model = False
+    
+    def is_available(self) -> bool:
+        """Check if any model is available for use."""
+        if self.use_ollama:
+            return True  # Ollama connection was tested in init
+        elif self.use_your_model:
+            return self.your_model_client is not None
+        return self.generator is not None
+    
+    def get_model_info(self) -> dict:
+        """Get information about the current model setup."""
+        return {
+            'use_ollama': self.use_ollama,
+            'ollama_model': self.ollama_model if self.use_ollama else None,
+            'hf_model': self.model_name if not self.use_ollama and not self.use_your_model else None,
+            'hf_available': HF_AVAILABLE,
+            'use_your_model': self.use_your_model,
+            'your_model_name': self.your_model_name if self.use_your_model else None,
+            'is_available': self.is_available()
+        }
+----
+
+**Example: Anthropic Claude Integration**
+
+[source,python]
+----
+try:
+    import anthropic
+    ANTHROPIC_AVAILABLE = True
+except ImportError:
+    ANTHROPIC_AVAILABLE = False
+
+class ModelManager:
+    def __init__(self, model_name: str = "microsoft/DialoGPT-medium", 
+                 use_ollama: bool = False, ollama_model: str = "llama3:8b",
+                 use_anthropic: bool = False, anthropic_model: str = "claude-3-sonnet-20240229"):
+        # ... existing initialization ...
+        
+        self.use_anthropic = use_anthropic
+        self.anthropic_model = anthropic_model
+        self.anthropic_client = None
+        
+        # Initialize the appropriate model
+        if use_ollama:
+            self._test_ollama_connection()
+        elif use_anthropic:
+            self._initialize_anthropic_model()
+        else:
+            self._initialize_hf_model()
+    
+    def _initialize_anthropic_model(self):
+        """Initialize Anthropic Claude model."""
+        if not ANTHROPIC_AVAILABLE:
+            logger.warning("Anthropic library not available. Install with: pip install anthropic")
+            self.use_anthropic = False
+            return
+            
+        try:
+            from src.config import Config
+            
+            api_key = Config.ANTHROPIC_API_KEY
+            if not api_key:
+                logger.warning("Anthropic API key not provided")
+                self.use_anthropic = False
+                return
+            
+            self.anthropic_client = anthropic.Anthropic(
+                api_key=api_key,
+                base_url=Config.ANTHROPIC_BASE_URL
+            )
+            
+            logger.info(f"✅ Anthropic model initialized successfully: {self.anthropic_model}")
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to initialize Anthropic model: {e}")
+            self.anthropic_client = None
+            self.use_anthropic = False
+----
+
+=== Step 3: Add Text Generation Support
+
+Extend the text generator to support your new model.
+
+**File:** `rewriter/generators.py`
+
+[source,python]
+----
+class TextGenerator:
+    """Handles AI text generation using various models."""
+    
+    def generate_with_your_model(self, prompt: str, original_text: str) -> str:
+        """Generate rewritten text using your custom model."""
+        if not self.model_manager.your_model_client:
+            logger.warning("Your model not available for generation")
+            return original_text
+            
+        try:
+            # Implement your model's generation logic
+            # Example for API-based models:
+            response = self.model_manager.your_model_client.generate(
+                prompt=prompt,
+                max_tokens=512,
+                temperature=0.4,
+                # Add other parameters as needed
+            )
+            
+            # Extract generated text from response
+            generated_text = response.get('text', '').strip()
+            
+            logger.info(f"Generated text with your model: {len(generated_text)} characters")
+            
+            return generated_text if generated_text else original_text
+            
+        except Exception as e:
+            logger.error(f"Your model generation failed: {e}")
+            return original_text
+    
+    def generate_text(self, prompt: str, original_text: str) -> str:
+        """
+        Generate text using the available model.
+        
+        Args:
+            prompt: The prompt to use for generation
+            original_text: Original text as fallback
+            
+        Returns:
+            Generated text or original text if generation fails
+        """
+        if self.model_manager.use_ollama:
+            return self.generate_with_ollama(prompt, original_text)
+        elif self.model_manager.use_your_model:
+            return self.generate_with_your_model(prompt, original_text)
+        else:
+            return self.generate_with_hf_model(prompt, original_text)
+    
+    def is_available(self) -> bool:
+        """Check if text generation is available."""
+        return self.model_manager.is_available()
+    
+    def get_model_info(self) -> Dict[str, Any]:
+        """Get information about the current generation setup."""
+        return {
+            **self.model_manager.get_model_info(),
+            'generation_available': self.is_available()
+        }
+----
+
+**Example: Anthropic Claude Generation**
+
+[source,python]
+----
+class TextGenerator:
+    def generate_with_anthropic(self, prompt: str, original_text: str) -> str:
+        """Generate rewritten text using Anthropic Claude."""
+        if not self.model_manager.anthropic_client:
+            logger.warning("Anthropic model not available for generation")
+            return original_text
+            
+        try:
+            response = self.model_manager.anthropic_client.messages.create(
+                model=self.model_manager.anthropic_model,
+                max_tokens=512,
+                temperature=0.4,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ]
+            )
+            
+            generated_text = response.content[0].text.strip()
+            
+            logger.info(f"Generated text with Anthropic: {len(generated_text)} characters")
+            
+            return generated_text if generated_text else original_text
+            
+        except Exception as e:
+            logger.error(f"Anthropic generation failed: {e}")
+            return original_text
+    
+    def generate_text(self, prompt: str, original_text: str) -> str:
+        if self.model_manager.use_ollama:
+            return self.generate_with_ollama(prompt, original_text)
+        elif self.model_manager.use_anthropic:
+            return self.generate_with_anthropic(prompt, original_text)
+        else:
+            return self.generate_with_hf_model(prompt, original_text)
+----
+
+=== Step 4: Update Rewriter Core
+
+Update the AI rewriter core to initialize with your new model.
+
+**File:** `rewriter/core.py`
+
+[source,python]
+----
+class AIRewriter:
+    """Main AI Rewriter class that orchestrates the rewriting process."""
+    
+    def __init__(self, model_name: str = "microsoft/DialoGPT-medium", 
+                 use_ollama: bool = False, ollama_model: str = "llama3:8b",
+                 use_your_model: bool = False, your_model_name: str = "your-model",
+                 progress_callback=None):
+        """Initialize the AI rewriter with all components."""
+        self.progress_callback = progress_callback
+        
+        # Initialize all components
+        self.model_manager = ModelManager(
+            model_name, use_ollama, ollama_model,
+            use_your_model, your_model_name
+        )
+        self.prompt_generator = PromptGenerator(
+            style_guide='ibm_style', 
+            use_ollama=use_ollama or use_your_model  # API-based models often work with similar prompts
+        )
+        self.text_generator = TextGenerator(self.model_manager)
+        self.text_processor = TextProcessor()
+        self.evaluator = RewriteEvaluator()
+        
+        logger.info(f"✅ AIRewriter initialized with {len(self._get_available_components())} components")
+----
+
+**Example: Anthropic Claude Integration**
+
+[source,python]
+----
+class AIRewriter:
+    def __init__(self, model_name: str = "microsoft/DialoGPT-medium", 
+                 use_ollama: bool = False, ollama_model: str = "llama3:8b",
+                 use_anthropic: bool = False, anthropic_model: str = "claude-3-sonnet-20240229",
+                 progress_callback=None):
+        """Initialize the AI rewriter with all components."""
+        self.progress_callback = progress_callback
+        
+        # Initialize all components
+        self.model_manager = ModelManager(
+            model_name, use_ollama, ollama_model,
+            use_anthropic, anthropic_model
+        )
+        self.prompt_generator = PromptGenerator(
+            style_guide='ibm_style', 
+            use_ollama=use_ollama or use_anthropic
+        )
+        self.text_generator = TextGenerator(self.model_manager)
+        self.text_processor = TextProcessor()
+        self.evaluator = RewriteEvaluator()
+        
+        model_type = "Anthropic Claude" if use_anthropic else ("Ollama" if use_ollama else "HuggingFace")
+        logger.info(f"✅ AIRewriter initialized with {model_type} model")
+----
+
+=== Step 5: Update Application Factory
+
+Update the application factory to initialize your model based on configuration.
+
+**File:** `app_modules/app_factory.py`
+
+[source,python]
+----
+def initialize_services():
+    """Initialize all services with fallback mechanisms."""
+    services = {
+        'document_processor': None,
+        'style_analyzer': None,
+        'ai_rewriter': None,
+        'document_processor_available': False,
+        'style_analyzer_available': False,
+        'ai_rewriter_available': False
+    }
+    
+    # ... existing initialization ...
+    
+    # Initialize AI Rewriter
+    try:
+        from rewriter import AIRewriter
+        from src.config import Config
+        
+        # Get AI configuration
+        ai_config = Config.get_ai_config()
+        
+        # Initialize with proper configuration
+        services['ai_rewriter'] = AIRewriter(
+            model_name=ai_config['hf_model_name'],
+            use_ollama=ai_config['use_ollama'],
+            ollama_model=ai_config['ollama_model'],
+            use_your_model=ai_config.get('use_your_model', False),
+            your_model_name=ai_config.get('your_model_name', 'your-model')
+        )
+        services['ai_rewriter_available'] = True
+        logger.info("✅ AIRewriter imported successfully")
+        
+        # Log model type
+        if ai_config['use_ollama']:
+            logger.info(f"AI Model: Ollama ({ai_config['ollama_model']})")
+        elif ai_config.get('use_your_model'):
+            logger.info(f"AI Model: Your Model ({ai_config.get('your_model_name')})")
+        else:
+            logger.info("AI Model: HuggingFace")
+            
+    except ImportError as e:
+        services['ai_rewriter'] = SimpleAIRewriter()
+        services['ai_rewriter_available'] = False
+        logger.warning(f"⚠️ AI rewriter not available - {e}")
+    
+    return services
+----
+
+**Example: Anthropic Claude in Application Factory**
+
+[source,python]
+----
+def initialize_services():
+    # ... existing initialization ...
+    
+    # Initialize AI Rewriter
+    try:
+        from rewriter import AIRewriter
+        from src.config import Config
+        
+        # Get AI configuration
+        ai_config = Config.get_ai_config()
+        
+        # Initialize with proper configuration
+        services['ai_rewriter'] = AIRewriter(
+            model_name=ai_config['hf_model_name'],
+            use_ollama=ai_config['use_ollama'],
+            ollama_model=ai_config['ollama_model'],
+            use_anthropic=ai_config.get('use_anthropic', False),
+            anthropic_model=ai_config.get('anthropic_model', 'claude-3-sonnet-20240229')
+        )
+        services['ai_rewriter_available'] = True
+        logger.info("✅ AIRewriter imported successfully")
+        
+        # Log model type
+        if ai_config['use_ollama']:
+            logger.info(f"AI Model: Ollama ({ai_config['ollama_model']})")
+        elif ai_config.get('use_anthropic'):
+            logger.info(f"AI Model: Anthropic Claude ({ai_config.get('anthropic_model')})")
+        else:
+            logger.info("AI Model: HuggingFace")
+            
+    except ImportError as e:
+        services['ai_rewriter'] = SimpleAIRewriter()
+        services['ai_rewriter_available'] = False
+        logger.warning(f"⚠️ AI rewriter not available - {e}")
+    
+    return services
+----
+
+=== Step 6: Update Health Check
+
+Update the health check endpoint to include your new model status.
+
+**File:** `app_modules/api_routes.py`
+
+[source,python]
+----
+@app.route('/health')
+def health_check():
+    """Health check endpoint to verify service status."""
+    try:
+        # ... existing health checks ...
+        
+        # Check your model status
+        your_model_status = "not_configured"
+        if Config.is_your_model_enabled():
+            try:
+                # Add your model health check logic
+                # Example for API-based models:
+                import requests
+                response = requests.get(f"{Config.YOUR_MODEL_BASE_URL}/health", 
+                                      headers={"Authorization": f"Bearer {Config.YOUR_MODEL_API_KEY}"},
+                                      timeout=5)
+                if response.status_code == 200:
+                    your_model_status = "available"
+                else:
+                    your_model_status = "service_unavailable"
+            except:
+                your_model_status = "connection_failed"
+        
+        return jsonify({
+            'status': 'healthy',
+            'timestamp': datetime.now().isoformat(),
+            'version': '2.0.0',
+            'ai_model_type': getattr(Config, 'AI_MODEL_TYPE', 'unknown'),
+            'ollama_status': ollama_status,
+            'your_model_status': your_model_status,
+            'services': {
+                'document_processor': document_processor_status,
+                'style_analyzer': style_analyzer_status,
+                'ai_rewriter': ai_rewriter_status,
+                'ollama': ollama_status,
+                'your_model': your_model_status
+            }
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Health check failed: {str(e)}")
+        return jsonify({
+            'status': 'unhealthy',
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 500
+----
+
+=== Step 7: Add Dependencies
+
+Update the requirements file to include your new model dependencies.
+
+**File:** `requirements.txt`
+
+[source,text]
+----
+# ... existing requirements ...
+
+# Your Model Integration
+your-model-client>=1.0.0,<2.0.0
+----
+
+**Example: Anthropic Claude Dependencies**
+
+[source,text]
+----
+# ... existing requirements ...
+
+# Anthropic Claude Integration
+anthropic>=0.17.0,<1.0.0
+----
+
+=== Step 8: Add Environment Configuration
+
+Create environment variable examples for your new model.
+
+**File:** `.env.example` (create if doesn't exist)
+
+[source,bash]
+----
+# Flask Configuration
+SECRET_KEY=your-secret-key-here
+FLASK_DEBUG=False
+
+# AI Model Configuration
+AI_MODEL_TYPE=ollama  # Options: ollama, huggingface, openai, your_provider
+AI_MODEL_NAME=microsoft/DialoGPT-medium
+AI_TEMPERATURE=0.7
+
+# Ollama Configuration
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama3:8b
+OLLAMA_TIMEOUT=60
+
+# Hugging Face Configuration
+HF_MODEL_NAME=microsoft/DialoGPT-medium
+HF_CACHE_DIR=./models
+
+# OpenAI Configuration
+OPENAI_API_KEY=your-openai-api-key
+
+# Your Model Configuration
+YOUR_MODEL_API_KEY=your-api-key-here
+YOUR_MODEL_NAME=your-model-name
+YOUR_MODEL_BASE_URL=https://api.yourprovider.com
+YOUR_MODEL_TIMEOUT=30
+
+# SpaCy Configuration
+SPACY_MODEL=en_core_web_sm
+
+# File Upload Configuration
+MAX_CONTENT_LENGTH=16777216  # 16MB
+UPLOAD_FOLDER=uploads
+----
+
+**Example: Anthropic Claude Environment Variables**
+
+[source,bash]
+----
+# Anthropic Configuration
+ANTHROPIC_API_KEY=your-anthropic-api-key
+ANTHROPIC_MODEL=claude-3-sonnet-20240229
+ANTHROPIC_BASE_URL=https://api.anthropic.com
+ANTHROPIC_TIMEOUT=30
+----
+
+== Model-Specific Implementation Examples
+
+=== Ollama Model
+
+For adding a new Ollama model (easiest option):
+
+1. **Pull the model**: `ollama pull your-model-name`
+2. **Update configuration**:
+   ```bash
+   export AI_MODEL_TYPE=ollama
+   export OLLAMA_MODEL=your-model-name
+   ```
+3. **No code changes needed** - the existing Ollama integration will work
+
+=== API-Based Model (e.g., Anthropic, Cohere, etc.)
+
+[source,python]
+----
+# In rewriter/generators.py
+def generate_with_api_model(self, prompt: str, original_text: str) -> str:
+    """Generate text using API-based model."""
+    try:
+        headers = {
+            'Authorization': f'Bearer {self.api_key}',
+            'Content-Type': 'application/json'
+        }
+        
+        payload = {
+            'model': self.model_name,
+            'messages': [{'role': 'user', 'content': prompt}],
+            'max_tokens': 512,
+            'temperature': 0.4
+        }
+        
+        response = requests.post(
+            f"{self.base_url}/v1/chat/completions",
+            headers=headers,
+            json=payload,
+            timeout=30
+        )
+        
+        if response.status_code == 200:
+            result = response.json()
+            return result['choices'][0]['message']['content'].strip()
+        else:
+            logger.error(f"API error: {response.status_code}")
+            return original_text
+            
+    except Exception as e:
+        logger.error(f"API generation failed: {e}")
+        return original_text
+----
+
+=== Local Transformers Model
+
+[source,python]
+----
+# In rewriter/models.py
+def _initialize_custom_hf_model(self):
+    """Initialize a custom Hugging Face model."""
+    try:
+        from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
+        
+        # Load custom model
+        tokenizer = AutoTokenizer.from_pretrained(self.custom_model_name)
+        model = AutoModelForCausalLM.from_pretrained(self.custom_model_name)
+        
+        if tokenizer.pad_token is None:
+            tokenizer.pad_token = tokenizer.eos_token
+        
+        self.custom_generator = pipeline(
+            "text-generation",
+            model=model,
+            tokenizer=tokenizer,
+            max_length=512,
+            temperature=0.7,
+            do_sample=True
+        )
+        
+        logger.info(f"✅ Custom model initialized: {self.custom_model_name}")
+        
+    except Exception as e:
+        logger.error(f"❌ Failed to initialize custom model: {e}")
+        self.custom_generator = None
+----
+
+== Files Summary
+
+When adding a new model, you need to update these files:
+
+[cols="1,3,1"]
+|===
+|File |Purpose |Required
+
+|`src/config.py`
+|Add configuration variables and methods
+|✓
+
+|`rewriter/models.py`
+|Add model initialization and management
+|✓
+
+|`rewriter/generators.py`
+|Add text generation implementation
+|✓
+
+|`rewriter/core.py`
+|Update constructor parameters
+|✓
+
+|`app_modules/app_factory.py`
+|Update service initialization
+|✓
+
+|`app_modules/api_routes.py`
+|Update health check endpoint
+|✓
+
+|`requirements.txt`
+|Add model dependencies
+|✓
+
+|`.env.example`
+|Document environment variables
+|Recommended
+|===
+
+== Best Practices
+
+=== Model Integration
+
+* **Follow the Existing Pattern**: Use the same parameter passing and initialization structure
+* **Add Health Checks**: Implement proper health checking for your model
+* **Error Handling**: Gracefully handle model failures with fallbacks
+* **Logging**: Add comprehensive logging for debugging
+
+=== Configuration
+
+* **Environment Variables**: Use environment variables for all configuration
+* **Defaults**: Provide sensible defaults for development
+* **Validation**: Validate configuration on startup
+* **Documentation**: Document all new environment variables
+
+=== Performance
+
+* **Lazy Loading**: Initialize models only when needed
+* **Connection Pooling**: Reuse connections for API-based models
+* **Timeouts**: Set appropriate timeouts for all external calls
+* **Caching**: Cache model responses when appropriate
+
+=== Security
+
+* **API Keys**: Never hardcode API keys in source code
+* **Environment Variables**: Use secure environment variable management
+* **Rate Limiting**: Implement rate limiting for API calls
+* **Input Validation**: Validate all inputs before sending to models
+
+== Testing Your Model Integration
+
+=== Basic Testing
+
+1. **Configuration Test**:
+   ```bash
+   # Set environment variables
+   export AI_MODEL_TYPE=your_provider
+   export YOUR_MODEL_API_KEY=your-key
+   
+   # Start application
+   python app.py
+   ```
+
+2. **Health Check Test**:
+   ```bash
+   curl http://localhost:5000/health
+   ```
+
+3. **Model Generation Test**:
+   ```bash
+   curl -X POST http://localhost:5000/rewrite \
+     -H "Content-Type: application/json" \
+     -d '{"content":"This is a test sentence.","errors":[]}'
+   ```
+
+=== Integration Testing
+
+[source,python]
+----
+# tests/test_your_model.py
+import pytest
+from rewriter import AIRewriter
+from src.config import Config
+
+def test_your_model_initialization():
+    """Test your model initializes correctly."""
+    rewriter = AIRewriter(
+        use_your_model=True,
+        your_model_name="test-model"
+    )
+    
+    assert rewriter.model_manager.use_your_model is True
+    assert rewriter.text_generator.is_available()
+
+def test_your_model_generation():
+    """Test your model generates text."""
+    rewriter = AIRewriter(use_your_model=True)
+    
+    result = rewriter.rewrite(
+        content="This is a test sentence.",
+        errors=[],
+        context="sentence"
+    )
+    
+    assert 'rewritten_text' in result
+    assert result['confidence'] > 0.0
+----
+
+== Troubleshooting
+
+=== Common Issues
+
+**Model Not Loading**
+- Check API key and credentials
+- Verify network connectivity
+- Check model name and availability
+- Review error logs for specific issues
+
+**Generation Failures**
+- Check prompt format compatibility
+- Verify token limits and parameters
+- Test with simpler inputs first
+- Check model-specific requirements
+
+**Performance Issues**
+- Monitor response times and latency
+- Consider model size and complexity
+- Implement caching strategies
+- Use appropriate timeout values
+
+**Configuration Issues**
+- Verify environment variables are set
+- Check configuration file syntax
+- Ensure all required dependencies are installed
+- Validate configuration values
+
+=== Debug Mode
+
+Enable debug logging to troubleshoot issues:
+
+[source,python]
+----
+# In your model implementation
+import logging
+logging.getLogger('your_model').setLevel(logging.DEBUG)
+
+# In rewriter/generators.py
+def generate_with_your_model(self, prompt: str, original_text: str) -> str:
+    logger.debug(f"Generating with your model: {self.model_name}")
+    logger.debug(f"Prompt length: {len(prompt)} characters")
+    
+    # ... generation logic ...
+    
+    logger.debug(f"Generated text length: {len(generated_text)} characters")
+    return generated_text
+----
+
+== Conclusion
+
+Adding a new model to Style Guide AI involves:
+
+1. **Configuration setup** for environment variables and model parameters
+2. **Model management** integration for initialization and health checking
+3. **Text generation** implementation for your specific model API
+4. **Application integration** through the factory pattern and core rewriter
+5. **Health monitoring** and error handling for production use
+
+The modular architecture makes it straightforward to add new models while maintaining compatibility with existing functionality. Each model type can have its own specific implementation while sharing common interfaces and fallback mechanisms.
+
+The system is designed to be model-agnostic, allowing you to integrate virtually any text generation model that can accept prompts and return text responses. 

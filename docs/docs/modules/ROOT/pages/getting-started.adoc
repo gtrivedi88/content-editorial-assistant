@@ -1,0 +1,221 @@
+= Getting Started
+:page-layout: doc
+
+== Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+* Python 3.8 or higher
+* pip (Python package manager)
+* Git
+* Node.js (for frontend dependencies, optional)
+
+== Installation
+
+=== 1. Clone the Repository
+
+[source,bash]
+----
+git clone https://github.com/your-org/style-guide-ai.git
+cd style-guide-ai
+----
+
+=== 2. Set Up Virtual Environment
+
+[source,bash]
+----
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+----
+
+=== 3. Install Dependencies
+
+[source,bash]
+----
+pip install -r requirements.txt
+----
+
+=== 4. Configure Ollama (Optional)
+
+If you want to use AI rewriting features:
+
+[source,bash]
+----
+# Install Ollama
+curl -fsSL https://ollama.ai/install.sh | sh
+
+# Pull a model (e.g., llama2)
+ollama pull llama2
+----
+
+== Configuration
+
+=== Environment Variables
+
+Create a `.env` file in the project root:
+
+[source,bash]
+----
+# Flask Configuration
+FLASK_ENV=development
+FLASK_DEBUG=True
+
+# Ollama Configuration
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama2
+
+# Upload Configuration
+UPLOAD_FOLDER=./uploads
+MAX_CONTENT_LENGTH=16777216  # 16MB
+----
+
+=== Application Configuration
+
+The main configuration is in `src/config.py`. Key settings include:
+
+* **Upload limits**: Maximum file size and allowed extensions
+* **AI model settings**: Ollama configuration and model selection
+* **Style rules**: Enable/disable specific rule categories
+* **Analysis modes**: Configure different analysis depth levels
+
+== Running the Application
+
+=== Development Mode
+
+[source,bash]
+----
+python app.py
+----
+
+The application will start on `http://localhost:5000`
+
+=== Production Mode
+
+[source,bash]
+----
+export FLASK_ENV=production
+gunicorn -w 4 -b 0.0.0.0:5000 app:app
+----
+
+=== Docker Deployment
+
+[source,bash]
+----
+# Build the image
+docker build -t style-guide-ai .
+
+# Run the container
+docker run -p 5000:5000 style-guide-ai
+----
+
+Or use Docker Compose:
+
+[source,bash]
+----
+docker-compose up
+----
+
+== First Steps
+
+=== 1. Access the Web Interface
+
+Open your browser to `http://localhost:5000`
+
+=== 2. Upload a Document
+
+* Click "Choose File" and select a PDF, DOCX, Markdown, or AsciiDoc file
+* The system supports files up to 16MB
+
+=== 3. Configure Analysis
+
+* **Analysis Mode**: Choose between Quick, Standard, or Comprehensive
+* **Style Rules**: Enable specific rule categories (Grammar, Punctuation, Structure)
+* **AI Rewriting**: Enable if you have Ollama configured
+
+=== 4. Review Results
+
+The analysis provides:
+
+* **Style Issues**: Detailed rule violations with suggestions
+* **Ambiguity Detection**: Potential unclear or risky content
+* **AI Suggestions**: Improved text alternatives (if enabled)
+* **Statistics**: Readability scores and document metrics
+
+== API Usage
+
+=== REST API
+
+Upload and analyze documents programmatically:
+
+[source,bash]
+----
+curl -X POST \
+  -F "file=@document.pdf" \
+  -F "analysis_mode=standard" \
+  -F "enable_ai_rewriting=true" \
+  http://localhost:5000/api/analyze
+----
+
+=== WebSocket API
+
+Real-time analysis updates:
+
+[source,javascript]
+----
+const socket = io('http://localhost:5000');
+socket.on('analysis_update', (data) => {
+    console.log('Analysis progress:', data);
+});
+----
+
+== Troubleshooting
+
+=== Common Issues
+
+**Port Already in Use**
+[source,bash]
+----
+# Find process using port 5000
+lsof -i :5000
+# Kill the process
+kill -9 <PID>
+----
+
+**Missing Dependencies**
+[source,bash]
+----
+# Reinstall requirements
+pip install -r requirements.txt --force-reinstall
+----
+
+**Ollama Connection Error**
+[source,bash]
+----
+# Check Ollama status
+ollama list
+# Restart Ollama service
+sudo systemctl restart ollama
+----
+
+=== Log Files
+
+Check application logs in the `logs/` directory:
+
+* `app.log` - Main application logs
+* `analysis.log` - Analysis engine logs
+* `error.log` - Error tracking
+
+== Next Steps
+
+* xref:architecture:architecture.adoc[Explore the System Architecture]
+* xref:how-to:how-to-add-new-rule.adoc[Add Custom Style Rules]
+* xref:api-reference.adoc[Review API Documentation]
+
+== Support
+
+For additional help:
+
+* Check the FAQ section
+* Review the troubleshooting guide
+* Submit issues on GitHub
+* Join the community discussion 

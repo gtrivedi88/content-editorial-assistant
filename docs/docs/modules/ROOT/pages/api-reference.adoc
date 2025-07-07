@@ -1,0 +1,490 @@
+= API Reference
+:page-layout: doc
+
+== Overview
+
+Style Guide AI provides both REST API and WebSocket interfaces for document analysis and real-time communication. This reference covers all available endpoints, request formats, and response structures.
+
+== Authentication
+
+Currently, the API does not require authentication. All endpoints are publicly accessible.
+
+== REST API
+
+=== Base URL
+
+[source]
+----
+http://localhost:5000/api
+----
+
+=== Content Types
+
+* **Request**: `multipart/form-data` for file uploads, `application/json` for JSON data
+* **Response**: `application/json`
+
+=== Common Headers
+
+[source,http]
+----
+Content-Type: application/json
+Accept: application/json
+----
+
+== Document Analysis
+
+=== Upload and Analyze Document
+
+Uploads a document and returns analysis results.
+
+[source,http]
+----
+POST /api/analyze
+----
+
+==== Request Parameters
+
+[cols="1,1,1,3"]
+|===
+|Parameter |Type |Required |Description
+
+|file
+|File
+|Yes
+|Document file (PDF, DOCX, Markdown, AsciiDoc)
+
+|analysis_mode
+|String
+|No
+|Analysis depth: `quick`, `standard`, `comprehensive` (default: `standard`)
+
+|enable_ai_rewriting
+|Boolean
+|No
+|Enable AI-powered content improvement (default: `false`)
+
+|style_rules
+|Array
+|No
+|Specific rule categories to apply: `grammar`, `punctuation`, `structure`
+
+|format
+|String
+|No
+|Force document format: `pdf`, `docx`, `markdown`, `asciidoc`
+|===
+
+==== Example Request
+
+[source,bash]
+----
+curl -X POST \
+  -F "file=@document.pdf" \
+  -F "analysis_mode=standard" \
+  -F "enable_ai_rewriting=true" \
+  -F "style_rules[]=grammar" \
+  -F "style_rules[]=punctuation" \
+  http://localhost:5000/api/analyze
+----
+
+==== Response
+
+[source,json]
+----
+{
+  "status": "success",
+  "analysis_id": "12345-abcde-67890",
+  "document_info": {
+    "filename": "document.pdf",
+    "format": "pdf",
+    "size": 1048576,
+    "pages": 5,
+    "word_count": 2500,
+    "character_count": 12000
+  },
+  "analysis_results": {
+    "style_issues": [
+      {
+        "rule_id": "grammar_subject_verb_agreement",
+        "rule_name": "Subject-Verb Agreement",
+        "category": "grammar",
+        "severity": "error",
+        "location": {
+          "page": 1,
+          "line": 5,
+          "column": 15,
+          "offset": 245
+        },
+        "original_text": "The documents is important",
+        "suggested_text": "The documents are important",
+        "explanation": "Subject 'documents' (plural) requires plural verb 'are'",
+        "confidence": 0.95
+      }
+    ],
+    "ambiguity_detections": [
+      {
+        "type": "pronoun_ambiguity",
+        "location": {
+          "page": 2,
+          "line": 10,
+          "column": 8,
+          "offset": 567
+        },
+        "text": "It should be configured properly",
+        "issue": "Unclear antecedent for pronoun 'it'",
+        "severity": "warning",
+        "suggestions": [
+          "The system should be configured properly",
+          "The application should be configured properly"
+        ]
+      }
+    ],
+    "ai_suggestions": [
+      {
+        "location": {
+          "page": 1,
+          "line": 12,
+          "column": 1,
+          "offset": 456
+        },
+        "original_text": "This is a sentence that could be improved.",
+        "improved_text": "This sentence demonstrates enhanced clarity and precision.",
+        "improvement_type": "clarity",
+        "confidence": 0.87
+      }
+    ],
+    "statistics": {
+      "readability_score": 65.2,
+      "readability_level": "College",
+      "sentence_count": 125,
+      "average_sentence_length": 18.4,
+      "complex_sentences": 23,
+      "passive_voice_count": 8,
+      "total_issues": 34,
+      "critical_issues": 5,
+      "warnings": 18,
+      "suggestions": 11
+    }
+  },
+  "processing_time": 2.34,
+  "timestamp": "2024-01-15T10:30:00Z"
+}
+----
+
+=== Get Analysis Status
+
+Check the status of a running analysis.
+
+[source,http]
+----
+GET /api/analysis/{analysis_id}/status
+----
+
+==== Response
+
+[source,json]
+----
+{
+  "status": "processing",
+  "progress": 65,
+  "stage": "ambiguity_detection",
+  "estimated_completion": "2024-01-15T10:32:00Z"
+}
+----
+
+=== Download Analysis Report
+
+Download a formatted report of the analysis results.
+
+[source,http]
+----
+GET /api/analysis/{analysis_id}/report
+----
+
+==== Query Parameters
+
+[cols="1,1,1,3"]
+|===
+|Parameter |Type |Required |Description
+
+|format
+|String
+|No
+|Report format: `json`, `html`, `pdf` (default: `json`)
+
+|include_suggestions
+|Boolean
+|No
+|Include AI suggestions in report (default: `true`)
+|===
+
+== Configuration
+
+=== Get Available Rules
+
+Retrieve all available style rules and their configurations.
+
+[source,http]
+----
+GET /api/rules
+----
+
+==== Response
+
+[source,json]
+----
+{
+  "categories": {
+    "grammar": [
+      {
+        "id": "grammar_subject_verb_agreement",
+        "name": "Subject-Verb Agreement",
+        "description": "Ensures subjects and verbs agree in number",
+        "enabled": true,
+        "severity": "error"
+      }
+    ],
+    "punctuation": [
+      {
+        "id": "punctuation_comma_splice",
+        "name": "Comma Splice",
+        "description": "Detects incorrect comma usage between independent clauses",
+        "enabled": true,
+        "severity": "warning"
+      }
+    ]
+  }
+}
+----
+
+=== Update Rule Configuration
+
+Enable or disable specific style rules.
+
+[source,http]
+----
+PUT /api/rules/{rule_id}
+----
+
+==== Request Body
+
+[source,json]
+----
+{
+  "enabled": true,
+  "severity": "warning"
+}
+----
+
+== WebSocket API
+
+=== Connection
+
+Connect to the WebSocket endpoint for real-time updates.
+
+[source,javascript]
+----
+const socket = io('http://localhost:5000');
+----
+
+=== Events
+
+==== Client to Server
+
+**start_analysis**
+[source,javascript]
+----
+socket.emit('start_analysis', {
+  analysis_id: '12345-abcde-67890',
+  options: {
+    enable_ai_rewriting: true,
+    analysis_mode: 'standard'
+  }
+});
+----
+
+**subscribe_to_analysis**
+[source,javascript]
+----
+socket.emit('subscribe_to_analysis', {
+  analysis_id: '12345-abcde-67890'
+});
+----
+
+==== Server to Client
+
+**analysis_progress**
+[source,javascript]
+----
+socket.on('analysis_progress', (data) => {
+  console.log('Progress:', data.progress);
+  console.log('Stage:', data.stage);
+  console.log('ETA:', data.estimated_completion);
+});
+----
+
+**analysis_complete**
+[source,javascript]
+----
+socket.on('analysis_complete', (data) => {
+  console.log('Analysis finished:', data.analysis_id);
+  console.log('Results:', data.results);
+});
+----
+
+**analysis_error**
+[source,javascript]
+----
+socket.on('analysis_error', (data) => {
+  console.error('Analysis failed:', data.error);
+  console.error('Details:', data.details);
+});
+----
+
+== Error Handling
+
+=== Error Response Format
+
+[source,json]
+----
+{
+  "status": "error",
+  "error_code": "INVALID_FILE_FORMAT",
+  "message": "Unsupported file format. Please upload PDF, DOCX, Markdown, or AsciiDoc files.",
+  "details": {
+    "provided_format": "txt",
+    "supported_formats": ["pdf", "docx", "markdown", "asciidoc"]
+  },
+  "timestamp": "2024-01-15T10:30:00Z"
+}
+----
+
+=== Common Error Codes
+
+[cols="1,1,3"]
+|===
+|Code |HTTP Status |Description
+
+|INVALID_FILE_FORMAT
+|400
+|Unsupported file format
+
+|FILE_TOO_LARGE
+|413
+|File exceeds maximum size limit
+
+|ANALYSIS_FAILED
+|500
+|Internal error during analysis
+
+|INVALID_ANALYSIS_ID
+|404
+|Analysis ID not found
+
+|RATE_LIMIT_EXCEEDED
+|429
+|Too many requests
+
+|OLLAMA_UNAVAILABLE
+|503
+|AI service unavailable
+|===
+
+== Rate Limiting
+
+* **File uploads**: 10 requests per minute per IP
+* **API calls**: 100 requests per minute per IP
+* **WebSocket connections**: 5 concurrent connections per IP
+
+== SDKs and Libraries
+
+=== Python SDK
+
+[source,python]
+----
+from style_guide_ai import StyleGuideClient
+
+client = StyleGuideClient(base_url='http://localhost:5000')
+
+# Analyze document
+with open('document.pdf', 'rb') as f:
+    result = client.analyze_document(
+        file=f,
+        analysis_mode='standard',
+        enable_ai_rewriting=True
+    )
+
+print(f"Found {len(result.style_issues)} style issues")
+----
+
+=== JavaScript SDK
+
+[source,javascript]
+----
+import { StyleGuideClient } from 'style-guide-ai-sdk';
+
+const client = new StyleGuideClient('http://localhost:5000');
+
+// Analyze document
+const fileInput = document.getElementById('file-input');
+const result = await client.analyzeDocument(fileInput.files[0], {
+  analysisMode: 'standard',
+  enableAIRewriting: true
+});
+
+console.log(`Found ${result.styleIssues.length} style issues`);
+----
+
+== Examples
+
+=== Complete Analysis Workflow
+
+[source,javascript]
+----
+// 1. Upload and start analysis
+const formData = new FormData();
+formData.append('file', fileInput.files[0]);
+formData.append('analysis_mode', 'comprehensive');
+formData.append('enable_ai_rewriting', 'true');
+
+const response = await fetch('/api/analyze', {
+  method: 'POST',
+  body: formData
+});
+
+const result = await response.json();
+const analysisId = result.analysis_id;
+
+// 2. Monitor progress via WebSocket
+const socket = io();
+socket.emit('subscribe_to_analysis', { analysis_id: analysisId });
+
+socket.on('analysis_progress', (data) => {
+  updateProgressBar(data.progress);
+});
+
+socket.on('analysis_complete', (data) => {
+  displayResults(data.results);
+});
+
+// 3. Download detailed report
+const reportUrl = `/api/analysis/${analysisId}/report?format=pdf`;
+window.open(reportUrl, '_blank');
+----
+
+== Changelog
+
+=== v1.0.0 (Latest)
+
+* Initial API release
+* Document analysis endpoints
+* WebSocket real-time communication
+* Style rules configuration
+* AI-powered suggestions
+
+=== Upcoming Features
+
+* Batch processing API
+* Webhook notifications
+* Custom rule creation API
+* Advanced filtering options 

@@ -1,0 +1,745 @@
+= How to Add a New Ambiguity Detector to Style Guide AI
+:toc: left
+:toc-title: Table of Contents
+:toclevels: 3
+:sectnums:
+:sectanchors:
+:source-highlighter: highlightjs
+
+== Overview
+
+This guide provides step-by-step instructions for adding a new ambiguity detector to the Style Guide AI application. The ambiguity detection system uses specialized detectors to identify unclear or ambiguous content in technical writing.
+
+[.lead]
+**What You'll Create:**
+
+* A new detector class implementing your ambiguity detection logic
+* Type definitions for your new ambiguity type
+* Configuration updates to enable the detector
+* Integration with the existing ambiguity detection system
+
+== Understanding the Ambiguity Detection System
+
+=== System Architecture
+
+The ambiguity detection system consists of:
+
+* **AmbiguityType Enum**: Defines all types of ambiguity that can be detected
+* **Base Classes**: `AmbiguityDetector` base class and `BaseAmbiguityRule` integration
+* **Specific Detectors**: Individual detector classes for different ambiguity types
+* **Configuration**: YAML configuration for enabling/disabling detectors
+* **Integration**: Automatic discovery and registration system
+
+=== Existing Ambiguity Types
+
+The system currently supports these ambiguity types:
+
+* `MISSING_ACTOR`: Passive voice without clear actors
+* `AMBIGUOUS_PRONOUN`: Pronouns with unclear referents
+* `UNCLEAR_SUBJECT`: Unclear subject references
+* `AMBIGUOUS_MODIFIER`: Ambiguous modifier placement
+* `VAGUE_QUANTIFIER`: Vague quantifiers without context
+* `UNCLEAR_TEMPORAL`: Unclear temporal references
+* `UNSUPPORTED_CLAIMS`: Unsupported claims and promises
+* `FABRICATION_RISK`: Risk of adding unverified information
+* `EXCESSIVE_CERTAINTY`: Overly strong claims
+
+== Step-by-Step Implementation
+
+=== Step 1: Define Your Ambiguity Type
+
+First, add your new ambiguity type to the `AmbiguityType` enum.
+
+**File:** `ambiguity/types.py`
+
+[source,python]
+----
+class AmbiguityType(Enum):
+    """Types of ambiguity that can be detected in technical writing."""
+    
+    # ... existing types ...
+    
+    # Add your new type here
+    YOUR_NEW_TYPE = "your_new_type"
+----
+
+**Example: Adding a "Double Negative" detector**
+
+[source,python]
+----
+class AmbiguityType(Enum):
+    # ... existing types ...
+    
+    # Double negatives that create confusion
+    DOUBLE_NEGATIVE = "double_negative"
+----
+
+=== Step 2: Update Configuration Mappings
+
+Update the default configuration mappings in the `AmbiguityConfig` class.
+
+**File:** `ambiguity/types.py`
+
+[source,python]
+----
+def _initialize_defaults(self):
+    """Initialize default configuration."""
+    # Default severity mappings
+    self.severity_mappings = {
+        # ... existing mappings ...
+        AmbiguityType.YOUR_NEW_TYPE: AmbiguitySeverity.MEDIUM,  # Choose appropriate severity
+    }
+    
+    # Default category mappings
+    self.category_mappings = {
+        # ... existing mappings ...
+        AmbiguityType.YOUR_NEW_TYPE: AmbiguityCategory.SEMANTIC,  # Choose appropriate category
+    }
+----
+
+**Example: Double Negative Configuration**
+
+[source,python]
+----
+def _initialize_defaults(self):
+    # Default severity mappings
+    self.severity_mappings = {
+        # ... existing mappings ...
+        AmbiguityType.DOUBLE_NEGATIVE: AmbiguitySeverity.MEDIUM,
+    }
+    
+    # Default category mappings
+    self.category_mappings = {
+        # ... existing mappings ...
+        AmbiguityType.DOUBLE_NEGATIVE: AmbiguityCategory.SEMANTIC,
+    }
+----
+
+=== Step 3: Create Your Detector Class
+
+Create a new detector file in the `ambiguity/detectors/` directory.
+
+**File:** `ambiguity/detectors/your_detector_name.py`
+
+[source,python]
+----
+"""
+Your Detector Name
+
+Brief description of what ambiguity this detector identifies.
+
+Example: "This is not uncommon" - double negative creates confusion.
+"""
+
+from typing import List, Dict, Any, Optional
+import re
+
+from ..base_ambiguity_rule import AmbiguityDetector
+from ..types import (
+    AmbiguityType, AmbiguityCategory, AmbiguitySeverity,
+    AmbiguityContext, AmbiguityEvidence, AmbiguityDetection,
+    ResolutionStrategy, AmbiguityConfig
+)
+
+
+class YourDetectorName(AmbiguityDetector):
+    """
+    Brief description of what this detector does.
+    
+    Detailed explanation of the type of ambiguity this detector identifies
+    and how it analyzes text to find instances of this ambiguity.
+    """
+    
+    def __init__(self, config: AmbiguityConfig):
+        super().__init__(config)
+        
+        # Configuration parameters
+        self.confidence_threshold = 0.7
+        self.min_confidence = 0.6
+        
+        # Detection patterns or rules
+        self.detection_patterns = [
+            # Add your detection patterns here
+        ]
+        
+        # Any other initialization needed
+    
+    def detect(self, context: AmbiguityContext, nlp) -> List[AmbiguityDetection]:
+        """
+        Detect your specific type of ambiguity.
+        
+        Args:
+            context: Sentence context for analysis
+            nlp: SpaCy nlp object
+            
+        Returns:
+            List of ambiguity detections
+        """
+        if not self.enabled:
+            return []
+        
+        detections = []
+        
+        try:
+            # Parse the sentence
+            doc = nlp(context.sentence)
+            
+            # Implement your detection logic here
+            # Example structure:
+            for token in doc:
+                if self._matches_pattern(token, doc):
+                    detection = self._create_detection(token, doc, context)
+                    if detection:
+                        detections.append(detection)
+        
+        except Exception as e:
+            # Log error but don't fail
+            print(f"Error in {self.__class__.__name__}: {e}")
+        
+        return detections
+    
+    def _matches_pattern(self, token, doc) -> bool:
+        """Check if a token matches your detection pattern."""
+        # Implement your pattern matching logic
+        return False
+    
+    def _create_detection(self, token, doc, context: AmbiguityContext) -> Optional[AmbiguityDetection]:
+        """Create ambiguity detection for matched pattern."""
+        try:
+            # Calculate confidence
+            confidence = self._calculate_confidence(token, doc, context)
+            
+            if confidence < self.min_confidence:
+                return None
+            
+            # Extract evidence
+            evidence = AmbiguityEvidence(
+                tokens=[token.text],
+                linguistic_pattern=f"your_pattern_{token.pos_}",
+                confidence=confidence,
+                spacy_features={
+                    'pos': token.pos_,
+                    'lemma': token.lemma_,
+                    # Add other relevant features
+                }
+            )
+            
+            # Define resolution strategies
+            resolution_strategies = [
+                ResolutionStrategy.RESTRUCTURE_SENTENCE,
+                # Add other appropriate strategies
+            ]
+            
+            # Generate AI instructions
+            ai_instructions = [
+                "Your specific instructions for the AI rewriter",
+                "How to resolve this type of ambiguity"
+            ]
+            
+            # Create detection
+            detection = AmbiguityDetection(
+                ambiguity_type=AmbiguityType.YOUR_NEW_TYPE,
+                category=self.config.get_category(AmbiguityType.YOUR_NEW_TYPE),
+                severity=self.config.get_severity(AmbiguityType.YOUR_NEW_TYPE),
+                context=context,
+                evidence=evidence,
+                resolution_strategies=resolution_strategies,
+                ai_instructions=ai_instructions
+            )
+            
+            return detection
+            
+        except Exception as e:
+            print(f"Error creating detection: {e}")
+            return None
+    
+    def _calculate_confidence(self, token, doc, context: AmbiguityContext) -> float:
+        """Calculate confidence score for detection."""
+        confidence = 0.5  # Base confidence
+        
+        # Add your confidence calculation logic
+        # Consider factors like:
+        # - Pattern strength
+        # - Context clues
+        # - Sentence structure
+        
+        return min(1.0, max(0.0, confidence))
+----
+
+**Example: Double Negative Detector**
+
+[source,python]
+----
+"""
+Double Negative Detector
+
+Detects double negatives that create confusion about the intended meaning.
+
+Example: "This is not uncommon" - unclear if it means "common" or "rare".
+"""
+
+from typing import List, Dict, Any, Optional
+import re
+
+from ..base_ambiguity_rule import AmbiguityDetector
+from ..types import (
+    AmbiguityType, AmbiguityCategory, AmbiguitySeverity,
+    AmbiguityContext, AmbiguityEvidence, AmbiguityDetection,
+    ResolutionStrategy, AmbiguityConfig
+)
+
+
+class DoubleNegativeDetector(AmbiguityDetector):
+    """
+    Detects double negatives that create ambiguity.
+    
+    Identifies sentences where two negatives are used together,
+    potentially creating confusion about the intended meaning.
+    """
+    
+    def __init__(self, config: AmbiguityConfig):
+        super().__init__(config)
+        self.confidence_threshold = 0.7
+        self.min_confidence = 0.6
+        
+        # Negative words and prefixes
+        self.negative_words = {
+            'not', 'no', 'never', 'nothing', 'nobody', 'nowhere',
+            'neither', 'none', 'hardly', 'scarcely', 'barely'
+        }
+        
+        self.negative_prefixes = {
+            'un', 'in', 'im', 'ir', 'il', 'dis', 'mis', 'non'
+        }
+    
+    def detect(self, context: AmbiguityContext, nlp) -> List[AmbiguityDetection]:
+        """Detect double negatives in the sentence."""
+        if not self.enabled:
+            return []
+        
+        detections = []
+        
+        try:
+            doc = nlp(context.sentence)
+            
+            # Find negative words in the sentence
+            negatives = []
+            for token in doc:
+                if self._is_negative(token):
+                    negatives.append(token)
+            
+            # Check for double negatives
+            if len(negatives) >= 2:
+                # Check if they're close enough to be confusing
+                for i in range(len(negatives) - 1):
+                    for j in range(i + 1, len(negatives)):
+                        if self._forms_double_negative(negatives[i], negatives[j], doc):
+                            detection = self._create_detection(
+                                [negatives[i], negatives[j]], doc, context
+                            )
+                            if detection:
+                                detections.append(detection)
+        
+        except Exception as e:
+            print(f"Error in double negative detection: {e}")
+        
+        return detections
+    
+    def _is_negative(self, token) -> bool:
+        """Check if a token is a negative word."""
+        text = token.text.lower()
+        lemma = token.lemma_.lower()
+        
+        # Check direct negative words
+        if text in self.negative_words or lemma in self.negative_words:
+            return True
+        
+        # Check negative prefixes
+        for prefix in self.negative_prefixes:
+            if text.startswith(prefix) and len(text) > len(prefix):
+                return True
+        
+        return False
+    
+    def _forms_double_negative(self, neg1, neg2, doc) -> bool:
+        """Check if two negatives form a confusing double negative."""
+        # Check distance between negatives
+        distance = abs(neg1.i - neg2.i)
+        
+        # Close negatives are more likely to be confusing
+        return distance <= 5
+    
+    def _create_detection(self, negative_tokens, doc, context: AmbiguityContext) -> Optional[AmbiguityDetection]:
+        """Create detection for double negative."""
+        try:
+            confidence = self._calculate_confidence(negative_tokens, doc, context)
+            
+            if confidence < self.min_confidence:
+                return None
+            
+            tokens = [token.text for token in negative_tokens]
+            
+            evidence = AmbiguityEvidence(
+                tokens=tokens,
+                linguistic_pattern="double_negative",
+                confidence=confidence,
+                spacy_features={
+                    'negative_count': len(negative_tokens),
+                    'negative_types': [token.pos_ for token in negative_tokens]
+                }
+            )
+            
+            resolution_strategies = [
+                ResolutionStrategy.RESTRUCTURE_SENTENCE
+            ]
+            
+            ai_instructions = [
+                "Rewrite the sentence to avoid double negatives",
+                "Use positive language where possible",
+                "Ensure the meaning is clear and unambiguous"
+            ]
+            
+            detection = AmbiguityDetection(
+                ambiguity_type=AmbiguityType.DOUBLE_NEGATIVE,
+                category=self.config.get_category(AmbiguityType.DOUBLE_NEGATIVE),
+                severity=self.config.get_severity(AmbiguityType.DOUBLE_NEGATIVE),
+                context=context,
+                evidence=evidence,
+                resolution_strategies=resolution_strategies,
+                ai_instructions=ai_instructions
+            )
+            
+            return detection
+            
+        except Exception as e:
+            print(f"Error creating double negative detection: {e}")
+            return None
+    
+    def _calculate_confidence(self, negative_tokens, doc, context: AmbiguityContext) -> float:
+        """Calculate confidence for double negative detection."""
+        confidence = 0.6  # Base confidence
+        
+        # More negatives = higher confidence
+        if len(negative_tokens) > 2:
+            confidence += 0.2
+        
+        # Close negatives = higher confidence
+        distances = [abs(negative_tokens[i].i - negative_tokens[i+1].i) 
+                    for i in range(len(negative_tokens)-1)]
+        avg_distance = sum(distances) / len(distances) if distances else 0
+        
+        if avg_distance <= 3:
+            confidence += 0.2
+        
+        return min(1.0, max(0.0, confidence))
+----
+
+=== Step 4: Update Detector Package
+
+Add your detector to the package's `__init__.py` file.
+
+**File:** `ambiguity/detectors/__init__.py`
+
+[source,python]
+----
+"""
+Ambiguity Detectors Package
+"""
+
+# ... existing imports ...
+
+try:
+    from .your_detector_name import YourDetectorName
+    __all__.append('YourDetectorName')
+except ImportError:
+    pass
+----
+
+**Example: Double Negative Detector**
+
+[source,python]
+----
+try:
+    from .double_negative_detector import DoubleNegativeDetector
+    __all__.append('DoubleNegativeDetector')
+except ImportError:
+    pass
+----
+
+=== Step 5: Register the Detector
+
+Update the base ambiguity rule to initialize your detector.
+
+**File:** `ambiguity/base_ambiguity_rule.py`
+
+[source,python]
+----
+def _initialize_detectors(self):
+    """Initialize specific ambiguity detectors."""
+    try:
+        # ... existing detector imports ...
+        from .detectors.your_detector_name import YourDetectorName
+        
+        # ... existing detector initializations ...
+        self.detectors['your_detector_key'] = YourDetectorName(self.config)
+        
+    except ImportError as e:
+        print(f"Warning: Could not import some ambiguity detectors: {e}")
+        pass
+----
+
+Also update the `_is_detector_enabled` method:
+
+[source,python]
+----
+def _is_detector_enabled(self, detector_type: str) -> bool:
+    """Check if a detector type is enabled."""
+    detector_mappings = {
+        # ... existing mappings ...
+        'your_detector_key': AmbiguityType.YOUR_NEW_TYPE,
+    }
+    
+    ambiguity_type = detector_mappings.get(detector_type)
+    return ambiguity_type is not None and self.config.is_enabled(ambiguity_type)
+----
+
+**Example: Double Negative Detector Registration**
+
+[source,python]
+----
+def _initialize_detectors(self):
+    """Initialize specific ambiguity detectors."""
+    try:
+        # ... existing imports ...
+        from .detectors.double_negative_detector import DoubleNegativeDetector
+        
+        # ... existing initializations ...
+        self.detectors['double_negative'] = DoubleNegativeDetector(self.config)
+        
+    except ImportError as e:
+        print(f"Warning: Could not import some ambiguity detectors: {e}")
+        pass
+
+def _is_detector_enabled(self, detector_type: str) -> bool:
+    """Check if a detector type is enabled."""
+    detector_mappings = {
+        # ... existing mappings ...
+        'double_negative': AmbiguityType.DOUBLE_NEGATIVE,
+    }
+    
+    ambiguity_type = detector_mappings.get(detector_type)
+    return ambiguity_type is not None and self.config.is_enabled(ambiguity_type)
+----
+
+=== Step 6: Add Configuration
+
+Add configuration for your detector in the YAML configuration file.
+
+**File:** `ambiguity/config/ambiguity_types.yaml`
+
+[source,yaml]
+----
+ambiguity_types:
+  # ... existing types ...
+  
+  your_new_type:
+    enabled: true
+    category: "semantic"  # or appropriate category
+    severity: "medium"    # or appropriate severity
+    confidence_threshold: 0.7
+    description: "Brief description of your ambiguity type"
+----
+
+**Example: Double Negative Configuration**
+
+[source,yaml]
+----
+ambiguity_types:
+  # ... existing types ...
+  
+  double_negative:
+    enabled: true
+    category: "semantic"
+    severity: "medium"
+    confidence_threshold: 0.6
+    description: "Double negatives that create confusion"
+----
+
+=== Step 7: Test Your Detector
+
+Create test cases to verify your detector works correctly.
+
+**File:** `tests/test_your_detector.py` (create if needed)
+
+[source,python]
+----
+"""
+Tests for Your Detector Name
+"""
+
+import pytest
+from ambiguity.detectors.your_detector_name import YourDetectorName
+from ambiguity.types import AmbiguityContext, AmbiguityConfig
+import spacy
+
+
+@pytest.fixture
+def detector():
+    """Create detector instance for testing."""
+    config = AmbiguityConfig()
+    return YourDetectorName(config)
+
+
+@pytest.fixture
+def nlp():
+    """Create SpaCy nlp instance for testing."""
+    return spacy.load("en_core_web_sm")
+
+
+def test_detector_initialization(detector):
+    """Test detector initializes correctly."""
+    assert detector is not None
+    assert detector.enabled is True
+
+
+def test_detects_ambiguity(detector, nlp):
+    """Test detector finds ambiguity in sample text."""
+    context = AmbiguityContext(
+        sentence_index=0,
+        sentence="Your test sentence with ambiguity"
+    )
+    
+    detections = detector.detect(context, nlp)
+    
+    assert len(detections) > 0
+    assert detections[0].ambiguity_type == AmbiguityType.YOUR_NEW_TYPE
+
+
+def test_no_false_positives(detector, nlp):
+    """Test detector doesn't flag clear sentences."""
+    context = AmbiguityContext(
+        sentence_index=0,
+        sentence="This is a clear sentence with no ambiguity."
+    )
+    
+    detections = detector.detect(context, nlp)
+    
+    assert len(detections) == 0
+----
+
+== Files Summary
+
+When adding a new ambiguity detector, you need to update these files:
+
+[cols="1,3,1"]
+|===
+|File |Purpose |Required
+
+|`ambiguity/types.py`
+|Add new ambiguity type enum and configuration
+|✓
+
+|`ambiguity/detectors/your_detector.py`
+|Implement the detector class
+|✓
+
+|`ambiguity/detectors/__init__.py`
+|Register detector in package
+|✓
+
+|`ambiguity/base_ambiguity_rule.py`
+|Initialize and enable detector
+|✓
+
+|`ambiguity/config/ambiguity_types.yaml`
+|Configure detector settings
+|✓
+
+|`tests/test_your_detector.py`
+|Create test cases
+|Recommended
+|===
+
+== Best Practices
+
+=== Detection Logic
+
+* **Be Specific**: Target specific patterns rather than overly broad detection
+* **Use Confidence Scores**: Implement meaningful confidence calculations
+* **Consider Context**: Use surrounding sentences when relevant
+* **Handle Edge Cases**: Account for unusual sentence structures
+
+=== Performance
+
+* **Efficient Patterns**: Use efficient regex and SpaCy operations
+* **Early Returns**: Return early when conditions aren't met
+* **Error Handling**: Gracefully handle parsing errors
+
+=== Integration
+
+* **Consistent Naming**: Follow existing naming conventions
+* **Standard Interface**: Implement all required methods
+* **Configuration**: Make behavior configurable through YAML
+* **Documentation**: Include clear docstrings and examples
+
+=== Testing
+
+* **Positive Cases**: Test that ambiguity is detected
+* **Negative Cases**: Test that clear text isn't flagged
+* **Edge Cases**: Test unusual sentence structures
+* **Performance**: Test with large documents
+
+== Troubleshooting
+
+=== Common Issues
+
+**Detector Not Found**
+- Check that the detector is properly imported in `__init__.py`
+- Verify the detector class name matches the import
+
+**Detector Not Running**
+- Ensure the detector is registered in `_initialize_detectors`
+- Check that the detector type is enabled in configuration
+- Verify the detector mapping in `_is_detector_enabled`
+
+**Low Detection Accuracy**
+- Adjust confidence thresholds
+- Refine detection patterns
+- Consider more context information
+- Review test cases for edge cases
+
+**Performance Issues**
+- Profile detector performance with large texts
+- Optimize pattern matching logic
+- Consider caching frequently used computations
+
+=== Debug Mode
+
+Enable debug output to troubleshoot detection issues:
+
+[source,python]
+----
+# In your detector class
+def detect(self, context: AmbiguityContext, nlp) -> List[AmbiguityDetection]:
+    if self.debug:
+        print(f"Analyzing: {context.sentence}")
+    
+    # ... detection logic ...
+    
+    if self.debug and detections:
+        print(f"Found {len(detections)} detections")
+    
+    return detections
+----
+
+== Conclusion
+
+Adding a new ambiguity detector involves:
+
+1. **Defining the ambiguity type** in the type system
+2. **Implementing detection logic** in a dedicated detector class
+3. **Registering the detector** with the ambiguity system
+4. **Configuring the detector** through YAML settings
+5. **Testing thoroughly** with various text samples
+
+The modular design makes it straightforward to add new detectors while maintaining system stability and performance. Each detector operates independently, allowing for focused development and testing of specific ambiguity types. 

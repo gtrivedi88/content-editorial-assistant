@@ -1,0 +1,116 @@
+= Style Guide AI Documentation
+:page-layout: home
+:!sectids:
+
+== Welcome to Style Guide AI
+
+Style Guide AI is a comprehensive documentation analysis and improvement tool that combines traditional style checking with AI-powered content enhancement. This system analyzes documents for style compliance, detects ambiguities, and provides intelligent suggestions for improvement.
+
+=== Key Features
+
+* **Multi-format Support**: Analyze PDF, DOCX, Markdown, and AsciiDoc documents
+* **45+ Style Rules**: Comprehensive rule system covering grammar, punctuation, structure, and formatting
+* **AI-powered Rewriting**: Two-pass improvement system using Ollama integration
+* **Ambiguity Detection**: Specialized detectors for fabrication risks, missing actors, and unclear references
+* **Real-time Analysis**: WebSocket-based communication for instant feedback
+* **Extensible Architecture**: Modular design for easy extension and customization
+
+=== Getting Started
+
+[.card-row]
+====
+[.card]
+--
+*Architecture*
+
+xref:architecture:architecture.adoc[System Architecture] +
+Understanding the complete system design and component interactions.
+--
+
+[.card]
+--
+*How-to Guides*
+
+xref:how-to:how-to-add-new-rule.adoc[Add New Rule] +
+xref:how-to:how-to-add-new-ambiguity-detector.adoc[Add New Ambiguity Detector] +
+xref:how-to:how-to-add-new-model.adoc[Add New AI Model] +
+Step-by-step guides for extending the system.
+--
+
+[.card]
+--
+*API Reference*
+
+xref:api-reference.adoc[API Documentation] +
+Complete reference for all API endpoints and WebSocket interfaces.
+--
+====
+
+=== Technology Stack
+
+* **Backend**: Flask 3.0+, Python 3.8+
+* **AI/ML**: SpaCy 3.7+, Transformers 4.36+, Ollama 0.1+
+* **Document Processing**: PyPDF2, python-docx, python-markdown
+* **Frontend**: HTML5, JavaScript ES6+, WebSockets
+* **Deployment**: Docker, Docker Compose
+
+=== Architecture Overview
+
+The system follows a modular architecture with clear separation of concerns:
+
+[mermaid]
+----
+graph TD
+    A[Document Input] --> B[Format Detection]
+    B --> C[Document Parser]
+    C --> D[Style Analyzer]
+    D --> E[Rules Engine]
+    D --> F[Ambiguity Detector]
+    D --> G[AI Rewriter]
+    E --> H[Analysis Results]
+    F --> H
+    G --> H
+    H --> I[Client Interface]
+----
+
+=== Quick Start
+
+1. **Installation**
++
+[source,bash]
+----
+git clone https://github.com/your-org/style-guide-ai.git
+cd style-guide-ai
+pip install -r requirements.txt
+----
+
+2. **Configuration**
++
+[source,bash]
+----
+cp config.example.py config.py
+# Edit config.py with your settings
+----
+
+3. **Run the Application**
++
+[source,bash]
+----
+python app.py
+----
+
+4. **Access the Interface**
++
+Open your browser to `http://localhost:5000`
+
+=== Support
+
+For questions, issues, or contributions:
+
+* **Documentation**: Browse the architecture and how-to guides
+* **Issues**: Report bugs or request features on GitHub
+* **Contributions**: See the contribution guidelines for development setup
+
+=== License
+
+This project is licensed under the MIT License - see the LICENSE file for details. 

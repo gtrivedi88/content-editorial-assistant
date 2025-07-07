@@ -1,0 +1,2 @@
+.Architecture
+* xref:architecture.adoc[System Architecture] 

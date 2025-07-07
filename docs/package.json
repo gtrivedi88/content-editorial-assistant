@@ -1,0 +1,32 @@
+{
+  "name": "ai-docs-governance-framework",
+  "version": "1.0.0",
+  "description": "AI Documentation Governance Framework - Built with Antora",
+  "scripts": {
+    "build": "antora antora-playbook.yml",
+    "serve": "antora antora-playbook.yml && npx http-server dist -p 8080",
+    "dev": "antora antora-playbook.yml --fetch && npx http-server dist -p 8080"
+  },
+  "devDependencies": {
+    "@antora/cli": "^3.1.7",
+    "@antora/site-generator": "^3.1.7",
+    "http-server": "^14.1.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-username/Framework.git"
+  },
+  "homepage": "https://your-username.github.io/Framework",
+  "author": "",
+  "license": "MIT",
+  "keywords": [
+    "documentation",
+    "antora",
+    "ai-governance",
+    "llm-validation"
+  ],
+  "dependencies": {
+    "@antora/lunr-extension": "^1.0.0-alpha.10",
+    "@asciidoctor/tabs": "^1.0.0-beta.6"
+  }
+}

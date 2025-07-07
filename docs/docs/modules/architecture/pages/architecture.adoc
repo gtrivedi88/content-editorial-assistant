@@ -1,0 +1,1643 @@
+= Style Guide AI - Complete Architecture Documentation
+:toc: left
+:toc-title: Table of Contents
+:toclevels: 4
+:sectnums:
+:sectanchors:
+:imagesdir: ./images
+:source-highlighter: highlightjs
+
+== Overview
+
+Style Guide AI is a comprehensive technical writing assistant that combines AI-powered rewriting with sophisticated style analysis. This document provides an exhaustive breakdown of every component, file, and their interconnections.
+
+[.lead]
+*Key Features:*
+
+* **AI-Powered Rewriting**: Two-pass iterative improvement using local Ollama models
+* **Comprehensive Style Analysis**: Multi-mode analysis with IBM Style Guide rules
+* **Structural Document Parsing**: Format-aware processing for AsciiDoc and Markdown
+* **Ambiguity Detection**: Specialized system for identifying unclear content
+* **Real-time Progress Tracking**: WebSocket-based progress updates
+* **Multi-format Support**: PDF, DOCX, MD, ADOC, DITA, TXT
+
+== Complete Project Structure
+
+[source,text]
+----
+style-guide-ai/
+├── app.py                          # Main application entry point
+├── requirements.txt                # Python dependencies
+├── setup.py                        # Installation and setup configuration
+├── README.md                       # Project documentation
+├── MARKDOWN_IMPLEMENTATION_GUIDE.md # Markdown format guide
+├── ASCIIDOC_IMPLEMENTATION_GUIDE.md # AsciiDoc format guide
+├── 
+├── app_modules/                    # Modular Flask application components
+│   ├── __init__.py                 # Package initialization
+│   ├── app_factory.py              # Flask factory pattern implementation
+│   ├── api_routes.py               # HTTP API route handlers
+│   ├── error_handlers.py           # Global error handling
+│   ├── websocket_handlers.py       # WebSocket event handlers
+│   └── fallback_services.py        # Fallback service implementations
+├── 
+├── src/                            # Source code and configuration
+│   ├── __init__.py                 # Package initialization
+│   ├── config.py                   # Application configuration
+│   └── format_aware_ai_rewriter.py # Format-aware AI rewriter
+├── 
+├── templates/                      # HTML templates
+│   ├── base.html                   # Base template
+│   ├── index.html                  # Main application page
+│   └── error.html                  # Error page template
+├── 
+├── static/                         # Static web assets
+│   ├── css/
+│   │   └── styles.css              # Application styles
+│   └── js/
+│       ├── core.js                 # Core JavaScript functionality
+│       ├── file-handler.js         # File upload handling
+│       ├── socket-handler.js       # WebSocket communication
+│       ├── analysis-display.js     # Analysis results display
+│       └── utility-functions.js    # Utility functions
+├── 
+├── style_analyzer/                 # Style analysis engine
+│   ├── __init__.py                 # Package initialization
+│   ├── base_analyzer.py            # Main StyleAnalyzer class
+│   ├── base_types.py               # Type definitions
+│   ├── analysis_modes.py           # Analysis mode implementations
+│   ├── core_analyzer.py            # Core analysis logic
+│   ├── block_processors.py         # Block-level processing
+│   ├── sentence_analyzer.py        # Sentence-level analysis
+│   ├── readability_analyzer.py     # Readability calculations
+│   ├── statistics_calculator.py    # Statistics computation
+│   ├── structural_analyzer.py      # Structural analysis
+│   ├── suggestion_generator.py     # Improvement suggestions
+│   └── error_converters.py         # Error format conversion
+├── 
+├── rules/                          # Style guide rules system
+│   ├── __init__.py                 # Rules registry and discovery
+│   ├── base_rule.py                # Base rule class
+│   ├── rule_mappings.yaml          # Rule configuration mapping
+│   ├── ambiguity_rule.py           # Ambiguity detection integration
+│   ├── second_person_rule.py       # Second person detection
+│   ├── sentence_length_rule.py     # Sentence length validation
+│   ├── 
+│   ├── language_and_grammar/       # Language and grammar rules
+│   │   ├── __init__.py             # Package initialization
+│   │   ├── base_language_rule.py   # Base language rule
+│   │   ├── abbreviations_rule.py   # Abbreviations checking
+│   │   ├── adverbs_only_rule.py    # Adverb usage rules
+│   │   ├── anthropomorphism_rule.py # Anthropomorphism detection
+│   │   ├── articles_rule.py        # Article usage rules
+│   │   ├── capitalization_rule.py  # Capitalization rules
+│   │   ├── conjunctions_rule.py    # Conjunction rules
+│   │   ├── contractions_rule.py    # Contraction rules
+│   │   ├── inclusive_language_rule.py # Inclusive language
+│   │   ├── plurals_rule.py         # Plural forms
+│   │   ├── possessives_rule.py     # Possessive forms
+│   │   ├── prepositions_rule.py    # Preposition rules
+│   │   ├── pronouns_rule.py        # Pronoun rules
+│   │   ├── spelling_rule.py        # Spelling validation
+│   │   ├── terminology_rule.py     # Terminology consistency
+│   │   └── verbs_rule.py           # Verb usage rules
+│   ├── 
+│   ├── punctuation/                # Punctuation rules
+│   │   ├── __init__.py             # Package initialization
+│   │   ├── base_punctuation_rule.py # Base punctuation rule
+│   │   ├── colons_rule.py          # Colon usage
+│   │   ├── commas_rule.py          # Comma usage
+│   │   ├── dashes_rule.py          # Dash usage
+│   │   ├── ellipses_rule.py        # Ellipsis usage
+│   │   ├── exclamation_points_rule.py # Exclamation points
+│   │   ├── hyphens_rule.py         # Hyphen usage
+│   │   ├── parentheses_rule.py     # Parentheses usage
+│   │   ├── periods_rule.py         # Period usage
+│   │   ├── punctuation_and_symbols_rule.py # General punctuation
+│   │   ├── quotation_marks_rule.py # Quotation marks
+│   │   ├── semicolons_rule.py      # Semicolon usage
+│   │   └── slashes_rule.py         # Slash usage
+│   └── 
+│   └── structure_and_format/       # Structure and format rules
+│       ├── __init__.py             # Package initialization
+│       ├── base_structure_rule.py  # Base structure rule
+│       ├── admonitions_rule.py     # Admonition blocks
+│       ├── headings_rule.py        # Heading structure
+│       ├── highlighting_rule.py    # Text highlighting
+│       ├── lists_rule.py           # List formatting
+│       ├── messages_rule.py        # Message formatting
+│       ├── notes_rule.py           # Note formatting
+│       ├── paragraphs_rule.py      # Paragraph structure
+│       └── procedures_rule.py      # Procedure formatting
+├── 
+├── ambiguity/                      # Ambiguity detection system
+│   ├── __init__.py                 # Package initialization
+│   ├── types.py                    # Type definitions
+│   ├── ambiguity_rule.py           # Main ambiguity rule
+│   ├── base_ambiguity_rule.py      # Base ambiguity rule
+│   ├── config/
+│   │   └── ambiguity_types.yaml    # Ambiguity type configuration
+│   ├── detectors/                  # Specific ambiguity detectors
+│   │   ├── __init__.py             # Package initialization
+│   │   ├── missing_actor_detector.py # Missing actor detection
+│   │   ├── pronoun_ambiguity_detector.py # Pronoun ambiguity
+│   │   ├── unsupported_claims_detector.py # Unsupported claims
+│   │   └── fabrication_risk_detector.py # Fabrication risk
+│   └── resolvers/                  # Ambiguity resolution (future)
+│       └── __init__.py             # Package initialization
+├── 
+├── rewriter/                       # AI rewriting system
+│   ├── __init__.py                 # Package initialization
+│   ├── core.py                     # Main AIRewriter class
+│   ├── models.py                   # Model management
+│   ├── generators.py               # Text generation
+│   ├── processors.py               # Text processing
+│   ├── evaluators.py               # Rewrite evaluation
+│   ├── prompts.py                  # Prompt generation
+│   └── prompt_configs/             # Prompt configuration
+│       └── ibm_style/              # IBM style guide prompts
+│           ├── language_and_grammar.yaml # Language prompts
+│           ├── punctuation.yaml    # Punctuation prompts
+│           ├── structure_and_format.yaml # Structure prompts
+│           └── voice_and_tone.yaml # Voice and tone prompts
+├── 
+├── structural_parsing/             # Document structure parsing
+│   ├── __init__.py                 # Package initialization
+│   ├── format_detector.py          # Format detection
+│   ├── parser_factory.py           # Parser factory
+│   ├── extractors/                 # Document extraction
+│   │   ├── __init__.py             # Package initialization
+│   │   └── document_processor.py   # Document processing
+│   ├── markdown/                   # Markdown parsing
+│   │   ├── __init__.py             # Package initialization
+│   │   ├── parser.py               # Markdown parser
+│   │   └── types.py                # Markdown types
+│   └── asciidoc/                   # AsciiDoc parsing
+│       ├── __init__.py             # Package initialization
+│       ├── parser.py               # AsciiDoc parser
+│       ├── ruby_server.py          # Ruby server integration
+│       └── types.py                # AsciiDoc types
+├── 
+├── docs/                           # Documentation
+│   ├── architecture.adoc           # This architecture document
+│   ├── how-to-add-new-rule.adoc   # Guide for adding rules
+│   ├── how-to-add-new-ambiguity-detector.adoc # Guide for ambiguity detectors
+│   └── how-to-add-new-model.adoc   # Guide for adding models
+├── 
+├── docker/                         # Docker configuration
+│   ├── Dockerfile                  # Docker build file
+│   ├── docker-compose.yml          # Docker compose configuration
+│   ├── build-and-push.sh          # Build and push script
+│   └── README.md                   # Docker documentation
+├── 
+├── uploads/                        # Uploaded files (temporary)
+├── instance/                       # Instance-specific files
+├── logs/                           # Application logs
+└── venv/                           # Virtual environment
+----
+
+== High-Level System Architecture
+
+[source,mermaid]
+----
+graph TB
+    subgraph "Client Layer"
+        WEB[Web Browser]
+        UI[Modern UI Interface]
+    end
+    
+    subgraph "Application Layer"
+        FLASK[Flask Application]
+        WS[WebSocket Handler]
+        API[REST API Routes]
+        ERR[Error Handlers]
+    end
+    
+    subgraph "Core Processing Layer"
+        SA[Style Analyzer]
+        AI[AI Rewriter]
+        SP[Structural Parser]
+        AD[Ambiguity Detector]
+    end
+    
+    subgraph "Service Layer"
+        DOC[Document Processor]
+        RULES[Rules Engine]
+        MODELS[Model Manager]
+        EVAL[Evaluator]
+    end
+    
+    subgraph "External Services"
+        OLLAMA[Ollama API]
+        SPACY[SpaCy NLP]
+        RUBY[Ruby Server]
+    end
+    
+    subgraph "Data Layer"
+        UPLOAD[File Storage]
+        LOGS[Log Files]
+        CONFIG[Configuration]
+    end
+    
+    WEB --> UI
+    UI --> FLASK
+    FLASK --> WS
+    FLASK --> API
+    FLASK --> ERR
+    
+    API --> SA
+    API --> AI
+    API --> DOC
+    
+    SA --> SP
+    SA --> AD
+    SA --> RULES
+    
+    AI --> MODELS
+    AI --> EVAL
+    
+    SP --> RUBY
+    SA --> SPACY
+    AI --> OLLAMA
+    
+    DOC --> UPLOAD
+    FLASK --> LOGS
+    FLASK --> CONFIG
+----
+
+== Component Interaction Flow
+
+[source,mermaid]
+----
+sequenceDiagram
+    participant Client
+    participant Flask
+    participant StyleAnalyzer
+    participant StructuralParser
+    participant RulesEngine
+    participant AIRewriter
+    participant Ollama
+    
+    Client->>Flask: Upload document / Input text
+    Flask->>StyleAnalyzer: analyze_with_blocks()
+    StyleAnalyzer->>StructuralParser: parse_document()
+    StructuralParser->>StructuralParser: Detect format (MD/ADOC)
+    StructuralParser->>StyleAnalyzer: Return structured blocks
+    StyleAnalyzer->>RulesEngine: Apply rules to blocks
+    RulesEngine->>StyleAnalyzer: Return style errors
+    StyleAnalyzer->>Flask: Return analysis results
+    Flask->>Client: Display analysis (via WebSocket)
+    
+    Client->>Flask: Request AI rewrite
+    Flask->>AIRewriter: rewrite() - Pass 1
+    AIRewriter->>Ollama: Generate improvements
+    Ollama->>AIRewriter: Return rewritten text
+    AIRewriter->>Flask: Return Pass 1 results
+    Flask->>Client: Show Pass 1 results
+    
+    Client->>Flask: Request refinement
+    Flask->>AIRewriter: refine_text() - Pass 2
+    AIRewriter->>Ollama: Self-review & polish
+    Ollama->>AIRewriter: Return final text
+    AIRewriter->>Flask: Return Pass 2 results
+    Flask->>Client: Show final results
+---- 
+
+== Entry Point & Configuration
+
+=== Main Application Entry Point
+
+==== `app.py`
+The main application file that bootstraps the entire system.
+
+**Purpose**: Primary entry point for the Flask application
+**Key Functions**:
+- Creates Flask app using factory pattern
+- Configures upload settings
+- Starts the application with SocketIO support
+
+**Dependencies**:
+- `app_modules.app_factory`: Application factory
+- `src.config`: Configuration management
+
+**Code Structure**:
+[source,python]
+----
+from app_modules.app_factory import create_app, configure_upload_folder
+from src.config import Config
+
+# Create application using factory pattern
+app, socketio = create_app(Config)
+
+# Configure upload settings
+configure_upload_folder(app)
+----
+
+==== `requirements.txt`
+Python dependencies specification with cross-platform compatibility.
+
+**Purpose**: Defines all Python package dependencies
+**Key Dependencies**:
+- Flask 3.0+ (Web framework)
+- SpaCy 3.7+ (NLP processing)
+- Transformers 4.36+ (AI models)
+- Ollama 0.1.7+ (Local AI models)
+- PyMuPDF, python-docx (Document processing)
+
+==== `setup.py`
+Installation and configuration script for the application.
+
+**Purpose**: Package installation, dependency management, and testing
+**Key Functions**:
+- `install_spacy_model()`: Downloads SpaCy language model
+- `test_installation()`: Validates successful installation
+- `setup()`: Package configuration with entry points
+
+=== Configuration Layer
+
+==== `src/config.py`
+Central configuration management for the entire application.
+
+**Purpose**: Environment-based configuration with fallbacks
+**Key Classes**:
+- `Config`: Main configuration class
+- `DevelopmentConfig`: Development-specific settings
+
+**Configuration Categories**:
+- **Flask Configuration**: Secret keys, debug settings
+- **AI Model Configuration**: Ollama, HuggingFace, OpenAI settings
+- **Database Configuration**: SQLAlchemy settings
+- **File Upload Configuration**: Size limits, allowed extensions
+- **Style Guide Rules Configuration**: Rule thresholds and settings
+- **Logging Configuration**: Log levels and formats
+
+**Key Methods**:
+- `get_ai_config()`: Returns AI model configuration
+- `is_ollama_enabled()`: Checks if Ollama is configured
+- `get_upload_config()`: Returns file upload settings
+- `get_analysis_config()`: Returns style analysis configuration
+
+== Application Layer Components
+
+=== Flask Application Factory
+
+==== `app_modules/app_factory.py`
+Implements the Flask factory pattern for modular application creation.
+
+**Purpose**: Creates and configures Flask application with all components
+**Key Functions**:
+- `create_app(config_class)`: Main factory function
+- `initialize_services()`: Service initialization with fallbacks
+- `setup_logging(app)`: Logging configuration
+- `log_initialization_status()`: Service status reporting
+- `register_cleanup_handlers()`: Graceful shutdown handlers
+
+**Service Initialization Pattern**:
+[source,python]
+----
+try:
+    from structural_parsing.extractors import DocumentProcessor
+    services['document_processor'] = DocumentProcessor()
+    services['document_processor_available'] = True
+except ImportError:
+    services['document_processor'] = SimpleDocumentProcessor()
+    services['document_processor_available'] = False
+----
+
+==== `app_modules/api_routes.py`
+HTTP API route handlers for all application endpoints.
+
+**Purpose**: Defines all REST API endpoints and their handlers
+**Key Routes**:
+- `GET /`: Main application page
+- `POST /upload`: File upload and text extraction
+- `POST /analyze`: Text analysis with style checking
+- `POST /rewrite`: AI-powered rewriting (Pass 1)
+- `POST /refine`: AI-powered refinement (Pass 2)
+- `GET /health`: Health check endpoint
+
+**Route Handler Pattern**:
+[source,python]
+----
+@app.route('/analyze', methods=['POST'])
+def analyze_content():
+    data = request.get_json()
+    content = data.get('content', '')
+    
+    # Emit progress via WebSocket
+    emit_progress(session_id, 'analysis_start', 'Starting analysis...', 5)
+    
+    # Perform analysis
+    result = style_analyzer.analyze_with_blocks(content)
+    
+    # Return results
+    return jsonify(result)
+----
+
+==== `app_modules/error_handlers.py`
+Global error handling for HTTP errors and application exceptions.
+
+**Purpose**: Provides user-friendly error pages and JSON error responses
+**Key Handlers**:
+- `404 Not Found`: Page not found errors
+- `500 Internal Server Error`: Application errors
+- `413 Request Entity Too Large`: File upload size errors
+- `400 Bad Request`: Invalid request errors
+- `429 Too Many Requests`: Rate limiting errors
+- `Exception`: Catch-all for unexpected errors
+
+==== `app_modules/websocket_handlers.py`
+Real-time communication for progress updates and notifications.
+
+**Purpose**: WebSocket event handling for real-time feedback
+**Key Functions**:
+- `emit_progress()`: Send progress updates to clients
+- `emit_completion()`: Send completion notifications
+- `setup_websocket_handlers()`: Configure WebSocket events
+
+**Event Handlers**:
+- `connect`: Client connection handling
+- `disconnect`: Client disconnection handling
+- `join_session`: Session-based room management
+
+==== `app_modules/fallback_services.py`
+Fallback service implementations when dependencies are unavailable.
+
+**Purpose**: Graceful degradation when services fail to initialize
+**Fallback Classes**:
+- `SimpleDocumentProcessor`: Basic text extraction
+- `SimpleStyleAnalyzer`: Rule-based analysis without SpaCy
+- `SimpleAIRewriter`: Basic rewriting with Ollama fallback
+
+== Style Analysis Engine
+
+=== Core Analyzer Components
+
+==== `style_analyzer/base_analyzer.py`
+Main StyleAnalyzer class that coordinates all analysis components.
+
+**Purpose**: Central orchestration of style analysis
+**Key Classes**:
+- `StyleAnalyzer`: Main analyzer class
+
+**Key Methods**:
+- `analyze_with_blocks()`: Primary analysis method with structured parsing
+- `analyze()`: Legacy analysis method
+- `_determine_analysis_mode()`: Intelligent mode selection
+- `_initialize_nlp()`: SpaCy model initialization
+
+**Analysis Flow**:
+[source,python]
+----
+def analyze_with_blocks(self, content: str) -> AnalysisResult:
+    # 1. Determine analysis mode
+    mode = self._determine_analysis_mode()
+    
+    # 2. Parse document structure
+    blocks = self.structural_analyzer.parse_document_to_blocks(content)
+    
+    # 3. Execute analysis mode
+    results = self.mode_executor.execute_mode(mode, content, blocks)
+    
+    # 4. Return structured results
+    return create_analysis_result(results)
+----
+
+==== `style_analyzer/base_types.py`
+Type definitions and data structures for style analysis.
+
+**Purpose**: Common data structures and type definitions
+**Key Types**:
+- `AnalysisResult`: Main result container
+- `AnalysisMode`: Analysis mode enumeration
+- `ErrorDict`: Error representation
+- `BlockResult`: Block-level analysis results
+
+==== `style_analyzer/analysis_modes.py`
+Analysis mode implementations with intelligent fallbacks.
+
+**Purpose**: Multiple analysis strategies based on available dependencies
+**Analysis Modes**:
+- `SPACY_RULES`: SpaCy + Modular Rules (optimal)
+- `RULES_FALLBACK`: Rules + fallbacks (good)
+- `SPACY_LEGACY`: SpaCy legacy only (basic)
+- `MINIMAL`: Minimal safe mode (fallback)
+
+==== `style_analyzer/core_analyzer.py`
+Core analysis logic and rule application.
+
+**Purpose**: Rule execution and error detection
+**Key Functions**:
+- Rule discovery and loading
+- Error detection and reporting
+- Context-aware analysis
+
+==== `style_analyzer/block_processors.py`
+Block-level processing for structured documents.
+
+**Purpose**: Process document blocks with context awareness
+**Key Functions**:
+- Block type detection
+- Context-aware rule application
+- Block-specific error handling
+
+==== `style_analyzer/sentence_analyzer.py`
+Sentence-level analysis and processing.
+
+**Purpose**: Individual sentence analysis and error detection
+**Key Functions**:
+- Sentence segmentation
+- Per-sentence rule application
+- Sentence-level statistics
+
+==== `style_analyzer/readability_analyzer.py`
+Readability calculations and metrics.
+
+**Purpose**: Text readability assessment
+**Metrics Calculated**:
+- Flesch Reading Ease
+- Flesch-Kincaid Grade Level
+- Automated Readability Index
+- Coleman-Liau Index
+- Gunning Fog Index
+
+==== `style_analyzer/statistics_calculator.py`
+Statistics computation for analysis results.
+
+**Purpose**: Calculate comprehensive text statistics
+**Statistics Calculated**:
+- Word count, sentence count, paragraph count
+- Average sentence length
+- Complex word percentage
+- Reading time estimation
+
+==== `style_analyzer/structural_analyzer.py`
+Structural analysis of documents.
+
+**Purpose**: Document structure parsing and analysis
+**Key Functions**:
+- Format detection (Markdown, AsciiDoc)
+- Block extraction and parsing
+- Structural rule application
+
+==== `style_analyzer/suggestion_generator.py`
+Improvement suggestions based on analysis results.
+
+**Purpose**: Generate actionable improvement suggestions
+**Key Functions**:
+- Rule-based suggestion generation
+- Context-aware recommendations
+- Prioritized suggestion ordering
+
+==== `style_analyzer/error_converters.py`
+Error format conversion for different output formats.
+
+**Purpose**: Convert internal error formats to external representations
+**Key Functions**:
+- JSON error formatting
+- HTML error formatting
+- Plain text error formatting 
+
+== Rules System
+
+=== Rules Registry and Discovery
+
+==== `rules/__init__.py`
+Central rules registry with automatic discovery system.
+
+**Purpose**: Discovers and loads all rule modules automatically
+**Key Classes**:
+- `RulesRegistry`: Main registry class for rule discovery and management
+
+**Discovery Process**:
+[source,python]
+----
+def _load_all_rules(self):
+    # Recursively walk through rules directory
+    for root, dirs, files in os.walk(rules_dir):
+        # Process files ending with '_rule.py'
+        for filename in files:
+            if filename.endswith('_rule.py') and filename != 'base_rule.py':
+                # Import and register rule
+                module = self._import_rule_module_enhanced(import_path)
+                self._register_rule_from_module(module)
+----
+
+**Rule Registration**:
+- Automatic discovery of rule classes
+- Dynamic import with error handling
+- Support for nested directory structures (up to 4 levels)
+- Graceful fallback when rules fail to load
+
+==== `rules/base_rule.py`
+Base class for all style guide rules.
+
+**Purpose**: Common interface and functionality for all rules
+**Key Classes**:
+- `BaseRule`: Abstract base class for all rules
+
+**Key Methods**:
+- `analyze()`: Main analysis method (abstract)
+- `get_rule_type()`: Returns rule type identifier
+- `get_description()`: Returns rule description
+- `is_enabled()`: Checks if rule is enabled
+
+==== `rules/rule_mappings.yaml`
+Configuration mapping for rule categories and settings.
+
+**Purpose**: Centralized rule configuration and categorization
+**Configuration Structure**:
+- Rule categories (language_and_grammar, punctuation, structure_and_format)
+- Rule priorities and weights
+- Rule-specific settings and thresholds
+
+=== Language and Grammar Rules
+
+==== `rules/language_and_grammar/base_language_rule.py`
+Base class for language and grammar rules.
+
+**Purpose**: Common functionality for language-specific rules
+**Shared Methods**:
+- NLP processing utilities
+- Context analysis functions
+- Language pattern matching
+
+==== Individual Language Rules
+
+**`abbreviations_rule.py`**
+- **Purpose**: Validates abbreviation usage and formatting
+- **Checks**: Proper abbreviation definitions, consistent usage
+
+**`adverbs_only_rule.py`**
+- **Purpose**: Detects unnecessary adverb usage
+- **Checks**: Excessive adverbs, weak adverb choices
+
+**`anthropomorphism_rule.py`**
+- **Purpose**: Identifies anthropomorphic language
+- **Checks**: Human characteristics attributed to non-human entities
+
+**`articles_rule.py`**
+- **Purpose**: Validates article usage (a, an, the)
+- **Checks**: Correct article selection, missing articles
+
+**`capitalization_rule.py`**
+- **Purpose**: Enforces capitalization rules
+- **Checks**: Title case, sentence case, proper nouns
+
+**`conjunctions_rule.py`**
+- **Purpose**: Validates conjunction usage
+- **Checks**: Proper conjunction selection, overuse
+
+**`contractions_rule.py`**
+- **Purpose**: Manages contraction usage in technical writing
+- **Checks**: Formal vs. informal tone consistency
+
+**`inclusive_language_rule.py`**
+- **Purpose**: Promotes inclusive language practices
+- **Checks**: Gender-neutral language, cultural sensitivity
+
+**`plurals_rule.py`**
+- **Purpose**: Validates plural forms
+- **Checks**: Correct plural formations, consistency
+
+**`possessives_rule.py`**
+- **Purpose**: Enforces possessive form rules
+- **Checks**: Apostrophe placement, possessive consistency
+
+**`prepositions_rule.py`**
+- **Purpose**: Validates preposition usage
+- **Checks**: Correct preposition selection, clarity
+
+**`pronouns_rule.py`**
+- **Purpose**: Manages pronoun usage and clarity
+- **Checks**: Pronoun-antecedent agreement, clarity
+
+**`spelling_rule.py`**
+- **Purpose**: Spell checking and consistency
+- **Checks**: Spelling errors, variant spellings
+
+**`terminology_rule.py`**
+- **Purpose**: Enforces terminology consistency
+- **Checks**: Consistent term usage, approved terminology
+
+**`verbs_rule.py`**
+- **Purpose**: Validates verb usage and forms
+- **Checks**: Verb tense consistency, active vs. passive voice
+
+=== Punctuation Rules
+
+==== `rules/punctuation/base_punctuation_rule.py`
+Base class for punctuation rules.
+
+**Purpose**: Common functionality for punctuation-specific rules
+**Shared Methods**:
+- Punctuation pattern detection
+- Context-aware punctuation analysis
+- Formatting validation
+
+==== Individual Punctuation Rules
+
+**`punctuation_and_symbols_rule.py`**
+- **Purpose**: General punctuation and symbol usage
+- **Checks**: Symbol consistency, proper punctuation
+
+**`colons_rule.py`**
+- **Purpose**: Colon usage rules
+- **Checks**: Proper colon placement, list introductions
+
+**`commas_rule.py`**
+- **Purpose**: Comma usage and placement
+- **Checks**: Oxford commas, comma splices, clarity
+
+**`dashes_rule.py`**
+- **Purpose**: Dash usage (em dashes, en dashes)
+- **Checks**: Proper dash types, formatting
+
+**`ellipses_rule.py`**
+- **Purpose**: Ellipsis usage and formatting
+- **Checks**: Proper ellipsis formation, overuse
+
+**`exclamation_points_rule.py`**
+- **Purpose**: Exclamation point usage
+- **Checks**: Professional tone, overuse detection
+
+**`hyphens_rule.py`**
+- **Purpose**: Hyphen usage and compound words
+- **Checks**: Compound word formation, line breaks
+
+**`parentheses_rule.py`**
+- **Purpose**: Parentheses usage and nesting
+- **Checks**: Proper nesting, clarity, overuse
+
+**`periods_rule.py`**
+- **Purpose**: Period usage and sentence endings
+- **Checks**: Sentence completion, abbreviations
+
+**`quotation_marks_rule.py`**
+- **Purpose**: Quotation mark usage and formatting
+- **Checks**: Proper quotation formatting, nested quotes
+
+**`semicolons_rule.py`**
+- **Purpose**: Semicolon usage and placement
+- **Checks**: Proper semicolon usage, list formatting
+
+**`slashes_rule.py`**
+- **Purpose**: Slash usage and alternatives
+- **Checks**: Proper slash usage, clarity alternatives
+
+=== Structure and Format Rules
+
+==== `rules/structure_and_format/base_structure_rule.py`
+Base class for structure and format rules.
+
+**Purpose**: Common functionality for document structure rules
+**Shared Methods**:
+- Document structure analysis
+- Formatting pattern detection
+- Hierarchy validation
+
+==== Individual Structure Rules
+
+**`admonitions_rule.py`**
+- **Purpose**: Admonition block formatting
+- **Checks**: Proper admonition structure, consistency
+
+**`headings_rule.py`**
+- **Purpose**: Heading structure and hierarchy
+- **Checks**: Heading levels, formatting consistency
+
+**`highlighting_rule.py`**
+- **Purpose**: Text highlighting and emphasis
+- **Checks**: Consistent highlighting, overuse
+
+**`lists_rule.py`**
+- **Purpose**: List formatting and structure
+- **Checks**: List consistency, proper nesting
+
+**`messages_rule.py`**
+- **Purpose**: Message formatting (warnings, notes)
+- **Checks**: Message structure, consistency
+
+**`notes_rule.py`**
+- **Purpose**: Note formatting and placement
+- **Checks**: Note structure, appropriate usage
+
+**`paragraphs_rule.py`**
+- **Purpose**: Paragraph structure and flow
+- **Checks**: Paragraph length, coherence
+
+**`procedures_rule.py`**
+- **Purpose**: Procedure and step formatting
+- **Checks**: Step numbering, clarity
+
+=== Specialized Rules
+
+==== `rules/second_person_rule.py`
+Detects and manages second-person usage.
+
+**Purpose**: Controls second-person pronoun usage in technical writing
+**Checks**: 
+- "You" usage in formal contexts
+- Consistency with writing style
+- Alternative suggestions
+
+==== `rules/sentence_length_rule.py`
+Validates sentence length for readability.
+
+**Purpose**: Ensures sentences are appropriately sized for clarity
+**Checks**:
+- Maximum sentence length (configurable)
+- Complex sentence structure
+- Readability impact
+
+==== `rules/ambiguity_rule.py`
+Integration point for ambiguity detection system.
+
+**Purpose**: Connects ambiguity detection to rules system
+**Integration**: Links to `ambiguity/` package for specialized ambiguity detection
+
+== AI Rewriting System
+
+=== Core AI Components
+
+==== `rewriter/core.py`
+Main AIRewriter class that orchestrates the rewriting process.
+
+**Purpose**: Central coordination of AI rewriting with two-pass system
+**Key Classes**:
+- `AIRewriter`: Main rewriter orchestrator
+
+**Key Methods**:
+- `rewrite()`: Performs first pass rewriting
+- `refine_text()`: Performs second pass refinement
+- `_perform_first_pass()`: Initial AI improvements
+- `_perform_second_pass()`: AI self-review and polish
+
+**Two-Pass Process**:
+[source,python]
+----
+# Pass 1: Address specific errors
+first_pass_result = self._perform_first_pass(content, errors, context)
+
+# Pass 2: Self-review and refinement
+final_result = self._perform_second_pass(first_pass_result, original_errors, context)
+----
+
+==== `rewriter/models.py`
+Model management for different AI backends.
+
+**Purpose**: Unified interface for multiple AI model types
+**Key Classes**:
+- `ModelManager`: Manages model initialization and connectivity
+
+**Supported Models**:
+- **Ollama**: Local LLM serving (primary)
+- **Hugging Face**: Transformers library models
+- **OpenAI**: API-based models (configurable)
+
+**Model Initialization Pattern**:
+[source,python]
+----
+def __init__(self, model_name, use_ollama=False, ollama_model="llama3:8b"):
+    if use_ollama:
+        self._test_ollama_connection()
+    else:
+        self._initialize_hf_model()
+----
+
+==== `rewriter/generators.py`
+Text generation handling for various models.
+
+**Purpose**: Actual AI text generation using configured models
+**Key Classes**:
+- `TextGenerator`: Handles text generation across model types
+
+**Generation Methods**:
+- `generate_with_ollama()`: Ollama API calls
+- `generate_with_hf_model()`: Hugging Face model generation
+- `generate_text()`: Unified generation interface
+
+==== `rewriter/processors.py`
+Text processing and cleanup for generated content.
+
+**Purpose**: Post-processing of AI-generated text
+**Key Functions**:
+- Text cleaning and normalization
+- Format preservation
+- Quality validation
+
+==== `rewriter/evaluators.py`
+Rewrite quality evaluation and confidence calculation.
+
+**Purpose**: Assesses quality of AI rewrites and calculates confidence scores
+**Key Classes**:
+- `RewriteEvaluator`: Quality assessment and metrics
+
+**Evaluation Methods**:
+- `evaluate_rewrite_quality()`: Comprehensive quality assessment
+- `calculate_confidence()`: Confidence score calculation
+- `extract_improvements()`: Improvement identification
+
+==== `rewriter/prompts.py`
+Prompt generation with style guide integration.
+
+**Purpose**: Dynamic prompt creation based on detected errors and style guide rules
+**Key Classes**:
+- `PromptGenerator`: Creates context-aware prompts
+
+**Prompt Features**:
+- Dynamic instruction loading from YAML configs
+- Error-specific prompt customization
+- Style guide rule integration
+- Model-specific prompt optimization
+
+=== Prompt Configuration System
+
+==== `rewriter/prompt_configs/ibm_style/`
+Style guide specific prompt configurations.
+
+**Purpose**: Modular prompt templates for different style guide rules
+**Configuration Files**:
+
+**`language_and_grammar.yaml`**
+- Language and grammar rule prompts
+- Error-specific instructions
+- Examples and corrections
+
+**`punctuation.yaml`**
+- Punctuation rule prompts
+- Formatting instructions
+- Style-specific guidelines
+
+**`structure_and_format.yaml`**
+- Document structure prompts
+- Format preservation instructions
+- Layout guidelines
+
+**`voice_and_tone.yaml`**
+- Voice and tone prompts
+- Style consistency instructions
+- Brand voice guidelines
+
+== Ambiguity Detection System
+
+=== Core Ambiguity Components
+
+==== `ambiguity/types.py`
+Type definitions and data structures for ambiguity detection.
+
+**Purpose**: Core type system for ambiguity detection
+**Key Types**:
+- `AmbiguityType`: Enumeration of ambiguity types
+- `AmbiguityCategory`: Categorization system
+- `AmbiguitySeverity`: Severity levels
+- `AmbiguityContext`: Context information
+- `AmbiguityEvidence`: Evidence supporting detection
+- `AmbiguityDetection`: Complete detection result
+
+**Ambiguity Types**:
+- `MISSING_ACTOR`: Passive voice without clear actors
+- `AMBIGUOUS_PRONOUN`: Pronouns with unclear referents
+- `UNCLEAR_SUBJECT`: Unclear subject references
+- `FABRICATION_RISK`: Risk of adding unverified information
+- And others...
+
+==== `ambiguity/base_ambiguity_rule.py`
+Base ambiguity rule and detector framework.
+
+**Purpose**: Integration with rules system and detector coordination
+**Key Classes**:
+- `BaseAmbiguityRule`: Integration with rules system
+- `AmbiguityDetector`: Base class for specific detectors
+
+**Integration Pattern**:
+[source,python]
+----
+def analyze(self, text, sentences, nlp=None, context=None):
+    errors = []
+    for detector_type, detector in self.detectors.items():
+        if self._is_detector_enabled(detector_type):
+            detections = detector.detect(sentence_context, nlp)
+            errors.extend([d.to_error_dict() for d in detections])
+    return errors
+----
+
+==== `ambiguity/ambiguity_rule.py`
+Main ambiguity detection rule for integration.
+
+**Purpose**: Primary integration point with the rules system
+**Provides**: Seamless integration with existing rule framework
+
+=== Ambiguity Detectors
+
+==== `ambiguity/detectors/missing_actor_detector.py`
+Detects passive voice sentences without clear actors.
+
+**Purpose**: Identifies passive constructions lacking clear performers
+**Detection Logic**:
+- Passive voice pattern recognition
+- Actor presence validation
+- Context analysis for implicit actors
+
+==== `ambiguity/detectors/pronoun_ambiguity_detector.py`
+Detects pronouns with unclear referents.
+
+**Purpose**: Identifies ambiguous pronoun references
+**Detection Logic**:
+- Pronoun identification
+- Referent analysis
+- Distance and context evaluation
+
+==== `ambiguity/detectors/unsupported_claims_detector.py`
+Detects unsupported claims and promises.
+
+**Purpose**: Identifies statements that cannot be substantiated
+**Detection Logic**:
+- Claim pattern recognition
+- Evidence requirement analysis
+- Certainty level assessment
+
+==== `ambiguity/detectors/fabrication_risk_detector.py`
+Detects risk of information fabrication.
+
+**Purpose**: Identifies content that might invite fabrication
+**Detection Logic**:
+- Vague instruction detection
+- Missing detail identification
+- Process gap analysis
+
+=== Ambiguity Configuration
+
+==== `ambiguity/config/ambiguity_types.yaml`
+Configuration for ambiguity detection types and settings.
+
+**Purpose**: Centralized configuration for ambiguity detection
+**Configuration Structure**:
+- Ambiguity type definitions
+- Detection thresholds
+- Severity mappings
+- Enable/disable flags 
+
+== Document Processing & Structural Parsing
+
+=== Core Document Processing
+
+==== `structural_parsing/extractors/document_processor.py`
+Main document processing and text extraction.
+
+**Purpose**: Unified interface for extracting text from multiple document formats
+**Supported Formats**:
+- **PDF**: PyMuPDF-based extraction
+- **DOCX**: python-docx based processing
+- **Markdown**: Built-in markdown processing
+- **AsciiDoc**: Ruby-based asciidoctor integration
+- **Plain Text**: Direct text handling
+- **DITA**: XML-based processing
+
+**Key Methods**:
+- `extract_text(filepath)`: Main extraction method
+- `allowed_file(filename)`: File type validation
+- `_extract_pdf_text()`: PDF-specific extraction
+- `_extract_docx_text()`: DOCX-specific extraction
+
+==== `structural_parsing/format_detector.py`
+Document format detection and classification.
+
+**Purpose**: Automatic detection of document formats
+**Detection Methods**:
+- File extension analysis
+- Content-based detection
+- MIME type checking
+- Header pattern recognition
+
+==== `structural_parsing/parser_factory.py`
+Factory pattern for creating format-specific parsers.
+
+**Purpose**: Creates appropriate parser based on detected format
+**Parser Creation Pattern**:
+[source,python]
+----
+def create_parser(content: str, format_hint: str = None):
+    detected_format = detect_format(content, format_hint)
+    
+    if detected_format == DocumentFormat.MARKDOWN:
+        return MarkdownParser()
+    elif detected_format == DocumentFormat.ASCIIDOC:
+        return AsciiDocParser()
+    else:
+        return PlainTextParser()
+----
+
+=== Markdown Processing
+
+==== `structural_parsing/markdown/parser.py`
+Markdown document parsing and structure extraction.
+
+**Purpose**: Parses Markdown documents into structured blocks
+**Key Features**:
+- CommonMark compatibility
+- Block-level structure extraction
+- Metadata preservation
+- Link and reference handling
+
+**Block Types Supported**:
+- Headings (H1-H6)
+- Paragraphs
+- Lists (ordered, unordered)
+- Code blocks
+- Blockquotes
+- Tables
+- Links and images
+
+==== `structural_parsing/markdown/types.py`
+Type definitions for Markdown structures.
+
+**Purpose**: Data structures for Markdown document representation
+**Key Types**:
+- `MarkdownBlock`: Base block representation
+- `HeadingBlock`: Heading structure
+- `ParagraphBlock`: Paragraph content
+- `ListBlock`: List structure
+- `CodeBlock`: Code block representation
+
+=== AsciiDoc Processing
+
+==== `structural_parsing/asciidoc/parser.py`
+AsciiDoc document parsing and structure extraction.
+
+**Purpose**: Parses AsciiDoc documents using Ruby-based asciidoctor
+**Key Features**:
+- Full AsciiDoc specification support
+- Advanced block type handling
+- Attribute processing
+- Include file resolution
+
+**Advanced Block Types**:
+- Admonition blocks (NOTE, TIP, WARNING)
+- Sidebar blocks
+- Example blocks
+- Source code blocks with syntax highlighting
+- Tables with complex formatting
+
+==== `structural_parsing/asciidoc/ruby_server.py`
+Ruby server integration for AsciiDoc processing.
+
+**Purpose**: Manages Ruby subprocess for asciidoctor integration
+**Key Functions**:
+- `start_ruby_server()`: Initialize Ruby subprocess
+- `process_asciidoc()`: Send content for processing
+- `shutdown_server()`: Clean server shutdown
+
+**Ruby Integration Pattern**:
+[source,python]
+----
+def process_asciidoc(content: str) -> dict:
+    # Send content to Ruby server
+    request = json.dumps({"content": content})
+    ruby_process.stdin.write(request + "\n")
+    
+    # Read response
+    response = ruby_process.stdout.readline()
+    return json.loads(response)
+----
+
+==== `structural_parsing/asciidoc/types.py`
+Type definitions for AsciiDoc structures.
+
+**Purpose**: Data structures for AsciiDoc document representation
+**Key Types**:
+- `AsciiDocBlock`: Base AsciiDoc block
+- `AdmonitionBlock`: Admonition representation
+- `SidebarBlock`: Sidebar content
+- `ExampleBlock`: Example block structure
+
+== Frontend Components
+
+=== HTML Templates
+
+==== `templates/base.html`
+Base template providing common layout and functionality.
+
+**Purpose**: Common layout structure for all pages
+**Features**:
+- Responsive design framework
+- Common CSS and JavaScript includes
+- Navigation structure
+- Error handling integration
+
+==== `templates/index.html`
+Main application interface.
+
+**Purpose**: Primary user interface for the Style Guide AI application
+**Key Sections**:
+- File upload interface
+- Text input area
+- Analysis results display
+- AI rewrite interface
+- Progress tracking display
+
+**Interactive Elements**:
+- Drag-and-drop file upload
+- Real-time text analysis
+- WebSocket progress updates
+- Two-pass AI rewriting interface
+
+==== `templates/error.html`
+Error page template for user-friendly error display.
+
+**Purpose**: Displays errors in a user-friendly format
+**Error Types Handled**:
+- 404 Page Not Found
+- 500 Internal Server Error
+- File upload errors
+- Analysis errors
+
+=== Static Assets
+
+==== `static/css/styles.css`
+Main stylesheet for the application.
+
+**Purpose**: Comprehensive styling for the entire application
+**Style Categories**:
+- Layout and responsive design
+- Typography and readability
+- Interactive element styling
+- Error and success state styling
+- Progress indicator styling
+- Analysis result formatting
+
+==== `static/js/core.js`
+Core JavaScript functionality.
+
+**Purpose**: Main application logic and coordination
+**Key Functions**:
+- Application initialization
+- Event coordination
+- State management
+- Error handling
+- User interface updates
+
+==== `static/js/file-handler.js`
+File upload and handling functionality.
+
+**Purpose**: Manages file upload operations
+**Features**:
+- Drag-and-drop support
+- File type validation
+- Progress tracking
+- Error handling
+- Multiple file format support
+
+**File Handling Flow**:
+[source,javascript]
+----
+class FileHandler {
+    handleFileUpload(file) {
+        // Validate file type and size
+        if (!this.validateFile(file)) return;
+        
+        // Show progress
+        this.showProgress();
+        
+        // Upload file
+        this.uploadFile(file)
+            .then(response => this.handleSuccess(response))
+            .catch(error => this.handleError(error));
+    }
+}
+----
+
+==== `static/js/socket-handler.js`
+WebSocket communication management.
+
+**Purpose**: Real-time communication with the server
+**Key Features**:
+- Connection management
+- Progress update handling
+- Error state management
+- Session management
+
+**WebSocket Events Handled**:
+- `connect`: Connection establishment
+- `progress`: Progress updates
+- `completion`: Task completion
+- `error`: Error notifications
+
+==== `static/js/analysis-display.js`
+Analysis results display and interaction.
+
+**Purpose**: Displays and manages analysis results
+**Display Features**:
+- Error highlighting in text
+- Rule violation details
+- Improvement suggestions
+- Statistics visualization
+- Interactive error navigation
+
+==== `static/js/utility-functions.js`
+Common utility functions and helpers.
+
+**Purpose**: Shared utility functions across the application
+**Utility Categories**:
+- DOM manipulation helpers
+- Data formatting functions
+- Validation utilities
+- Animation helpers
+- Browser compatibility functions
+
+== Data Flow and Integration
+
+=== Complete Request Processing Flow
+
+[source,mermaid]
+----
+graph TD
+    A[User Input/File Upload] --> B[Flask Route Handler]
+    B --> C{Request Type}
+    
+    C -->|Upload| D[Document Processor]
+    C -->|Analyze| E[Style Analyzer]
+    C -->|Rewrite| F[AI Rewriter]
+    
+    D --> G[Format Detection]
+    G --> H[Structural Parser]
+    H --> I[Text Extraction]
+    I --> J[Return to Client]
+    
+    E --> K[Analysis Mode Selection]
+    K --> L[Rules Engine]
+    L --> M[Block Processing]
+    M --> N[Error Detection]
+    N --> O[Statistics Calculation]
+    O --> P[Suggestion Generation]
+    P --> Q[Return Analysis Results]
+    
+    F --> R[Model Manager]
+    R --> S[Prompt Generator]
+    S --> T[Text Generator]
+    T --> U[Evaluator]
+    U --> V[Return Rewrite Results]
+    
+    J --> W[WebSocket Progress]
+    Q --> W
+    V --> W
+    W --> X[Frontend Update]
+----
+
+=== Inter-Component Communication
+
+**Service Layer Integration**:
+[source,python]
+----
+# Application factory initializes all services
+services = {
+    'document_processor': DocumentProcessor(),
+    'style_analyzer': StyleAnalyzer(),
+    'ai_rewriter': AIRewriter()
+}
+
+# Route handlers use services
+@app.route('/analyze', methods=['POST'])
+def analyze_content():
+    result = services['style_analyzer'].analyze_with_blocks(content)
+    return jsonify(result)
+----
+
+**Component Dependencies**:
+- **Style Analyzer** depends on:
+  - Rules system for error detection
+  - Structural parser for document analysis
+  - SpaCy for NLP processing
+  - Statistics calculator for metrics
+
+- **AI Rewriter** depends on:
+  - Model manager for AI integration
+  - Prompt generator for instruction creation
+  - Evaluator for quality assessment
+  - Style analyzer results for context
+
+- **Document Processor** depends on:
+  - Format detector for type identification
+  - Parser factory for appropriate parsers
+  - External libraries (PyMuPDF, python-docx)
+
+=== Configuration and Environment Management
+
+**Environment Variable Flow**:
+[source,text]
+----
+.env file → Config class → Service initialization → Runtime behavior
+----
+
+**Configuration Precedence**:
+1. Environment variables
+2. Configuration file defaults
+3. Hardcoded fallbacks
+
+**Key Configuration Points**:
+- AI model selection (Ollama vs. HuggingFace)
+- Analysis mode preference
+- Rule enable/disable flags
+- File upload limits
+- Logging levels
+
+== Performance and Optimization
+
+=== Analysis Performance
+
+**Intelligent Mode Selection**:
+The system automatically selects the optimal analysis mode based on available dependencies:
+
+[source,python]
+----
+def _determine_analysis_mode(self):
+    if SPACY_AVAILABLE and RULES_AVAILABLE:
+        return AnalysisMode.SPACY_RULES  # Optimal performance
+    elif RULES_AVAILABLE:
+        return AnalysisMode.RULES_FALLBACK  # Good performance
+    elif SPACY_AVAILABLE:
+        return AnalysisMode.SPACY_LEGACY  # Basic performance
+    else:
+        return AnalysisMode.MINIMAL  # Minimal performance
+----
+
+**Block-Level Processing**:
+- Parallel processing of document blocks
+- Context-aware rule application
+- Efficient error aggregation
+
+**Caching Strategies**:
+- SpaCy model caching
+- Rule compilation caching
+- Parser result caching
+
+=== AI Performance Optimization
+
+**Model Management**:
+- Lazy model loading
+- Connection pooling for API models
+- Efficient prompt generation
+- Response caching for similar inputs
+
+**Two-Pass Optimization**:
+- Selective second pass execution
+- Progressive enhancement approach
+- Quality threshold-based processing
+
+=== Memory Management
+
+**Large Document Handling**:
+- Streaming document processing
+- Block-wise analysis to prevent memory overflow
+- Efficient text storage and retrieval
+
+**Resource Cleanup**:
+- Automatic cleanup handlers for external processes
+- Memory-efficient data structures
+- Proper resource disposal
+
+=== Scalability Considerations
+
+**Horizontal Scaling**:
+- Stateless application design
+- External service integration (Ruby server)
+- Load balancer compatible
+
+**Vertical Scaling**:
+- Multi-threaded processing support
+- Efficient algorithm implementations
+- Resource usage optimization
+
+== Error Handling and Logging
+
+=== Comprehensive Error Handling
+
+**Error Hierarchy**:
+[source,text]
+----
+Application Errors
+├── Configuration Errors
+├── Service Initialization Errors
+├── Processing Errors
+│   ├── Document Processing Errors
+│   ├── Analysis Errors
+│   └── AI Generation Errors
+├── External Service Errors
+│   ├── Ollama Connection Errors
+│   ├── SpaCy Model Errors
+│   └── Ruby Server Errors
+└── User Input Errors
+----
+
+**Fallback Strategy**:
+Each component implements graceful degradation:
+- Missing dependencies → Fallback implementations
+- Service failures → Reduced functionality
+- External service unavailable → Local alternatives
+
+=== Logging System
+
+**Log Categories**:
+- **INFO**: Normal operation status
+- **WARNING**: Fallback usage, missing dependencies
+- **ERROR**: Service failures, processing errors
+- **DEBUG**: Detailed processing information
+
+**Log Destinations**:
+- Console output for development
+- File logging for production
+- Structured logging for monitoring
+
+== Docker Deployment
+
+=== Docker Configuration
+
+==== `docker/Dockerfile`
+Multi-stage Docker build for optimized deployment.
+
+**Purpose**: Creates optimized Docker image for production deployment
+**Build Stages**:
+1. **Base stage**: Python environment setup
+2. **Dependencies stage**: Install Python packages
+3. **Ruby stage**: Install Ruby and asciidoctor
+4. **Production stage**: Final optimized image
+
+==== `docker/docker-compose.yml`
+Docker Compose configuration for full stack deployment.
+
+**Purpose**: Orchestrates multi-container deployment
+**Services Defined**:
+- **app**: Main Flask application
+- **ollama**: Local AI model serving
+- **redis**: Caching and session storage (optional)
+
+==== `docker/build-and-push.sh`
+Automated build and deployment script.
+
+**Purpose**: Automates Docker image building and registry push
+**Build Process**:
+- Multi-architecture builds
+- Tag management
+- Registry authentication
+- Deployment automation
+
+== Documentation System
+
+=== Documentation Files
+
+**Architecture Documentation**:
+- `docs/architecture.adoc`: This comprehensive architecture document
+- `docs/how-to-add-new-rule.adoc`: Guide for extending rules
+- `docs/how-to-add-new-ambiguity-detector.adoc`: Ambiguity detection guide
+- `docs/how-to-add-new-model.adoc`: AI model integration guide
+
+**Implementation Guides**:
+- `MARKDOWN_IMPLEMENTATION_GUIDE.md`: Markdown processing details
+- `ASCIIDOC_IMPLEMENTATION_GUIDE.md`: AsciiDoc processing details
+- `README.md`: Project overview and setup instructions
+
+== Technology Stack Summary
+
+=== Core Technologies
+
+[cols="2,2,3,2"]
+|===
+|Component |Technology |Version |Purpose
+
+|Web Framework |Flask |3.0+ |HTTP server and routing
+|Real-time Communication |Flask-SocketIO |5.3+ |WebSocket support
+|NLP Processing |SpaCy |3.7+ |Natural language processing
+|AI Models |Ollama |0.1+ |Local LLM serving
+|AI Fallback |Transformers |4.36+ |Hugging Face models
+|Document Processing |PyMuPDF |1.23+ |PDF text extraction
+|Document Processing |python-docx |1.1+ |DOCX processing
+|AsciiDoc Processing |Ruby + Asciidoctor |Latest |AsciiDoc parsing
+|Configuration |YAML + python-dotenv |Latest |Settings management
+|Frontend |Vanilla JavaScript |ES6+ |User interface
+|Styling |CSS3 |Latest |User interface styling
+|Container |Docker |Latest |Deployment packaging
+|===
+
+=== External Dependencies
+
+**Required for Full Functionality**:
+- **Ollama**: Local AI model serving
+- **Ruby**: AsciiDoc processing
+- **SpaCy Model**: `en_core_web_sm` for NLP
+
+**Optional Dependencies**:
+- **Redis**: Session storage and caching
+- **OpenAI API**: Alternative AI model
+- **Various Python packages**: See requirements.txt
+
+== Conclusion
+
+Style Guide AI represents a comprehensive, modular architecture designed for:
+
+- **Extensibility**: Easy addition of new rules, detectors, and models
+- **Reliability**: Graceful fallbacks and error handling
+- **Performance**: Optimized processing and resource management
+- **Maintainability**: Clear separation of concerns and modular design
+- **Scalability**: Horizontal and vertical scaling capabilities
+
+The architecture supports multiple analysis modes, various AI backends, and comprehensive document format support while maintaining user-friendly operation and developer-friendly extension points. 

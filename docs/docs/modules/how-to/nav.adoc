@@ -1,0 +1,4 @@
+.How-to Guides
+* xref:how-to-add-new-rule.adoc[Add New Rule]
+* xref:how-to-add-new-ambiguity-detector.adoc[Add New Ambiguity Detector]
+* xref:how-to-add-new-model.adoc[Add New AI Model] 

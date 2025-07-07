@@ -1,0 +1,67 @@
+<link rel="stylesheet" href="{{uiRootPath}}/css/main.css">
+
+{{! Custom head meta for Mermaid support on GitHub Pages }}
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+  
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'default',
+    themeVariables: {
+      primaryColor: '#0066cc',
+      primaryTextColor: '#ffffff',
+      primaryBorderColor: '#0066cc',
+      lineColor: '#333333',
+      secondaryColor: '#f0f0f0',
+      tertiaryColor: '#ffffff'
+    },
+    flowchart: {
+      htmlLabels: true,
+      curve: 'basis'
+    },
+    gitGraph: {
+      showBranches: true,
+      showCommitLabel: true,
+      mainBranchName: 'main'
+    },
+    sequence: {
+      actorMargin: 50,
+      width: 150,
+      height: 65,
+      boxMargin: 10,
+      boxTextMargin: 5,
+      noteMargin: 10,
+      messageMargin: 35
+    }
+  });
+  
+  // Auto-render mermaid diagrams
+  document.addEventListener('DOMContentLoaded', function() {
+    const mermaidElements = document.querySelectorAll('.mermaid');
+    mermaidElements.forEach(element => {
+      mermaid.render('mermaid-' + Math.random().toString(36).substr(2, 9), element.textContent, function(svgCode) {
+        element.innerHTML = svgCode;
+      });
+    });
+  });
+</script>
+
+{{! Mermaid CSS for better styling }}
+<style>
+  .mermaid {
+    text-align: center;
+    margin: 1rem 0;
+  }
+  
+  .mermaid svg {
+    max-width: 100%;
+    height: auto;
+  }
+  
+  /* Dark mode support for diagrams */
+  @media (prefers-color-scheme: dark) {
+    .mermaid {
+      filter: invert(1) hue-rotate(180deg);
+    }
+  }
+</style>

@@ -1,0 +1,45 @@
+---
+image: registry.access.redhat.com/ubi9/ubi
+
+cache:
+  - key: $CI_COMMIT_REF_SLUG
+    paths:
+      - node_modules/
+      - /root/.cache/
+
+variables:
+  NODE_AUTH_TOKEN: $NODE_AUTH_TOKEN
+  CACHE_FALLBACK_KEY: main
+
+# YAML anchor to define the script steps once and reuse them
+.build_script: &build_script
+  before_script:
+    - dnf module enable -y nodejs:18
+    - dnf install -y nodejs golang jq
+  script:
+    - npm ci
+    - npm run build
+  tags: [shared-podman]
+
+# This job is for testing on merge requests. It builds the site and saves the artifacts
+# but does not deploy to GitLab Pages.
+test:
+  stage: test
+  <<: *build_script
+  artifacts:
+    paths:
+      - dist
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+
+# This job builds and deploys the site to GitLab Pages on the main branch.
+pages:
+  stage: deploy
+  <<: *build_script
+  artifacts:
+    paths:
+      - dist
+  # --- FINAL FIX: Tell GitLab Pages to use the 'dist' folder ---
+  publish: dist
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
