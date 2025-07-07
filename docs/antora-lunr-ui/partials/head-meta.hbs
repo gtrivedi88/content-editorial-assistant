@@ -38,29 +38,45 @@
     });
     
     // Find and render mermaid diagrams
-    const mermaidElements = document.querySelectorAll('pre[class*="mermaid"], .mermaid, [data-lang="mermaid"]');
+    // Look for pre elements that contain mermaid syntax
+    const allPreElements = document.querySelectorAll('pre');
     
-    mermaidElements.forEach(function(element, index) {
-      const graphDefinition = element.textContent || element.innerText;
-      const graphId = 'mermaid-diagram-' + index;
+    allPreElements.forEach(function(element, index) {
+      const content = element.textContent || element.innerText;
       
-      // Create a container for the rendered diagram
-      const container = document.createElement('div');
-      container.className = 'mermaid-container';
-      container.style.textAlign = 'center';
-      container.style.margin = '1rem 0';
+      // Check if this is a mermaid diagram by looking for mermaid keywords
+      const isMermaidDiagram = content.includes('graph ') || 
+                              content.includes('sequenceDiagram') || 
+                              content.includes('flowchart ') ||
+                              content.includes('classDiagram') ||
+                              content.includes('stateDiagram') ||
+                              content.includes('journey:') ||
+                              content.includes('gantt:') ||
+                              content.includes('pie:') ||
+                              content.includes('gitGraph:');
       
-      // Render the diagram
-      try {
-        mermaid.render(graphId, graphDefinition, function(svgCode) {
-          container.innerHTML = svgCode;
+      if (isMermaidDiagram) {
+        const graphDefinition = content.trim();
+        const graphId = 'mermaid-diagram-' + index;
+        
+        // Create a container for the rendered diagram
+        const container = document.createElement('div');
+        container.className = 'mermaid-container';
+        container.style.textAlign = 'center';
+        container.style.margin = '1rem 0';
+        
+        // Render the diagram
+        try {
+          mermaid.render(graphId, graphDefinition, function(svgCode) {
+            container.innerHTML = svgCode;
+            element.parentNode.replaceChild(container, element);
+          });
+        } catch (error) {
+          console.error('Mermaid rendering error:', error);
+          // Fallback: show the raw code
+          container.innerHTML = '<pre><code>' + graphDefinition + '</code></pre>';
           element.parentNode.replaceChild(container, element);
-        });
-      } catch (error) {
-        console.error('Mermaid rendering error:', error);
-        // Fallback: show the raw code
-        container.innerHTML = '<pre><code>' + graphDefinition + '</code></pre>';
-        element.parentNode.replaceChild(container, element);
+        }
       }
     });
   });
