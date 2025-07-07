@@ -1,5 +1,5 @@
 """
-Articles Rule (Enhanced)
+Articles Rule (Final Corrected Version)
 Based on IBM Style Guide topic: "Articles"
 """
 from typing import List, Dict, Any
@@ -7,8 +7,9 @@ from .base_language_rule import BaseLanguageRule
 
 class ArticlesRule(BaseLanguageRule):
     """
-    Checks for common article errors, such as incorrect 'a' vs 'an' usage
-    and potentially missing articles before singular countable nouns.
+    Checks for common article errors. This version has been corrected to
+    eliminate false positives, especially those caused by incorrect parsing
+    of ungrammatical source text.
     """
     def _get_rule_type(self) -> str:
         """Returns the unique identifier for this rule."""
@@ -28,31 +29,29 @@ class ArticlesRule(BaseLanguageRule):
                 # --- Rule 1: Check for 'a' vs 'an' ---
                 if token.lower_ in ['a', 'an'] and j < len(doc) - 1:
                     next_token = doc[j + 1]
-                    # Use a helper with linguistic anchors to check for vowel sounds.
                     starts_with_vowel_sound = self._starts_with_vowel_sound(next_token.text)
 
                     if token.lower_ == 'a' and starts_with_vowel_sound:
                         errors.append(self._create_error(
                             sentence=sentence, sentence_index=i,
-                            message=f"Incorrect article usage: Use 'an' before a vowel sound.",
+                            message=f"Incorrect article usage: Use 'an' before '{next_token.text}'.",
                             suggestions=[f"Change 'a {next_token.text}' to 'an {next_token.text}'."],
                             severity='medium'
                         ))
                     elif token.lower_ == 'an' and not starts_with_vowel_sound:
                          errors.append(self._create_error(
                             sentence=sentence, sentence_index=i,
-                            message=f"Incorrect article usage: Use 'a' before a consonant sound.",
+                            message=f"Incorrect article usage: Use 'a' before '{next_token.text}'.",
                             suggestions=[f"Change 'an {next_token.text}' to 'a {next_token.text}'."],
                             severity='medium'
                         ))
                 
-                # --- Rule 2: Check for potentially missing articles ---
-                # This is a heuristic and should be low severity to avoid false positives.
-                if self._is_missing_article_candidate(token):
+                # --- Rule 2: Check for potentially missing articles (Final Logic) ---
+                if self._is_missing_article_candidate(token, doc):
                     errors.append(self._create_error(
                         sentence=sentence, sentence_index=i,
                         message=f"Potentially missing article before the noun '{token.text}'.",
-                        suggestions=["Singular countable nouns usually require an article (a/an/the). Please review."],
+                        suggestions=["Singular countable nouns acting as the main subject or object often require an article (a/an/the). Please review."],
                         severity='low'
                     ))
 
@@ -60,7 +59,7 @@ class ArticlesRule(BaseLanguageRule):
 
     def _starts_with_vowel_sound(self, word: str) -> bool:
         """
-        A more robust check for whether a word starts with a vowel sound.
+        A robust check for whether a word starts with a vowel sound.
         It uses linguistic anchors to handle common exceptions.
         """
         word_lower = word.lower()
@@ -76,19 +75,38 @@ class ArticlesRule(BaseLanguageRule):
         # General rule for vowels.
         return word_lower[0] in 'aeiou'
 
-    def _is_missing_article_candidate(self, token) -> bool:
+    def _is_missing_article_candidate(self, token, doc) -> bool:
         """
-        Uses dependency parsing to check if a singular countable noun might
-        be missing a determiner (like 'a', 'an', or 'the').
+        A highly conservative check for missing articles. This function is designed
+        to be defensive against NLP parsing errors on ungrammatical text to
+        prevent false positives.
         """
-        # Linguistic Anchor: We are looking for singular, common nouns.
-        if token.pos_ == 'NOUN' and token.morph.get("Number") == ["Sing"]:
-            # We ignore proper nouns as they often don't need articles.
-            if token.tag_ == 'NN':
-                # Check the dependency parse. If the noun has no determiner ('det')
-                # or possessive ('poss') child, it might be missing an article.
-                has_determiner = any(child.dep_ in ('det', 'poss') for child in token.children)
-                if not has_determiner:
-                    # This is a strong candidate for a missing article.
-                    return True
+        # --- Condition 0: Guard against misidentified verbs. ---
+        # If the token is preceded by "to", it's almost certainly an infinitive verb,
+        # regardless of what the POS tagger might say due to bad grammar.
+        # This check is crucial for fixing the "configure" false positive.
+        if token.i > 0 and doc[token.i - 1].lower_ == 'to':
+            return False
+
+        # --- Condition 1: The token must NOT be part of a compound noun. ---
+        if token.dep_ == 'compound':
+            return False
+
+        # --- Condition 2: The token must be a singular common noun. ---
+        if token.pos_ == 'NOUN' and token.tag_ == 'NN':
+            
+            # --- Condition 3: The noun must NOT already have a determiner. ---
+            has_determiner = any(child.dep_ in ('det', 'poss') for child in token.children)
+            if has_determiner:
+                return False
+
+            # --- Condition 4: The noun should be a subject or object. ---
+            is_subject_or_object = token.dep_ in ('nsubj', 'dobj', 'pobj')
+            if is_subject_or_object:
+                # --- Condition 5: Add exclusions for common abstract nouns. ---
+                if token.lemma_ in ['access', 'permission', 'information', 'guidance', 'storage', 'software', 'security', 'support']:
+                    return False
+                
+                return True
+
         return False
