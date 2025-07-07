@@ -5,8 +5,6 @@ This ensures a consistent interface for all rules.
 """
 
 from typing import List, Dict, Any
-import os
-import sys
 
 # A generic base rule to be inherited from a central location
 # in a real application. The # type: ignore comments prevent the
@@ -14,23 +12,11 @@ import sys
 try:
     from ..base_rule import BaseRule  # type: ignore
 except ImportError:
-    try:
-        # Try absolute import
-        from rules.base_rule import BaseRule  # type: ignore
-    except ImportError:
-        # Fallback: add parent directory to path and import
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        parent_dir = os.path.dirname(current_dir)
-        if parent_dir not in sys.path:
-            sys.path.insert(0, parent_dir)
-        try:
-            from base_rule import BaseRule  # type: ignore
-        except ImportError:
-            class BaseRule:  # type: ignore
-                def _get_rule_type(self) -> str:
-                    return 'base'
-                def _create_error(self, **kwargs) -> Dict[str, Any]:
-                    return kwargs
+    class BaseRule:  # type: ignore
+        def _get_rule_type(self) -> str:
+            return 'base'
+        def _create_error(self, **kwargs) -> Dict[str, Any]:
+            return kwargs
 
 
 class BaseLanguageRule(BaseRule):

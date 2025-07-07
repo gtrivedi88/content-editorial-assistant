@@ -122,11 +122,28 @@ def parse_document(content)
       end
     end
     
+    # Determine the correct level for this block
+    block_level = level  # Default to nesting depth
+    
+    # For headings and sections, use the actual heading level instead of nesting depth
+    if block.context == :section
+      # For sections, use the section level (1, 2, 3, etc.)
+      block_level = block.level if block.respond_to?(:level)
+    elsif block.context == :heading
+      # For heading blocks, extract level from attributes or style
+      if block.respond_to?(:level)
+        block_level = block.level
+      elsif block.attributes && block.attributes['level']
+        block_level = block.attributes['level'].to_i
+      end
+    end
+
     block_info = {
       'context' => block.context.to_s,
       'content_model' => block.content_model.to_s,
       'content' => content,
-      'level' => level,
+      'level' => block_level,
+      'nesting_depth' => level,  # Keep track of nesting depth separately
       'style' => block.style,
       'title' => block.title,
       'id' => block.id,

@@ -3,7 +3,7 @@ Hyphens Rule
 Based on IBM Style Guide topics: "Hyphens" and "Prefixes"
 """
 from typing import List, Dict, Any
-from rules.punctuation.base_punctuation_rule import BasePunctuationRule
+from .base_punctuation_rule import BasePunctuationRule
 
 class HyphensRule(BasePunctuationRule):
     """

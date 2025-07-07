@@ -3,7 +3,7 @@ Ellipses Rule
 Based on IBM Style Guide topic: "Ellipses"
 """
 from typing import List, Dict, Any
-from rules.punctuation.base_punctuation_rule import BasePunctuationRule
+from .base_punctuation_rule import BasePunctuationRule
 
 class EllipsesRule(BasePunctuationRule):
     """

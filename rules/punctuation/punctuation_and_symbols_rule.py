@@ -3,13 +3,12 @@ Punctuation and Symbols Rule
 Based on IBM Style Guide topic: "Punctuation and symbols"
 """
 from typing import List, Dict, Any
-from rules.punctuation.base_punctuation_rule import BasePunctuationRule
+from .base_punctuation_rule import BasePunctuationRule
 
 class PunctuationAndSymbolsRule(BasePunctuationRule):
     """
-    Checks for incorrect placement of punctuation with quotation marks,
-    specifically for periods and commas placed outside the closing quote,
-    which is contrary to standard US English style.
+    Checks for the use of symbols instead of words in general text, using
+    dependency parsing to avoid flagging symbols in proper names or code.
     """
     def _get_rule_type(self) -> str:
         """Returns the unique identifier for this rule."""
@@ -17,33 +16,36 @@ class PunctuationAndSymbolsRule(BasePunctuationRule):
 
     def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         """
-        Analyzes sentences for incorrect punctuation placement after a
-        closing quotation mark.
+        Analyzes sentences for discouraged symbols in general text.
         """
         errors = []
         if not nlp:
-            # This rule requires tokenization to identify punctuation order.
+            # This rule requires dependency parsing for context.
             return errors
+        
+        # Linguistic Anchor: Symbols that should be spelled out in general text.
+        discouraged_symbols = {'&', '+'}
 
         for i, sentence in enumerate(sentences):
             doc = nlp(sentence)
             for token in doc:
-                # The rule triggers when a closing quotation mark is found.
-                # The IBM Style Guide follows US English conventions.
-                if token.text == '"' and token.i < len(doc) - 1:
+                if token.text in discouraged_symbols:
                     
                     # --- Context-Aware Check ---
-                    # The context is the token immediately following the quote.
-                    next_token = doc[token.i + 1]
+                    # To avoid false positives, we check if the symbol is part of a
+                    # larger entity that is likely a proper name or code. We do this
+                    # by checking the part-of-speech of the symbol's ancestors in
+                    # the dependency tree.
+                    is_part_of_proper_name_or_code = any(
+                        ancestor.pos_ in ("PROPN", "X", "SYM") for ancestor in token.ancestors
+                    )
                     
-                    # Linguistic Anchor: The error pattern is a closing quote
-                    # followed immediately by a period or comma.
-                    if next_token.text in {'.', ','}:
+                    if not is_part_of_proper_name_or_code:
                         errors.append(self._create_error(
                             sentence=sentence,
                             sentence_index=i,
-                            message="Punctuation placement with quotation mark may be incorrect for US English style.",
-                            suggestions=[f"Consider moving the '{next_token.text}' to be inside the closing quotation mark."],
-                            severity='low'
+                            message=f"Avoid using the symbol '{token.text}' in general text.",
+                            suggestions=[f"Replace '{token.text}' with 'and'."] if token.text in '&+' else [],
+                            severity='medium'
                         ))
         return errors

@@ -1,64 +1,77 @@
 """
-AsciiDoc Admonitions Rule
-Analyzes content within AsciiDoc admonition blocks for style and clarity.
+Admonitions Rule
+Based on IBM Style Guide topic: "Notes"
 """
 from typing import List, Dict, Any
 from .base_structure_rule import BaseStructureRule
 
 class AdmonitionsRule(BaseStructureRule):
     """
-    Checks for style issues specific to AsciiDoc admonition blocks.
-    This rule is designed to work with structural AsciiDoc parsing.
+    Checks for style issues within admonition blocks (like [NOTE], [WARNING]).
+    This rule verifies the use of correct labels and ensures the content is
+    a complete sentence for clarity.
     """
     def _get_rule_type(self) -> str:
+        """Returns the unique identifier for this rule."""
         return 'admonitions'
 
     def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
+        """
+        Analyzes the content of a block identified by the parser as an 'admonition'.
+        """
         errors = []
+        if not nlp or not context or context.get('block_type') != 'admonition':
+            # This rule only applies to blocks explicitly parsed as admonitions.
+            return errors
+
+        admonition_kind = context.get('kind', '').upper()
         
-        # Context-aware analysis: Only analyze if we know this is an admonition block
-        if not context or context.get('block_type') != 'admonition':
-            return errors  # Skip analysis if not an admonition block
-            
-        # Get admonition type from context (set by asciidoctor parsing)
-        admonition_type = context.get('admonition_type', 'NOTE').upper()
-        
-        # Combine all sentences to get full admonition content
-        full_content = ' '.join(sentences).strip()
-        
-        # Rule 1: Admonition content should not be empty
-        if not full_content:
+        # --- Rule 1: Check for Valid Admonition Labels ---
+        # Linguistic Anchor: A set of approved labels from the IBM Style Guide.
+        approved_labels = {
+            'NOTE', 'IMPORTANT', 'RESTRICTION', 'TIP', 'ATTENTION', 
+            'CAUTION', 'DANGER', 'REQUIREMENT', 'EXCEPTION', 'FAST PATH', 'REMEMBER'
+        }
+
+        if admonition_kind not in approved_labels:
             errors.append(self._create_error(
                 sentence=text,
                 sentence_index=0,
-                message=f"{admonition_type} admonition is empty.",
-                suggestions=[f"Provide meaningful content for the {admonition_type} admonition."],
+                message=f"Invalid admonition label '[{admonition_kind}]' used.",
+                suggestions=[f"Use one of the approved labels from the IBM Style Guide, such as 'NOTE', 'IMPORTANT', or 'WARNING'."],
                 severity='medium'
             ))
-            return errors
+
+        # --- Rule 2: Check if Admonition Content is a Complete Sentence ---
+        # The content of a note should be a clear, complete thought.
+        doc = nlp(text)
+        if not self._is_complete_sentence(doc):
+            errors.append(self._create_error(
+                sentence=text,
+                sentence_index=0,
+                message="The content of the admonition may not be a complete sentence.",
+                suggestions=["Ensure the text within the note forms a complete, standalone sentence for clarity."],
+                severity='low'
+            ))
+
+        return errors
+
+    def _is_complete_sentence(self, doc) -> bool:
+        """
+        Uses dependency parsing to check if the text forms a complete sentence.
+        A complete sentence must have a root and typically a subject.
+        """
+        if not doc:
+            return False
+            
+        # Linguistic Anchor: A complete sentence has a root verb.
+        has_root = any(token.dep_ == 'ROOT' for token in doc)
         
-        # Rule 2: WARNING and CAUTION should be specific and actionable
-        if admonition_type in ['WARNING', 'CAUTION']:
-            if len(full_content.split()) < 5:
-                errors.append(self._create_error(
-                    sentence=full_content,
-                    sentence_index=0,
-                    message=f"{admonition_type} admonition should provide specific guidance.",
-                    suggestions=[f"Expand the {admonition_type} to explain what might happen and how to avoid it."],
-                    severity='medium'
-                ))
+        # Check for a subject, which is typical for a complete sentence.
+        has_subject = any(token.dep_ in ('nsubj', 'nsubjpass', 'csubj') for token in doc)
         
-        # Rule 3: Avoid redundant phrases in admonitions
-        redundant_phrases = ['please note that', 'it is important to note', 'be aware that']
-        for i, sentence in enumerate(sentences):
-            for phrase in redundant_phrases:
-                if phrase in sentence.lower():
-                    errors.append(self._create_error(
-                        sentence=sentence,
-                        sentence_index=i,
-                        message=f"Avoid redundant phrase '{phrase}' in {admonition_type} admonition.",
-                        suggestions=[f"Remove '{phrase}' as the {admonition_type} already indicates importance."],
-                        severity='low'
-                    ))
-        
-        return errors 
+        # Imperative sentences (common in notes) might not have an explicit subject,
+        # but their root is a verb.
+        is_imperative = doc[0].pos_ == 'VERB' and doc[0].dep_ == 'ROOT'
+
+        return has_root and (has_subject or is_imperative)

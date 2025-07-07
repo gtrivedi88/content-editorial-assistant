@@ -21,7 +21,6 @@ from .pronouns_rule import PronounsRule
 from .spelling_rule import SpellingRule
 from .terminology_rule import TerminologyRule
 from .verbs_rule import VerbsRule
-from .passive_voice_rule import PassiveVoiceRule
 
 
 __all__ = [
@@ -39,6 +38,5 @@ __all__ = [
     'PronounsRule',
     'SpellingRule',
     'TerminologyRule',
-    'VerbsRule',
-    'PassiveVoiceRule',
+    'VerbsRule'
 ]

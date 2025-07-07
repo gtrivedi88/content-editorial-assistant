@@ -526,7 +526,8 @@ class BlockProcessor:
     @staticmethod
     def get_block_type_display_name(block_type_value: str, context: Dict[str, Any]) -> str:
         """Get a human-readable display name for a block type."""
-        level = context.get('level', 0)
+        # Check both level keys since different parsers use different keys
+        level = context.get('level', 0) or context.get('heading_level', 0)
         admonition_type = context.get('admonition_type')
         
         display_names = {

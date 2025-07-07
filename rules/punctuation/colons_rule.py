@@ -3,7 +3,7 @@ Colons Rule
 Based on IBM Style Guide topic: "Colons"
 """
 from typing import List, Dict, Any
-from rules.punctuation.base_punctuation_rule import BasePunctuationRule
+from .base_punctuation_rule import BasePunctuationRule
 
 class ColonsRule(BasePunctuationRule):
     """
@@ -21,11 +21,6 @@ class ColonsRule(BasePunctuationRule):
         Analyzes sentences for various colon usage violations.
         """
         errors = []
-        
-        # Context-aware analysis: Skip analysis for AsciiDoc attribute entries
-        if context and context.get('block_type') == 'attribute_entry':
-            return errors  # Skip analysis for attributes like :author: Jane Doe
-        
         if not nlp:
             # This rule requires dependency parsing, so NLP is essential.
             return errors
@@ -39,8 +34,8 @@ class ColonsRule(BasePunctuationRule):
                     if self._is_legitimate_context(token, doc):
                         continue
 
-                    # If not a legitimate context, check for common errors.
-                    # The main rule: A colon must follow a complete independent clause.
+                    # If not a legitimate context, check for the main error:
+                    # A colon must follow a complete independent clause.
                     if not self._is_preceded_by_complete_clause(token, doc):
                         errors.append(self._create_error(
                             sentence=sentence,
@@ -57,18 +52,18 @@ class ColonsRule(BasePunctuationRule):
         Uses linguistic anchors to identify legitimate colon contexts that should be ignored.
         This is the primary method for reducing false positives.
         """
-        # Linguistic Anchor: Time expressions (e.g., 3:30 PM)
+        # Linguistic Anchor: Time expressions (e.g., 3:30 PM) and ratios (e.g., 5:1).
         if colon_token.i > 0 and colon_token.i < len(doc) - 1:
             prev_token = doc[colon_token.i - 1]
             next_token = doc[colon_token.i + 1]
             if prev_token.like_num and next_token.like_num:
-                return True # Likely a time or ratio
+                return True
 
-        # Linguistic Anchor: Technical paths or URLs (e.g., http:)
+        # Linguistic Anchor: Technical paths or URLs (e.g., http:).
         if "http" in colon_token.head.text.lower():
             return True
 
-        # Linguistic Anchor: Title/subtitle patterns (e.g., "Chapter 1: Getting Started")
+        # Linguistic Anchor: Title/subtitle patterns (e.g., "Chapter 1: Getting Started").
         if colon_token.head.pos_ in ("NOUN", "PROPN") and colon_token.head.is_title:
              if colon_token.i < len(doc) - 1 and doc[colon_token.i + 1].is_title:
                 return True

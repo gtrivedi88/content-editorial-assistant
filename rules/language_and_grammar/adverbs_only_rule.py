@@ -7,28 +7,34 @@ from .base_language_rule import BaseLanguageRule
 
 class AdverbsOnlyRule(BaseLanguageRule):
     """
-    Checks for potentially misplaced "only" adverbs. The placement of "only"
-    can significantly change the meaning of a sentence.
+    Checks for the word "only" and advises the user to review its placement
+    to ensure the meaning of the sentence is clear and unambiguous.
     """
     def _get_rule_type(self) -> str:
+        """Returns the unique identifier for this rule."""
         return 'adverbs_only'
 
     def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
+        """
+        Analyzes sentences for the presence of the word "only".
+        """
         errors = []
         if not nlp:
+            # This rule requires tokenization.
             return errors
 
         for i, sentence in enumerate(sentences):
             doc = nlp(sentence)
             for token in doc:
+                # Linguistic Anchor: The target is the adverb "only".
+                # Because its correct placement is semantic, we flag it for review
+                # rather than attempting to auto-correct it, which prevents false positives.
                 if token.lemma_ == 'only':
-                    # This is a complex semantic issue. The best approach for a style
-                    # checker is to flag it for human review.
                     errors.append(self._create_error(
                         sentence=sentence,
                         sentence_index=i,
-                        message="The word 'only' can be ambiguous. Please review its placement.",
-                        suggestions=["Ensure 'only' is placed immediately before the word or phrase it is intended to modify."],
+                        message="The word 'only' can be ambiguous depending on its placement.",
+                        suggestions=["To ensure clarity, review the sentence and place 'only' immediately before the word or phrase it is intended to modify."],
                         severity='low'
                     ))
         return errors

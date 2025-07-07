@@ -3,7 +3,7 @@ Semicolons Rule
 Based on IBM Style Guide topic: "Semicolons"
 """
 from typing import List, Dict, Any
-from rules.punctuation.base_punctuation_rule import BasePunctuationRule
+from .base_punctuation_rule import BasePunctuationRule
 
 class SemicolonsRule(BasePunctuationRule):
     """
@@ -19,14 +19,17 @@ class SemicolonsRule(BasePunctuationRule):
         Analyzes sentences for the presence of semicolons.
         """
         errors = []
-        # The IBM Style Guide is direct: "Use a semicolon to separate independent
-        # clauses or items in a series that has internal punctuation. If a sentence
-        # is complex, difficult to read, or longer than 32 words, consider
-        # rewriting it, separating it into multiple sentences..."
-        # For a style checker, flagging any semicolon for review is the most
-        # reliable way to enforce this principle of clarity and simplicity.
+        if not nlp:
+            # This rule requires tokenization to be robust.
+            return errors
+
         for i, sentence in enumerate(sentences):
-            if ';' in sentence:
+            doc = nlp(sentence)
+            # The IBM Style Guide advises against semicolons for clarity.
+            # Therefore, we check for the presence of the semicolon token itself.
+            # This is more reliable than a simple string search, as it won't be
+            # confused by HTML entities or other special characters.
+            if any(token.text == ';' for token in doc):
                 errors.append(self._create_error(
                     sentence=sentence,
                     sentence_index=i,

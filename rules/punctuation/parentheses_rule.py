@@ -3,7 +3,7 @@ Parentheses Rule
 Based on IBM Style Guide topic: "Parentheses"
 """
 from typing import List, Dict, Any
-from rules.punctuation.base_punctuation_rule import BasePunctuationRule
+from .base_punctuation_rule import BasePunctuationRule
 
 class ParenthesesRule(BasePunctuationRule):
     """
