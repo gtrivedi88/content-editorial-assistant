@@ -56,6 +56,7 @@ block_type_rules:
     # General rules
     - second_person
     - sentence_length
+    - ambiguity
 
   # List items - apply list-specific rules plus general content rules
   list_item:
@@ -93,6 +94,7 @@ block_type_rules:
     # General rules
     - second_person
     - sentence_length
+    - ambiguity
     
   list_item_ordered:
     - lists
@@ -129,6 +131,7 @@ block_type_rules:
     # General rules
     - second_person
     - sentence_length
+    - ambiguity
     
   list_item_unordered:
     - lists
@@ -164,6 +167,7 @@ block_type_rules:
     # General rules
     - second_person
     - sentence_length
+    - ambiguity
     
   list_title:
     - lists
@@ -211,6 +215,7 @@ block_type_rules:
     # General rules
     - second_person
     - sentence_length
+    - ambiguity
 
   quote:
     - punctuation_and_symbols
@@ -222,6 +227,7 @@ block_type_rules:
     - lists
     - second_person
     - sentence_length
+    - ambiguity
     - contractions
     - ellipses
 
@@ -256,6 +262,7 @@ block_type_rules:
     - procedures
     - second_person
     - sentence_length
+    - ambiguity
     - contractions
     - ellipses
 
@@ -279,6 +286,7 @@ block_type_rules:
     - punctuation_and_symbols
     - quotation_marks
     - sentence_length
+    - ambiguity
 
 # Define rules that should never be applied to certain block types
 rule_exclusions:

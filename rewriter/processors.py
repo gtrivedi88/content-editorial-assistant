@@ -112,13 +112,19 @@ class TextProcessor:
             
             sentence_lower = sentence.lower()
             
+            # Skip numbered explanations (1., 2., 3., etc.)
+            if re.match(r'^\d+\.', sentence):
+                continue
+            
             # Skip explanatory sentences
             explanatory_starts = [
                 'note:', 'i\'ve', 'i have', 'i applied', 'i made', 'i converted',
                 'i removed', 'i shortened', 'i replaced', 'this addresses',
                 'these changes', 'the rewrite', 'as requested', 'per your',
                 'let me know', 'if you\'d like', 'would you like', 'i can help',
-                'here are the', 'the changes', 'improvements made', 'changes include'
+                'here are the', 'the changes', 'improvements made', 'changes include',
+                'critical:', 'important:', 'note that', 'i did not', 'i ensured',
+                'i maintained', 'i used', 'i kept', 'i split', 'i toned'
             ]
             
             is_explanatory = any(sentence_lower.startswith(start) for start in explanatory_starts)
@@ -127,7 +133,18 @@ class TextProcessor:
             meta_keywords = ['converted', 'identified', 'replaced', 'clarified', 'improved', 'rewritten', 'changed']
             has_meta_keywords = any(keyword in sentence_lower for keyword in meta_keywords)
             
-            if not is_explanatory and not has_meta_keywords:
+            # Skip sentences that sound like AI explanations
+            ai_explanation_patterns = [
+                r'\bi (did|have|used|kept|split|maintained|ensured|toned)\b',
+                r'\bto avoid\b.*\b(guarantees|promises|claims)\b',
+                r'\binstead of\b.*\boriginal\b',
+                r'\bfor better\b.*\bclarity\b',
+                r'\blevel of\b.*\bdetail\b.*\boriginal\b'
+            ]
+            
+            has_ai_patterns = any(re.search(pattern, sentence_lower) for pattern in ai_explanation_patterns)
+            
+            if not is_explanatory and not has_meta_keywords and not has_ai_patterns:
                 content_sentences.append(sentence)
         
         if content_sentences:

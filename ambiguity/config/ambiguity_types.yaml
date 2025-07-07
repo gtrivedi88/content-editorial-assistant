@@ -1,0 +1,147 @@
+# Ambiguity Detection Configuration
+# This file defines the types of ambiguity to detect and their patterns
+
+# Global settings
+enabled: true
+confidence_threshold: 0.7
+
+# Ambiguity type configurations
+ambiguity_types:
+  missing_actor:
+    enabled: true
+    category: "referential"
+    severity: "high"
+    confidence_threshold: 0.7
+    description: "Passive voice sentences without clear actors"
+    
+  ambiguous_pronoun:
+    enabled: true
+    category: "referential"  
+    severity: "medium"
+    confidence_threshold: 0.6
+    description: "Pronouns with unclear referents"
+    
+  unclear_subject:
+    enabled: true
+    category: "referential"
+    severity: "medium" 
+    confidence_threshold: 0.6
+    description: "Unclear subject references"
+    
+  ambiguous_modifier:
+    enabled: false  # To be implemented later
+    category: "structural"
+    severity: "low"
+    confidence_threshold: 0.5
+    description: "Ambiguous modifier placement"
+    
+  vague_quantifier:
+    enabled: false  # To be implemented later
+    category: "semantic"
+    severity: "low" 
+    confidence_threshold: 0.5
+    description: "Vague quantifiers without context"
+    
+  unclear_temporal:
+    enabled: false  # To be implemented later
+    category: "temporal"
+    severity: "medium"
+    confidence_threshold: 0.6
+    description: "Unclear temporal references"
+
+# Detection patterns for missing actors
+missing_actor_patterns:
+  passive_voice_indicators:
+    - "be"
+    - "is" 
+    - "are"
+    - "was"
+    - "were"
+    - "being"
+    - "been"
+    
+  clear_actors:
+    technical:
+      - "system"
+      - "application"
+      - "program" 
+      - "software"
+      - "server"
+      - "database"
+      - "service"
+      - "api"
+      - "interface"
+      - "module"
+      - "component"
+    human:
+      - "user"
+      - "administrator"
+      - "developer"
+      - "operator"
+      - "manager"
+      - "you"
+      - "we"
+      
+  technical_contexts:
+    - "configure"
+    - "generate"
+    - "create"
+    - "install"
+    - "setup"
+    - "deploy"
+    - "execute"
+    - "run"
+    - "start"
+    - "stop"
+    - "update"
+    - "modify"
+    - "delete"
+    - "process"
+    - "handle"
+    - "manage"
+    - "control"
+    - "monitor"
+    - "validate"
+
+# Detection patterns for ambiguous pronouns  
+ambiguous_pronoun_patterns:
+  problematic_pronouns:
+    - "it"
+    - "this"
+    - "that"
+    - "they"
+    - "them"
+    - "these"
+    - "those"
+    
+  safe_contexts:
+    # Contexts where pronouns are usually clear
+    - "immediately_follows_noun"
+    - "single_possible_referent"
+    - "within_same_clause"
+
+# Resolution strategies by ambiguity type
+resolution_strategies:
+  missing_actor:
+    - "identify_actor"
+    - "restructure_sentence"
+    
+  ambiguous_pronoun:
+    - "clarify_pronoun"
+    - "specify_reference"
+    
+  unclear_subject:
+    - "specify_reference"
+    - "add_context"
+    
+  ambiguous_modifier:
+    - "restructure_sentence"
+    - "clarify_modification_target"
+    
+  vague_quantifier:
+    - "quantify_precisely"
+    - "add_context"
+    
+  unclear_temporal:
+    - "specify_timing"
+    - "add_temporal_context" 

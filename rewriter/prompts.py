@@ -85,7 +85,12 @@ class PromptGenerator:
         # GROUP by error type to avoid duplication
         error_groups = defaultdict(list)
         for error in prioritized_errors:
-            error_groups[error.get('type', 'unknown')].append(error)
+            # Handle ambiguity errors by using their subtype
+            if error.get('type') == 'ambiguity':
+                error_type = error.get('subtype', 'unknown')
+            else:
+                error_type = error.get('type', 'unknown')
+            error_groups[error_type].append(error)
 
         primary_command = ""
         specific_instructions = []

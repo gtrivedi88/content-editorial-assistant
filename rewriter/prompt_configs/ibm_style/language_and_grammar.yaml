@@ -66,3 +66,65 @@ rules:
   
   article_usage:
     instruction: "Correct article usage (a, an, the). Use 'a' before consonant sounds, 'an' before vowel sounds, and 'the' for specific references."
+
+  # AMBIGUITY DETECTION RULES
+  ambiguity:
+    primary_command: "CRITICAL: This text contains ambiguous content that requires clarification. You MUST resolve all ambiguities by identifying missing actors, clarifying unclear references, and making all meaning explicit."
+    instruction: "Resolve ambiguity by clearly specifying who or what performs actions, what pronouns refer to, and ensuring all references are unambiguous."
+    
+  missing_actor:
+    instruction: "CRITICAL: This sentence uses passive voice without specifying who or what performs the action. You MUST identify and specify the actor (e.g., 'the system', 'you', 'the administrator') performing the action."
+    examples:
+      - "BEFORE: This is configured automatically."
+      - "AFTER: The system configures this automatically."
+      - "AFTER: You configure this automatically."
+    
+  ambiguous_pronoun:
+    instruction: "CRITICAL: This sentence contains a pronoun with an unclear referent. Replace the ambiguous pronoun with the specific noun it refers to."
+    examples:
+      - "BEFORE: The server connects to the gateway. It is fast."
+      - "AFTER: The server connects to the gateway. The connection is fast."
+      - "AFTER: The server connects to the gateway. The server is fast."
+      
+  unclear_subject:
+    instruction: "Clarify the unclear subject by specifying exactly what entity you are referring to."
+    
+  ambiguous_modifier:
+    instruction: "Restructure the sentence to clarify what the modifier is describing."
+    
+  vague_quantifier:
+    instruction: "Replace vague quantifiers (some, many, several) with specific numbers or ranges when possible."
+    
+  unclear_temporal:
+    instruction: "Specify exact timing or sequence instead of using vague temporal references like 'then' or 'later'."
+    
+  # CRITICAL AI REWRITER CONSTRAINTS
+  unsupported_claims:
+    primary_command: "CRITICAL: This text contains unsupported claims or promises. You MUST NOT strengthen claims beyond what can be substantiated."
+    instruction: "Replace strong claims with more measured language. Avoid absolute guarantees, promises, or claims that cannot be verified."
+    examples:
+      - "WRONG: Change 'ensures' to 'guarantees'"
+      - "CORRECT: Keep 'ensures' or use 'helps ensure', 'is designed to'"
+      - "WRONG: Use 'always', 'never', 'perfect', 'foolproof'"
+      - "CORRECT: Use 'typically', 'rarely', 'reliable', 'straightforward'"
+    constraints:
+      - "Never strengthen claims beyond the original text"
+      - "Do not make promises that cannot be substantiated"
+      - "Use qualifying language when appropriate"
+    
+  fabrication_risk:
+    primary_command: "CRITICAL: This text has high risk of information fabrication. You MUST NOT add any information not present in the original text."
+    instruction: "Do not add purposes, explanations, methods, or details that are not explicitly stated in the original text."
+    examples:
+      - "WRONG: Add 'to verify data accuracy' when not in original"
+      - "CORRECT: Keep vague actions vague if original is vague"
+      - "WRONG: Specify technical details not mentioned"
+      - "CORRECT: Preserve the level of detail from original"
+    constraints:
+      - "Do not add information not in the original text"
+      - "Do not invent purposes or explanations"
+      - "Preserve the level of specificity from the original"
+      - "When in doubt, keep it general"
+    
+  excessive_certainty:
+    instruction: "Replace overly confident language with more measured alternatives that accurately reflect the level of certainty."
