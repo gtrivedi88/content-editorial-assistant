@@ -1,13 +1,13 @@
 site:
   title: Style Guide AI Documentation
-  url: https://gtrivedi.github.io/style-guide-ai
+  url: https://github.com/gtrivedi88/peer-lens
   start_page: style-guide-ai::index.adoc
 
 content:
   sources:
   - url: .
     branches: HEAD
-    edit_url: 'https://github.com/gtrivedi/style-guide-ai/blob/main/{path}'
+    edit_url: 'https://github.com/gtrivedi88/peer-lens/blob/main/{path}'
     start_path: docs
 
 ui:
