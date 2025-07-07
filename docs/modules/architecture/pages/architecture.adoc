@@ -1,6 +1,4 @@
 = Style Guide AI - Complete Architecture Documentation
-:toc: left
-:toc-title: Table of Contents
 :sectnums:
 :sectanchors:
 :imagesdir: ./images
@@ -197,7 +195,7 @@ style-guide-ai/
 
 == High-Level System Architecture
 
-[source,mermaid]
+[mermaid]
 ----
 graph TB
     subgraph "Client Layer"
@@ -266,7 +264,7 @@ graph TB
 
 == Component Interaction Flow
 
-[source,mermaid]
+[mermaid]
 ----
 sequenceDiagram
     participant Client
@@ -1348,7 +1346,7 @@ Common utility functions and helpers.
 
 === Complete Request Processing Flow
 
-[source,mermaid]
+[mermaid]
 ----
 graph TD
     A[User Input/File Upload] --> B[Flask Route Handler]

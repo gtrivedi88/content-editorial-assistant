@@ -1,6 +1,4 @@
 = How to Add a New Ambiguity Detector to Style Guide AI
-:toc: left
-:toc-title: Table of Contents
 :source-highlighter: highlightjs
 
 == Overview

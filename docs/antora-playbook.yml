@@ -26,15 +26,10 @@ runtime:
 
 asciidoc:
   attributes:
-    source-highlighter: highlight.js
     kroki-server-url: https://kroki.io
     kroki-fetch-diagram: true
     page-mermaid: true
-    experimental: ''
-    icons: font
-    sectanchors: ''
-    sectlinks: ''
-    stem: latexmath
+    experimental: true
 
 output:
   dir: ./dist

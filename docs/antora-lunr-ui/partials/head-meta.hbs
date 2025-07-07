@@ -1,67 +1,110 @@
 <link rel="stylesheet" href="{{uiRootPath}}/css/main.css">
 
-{{! Custom head meta for Mermaid support on GitHub Pages }}
-<script type="module">
-  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-  
-  mermaid.initialize({
-    startOnLoad: true,
-    theme: 'default',
-    themeVariables: {
-      primaryColor: '#0066cc',
-      primaryTextColor: '#ffffff',
-      primaryBorderColor: '#0066cc',
-      lineColor: '#333333',
-      secondaryColor: '#f0f0f0',
-      tertiaryColor: '#ffffff'
-    },
-    flowchart: {
-      htmlLabels: true,
-      curve: 'basis'
-    },
-    gitGraph: {
-      showBranches: true,
-      showCommitLabel: true,
-      mainBranchName: 'main'
-    },
-    sequence: {
-      actorMargin: 50,
-      width: 150,
-      height: 65,
-      boxMargin: 10,
-      boxTextMargin: 5,
-      noteMargin: 10,
-      messageMargin: 35
-    }
-  });
-  
-  // Auto-render mermaid diagrams
+{{! Mermaid support for GitHub Pages }}
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+<script>
   document.addEventListener('DOMContentLoaded', function() {
-    const mermaidElements = document.querySelectorAll('.mermaid');
-    mermaidElements.forEach(element => {
-      mermaid.render('mermaid-' + Math.random().toString(36).substr(2, 9), element.textContent, function(svgCode) {
-        element.innerHTML = svgCode;
-      });
+    // Initialize Mermaid
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'default',
+      securityLevel: 'loose',
+      themeVariables: {
+        primaryColor: '#0066cc',
+        primaryTextColor: '#ffffff',
+        primaryBorderColor: '#0066cc',
+        lineColor: '#333333',
+        secondaryColor: '#f0f0f0',
+        tertiaryColor: '#ffffff'
+      },
+      flowchart: {
+        htmlLabels: true,
+        curve: 'basis'
+      },
+      gitGraph: {
+        showBranches: true,
+        showCommitLabel: true,
+        mainBranchName: 'main'
+      },
+      sequence: {
+        actorMargin: 50,
+        width: 150,
+        height: 65,
+        boxMargin: 10,
+        boxTextMargin: 5,
+        noteMargin: 10,
+        messageMargin: 35
+      }
+    });
+    
+    // Find and render mermaid diagrams
+    const mermaidElements = document.querySelectorAll('pre[class*="mermaid"], .mermaid, [data-lang="mermaid"]');
+    
+    mermaidElements.forEach(function(element, index) {
+      const graphDefinition = element.textContent || element.innerText;
+      const graphId = 'mermaid-diagram-' + index;
+      
+      // Create a container for the rendered diagram
+      const container = document.createElement('div');
+      container.className = 'mermaid-container';
+      container.style.textAlign = 'center';
+      container.style.margin = '1rem 0';
+      
+      // Render the diagram
+      try {
+        mermaid.render(graphId, graphDefinition, function(svgCode) {
+          container.innerHTML = svgCode;
+          element.parentNode.replaceChild(container, element);
+        });
+      } catch (error) {
+        console.error('Mermaid rendering error:', error);
+        // Fallback: show the raw code
+        container.innerHTML = '<pre><code>' + graphDefinition + '</code></pre>';
+        element.parentNode.replaceChild(container, element);
+      }
     });
   });
 </script>
 
 {{! Mermaid CSS for better styling }}
 <style>
-  .mermaid {
+  .mermaid-container {
     text-align: center;
     margin: 1rem 0;
   }
   
-  .mermaid svg {
+  .mermaid-container svg {
     max-width: 100%;
     height: auto;
   }
   
-  /* Dark mode support for diagrams */
+  /* Improve diagram readability */
+  .mermaid-container .node rect,
+  .mermaid-container .node circle,
+  .mermaid-container .node ellipse {
+    fill: #f9f9f9;
+    stroke: #333;
+    stroke-width: 1px;
+  }
+  
+  .mermaid-container .edgeLabel {
+    background-color: #ffffff;
+    padding: 2px 4px;
+    border-radius: 2px;
+  }
+  
+  /* Dark mode support */
   @media (prefers-color-scheme: dark) {
-    .mermaid {
-      filter: invert(1) hue-rotate(180deg);
+    .mermaid-container .node rect,
+    .mermaid-container .node circle,
+    .mermaid-container .node ellipse {
+      fill: #2d3748;
+      stroke: #e2e8f0;
+    }
+    
+    .mermaid-container .edgeLabel {
+      background-color: #2d3748;
+      color: #e2e8f0;
     }
   }
 </style>

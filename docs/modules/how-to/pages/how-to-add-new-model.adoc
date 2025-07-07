@@ -1,6 +1,4 @@
 = How to Add a New AI Model to Style Guide AI
-:toc: left
-:toc-title: Table of Contents
 :source-highlighter: highlightjs
 
 == Overview
