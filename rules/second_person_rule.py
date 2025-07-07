@@ -3,7 +3,7 @@ Second Person Rule (Context-Aware)
 Based on IBM Style Guide topic: "Verbs: Person"
 """
 from typing import List, Dict, Any
-from .base_language_rule import BaseLanguageRule
+from .language_and_grammar.base_language_rule import BaseLanguageRule
 
 class SecondPersonRule(BaseLanguageRule):
     """
