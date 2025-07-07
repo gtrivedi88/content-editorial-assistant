@@ -212,7 +212,20 @@ class BlockProcessor:
             combined_content = []
             for child in block.children:
                 if hasattr(child, 'content') and child.content:
-                    combined_content.append(child.content.strip())
+                    child_content = child.content.strip()
+                    child_type = getattr(child.block_type, 'value', str(child.block_type))
+                    
+                    # Skip unordered lists with Ruby AST content (> 1000 characters)
+                    if child_type == 'unordered_list' and len(child_content) > 1000:
+                        # Extract clean list items dynamically
+                        list_items = BlockProcessor._extract_clean_list_items_from_block(child)
+                        if list_items:
+                            combined_content.extend(list_items)
+                        else:
+                            # Fallback - indicate list is present but content unavailable
+                            combined_content.append("* [List content not available]")
+                    else:
+                        combined_content.append(child_content)
             
             # Update the block's content with consolidated content
             if combined_content:
@@ -226,6 +239,95 @@ class BlockProcessor:
         except Exception as e:
             logger.error(f"Error consolidating compound block: {e}")
             return block
+    
+    @staticmethod
+    def _extract_clean_list_items_from_block(list_block):
+        """Extract clean text from list items, handling Ruby AST objects."""
+        list_items = []
+        
+        try:
+            # Try to extract from children first
+            children = getattr(list_block, 'children', [])
+            if children:
+                for child in children:
+                    # Try multiple methods to get clean text
+                    item_text = None
+                    
+                    # Method 1: Check for 'text' attribute (often clean)
+                    if hasattr(child, 'text') and child.text:
+                        item_text = str(child.text).strip()
+                    
+                    # Method 2: Check for clean content
+                    elif hasattr(child, 'content') and isinstance(child.content, str):
+                        content = child.content.strip()
+                        if len(content) < 500 and not content.startswith('[#'):  # Not Ruby AST
+                            item_text = content
+                    
+                    # Method 3: Try get_text_content if available
+                    elif hasattr(child, 'get_text_content'):
+                        try:
+                            text_content = child.get_text_content().strip()
+                            if text_content and len(text_content) < 500:
+                                item_text = text_content
+                        except:
+                            pass
+                    
+                    if item_text:
+                        list_items.append(f"* {item_text}")
+            
+            # If no clean items found, try to parse the raw content
+            if not list_items:
+                list_items = BlockProcessor._parse_list_from_ruby_ast(list_block)
+                
+        except Exception as e:
+            logger.error(f"Error extracting list items: {e}")
+            
+        return list_items
+    
+    @staticmethod
+    def _parse_list_from_ruby_ast(list_block):
+        """Parse list items from Ruby AST object as last resort."""
+        list_items = []
+        
+        try:
+            # Look for common patterns in the Ruby AST string
+            content = getattr(list_block, 'content', '')
+            if isinstance(content, str) and len(content) > 1000:
+                # Try to find text patterns that look like list items
+                import re
+                
+                # Look for quoted strings that might be list items
+                quoted_patterns = re.findall(r'"([^"]{10,100})"', content)
+                for pattern in quoted_patterns:
+                    # Filter out Ruby code patterns
+                    if not any(ruby_keyword in pattern.lower() for ruby_keyword in 
+                              ['context', 'document', 'attributes', 'node_name', 'blocks']):
+                        # Clean up the text
+                        clean_text = pattern.strip()
+                        if clean_text and len(clean_text.split()) >= 2:  # At least 2 words
+                            list_items.append(f"* {clean_text}")
+                
+                # If still no items, try a different approach
+                if not list_items:
+                    # Look for lines that might be list content
+                    lines = content.split('\n')
+                    for line in lines:
+                        line = line.strip()
+                        if (line and 
+                            len(line.split()) >= 2 and 
+                            not line.startswith('[') and 
+                            not line.startswith('"@') and
+                            not any(ruby_keyword in line.lower() for ruby_keyword in 
+                                   ['context', 'document', 'attributes', 'node_name', 'blocks'])):
+                            # This might be list content
+                            list_items.append(f"* {line}")
+                            if len(list_items) >= 5:  # Don't extract too many
+                                break
+                                
+        except Exception as e:
+            logger.error(f"Error parsing Ruby AST: {e}")
+            
+        return list_items
     
     @staticmethod
     def _process_list_block(list_block):

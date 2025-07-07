@@ -54,9 +54,24 @@ class RulesRegistry:
             'list_title': ['lists', 'capitalization'],
             
             # Special blocks - apply specific rules
-            'admonition': ['admonitions', 'capitalization'],
+            'admonition': [
+                'admonitions', 'capitalization',
+                # Language and grammar rules
+                'abbreviations', 'contractions', 'inclusive_language', 'passive_voice', 
+                'plurals', 'possessives', 'prepositions', 'pronouns', 'spelling', 
+                'terminology', 'verbs', 'conjunctions', 'anthropomorphism', 'articles',
+                # Punctuation rules
+                'colons', 'commas', 'dashes', 'ellipses', 'exclamation_points', 'hyphens',
+                'parentheses', 'periods', 'punctuation_and_symbols', 'quotation_marks',
+                'semicolons', 'slashes',
+                # General rules
+                'second_person', 'sentence_length'
+            ],
             'quote': ['punctuation_and_symbols', 'quotation_marks', 'capitalization'],
-            'sidebar': ['capitalization'],
+            'sidebar': [
+                'capitalization', 'lists', 'second_person', 'sentence_length',
+                'contractions', 'ellipses', 'passive_voice'
+            ],
             
             # Code blocks - skip all analysis
             'listing': [],
