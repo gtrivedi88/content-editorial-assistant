@@ -1,7 +1,6 @@
 = Style Guide AI - Complete Architecture Documentation
 :toc: left
 :toc-title: Table of Contents
-:toclevels: 4
 :sectnums:
 :sectanchors:
 :imagesdir: ./images
