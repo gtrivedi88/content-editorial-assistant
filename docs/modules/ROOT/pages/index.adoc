@@ -1,5 +1,4 @@
 = Peer-Review Platform Documentation
-:page-layout: home
 :!sectids:
 
 == Welcome to Peer-Review Platform
@@ -17,34 +16,14 @@ The Peer-Review Platform is a comprehensive documentation analysis and improveme
 
 === Getting Started
 
-[.card-row]
-====
-[.card]
---
-*Architecture*
+* **Architecture**: xref:architecture:architecture.adoc[System Architecture] - Understanding the complete system design and component interactions.
 
-xref:architecture:architecture.adoc[System Architecture] +
-Understanding the complete system design and component interactions.
---
+* **How-to Guides**: Step-by-step guides for extending the system:
+** xref:how-to:how-to-add-new-rule.adoc[Add New Rule]
+** xref:how-to:how-to-add-new-ambiguity-detector.adoc[Add New Ambiguity Detector]
+** xref:how-to:how-to-add-new-model.adoc[Add New AI Model]
 
-[.card]
---
-*How-to Guides*
-
-xref:how-to:how-to-add-new-rule.adoc[Add New Rule] +
-xref:how-to:how-to-add-new-ambiguity-detector.adoc[Add New Ambiguity Detector] +
-xref:how-to:how-to-add-new-model.adoc[Add New AI Model] +
-Step-by-step guides for extending the system.
---
-
-[.card]
---
-*API Reference*
-
-xref:api-reference.adoc[API Documentation] +
-Complete reference for all API endpoints and WebSocket interfaces.
---
-====
+* **API Reference**: xref:api-reference.adoc[API Documentation] - Complete reference for all API endpoints and WebSocket interfaces.
 
 === Technology Stack
 

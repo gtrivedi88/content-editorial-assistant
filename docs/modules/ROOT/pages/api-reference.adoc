@@ -1,5 +1,4 @@
 = API Reference
-:page-layout: doc
 
 == Overview
 
