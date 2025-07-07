@@ -123,15 +123,20 @@ function createListBlock(block, displayIndex) {
         admonition_type: block.admonition_type
     });
     
-    // Count total issues in all list items
+    // Count total issues including both list-level and item-level errors
     let totalIssues = 0;
+    
+    // Add block-level errors (like parallelism)
+    if (block.errors) totalIssues += block.errors.length;
+    
+    // Add individual item errors
     const countIssues = (items) => {
         items.forEach(item => {
             if (item.errors) totalIssues += item.errors.length;
             if (item.children) countIssues(item.children);
         });
     };
-         if (block.children) countIssues(block.children);
+    if (block.children) countIssues(block.children);
      
      // Generate list items HTML with proper formatting
      const generateListItems = (items, level = 0, parentIsOrdered = isOrdered) => {
@@ -255,6 +260,36 @@ function createListBlock(block, displayIndex) {
                 ">
                     ${generateListItems(block.children)}
                 </div>
+                
+                ${block.errors && block.errors.length > 0 ? `
+                <div class="block-level-errors mt-3" style="
+                    background: white;
+                    border: 1px solid ${style.borderColor};
+                    border-radius: 12px;
+                    padding: 20px;
+                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+                ">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="me-3 d-flex align-items-center justify-content-center" style="
+                            width: 32px;
+                            height: 32px;
+                            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+                            border-radius: 8px;
+                        ">
+                            <i class="fas fa-list-ul" style="color: #dc2626; font-size: 14px;"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0 fw-bold" style="color: #dc2626; font-size: 14px;">
+                                List-Level Issues (${block.errors.length})
+                            </h6>
+                            <small style="color: #6b7280;">Issues affecting the entire list structure</small>
+                        </div>
+                    </div>
+                    <div class="error-list">
+                        ${block.errors.map(error => createInlineError(error)).join('')}
+                    </div>
+                </div>
+                ` : ''}
                 
                 ${totalIssues === 0 ? `
                 <div class="d-flex align-items-center justify-content-center py-3 mt-3" style="
@@ -386,6 +421,320 @@ function createListTitleBlock(block, displayIndex) {
     `;
 }
 
+// Create a table block with proper HTML table rendering
+function createTableBlock(block, displayIndex) {
+    const style = {
+        gradient: 'linear-gradient(135deg, #14b8a6 0%, #0d9488 100%)',
+        bgColor: '#f0fdfa',
+        borderColor: '#ccfbf1',
+        textColor: '#134e4a',
+        accentColor: '#14b8a6'
+    };
+    
+    const blockTitle = getBlockTypeDisplayName(block.block_type, {
+        level: block.level,
+        admonition_type: block.admonition_type
+    });
+    
+    // Count issues in table content and cells
+    let totalIssues = 0;
+    if (block.errors) totalIssues += block.errors.length;
+    
+    // Count issues in table rows and cells
+    const countTableIssues = (children) => {
+        if (!children) return;
+        children.forEach(child => {
+            if (child.errors) totalIssues += child.errors.length;
+            if (child.children) countTableIssues(child.children);
+        });
+    };
+    countTableIssues(block.children);
+    
+    // Calculate actual table dimensions from structure
+    const rows = block.children ? block.children.filter(child => child.block_type === 'table_row') : [];
+    const rowCount = rows.length;
+    let colCount = 0;
+    
+    // Get column count from first row
+    if (rows.length > 0) {
+        const firstRowCells = rows[0].children ? rows[0].children.filter(child => child.block_type === 'table_cell') : [];
+        colCount = firstRowCells.length;
+    }
+    
+    // Extract table attributes for display
+    const tableAttrs = block.attributes || {};
+    const colsInfo = tableAttrs.cols;
+    
+    // Generate HTML table from structured data
+    const generateHTMLTable = (tableBlock) => {
+        if (!tableBlock.children || tableBlock.children.length === 0) {
+            return `<div class="alert alert-info">No table data available</div>`;
+        }
+        
+        const rows = tableBlock.children.filter(child => child.block_type === 'table_row');
+        if (rows.length === 0) {
+            return `<div class="alert alert-info">No table rows found</div>`;
+        }
+        
+        let tableHTML = `
+            <table class="table table-striped table-hover" style="
+                width: 100%;
+                border-collapse: separate;
+                border-spacing: 0;
+                border: 1px solid ${style.borderColor};
+                border-radius: 12px;
+                overflow: hidden;
+                background: white;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            ">
+        `;
+        
+        // Process each row
+        rows.forEach((row, rowIndex) => {
+            // First row is typically header in AsciiDoc tables
+            const isHeaderRow = rowIndex === 0 || (row.attributes && row.attributes.row_type === 'header');
+            const cells = row.children ? row.children.filter(child => child.block_type === 'table_cell') : [];
+            
+            const originalBgColor = isHeaderRow ? 
+                `linear-gradient(135deg, ${style.accentColor}15, ${style.accentColor}10)` : 
+                (rowIndex % 2 === 0 ? 'white' : '#f9fafb');
+            
+            tableHTML += `<tr style="
+                background: ${originalBgColor};
+                transition: all 0.2s ease;
+            " onmouseover="this.style.backgroundColor='${style.accentColor}10'" onmouseout="this.style.background='${originalBgColor}'">`;
+            
+            // Process each cell
+            cells.forEach((cell, cellIndex) => {
+                const cellType = isHeaderRow ? 'th' : 'td';
+                const cellAttrs = cell.attributes || {};
+                const colspan = cellAttrs.colspan || 1;
+                const rowspan = cellAttrs.rowspan || 1;
+                
+                const cellStyle = `
+                    padding: 12px 16px;
+                    border-bottom: 1px solid ${style.borderColor};
+                    ${cellIndex === 0 ? `border-left: 3px solid ${style.accentColor};` : ''}
+                    font-weight: ${isHeaderRow ? '600' : '400'};
+                    color: ${isHeaderRow ? style.textColor : '#1f2937'};
+                    font-size: 14px;
+                    line-height: 1.5;
+                    vertical-align: top;
+                    position: relative;
+                `;
+                
+                // Add error indicators if cell has issues
+                const cellErrors = cell.errors || [];
+                const errorIndicator = cellErrors.length > 0 ? `
+                    <div class="position-absolute top-0 end-0 me-2 mt-1">
+                        <span class="badge bg-danger rounded-circle" style="width: 8px; height: 8px; padding: 0;" 
+                              title="${cellErrors.length} issue${cellErrors.length > 1 ? 's' : ''} in this cell"></span>
+                    </div>
+                ` : '';
+                
+                tableHTML += `<${cellType} 
+                    ${colspan > 1 ? `colspan="${colspan}"` : ''}
+                    ${rowspan > 1 ? `rowspan="${rowspan}"` : ''}
+                    style="${cellStyle}"
+                >
+                    ${errorIndicator}
+                    ${renderSafeTableCellHtml(cell.content || '')}
+                </${cellType}>`;
+            });
+            
+            tableHTML += `</tr>`;
+        });
+        
+        tableHTML += `</table>`;
+        return tableHTML;
+    };
+    
+    return `
+        <div class="structural-block mb-4" style="
+            border-radius: 16px;
+            overflow: hidden;
+            background: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            border: 1px solid ${style.borderColor};
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        ">
+            <!-- Table header -->
+            <div class="block-header d-flex justify-content-between align-items-center p-3" style="
+                background: ${style.gradient};
+                color: white;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            ">
+                <div class="d-flex align-items-center">
+                    <div class="me-3 d-flex align-items-center justify-content-center" style="
+                        width: 40px;
+                        height: 40px;
+                        background: rgba(255, 255, 255, 0.15);
+                        border-radius: 12px;
+                        backdrop-filter: blur(10px);
+                    ">
+                        <i class="fas fa-table" style="font-size: 18px;"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0 fw-bold" style="font-size: 14px; letter-spacing: 0.5px;">
+                            BLOCK ${displayIndex + 1}: ${blockTitle}
+                        </h6>
+                        <small class="opacity-90" style="font-size: 12px;">
+                            ${rowCount} rows × ${colCount} columns • ${totalIssues} ${totalIssues === 1 ? 'issue' : 'issues'} found
+                        </small>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center">
+                    <div class="badge" style="
+                        background: ${totalIssues > 0 ? 'rgba(239, 68, 68, 0.9)' : 'rgba(34, 197, 94, 0.9)'};
+                        color: white;
+                        padding: 6px 12px;
+                        border-radius: 20px;
+                        font-size: 11px;
+                        font-weight: 600;
+                        letter-spacing: 0.5px;
+                    ">
+                        ${totalIssues > 0 ? `${totalIssues} ${totalIssues === 1 ? 'ISSUE' : 'ISSUES'}` : 'CLEAN'}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Table content -->
+            <div class="block-content p-4" style="background: ${style.bgColor};">
+                ${block.title ? `
+                    <div class="table-title mb-3 text-center" style="
+                        font-size: 16px;
+                        font-weight: 600;
+                        color: ${style.textColor};
+                        padding: 12px 0;
+                        border-bottom: 2px solid ${style.borderColor};
+                    ">
+                        ${escapeHtml(block.title)}
+                    </div>
+                ` : ''}
+                
+                <!-- Rendered HTML Table -->
+                <div class="table-responsive" style="border-radius: 12px; overflow: hidden;">
+                    ${generateHTMLTable(block)}
+                </div>
+                
+                <!-- Table-level errors -->
+                ${block.errors && block.errors.length > 0 ? `
+                    <div class="block-errors mt-3" style="
+                        background: white;
+                        border: 1px solid ${style.borderColor};
+                        border-radius: 12px;
+                        padding: 20px;
+                        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+                    ">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="me-3 d-flex align-items-center justify-content-center" style="
+                                width: 32px;
+                                height: 32px;
+                                background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+                                border-radius: 8px;
+                            ">
+                                <i class="fas fa-table" style="color: #dc2626; font-size: 14px;"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0 fw-bold" style="color: #dc2626; font-size: 14px;">
+                                    Table-Level Issues (${block.errors.length})
+                                </h6>
+                                <small style="color: #6b7280;">Issues affecting the entire table structure</small>
+                            </div>
+                        </div>
+                        <div class="error-list">
+                            ${block.errors.map(error => createInlineError(error)).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+                
+                <!-- Cell-level errors summary -->
+                ${(() => {
+                    const cellErrors = [];
+                    const collectCellErrors = (children) => {
+                        if (!children) return;
+                        children.forEach(child => {
+                            if (child.block_type === 'table_cell' && child.errors && child.errors.length > 0) {
+                                cellErrors.push({
+                                    rowIndex: child.attributes?.row_index || 0,
+                                    cellIndex: child.attributes?.cell_index || 0,
+                                    content: child.content || '',
+                                    errors: child.errors
+                                });
+                            }
+                            if (child.children) collectCellErrors(child.children);
+                        });
+                    };
+                    collectCellErrors(block.children);
+                    
+                    if (cellErrors.length > 0) {
+                        return `
+                            <div class="cell-errors mt-3" style="
+                                background: white;
+                                border: 1px solid ${style.borderColor};
+                                border-radius: 12px;
+                                padding: 20px;
+                                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+                            ">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="me-3 d-flex align-items-center justify-content-center" style="
+                                        width: 32px;
+                                        height: 32px;
+                                        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+                                        border-radius: 8px;
+                                    ">
+                                        <i class="fas fa-th" style="color: #d97706; font-size: 14px;"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0 fw-bold" style="color: #d97706; font-size: 14px;">
+                                            Cell-Level Issues (${cellErrors.length})
+                                        </h6>
+                                        <small style="color: #6b7280;">Issues found in individual table cells</small>
+                                    </div>
+                                </div>
+                                <div class="error-list">
+                                    ${cellErrors.map(cellError => `
+                                        <div class="cell-error mb-2" style="
+                                            background: #fef3c7;
+                                            border: 1px solid #fde68a;
+                                            border-radius: 8px;
+                                            padding: 12px;
+                                        ">
+                                            <div class="fw-medium mb-1" style="color: #92400e;">
+                                                Row ${cellError.rowIndex + 1}, Column ${cellError.cellIndex + 1}
+                                            </div>
+                                            <div class="small mb-2" style="color: #6b7280;">
+                                                "${cellError.content.length > 50 ? cellError.content.substring(0, 50) + '...' : cellError.content}"
+                                            </div>
+                                            ${cellError.errors.map(error => createInlineError(error)).join('')}
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }
+                    return '';
+                })()}
+                
+                ${totalIssues === 0 ? `
+                    <div class="d-flex align-items-center justify-content-center py-3 mt-3" style="
+                        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+                        border: 1px solid #bbf7d0;
+                        border-radius: 12px;
+                        color: #166534;
+                    ">
+                        <i class="fas fa-check-circle me-3" style="color: #22c55e; font-size: 20px;"></i>
+                        <div>
+                            <div class="fw-medium">Table is perfectly formatted</div>
+                            <small style="opacity: 0.8;">No style issues found in this table</small>
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        </div>
+    `;
+}
+
 // Create a structural block display with world-class design
 function createStructuralBlock(block, displayIndex) {
     // Handle list blocks specially - group list items under their parent
@@ -401,6 +750,16 @@ function createStructuralBlock(block, displayIndex) {
     // Handle list titles specially
     if (block.block_type === 'list_title') {
         return createListTitleBlock(block, displayIndex);
+    }
+    
+    // Handle table blocks specially - render as actual HTML table
+    if (block.block_type === 'table') {
+        return createTableBlock(block, displayIndex);
+    }
+    
+    // Skip table rows and cells - they'll be handled by their parent table
+    if (block.block_type === 'table_row' || block.block_type === 'table_cell') {
+        return '';
     }
     
     // World-class color palette - professional and accessible
@@ -1025,6 +1384,36 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// Safe HTML renderer for table cells - allows common formatting tags
+function renderSafeTableCellHtml(text) {
+    if (!text) return '';
+    
+    // First escape all HTML to be safe
+    let escaped = escapeHtml(text);
+    
+    // Then selectively un-escape safe formatting tags
+    const safeTagsMap = {
+        '&lt;code&gt;': '<code style="background: rgba(14, 184, 166, 0.1); color: #0d9488; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 13px;">',
+        '&lt;/code&gt;': '</code>',
+        '&lt;strong&gt;': '<strong>',
+        '&lt;/strong&gt;': '</strong>',
+        '&lt;em&gt;': '<em>',
+        '&lt;/em&gt;': '</em>',
+        '&lt;b&gt;': '<strong>',
+        '&lt;/b&gt;': '</strong>',
+        '&lt;i&gt;': '<em>',
+        '&lt;/i&gt;': '</em>'
+    };
+    
+    // Replace escaped safe tags with their HTML equivalents
+    Object.keys(safeTagsMap).forEach(escapedTag => {
+        const htmlTag = safeTagsMap[escapedTag];
+        escaped = escaped.replace(new RegExp(escapedTag, 'gi'), htmlTag);
+    });
+    
+    return escaped;
 }
 
 // Helper functions for statistics card

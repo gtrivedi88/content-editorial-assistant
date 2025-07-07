@@ -178,6 +178,201 @@ def parse_document(content)
         children << extract_block_info(child_block, level + 1)
       end
     end
+    
+    # Special handling for table children (rows and cells)
+    if block.context == :table && block.respond_to?(:rows) && block.rows
+      row_index = 0
+      
+      # Add header rows as children
+      if block.rows.respond_to?(:head) && block.rows.head && !block.rows.head.empty?
+        block.rows.head.each do |row|
+          row_info = {
+            'context' => 'table_row',
+            'content_model' => 'compound',
+            'content' => '',
+            'level' => level + 1,
+            'nesting_depth' => level + 1,
+            'style' => 'header',
+            'title' => nil,
+            'id' => nil,
+            'attributes' => {'row_type' => 'header', 'row_index' => row_index},
+            'raw_content' => '',
+            'source_location' => block_info['source_location'],
+            'lines' => [],
+            'children' => []
+          }
+          
+          # Extract cells from this row
+          if row.respond_to?(:each)
+            cell_index = 0
+            row_cells = []
+            row.each do |cell|
+              cell_text = cell.respond_to?(:text) ? cell.text.to_s : cell.to_s
+              row_cells << cell_text
+              
+              cell_info = {
+                'context' => 'table_cell',
+                'content_model' => 'simple',
+                'content' => cell_text,
+                'level' => level + 2,
+                'nesting_depth' => level + 2,
+                'style' => 'header',
+                'title' => nil,
+                'id' => nil,
+                'attributes' => {
+                  'cell_type' => 'header',
+                  'row_index' => row_index,
+                  'cell_index' => cell_index,
+                  'colspan' => cell.respond_to?(:colspan) ? cell.colspan.to_i : 1,
+                  'rowspan' => cell.respond_to?(:rowspan) ? cell.rowspan.to_i : 1
+                },
+                'raw_content' => cell_text,
+                'source_location' => block_info['source_location'],
+                'lines' => [cell_text],
+                'children' => []
+              }
+              
+              row_info['children'] << cell_info
+              cell_index += 1
+            end
+            
+            row_info['content'] = "| " + row_cells.join(" | ") + " |"
+            row_info['raw_content'] = row_info['content']
+            row_info['lines'] = [row_info['content']]
+          end
+          
+          children << row_info
+          row_index += 1
+        end
+      end
+      
+      # Add body rows as children
+      if block.rows.respond_to?(:body) && block.rows.body
+        block.rows.body.each do |row|
+          row_info = {
+            'context' => 'table_row',
+            'content_model' => 'compound',
+            'content' => '',
+            'level' => level + 1,
+            'nesting_depth' => level + 1,
+            'style' => 'body',
+            'title' => nil,
+            'id' => nil,
+            'attributes' => {'row_type' => 'body', 'row_index' => row_index},
+            'raw_content' => '',
+            'source_location' => block_info['source_location'],
+            'lines' => [],
+            'children' => []
+          }
+          
+          # Extract cells from this row
+          if row.respond_to?(:each)
+            cell_index = 0
+            row_cells = []
+            row.each do |cell|
+              cell_text = cell.respond_to?(:text) ? cell.text.to_s : cell.to_s
+              row_cells << cell_text
+              
+              cell_info = {
+                'context' => 'table_cell',
+                'content_model' => 'simple',
+                'content' => cell_text,
+                'level' => level + 2,
+                'nesting_depth' => level + 2,
+                'style' => 'body',
+                'title' => nil,
+                'id' => nil,
+                'attributes' => {
+                  'cell_type' => 'body',
+                  'row_index' => row_index,
+                  'cell_index' => cell_index,
+                  'colspan' => cell.respond_to?(:colspan) ? cell.colspan.to_i : 1,
+                  'rowspan' => cell.respond_to?(:rowspan) ? cell.rowspan.to_i : 1
+                },
+                'raw_content' => cell_text,
+                'source_location' => block_info['source_location'],
+                'lines' => [cell_text],
+                'children' => []
+              }
+              
+              row_info['children'] << cell_info
+              cell_index += 1
+            end
+            
+            row_info['content'] = "| " + row_cells.join(" | ") + " |"
+            row_info['raw_content'] = row_info['content']
+            row_info['lines'] = [row_info['content']]
+          end
+          
+          children << row_info
+          row_index += 1
+        end
+      end
+      
+      # Add footer rows as children
+      if block.rows.respond_to?(:foot) && block.rows.foot && !block.rows.foot.empty?
+        block.rows.foot.each do |row|
+          row_info = {
+            'context' => 'table_row',
+            'content_model' => 'compound',
+            'content' => '',
+            'level' => level + 1,
+            'nesting_depth' => level + 1,
+            'style' => 'footer',
+            'title' => nil,
+            'id' => nil,
+            'attributes' => {'row_type' => 'footer', 'row_index' => row_index},
+            'raw_content' => '',
+            'source_location' => block_info['source_location'],
+            'lines' => [],
+            'children' => []
+          }
+          
+          # Extract cells from this row
+          if row.respond_to?(:each)
+            cell_index = 0
+            row_cells = []
+            row.each do |cell|
+              cell_text = cell.respond_to?(:text) ? cell.text.to_s : cell.to_s
+              row_cells << cell_text
+              
+              cell_info = {
+                'context' => 'table_cell',
+                'content_model' => 'simple',
+                'content' => cell_text,
+                'level' => level + 2,
+                'nesting_depth' => level + 2,
+                'style' => 'footer',
+                'title' => nil,
+                'id' => nil,
+                'attributes' => {
+                  'cell_type' => 'footer',
+                  'row_index' => row_index,
+                  'cell_index' => cell_index,
+                  'colspan' => cell.respond_to?(:colspan) ? cell.colspan.to_i : 1,
+                  'rowspan' => cell.respond_to?(:rowspan) ? cell.rowspan.to_i : 1
+                },
+                'raw_content' => cell_text,
+                'source_location' => block_info['source_location'],
+                'lines' => [cell_text],
+                'children' => []
+              }
+              
+              row_info['children'] << cell_info
+              cell_index += 1
+            end
+            
+            row_info['content'] = "| " + row_cells.join(" | ") + " |"
+            row_info['raw_content'] = row_info['content']
+            row_info['lines'] = [row_info['content']]
+          end
+          
+          children << row_info
+          row_index += 1
+        end
+      end
+    end
+    
     block_info['children'] = children
     
     # Handle special block types dynamically
@@ -193,6 +388,62 @@ def parse_document(content)
     when :table
       block_info['cols'] = block.attr('cols') if block.attr('cols')
       block_info['format'] = block.attr('format') if block.attr('format')
+      block_info['frame'] = block.attr('frame') if block.attr('frame')
+      block_info['grid'] = block.attr('grid') if block.attr('grid')
+      block_info['stripes'] = block.attr('stripes') if block.attr('stripes')
+      block_info['width'] = block.attr('width') if block.attr('width')
+      block_info['autowidth'] = block.attr('autowidth') if block.attr('autowidth')
+      block_info['orientation'] = block.attr('orientation') if block.attr('orientation')
+      
+      # Extract table content by concatenating all rows
+      if block.respond_to?(:rows) && block.rows
+        table_content = []
+        # Extract header row if present
+        if block.rows.respond_to?(:head) && block.rows.head && !block.rows.head.empty?
+          header_row = block.rows.head.first
+          if header_row.respond_to?(:each)
+            header_cells = []
+            header_row.each do |cell|
+              cell_text = cell.respond_to?(:text) ? cell.text.to_s : cell.to_s
+              header_cells << cell_text
+            end
+            table_content << "| " + header_cells.join(" | ") + " |"
+          end
+        end
+        
+        # Extract body rows
+        if block.rows.respond_to?(:body) && block.rows.body
+          block.rows.body.each do |row|
+            if row.respond_to?(:each)
+              row_cells = []
+              row.each do |cell|
+                cell_text = cell.respond_to?(:text) ? cell.text.to_s : cell.to_s
+                row_cells << cell_text
+              end
+              table_content << "| " + row_cells.join(" | ") + " |"
+            end
+          end
+        end
+        
+        # Extract footer row if present
+        if block.rows.respond_to?(:foot) && block.rows.foot && !block.rows.foot.empty?
+          footer_row = block.rows.foot.first
+          if footer_row.respond_to?(:each)
+            footer_cells = []
+            footer_row.each do |cell|
+              cell_text = cell.respond_to?(:text) ? cell.text.to_s : cell.to_s
+              footer_cells << cell_text
+            end
+            table_content << "| " + footer_cells.join(" | ") + " |"
+          end
+        end
+        
+        # Update content with table text
+        if !table_content.empty?
+          block_info['content'] = table_content.join("\n")
+          block_info['raw_content'] = table_content.join("\n")
+        end
+      end
     end
     
     # Add any additional attributes that might be useful

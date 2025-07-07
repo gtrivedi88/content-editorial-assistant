@@ -26,13 +26,26 @@ class VerbsRule(BaseLanguageRule):
         for i, sentence in enumerate(sentences):
             doc = nlp(sentence)
             
-            # --- Rule 1: Passive Voice Check (Robust) ---
-            # This logic is accurate and remains unchanged. It correctly identifies
-            # true passive voice constructions.
-            has_passive_subject = any(token.dep_ == 'nsubjpass' for token in doc)
+            # --- Rule 1: Passive Voice Check (Enhanced) ---
+            # Enhanced logic to catch more passive voice constructions
             has_passive_aux = any(token.dep_ == 'auxpass' for token in doc)
+            has_passive_subject = any(token.dep_ == 'nsubjpass' for token in doc)
+            
+            # Additional passive voice patterns
+            has_be_verb_with_past_participle = False
+            for token in doc:
+                # Look for "be" verbs (is, was, are, were, be, been) followed by past participles
+                if token.lemma_ in ['be'] and token.pos_ == 'AUX':
+                    # Check if there's a past participle (VBN) that could indicate passive
+                    for child in token.head.children:
+                        if child.tag_ == 'VBN':  # Past participle
+                            has_be_verb_with_past_participle = True
+                            break
 
-            if has_passive_subject and has_passive_aux:
+            # Passive voice if we have passive auxiliary OR the be+participle pattern
+            is_passive = (has_passive_subject and has_passive_aux) or has_passive_aux or has_be_verb_with_past_participle
+
+            if is_passive:
                 errors.append(self._create_error(
                     sentence=sentence,
                     sentence_index=i,
@@ -71,4 +84,17 @@ class VerbsRule(BaseLanguageRule):
                     suggestions=["Use present tense for instructions and descriptions. For commands, use the imperative mood (e.g., 'Click the button' instead of 'You will click the button')."],
                     severity='low'
                 ))
+
+            # --- Rule 3: Check for "login" used as verb ---
+            # "Login" should be a noun; use "log in" as a verb
+            for token in doc:
+                if token.text.lower() == 'login' and token.pos_ == 'VERB':
+                    errors.append(self._create_error(
+                        sentence=sentence,
+                        sentence_index=i,
+                        message="Use 'log in' (two words) as a verb, not 'login' (one word).",
+                        suggestions=["Change 'Login to the server' to 'Log in to the server'. Use 'login' as a noun only (e.g., 'Enter your login credentials')."],
+                        severity='medium'
+                    ))
+
         return errors

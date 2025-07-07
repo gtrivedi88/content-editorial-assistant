@@ -214,13 +214,25 @@ class AnalysisModeExecutor:
             elif block_type == AsciiDocBlockType.ORDERED_LIST:
                 errors.extend(self._analyze_ordered_list_content(block, content, analysis_mode, block_context))
             
-            # Skip unordered lists to avoid performance issues with Ruby AST object content
+            # Apply special analysis for unordered lists to extract clean text and analyze each item
             elif block_type == AsciiDocBlockType.UNORDERED_LIST:
-                pass  # Skip analysis - the lists rule will be applied to sidebar content instead
+                errors.extend(self._analyze_unordered_list_content(block, content, analysis_mode, block_context))
             
             # Apply special analysis for sidebar blocks to extract clean text  
             elif block_type == AsciiDocBlockType.SIDEBAR:
                 errors.extend(self._analyze_sidebar_content(block, content, analysis_mode, block_context))
+            
+            # Apply special analysis for table blocks to analyze cell content
+            elif block_type == AsciiDocBlockType.TABLE:
+                errors.extend(self._analyze_table_content(block, content, analysis_mode, block_context))
+            
+            # Apply basic analysis for table rows (primarily for structural issues)
+            elif block_type == AsciiDocBlockType.TABLE_ROW:
+                errors.extend(self._analyze_table_row_content(block, content, analysis_mode, block_context))
+            
+            # Apply focused analysis for table cells (content-specific)
+            elif block_type == AsciiDocBlockType.TABLE_CELL:
+                errors.extend(self._analyze_table_cell_content(block, content, analysis_mode, block_context))
             
             # Apply general content analysis for other blocks
             elif block_type in [AsciiDocBlockType.PARAGRAPH, AsciiDocBlockType.HEADING, AsciiDocBlockType.QUOTE, AsciiDocBlockType.LIST_ITEM]:
@@ -309,6 +321,83 @@ class AnalysisModeExecutor:
             logger.error(f"Error analyzing ordered list content: {e}")
             
         # Return empty errors for parent block since errors are stored on children
+        return errors
+    
+    def _analyze_unordered_list_content(self, block, content: str, analysis_mode: AnalysisMode, 
+                                      block_context: Optional[dict] = None) -> List[ErrorDict]:
+        """Analyze unordered list content by analyzing each list item individually and the list as a whole."""
+        errors = []
+        
+        try:
+            # Get the children (list items) from the block
+            children = getattr(block, 'children', [])
+            
+            # Extract clean content from all children for whole-list analysis
+            all_list_items = []
+            
+            for i, child in enumerate(children):
+                # Create context for the individual list item
+                child_context = child.get_context_info()
+                
+                # Add context for unordered list items
+                if child_context:
+                    child_context['item_number'] = i + 1
+                    child_context['is_unordered_list_item'] = True
+                
+                # Extract clean content from the child, handling Ruby AST objects
+                child_content = None
+                
+                # Method 1: Try to get clean content directly
+                if hasattr(child, 'content') and isinstance(child.content, str):
+                    content_str = child.content.strip()
+                    if len(content_str) < 500 and not content_str.startswith('[#'):  # Not Ruby AST
+                        child_content = content_str
+                
+                # Method 2: Try get_text_content if available
+                if not child_content and hasattr(child, 'get_text_content'):
+                    try:
+                        text_content = child.get_text_content().strip()
+                        if text_content and len(text_content) < 500:
+                            child_content = text_content
+                    except:
+                        pass
+                
+                # Method 3: Try text attribute
+                if not child_content and hasattr(child, 'text') and child.text:
+                    child_content = str(child.text).strip()
+                
+                # Only analyze if we have clean content
+                if child_content:
+                    # Store for whole-list analysis
+                    all_list_items.append(child_content)
+                    
+                    # Analyze this individual list item
+                    child_errors = self._analyze_generic_content(child_content, analysis_mode, child_context)
+                    
+                    # Store errors on the child instead of returning them to parent
+                    if not hasattr(child, '_analysis_errors'):
+                        child._analysis_errors = []
+                    child._analysis_errors.extend(child_errors)
+            
+            # Also analyze the whole list for parallelism if we have multiple items
+            if len(all_list_items) >= 2:
+                # Create a combined context for the whole list
+                whole_list_context = block_context.copy() if block_context else {}
+                whole_list_context['block_type'] = 'unordered_list'
+                whole_list_context['is_whole_list_analysis'] = True
+                
+                # Combine all list items into a single text for analysis
+                combined_content = '\n'.join(all_list_items)
+                
+                # Analyze the combined list content (this will trigger the lists_rule)
+                whole_list_errors = self._analyze_generic_content(combined_content, analysis_mode, whole_list_context)
+                
+                # Add any whole-list errors to the main errors
+                errors.extend(whole_list_errors)
+        
+        except Exception as e:
+            logger.error(f"Error analyzing unordered list content: {e}")
+            
         return errors
     
     def _analyze_sidebar_content(self, block, content: str, analysis_mode: AnalysisMode, 
@@ -436,6 +525,86 @@ class AnalysisModeExecutor:
             logger.error(f"Error parsing Ruby AST: {e}")
             
         return list_items
+    
+    def _analyze_table_content(self, block, content: str, analysis_mode: AnalysisMode, 
+                              block_context: Optional[dict] = None) -> List[ErrorDict]:
+        """Special analysis for table blocks focusing on overall table structure and content."""
+        errors = []
+        
+        try:
+            # Apply general content analysis to the combined table content
+            if content and content.strip():
+                errors.extend(self._analyze_generic_content(content, analysis_mode, block_context))
+            
+            # Analyze each table row and cell individually for more specific issues
+            children = getattr(block, 'children', [])
+            for i, child in enumerate(children):
+                child_context = child.get_context_info() if hasattr(child, 'get_context_info') else {}
+                child_context['table_row_index'] = i
+                
+                # Get child content
+                child_content = None
+                if hasattr(child, 'content') and isinstance(child.content, str):
+                    child_content = child.content.strip()
+                elif hasattr(child, 'get_text_content'):
+                    try:
+                        child_content = child.get_text_content().strip()
+                    except:
+                        pass
+                
+                # Analyze child content if available
+                if child_content:
+                    child_errors = self._analyze_generic_content(child_content, analysis_mode, child_context)
+                    # Store errors on the child instead of returning them to parent
+                    if not hasattr(child, '_analysis_errors'):
+                        child._analysis_errors = []
+                    child._analysis_errors.extend(child_errors)
+                        
+        except Exception as e:
+            logger.error(f"Error analyzing table content: {e}")
+            
+        return errors
+    
+    def _analyze_table_row_content(self, block, content: str, analysis_mode: AnalysisMode, 
+                                  block_context: Optional[dict] = None) -> List[ErrorDict]:
+        """Special analysis for table row blocks focusing on row-level consistency."""
+        errors = []
+        
+        try:
+            # Apply basic content analysis to the row content
+            if content and content.strip():
+                errors.extend(self._analyze_generic_content(content, analysis_mode, block_context))
+                
+        except Exception as e:
+            logger.error(f"Error analyzing table row content: {e}")
+            
+        return errors
+    
+    def _analyze_table_cell_content(self, block, content: str, analysis_mode: AnalysisMode, 
+                                   block_context: Optional[dict] = None) -> List[ErrorDict]:
+        """Special analysis for table cell blocks focusing on cell-specific content."""
+        errors = []
+        
+        try:
+            # Apply focused content analysis to the cell content
+            if content and content.strip():
+                # Add cell-specific context
+                cell_context = block_context.copy() if block_context else {}
+                cell_context['is_table_cell'] = True
+                
+                # Get cell position information from attributes
+                if hasattr(block, 'attributes') and hasattr(block.attributes, 'named_attributes'):
+                    cell_attrs = block.attributes.named_attributes
+                    cell_context['cell_type'] = cell_attrs.get('cell_type', 'body')
+                    cell_context['row_index'] = cell_attrs.get('row_index', 0)
+                    cell_context['cell_index'] = cell_attrs.get('cell_index', 0)
+                
+                errors.extend(self._analyze_generic_content(content, analysis_mode, cell_context))
+                
+        except Exception as e:
+            logger.error(f"Error analyzing table cell content: {e}")
+            
+        return errors
     
     def _analyze_generic_content(self, content: str, analysis_mode: AnalysisMode, 
                                block_context: Optional[dict] = None) -> List[ErrorDict]:

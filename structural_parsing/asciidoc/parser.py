@@ -147,6 +147,8 @@ class AsciiDocParser:
                 'ulist': AsciiDocBlockType.UNORDERED_LIST,
                 'olist': AsciiDocBlockType.ORDERED_LIST,
                 'dlist': AsciiDocBlockType.DESCRIPTION_LIST,
+                'table_row': AsciiDocBlockType.TABLE_ROW,
+                'table_cell': AsciiDocBlockType.TABLE_CELL,
             }
             block_type = mapping.get(context)
         
@@ -171,8 +173,8 @@ class AsciiDocParser:
         # Add block-specific attributes
         block_attributes = block_data.get('attributes', {})
         for key, value in block_attributes.items():
-            if isinstance(value, str):
-                attributes.named_attributes[key] = value
+            if isinstance(value, (str, int, float, bool)):
+                attributes.named_attributes[key] = str(value)
         
         # Handle admonitions
         admonition_type = None

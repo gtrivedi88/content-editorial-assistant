@@ -1,59 +1,83 @@
 """
-Lists Rule
+Lists Rule (Corrected for Parallelism)
 Based on IBM Style Guide topic: "Lists"
 """
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from .base_structure_rule import BaseStructureRule
 
 class ListsRule(BaseStructureRule):
     """
     Checks for style issues in lists, with a focus on ensuring
-    grammatical parallelism between list items. This rule analyzes all
-    items in a list block to ensure they share a consistent structure.
+    grammatical parallelism between list items. This version uses a more
+    robust method to identify the grammatical form of each list item.
     """
     def _get_rule_type(self) -> str:
         """Returns the unique identifier for this rule."""
         return 'lists'
+
+    def _get_grammatical_form(self, doc: Any) -> str:
+        """
+        Analyzes a SpaCy doc object and determines its grammatical form.
+        This is the core logic for checking parallelism.
+        """
+        if not doc or len(doc) == 0:
+            return "EMPTY"
+
+        # Check for imperative form (for procedures)
+        if doc[0].pos_ == 'VERB' and doc[0].tag_ == 'VB':
+            return "IMPERATIVE_PHRASE"
+            
+        # Check for gerund phrase
+        if doc[0].pos_ == 'VERB' and doc[0].tag_ == 'VBG':
+            return "GERUND_PHRASE"
+
+        # Check if it's a full declarative sentence (has a subject)
+        has_subject = any(token.dep_ in ('nsubj', 'nsubjpass') for token in doc)
+        if has_subject:
+            return "SENTENCE"
+
+        # Default to noun phrase if no other pattern matches
+        return "NOUN_PHRASE"
+
 
     def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         """
         Analyzes a block of list items for grammatical parallelism.
         
         This method assumes it receives all items of a single list in the
-        `sentences` argument, which is made possible by the structural parser.
+        `sentences` argument.
         """
-        errors = []
-        
-        # This rule requires at least two list items to compare for parallelism.
         if not nlp or len(sentences) < 2:
-            return errors
+            return []
 
-        # --- Consolidated Parallelism Analysis ---
+        # --- Corrected Parallelism Analysis ---
         
-        # 1. Establish the grammatical pattern from the first list item.
+        # 1. Establish the grammatical form of the first list item.
         first_item_doc = nlp(sentences[0])
         if not first_item_doc:
-            return [] # Cannot establish a pattern if the first item is empty.
+            return []
         
-        # Linguistic Anchor: The Part-of-Speech of the first token sets the pattern.
-        pattern_pos = first_item_doc[0].pos_
-
-        # 2. Iterate through the rest of the list items and check for any deviation.
+        pattern_form = self._get_grammatical_form(first_item_doc)
+        
+        # 2. Iterate through the rest of the list items and compare their form.
         for i, sentence in enumerate(sentences[1:]):
             doc = nlp(sentence)
-            if not doc: continue
+            if not doc:
+                continue
             
-            current_item_pos = doc[0].pos_
+            current_item_form = self._get_grammatical_form(doc)
             
-            # 3. If any item's POS doesn't match the established pattern, flag ONE error and stop.
-            if current_item_pos != pattern_pos:
+            # 3. If a form doesn't match the established pattern, flag the error.
+            if current_item_form != pattern_form:
+                # Return one error for the entire list block, as the whole list needs review.
                 return [self._create_error(
-                    sentence=text, # Report the error on the whole block of text
+                    sentence=text, # Report the error on the whole block text
                     sentence_index=0, 
                     message="List items are not grammatically parallel.",
-                    suggestions=[f"The first item starts with a '{pattern_pos}', but a later item starts with a '{current_item_pos}'. Please rewrite the items to have a consistent grammatical structure."],
-                    severity='medium'
+                    suggestions=[f"The first list item appears to be a '{pattern_form}', but a later item is a '{current_item_form}'. Please rewrite all items to have a consistent grammatical structure (e.g., all full sentences, or all phrases starting with a verb)."],
+                    severity='high'
                 )]
         
-        # If the loop completes without finding any non-parallel items, return no errors.
+        # If the loop completes, the list is parallel.
         return []
+

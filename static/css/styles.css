@@ -276,6 +276,78 @@ body {
     font-weight: 500 !important;
 }
 
+/* ===== ENHANCED TABLE STYLING ===== */
+
+/* Modern table styling for AsciiDoc tables */
+.table-responsive table {
+    margin-bottom: 0;
+}
+
+.table-responsive table th {
+    background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%) !important;
+    color: white !important;
+    font-weight: 600 !important;
+    text-align: center !important;
+    border: none !important;
+    font-size: 13px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+}
+
+.table-responsive table td {
+    border-color: #ccfbf1 !important;
+    vertical-align: top !important;
+    transition: all 0.2s ease !important;
+}
+
+.table-responsive table tr:hover td {
+    background: rgba(20, 184, 166, 0.05) !important;
+}
+
+/* Table cell error indicators */
+.table-responsive .position-absolute {
+    z-index: 10;
+}
+
+/* Table title styling */
+.table-title {
+    position: relative;
+}
+
+.table-title::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 2px;
+    background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+    border-radius: 1px;
+}
+
+/* Cell error styling */
+.cell-error {
+    transition: all 0.2s ease;
+}
+
+.cell-error:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(217, 119, 6, 0.15);
+}
+
+/* Responsive table enhancements */
+@media (max-width: 768px) {
+    .table-responsive table {
+        font-size: 12px;
+    }
+    
+    .table-responsive table th,
+    .table-responsive table td {
+        padding: 8px 12px !important;
+    }
+}
+
 /* Enhanced focus states for accessibility */
 .btn:focus,
 .btn-primary:focus {

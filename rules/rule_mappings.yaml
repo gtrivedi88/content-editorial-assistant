@@ -33,7 +33,6 @@ block_type_rules:
     - conjunctions
     - contractions
     - inclusive_language
-    - passive_voice
     - plurals
     - possessives
     - prepositions
@@ -64,21 +63,119 @@ block_type_rules:
     - procedures
     - capitalization
     - punctuation_and_symbols
+    # Language and grammar rules
+    - abbreviations
+    - adverbs_only
+    - anthropomorphism
+    - articles
+    - conjunctions
+    - contractions
+    - inclusive_language
+    - plurals
+    - possessives
+    - prepositions
+    - pronouns
+    - spelling
+    - terminology
+    - verbs
+    # Punctuation rules
+    - colons
+    - commas
+    - dashes
+    - ellipses
+    - exclamation_points
+    - hyphens
+    - parentheses
+    - periods
+    - quotation_marks
+    - semicolons
+    - slashes
+    # General rules
+    - second_person
+    - sentence_length
     
   list_item_ordered:
     - lists
     - procedures
     - capitalization
     - punctuation_and_symbols
+    # Language and grammar rules
+    - abbreviations
+    - adverbs_only
+    - anthropomorphism
+    - articles
+    - conjunctions
+    - contractions
+    - inclusive_language
+    - plurals
+    - possessives
+    - prepositions
+    - pronouns
+    - spelling
+    - terminology
+    - verbs
+    # Punctuation rules
+    - colons
+    - commas
+    - dashes
+    - ellipses
+    - exclamation_points
+    - hyphens
+    - parentheses
+    - periods
+    - quotation_marks
+    - semicolons
+    - slashes
+    # General rules
+    - second_person
+    - sentence_length
     
   list_item_unordered:
     - lists
     - capitalization
     - punctuation_and_symbols
+    # Language and grammar rules
+    - abbreviations
+    - adverbs_only
+    - anthropomorphism
+    - articles
+    - conjunctions
+    - contractions
+    - inclusive_language
+    - plurals
+    - possessives
+    - prepositions
+    - pronouns
+    - spelling
+    - terminology
+    - verbs
+    # Punctuation rules
+    - colons
+    - commas
+    - dashes
+    - ellipses
+    - exclamation_points
+    - hyphens
+    - parentheses
+    - periods
+    - quotation_marks
+    - semicolons
+    - slashes
+    # General rules
+    - second_person
+    - sentence_length
     
   list_title:
     - lists
     - capitalization
+
+  # List container blocks - apply lists rule for parallelism analysis
+  unordered_list:
+    - lists
+    
+  ordered_list:
+    - lists
+    - procedures
 
   # Special blocks - apply specific rules
   admonition:
@@ -88,7 +185,6 @@ block_type_rules:
     - abbreviations
     - contractions
     - inclusive_language
-    - passive_voice
     - plurals
     - possessives
     - prepositions
@@ -128,7 +224,6 @@ block_type_rules:
     - sentence_length
     - contractions
     - ellipses
-    - passive_voice
 
   # Code blocks - skip all analysis
   listing: []
@@ -145,17 +240,44 @@ block_type_rules:
   softbreak: []
   hardbreak: []
 
+  # Table blocks - apply structure analysis
+  table:
+    - capitalization
+    - punctuation_and_symbols
+    - terminology
+    - inclusive_language
+    - contractions
+    - spelling
+    - verbs
+    - abbreviations
+    - slashes
+    - headings
+    - lists
+    - procedures
+    - second_person
+    - sentence_length
+    - contractions
+    - ellipses
+
+  # Table rows - structural analysis
+  table_row:
+    - capitalization
+    - punctuation_and_symbols
+
   # Table cells - basic content analysis
   table_cell:
     - capitalization
     - punctuation_and_symbols
+    - terminology
+    - inclusive_language
+    - contractions
+    - spelling
 
   # Blockquotes - similar to paragraphs but more limited
   blockquote:
     - capitalization
     - punctuation_and_symbols
     - quotation_marks
-    - passive_voice
     - sentence_length
 
 # Define rules that should never be applied to certain block types
@@ -172,7 +294,7 @@ rule_exclusions:
     - procedures
     - admonitions
     
-  # List items should never have heading or paragraph-specific rules
+  # List items should never have heading-specific rules
   list_item:
     - headings
     - admonitions
