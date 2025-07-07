@@ -1,0 +1,192 @@
+# Rule-to-BlockType Mapping Configuration
+# This file defines which rules should be applied to which block types and which rules should be excluded
+
+# Define block type to rule mapping for context-aware analysis
+block_type_rules:
+  # Heading blocks - only apply heading-specific rules
+  heading:
+    - headings
+    - capitalization
+    - pronouns
+    - second_person
+    - slashes
+    - hyphens
+    - colons
+    - commas
+    - dashes
+    - ellipses
+    - exclamation_points
+    - parentheses
+    - periods
+    - punctuation_and_symbols
+    - quotation_marks
+    - semicolons
+
+  # Paragraph blocks - apply general language and grammar rules but exclude structure-specific rules
+  paragraph:
+    # Language and grammar rules
+    - abbreviations
+    - adverbs_only
+    - anthropomorphism
+    - articles
+    - capitalization
+    - conjunctions
+    - contractions
+    - inclusive_language
+    - passive_voice
+    - plurals
+    - possessives
+    - prepositions
+    - pronouns
+    - spelling
+    - terminology
+    - verbs
+    # Punctuation rules
+    - colons
+    - commas
+    - dashes
+    - ellipses
+    - exclamation_points
+    - hyphens
+    - parentheses
+    - periods
+    - punctuation_and_symbols
+    - quotation_marks
+    - semicolons
+    - slashes
+    # General rules
+    - second_person
+    - sentence_length
+
+  # List items - apply list-specific rules plus general content rules
+  list_item:
+    - lists
+    - procedures
+    - capitalization
+    - punctuation_and_symbols
+    
+  list_item_ordered:
+    - lists
+    - procedures
+    - capitalization
+    - punctuation_and_symbols
+    
+  list_item_unordered:
+    - lists
+    - capitalization
+    - punctuation_and_symbols
+    
+  list_title:
+    - lists
+    - capitalization
+
+  # Special blocks - apply specific rules
+  admonition:
+    - admonitions
+    - capitalization
+    # Language and grammar rules
+    - abbreviations
+    - contractions
+    - inclusive_language
+    - passive_voice
+    - plurals
+    - possessives
+    - prepositions
+    - pronouns
+    - spelling
+    - terminology
+    - verbs
+    - conjunctions
+    - anthropomorphism
+    - articles
+    # Punctuation rules
+    - colons
+    - commas
+    - dashes
+    - ellipses
+    - exclamation_points
+    - hyphens
+    - parentheses
+    - periods
+    - punctuation_and_symbols
+    - quotation_marks
+    - semicolons
+    - slashes
+    # General rules
+    - second_person
+    - sentence_length
+
+  quote:
+    - punctuation_and_symbols
+    - quotation_marks
+    - capitalization
+
+  sidebar:
+    - capitalization
+    - lists
+    - second_person
+    - sentence_length
+    - contractions
+    - ellipses
+    - passive_voice
+
+  # Code blocks - skip all analysis
+  listing: []
+  literal: []
+  code_block: []
+  inline_code: []
+  pass: []
+
+  # Other blocks that should be skipped
+  attribute_entry: []
+  html_block: []
+  html_inline: []
+  horizontal_rule: []
+  softbreak: []
+  hardbreak: []
+
+  # Table cells - basic content analysis
+  table_cell:
+    - capitalization
+    - punctuation_and_symbols
+
+  # Blockquotes - similar to paragraphs but more limited
+  blockquote:
+    - capitalization
+    - punctuation_and_symbols
+    - quotation_marks
+    - passive_voice
+    - sentence_length
+
+# Define rules that should never be applied to certain block types
+rule_exclusions:
+  # Headings should never have list or procedure rules
+  heading:
+    - lists
+    - procedures
+    
+  # Paragraphs should never have heading or list-specific rules
+  paragraph:
+    - headings
+    - lists
+    - procedures
+    - admonitions
+    
+  # List items should never have heading or paragraph-specific rules
+  list_item:
+    - headings
+    - admonitions
+    
+  list_item_ordered:
+    - headings
+    - admonitions
+    
+  list_item_unordered:
+    - headings
+    - admonitions
+    
+  # Admonitions should never have heading or list rules
+  admonition:
+    - headings
+    - lists
+    - procedures 

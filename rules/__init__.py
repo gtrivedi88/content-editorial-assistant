@@ -8,6 +8,7 @@ import importlib
 import importlib.util
 import pkgutil
 import os
+import yaml
 from typing import List, Dict, Any, Optional
 
 # Import base rule with proper path handling
@@ -28,89 +29,8 @@ class RulesRegistry:
         self.rule_locations = {}  # Track where each rule was found
         self._load_all_rules()
         
-        # Define block type to rule mapping for context-aware analysis
-        self.block_type_rules = {
-            # Heading blocks - only apply heading-specific rules
-            'heading': ['headings', 'capitalization', 'pronouns', 'second_person', 'slashes', 'hyphens', 'colons', 'commas', 'dashes', 'ellipses', 'exclamation_points', 'hyphens', 'parentheses', 'periods', 'punctuation_and_symbols', 'quotation_marks', 'semicolons'],
-            
-            # Paragraph blocks - apply general language and grammar rules but exclude structure-specific rules
-            'paragraph': [
-                # Language and grammar rules
-                'abbreviations', 'adverbs_only', 'anthropomorphism', 'articles', 'capitalization',
-                'conjunctions', 'contractions', 'inclusive_language', 'passive_voice', 'plurals',
-                'possessives', 'prepositions', 'pronouns', 'spelling', 'terminology', 'verbs',
-                # Punctuation rules
-                'colons', 'commas', 'dashes', 'ellipses', 'exclamation_points', 'hyphens',
-                'parentheses', 'periods', 'punctuation_and_symbols', 'quotation_marks',
-                'semicolons', 'slashes',
-                # General rules
-                'second_person', 'sentence_length'
-            ],
-            
-            # List items - apply list-specific rules plus general content rules
-            'list_item': ['lists', 'procedures', 'capitalization', 'punctuation_and_symbols'],
-            'list_item_ordered': ['lists', 'procedures', 'capitalization', 'punctuation_and_symbols'],
-            'list_item_unordered': ['lists', 'capitalization', 'punctuation_and_symbols'],
-            'list_title': ['lists', 'capitalization'],
-            
-            # Special blocks - apply specific rules
-            'admonition': [
-                'admonitions', 'capitalization',
-                # Language and grammar rules
-                'abbreviations', 'contractions', 'inclusive_language', 'passive_voice', 
-                'plurals', 'possessives', 'prepositions', 'pronouns', 'spelling', 
-                'terminology', 'verbs', 'conjunctions', 'anthropomorphism', 'articles',
-                # Punctuation rules
-                'colons', 'commas', 'dashes', 'ellipses', 'exclamation_points', 'hyphens',
-                'parentheses', 'periods', 'punctuation_and_symbols', 'quotation_marks',
-                'semicolons', 'slashes',
-                # General rules
-                'second_person', 'sentence_length'
-            ],
-            'quote': ['punctuation_and_symbols', 'quotation_marks', 'capitalization'],
-            'sidebar': [
-                'capitalization', 'lists', 'second_person', 'sentence_length',
-                'contractions', 'ellipses', 'passive_voice'
-            ],
-            
-            # Code blocks - skip all analysis
-            'listing': [],
-            'literal': [],
-            'code_block': [],
-            'inline_code': [],
-            'pass': [],
-            
-            # Other blocks that should be skipped
-            'attribute_entry': [],
-            'html_block': [],
-            'html_inline': [],
-            'horizontal_rule': [],
-            'softbreak': [],
-            'hardbreak': [],
-            
-            # Table cells - basic content analysis
-            'table_cell': ['capitalization', 'punctuation_and_symbols'],
-            
-            # Blockquotes - similar to paragraphs but more limited
-            'blockquote': [
-                'capitalization', 'punctuation_and_symbols', 'quotation_marks',
-                'passive_voice', 'sentence_length'
-            ]
-        }
-        
-        # Define rules that should never be applied to certain block types
-        self.rule_exclusions = {
-            # Headings should never have list or procedure rules
-            'heading': ['lists', 'procedures'],
-            # Paragraphs should never have heading or list-specific rules
-            'paragraph': ['headings', 'lists', 'procedures', 'admonitions'],
-            # List items should never have heading or paragraph-specific rules
-            'list_item': ['headings', 'admonitions'],
-            'list_item_ordered': ['headings', 'admonitions'],
-            'list_item_unordered': ['headings', 'admonitions'],
-            # Admonitions should never have heading or list rules
-            'admonition': ['headings', 'lists', 'procedures'],
-        }
+        # Load rule-to-block type mappings from configuration file
+        self._load_rule_mappings()
     
     def _load_all_rules(self):
         """Automatically discover and load all rule modules from main directory and nested subdirectories (up to 4 levels deep)."""
@@ -193,6 +113,83 @@ class RulesRegistry:
             print(f"❌ Critical error in rules registry initialization: {e}")
             
         print(f"📊 Rules discovery complete. Loaded {len(self.rules)} rules from {len(set(self.rule_locations.values()))} locations.")
+    
+    def _load_rule_mappings(self):
+        """Load rule-to-block type mappings from configuration file with validation."""
+        try:
+            # Get the path to the configuration file
+            rules_dir = os.path.dirname(os.path.abspath(__file__))
+            config_path = os.path.join(rules_dir, 'rule_mappings.yaml')
+            
+            if not os.path.exists(config_path):
+                raise FileNotFoundError(f"Rule mappings configuration file not found: {config_path}")
+            
+            print(f"📋 Loading rule mappings from: {config_path}")
+            
+            # Load the YAML configuration
+            with open(config_path, 'r', encoding='utf-8') as f:
+                config = yaml.safe_load(f)
+            
+            # Validate configuration structure
+            self._validate_rule_mappings_config(config)
+            
+            # Set the mappings
+            self.block_type_rules = config.get('block_type_rules', {})
+            self.rule_exclusions = config.get('rule_exclusions', {})
+            
+            print(f"✅ Successfully loaded {len(self.block_type_rules)} block type rules and {len(self.rule_exclusions)} exclusions")
+            
+        except Exception as e:
+            print(f"❌ Critical error loading rule mappings: {e}")
+            raise RuntimeError(f"Failed to load rule mappings configuration: {e}")
+    
+    def _validate_rule_mappings_config(self, config: dict):
+        """Validate the structure and content of the rule mappings configuration."""
+        if not isinstance(config, dict):
+            raise ValueError("Configuration must be a dictionary")
+        
+        # Check required top-level keys
+        required_keys = ['block_type_rules', 'rule_exclusions']
+        for key in required_keys:
+            if key not in config:
+                raise ValueError(f"Missing required configuration key: {key}")
+        
+        # Validate block_type_rules
+        block_type_rules = config['block_type_rules']
+        if not isinstance(block_type_rules, dict):
+            raise ValueError("block_type_rules must be a dictionary")
+        
+        for block_type, rules in block_type_rules.items():
+            if not isinstance(block_type, str):
+                raise ValueError(f"Block type must be a string, got: {type(block_type)}")
+            
+            if not isinstance(rules, list):
+                raise ValueError(f"Rules for block type '{block_type}' must be a list, got: {type(rules)}")
+            
+            for rule in rules:
+                if not isinstance(rule, str):
+                    raise ValueError(f"Rule name must be a string, got: {type(rule)} for block type '{block_type}'")
+        
+        # Validate rule_exclusions
+        rule_exclusions = config['rule_exclusions']
+        if not isinstance(rule_exclusions, dict):
+            raise ValueError("rule_exclusions must be a dictionary")
+        
+        for block_type, excluded_rules in rule_exclusions.items():
+            if not isinstance(block_type, str):
+                raise ValueError(f"Block type in exclusions must be a string, got: {type(block_type)}")
+            
+            if not isinstance(excluded_rules, list):
+                raise ValueError(f"Excluded rules for block type '{block_type}' must be a list, got: {type(excluded_rules)}")
+            
+            for rule in excluded_rules:
+                if not isinstance(rule, str):
+                    raise ValueError(f"Excluded rule name must be a string, got: {type(rule)} for block type '{block_type}'")
+        
+        # Validate that all block types in rule_exclusions also exist in block_type_rules
+        for block_type in rule_exclusions.keys():
+            if block_type not in block_type_rules:
+                print(f"⚠️ Warning: Block type '{block_type}' in rule_exclusions not found in block_type_rules")
     
     def _import_rule_module_enhanced(self, import_path: str, file_dir: str, filename: str, depth: int):
         """Enhanced import method with proper Python imports as primary method."""
