@@ -1,11 +1,11 @@
 site:
-  title: Style Guide AI Documentation
-  url: https://github.com/gtrivedi88/peer-lens
-  start_page: style-guide-ai::index.adoc
+  title: Peer-Review Platform Documentation
+  url: https://gtrivedi88.github.io/peer-lens
+  start_page: peer-lens::index.adoc
 
 content:
   sources:
-  - url: .
+  - url: ../
     branches: HEAD
     edit_url: 'https://github.com/gtrivedi88/peer-lens/blob/main/{path}'
     start_path: docs

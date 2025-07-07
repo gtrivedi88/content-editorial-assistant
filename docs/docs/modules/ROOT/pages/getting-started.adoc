@@ -16,8 +16,8 @@ Before you begin, ensure you have the following installed:
 
 [source,bash]
 ----
-git clone https://github.com/your-org/style-guide-ai.git
-cd style-guide-ai
+git clone https://github.com/gtrivedi88/peer-lens.git
+cd peer-lens
 ----
 
 === 2. Set Up Virtual Environment

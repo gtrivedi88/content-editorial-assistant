@@ -1,6 +1,6 @@
-# Style Guide AI Documentation
+# Peer-Review Platform Documentation
 
-This directory contains the complete documentation for the Style Guide AI project, built with [Antora](https://antora.org/) and deployed to GitHub Pages.
+This directory contains the complete documentation for the Peer-Review Platform project, built with [Antora](https://antora.org/) and deployed to GitHub Pages.
 
 ## Documentation Structure
 
@@ -61,7 +61,7 @@ The documentation is automatically deployed to GitHub Pages via GitHub Actions w
 1. **Trigger**: Push to `main` branch or changes to `docs/**` files
 2. **Build**: GitHub Actions runs Antora to build the site
 3. **Deploy**: Built site is deployed to GitHub Pages
-4. **Access**: Available at `https://your-username.github.io/style-guide-ai`
+4. **Access**: Available at `https://gtrivedi88.github.io/peer-lens`
 
 ### Manual Deployment
 
@@ -260,4 +260,4 @@ For help with the documentation:
 
 ## License
 
-This documentation is part of the Style Guide AI project and follows the same license terms.
+This documentation is part of the Peer-Review Platform project and follows the same license terms.

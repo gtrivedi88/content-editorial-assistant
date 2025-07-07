@@ -1,10 +1,10 @@
-= Style Guide AI Documentation
+= Peer-Review Platform Documentation
 :page-layout: home
 :!sectids:
 
-== Welcome to Style Guide AI
+== Welcome to Peer-Review Platform
 
-Style Guide AI is a comprehensive documentation analysis and improvement tool that combines traditional style checking with AI-powered content enhancement. This system analyzes documents for style compliance, detects ambiguities, and provides intelligent suggestions for improvement.
+The Peer-Review Platform is a comprehensive documentation analysis and improvement tool that combines traditional style checking with AI-powered content enhancement. This system analyzes documents for style compliance, detects ambiguities, and provides intelligent suggestions for improvement.
 
 === Key Features
 
@@ -79,8 +79,8 @@ graph TD
 +
 [source,bash]
 ----
-git clone https://github.com/your-org/style-guide-ai.git
-cd style-guide-ai
+git clone https://github.com/gtrivedi88/peer-lens.git
+cd peer-lens
 pip install -r requirements.txt
 ----
 
