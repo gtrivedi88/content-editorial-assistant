@@ -23,12 +23,14 @@ This Docker deployment provides a complete AI-powered writing assistant with:
 ### One-Command Deployment
 
 ```bash
-docker run -p 5000:5000 -p 11434:11434 quay.io/rhdeveldocs/peer-lens:latest
+docker run -p 5000:5000 -p 11435:11434 -e FLASK_RUN_HOST=0.0.0.0 -e HOST=0.0.0.0 quay.io/rhdeveldocs/peer-lens:latest
 ```
 
 **Access your application at:** http://localhost:5000
 
 **Initial startup takes 2-3 minutes** as the AI models load automatically.
+
+> **Note**: This command uses port 11435 for the Ollama API to avoid conflicts with existing Ollama installations that typically use port 11434.
 
 ### Production Deployment (Recommended)
 
@@ -38,7 +40,9 @@ For regular use with data persistence:
 docker run -d \
   --name peer-lens-ai \
   -p 5000:5000 \
-  -p 11434:11434 \
+  -p 11435:11434 \
+  -e FLASK_RUN_HOST=0.0.0.0 \
+  -e HOST=0.0.0.0 \
   -v peer-lens-uploads:/app/uploads \
   -v peer-lens-ollama:/root/.ollama \
   --restart unless-stopped \
@@ -90,7 +94,7 @@ docker rm peer-lens-ai
 ## Application Endpoints
 
 - **Main Application**: http://localhost:5000
-- **Ollama API**: http://localhost:11434
+- **Ollama API**: http://localhost:11435
 - **Health Check**: http://localhost:5000/health
 
 ## Troubleshooting
@@ -98,7 +102,7 @@ docker rm peer-lens-ai
 ### Application Won't Start
 - Verify Docker is running: `docker info`
 - Increase Docker memory allocation to 8GB+ in Docker Desktop settings
-- Ensure ports 5000 and 11434 are available
+- Ensure ports 5000 and 11435 are available
 
 ### Performance Issues
 - Allocate more RAM to Docker (8GB+ recommended)
@@ -106,13 +110,24 @@ docker rm peer-lens-ai
 - Use SSD storage for better performance
 
 ### Port Conflicts
-If default ports are unavailable:
+If you have Ollama running on your host system (port 11434), the default command will fail. Use this corrected version:
 
 ```bash
+# Recommended: Uses port 11435 for Ollama API and includes network binding fix
+docker run -p 5000:5000 -p 11435:11434 -e FLASK_RUN_HOST=0.0.0.0 -e HOST=0.0.0.0 quay.io/rhdeveldocs/peer-lens:latest
+```
+
+For completely different ports:
+```bash
 # Use alternative ports
-docker run -p 8080:5000 -p 11435:11434 quay.io/rhdeveldocs/peer-lens:latest
+docker run -p 8080:5000 -p 11436:11434 -e FLASK_RUN_HOST=0.0.0.0 -e HOST=0.0.0.0 quay.io/rhdeveldocs/peer-lens:latest
 # Access at: http://localhost:8080
 ```
+
+### Connection Issues
+If you get "connection reset" errors, ensure the environment variables are set:
+- `FLASK_RUN_HOST=0.0.0.0` - Makes Flask bind to all interfaces
+- `HOST=0.0.0.0` - Alternative environment variable for network binding
 
 ### Common Issues
 
