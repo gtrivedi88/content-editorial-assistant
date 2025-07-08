@@ -26,8 +26,6 @@ runtime:
 
 asciidoc:
   attributes:
-    kroki-server-url: https://kroki.io
-    kroki-fetch-diagram: true
     page-mermaid: true
     experimental: true
 

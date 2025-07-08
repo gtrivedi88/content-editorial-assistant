@@ -20,31 +20,16 @@
       flowchart: {
         htmlLabels: true,
         curve: 'basis'
-      },
-      gitGraph: {
-        showBranches: true,
-        showCommitLabel: true,
-        mainBranchName: 'main'
-      },
-      sequence: {
-        actorMargin: 50,
-        width: 150,
-        height: 65,
-        boxMargin: 10,
-        boxTextMargin: 5,
-        noteMargin: 10,
-        messageMargin: 35
       }
     });
     
     // Find and render mermaid diagrams
-    // Look for pre elements that contain mermaid syntax
-    const allPreElements = document.querySelectorAll('pre');
+    const diagramContainers = document.querySelectorAll('.listingblock .content pre, .literalblock .content pre');
     
-    allPreElements.forEach(function(element, index) {
+    diagramContainers.forEach(function(element, index) {
       const content = element.textContent || element.innerText;
       
-      // Check if this is a mermaid diagram by looking for mermaid keywords
+      // Check if this is a mermaid diagram
       const isMermaidDiagram = content.includes('graph ') || 
                               content.includes('sequenceDiagram') || 
                               content.includes('flowchart ') ||
@@ -64,18 +49,22 @@
         container.className = 'mermaid-container';
         container.style.textAlign = 'center';
         container.style.margin = '1rem 0';
+        container.style.padding = '1rem';
+        container.style.backgroundColor = '#f8f9fa';
+        container.style.border = '1px solid #dee2e6';
+        container.style.borderRadius = '0.375rem';
         
         // Render the diagram
         try {
-          mermaid.render(graphId, graphDefinition, function(svgCode) {
-            container.innerHTML = svgCode;
-            element.parentNode.replaceChild(container, element);
+          mermaid.render(graphId, graphDefinition).then(function(result) {
+            container.innerHTML = result.svg;
+            element.parentNode.parentNode.replaceChild(container, element.parentNode);
           });
         } catch (error) {
           console.error('Mermaid rendering error:', error);
-          // Fallback: show the raw code
-          container.innerHTML = '<pre><code>' + graphDefinition + '</code></pre>';
-          element.parentNode.replaceChild(container, element);
+          // Fallback: show the raw code with a note
+          container.innerHTML = '<div style="color: #dc3545; font-weight: bold; margin-bottom: 0.5rem;">⚠️ Diagram rendering failed</div><pre style="background: #f8f9fa; padding: 1rem; border-radius: 0.25rem;"><code>' + graphDefinition + '</code></pre>';
+          element.parentNode.parentNode.replaceChild(container, element.parentNode);
         }
       }
     });
@@ -87,6 +76,10 @@
   .mermaid-container {
     text-align: center;
     margin: 1rem 0;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
   }
   
   .mermaid-container svg {
@@ -111,6 +104,11 @@
   
   /* Dark mode support */
   @media (prefers-color-scheme: dark) {
+    .mermaid-container {
+      background-color: #2d3748;
+      border-color: #4a5568;
+    }
+    
     .mermaid-container .node rect,
     .mermaid-container .node circle,
     .mermaid-container .node ellipse {

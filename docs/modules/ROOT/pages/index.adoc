@@ -37,8 +37,8 @@ The Peer-Review Platform is a comprehensive documentation analysis and improveme
 
 The system follows a modular architecture with clear separation of concerns:
 
-[mermaid]
-----
+[mermaid,target=architecture-overview]
+....
 graph TD
     A[Document Input] --> B[Format Detection]
     B --> C[Document Parser]
@@ -50,7 +50,7 @@ graph TD
     F --> H
     G --> H
     H --> I[Client Interface]
-----
+....
 
 === Quick Start
 
