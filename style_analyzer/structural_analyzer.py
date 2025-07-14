@@ -34,20 +34,33 @@ class StructuralAnalyzer:
         self.rules_registry = rules_registry
         self.nlp = nlp
         
-        # Initialize structural parser factory if available
-        self.parser_factory = None
-        if STRUCTURAL_PARSING_AVAILABLE:
-            try:
-                self.parser_factory = StructuralParserFactory()
-                logger.info("Structural parsing enabled - context-aware analysis available")
-            except Exception as e:
-                logger.warning(f"Failed to initialize structural parser: {e}")
-                self.parser_factory = None
+        # Use lazy initialization for structural parser to prevent hanging during import
+        self._parser_factory = None
+        self._parser_factory_attempted = False
         
         # Initialize analysis mode executor
         self.mode_executor = AnalysisModeExecutor(
             readability_analyzer, sentence_analyzer, rules_registry, nlp
         )
+    
+    @property
+    def parser_factory(self):
+        """Lazy initialization of parser factory to prevent hanging during app startup."""
+        if not self._parser_factory_attempted:
+            self._parser_factory_attempted = True
+            
+            if STRUCTURAL_PARSING_AVAILABLE:
+                try:
+                    self._parser_factory = StructuralParserFactory()
+                    logger.info("Structural parsing enabled - context-aware analysis available")
+                except Exception as e:
+                    logger.warning(f"Failed to initialize structural parser: {e}")
+                    self._parser_factory = None
+            else:
+                logger.warning("Structural parsing not available - missing dependencies")
+                self._parser_factory = None
+        
+        return self._parser_factory
     
     def analyze_with_structure(self, text: str, format_hint: str = 'auto', 
                              analysis_mode: AnalysisMode = AnalysisMode.SPACY_WITH_MODULAR_RULES) -> List[ErrorDict]:
@@ -55,9 +68,9 @@ class StructuralAnalyzer:
         errors = []
         
         try:
-            # Try structural parsing for context-aware analysis
+            # Try structural parsing for context-aware analysis (lazy initialization)
             parsed_document = None
-            if self.parser_factory:
+            if self.parser_factory:  # This will trigger lazy initialization
                 try:
                     # Ensure format_hint is a valid value and cast to Literal type
                     from typing import cast, Literal
@@ -105,25 +118,22 @@ class StructuralAnalyzer:
     
     def analyze_with_blocks(self, text: str, format_hint: str = 'auto', 
                           analysis_mode: AnalysisMode = AnalysisMode.SPACY_WITH_MODULAR_RULES) -> Dict[str, Any]:
-        """Perform block-aware analysis returning structured results with errors per block."""
-        if not text or not text.strip():
-            return {
-                'analysis': create_analysis_result(
-                    errors=[], suggestions=[], statistics={}, technical_metrics={},
-                    overall_score=0, analysis_mode=AnalysisMode.NONE,
-                    spacy_available=self.nlp is not None, 
-                    modular_rules_available=self.rules_registry is not None
-                ),
-                'structural_blocks': [],
-                'has_structure': False
-            }
+        """
+        Analyze document and return both overall analysis and individual block analysis.
+        
+        Returns:
+            Dict containing:
+            - 'analysis': Overall analysis result
+            - 'structural_blocks': List of analyzed blocks
+            - 'has_structure': Boolean indicating if structural parsing succeeded
+        """
         
         try:
-            # Try structural parsing for block-aware analysis
+            # Try structural parsing for block-aware analysis (lazy initialization)
             parsed_document = None
             structural_blocks = []
             
-            if self.parser_factory:
+            if self.parser_factory:  # This will trigger lazy initialization
                 try:
                     from typing import cast, Literal
                     if format_hint in ['asciidoc', 'markdown', 'auto']:
@@ -155,25 +165,22 @@ class StructuralAnalyzer:
             sentences = self._split_sentences(text)
             paragraphs = self.statistics_calculator.split_paragraphs_safe(text)
             
-            statistics = self.statistics_calculator.calculate_safe_statistics(
+            statistics = self.statistics_calculator.calculate_statistics(
+                text, sentences, paragraphs, all_errors
+            )
+            
+            # Calculate technical writing metrics
+            technical_metrics = self.readability_analyzer.calculate_advanced_metrics(
                 text, sentences, paragraphs
             )
             
-            technical_metrics = self.statistics_calculator.calculate_safe_technical_metrics(
-                text, sentences, len(all_errors)
-            )
-            
             # Generate suggestions
-            suggestions = self.suggestion_generator.generate_suggestions(
-                all_errors, statistics, technical_metrics
-            )
+            suggestions = self.suggestion_generator.generate_suggestions(all_errors, text)
             
             # Calculate overall score
-            overall_score = self._calculate_overall_score(
-                all_errors, technical_metrics, statistics
-            )
+            overall_score = self._calculate_overall_score(statistics, technical_metrics, all_errors)
             
-            # Create analysis result
+            # Create overall analysis result
             analysis = create_analysis_result(
                 errors=all_errors,
                 suggestions=suggestions,
@@ -192,22 +199,34 @@ class StructuralAnalyzer:
             }
             
         except Exception as e:
-            logger.error(f"Block-aware analysis failed: {e}")
+            logger.error(f"Block analysis failed: {e}")
+            # Complete fallback
+            sentences = self._split_sentences(text)
+            all_errors = self._analyze_without_structure(text, sentences, analysis_mode)
+            
+            paragraphs = self.statistics_calculator.split_paragraphs_safe(text)
+            statistics = self.statistics_calculator.calculate_statistics(
+                text, sentences, paragraphs, all_errors
+            )
+            technical_metrics = self.readability_analyzer.calculate_advanced_metrics(
+                text, sentences, paragraphs
+            )
+            suggestions = self.suggestion_generator.generate_suggestions(all_errors, text)
+            overall_score = self._calculate_overall_score(statistics, technical_metrics, all_errors)
+            
+            analysis = create_analysis_result(
+                errors=all_errors,
+                suggestions=suggestions,
+                statistics=statistics,
+                technical_metrics=technical_metrics,
+                overall_score=overall_score,
+                analysis_mode=analysis_mode,
+                spacy_available=self.nlp is not None,
+                modular_rules_available=self.rules_registry is not None
+            )
+            
             return {
-                'analysis': create_analysis_result(
-                    errors=[create_error(
-                        error_type='system',
-                        message=f'Analysis failed: {str(e)}',
-                        suggestions=['Check text input and system configuration']
-                    )],
-                    suggestions=[],
-                    statistics={},
-                    technical_metrics={},
-                    overall_score=0,
-                    analysis_mode=AnalysisMode.ERROR,
-                    spacy_available=self.nlp is not None,
-                    modular_rules_available=self.rules_registry is not None
-                ),
+                'analysis': analysis,
                 'structural_blocks': [],
                 'has_structure': False
             }
@@ -304,8 +323,8 @@ class StructuralAnalyzer:
             sentences = re.split(r'[.!?]+', text)
             return [s.strip() for s in sentences if s.strip()]
     
-    def _calculate_overall_score(self, errors: List[ErrorDict], technical_metrics: Dict[str, Any], 
-                               statistics: Dict[str, Any]) -> float:
+    def _calculate_overall_score(self, statistics: Dict[str, Any], technical_metrics: Dict[str, Any], 
+                               errors: List[ErrorDict]) -> float:
         """Calculate overall style score safely."""
         try:
             # Base score

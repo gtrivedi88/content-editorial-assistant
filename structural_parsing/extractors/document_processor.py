@@ -59,7 +59,7 @@ class DocumentProcessor:
             # Extract text using appropriate method
             text = self.supported_formats[file_ext](filepath)
             
-            if text:
+            if text is not None:
                 # Clean and normalize the text
                 text = self._clean_text(text)
                 logger.info(f"Successfully extracted {len(text)} characters from {filepath}")
@@ -80,7 +80,12 @@ class DocumentProcessor:
             
             for page_num in range(doc.page_count):
                 page = doc[page_num]
-                text += page.get_text()
+                try:
+                    # Try newer PyMuPDF API first
+                    text += page.get_text()
+                except AttributeError:
+                    # Fallback to older API
+                    text += page.getText()
                 text += "\n\n"  # Add page break
             
             doc.close()
@@ -136,12 +141,20 @@ class DocumentProcessor:
                 content = file.read()
             
             # Remove AsciiDoc formatting (basic implementation)
-            # Remove headers
-            content = re.sub(r'^=+\s+.*$', '', content, flags=re.MULTILINE)
+            # Convert headers to text (preserve content, remove =+ markers)
+            content = re.sub(r'^=+\s+(.*?)$', r'\1', content, flags=re.MULTILINE)
             
-            # Remove block delimiters
+            # Remove attribute entries (lines starting with :attribute:)
+            content = re.sub(r'^:[\w-]+:\s*.*?$', '', content, flags=re.MULTILINE)
+            
+            # Remove block delimiters but preserve content inside
             content = re.sub(r'^----+$', '', content, flags=re.MULTILINE)
             content = re.sub(r'^\*\*\*\*+$', '', content, flags=re.MULTILINE)
+            content = re.sub(r'^====+$', '', content, flags=re.MULTILINE)
+            content = re.sub(r'^\+\+\+\++$', '', content, flags=re.MULTILINE)
+            
+            # Remove admonition markers but preserve content
+            content = re.sub(r'^\[(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]$', '', content, flags=re.MULTILINE)
             
             # Remove inline formatting
             content = re.sub(r'\*([^*]+)\*', r'\1', content)  # bold
@@ -154,6 +167,7 @@ class DocumentProcessor:
             
             # Clean up extra whitespace
             content = re.sub(r'\n\s*\n', '\n\n', content)
+            content = re.sub(r'\n{3,}', '\n\n', content)
             
             return content.strip()
             
@@ -170,8 +184,8 @@ class DocumentProcessor:
             # Parse DITA XML and extract text
             soup = BeautifulSoup(content, 'xml')
             
-            # Remove unwanted elements
-            for element in soup(['title', 'prolog', 'metadata']):
+            # Remove unwanted metadata but preserve titles
+            for element in soup(['prolog', 'metadata']):
                 element.decompose()
             
             # Extract text content
@@ -197,6 +211,8 @@ class DocumentProcessor:
     
     def _clean_text(self, text: str) -> str:
         """Clean and normalize extracted text."""
+        if text is None:
+            return ""
         if not text:
             return ""
         
@@ -230,11 +246,14 @@ class DocumentProcessor:
         }
         
         try:
-            if os.path.exists(filepath):
-                info['file_size'] = os.path.getsize(filepath)
-                file_ext = os.path.splitext(filepath)[1].lower()
+            # Extract format from file extension regardless of file existence
+            file_ext = os.path.splitext(filepath)[1].lower()
+            if file_ext:
                 info['format'] = file_ext.lstrip('.')
                 info['extractable'] = file_ext in self.supported_formats
+            
+            if os.path.exists(filepath):
+                info['file_size'] = os.path.getsize(filepath)
             
         except Exception as e:
             logger.error(f"Error getting document info: {str(e)}")

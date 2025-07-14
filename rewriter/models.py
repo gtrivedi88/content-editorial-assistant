@@ -14,6 +14,10 @@ try:
     HF_AVAILABLE = True
 except ImportError:
     HF_AVAILABLE = False
+    # Define dummy classes for testing/mocking purposes
+    AutoTokenizer = None
+    AutoModelForCausalLM = None
+    pipeline = None
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +71,7 @@ class ModelManager:
     
     def _initialize_hf_model(self):
         """Initialize the Hugging Face model for text generation."""
-        if not HF_AVAILABLE:
+        if not HF_AVAILABLE or AutoTokenizer is None or pipeline is None:
             logger.warning("Transformers not available. Install with: pip install transformers torch")
             return
             
@@ -109,4 +113,99 @@ class ModelManager:
             'hf_model': self.model_name if not self.use_ollama else None,
             'hf_available': HF_AVAILABLE,
             'is_available': self.is_available()
-        } 
+        }
+    
+    def get_model(self, model_name: Optional[str] = None) -> 'ModelWrapper':
+        """Get a model wrapper for text generation."""
+        return ModelWrapper(self, model_name or self.model_name)
+
+
+class ModelWrapper:
+    """Wrapper class for model operations that provides a consistent interface."""
+    
+    def __init__(self, model_manager: ModelManager, model_name: str):
+        """Initialize the model wrapper."""
+        self.model_manager = model_manager
+        self.model_name = model_name
+    
+    def generate_text(self, prompt: str, original_text: str = "") -> str:
+        """Generate text using the underlying model."""
+        if self.model_manager.use_ollama:
+            return self._generate_with_ollama(prompt, original_text)
+        else:
+            return self._generate_with_hf(prompt, original_text)
+    
+    def _generate_with_ollama(self, prompt: str, original_text: str) -> str:
+        """Generate text using Ollama."""
+        try:
+            payload = {
+                "model": self.model_manager.ollama_model,
+                "prompt": prompt,
+                "stream": False,
+                "options": {
+                    "temperature": 0.4,
+                    "top_p": 0.7,
+                    "top_k": 20,
+                    "num_predict": 512,
+                    "stop": ["\n\nOriginal:", "\n\nRewrite:", "###", "---"]
+                }
+            }
+            
+            response = requests.post(
+                self.model_manager.ollama_url,
+                json=payload,
+                timeout=30
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                return result.get('response', original_text).strip()
+            else:
+                logger.error(f"❌ Ollama API error: {response.status_code}")
+                return original_text
+                
+        except Exception as e:
+            logger.error(f"❌ Ollama generation failed: {e}")
+            return original_text
+    
+    def _generate_with_hf(self, prompt: str, original_text: str) -> str:
+        """Generate text using Hugging Face."""
+        if not self.model_manager.generator:
+            logger.warning("HuggingFace model not available")
+            return original_text
+            
+        try:
+            # Set pad_token_id if available
+            pad_token_id = None
+            if self.model_manager.tokenizer and hasattr(self.model_manager.tokenizer, 'eos_token_id'):
+                pad_token_id = self.model_manager.tokenizer.eos_token_id
+            
+            response = self.model_manager.generator(
+                prompt,
+                max_length=len(prompt.split()) + 150,
+                temperature=0.7,
+                do_sample=True,
+                pad_token_id=pad_token_id,
+                num_return_sequences=1
+            )
+            
+            # Handle response properly - it should be a list of dicts
+            if response and isinstance(response, list) and len(response) > 0:
+                result = response[0]
+                if isinstance(result, dict) and 'generated_text' in result:
+                    generated_text = result['generated_text']
+                    
+                    # Make sure generated_text is a string
+                    if isinstance(generated_text, str):
+                        # Extract only the new part (remove the original prompt)
+                        if generated_text.startswith(prompt):
+                            generated_text = generated_text[len(prompt):].strip()
+                        
+                        return generated_text if generated_text else original_text
+            
+            logger.warning("No valid response from HuggingFace model")
+            return original_text
+                
+        except Exception as e:
+            logger.error(f"❌ HuggingFace generation failed: {e}")
+            return original_text 

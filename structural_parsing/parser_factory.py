@@ -37,6 +37,10 @@ class StructuralParserFactory:
         Returns:
             ParseResult from the appropriate parser
         """
+        # Handle None content
+        if content is None:
+            content = ""
+        
         # Handle explicit format hints
         if format_hint == 'asciidoc':
             return self.asciidoc_parser.parse(content, filename)

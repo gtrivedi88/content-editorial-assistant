@@ -1,0 +1,240 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "style-guide-ai"
+version = "2.0.0"
+description = "AI-powered technical writing assistant for style and clarity"
+authors = [{name = "Style Guide AI Team"}]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.8"
+
+# Static Analysis Tools Configuration
+
+[tool.black]
+line-length = 88
+target-version = ['py38']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | venv
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+known_first_party = ["app_modules", "rewriter", "style_analyzer", "rules", "ambiguity", "structural_parsing", "src"]
+
+[tool.flake8]
+max-line-length = 88
+extend-ignore = ["E203", "E501", "W503"]
+exclude = [
+    ".git",
+    "__pycache__",
+    "venv",
+    ".venv",
+    "build",
+    "dist",
+    ".eggs",
+    "*.egg-info"
+]
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false  # Start with false, gradually enable
+disallow_incomplete_defs = false
+check_untyped_defs = true
+disallow_untyped_decorators = false
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = [
+    "spacy.*",
+    "transformers.*", 
+    "torch.*",
+    "requests.*",
+    "flask_socketio.*",
+    "werkzeug.*",
+    "fitz.*",
+    "docx.*",
+    "markdown.*",
+    "bs4.*",
+    "psutil.*"
+]
+ignore_missing_imports = true
+
+[tool.pylint.master]
+jobs = 1
+persistent = true
+suggestion-mode = true
+unsafe-load-any-extension = false
+
+[tool.pylint.messages_control]
+confidence = ""
+disable = [
+    "C0330",  # Wrong hanging indentation
+    "C0326",  # Bad whitespace  
+    "R0903",  # Too few public methods
+    "R0913",  # Too many arguments
+    "W0613",  # Unused argument
+    "C0114",  # Missing module docstring (for now)
+    "C0115",  # Missing class docstring (for now)
+    "C0116",  # Missing function docstring (for now)
+]
+
+[tool.pylint.reports]
+output-format = "text"
+reports = false
+score = true
+
+[tool.pylint.refactoring]
+max-nested-blocks = 5
+never-returning-functions = ["sys.exit"]
+
+[tool.pylint.similarities]
+ignore-comments = true
+ignore-docstrings = true
+ignore-imports = false
+min-similarity-lines = 4
+
+[tool.pylint.spelling]
+spelling-dict = ""
+spelling-ignore-words = ""
+spelling-private-dict-file = ""
+
+[tool.pylint.string]
+check-str-concat-over-line-jumps = false
+
+[tool.pylint.typecheck]
+contextmanager-decorators = ["contextlib.contextmanager"]
+ignore-mixin-members = true
+ignore-none = true
+ignore-on-opaque-inference = true
+ignored-modules = []
+ignored-classes = ["optparse.Values", "thread._local", "_thread._local"]
+missing-member-hint = true
+missing-member-hint-distance = 1
+missing-member-max-choices = 1
+
+[tool.pylint.variables]
+additional-builtins = []
+allow-global-unused-variables = true
+callbacks = ["cb_", "_cb"]
+dummy-variables-rgx = "_+$|(_[a-zA-Z0-9_]*[a-zA-Z0-9]+?$)|dummy|^ignored_|^unused_"
+ignored-argument-names = "_.*|^ignored_|^unused_"
+init-import = false
+redefining-builtins-modules = ["six.moves", "past.builtins", "future.builtins", "builtins", "io"]
+
+[tool.pylint.classes]
+defining-attr-methods = ["__init__", "__new__", "setUp", "__post_init__"]
+exclude-protected = ["_asdict", "_fields", "_replace", "_source", "_make"]
+valid-classmethod-first-arg = ["cls"]
+valid-metaclass-classmethod-first-arg = ["cls"]
+
+[tool.pylint.design]
+max-args = 8
+max-attributes = 12
+max-bool-expr = 5
+max-branches = 15
+max-locals = 20
+max-parents = 7
+max-public-methods = 25
+max-returns = 6
+max-statements = 60
+min-public-methods = 1
+
+[tool.pylint.exceptions]
+overgeneral-exceptions = ["BaseException", "Exception"]
+
+[tool.pylint.format]
+expected-line-ending-format = ""
+ignore-long-lines = "^\\s*(# )?<?https?://\\S+>?$"
+indent-after-paren = 4
+indent-string = "    "
+max-line-length = 88
+max-module-lines = 1000
+single-line-class-stmt = false
+single-line-if-stmt = false
+
+[tool.pylint.imports]
+allow-wildcard-with-all = false
+analyse-fallback-blocks = false
+deprecated-modules = ["optparse", "tkinter.tix"]
+
+[tool.pylint.logging]
+logging-format-style = "old"
+logging-modules = ["logging"]
+
+[tool.bandit]
+exclude_dirs = ["tests", "venv", ".venv"]
+skips = ["B101", "B601"]  # Skip assert_used and shell_injection for now
+
+[tool.bandit.assert_used]
+skips = ["**/test_*.py", "**/tests/*.py"]
+
+# Coverage Configuration
+[tool.coverage.run]
+source = [".", "app_modules", "rewriter", "style_analyzer", "rules", "ambiguity", "structural_parsing", "src"]
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "*/__pycache__/*",
+    "*/venv/*",
+    "*/.venv/*",
+    "setup.py"
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+# Pytest Configuration  
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q --strict-markers"
+testpaths = ["tests"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+    "performance: marks tests as performance tests",
+    "security: marks tests as security tests",
+]
+
+# Development Dependencies (optional)
+[tool.pip-tools]
+generate-hashes = true 

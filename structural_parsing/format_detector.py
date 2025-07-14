@@ -34,6 +34,7 @@ class FormatDetector:
             r'^include::', # Include directives
             r'^image::', # Image macros
             r'^link::', # Link macros
+            r'link:.*\[.*\]', # Inline link macros
         ]
         
         self.markdown_patterns = [
@@ -58,8 +59,8 @@ class FormatDetector:
         Returns:
             Detected format ('asciidoc' or 'markdown')
         """
-        if not content.strip():
-            return 'markdown'  # Default for empty content
+        if not content or not content.strip():
+            return 'markdown'  # Default for empty or None content
         
         lines = content.split('\n')
         asciidoc_score = 0

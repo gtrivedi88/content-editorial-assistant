@@ -31,6 +31,10 @@ class TextProcessor:
         # First, try to extract content between common delimiters
         # Look for patterns like "Here's the rewritten text:" or "Improved text:"
         content_patterns = [
+            r"here's the improved version:\s*(.*?)(?:\n\*|\*|$)",
+            r"certainly!\s*here's the rewrite:\s*(.*?)(?:\n\*|\*|$)",
+            r"i'll help you improve this:\s*(.*?)(?:\n\*|\*|$)",
+            r"let me rewrite this for you:\s*(.*?)(?:\n\*|\*|$)",
             r"here's the rewritten text:\s*(.*?)(?:\n\*|\*|$)",
             r"improved text:\s*(.*?)(?:\n\*|\*|$)",  
             r"rewritten text:\s*(.*?)(?:\n\*|\*|$)",
@@ -59,7 +63,6 @@ class TextProcessor:
                 line.startswith('-') or 
                 line.startswith('•') or
                 line.lower().startswith('let me know') or
-                line.lower().startswith('i ') or
                 line.lower().startswith('converted') or
                 line.lower().startswith('identified') or
                 line.lower().startswith('replaced') or
@@ -75,9 +78,15 @@ class TextProcessor:
         
         if content_lines:
             cleaned = ' '.join(content_lines)
+        else:
+            cleaned = ""  # All lines were filtered out
         
         # Remove common AI response prefixes
         prefixes_to_remove = [
+            "here's the improved version:",
+            "certainly! here's the rewrite:",
+            "i'll help you improve this:",
+            "let me rewrite this for you:",
             "here is the improved text:",
             "here's the improved text:",
             "improved text:",
@@ -116,7 +125,7 @@ class TextProcessor:
             if re.match(r'^\d+\.', sentence):
                 continue
             
-            # Skip explanatory sentences
+            # Skip explanatory sentences but be more selective
             explanatory_starts = [
                 'note:', 'i\'ve', 'i have', 'i applied', 'i made', 'i converted',
                 'i removed', 'i shortened', 'i replaced', 'this addresses',
@@ -130,8 +139,15 @@ class TextProcessor:
             is_explanatory = any(sentence_lower.startswith(start) for start in explanatory_starts)
             
             # Also skip sentences that contain meta-commentary about the rewriting process
-            meta_keywords = ['converted', 'identified', 'replaced', 'clarified', 'improved', 'rewritten', 'changed']
-            has_meta_keywords = any(keyword in sentence_lower for keyword in meta_keywords)
+            meta_commentary_patterns = [
+                r'\bthese changes address\b',
+                r'\bthe rewrite maintains\b',
+                r'\bby converting\b.*\bpassive voice\b',
+                r'\bimproving clarity\b.*\breadability\b',
+                r'\benhancing readability\b'
+            ]
+            
+            has_meta_commentary = any(re.search(pattern, sentence_lower) for pattern in meta_commentary_patterns)
             
             # Skip sentences that sound like AI explanations
             ai_explanation_patterns = [
@@ -144,7 +160,7 @@ class TextProcessor:
             
             has_ai_patterns = any(re.search(pattern, sentence_lower) for pattern in ai_explanation_patterns)
             
-            if not is_explanatory and not has_meta_keywords and not has_ai_patterns:
+            if not is_explanatory and not has_meta_commentary and not has_ai_patterns:
                 content_sentences.append(sentence)
         
         if content_sentences:
@@ -185,24 +201,25 @@ class TextProcessor:
         rewritten = content
         
         try:
+            # Always apply basic conciseness replacements
+            wordy_replacements = {
+                'in order to': 'to',
+                'due to the fact that': 'because',
+                'at this point in time': 'now',
+                'a large number of': 'many',
+                'make a decision': 'decide',
+                'for the purpose of': 'to',
+                'in spite of the fact that': 'although'
+            }
+            
+            for wordy, concise in wordy_replacements.items():
+                rewritten = re.sub(r'\b' + re.escape(wordy) + r'\b', concise, rewritten, flags=re.IGNORECASE)
+            
+            # Apply error-specific fixes
             for error in errors:
                 error_type = error.get('type', '')
                 
-                if error_type == 'conciseness':
-                    wordy_replacements = {
-                        'in order to': 'to',
-                        'due to the fact that': 'because',
-                        'at this point in time': 'now',
-                        'a large number of': 'many',
-                        'make a decision': 'decide',
-                        'for the purpose of': 'to',
-                        'in spite of the fact that': 'although'
-                    }
-                    
-                    for wordy, concise in wordy_replacements.items():
-                        rewritten = re.sub(r'\b' + re.escape(wordy) + r'\b', concise, rewritten, flags=re.IGNORECASE)
-                
-                elif error_type == 'clarity':
+                if error_type == 'clarity':
                     complex_replacements = {
                         'utilize': 'use',
                         'facilitate': 'help',
