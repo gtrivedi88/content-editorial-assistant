@@ -1,5 +1,5 @@
 """
-Procedures Rule
+Procedures Rule (Modular-Aware)
 Based on IBM Style Guide topic: "Procedures"
 """
 from typing import List, Dict, Any
@@ -7,10 +7,8 @@ from .base_structure_rule import BaseStructureRule
 
 class ProceduresRule(BaseStructureRule):
     """
-    Checks for style issues in procedural steps. This rule uses dependency
-    parsing to identify procedural contexts and ensures that steps begin
-    with an imperative verb, while correctly handling optional and
-    conditional steps to reduce false positives.
+    Checks that steps within a Procedure topic begin with an imperative verb.
+    This rule is now context-aware and only activates for Procedure topics.
     """
     def _get_rule_type(self) -> str:
         """Returns the unique identifier for this rule."""
@@ -24,11 +22,12 @@ class ProceduresRule(BaseStructureRule):
         if not nlp or not context:
             return errors
 
-        # Get block type from context (parsers use 'block_type' key)
+        # --- CONTEXT CHECK: Only run this rule inside a Procedure topic ---
+        topic_type = context.get('topic_type')
+        if topic_type != 'Procedure':
+            return errors # Do not run this rule on Concept or Reference topics.
+
         block_type = context.get('block_type', '')
-        
-        # This rule applies to both ordered and unordered list items
-        # since procedures can be in either format
         if block_type not in ['list_item_ordered', 'list_item_unordered', 'list_item']:
             return errors
 
@@ -42,7 +41,7 @@ class ProceduresRule(BaseStructureRule):
                 errors.append(self._create_error(
                     sentence=sentence,
                     sentence_index=i,
-                    message="Procedural steps should begin with a strong, imperative verb.",
+                    message="Steps in a procedure should begin with a strong, imperative verb.",
                     suggestions=["Rewrite the step to start with a command verb (e.g., 'Click', 'Enter', 'Select')."],
                     severity='medium'
                 ))
@@ -58,21 +57,15 @@ class ProceduresRule(BaseStructureRule):
             
         first_token = doc[0]
 
-        # --- Context-Aware Edge Case Handling ---
-
-        # Edge Case 1: Handle optional steps, which are valid.
-        # Linguistic Anchor: The word "Optional".
+        # Allow optional steps
         if first_token.text.lower() == 'optional':
             return True
 
-        # Edge Case 2: Handle conditional steps, which are valid.
-        # Linguistic Anchor: The word "If".
+        # Allow conditional steps
         if first_token.lemma_.lower() == 'if':
             return True
 
         # Main Rule: The step should start with an imperative verb.
-        # Linguistic Anchor: In SpaCy's dependency parse, the root of an
-        # imperative sentence is the verb itself.
         is_imperative = (first_token.pos_ == 'VERB' and first_token.dep_ == 'ROOT')
 
         return is_imperative

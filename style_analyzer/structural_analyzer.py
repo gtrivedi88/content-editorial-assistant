@@ -165,17 +165,17 @@ class StructuralAnalyzer:
             sentences = self._split_sentences(text)
             paragraphs = self.statistics_calculator.split_paragraphs_safe(text)
             
-            statistics = self.statistics_calculator.calculate_statistics(
-                text, sentences, paragraphs, all_errors
-            )
-            
-            # Calculate technical writing metrics
-            technical_metrics = self.readability_analyzer.calculate_advanced_metrics(
+            statistics = self.statistics_calculator.calculate_comprehensive_statistics(
                 text, sentences, paragraphs
             )
             
+            # Calculate technical writing metrics
+            technical_metrics = self.readability_analyzer.calculate_readability_metrics(
+                text
+            )
+            
             # Generate suggestions
-            suggestions = self.suggestion_generator.generate_suggestions(all_errors, text)
+            suggestions = self.suggestion_generator.generate_suggestions(all_errors, statistics, technical_metrics)
             
             # Calculate overall score
             overall_score = self._calculate_overall_score(statistics, technical_metrics, all_errors)
@@ -205,13 +205,13 @@ class StructuralAnalyzer:
             all_errors = self._analyze_without_structure(text, sentences, analysis_mode)
             
             paragraphs = self.statistics_calculator.split_paragraphs_safe(text)
-            statistics = self.statistics_calculator.calculate_statistics(
-                text, sentences, paragraphs, all_errors
-            )
-            technical_metrics = self.readability_analyzer.calculate_advanced_metrics(
+            statistics = self.statistics_calculator.calculate_comprehensive_statistics(
                 text, sentences, paragraphs
             )
-            suggestions = self.suggestion_generator.generate_suggestions(all_errors, text)
+            technical_metrics = self.readability_analyzer.calculate_readability_metrics(
+                text
+            )
+            suggestions = self.suggestion_generator.generate_suggestions(all_errors, statistics, technical_metrics)
             overall_score = self._calculate_overall_score(statistics, technical_metrics, all_errors)
             
             analysis = create_analysis_result(

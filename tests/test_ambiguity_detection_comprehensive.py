@@ -503,7 +503,7 @@ ambiguity_types:
         )
         
         detections = detector.detect(context, mock_nlp)
-
+        
         # Should detect unsupported claims
         assert isinstance(detections, list)
 
