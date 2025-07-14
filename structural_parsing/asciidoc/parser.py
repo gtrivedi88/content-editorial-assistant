@@ -20,7 +20,7 @@ from .types import (
     AsciiDocAttributes,
     ParseResult
 )
-from .ruby_server import get_server, RubyAsciidoctorServer
+from .ruby_client import get_client, SimpleRubyClient
 
 
 @dataclass
@@ -44,8 +44,8 @@ class AsciiDocParser:
     def _check_asciidoctor_availability(self) -> bool:
         """Check if asciidoctor is available on the system."""
         try:
-            server = get_server()
-            return server.ping()
+            client = get_client()
+            return client.ping()
         except:
             return False
     
@@ -69,9 +69,15 @@ class AsciiDocParser:
             )
         
         try:
-            # Use persistent Ruby server for parsing
-            server = get_server()
-            document_data = server.parse_document(content)
+            # Use simple Ruby client for parsing
+            client = get_client()
+            result = client.parse_document(content)
+            
+            if not result.get('success', False):
+                error_msg = result.get('error', 'Unknown error')
+                raise Exception(error_msg)
+            
+            document_data = result.get('data', {})
             
             # Convert the server result to our document structure
             document = self._convert_server_result_to_document(document_data, filename)

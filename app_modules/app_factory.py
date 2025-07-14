@@ -280,22 +280,22 @@ def health_check_services(services):
 def register_cleanup_handlers():
     """Register cleanup handlers for graceful shutdown."""
     
-    def cleanup_ruby_server():
-        """Cleanup the Ruby server on shutdown."""
+    def cleanup_ruby_client():
+        """Cleanup the Ruby client on shutdown."""
         try:
-            from structural_parsing.asciidoc.ruby_server import shutdown_server
-            shutdown_server()
-            logger.info("Ruby server shut down successfully")
+            from structural_parsing.asciidoc.ruby_client import shutdown_client
+            shutdown_client()
+            logger.info("Ruby client shut down successfully")
         except Exception as e:
-            logger.error(f"Error shutting down Ruby server: {e}")
+            logger.error(f"Error shutting down Ruby client: {e}")
     
     # Register cleanup on normal exit
-    atexit.register(cleanup_ruby_server)
+    atexit.register(cleanup_ruby_client)
     
     # Register cleanup on signal termination
     def signal_handler(signum, frame):
         logger.info(f"Received signal {signum}, shutting down...")
-        cleanup_ruby_server()
+        cleanup_ruby_client()
         exit(0)
     
     signal.signal(signal.SIGTERM, signal_handler)

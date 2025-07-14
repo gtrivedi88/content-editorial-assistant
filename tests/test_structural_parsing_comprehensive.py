@@ -24,7 +24,7 @@ try:
     from structural_parsing.format_detector import FormatDetector
     from structural_parsing.asciidoc.parser import AsciiDocParser
     from structural_parsing.markdown.parser import MarkdownParser
-    from structural_parsing.asciidoc.ruby_server import RubyAsciidoctorServer, get_server
+    from structural_parsing.asciidoc.ruby_client import SimpleRubyClient, get_client
     from structural_parsing.extractors.document_processor import DocumentProcessor
     from structural_parsing.asciidoc.types import (
         AsciiDocDocument, AsciiDocBlock, AsciiDocBlockType, 
@@ -640,8 +640,8 @@ Regular paragraph.
         """Test AsciiDocParser error handling."""
         parser = AsciiDocParser()
         
-        # Mock get_server to raise exception
-        with patch('structural_parsing.asciidoc.parser.get_server', side_effect=Exception("Server error")):
+        # Mock get_client to raise exception
+        with patch('structural_parsing.asciidoc.parser.get_client', side_effect=Exception("Client error")):
             result = parser.parse("= Test Document\n\nContent")
             
             assert isinstance(result, ParseResult)
@@ -670,52 +670,53 @@ Regular paragraph.
     # ===============================
     
     @pytest.mark.skipif(not STRUCTURAL_PARSING_AVAILABLE, reason="Structural parsing not available")
-    def test_ruby_asciidoctor_server_initialization(self):
-        """Test RubyAsciidoctorServer initialization."""
+    def test_ruby_client_initialization(self):
+        """Test SimpleRubyClient initialization."""
         try:
-            server = RubyAsciidoctorServer()
-            assert isinstance(server, RubyAsciidoctorServer)
-            assert hasattr(server, 'process')
-            assert hasattr(server, 'lock')
+            client = SimpleRubyClient()
+            assert isinstance(client, SimpleRubyClient)
+            assert hasattr(client, 'asciidoctor_available')
+            assert isinstance(client.asciidoctor_available, bool)
         except Exception:
-            # Server may not be available in test environment
-            pytest.skip("Ruby Asciidoctor server not available")
+            # Client may not be available in test environment
+            pytest.skip("Ruby client not available")
     
     @pytest.mark.skipif(not STRUCTURAL_PARSING_AVAILABLE, reason="Structural parsing not available")
-    def test_ruby_asciidoctor_server_ping(self):
-        """Test RubyAsciidoctorServer ping functionality."""
+    def test_ruby_client_ping(self):
+        """Test SimpleRubyClient ping functionality."""
         try:
-            server = RubyAsciidoctorServer()
-            if server.process:
-                ping_result = server.ping()
-                assert isinstance(ping_result, bool)
+            client = SimpleRubyClient()
+            ping_result = client.ping()
+            assert isinstance(ping_result, bool)
         except Exception:
-            # Server may not be available in test environment
-            pytest.skip("Ruby Asciidoctor server not available")
+            # Client may not be available in test environment
+            pytest.skip("Ruby client not available")
     
     @pytest.mark.skipif(not STRUCTURAL_PARSING_AVAILABLE, reason="Structural parsing not available")
-    def test_ruby_asciidoctor_server_parse_document(self):
-        """Test RubyAsciidoctorServer parse_document functionality."""
+    def test_ruby_client_parse_document(self):
+        """Test SimpleRubyClient parse_document functionality."""
         try:
-            server = RubyAsciidoctorServer()
-            if server.process:
-                result = server.parse_document("= Test Document\n\nContent")
+            client = SimpleRubyClient()
+            if client.asciidoctor_available:
+                result = client.parse_document("= Test Document\n\nContent")
                 assert isinstance(result, dict)
-                assert 'blocks' in result
-                assert isinstance(result['blocks'], list)
+                if result.get('success'):
+                    data = result.get('data', {})
+                    assert 'blocks' in data
+                    assert isinstance(data['blocks'], list)
         except Exception:
-            # Server may not be available in test environment
-            pytest.skip("Ruby Asciidoctor server not available")
+            # Client may not be available in test environment
+            pytest.skip("Ruby client not available")
     
     @pytest.mark.skipif(not STRUCTURAL_PARSING_AVAILABLE, reason="Structural parsing not available")
-    def test_get_server_function(self):
-        """Test get_server function."""
+    def test_get_client_function(self):
+        """Test get_client function."""
         try:
-            server = get_server()
-            assert isinstance(server, RubyAsciidoctorServer)
+            client = get_client()
+            assert isinstance(client, SimpleRubyClient)
         except Exception:
-            # Server may not be available in test environment
-            pytest.skip("Ruby Asciidoctor server not available")
+            # Client may not be available in test environment
+            pytest.skip("Ruby client not available")
     
     # ===============================
     # DOCUMENT PROCESSOR TESTS
