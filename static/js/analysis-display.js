@@ -96,6 +96,7 @@ function getBlockTypeDisplayName(blockType, context) {
         'verse': 'VERSE',
         'listing': 'CODE BLOCK',
         'literal': 'LITERAL BLOCK',
+        'section': 'SECTION',
         'attribute_entry': 'ATTRIBUTE',
         'comment': 'COMMENT',
         'table': 'TABLE',
@@ -760,6 +761,11 @@ function createStructuralBlock(block, displayIndex) {
     // Skip table rows and cells - they'll be handled by their parent table
     if (block.block_type === 'table_row' || block.block_type === 'table_cell') {
         return '';
+    }
+    
+    // Handle section blocks specially - display section + children
+    if (block.block_type === 'section') {
+        return createSectionBlock(block, displayIndex);
     }
     
     // World-class color palette - professional and accessible
@@ -1527,4 +1533,178 @@ function generateModernSmartRecommendations(analysis) {
             <small class="text-dark">${rec}</small>
         </div>
     `).join('');
+}
+
+// Create a section block with its children displayed recursively
+function createSectionBlock(block, displayIndex) {
+    const style = {
+        gradient: 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)',
+        bgColor: '#f8fafc',
+        borderColor: '#e2e8f0',
+        textColor: '#1e293b',
+        accentColor: '#4f46e5'
+    };
+    
+    const blockTitle = getBlockTypeDisplayName(block.block_type, {
+        level: block.level,
+        admonition_type: block.admonition_type
+    });
+    
+    // Count issues in section and all children
+    let totalIssues = 0;
+    if (block.errors) totalIssues += block.errors.length;
+    
+    const countChildIssues = (children) => {
+        if (!children) return;
+        children.forEach(child => {
+            if (child.errors) totalIssues += child.errors.length;
+            if (child.children) countChildIssues(child.children);
+        });
+    };
+    countChildIssues(block.children);
+    
+    // Generate children HTML with updated display indices
+    let childrenHtml = '';
+    let childDisplayIndex = 0;
+    
+    if (block.children && block.children.length > 0) {
+        childrenHtml = block.children.map(child => {
+            const html = createStructuralBlock(child, childDisplayIndex);
+            if (html !== '') {
+                childDisplayIndex++;
+            }
+            return html;
+        }).filter(html => html !== '').join('');
+    }
+    
+    return `
+        <div class="structural-section mb-4" style="
+            border-radius: 16px;
+            overflow: hidden;
+            background: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            border: 1px solid ${style.borderColor};
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        ">
+            <!-- Section header -->
+            <div class="section-header d-flex justify-content-between align-items-center p-3" style="
+                background: ${style.gradient};
+                color: white;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            ">
+                <div class="d-flex align-items-center">
+                    <div class="me-3 d-flex align-items-center justify-content-center" style="
+                        width: 40px;
+                        height: 40px;
+                        background: rgba(255, 255, 255, 0.15);
+                        border-radius: 12px;
+                        backdrop-filter: blur(10px);
+                    ">
+                        <i class="fas fa-layer-group" style="font-size: 18px;"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0 fw-bold" style="font-size: 14px; letter-spacing: 0.5px;">
+                            SECTION ${displayIndex + 1}: ${blockTitle}
+                        </h6>
+                        <small class="opacity-90" style="font-size: 12px;">
+                            ${block.children ? block.children.length : 0} child blocks • ${totalIssues} ${totalIssues === 1 ? 'issue' : 'issues'} total
+                        </small>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center">
+                    <div class="badge" style="
+                        background: ${totalIssues > 0 ? 'rgba(239, 68, 68, 0.9)' : 'rgba(34, 197, 94, 0.9)'};
+                        color: white;
+                        padding: 6px 12px;
+                        border-radius: 20px;
+                        font-size: 11px;
+                        font-weight: 600;
+                        letter-spacing: 0.5px;
+                    ">
+                        ${totalIssues > 0 ? `${totalIssues} ${totalIssues === 1 ? 'ISSUE' : 'ISSUES'}` : 'CLEAN'}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section content and children -->
+            <div class="section-content p-4" style="background: ${style.bgColor};">
+                ${block.content && block.content.trim() !== '' ? `
+                    <div class="section-text mb-4" style="
+                        background: white;
+                        border: 1px solid ${style.borderColor};
+                        border-radius: 12px;
+                        padding: 20px;
+                        font-size: 14px;
+                        line-height: 1.6;
+                        color: #1f2937;
+                        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+                    ">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="me-3 d-flex align-items-center justify-content-center" style="
+                                width: 32px;
+                                height: 32px;
+                                background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+                                border-radius: 8px;
+                            ">
+                                <i class="fas fa-align-left" style="color: ${style.accentColor}; font-size: 14px;"></i>
+                            </div>
+                            <h6 class="mb-0 fw-bold" style="color: ${style.accentColor}; font-size: 14px;">
+                                Section Content
+                            </h6>
+                        </div>
+                        ${escapeHtml(block.content)}
+                    </div>
+                ` : ''}
+                
+                ${childrenHtml !== '' ? `
+                    <div class="section-children">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="me-3 d-flex align-items-center justify-content-center" style="
+                                width: 32px;
+                                height: 32px;
+                                background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+                                border-radius: 8px;
+                            ">
+                                <i class="fas fa-sitemap" style="color: ${style.accentColor}; font-size: 14px;"></i>
+                            </div>
+                            <h6 class="mb-0 fw-bold" style="color: ${style.accentColor}; font-size: 14px;">
+                                Section Blocks (${block.children ? block.children.length : 0})
+                            </h6>
+                        </div>
+                        ${childrenHtml}
+                    </div>
+                ` : ''}
+                
+                ${block.errors && block.errors.length > 0 ? `
+                    <div class="section-errors mt-3" style="
+                        background: white;
+                        border: 1px solid #fecaca;
+                        border-radius: 12px;
+                        padding: 20px;
+                        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+                    ">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="me-3 d-flex align-items-center justify-content-center" style="
+                                width: 32px;
+                                height: 32px;
+                                background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+                                border-radius: 8px;
+                            ">
+                                <i class="fas fa-exclamation-triangle" style="color: #dc2626; font-size: 14px;"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0 fw-bold" style="color: #dc2626; font-size: 14px;">
+                                    Section-Level Issues (${block.errors.length})
+                                </h6>
+                                <small style="color: #6b7280;">Issues affecting the section structure</small>
+                            </div>
+                        </div>
+                        <div class="error-list">
+                            ${block.errors.map(error => createInlineError(error)).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        </div>
+    `;
 }

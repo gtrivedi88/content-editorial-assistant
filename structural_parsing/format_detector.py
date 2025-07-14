@@ -26,6 +26,9 @@ class FormatDetector:
             r'^={4,}\s*$',  # Example delimiters
             r'^-{4,}\s*$',  # Listing delimiters
             r'^\+{4,}\s*$',  # Passthrough delimiters
+            r'^\.{4,}\s*$',  # Literal delimiters (....)
+            r'^_{4,}\s*$',  # Quote delimiters (____)
+            r'^-{2}\s*$',  # Open block delimiters (--)
             r'^\.[A-Z]',  # Block titles (e.g., .Prerequisites)
             r'^\+\s*$',  # Continuation markers
             r'^\*{2,3}\s+',  # Multi-level list markers (** and ***)

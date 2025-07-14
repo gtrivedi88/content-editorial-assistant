@@ -12,7 +12,7 @@ def extract_block_info(block, level = 0)
     content = block.respond_to?(:text) && !block.text.nil? ? block.text.to_s : ''
   when :paragraph, :sidebar, :example, :quote, :verse, :literal, :admonition
     if block.respond_to?(:lines) && block.lines && !block.lines.empty?
-      content = block.lines.join('\n')
+      content = block.lines.join("\n")
     elsif block.respond_to?(:source) && !block.source.nil?
       content = block.source.to_s
     elsif !block.content.nil?
@@ -22,13 +22,13 @@ def extract_block_info(block, level = 0)
     if block.respond_to?(:source) && !block.source.nil?
       content = block.source.to_s
     elsif block.respond_to?(:lines) && block.lines
-      content = block.lines.join('\n')
+      content = block.lines.join("\n")
     end
   else
     if block.respond_to?(:source) && !block.source.nil?
       content = block.source.to_s
     elsif block.respond_to?(:lines) && block.lines && !block.lines.empty?
-      content = block.lines.join('\n')
+      content = block.lines.join("\n")
     elsif !block.content.nil?
       content = block.content.to_s
     elsif block.respond_to?(:text) && !block.text.nil?
