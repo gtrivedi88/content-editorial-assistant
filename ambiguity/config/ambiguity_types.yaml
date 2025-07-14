@@ -9,45 +9,93 @@ confidence_threshold: 0.7
 ambiguity_types:
   missing_actor:
     enabled: true
-    category: "referential"
-    severity: "high"
-    confidence_threshold: 0.7
-    description: "Passive voice sentences without clear actors"
-    
+    severity: high
+    confidence_threshold: 0.8
+    description: "Sentences where the actor or subject is missing or unclear"
+    examples:
+      - "The server was configured." # Who configured it?
+      - "Changes were made to the database." # Who made the changes?
+  
   ambiguous_pronoun:
     enabled: true
-    category: "referential"  
-    severity: "medium"
+    severity: medium
     confidence_threshold: 0.6
-    description: "Pronouns with unclear referents"
-    
+    description: "Pronouns that could refer to multiple entities"
+    examples:
+      - "The server connects to the database. It is slow." # Which is slow?
+      - "The manager spoke to the developer. He was concerned." # Who was concerned?
+  
+  unclear_antecedent:
+    enabled: true
+    severity: medium
+    confidence_threshold: 0.6
+    description: "Pronouns with unclear antecedents (e.g., 'It' with multiple possible referents)"
+    examples:
+      - "The application sends a confirmation to the database. It is critical." # Which is critical?
+      - "The system connects to the API. It handles requests." # Which handles requests?
+  
   unclear_subject:
     enabled: true
-    category: "referential"
-    severity: "medium" 
-    confidence_threshold: 0.6
-    description: "Unclear subject references"
-    
+    severity: medium
+    confidence_threshold: 0.7
+    description: "Sentences where the subject is ambiguous or unclear"
+    examples:
+      - "This causes issues." # What is 'this'?
+      - "The process fails." # Which process?
+  
   ambiguous_modifier:
-    enabled: false  # To be implemented later
-    category: "structural"
-    severity: "low"
+    enabled: false
+    severity: low
     confidence_threshold: 0.5
-    description: "Ambiguous modifier placement"
-    
+    description: "Modifiers that could apply to multiple elements"
+    examples:
+      - "The red car and truck" # Is the truck red?
+      - "Fast database queries" # Which queries are fast?
+  
   vague_quantifier:
-    enabled: false  # To be implemented later
-    category: "semantic"
-    severity: "low" 
-    confidence_threshold: 0.5
-    description: "Vague quantifiers without context"
-    
-  unclear_temporal:
-    enabled: false  # To be implemented later
-    category: "temporal"
-    severity: "medium"
+    enabled: false
+    severity: low
     confidence_threshold: 0.6
-    description: "Unclear temporal references"
+    description: "Vague quantities that lack specificity"
+    examples:
+      - "Many users reported issues." # How many is 'many'?
+      - "Some features are broken." # Which features?
+  
+  unclear_temporal:
+    enabled: false
+    severity: medium
+    confidence_threshold: 0.7
+    description: "Temporal references that are ambiguous"
+    examples:
+      - "The system was updated recently." # When exactly?
+      - "After the meeting, changes were made." # How long after?
+  
+  unsupported_claims:
+    enabled: true
+    severity: high
+    confidence_threshold: 0.8
+    description: "Claims made without evidence or support"
+    examples:
+      - "This is the best solution." # Based on what criteria?
+      - "The system is secure." # What makes it secure?
+  
+  fabrication_risk:
+    enabled: true
+    severity: high
+    confidence_threshold: 0.7
+    description: "Content that might be fabricated or unverifiable"
+    examples:
+      - "Studies show that..." # Which studies?
+      - "Experts recommend..." # Which experts?
+  
+  excessive_certainty:
+    enabled: false
+    severity: medium
+    confidence_threshold: 0.6
+    description: "Overly certain statements that should be qualified"
+    examples:
+      - "This will definitely work." # How can you be certain?
+      - "Everyone agrees that..." # Really, everyone?
 
 # Detection patterns for missing actors
 missing_actor_patterns:

@@ -49,21 +49,29 @@ class BaseAmbiguityRule(BaseRule):
         return 'ambiguity'
     
     def _initialize_detectors(self):
-        """Initialize specific ambiguity detectors."""
-        # Import detectors dynamically to avoid circular imports
+        """Initialize available ambiguity detectors."""
         try:
             from .detectors.missing_actor_detector import MissingActorDetector
+            self.add_detector('missing_actor', MissingActorDetector(self.config))
+        except ImportError:
+            pass
+        
+        try:
             from .detectors.pronoun_ambiguity_detector import PronounAmbiguityDetector
+            self.add_detector('pronoun_ambiguity', PronounAmbiguityDetector(self.config))
+        except ImportError:
+            pass
+        
+        try:
             from .detectors.unsupported_claims_detector import UnsupportedClaimsDetector
+            self.add_detector('unsupported_claims', UnsupportedClaimsDetector(self.config))
+        except ImportError:
+            pass
+        
+        try:
             from .detectors.fabrication_risk_detector import FabricationRiskDetector
-            
-            self.detectors['missing_actor'] = MissingActorDetector(self.config)
-            self.detectors['pronoun_ambiguity'] = PronounAmbiguityDetector(self.config)
-            self.detectors['unsupported_claims'] = UnsupportedClaimsDetector(self.config)
-            self.detectors['fabrication_risk'] = FabricationRiskDetector(self.config)
-        except ImportError as e:
-            # Detectors not yet implemented - graceful fallback
-            print(f"Warning: Could not import some ambiguity detectors: {e}")
+            self.add_detector('fabrication_risk', FabricationRiskDetector(self.config))
+        except ImportError:
             pass
     
     def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
@@ -146,20 +154,13 @@ class BaseAmbiguityRule(BaseRule):
     
     def _is_detector_enabled(self, detector_type: str) -> bool:
         """Check if a detector type is enabled."""
-        detector_mappings = {
-            'missing_actor': AmbiguityType.MISSING_ACTOR,
-            'pronoun_ambiguity': AmbiguityType.AMBIGUOUS_PRONOUN,
-            'unclear_subject': AmbiguityType.UNCLEAR_SUBJECT,
-            'ambiguous_modifier': AmbiguityType.AMBIGUOUS_MODIFIER,
-            'vague_quantifier': AmbiguityType.VAGUE_QUANTIFIER,
-            'unclear_temporal': AmbiguityType.UNCLEAR_TEMPORAL,
-            'unsupported_claims': AmbiguityType.UNSUPPORTED_CLAIMS,
-            'fabrication_risk': AmbiguityType.FABRICATION_RISK,
-            'excessive_certainty': AmbiguityType.EXCESSIVE_CERTAINTY
+        enabled_detectors = {
+            'missing_actor': True,
+            'pronoun_ambiguity': True,
+            'unsupported_claims': True,
+            'fabrication_risk': True
         }
-        
-        ambiguity_type = detector_mappings.get(detector_type)
-        return ambiguity_type is not None and self.config.is_enabled(ambiguity_type)
+        return enabled_detectors.get(detector_type, False)
     
     def add_detector(self, detector_type: str, detector):
         """Add a new detector to the system."""

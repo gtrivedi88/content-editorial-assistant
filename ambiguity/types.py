@@ -9,13 +9,16 @@ from dataclasses import dataclass
 
 
 class AmbiguityType(Enum):
-    """Types of ambiguity that can be detected in technical writing."""
+    """Types of ambiguity that can be detected."""
     
     # Passive voice without clear actors
     MISSING_ACTOR = "missing_actor"
     
     # Ambiguous pronoun references
     AMBIGUOUS_PRONOUN = "ambiguous_pronoun"
+    
+    # Unclear antecedent for pronouns (e.g., "It" with multiple possible referents)
+    UNCLEAR_ANTECEDENT = "unclear_antecedent"
     
     # Unclear subject references
     UNCLEAR_SUBJECT = "unclear_subject"
@@ -138,6 +141,7 @@ class AmbiguityDetection:
         messages = {
             AmbiguityType.MISSING_ACTOR: f"Passive voice without clear actor: '{' '.join(self.evidence.tokens)}'",
             AmbiguityType.AMBIGUOUS_PRONOUN: f"Ambiguous pronoun reference: '{' '.join(self.evidence.tokens)}'",
+            AmbiguityType.UNCLEAR_ANTECEDENT: f"Unclear antecedent for pronoun: '{' '.join(self.evidence.tokens)}'",
             AmbiguityType.UNCLEAR_SUBJECT: f"Unclear subject reference: '{' '.join(self.evidence.tokens)}'",
             AmbiguityType.AMBIGUOUS_MODIFIER: f"Ambiguous modifier placement: '{' '.join(self.evidence.tokens)}'",
             AmbiguityType.VAGUE_QUANTIFIER: f"Vague quantifier: '{' '.join(self.evidence.tokens)}'",
@@ -173,6 +177,10 @@ class AmbiguityDetection:
             suggestions.append("Do not add information that is not present in the original text")
         elif self.ambiguity_type == AmbiguityType.EXCESSIVE_CERTAINTY:
             suggestions.append("Use more measured language that accurately reflects the certainty level")
+        elif self.ambiguity_type == AmbiguityType.UNCLEAR_ANTECEDENT:
+            suggestions.append("Replace the pronoun with the specific noun it refers to, or restructure the sentence to make the reference clear")
+        elif self.ambiguity_type == AmbiguityType.UNCLEAR_SUBJECT:
+            suggestions.append("Replace the pronoun with the specific noun it refers to, or restructure the sentence to make the reference clear")
         
         return suggestions
 
@@ -219,6 +227,7 @@ class AmbiguityConfig:
         self.severity_mappings = {
             AmbiguityType.MISSING_ACTOR: AmbiguitySeverity.HIGH,
             AmbiguityType.AMBIGUOUS_PRONOUN: AmbiguitySeverity.MEDIUM,
+            AmbiguityType.UNCLEAR_ANTECEDENT: AmbiguitySeverity.MEDIUM,
             AmbiguityType.UNCLEAR_SUBJECT: AmbiguitySeverity.MEDIUM,
             AmbiguityType.AMBIGUOUS_MODIFIER: AmbiguitySeverity.LOW,
             AmbiguityType.VAGUE_QUANTIFIER: AmbiguitySeverity.LOW,
@@ -232,6 +241,7 @@ class AmbiguityConfig:
         self.category_mappings = {
             AmbiguityType.MISSING_ACTOR: AmbiguityCategory.REFERENTIAL,
             AmbiguityType.AMBIGUOUS_PRONOUN: AmbiguityCategory.REFERENTIAL,
+            AmbiguityType.UNCLEAR_ANTECEDENT: AmbiguityCategory.REFERENTIAL,
             AmbiguityType.UNCLEAR_SUBJECT: AmbiguityCategory.REFERENTIAL,
             AmbiguityType.AMBIGUOUS_MODIFIER: AmbiguityCategory.STRUCTURAL,
             AmbiguityType.VAGUE_QUANTIFIER: AmbiguityCategory.SEMANTIC,
