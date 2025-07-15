@@ -156,19 +156,61 @@ class MarkdownParser:
         start_line = token.map[0] if token.map else 0
         end_line = token.map[1] if token.map else start_line + 1
         
-        # Extract content
+        # Extract content from source lines
+        content = ""
+        raw_content = ""
+        
         if token.map and start_line < len(content_lines):
             if end_line <= len(content_lines):
                 raw_content = '\n'.join(content_lines[start_line:end_line])
             else:
                 raw_content = '\n'.join(content_lines[start_line:])
+            
+            # For most block types, extract clean content without markup
+            if block_type == MarkdownBlockType.HEADING:
+                # Remove heading markers (# ## ###)
+                lines = raw_content.split('\n')
+                for line in lines:
+                    clean_line = line.strip()
+                    if clean_line.startswith('#'):
+                        content = clean_line.lstrip('#').strip()
+                        break
+            elif block_type == MarkdownBlockType.PARAGRAPH:
+                # For paragraphs, use the raw content as-is
+                content = raw_content.strip()
+            elif block_type == MarkdownBlockType.BLOCKQUOTE:
+                # Remove blockquote markers (>)
+                lines = raw_content.split('\n')
+                clean_lines = []
+                for line in lines:
+                    clean_line = line.strip()
+                    if clean_line.startswith('>'):
+                        clean_lines.append(clean_line.lstrip('>').strip())
+                    elif clean_line:
+                        clean_lines.append(clean_line)
+                content = '\n'.join(clean_lines)
+            elif block_type in [MarkdownBlockType.CODE_BLOCK]:
+                # For code blocks, preserve content but clean fences
+                lines = raw_content.split('\n')
+                if len(lines) >= 2:
+                    # Remove opening and closing fences
+                    if lines[0].strip().startswith('```'):
+                        lines = lines[1:]
+                    if lines and lines[-1].strip() == '```':
+                        lines = lines[:-1]
+                content = '\n'.join(lines)
+            else:
+                # For other types, use raw content
+                content = raw_content.strip()
         else:
-            raw_content = token.content or ''
+            # Fallback to token content if available
+            content = token.content or ''
+            raw_content = content
         
         # Create the block
         block = MarkdownBlock(
             block_type=block_type,
-            content=token.content or '',
+            content=content,
             raw_content=raw_content,
             start_line=start_line + 1,  # Convert to 1-based indexing
             end_line=end_line,

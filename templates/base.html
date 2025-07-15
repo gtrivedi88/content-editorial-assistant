@@ -76,12 +76,22 @@
     <!-- Socket.IO -->
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     
-    <!-- Custom JavaScript (Modular) -->
+    <!-- Custom JavaScript (Modular Architecture) -->
+    <!-- Core utilities and configuration -->
     <script src="{{ url_for('static', filename='js/core.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/utility-functions.js') }}"></script>
+    
+    <!-- Analysis Display Modules (order is important for dependencies) -->
+    <script src="{{ url_for('static', filename='js/style-helpers.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/error-display.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/statistics-display.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/block-creators-basic.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/block-creators-complex.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/display-main.js') }}"></script>
+    
+    <!-- Communication and file handling -->
     <script src="{{ url_for('static', filename='js/socket-handler.js') }}"></script>
     <script src="{{ url_for('static', filename='js/file-handler.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/analysis-display.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/utility-functions.js') }}"></script>
     
     {% block extra_js %}{% endblock %}
 </body>

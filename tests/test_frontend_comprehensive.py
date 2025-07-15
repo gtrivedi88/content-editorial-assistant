@@ -903,7 +903,12 @@ class TestJavaScriptLogic:
             'static/js/file-handler.js',
             'static/js/socket-handler.js',
             'static/js/utility-functions.js',
-            'static/js/analysis-display.js'
+            'static/js/style-helpers.js',
+            'static/js/error-display.js',
+            'static/js/statistics-display.js',
+            'static/js/block-creators-basic.js',
+            'static/js/block-creators-complex.js',
+            'static/js/display-main.js'
         ]
         
         expected_functions = {
@@ -911,7 +916,12 @@ class TestJavaScriptLogic:
             'file-handler.js': ['handleFileUpload', 'showFileUploadProgress', 'analyzeContent'],
             'socket-handler.js': ['initializeSocket', 'handleProgressUpdate', 'updateStepIndicators'],
             'utility-functions.js': ['showLoading', 'showError', 'showSuccess', 'highlightErrors'],
-            'analysis-display.js': ['displayStructuralBlocks', 'createErrorCard', 'displayAnalysisResults']
+            'style-helpers.js': ['escapeHtml', 'getBlockTypeDisplayName', 'getFleschColor', 'getGradeLevelInsight'],
+            'error-display.js': ['createInlineError'],
+            'statistics-display.js': ['generateStatisticsCard', 'generateModernReadabilityCard'],
+            'block-creators-basic.js': ['createStructuralBlock', 'createSectionBlock'],
+            'block-creators-complex.js': ['createListBlock', 'createListTitleBlock', 'createTableBlock'],
+            'display-main.js': ['displayStructuralBlocks', 'displayAnalysisResults', 'displayFlatContent']
         }
         
         for js_file in js_files:
@@ -931,7 +941,12 @@ class TestJavaScriptLogic:
             'static/js/file-handler.js',
             'static/js/socket-handler.js',
             'static/js/utility-functions.js',
-            'static/js/analysis-display.js'
+            'static/js/style-helpers.js',
+            'static/js/error-display.js',
+            'static/js/statistics-display.js',
+            'static/js/block-creators-basic.js',
+            'static/js/block-creators-complex.js',
+            'static/js/display-main.js'
         ]
         
         for js_file in js_files:
@@ -944,33 +959,35 @@ class TestJavaScriptLogic:
                 assert content.count('(') == content.count(')'), f"Mismatched parentheses in {js_file}"
                 assert content.count('[') == content.count(']'), f"Mismatched brackets in {js_file}"
                 
-                # Check for obvious syntax errors
-                assert 'function(' not in content, f"Syntax error: missing space in {js_file}"
+                # Check for obvious syntax errors (more reasonable checks)
                 assert ')function' not in content, f"Syntax error: missing space in {js_file}"
+                # Note: function( is valid in addEventListener('event', function() {
     
     def test_html_template_javascript_integration(self):
         """Test that HTML templates properly include JavaScript files."""
-        template_files = [
-            'templates/base.html',
-            'templates/index.html'
-        ]
+        # Only check base.html since index.html extends it and doesn't include JS directly
+        template_file = 'templates/base.html'
         
         expected_js_files = [
             'core.js',
             'file-handler.js',
             'socket-handler.js',
             'utility-functions.js',
-            'analysis-display.js'
+            'style-helpers.js',
+            'error-display.js',
+            'statistics-display.js',
+            'block-creators-basic.js',
+            'block-creators-complex.js',
+            'display-main.js'
         ]
         
-        for template_file in template_files:
-            if os.path.exists(template_file):
-                with open(template_file, 'r') as f:
-                    content = f.read()
-                
-                for js_file in expected_js_files:
-                    # Check if JavaScript file is referenced
-                    assert js_file in content or f"js/{js_file}" in content, f"JavaScript file {js_file} not included in {template_file}"
+        if os.path.exists(template_file):
+            with open(template_file, 'r') as f:
+                content = f.read()
+            
+            for js_file in expected_js_files:
+                # Check if JavaScript file is referenced
+                assert js_file in content or f"js/{js_file}" in content, f"JavaScript file {js_file} not included in {template_file}"
     
     def test_css_file_existence(self):
         """Test that CSS files exist and are referenced."""
