@@ -455,19 +455,57 @@ Rewrite this table cell content to be clearer and more concise:
     
     def _reconstruct_document_with_rewrites(self, document, block_results: List[BlockRewriteResult]) -> str:
         """Reconstruct document with rewritten content while preserving structure."""
-        # This is a simplified reconstruction - in practice, would need more sophisticated 
-        # merging of rewritten content back into the original document structure
+        try:
+            # Try to use the new reconstructor system
+            from reconstructors import get_reconstructor, is_format_supported
+            
+            # Determine document format
+            format_name = 'asciidoc'
+            if hasattr(document, '__class__'):
+                class_name = document.__class__.__name__.lower()
+                if 'markdown' in class_name:
+                    format_name = 'markdown'
+                elif 'asciidoc' in class_name:
+                    format_name = 'asciidoc'
+            
+            # Use appropriate reconstructor if available
+            if is_format_supported(format_name):
+                reconstructor = get_reconstructor(format_name)
+                result = reconstructor.reconstruct(document, block_results)
+                
+                if result.success:
+                    return result.reconstructed_content
+                else:
+                    # Fall back to legacy method if reconstruction fails
+                    logger.warning(f"Reconstructor failed: {result.errors}")
+            
+        except ImportError:
+            # Reconstructor system not available, use legacy method
+            logger.info("Using legacy reconstruction method")
+        except Exception as e:
+            # Reconstructor failed, use legacy method
+            logger.warning(f"Reconstructor error: {e}, falling back to legacy method")
         
+        # Legacy reconstruction method (fallback)
+        return self._legacy_reconstruct_document(document, block_results)
+    
+    def _legacy_reconstruct_document(self, document, block_results: List[BlockRewriteResult]) -> str:
+        """Legacy document reconstruction method (fallback)."""
         reconstructed_blocks = []
         
         for result in block_results:
             block = result.original_block
             rewritten_content = result.rewritten_content
             
-            # Preserve the block's formatting context
-            context_info = block.get_context_info()
+            # Try to get context info
+            try:
+                context_info = block.get_context_info() if hasattr(block, 'get_context_info') else {}
+            except:
+                context_info = {}
             
-            if context_info['block_type'] == 'heading':
+            block_type = context_info.get('block_type', 'paragraph')
+            
+            if block_type == 'heading':
                 level = context_info.get('level', 1)
                 if hasattr(document, 'blocks') and hasattr(document.blocks[0], 'block_type'):
                     # AsciiDoc format
@@ -476,7 +514,7 @@ Rewrite this table cell content to be clearer and more concise:
                     # Markdown format
                     reconstructed_blocks.append(f"{'#' * level} {rewritten_content}")
             
-            elif context_info['block_type'] == 'admonition':
+            elif block_type == 'admonition':
                 admonition_type = context_info.get('admonition_type', 'NOTE')
                 if hasattr(document, 'blocks') and hasattr(document.blocks[0], 'block_type'):
                     # AsciiDoc format
