@@ -160,7 +160,10 @@ function rewriteContent() {
 
 // Refine content function (Pass 2)
 function refineContent(firstPassResult) {
-    if (!firstPassResult || !currentAnalysis) {
+    // Use the global currentRewrittenContent if no parameter provided
+    const contentToRefine = firstPassResult || window.currentRewrittenContent;
+    
+    if (!contentToRefine || !currentAnalysis) {
         alert('No first pass result available');
         return;
     }
@@ -173,7 +176,7 @@ function refineContent(firstPassResult) {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-            first_pass_result: firstPassResult,
+            first_pass_result: contentToRefine,
             original_errors: currentAnalysis.errors || [],
             session_id: sessionId 
         })

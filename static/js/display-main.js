@@ -221,10 +221,16 @@ function displayEmptyStructure() {
     `;
 }
 
+// Store current rewritten content for copying
+window.currentRewrittenContent = '';
+
 // Display rewrite results with enhanced styling
 function displayRewriteResults(data) {
     const rewriteContainer = document.getElementById('rewrite-results');
     if (!rewriteContainer) return;
+    
+    // Store the rewritten content globally for copying
+    window.currentRewrittenContent = data.rewritten_text || data.rewritten || '';
 
     rewriteContainer.innerHTML = `
         <div class="pf-v5-l-grid pf-m-gutter">
@@ -248,7 +254,7 @@ function displayRewriteResults(data) {
                                     </span>
                                 </div>
                                 <div class="pf-v5-l-flex__item">
-                                    <button class="pf-v5-c-button pf-m-secondary" type="button" onclick="refineContent('${escapeHtml(data.rewritten_content)}')">
+                                    <button class="pf-v5-c-button pf-m-secondary" type="button" onclick="refineContent()">
                                         <i class="fas fa-star pf-v5-u-mr-xs"></i>
                                         Refine Further
                                     </button>
@@ -263,13 +269,13 @@ function displayRewriteResults(data) {
                                     <span class="pf-v5-c-code-block__title">Improved Content</span>
                                 </div>
                                 <div class="pf-v5-c-code-block__actions">
-                                    <button class="pf-v5-c-button pf-m-plain pf-m-small" type="button" onclick="copyToClipboard('${escapeHtml(data.rewritten_content).replace(/'/g, "\\'")}')">
+                                    <button class="pf-v5-c-button pf-m-plain pf-m-small" type="button" onclick="copyRewrittenContent()">
                                         <i class="fas fa-copy" aria-hidden="true"></i>
                                     </button>
                                 </div>
                             </div>
                             <div class="pf-v5-c-code-block__content">
-                                <pre class="pf-v5-c-code-block__pre" style="white-space: pre-wrap; word-wrap: break-word;"><code class="pf-v5-c-code-block__code">${escapeHtml(data.rewritten_content)}</code></pre>
+                                <pre class="pf-v5-c-code-block__pre" style="white-space: pre-wrap; word-wrap: break-word;"><code class="pf-v5-c-code-block__code">${escapeHtml(data.rewritten_text || data.rewritten || '')}</code></pre>
                             </div>
                         </div>
                         
@@ -285,6 +291,88 @@ function displayRewriteResults(data) {
                                                 </div>
                                                 <div class="pf-v5-c-alert__title">
                                                     ${improvement}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    rewriteContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Helper function to copy rewritten content
+function copyRewrittenContent() {
+    if (window.currentRewrittenContent) {
+        copyToClipboard(window.currentRewrittenContent);
+    } else {
+        showNotification('No rewritten content available to copy', 'warning');
+    }
+}
+
+// Display refinement results (Pass 2)
+function displayRefinementResults(data) {
+    const rewriteContainer = document.getElementById('rewrite-results');
+    if (!rewriteContainer) return;
+    
+    // Store the refined content globally for copying
+    window.currentRewrittenContent = data.refined_content || data.refined_text || '';
+
+    rewriteContainer.innerHTML = `
+        <div class="pf-v5-l-grid pf-m-gutter">
+            <div class="pf-v5-l-grid__item pf-m-12-col">
+                <div class="pf-v5-c-card app-card">
+                    <div class="pf-v5-c-card__header">
+                        <div class="pf-v5-c-card__header-main">
+                            <h2 class="pf-v5-c-title pf-m-xl">
+                                <i class="fas fa-sparkles pf-v5-u-mr-sm" style="color: var(--app-success-color);"></i>
+                                AI Refinement Results (Pass 2)
+                            </h2>
+                        </div>
+                        <div class="pf-v5-c-card__actions">
+                            <span class="pf-v5-c-label pf-m-green pf-m-large">
+                                <span class="pf-v5-c-label__content">
+                                    <i class="fas fa-star pf-v5-c-label__icon"></i>
+                                    Refined
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="pf-v5-c-card__body">
+                        <div class="pf-v5-c-code-block">
+                            <div class="pf-v5-c-code-block__header">
+                                <div class="pf-v5-c-code-block__header-main">
+                                    <span class="pf-v5-c-code-block__title">Refined Content</span>
+                                </div>
+                                <div class="pf-v5-c-code-block__actions">
+                                    <button class="pf-v5-c-button pf-m-plain pf-m-small" type="button" onclick="copyRewrittenContent()">
+                                        <i class="fas fa-copy" aria-hidden="true"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="pf-v5-c-code-block__content">
+                                <pre class="pf-v5-c-code-block__pre" style="white-space: pre-wrap; word-wrap: break-word;"><code class="pf-v5-c-code-block__code">${escapeHtml(data.refined_content || data.refined_text || '')}</code></pre>
+                            </div>
+                        </div>
+                        
+                        ${data.refinements && data.refinements.length > 0 ? `
+                            <div class="pf-v5-u-mt-lg">
+                                <h3 class="pf-v5-c-title pf-m-lg pf-v5-u-mb-sm">Refinements Made</h3>
+                                <div class="pf-v5-l-stack pf-m-gutter">
+                                    ${data.refinements.map(refinement => `
+                                        <div class="pf-v5-l-stack__item">
+                                            <div class="pf-v5-c-alert pf-m-info pf-m-inline">
+                                                <div class="pf-v5-c-alert__icon">
+                                                    <i class="fas fa-lightbulb"></i>
+                                                </div>
+                                                <div class="pf-v5-c-alert__title">
+                                                    ${refinement}
                                                 </div>
                                             </div>
                                         </div>
