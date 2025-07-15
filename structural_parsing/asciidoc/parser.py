@@ -21,6 +21,7 @@ from .types import (
     ParseResult
 )
 from .ruby_client import get_client, SimpleRubyClient
+from .elements import element_coordinator
 
 
 @dataclass
@@ -79,8 +80,11 @@ class AsciiDocParser:
             
             document_data = result.get('data', {})
             
-            # Convert the server result to our document structure
-            document = self._convert_server_result_to_document(document_data, filename)
+            # Process document with element-specific parsing first
+            enhanced_data = element_coordinator.process_document_blocks(document_data)
+            
+            # Convert the enhanced result to our document structure
+            document = self._convert_server_result_to_document(enhanced_data, filename)
             
             return ParseResult(
                 document=document,
