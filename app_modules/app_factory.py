@@ -28,8 +28,8 @@ def create_app(config_class=Config):
     # Since we're in app_modules/, we need to go up one level
     import os
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    template_dir = os.path.join(base_dir, 'templates')
-    static_dir = os.path.join(base_dir, 'static')
+    template_dir = os.path.join(base_dir, 'ui', 'templates')
+    static_dir = os.path.join(base_dir, 'ui', 'static')
     
     # Create Flask app with correct template and static paths
     app = Flask(__name__, 

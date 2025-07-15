@@ -508,7 +508,7 @@ To update the software, you should complete these steps:
 ### Phase 6: Frontend Integration (Day 10)
 
 #### Step 10: Update Frontend Display
-Modify `templates/base.html` to add structural parsing toggle:
+Modify `ui/templates/base.html` to add structural parsing toggle:
 ```html
 <!-- Add to analysis form -->
 <div class="form-check mb-3">

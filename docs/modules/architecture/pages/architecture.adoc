@@ -1211,7 +1211,7 @@ Type definitions for AsciiDoc structures.
 
 === HTML Templates
 
-==== `templates/base.html`
+==== `ui/templates/base.html`
 Base template providing common layout and functionality.
 
 **Purpose**: Common layout structure for all pages
@@ -1221,7 +1221,7 @@ Base template providing common layout and functionality.
 - Navigation structure
 - Error handling integration
 
-==== `templates/index.html`
+==== `ui/templates/index.html`
 Main application interface.
 
 **Purpose**: Primary user interface for the Content Editorial Assistant application
@@ -1238,7 +1238,7 @@ Main application interface.
 - WebSocket progress updates
 - Two-pass AI rewriting interface
 
-==== `templates/error.html`
+==== `ui/templates/error.html`
 Error page template for user-friendly error display.
 
 **Purpose**: Displays errors in a user-friendly format

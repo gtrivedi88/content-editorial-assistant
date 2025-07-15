@@ -20,12 +20,12 @@ class TestAnalysisDisplayModules:
     def test_javascript_module_files_exist(self):
         """Test that all required JavaScript module files exist."""
         required_files = [
-            'static/js/display-main.js',
-            'static/js/style-helpers.js',
-            'static/js/error-display.js',
-            'static/js/statistics-display.js',
-            'static/js/block-creators-basic.js',
-            'static/js/block-creators-complex.js'
+            'ui/static/js/display-main.js',
+            'ui/static/js/style-helpers.js',
+            'ui/static/js/error-display.js',
+            'ui/static/js/statistics-display.js',
+            'ui/static/js/block-creators-basic.js',
+            'ui/static/js/block-creators-complex.js'
         ]
         
         for file_path in required_files:
@@ -69,7 +69,7 @@ class TestAnalysisDisplayModules:
         }
         
         for module_file, expected_functions in module_functions.items():
-            file_path = f'static/js/{module_file}'
+            file_path = f'ui/static/js/{module_file}'
             if os.path.exists(file_path):
                 with open(file_path, 'r') as f:
                     content = f.read()
@@ -80,12 +80,12 @@ class TestAnalysisDisplayModules:
     def test_module_comments_and_structure(self):
         """Test that modules have proper comments and structure."""
         modules_to_check = [
-            'static/js/display-main.js',
-            'static/js/style-helpers.js',
-            'static/js/error-display.js',
-            'static/js/statistics-display.js',
-            'static/js/block-creators-basic.js',
-            'static/js/block-creators-complex.js'
+            'ui/static/js/display-main.js',
+            'ui/static/js/style-helpers.js',
+            'ui/static/js/error-display.js',
+            'ui/static/js/statistics-display.js',
+            'ui/static/js/block-creators-basic.js',
+            'ui/static/js/block-creators-complex.js'
         ]
         
         for module_path in modules_to_check:
@@ -104,7 +104,7 @@ class TestAnalysisDisplayModules:
     
     def test_template_includes_all_modules(self):
         """Test that base.html template includes all module files."""
-        template_path = 'templates/base.html'
+        template_path = 'ui/templates/base.html'
         if os.path.exists(template_path):
             with open(template_path, 'r') as f:
                 template_content = f.read()
@@ -123,7 +123,7 @@ class TestAnalysisDisplayModules:
     
     def test_module_dependency_order(self):
         """Test that modules are included in the correct dependency order."""
-        template_path = 'templates/base.html'
+        template_path = 'ui/templates/base.html'
         if os.path.exists(template_path):
             with open(template_path, 'r') as f:
                 template_content = f.read()
@@ -157,12 +157,12 @@ class TestAnalysisDisplayModules:
         """Test that functions are not duplicated across modules."""
         all_functions = []
         module_files = [
-            'static/js/display-main.js',
-            'static/js/style-helpers.js',
-            'static/js/error-display.js',
-            'static/js/statistics-display.js',
-            'static/js/block-creators-basic.js',
-            'static/js/block-creators-complex.js'
+            'ui/static/js/display-main.js',
+            'ui/static/js/style-helpers.js',
+            'ui/static/js/error-display.js',
+            'ui/static/js/statistics-display.js',
+            'ui/static/js/block-creators-basic.js',
+            'ui/static/js/block-creators-complex.js'
         ]
         
         for module_path in module_files:
@@ -192,12 +192,12 @@ class TestAnalysisDisplayModules:
     def test_module_size_constraints(self):
         """Test that modules are within the 100-200 line constraint."""
         module_files = [
-            'static/js/display-main.js',
-            'static/js/style-helpers.js',
-            'static/js/error-display.js',
-            'static/js/statistics-display.js',
-            'static/js/block-creators-basic.js',
-            'static/js/block-creators-complex.js'
+            'ui/static/js/display-main.js',
+            'ui/static/js/style-helpers.js',
+            'ui/static/js/error-display.js',
+            'ui/static/js/statistics-display.js',
+            'ui/static/js/block-creators-basic.js',
+            'ui/static/js/block-creators-complex.js'
         ]
         
         for module_path in module_files:
@@ -211,26 +211,26 @@ class TestAnalysisDisplayModules:
     
     def test_original_file_can_be_removed(self):
         """Test that the original analysis-display.js can be safely removed."""
-        original_file = 'static/js/analysis-display.js'
+        original_file = 'ui/static/js/analysis-display.js'
         
         # Check if original file exists
         original_exists = os.path.exists(original_file)
         
         # Check that all new modules exist
         new_modules = [
-            'static/js/display-main.js',
-            'static/js/style-helpers.js',
-            'static/js/error-display.js',
-            'static/js/statistics-display.js',
-            'static/js/block-creators-basic.js',
-            'static/js/block-creators-complex.js'
+            'ui/static/js/display-main.js',
+            'ui/static/js/style-helpers.js',
+            'ui/static/js/error-display.js',
+            'ui/static/js/statistics-display.js',
+            'ui/static/js/block-creators-basic.js',
+            'ui/static/js/block-creators-complex.js'
         ]
         
         all_new_modules_exist = all(os.path.exists(module) for module in new_modules)
         
         if original_exists and all_new_modules_exist:
             # Verify the original file is not referenced in the template
-            template_path = 'templates/base.html'
+            template_path = 'ui/templates/base.html'
             if os.path.exists(template_path):
                 with open(template_path, 'r') as f:
                     template_content = f.read()
@@ -277,12 +277,12 @@ class TestModuleFunctionality:
         # For now, we'll test file structure and syntax
         
         module_files = [
-            'static/js/style-helpers.js',
-            'static/js/error-display.js',
-            'static/js/statistics-display.js',
-            'static/js/block-creators-basic.js',
-            'static/js/block-creators-complex.js',
-            'static/js/display-main.js'
+            'ui/static/js/style-helpers.js',
+            'ui/static/js/error-display.js',
+            'ui/static/js/statistics-display.js',
+            'ui/static/js/block-creators-basic.js',
+            'ui/static/js/block-creators-complex.js',
+            'ui/static/js/display-main.js'
         ]
         
         for module_path in module_files:

@@ -966,7 +966,7 @@ class TestJavaScriptLogic:
     def test_html_template_javascript_integration(self):
         """Test that HTML templates properly include JavaScript files."""
         # Only check base.html since index.html extends it and doesn't include JS directly
-        template_file = 'templates/base.html'
+        template_file = 'ui/templates/base.html'
         
         expected_js_files = [
             'core.js',

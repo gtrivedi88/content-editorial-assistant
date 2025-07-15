@@ -150,7 +150,7 @@ Code listing
 3. **Update Existing Files**
    - `src/document_processor.py`
    - `app_modules/api_routes.py`
-   - `templates/index.html`
+   - `ui/templates/index.html`
 
 4. **Test and Deploy**
    - Run unit tests

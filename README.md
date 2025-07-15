@@ -329,8 +329,9 @@ Peer-Review-Platform/
 │   ├── ai_rewriter.py    # Iterative AI rewriting
 │   ├── document_processor.py # Multi-format support
 │   └── config.py         # Configuration management
-├── templates/            # Web interface
-├── static/              # CSS, JS, images
+├── ui/                   # User interface files
+│   ├── templates/        # HTML templates  
+│   └── static/          # CSS, JS, images
 ├── uploads/             # File upload storage
 └── logs/               # Application logs
 ```
