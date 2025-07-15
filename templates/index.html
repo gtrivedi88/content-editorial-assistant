@@ -128,11 +128,28 @@ Our AI will analyze your writing for style, grammar, readability, and structure.
 
                     <!-- Action Buttons -->
                     <div class="editor-actions">
-                        <button class="primary-action" onclick="analyzeEditorContent()" disabled id="analyze-btn">
-                            <i class="fas fa-magic"></i>
-                            <span>Analyze Content</span>
-                            <div class="button-shine"></div>
-                        </button>
+                        <div class="analysis-controls">
+                            <!-- Content Type Selection (Left) -->
+                            <div class="content-type-selection">
+                                <label for="content-type-select" class="content-type-label">Content Type:</label>
+                                <div class="dropdown-wrapper">
+                                    <select id="content-type-select" class="content-type-dropdown">
+                                        <option value="concept">Concept</option>
+                                        <option value="procedure">Procedure</option>
+                                        <option value="reference">Reference</option>
+                                    </select>
+                                    <i class="fas fa-chevron-down dropdown-arrow"></i>
+                                </div>
+                            </div>
+                            
+                            <!-- Analyze Button (Right) -->
+                            <button class="primary-action" onclick="analyzeEditorContent()" disabled id="analyze-btn">
+                                <i class="fas fa-magic"></i>
+                                <span>Analyze Content</span>
+                                <div class="button-shine"></div>
+                            </button>
+                        </div>
+                        
                         <div class="action-help">
                             <i class="fas fa-info-circle"></i>
                             <span>Analysis takes 2-5 seconds</span>

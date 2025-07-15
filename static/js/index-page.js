@@ -294,9 +294,21 @@ In order to ensure successful deployment, we need to make sure that all team mem
  * Analyze content from modern editor
  */
 function analyzeEditorContent() {
+    // Get content from modern editor or legacy text input
+    const modernEditor = document.getElementById('modern-editor');
     const textInput = document.getElementById('text-input');
-    if (textInput && textInput.value.trim()) {
+    const contentTypeSelect = document.getElementById('content-type-select');
+    
+    let content = '';
+    if (modernEditor && modernEditor.value.trim()) {
+        content = modernEditor.value.trim();
+    } else if (textInput && textInput.value.trim()) {
+        content = textInput.value.trim();
+    }
+    
+    if (content) {
         const analyzeBtn = document.getElementById('analyze-btn');
+        const contentType = contentTypeSelect ? contentTypeSelect.value : 'concept';
         
         // Show loading state
         if (analyzeBtn) {
@@ -308,14 +320,14 @@ function analyzeEditorContent() {
             setTimeout(() => {
                 analyzeBtn.disabled = false;
                 analyzeBtn.innerHTML = originalText;
-                showNotification('Analysis complete! Results will appear below.', 'success');
+                showNotification(`Analysis complete for ${contentType} content! Results will appear below.`, 'success');
             }, 2500);
         }
         
-        showNotification('Starting analysis...', 'info');
+        showNotification(`Starting ${contentType} analysis...`, 'info');
         
-        // Call the actual analysis function
-        handleDirectTextAnalysis(textInput.value);
+        // Call the actual analysis function with content type
+        handleDirectTextAnalysis(content, contentType);
     } else {
         showNotification('Please enter some text to analyze.', 'warning');
     }
