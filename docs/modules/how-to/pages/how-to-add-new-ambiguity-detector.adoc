@@ -1,9 +1,9 @@
-= How to Add a New Ambiguity Detector to Style Guide AI
+= How to Add a New Ambiguity Detector to Content Editorial Assistant
 :source-highlighter: highlightjs
 
 == Overview
 
-This guide provides step-by-step instructions for adding a new ambiguity detector to the Style Guide AI application. The ambiguity detection system uses specialized detectors to identify unclear or ambiguous content in technical writing.
+This guide provides step-by-step instructions for adding a new ambiguity detector to the Content Editorial Assistant application. The ambiguity detection system uses specialized detectors to identify unclear or ambiguous content in technical writing.
 
 [.lead]
 **What You'll Create:**

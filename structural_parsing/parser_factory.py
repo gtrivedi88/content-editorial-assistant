@@ -25,7 +25,7 @@ class StructuralParserFactory:
         self.markdown_parser = MarkdownParser()
     
     def parse(self, content: str, filename: str = "", 
-              format_hint: Literal['asciidoc', 'markdown', 'auto'] = 'auto') -> Union[AsciiDocParseResult, MarkdownParseResult]:
+              format_hint: Literal['asciidoc', 'markdown', 'plaintext', 'auto'] = 'auto') -> Union[AsciiDocParseResult, MarkdownParseResult]:
         """
         Parse content using the appropriate parser.
         
@@ -46,12 +46,18 @@ class StructuralParserFactory:
             return self.asciidoc_parser.parse(content, filename)
         elif format_hint == 'markdown':
             return self.markdown_parser.parse(content, filename)
+        elif format_hint == 'plaintext':
+            # For plain text, use markdown parser which handles plain paragraphs well
+            return self.markdown_parser.parse(content, filename)
         
         # For 'auto' detection, use improved format detection first
         # This ensures we don't incorrectly parse Markdown as AsciiDoc
         detected_format = self.format_detector.detect_format(content)
         
-        if detected_format == 'asciidoc':
+        if detected_format == 'plaintext':
+            # For plain text, use markdown parser which handles plain paragraphs well
+            return self.markdown_parser.parse(content, filename)
+        elif detected_format == 'asciidoc':
             # Format detector thinks it's AsciiDoc, try AsciiDoc parser
             if self.asciidoc_parser.asciidoctor_available:
                 asciidoc_result = self.asciidoc_parser.parse(content, filename)
@@ -92,7 +98,7 @@ class StructuralParserFactory:
             }
         }
     
-    def detect_format(self, content: str) -> Literal['asciidoc', 'markdown']:
+    def detect_format(self, content: str) -> Literal['asciidoc', 'markdown', 'plaintext']:
         """
         Detect document format.
         

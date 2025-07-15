@@ -1,9 +1,9 @@
-= How to Add a New Rule to Style Guide AI
+= How to Add a New Rule to Content Editorial Assistant
 :source-highlighter: highlightjs
 
 == Overview
 
-This guide provides step-by-step instructions for adding a new rule to the Style Guide AI application. The rule system is designed for easy extensibility with automatic discovery, so adding a new rule requires updating several files but follows a clear pattern.
+This guide provides step-by-step instructions for adding a new rule to the Content Editorial Assistant application. The rule system is designed for easy extensibility with automatic discovery, so adding a new rule requires updating several files but follows a clear pattern.
 
 [.lead]
 **What You'll Create:**
@@ -917,7 +917,7 @@ This complete example demonstrates all the concepts covered in this guide and pr
 
 == Conclusion
 
-Adding a new rule to Style Guide AI involves creating a rule class, updating configuration files, and testing the integration. The modular architecture makes this process straightforward while providing powerful capabilities for sophisticated style analysis.
+Adding a new rule to Content Editorial Assistant involves creating a rule class, updating configuration files, and testing the integration. The modular architecture makes this process straightforward while providing powerful capabilities for sophisticated style analysis.
 
 **Key Takeaways:**
 

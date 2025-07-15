@@ -1,156 +1,410 @@
 /**
- * Main Display Module - Entry Points and Orchestration
- * Contains the main functions called by other modules and orchestrates the display
+ * Main Display Module - Enhanced PatternFly Version
+ * Entry Points and Orchestration with world-class design
  */
 
-// Main entry point - called from file-handler.js and socket-handler.js
+// Main entry point - orchestrates the display using enhanced PatternFly layouts
 function displayAnalysisResults(analysis, content, structuralBlocks = null) {
     const resultsContainer = document.getElementById('analysis-results');
     if (!resultsContainer) return;
-    
-    let html = `
-        <div class="row">
-            <div class="col-md-8">
-                <div class="card border-0" style="
-                    border-radius: 20px;
-                    overflow: hidden;
-                    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-                    background: white;
-                ">
-                    <div class="card-header border-0 d-flex justify-content-between align-items-center" style="
-                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                        color: white;
-                        padding: 24px;
-                    ">
-                        <div class="d-flex align-items-center">
-                            <div class="me-3 d-flex align-items-center justify-content-center" style="
-                                width: 48px;
-                                height: 48px;
-                                background: rgba(255, 255, 255, 0.15);
-                                border-radius: 16px;
-                                backdrop-filter: blur(10px);
-                            ">
-                                <i class="fas fa-file-alt" style="font-size: 20px;"></i>
-                            </div>
-                            <div>
-                                <h5 class="mb-1 fw-bold" style="font-size: 18px; letter-spacing: 0.5px;">Content Analysis</h5>
-                                <small class="opacity-90" style="font-size: 14px;">Structural document review and style assessment</small>
-                            </div>
-                        </div>
-                        <div class="d-flex align-items-center">
-                            <div class="text-end me-3">
-                                <div class="small opacity-75" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Quality Score</div>
-                                <div class="fw-bold" style="font-size: 24px;">${analysis.overall_score.toFixed(1)}%</div>
-                            </div>
-                            <div class="badge" style="
-                                background: ${analysis.overall_score >= 80 ? 'rgba(34, 197, 94, 0.9)' : analysis.overall_score >= 60 ? 'rgba(245, 158, 11, 0.9)' : 'rgba(239, 68, 68, 0.9)'};
-                                color: white;
-                                padding: 8px 16px;
-                                border-radius: 12px;
-                                font-size: 12px;
-                                font-weight: 600;
-                                letter-spacing: 0.5px;
-                            ">
-                                ${analysis.overall_score >= 80 ? 'EXCELLENT' : analysis.overall_score >= 60 ? 'GOOD' : 'NEEDS WORK'}
+
+    // Store current analysis for later use
+    currentAnalysis = analysis;
+
+    // Use enhanced PatternFly Grid layout for better responsiveness
+    resultsContainer.innerHTML = `
+        <div class="pf-v5-l-grid pf-m-gutter">
+            <div class="pf-v5-l-grid__item pf-m-8-col-on-lg pf-m-12-col">
+                <div class="pf-v5-l-stack pf-m-gutter">
+                    <!-- Analysis Header -->
+                    <div class="pf-v5-l-stack__item">
+                        <div class="pf-v5-c-card app-card">
+                            <div class="pf-v5-c-card__header">
+                                <div class="pf-v5-c-card__header-main">
+                                    <h2 class="pf-v5-c-title pf-m-xl">
+                                        <i class="fas fa-search pf-v5-u-mr-sm" style="color: var(--app-primary-color);"></i>
+                                        Analysis Results
+                                    </h2>
+                                </div>
+                                <div class="pf-v5-c-card__actions">
+                                    <div class="pf-v5-l-flex pf-m-space-items-sm">
+                                        <div class="pf-v5-l-flex__item">
+                                            <span class="pf-v5-c-label pf-m-${analysis.errors?.length > 0 ? 'orange' : 'green'}">
+                                                <span class="pf-v5-c-label__content">
+                                                    <i class="fas fa-${analysis.errors?.length > 0 ? 'exclamation-triangle' : 'check-circle'} pf-v5-c-label__icon"></i>
+                                                    ${analysis.errors?.length || 0} Issues
+                                                </span>
+                                            </span>
+                                        </div>
+                                        <div class="pf-v5-l-flex__item">
+                                            <button class="pf-v5-c-button pf-m-link pf-m-inline" type="button" onclick="scrollToStatistics()">
+                                                <i class="fas fa-chart-line pf-v5-u-mr-xs"></i>
+                                                View Stats
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <div class="card-body" style="padding: 32px;">
-                        ${structuralBlocks ? (displayStructuralBlocks(structuralBlocks) || displayFlatContent(content, analysis.errors)) : displayFlatContent(content, analysis.errors)}
-                        
-                        ${analysis.errors.length > 0 ? `
-                        <div class="text-center mt-4">
-                            <button class="btn btn-primary btn-lg" onclick="rewriteContent()">
-                                <i class="fas fa-magic me-2"></i>Rewrite with AI
-                            </button>
-                        </div>
-                        ` : ''}
+
+                    <!-- Content Display -->
+                    <div class="pf-v5-l-stack__item">
+                        ${structuralBlocks ? displayStructuralBlocks(structuralBlocks) : displayFlatContent(content, analysis.errors)}
                     </div>
+
+                    <!-- Error Summary -->
+                    ${analysis.errors?.length > 0 ? `
+                        <div class="pf-v5-l-stack__item">
+                            ${createErrorSummary(analysis.errors)}
+                        </div>
+                    ` : ''}
                 </div>
             </div>
-            
-            <div class="col-md-4">
+            <div class="pf-v5-l-grid__item pf-m-4-col-on-lg pf-m-12-col" id="statistics-column">
                 ${generateStatisticsCard(analysis)}
             </div>
         </div>
     `;
+
+    // Add smooth scroll behavior
+    resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
     
-    resultsContainer.innerHTML = html;
+    // Initialize expandable sections and other interactive elements
+    initializeExpandableSections();
+    initializeTooltips();
 }
 
-// Display structural blocks (ideal UI)
+// Display structural blocks using enhanced PatternFly Cards
 function displayStructuralBlocks(blocks) {
-    if (!blocks || blocks.length === 0) {
-        return null;
-    }
+    if (!blocks || blocks.length === 0) return displayEmptyStructure();
+
+    let displayIndex = 0;
+    const blocksHtml = blocks.map(block => {
+        const html = createStructuralBlock(block, displayIndex);
+        if (html) { // Check for non-empty HTML
+            displayIndex++;
+        }
+        return html;
+    }).filter(html => html).join('');
+
+    return `
+        <div class="pf-v5-c-card app-card">
+            <div class="pf-v5-c-card__header">
+                <div class="pf-v5-c-card__header-main">
+                    <h2 class="pf-v5-c-title pf-m-xl">
+                        <i class="fas fa-sitemap pf-v5-u-mr-sm" style="color: var(--app-primary-color);"></i>
+                        Document Structure Analysis
+                    </h2>
+                </div>
+                <div class="pf-v5-c-card__actions">
+                    <button class="pf-v5-c-button pf-m-link pf-m-inline" type="button" onclick="toggleAllBlocks()">
+                        <i class="fas fa-expand-alt pf-v5-u-mr-xs"></i>
+                        Toggle All
+                    </button>
+                </div>
+            </div>
+            <div class="pf-v5-c-card__body">
+                <div class="pf-v5-l-stack pf-m-gutter">
+                    ${blocksHtml}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Display flat content with enhanced styling
+function displayFlatContent(content, errors) {
+    const hasErrors = errors && errors.length > 0;
     
     return `
-        <div class="mb-4">
-            <div class="d-flex align-items-center mb-4" style="
-                padding: 20px;
-                background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-                border-radius: 16px;
-                border: 1px solid #e2e8f0;
-            ">
-                <div class="me-3 d-flex align-items-center justify-content-center" style="
-                    width: 40px;
-                    height: 40px;
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    border-radius: 12px;
-                ">
-                    <i class="fas fa-sitemap" style="color: white; font-size: 16px;"></i>
+        <div class="pf-v5-c-card app-card">
+            <div class="pf-v5-c-card__header">
+                <div class="pf-v5-c-card__header-main">
+                    <h2 class="pf-v5-c-title pf-m-lg">
+                        <i class="fas fa-file-alt pf-v5-u-mr-sm" style="color: var(--app-primary-color);"></i>
+                        Content Analysis
+                    </h2>
                 </div>
-                <div>
-                    <h6 class="mb-1 fw-bold" style="color: #1e293b; font-size: 16px; letter-spacing: 0.5px;">Document Structure Analysis</h6>
-                    <small style="color: #64748b; font-size: 13px;">Content organized by structural elements with context-aware style checking</small>
+                <div class="pf-v5-c-card__actions">
+                    ${hasErrors ? `
+                        <span class="pf-v5-c-label pf-m-orange">
+                            <span class="pf-v5-c-label__content">
+                                <i class="fas fa-exclamation-triangle pf-v5-c-label__icon"></i>
+                                ${errors.length} Issue${errors.length !== 1 ? 's' : ''}
+                            </span>
+                        </span>
+                    ` : `
+                        <span class="pf-v5-c-label pf-m-green">
+                            <span class="pf-v5-c-label__content">
+                                <i class="fas fa-check-circle pf-v5-c-label__icon"></i>
+                                Clean
+                            </span>
+                        </span>
+                    `}
                 </div>
-                <div class="ms-auto">
-                    <div class="badge" style="
-                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                        color: white;
-                        padding: 6px 12px;
-                        border-radius: 8px;
-                        font-size: 11px;
-                        font-weight: 600;
-                        letter-spacing: 0.5px;
-                    ">
-                        ${blocks.length} BLOCKS
+            </div>
+            <div class="pf-v5-c-card__body">
+                <div class="pf-v5-c-code-block">
+                    <div class="pf-v5-c-code-block__header">
+                        <div class="pf-v5-c-code-block__header-main">
+                            <span class="pf-v5-c-code-block__title">Original Content</span>
+                        </div>
+                        <div class="pf-v5-c-code-block__actions">
+                            <button class="pf-v5-c-button pf-m-plain pf-m-small" type="button" onclick="copyToClipboard('${escapeHtml(content).replace(/'/g, "\\'")}')">
+                                <i class="fas fa-copy" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="pf-v5-c-code-block__content">
+                        <pre class="pf-v5-c-code-block__pre" style="white-space: pre-wrap; word-wrap: break-word; max-height: 400px; overflow-y: auto;"><code class="pf-v5-c-code-block__code">${highlightErrors(content, errors)}</code></pre>
                     </div>
                 </div>
             </div>
-            <div class="structural-blocks">
-                ${(() => {
-                    let displayIndex = 0;
-                    return blocks.map(block => {
-                        const html = createStructuralBlock(block, displayIndex);
-                        if (html !== '') {
-                            displayIndex++;
-                        }
-                        return html;
-                    }).filter(html => html !== '').join('');
-                })()}
+            ${hasErrors ? `
+                <div class="pf-v5-c-card__footer">
+                    <div class="pf-v5-l-flex pf-m-space-items-sm pf-m-justify-content-center">
+                        <div class="pf-v5-l-flex__item">
+                            <button class="pf-v5-c-button pf-m-primary" type="button" onclick="rewriteContent()">
+                                <i class="fas fa-magic pf-v5-u-mr-sm"></i>
+                                AI Rewrite
+                            </button>
+                        </div>
+                        <div class="pf-v5-l-flex__item">
+                            <button class="pf-v5-c-button pf-m-secondary" type="button" onclick="scrollToErrorSummary()">
+                                <i class="fas fa-list pf-v5-u-mr-sm"></i>
+                                View Issues
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            ` : `
+                <div class="pf-v5-c-card__footer">
+                    <div class="pf-v5-c-empty-state pf-m-sm">
+                        <div class="pf-v5-c-empty-state__content">
+                            <i class="fas fa-thumbs-up pf-v5-c-empty-state__icon" style="color: var(--app-success-color);"></i>
+                            <h3 class="pf-v5-c-title pf-m-md">Excellent Writing!</h3>
+                            <div class="pf-v5-c-empty-state__body">
+                                No style issues detected. Your content follows best practices.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `}
+        </div>
+    `;
+}
+
+// Display empty structure state
+function displayEmptyStructure() {
+    return `
+        <div class="pf-v5-c-card app-card">
+            <div class="pf-v5-c-card__body">
+                <div class="pf-v5-c-empty-state pf-m-lg">
+                    <div class="pf-v5-c-empty-state__content">
+                        <i class="fas fa-file-alt pf-v5-c-empty-state__icon" style="color: var(--app-primary-color);"></i>
+                        <h2 class="pf-v5-c-title pf-m-lg">Simple Content Structure</h2>
+                        <div class="pf-v5-c-empty-state__body">
+                            This content doesn't have complex structural elements. 
+                            The analysis focuses on style and grammar improvements.
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     `;
 }
 
-// Display flat content (fallback)
-function displayFlatContent(content, errors) {
-    return `
-        <div class="mb-3">
-            <h6>Original Content:</h6>
-            <div class="border rounded p-3 bg-light">
-                ${highlightErrors(content, errors)}
+// Display rewrite results with enhanced styling
+function displayRewriteResults(data) {
+    const rewriteContainer = document.getElementById('rewrite-results');
+    if (!rewriteContainer) return;
+
+    rewriteContainer.innerHTML = `
+        <div class="pf-v5-l-grid pf-m-gutter">
+            <div class="pf-v5-l-grid__item pf-m-12-col">
+                <div class="pf-v5-c-card app-card">
+                    <div class="pf-v5-c-card__header">
+                        <div class="pf-v5-c-card__header-main">
+                            <h2 class="pf-v5-c-title pf-m-xl">
+                                <i class="fas fa-magic pf-v5-u-mr-sm" style="color: var(--app-success-color);"></i>
+                                AI Rewrite Results
+                            </h2>
+                        </div>
+                        <div class="pf-v5-c-card__actions">
+                            <div class="pf-v5-l-flex pf-m-space-items-sm">
+                                <div class="pf-v5-l-flex__item">
+                                    <span class="pf-v5-c-label pf-m-green">
+                                        <span class="pf-v5-c-label__content">
+                                            <i class="fas fa-check-circle pf-v5-c-label__icon"></i>
+                                            Improved
+                                        </span>
+                                    </span>
+                                </div>
+                                <div class="pf-v5-l-flex__item">
+                                    <button class="pf-v5-c-button pf-m-secondary" type="button" onclick="refineContent('${escapeHtml(data.rewritten_content)}')">
+                                        <i class="fas fa-star pf-v5-u-mr-xs"></i>
+                                        Refine Further
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pf-v5-c-card__body">
+                        <div class="pf-v5-c-code-block">
+                            <div class="pf-v5-c-code-block__header">
+                                <div class="pf-v5-c-code-block__header-main">
+                                    <span class="pf-v5-c-code-block__title">Improved Content</span>
+                                </div>
+                                <div class="pf-v5-c-code-block__actions">
+                                    <button class="pf-v5-c-button pf-m-plain pf-m-small" type="button" onclick="copyToClipboard('${escapeHtml(data.rewritten_content).replace(/'/g, "\\'")}')">
+                                        <i class="fas fa-copy" aria-hidden="true"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="pf-v5-c-code-block__content">
+                                <pre class="pf-v5-c-code-block__pre" style="white-space: pre-wrap; word-wrap: break-word;"><code class="pf-v5-c-code-block__code">${escapeHtml(data.rewritten_content)}</code></pre>
+                            </div>
+                        </div>
+                        
+                        ${data.improvements && data.improvements.length > 0 ? `
+                            <div class="pf-v5-u-mt-lg">
+                                <h3 class="pf-v5-c-title pf-m-lg pf-v5-u-mb-sm">Key Improvements</h3>
+                                <div class="pf-v5-l-stack pf-m-gutter">
+                                    ${data.improvements.map(improvement => `
+                                        <div class="pf-v5-l-stack__item">
+                                            <div class="pf-v5-c-alert pf-m-success pf-m-inline">
+                                                <div class="pf-v5-c-alert__icon">
+                                                    <i class="fas fa-arrow-up"></i>
+                                                </div>
+                                                <div class="pf-v5-c-alert__title">
+                                                    ${improvement}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
             </div>
         </div>
-        
-        ${errors.length > 0 ? `
-        <div class="mb-3">
-            <h6>Detected Issues (${errors.length}):</h6>
-            <div class="analysis-container">
-                ${errors.map(error => createErrorCard(error)).join('')}
-            </div>
-        </div>
-        ` : '<div class="alert alert-success"><i class="fas fa-check-circle me-2"></i>No issues detected!</div>'}
     `;
-} 
+
+    rewriteContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Utility functions for enhanced functionality
+function scrollToStatistics() {
+    const statisticsColumn = document.getElementById('statistics-column');
+    if (statisticsColumn) {
+        statisticsColumn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
+
+function scrollToErrorSummary() {
+    const errorSummary = document.querySelector('[data-error-summary]');
+    if (errorSummary) {
+        errorSummary.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+
+function toggleAllBlocks() {
+    const expandableSections = document.querySelectorAll('.pf-v5-c-expandable-section');
+    const allExpanded = Array.from(expandableSections).every(section => 
+        section.getAttribute('aria-expanded') === 'true'
+    );
+    
+    expandableSections.forEach(section => {
+        const toggle = section.querySelector('.pf-v5-c-expandable-section__toggle');
+        const content = section.querySelector('.pf-v5-c-expandable-section__content');
+        
+        if (allExpanded) {
+            section.setAttribute('aria-expanded', 'false');
+            toggle.setAttribute('aria-expanded', 'false');
+            content.style.display = 'none';
+        } else {
+            section.setAttribute('aria-expanded', 'true');
+            toggle.setAttribute('aria-expanded', 'true');
+            content.style.display = 'block';
+        }
+    });
+}
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        showNotification('Content copied to clipboard!', 'success');
+    }).catch(() => {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        showNotification('Content copied to clipboard!', 'success');
+    });
+}
+
+function initializeExpandableSections() {
+    const expandableSections = document.querySelectorAll('.pf-v5-c-expandable-section');
+    
+    expandableSections.forEach(section => {
+        const toggle = section.querySelector('.pf-v5-c-expandable-section__toggle');
+        const content = section.querySelector('.pf-v5-c-expandable-section__content');
+        
+        if (toggle && content) {
+            toggle.addEventListener('click', () => {
+                const isExpanded = section.getAttribute('aria-expanded') === 'true';
+                
+                section.setAttribute('aria-expanded', !isExpanded);
+                toggle.setAttribute('aria-expanded', !isExpanded);
+                content.style.display = isExpanded ? 'none' : 'block';
+                
+                // Rotate the icon
+                const icon = toggle.querySelector('.pf-v5-c-expandable-section__toggle-icon i');
+                if (icon) {
+                    icon.style.transform = isExpanded ? 'rotate(0deg)' : 'rotate(90deg)';
+                    icon.style.transition = 'transform 0.2s ease';
+                }
+            });
+        }
+    });
+}
+
+function initializeTooltips() {
+    // Initialize tooltips for marked text
+    const markedElements = document.querySelectorAll('mark[title]');
+    markedElements.forEach(element => {
+        element.addEventListener('mouseenter', function() {
+            // Simple tooltip implementation
+            const tooltip = document.createElement('div');
+            tooltip.className = 'pf-v5-c-tooltip';
+            tooltip.textContent = this.getAttribute('title');
+            tooltip.style.position = 'absolute';
+            tooltip.style.background = 'rgba(0,0,0,0.8)';
+            tooltip.style.color = 'white';
+            tooltip.style.padding = '0.5rem';
+            tooltip.style.borderRadius = '4px';
+            tooltip.style.fontSize = '0.875rem';
+            tooltip.style.zIndex = '9999';
+            tooltip.style.pointerEvents = 'none';
+            
+            document.body.appendChild(tooltip);
+            
+            const rect = this.getBoundingClientRect();
+            tooltip.style.left = rect.left + 'px';
+            tooltip.style.top = (rect.top - tooltip.offsetHeight - 5) + 'px';
+            
+            this._tooltip = tooltip;
+        });
+        
+        element.addEventListener('mouseleave', function() {
+            if (this._tooltip) {
+                this._tooltip.remove();
+                this._tooltip = null;
+            }
+        });
+    });
+}

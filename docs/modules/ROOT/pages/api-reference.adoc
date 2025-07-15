@@ -2,7 +2,7 @@
 
 == Overview
 
-Style Guide AI provides both REST API and WebSocket interfaces for document analysis and real-time communication. This reference covers all available endpoints, request formats, and response structures.
+Content Editorial Assistant provides both REST API and WebSocket interfaces for document analysis and real-time communication. This reference covers all available endpoints, request formats, and response structures.
 
 == Authentication
 

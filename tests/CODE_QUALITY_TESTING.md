@@ -1,6 +1,6 @@
 # Code Quality Testing Suite
 
-This document describes the comprehensive code quality testing suite for the Style Guide AI project, designed to detect duplicate code, maintain coding standards, and ensure high code quality.
+This document describes the comprehensive code quality testing suite for the Content Editorial Assistant project, designed to detect duplicate code, maintain coding standards, and ensure high code quality.
 
 ## 🎯 Overview
 

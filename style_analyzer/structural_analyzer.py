@@ -74,8 +74,8 @@ class StructuralAnalyzer:
                 try:
                     # Ensure format_hint is a valid value and cast to Literal type
                     from typing import cast, Literal
-                    if format_hint in ['asciidoc', 'markdown', 'auto']:
-                        validated_hint = cast(Literal['asciidoc', 'markdown', 'auto'], format_hint)
+                    if format_hint in ['asciidoc', 'markdown', 'plaintext', 'auto']:
+                        validated_hint = cast(Literal['asciidoc', 'markdown', 'plaintext', 'auto'], format_hint)
                     else:
                         validated_hint = 'auto'
                     parse_result = self.parser_factory.parse(text, format_hint=validated_hint)
@@ -136,8 +136,8 @@ class StructuralAnalyzer:
             if self.parser_factory:  # This will trigger lazy initialization
                 try:
                     from typing import cast, Literal
-                    if format_hint in ['asciidoc', 'markdown', 'auto']:
-                        validated_hint = cast(Literal['asciidoc', 'markdown', 'auto'], format_hint)
+                    if format_hint in ['asciidoc', 'markdown', 'plaintext', 'auto']:
+                        validated_hint = cast(Literal['asciidoc', 'markdown', 'plaintext', 'auto'], format_hint)
                     else:
                         validated_hint = 'auto'
                     parse_result = self.parser_factory.parse(text, format_hint=validated_hint)

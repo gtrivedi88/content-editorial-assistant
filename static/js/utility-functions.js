@@ -1,223 +1,297 @@
-// Utility functions for UI
+// Enhanced Utility functions for PatternFly UI
 
-// Show loading state
+// Show loading state using PatternFly EmptyState and Spinner
 function showLoading(elementId, message = 'Processing...') {
     const element = document.getElementById(elementId);
     if (!element) return;
 
     element.innerHTML = `
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-search me-2"></i>Analyzing Your Text
-                    <span class="badge bg-primary ms-2">In Progress</span>
-                </h5>
-            </div>
-            <div class="card-body text-center">
-                <div class="mb-4">
-                    <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
-                        <span class="visually-hidden">Loading...</span>
+        <div class="pf-v5-c-card app-card">
+            <div class="pf-v5-c-card__body">
+                <div class="pf-v5-c-empty-state pf-m-lg">
+                    <div class="pf-v5-c-empty-state__content">
+                        <div class="pf-v5-c-empty-state__icon">
+                            <span class="pf-v5-c-spinner pf-m-xl" role="status" aria-label="Loading...">
+                                <span class="pf-v5-c-spinner__clipper"></span>
+                                <span class="pf-v5-c-spinner__lead-ball"></span>
+                                <span class="pf-v5-c-spinner__tail-ball"></span>
+                            </span>
+                        </div>
+                        <h2 class="pf-v5-c-title pf-m-xl">Analyzing Your Content</h2>
+                        <div class="pf-v5-c-empty-state__body">
+                            <p class="pf-v5-u-mb-lg">${message}</p>
+                            
+                            <div class="pf-v5-l-grid pf-m-gutter">
+                                <div class="pf-v5-l-grid__item pf-m-6-col">
+                                    <div class="pf-v5-c-card pf-m-plain">
+                                        <div class="pf-v5-c-card__body">
+                                            <h3 class="pf-v5-c-title pf-m-md pf-v5-u-mb-sm">
+                                                <i class="fas fa-search pf-v5-u-mr-sm" style="color: var(--app-success-color);"></i>
+                                                Analysis Features
+                                            </h3>
+                                            <ul class="pf-v5-c-list">
+                                                <li class="pf-v5-c-list__item">Sentence length and complexity</li>
+                                                <li class="pf-v5-c-list__item">Passive voice detection</li>
+                                                <li class="pf-v5-c-list__item">Wordy phrases and redundancy</li>
+                                                <li class="pf-v5-c-list__item">Readability scores</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="pf-v5-l-grid__item pf-m-6-col">
+                                    <div class="pf-v5-c-card pf-m-plain">
+                                        <div class="pf-v5-c-card__body">
+                                            <h3 class="pf-v5-c-title pf-m-md pf-v5-u-mb-sm">
+                                                <i class="fas fa-chart-line pf-v5-u-mr-sm" style="color: var(--app-primary-color);"></i>
+                                                Metrics Calculated
+                                            </h3>
+                                            <ul class="pf-v5-c-list">
+                                                <li class="pf-v5-c-list__item">Grade level assessment</li>
+                                                <li class="pf-v5-c-list__item">Technical writing quality</li>
+                                                <li class="pf-v5-c-list__item">Word complexity analysis</li>
+                                                <li class="pf-v5-c-list__item">Improvement recommendations</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <h6 class="text-primary">${message}</h6>
-                </div>
-                
-                <div class="row text-start">
-                    <div class="col-md-6">
-                        <h6><i class="fas fa-check-circle text-success me-2"></i>What We're Analyzing:</h6>
-                        <ul class="list-unstyled small text-muted">
-                            <li><i class="fas fa-arrow-right me-2"></i>Sentence length and complexity</li>
-                            <li><i class="fas fa-arrow-right me-2"></i>Passive voice usage</li>
-                            <li><i class="fas fa-arrow-right me-2"></i>Wordy phrases and redundancy</li>
-                            <li><i class="fas fa-arrow-right me-2"></i>Readability scores (Flesch, Fog, etc.)</li>
-                        </ul>
-                    </div>
-                    <div class="col-md-6">
-                        <h6><i class="fas fa-chart-line text-info me-2"></i>Metrics Calculated:</h6>
-                        <ul class="list-unstyled small text-muted">
-                            <li><i class="fas fa-arrow-right me-2"></i>Grade level assessment</li>
-                            <li><i class="fas fa-arrow-right me-2"></i>Technical writing quality</li>
-                            <li><i class="fas fa-arrow-right me-2"></i>Word complexity analysis</li>
-                            <li><i class="fas fa-arrow-right me-2"></i>Overall improvement score</li>
-                        </ul>
-                    </div>
-                </div>
-                
-                <div class="alert alert-info mt-3">
-                    <small>
-                        <i class="fas fa-lightbulb me-2"></i>
-                        <strong>Tip:</strong> Analysis typically takes 2-5 seconds. We use SpaCy NLP for precise style detection.
-                    </small>
                 </div>
             </div>
         </div>
     `;
 }
 
-// Show error message
+// Show error message using enhanced PatternFly Alert
 function showError(elementId, message) {
     const element = document.getElementById(elementId);
     if (!element) return;
 
     element.innerHTML = `
-        <div class="alert alert-danger">
-            <i class="fas fa-exclamation-triangle me-2"></i>
-            ${message}
+        <div class="pf-v5-c-alert pf-m-danger pf-m-inline fade-in" role="alert">
+            <div class="pf-v5-c-alert__icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h4 class="pf-v5-c-alert__title">Analysis Error</h4>
+            <div class="pf-v5-c-alert__description">
+                <p>${message}</p>
+                <div class="pf-v5-u-mt-sm">
+                    <button class="pf-v5-c-button pf-m-link pf-m-inline" type="button" onclick="location.reload()">
+                        <i class="fas fa-redo pf-v5-u-mr-xs"></i>
+                        Try Again
+                    </button>
+                </div>
+            </div>
+            <div class="pf-v5-c-alert__action">
+                <button class="pf-v5-c-button pf-m-plain" type="button" onclick="this.closest('.pf-v5-c-alert').remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
         </div>
     `;
 }
 
-// Show success message
+// Show success message using enhanced PatternFly Alert
 function showSuccess(elementId, message) {
     const element = document.getElementById(elementId);
     if (!element) return;
 
     element.innerHTML = `
-        <div class="alert alert-success">
-            <i class="fas fa-check-circle me-2"></i>
-            ${message}
+        <div class="pf-v5-c-alert pf-m-success pf-m-inline fade-in" role="alert">
+            <div class="pf-v5-c-alert__icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h4 class="pf-v5-c-alert__title">${message}</h4>
+            <div class="pf-v5-c-alert__action">
+                <button class="pf-v5-c-button pf-m-plain" type="button" onclick="this.closest('.pf-v5-c-alert').remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
         </div>
     `;
 }
 
-// Highlight errors in text
+// Basic highlight errors function (enhanced version is in error-display.js)
 function highlightErrors(text, errors) {
-    if (!errors || errors.length === 0) return text;
+    if (!errors || errors.length === 0) return escapeHtml(text);
     
-    let highlightedText = text;
+    let highlightedText = escapeHtml(text);
     
+    // Simple highlighting - just mark error text
     errors.forEach(error => {
-        const sentence = error.sentence || '';
-        if (sentence) {
-            const highlighted = `<span class="error-highlight">${sentence}</span>`;
-            highlightedText = highlightedText.replace(sentence, highlighted);
+        if (error.text_segment) {
+            const segment = escapeHtml(error.text_segment);
+            const highlightedSegment = `<mark style="background-color: rgba(201, 25, 11, 0.1); border-bottom: 2px solid var(--app-danger-color);">${segment}</mark>`;
+            highlightedText = highlightedText.replace(segment, highlightedSegment);
         }
     });
     
     return highlightedText;
 }
 
-// Create error card
-function createErrorCard(error) {
-    const severityClass = error.severity === 'high' ? 'error-high' : 
-                         error.severity === 'medium' ? 'error-medium' : 'error-low';
+// Basic error card function (enhanced version is in error-display.js)
+function createErrorCard(error, index = 0) {
+    const errorType = error.error_type || 'STYLE';
+    const message = error.message || 'Style issue detected';
     
     return `
-        <div class="card mb-3 border-start border-danger border-3">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div class="flex-grow-1">
-                        <h6 class="card-title text-danger">
-                            <i class="fas fa-exclamation-triangle me-2"></i>
-                            ${error.error_type || 'Style Issue'}
-                        </h6>
-                        <p class="card-text">${error.message || 'Style issue detected'}</p>
-                        
-                        ${error.suggestion ? `
-                        <div class="alert alert-info alert-sm">
-                            <i class="fas fa-lightbulb me-2"></i>
-                            <strong>Suggestion:</strong> ${error.suggestion}
-                        </div>
-                        ` : ''}
-                        
-                        ${error.sentence ? `
-                        <div class="mt-2">
-                            <small class="text-muted">
-                                <strong>Context:</strong> "${error.sentence}"
-                            </small>
-                        </div>
-                        ` : ''}
-                    </div>
-                    <span class="badge ${severityClass} ms-2">
-                        ${error.severity || 'medium'}
-                    </span>
-                </div>
+        <div class="pf-v5-c-alert pf-m-warning pf-m-inline pf-v5-u-mb-sm">
+            <div class="pf-v5-c-alert__icon">
+                <i class="fas fa-exclamation-triangle"></i>
             </div>
+            <div class="pf-v5-c-alert__title">${errorType.replace(/_/g, ' ')}</div>
+            <div class="pf-v5-c-alert__description">${message}</div>
         </div>
     `;
 }
 
-// Note: generateStatisticsCard is implemented in analysis-display.js with full functionality
-
-// Display rewrite results (placeholder)
+// Enhanced display rewrite results (now properly implemented)
 function displayRewriteResults(data) {
     const resultsContainer = document.getElementById('rewrite-results');
     if (!resultsContainer) return;
     
     resultsContainer.innerHTML = `
-        <div class="card mt-4">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-magic me-2"></i>AI Rewrite Results
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6>Original:</h6>
-                        <div class="bg-light p-3 rounded">
-                            ${data.original || ''}
+        <div class="pf-v5-l-grid pf-m-gutter">
+            <div class="pf-v5-l-grid__item pf-m-12-col">
+                <div class="pf-v5-c-card app-card">
+                    <div class="pf-v5-c-card__header">
+                        <div class="pf-v5-c-card__header-main">
+                            <h2 class="pf-v5-c-title pf-m-xl">
+                                <i class="fas fa-magic pf-v5-u-mr-sm" style="color: var(--app-success-color);"></i>
+                                AI Rewrite Results
+                            </h2>
+                        </div>
+                        <div class="pf-v5-c-card__actions">
+                            <div class="pf-v5-l-flex pf-m-space-items-sm">
+                                <div class="pf-v5-l-flex__item">
+                                    <span class="pf-v5-c-label pf-m-green">
+                                        <span class="pf-v5-c-label__content">
+                                            <i class="fas fa-check-circle pf-v5-c-label__icon"></i>
+                                            Improved
+                                        </span>
+                                    </span>
+                                </div>
+                                <div class="pf-v5-l-flex__item">
+                                    <button class="pf-v5-c-button pf-m-secondary" type="button" onclick="refineContent('${escapeHtml(data.rewritten_content)}')">
+                                        <i class="fas fa-star pf-v5-u-mr-xs"></i>
+                                        Refine Further
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <h6>Rewritten:</h6>
-                        <div class="bg-success bg-opacity-10 p-3 rounded">
-                            ${data.rewritten_text || ''}
+                    <div class="pf-v5-c-card__body">
+                        <div class="pf-v5-c-code-block">
+                            <div class="pf-v5-c-code-block__header">
+                                <div class="pf-v5-c-code-block__header-main">
+                                    <span class="pf-v5-c-code-block__title">Improved Content</span>
+                                </div>
+                                <div class="pf-v5-c-code-block__actions">
+                                    <button class="pf-v5-c-button pf-m-plain pf-m-small" type="button" onclick="copyToClipboard('${escapeHtml(data.rewritten_content).replace(/'/g, "\\'")}')">
+                                        <i class="fas fa-copy" aria-hidden="true"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="pf-v5-c-code-block__content">
+                                <pre class="pf-v5-c-code-block__pre" style="white-space: pre-wrap; word-wrap: break-word;"><code class="pf-v5-c-code-block__code">${escapeHtml(data.rewritten_content)}</code></pre>
+                            </div>
                         </div>
+                        
+                        ${data.improvements && data.improvements.length > 0 ? `
+                            <div class="pf-v5-u-mt-lg">
+                                <h3 class="pf-v5-c-title pf-m-lg pf-v5-u-mb-sm">Key Improvements</h3>
+                                <div class="pf-v5-l-stack pf-m-gutter">
+                                    ${data.improvements.map(improvement => `
+                                        <div class="pf-v5-l-stack__item">
+                                            <div class="pf-v5-c-alert pf-m-success pf-m-inline">
+                                                <div class="pf-v5-c-alert__icon">
+                                                    <i class="fas fa-arrow-up"></i>
+                                                </div>
+                                                <div class="pf-v5-c-alert__title">
+                                                    ${improvement}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
                     </div>
                 </div>
-                
-                ${data.improvements && data.improvements.length > 0 ? `
-                <div class="mt-4">
-                    <h6>Improvements Made:</h6>
-                    <ul class="list-unstyled">
-                        ${data.improvements.map(improvement => `
-                            <li class="mb-2">
-                                <i class="fas fa-check-circle text-success me-2"></i>
-                                ${improvement}
-                            </li>
-                        `).join('')}
-                    </ul>
-                </div>
-                ` : ''}
             </div>
         </div>
     `;
+
+    resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-// Display refinement results (placeholder)
+// Enhanced display refinement results (now properly implemented)
 function displayRefinementResults(data) {
     const resultsContainer = document.getElementById('rewrite-results');
     if (!resultsContainer) return;
     
     resultsContainer.innerHTML = `
-        <div class="card mt-4">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-sparkles me-2"></i>AI Refinement Results (Pass 2)
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-4">
-                        <h6>Original:</h6>
-                        <div class="bg-light p-3 rounded small">
-                            ${data.first_pass || ''}
+        <div class="pf-v5-l-grid pf-m-gutter">
+            <div class="pf-v5-l-grid__item pf-m-12-col">
+                <div class="pf-v5-c-card app-card">
+                    <div class="pf-v5-c-card__header">
+                        <div class="pf-v5-c-card__header-main">
+                            <h2 class="pf-v5-c-title pf-m-xl">
+                                <i class="fas fa-sparkles pf-v5-u-mr-sm" style="color: var(--app-success-color);"></i>
+                                AI Refinement Results (Pass 2)
+                            </h2>
+                        </div>
+                        <div class="pf-v5-c-card__actions">
+                            <span class="pf-v5-c-label pf-m-green pf-m-large">
+                                <span class="pf-v5-c-label__content">
+                                    <i class="fas fa-star pf-v5-c-label__icon"></i>
+                                    Refined
+                                </span>
+                            </span>
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <h6>First Pass:</h6>
-                        <div class="bg-info bg-opacity-10 p-3 rounded small">
-                            ${data.first_pass || ''}
+                    <div class="pf-v5-c-card__body">
+                        <div class="pf-v5-c-code-block">
+                            <div class="pf-v5-c-code-block__header">
+                                <div class="pf-v5-c-code-block__header-main">
+                                    <span class="pf-v5-c-code-block__title">Refined Content</span>
+                                </div>
+                                <div class="pf-v5-c-code-block__actions">
+                                    <button class="pf-v5-c-button pf-m-plain pf-m-small" type="button" onclick="copyToClipboard('${escapeHtml(data.refined_content).replace(/'/g, "\\'")}')">
+                                        <i class="fas fa-copy" aria-hidden="true"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="pf-v5-c-code-block__content">
+                                <pre class="pf-v5-c-code-block__pre" style="white-space: pre-wrap; word-wrap: break-word;"><code class="pf-v5-c-code-block__code">${escapeHtml(data.refined_content)}</code></pre>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-md-4">
-                        <h6>Refined:</h6>
-                        <div class="bg-success bg-opacity-10 p-3 rounded small">
-                            ${data.refined || ''}
-                        </div>
+                        
+                        ${data.refinements && data.refinements.length > 0 ? `
+                            <div class="pf-v5-u-mt-lg">
+                                <h3 class="pf-v5-c-title pf-m-lg pf-v5-u-mb-sm">Refinements Made</h3>
+                                <div class="pf-v5-l-stack pf-m-gutter">
+                                    ${data.refinements.map(refinement => `
+                                        <div class="pf-v5-l-stack__item">
+                                            <div class="pf-v5-c-alert pf-m-info pf-m-inline">
+                                                <div class="pf-v5-c-alert__icon">
+                                                    <i class="fas fa-lightbulb"></i>
+                                                </div>
+                                                <div class="pf-v5-c-alert__title">
+                                                    ${refinement}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
                     </div>
                 </div>
             </div>
         </div>
     `;
-} 
+
+    resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}

@@ -22,7 +22,7 @@ if __name__ == '__main__':
         port = int(os.getenv('PORT', 5000))
         host = os.getenv('HOST', '127.0.0.1')
         
-        print("🚀 Starting Style Guide AI Application...")
+        print("🚀 Starting Content Editorial Assistant Application...")
         print(f"📱 Access the application at: http://{host}:{port}")
         print("📊 Real-time progress tracking enabled via WebSocket")
         print("🤖 AI rewriting with Ollama integration ready")

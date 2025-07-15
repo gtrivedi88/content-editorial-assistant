@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Comprehensive Integration Scenario Tests for Style Guide AI System
+Comprehensive Integration Scenario Tests for Content Editorial Assistant System
 
 This module provides end-to-end integration tests that validate the complete
 workflow from document input to final output, testing interactions between

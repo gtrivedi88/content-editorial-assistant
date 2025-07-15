@@ -149,7 +149,7 @@ Some complex technical jargon and unnecessarily verbose language that could be s
         )
         
         # Check page title
-        assert "Style Guide AI" in driver.title
+        assert "Content Editorial Assistant" in driver.title
         
         # Check main elements are present
         assert driver.find_element(By.ID, "upload-area")

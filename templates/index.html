@@ -1,206 +1,166 @@
 {% extends "base.html" %}
 
-{% block title %}Peer lens{% endblock %}
+{% block title %}Content Editorial Assistant - Intelligent Writing Analysis{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/index-page.css') }}" />
+{% endblock %}
 
 {% block content %}
 <!-- Hero Section -->
-<div class="row mb-5">
-    <div class="col-lg-12 text-center">
-        <h1 class="display-4 fw-bold text-primary mb-3">
-            <i class="fas fa-pen-fancy me-3"></i>
-            Peer lens
-        </h1>
-        <p class="lead text-muted mb-4">
-            Upload your documents and get instant feedback on writing style, grammar, and clarity.
-            This AI-powered tool analyzes your content against professional writing standards.
-        </p>
-        <div class="row justify-content-center">
-            <div class="col-md-8">
-                <div class="d-flex flex-wrap justify-content-center gap-3">
-                    <span class="badge bg-primary rounded-pill px-3 py-2">
-                        <i class="fas fa-file-pdf me-2"></i>PDF
-                    </span>
-                    <span class="badge bg-info rounded-pill px-3 py-2">
-                        <i class="fas fa-file-word me-2"></i>DOCX
-                    </span>
-                    <span class="badge bg-success rounded-pill px-3 py-2">
-                        <i class="fab fa-markdown me-2"></i>Markdown
-                    </span>
-                    <span class="badge bg-warning rounded-pill px-3 py-2">
-                        <i class="fas fa-file-code me-2"></i>AsciiDoc
-                    </span>
-                    <span class="badge bg-secondary rounded-pill px-3 py-2">
-                        <i class="fas fa-file-alt me-2"></i>DITA
-                    </span>
+<section class="hero-section">
+    <div class="pf-v5-l-grid pf-m-gutter hero-container">
+        <!-- Left Column: Main Content -->
+        <div class="pf-v5-l-grid__item pf-m-8-col-on-lg pf-m-12-col">
+            <div class="hero-content">
+                <!-- Hero Title & Icon -->
+                <div class="hero-title-wrapper pf-v5-u-mb-xl">
+                    <h1 class="hero-title pf-v5-u-mb-md">
+                        Transform Your Writing with AI
+                    </h1>
+                    <div class="hero-subtitle-wrapper">
+                        <p class="hero-subtitle pf-v5-u-mb-lg">
+                            Upload your documents and get instant, professional feedback on writing style, grammar, and clarity. 
+                            Our advanced AI analysis helps you write with confidence and authority.
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
+</section>
 
-<!-- Upload Section -->
-<div class="row mb-5">
-    <div class="col-lg-8 mx-auto">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title mb-0">
-                    <i class="fas fa-cloud-upload-alt me-2"></i>
-                    Upload Your Document
-                </h3>
-            </div>
-            <div class="card-body">
-                <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()">
-                    <div class="upload-content">
-                        <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
-                        <h4 class="mb-3">Drop your file here or click to browse</h4>
-                        <p class="text-muted mb-3">
-                            Supported formats: PDF, DOCX, Markdown, AsciiDoc, DITA
-                        </p>
-                        <p class="text-muted small">
-                            Maximum file size: 16MB
+<!-- Modern Unified Editor Section -->
+<section class="modern-editor-section">
+    <div class="editor-container">
+        <!-- Modern Content Editor -->
+        <div class="content-editor-wrapper">
+            <div class="editor-card">
+                <!-- Editor Header -->
+                <div class="editor-header">
+                    <div class="editor-title-section">
+                        <h2 class="editor-title">
+                            <i class="fas fa-edit editor-title-icon"></i>
+                            Start Your Analysis
+                        </h2>
+                        <p class="editor-subtitle">
+                            Upload a document or paste your content to get instant AI-powered feedback
                         </p>
                     </div>
-                    <input type="file" id="file-input" class="d-none" accept=".pdf,.docx,.md,.adoc,.dita,.txt">
                 </div>
-                
-                <!-- Alternative Text Input -->
-                <div class="mt-4">
-                    <div class="d-flex align-items-center mb-3">
-                        <hr class="flex-grow-1">
-                        <span class="px-3 text-muted">OR</span>
-                        <hr class="flex-grow-1">
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="text-input" class="form-label">
-                            <i class="fas fa-keyboard me-2"></i>
-                            Paste your text directly
-                        </label>
-                        <textarea 
-                            class="form-control" 
-                            id="text-input" 
-                            rows="6" 
-                            placeholder="Paste your content here for immediate analysis..."
-                        ></textarea>
-                    </div>
-                    
-                    <div class="text-center">
-                        <button class="btn btn-primary" onclick="analyzeDirectText()">
-                            <i class="fas fa-search me-2"></i>
-                            Analyze Text
+
+                <!-- Editor Body -->
+                <div class="editor-body">
+                    <!-- Input Methods Tabs -->
+                    <div class="input-method-tabs">
+                        <button class="input-tab active" data-method="text">
+                            <i class="fas fa-keyboard"></i>
+                            <span>Write or Paste</span>
+                        </button>
+                        <button class="input-tab" data-method="upload">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span>Upload File</span>
                         </button>
                     </div>
+
+                    <!-- Text Input Area -->
+                    <div class="input-area text-input-area active" id="text-input-area">
+                        <div class="editor-interface">
+                            <div class="editor-toolbar">
+                                <div class="toolbar-left">
+                                    <span class="word-count" id="word-count">0 words</span>
+                                    <span class="char-count" id="char-count">0 characters</span>
+                                </div>
+                                <div class="toolbar-right">
+                                    <button class="toolbar-btn" onclick="loadSampleText()" title="Load sample text">
+                                        <i class="fas fa-lightbulb"></i>
+                                        <span>Try Sample</span>
+                                    </button>
+                                    <button class="toolbar-btn" onclick="clearEditor()" title="Clear content">
+                                        <i class="fas fa-eraser"></i>
+                                        <span>Clear</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <textarea 
+                                class="modern-editor" 
+                                id="text-input" 
+                                name="text-input"
+                                placeholder="Paste your content here or start writing...
+
+Try pasting:
+• Blog posts or articles
+• Technical documentation  
+• Business communications
+• Academic papers
+• Marketing copy
+
+Our AI will analyze your writing for style, grammar, readability, and structure."
+                            ></textarea>
+                        </div>
+                    </div>
+
+                    <!-- File Upload Area -->
+                    <div class="input-area file-upload-area" id="upload-input-area">
+                        <input type="file" id="file-input" class="hidden-input" accept=".pdf,.docx,.md,.adoc,.dita,.txt">
+                        <div class="upload-interface" id="upload-area">
+                            <div class="upload-content">
+                                <div class="upload-icon-wrapper">
+                                    <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                                </div>
+                                <h3 class="upload-title">Drop your document here</h3>
+                                <p class="upload-description">
+                                    or <button class="upload-link" onclick="document.getElementById('file-input').click()">browse files</button>
+                                </p>
+                                <div class="supported-formats">
+                                    <div class="formats-list">
+                                        <span class="format-item">PDF</span>
+                                        <span class="format-item">DOCX</span>
+                                        <span class="format-item">Markdown</span>
+                                        <span class="format-item">AsciiDoc</span>
+                                        <span class="format-item">DITA</span>
+                                    </div>
+                                    <p class="size-limit">Maximum file size: 16MB</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="editor-actions">
+                        <button class="primary-action" onclick="analyzeEditorContent()" disabled id="analyze-btn">
+                            <i class="fas fa-magic"></i>
+                            <span>Analyze Content</span>
+                            <div class="button-shine"></div>
+                        </button>
+                        <div class="action-help">
+                            <i class="fas fa-info-circle"></i>
+                            <span>Analysis takes 2-5 seconds</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
+</section>
 
 <!-- Results Section -->
-<div class="row">
-    <div class="col-12">
-        <div id="analysis-results">
-            <!-- Analysis results will be displayed here -->
+<section class="pf-v5-u-py-lg">
+    <div class="pf-v5-l-grid pf-m-gutter">
+        <div class="pf-v5-l-grid__item pf-m-12-col">
+            <div id="analysis-results" class="fade-in">
+                <!-- Analysis results will be displayed here by JavaScript -->
+            </div>
         </div>
-        <div id="rewrite-results">
-            <!-- Rewrite results will be displayed here -->
+        <div class="pf-v5-l-grid__item pf-m-12-col">
+            <div id="rewrite-results" class="fade-in">
+                <!-- Rewrite results will be displayed here by JavaScript -->
+            </div>
         </div>
     </div>
-</div>
-
+</section>
 {% endblock %}
 
 {% block extra_js %}
-<script>
-    // File upload handling
-    const uploadArea = document.getElementById('upload-area');
-    const fileInput = document.getElementById('file-input');
-    const textInput = document.getElementById('text-input');
-
-    // Drag and drop functionality
-    uploadArea.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        uploadArea.classList.add('dragover');
-    });
-
-    uploadArea.addEventListener('dragleave', (e) => {
-        e.preventDefault();
-        uploadArea.classList.remove('dragover');
-    });
-
-    uploadArea.addEventListener('drop', (e) => {
-        e.preventDefault();
-        uploadArea.classList.remove('dragover');
-        
-        const files = e.dataTransfer.files;
-        if (files.length > 0) {
-            handleFileUpload(files[0]);
-            // Hide sample section when analysis starts
-            hideSampleSection();
-        }
-    });
-
-    // File input change handler
-    fileInput.addEventListener('change', (e) => {
-        if (e.target.files.length > 0) {
-            handleFileUpload(e.target.files[0]);
-            // Hide sample section when analysis starts
-            hideSampleSection();
-        }
-    });
-
-    // Direct text analysis
-    function analyzeDirectText() {
-        const text = textInput.value.trim();
-        if (!text) {
-            alert('Please enter some text to analyze');
-            return;
-        }
-
-        currentContent = text;
-        analyzeContent(text);
-        // Hide sample section when analysis starts
-        hideSampleSection();
-    }
-
-    // Sample text analysis
-    function analyzeSampleText() {
-        const sampleText = `The implementation of the new system was facilitated by the team in order to optimize performance metrics. Due to the fact that the previous system was inefficient, a large number of users were experiencing difficulties. The decision was made by management to utilize advanced technologies for the purpose of enhancing user experience and improving overall system reliability.`;
-        
-        currentContent = sampleText;
-        analyzeContent(sampleText);
-        // Hide sample section when analysis starts
-        hideSampleSection();
-    }
-
-    // Clear text input when file is selected
-    fileInput.addEventListener('change', () => {
-        textInput.value = '';
-    });
-
-    // Clear file input when text is entered
-    textInput.addEventListener('input', () => {
-        fileInput.value = '';
-    });
-
-    // Auto-resize textarea
-    textInput.addEventListener('input', function() {
-        this.style.height = 'auto';
-        this.style.height = this.scrollHeight + 'px';
-    });
-
-    // Show welcome message on page load
-    document.addEventListener('DOMContentLoaded', function() {
-        // Add some interactive elements
-        const cards = document.querySelectorAll('.card');
-        cards.forEach(card => {
-            card.addEventListener('mouseenter', function() {
-                this.style.transform = 'translateY(-5px)';
-            });
-            card.addEventListener('mouseleave', function() {
-                this.style.transform = 'translateY(0)';
-            });
-        });
-    });
-</script>
-{% endblock %} 
+<!-- Index page JavaScript is loaded via index-page.js -->
+{% endblock %}

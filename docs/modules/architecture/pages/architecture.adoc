@@ -1,11 +1,11 @@
-= Style Guide AI - Complete Architecture Documentation
+= Content Editorial Assistant - Complete Architecture Documentation
 :sectnums:
 :sectanchors:
 :source-highlighter: highlightjs
 
 == Overview
 
-Style Guide AI is a comprehensive technical writing assistant that combines AI-powered rewriting with sophisticated style analysis. This document provides an exhaustive breakdown of every component, file, and their interconnections.
+Content Editorial Assistant is a comprehensive technical writing assistant that combines AI-powered rewriting with sophisticated style analysis. This document provides an exhaustive breakdown of every component, file, and their interconnections.
 
 [.lead]
 *Key Features:*
@@ -1224,7 +1224,7 @@ Base template providing common layout and functionality.
 ==== `templates/index.html`
 Main application interface.
 
-**Purpose**: Primary user interface for the Style Guide AI application
+**Purpose**: Primary user interface for the Content Editorial Assistant application
 **Key Sections**:
 - File upload interface
 - Text input area
@@ -1628,7 +1628,7 @@ Automated build and deployment script.
 
 == Conclusion
 
-Style Guide AI represents a comprehensive, modular architecture designed for:
+Content Editorial Assistant represents a comprehensive, modular architecture designed for:
 
 - **Extensibility**: Easy addition of new rules, detectors, and models
 - **Reliability**: Graceful fallbacks and error handling

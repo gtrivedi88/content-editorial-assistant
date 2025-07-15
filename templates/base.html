@@ -3,97 +3,301 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Peer lens{% endblock %}</title>
+    <title>{% block title %}Content Editorial Assistant{% endblock %}</title>
+    <meta name="description" content="AI-powered writing analysis and style checking tool">
     
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <!-- Custom CSS -->
-    <link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet">
+    <!-- PatternFly 5 CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/@patternfly/patternfly@5/patternfly.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/patternfly.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/patternfly-addons.css') }}" />
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    
+    <!-- Custom CSS for enhanced styling -->
+    <style>
+        :root {
+            --app-primary-color: #0066cc;
+            --app-secondary-color: #004080;
+            --app-success-color: #3e8635;
+            --app-warning-color: #f0ab00;
+            --app-danger-color: #c9190b;
+        }
+
+        .pf-v5-c-masthead {
+            background: linear-gradient(135deg, var(--app-primary-color) 0%, var(--app-secondary-color) 100%);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .pf-v5-c-masthead__brand {
+            text-decoration: none;
+        }
+
+        .pf-v5-c-masthead__brand:hover {
+            text-decoration: none;
+        }
+
+        .pf-v5-c-masthead__content {
+            margin-left: auto;
+        }
+
+        .app-logo {
+            color: white;
+            margin: 0;
+            font-weight: 600;
+            font-size: 1.5rem;
+        }
+
+        .pf-v5-c-page__sidebar {
+            border-right: 1px solid var(--pf-v5-global--BorderColor--100);
+            background: white;
+        }
+
+        .pf-v5-c-nav__link {
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .pf-v5-c-nav__link:hover {
+            background-color: var(--pf-v5-global--BackgroundColor--200);
+            transform: translateX(4px);
+        }
+
+        .pf-v5-c-nav__link.pf-m-current {
+            background: linear-gradient(90deg, var(--app-primary-color) 0%, transparent 100%);
+            border-left: 4px solid var(--app-primary-color);
+            font-weight: 600;
+        }
+
+        .page-hero {
+            background: linear-gradient(135deg, 
+                rgba(0, 102, 204, 0.03) 0%, 
+                rgba(0, 64, 128, 0.05) 100%);
+            border-bottom: 1px solid var(--pf-v5-global--BorderColor--100);
+        }
+
+        .app-card {
+            transition: all 0.3s ease;
+            border: 1px solid var(--pf-v5-global--BorderColor--100);
+        }
+
+        .app-card:hover {
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+
+        .upload-zone {
+            border: 2px dashed var(--pf-v5-global--BorderColor--200);
+            border-radius: var(--pf-v5-global--BorderRadius--lg);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-zone:hover,
+        .upload-zone.pf-m-drag-hover {
+            border-color: var(--app-primary-color);
+            background-color: rgba(0, 102, 204, 0.02);
+        }
+
+        .feature-badge {
+            transition: all 0.2s ease;
+        }
+
+        .feature-badge:hover {
+            transform: scale(1.05);
+        }
+
+        .progress-custom .pf-v5-c-progress__indicator {
+            transition: width 0.6s ease;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .app-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            max-width: 400px;
+        }
+    </style>
     
     {% block extra_css %}{% endblock %}
 </head>
-<body>
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container">
-            <a class="navbar-brand" href="{{ url_for('index') }}">
-                <i class="fas fa-pen-fancy me-2"></i>
-                Peer lens
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('index') }}">
-                            <i class="fas fa-upload me-1"></i> Analyze
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('health_check') }}">
-                            <i class="fas fa-heartbeat me-1"></i> Health
-                        </a>
-                    </li>
-                </ul>
+<body class="pf-v5-c-body">
+    <div class="pf-v5-c-page" id="page-layout-primary-nav">
+        <!-- Masthead (Header) -->
+        <header class="pf-v5-c-masthead" id="page-masthead">
+            <span class="pf-v5-c-masthead__toggle">
+                <button class="pf-v5-c-button pf-m-plain" type="button" id="page-sidebar-toggle" aria-label="Global navigation" aria-expanded="true" aria-controls="page-sidebar">
+                    <i class="fas fa-bars" aria-hidden="true"></i>
+                </button>
+            </span>
+            <div class="pf-v5-c-masthead__main">
+                <a class="pf-v5-c-masthead__brand" href="{{ url_for('index') }}">
+                    <h1 class="app-logo">
+                        <i class="fas fa-magic pf-v5-u-mr-sm"></i>
+                        Content Editorial Assistant
+                    </h1>
+                </a>
             </div>
-        </div>
-    </nav>
-
-    <!-- Main Content -->
-    <main class="container my-5">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
-                        <i class="fas fa-{{ 'exclamation-triangle' if category == 'error' else 'info-circle' }} me-2"></i>
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <div class="pf-v5-c-masthead__content">
+                <div class="pf-v5-l-flex pf-m-align-items-center pf-m-space-items-lg">
+                    <div class="pf-v5-l-flex__item">
+                        <a href="{{ url_for('health_check') }}" class="pf-v5-c-button pf-m-link pf-m-inline" style="color: white;">
+                            <i class="fas fa-heartbeat pf-v5-u-mr-sm" aria-hidden="true"></i>
+                            System Health
+                        </a>
                     </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+                    <div class="pf-v5-l-flex__item">
+                        <div class="pf-v5-c-dropdown">
+                            <button class="pf-v5-c-dropdown__toggle pf-m-plain" type="button" aria-expanded="false">
+                                <i class="fas fa-user-circle" style="color: white; font-size: 1.5rem;"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
 
-        {% block content %}{% endblock %}
-    </main>
+        <!-- Sidebar -->
+        <aside class="pf-v5-c-page__sidebar pf-m-expanded" id="page-sidebar">
+            <div class="pf-v5-c-page__sidebar-body">
+                <nav class="pf-v5-c-nav" aria-label="Primary navigation">
+                    <ul class="pf-v5-c-nav__list">
+                        <li class="pf-v5-c-nav__item">
+                            <a href="{{ url_for('index') }}" class="pf-v5-c-nav__link pf-m-current" aria-current="page">
+                                <i class="fas fa-magic pf-v5-u-mr-sm" aria-hidden="true"></i>
+                                Analyze Content
+                            </a>
+                        </li>
+                        <li class="pf-v5-c-nav__item">
+                            <a href="#" class="pf-v5-c-nav__link">
+                                <i class="fas fa-history pf-v5-u-mr-sm" aria-hidden="true"></i>
+                                Analysis History
+                            </a>
+                        </li>
+                        <li class="pf-v5-c-nav__item">
+                            <a href="#" class="pf-v5-c-nav__link">
+                                <i class="fas fa-chart-line pf-v5-u-mr-sm" aria-hidden="true"></i>
+                                Analytics Dashboard
+                            </a>
+                        </li>
+                        <li class="pf-v5-c-nav__item">
+                            <a href="#" class="pf-v5-c-nav__link">
+                                <i class="fas fa-cog pf-v5-u-mr-sm" aria-hidden="true"></i>
+                                Settings
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </aside>
 
-    <!-- Footer -->
-    <footer class="bg-dark text-light text-center py-4 mt-5">
-        <div class="container">
-            <p class="mb-0">
-                <i class="fas fa-code me-2"></i>
-                Peer lens - Powered by AI
-            </p>
-        </div>
-    </footer>
+        <!-- Main Content Area -->
+        <main class="pf-v5-c-page__main" tabindex="-1" id="main-content">
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="app-notification">
+                        {% for category, message in messages %}
+                            <div class="pf-v5-c-alert pf-m-{{ 'danger' if category == 'error' else 'success' if category == 'success' else 'info' }} pf-m-inline fade-in" role="alert">
+                                <div class="pf-v5-c-alert__icon">
+                                    <i class="fas fa-{{ 'exclamation-triangle' if category == 'error' else 'check-circle' if category == 'success' else 'info-circle' }}"></i>
+                                </div>
+                                <p class="pf-v5-c-alert__title">{{ message }}</p>
+                                <div class="pf-v5-c-alert__action">
+                                    <button class="pf-v5-c-button pf-m-plain" type="button" onclick="this.closest('.pf-v5-c-alert').remove()">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- jQuery -->
-    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-    <!-- Socket.IO -->
+            <section class="pf-v5-c-page__main-section">
+                {% block content %}{% endblock %}
+            </section>
+        </main>
+    </div>
+
+    <!-- JavaScript Libraries -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     
-    <!-- Custom JavaScript (Modular Architecture) -->
-    <!-- Core utilities and configuration -->
+    <!-- PatternFly JavaScript -->
+    <script>
+        // Initialize PatternFly sidebar toggle
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebarToggle = document.getElementById('page-sidebar-toggle');
+            const sidebar = document.getElementById('page-sidebar');
+            
+            if (sidebarToggle && sidebar) {
+                sidebarToggle.addEventListener('click', function() {
+                    const isExpanded = sidebar.classList.contains('pf-m-expanded');
+                    if (isExpanded) {
+                        sidebar.classList.remove('pf-m-expanded');
+                        sidebarToggle.setAttribute('aria-expanded', 'false');
+                    } else {
+                        sidebar.classList.add('pf-m-expanded');
+                        sidebarToggle.setAttribute('aria-expanded', 'true');
+                    }
+                });
+            }
+
+            // Auto-hide notifications after 5 seconds
+            const notifications = document.querySelectorAll('.app-notification .pf-v5-c-alert');
+            notifications.forEach(notification => {
+                setTimeout(() => {
+                    notification.style.animation = 'fadeOut 0.3s ease-out forwards';
+                    setTimeout(() => notification.remove(), 300);
+                }, 5000);
+            });
+        });
+
+        // Add fadeOut animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeOut {
+                from { opacity: 1; transform: translateX(0); }
+                to { opacity: 0; transform: translateX(100%); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+    
+    <!-- Application JavaScript -->
     <script src="{{ url_for('static', filename='js/core.js') }}"></script>
     <script src="{{ url_for('static', filename='js/utility-functions.js') }}"></script>
-    
-    <!-- Analysis Display Modules (order is important for dependencies) -->
     <script src="{{ url_for('static', filename='js/style-helpers.js') }}"></script>
     <script src="{{ url_for('static', filename='js/error-display.js') }}"></script>
     <script src="{{ url_for('static', filename='js/statistics-display.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/tables-display.js') }}"></script>
     <script src="{{ url_for('static', filename='js/block-creators-basic.js') }}"></script>
     <script src="{{ url_for('static', filename='js/block-creators-complex.js') }}"></script>
     <script src="{{ url_for('static', filename='js/display-main.js') }}"></script>
-    
-    <!-- Communication and file handling -->
     <script src="{{ url_for('static', filename='js/socket-handler.js') }}"></script>
     <script src="{{ url_for('static', filename='js/file-handler.js') }}"></script>
-    
+    <script src="{{ url_for('static', filename='js/index-page.js') }}"></script>
+
     {% block extra_js %}{% endblock %}
 </body>
-</html> 
+</html>

@@ -1,9 +1,9 @@
-= How to Add a New AI Model to Style Guide AI
+= How to Add a New AI Model to Content Editorial Assistant
 :source-highlighter: highlightjs
 
 == Overview
 
-This guide provides step-by-step instructions for adding new AI models to the Style Guide AI application. The system supports multiple model types and integration patterns, making it flexible for different AI backends.
+This guide provides step-by-step instructions for adding new AI models to the Content Editorial Assistant application. The system supports multiple model types and integration patterns, making it flexible for different AI backends.
 
 [.lead]
 **Supported Model Types:**
@@ -17,7 +17,7 @@ This guide provides step-by-step instructions for adding new AI models to the St
 
 === Model Integration Layers
 
-The Style Guide AI uses a layered architecture for model integration:
+The Content Editorial Assistant uses a layered architecture for model integration:
 
 ```
 ┌─────────────────────────────────────────┐
@@ -962,7 +962,7 @@ def generate_with_your_model(self, prompt: str, original_text: str) -> str:
 
 == Conclusion
 
-Adding a new model to Style Guide AI involves:
+Adding a new model to Content Editorial Assistant involves:
 
 1. **Configuration setup** for environment variables and model parameters
 2. **Model management** integration for initialization and health checking

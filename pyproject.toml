@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "style-guide-ai"
 version = "2.0.0"
 description = "AI-powered technical writing assistant for style and clarity"
-authors = [{name = "Style Guide AI Team"}]
+authors = [{name = "Content Editorial Assistant Team"}]
 license = {text = "MIT"}
 readme = "README.md"
 requires-python = ">=3.8"

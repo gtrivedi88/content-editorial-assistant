@@ -49,7 +49,7 @@ class FormatDetector:
             r'^\|\s*.*\s*\|',  # Tables
         ]
     
-    def detect_format(self, content: str) -> Literal['asciidoc', 'markdown']:
+    def detect_format(self, content: str) -> Literal['asciidoc', 'markdown', 'plaintext']:
         """
         Detect document format using simple heuristics.
         
@@ -60,10 +60,10 @@ class FormatDetector:
             content: Raw document content
             
         Returns:
-            Detected format ('asciidoc' or 'markdown')
+            Detected format ('asciidoc', 'markdown', or 'plaintext')
         """
         if not content or not content.strip():
-            return 'markdown'  # Default for empty or None content
+            return 'plaintext'  # Default for empty or None content
         
         lines = content.split('\n')
         asciidoc_score = 0
@@ -89,5 +89,9 @@ class FormatDetector:
                     markdown_score += 1
                     break
         
-        # Return format with higher score, default to markdown
+        # If no markup patterns found, treat as plain text
+        if asciidoc_score == 0 and markdown_score == 0:
+            return 'plaintext'
+        
+        # Return format with higher score, default to markdown if tied
         return 'asciidoc' if asciidoc_score > markdown_score else 'markdown' 
