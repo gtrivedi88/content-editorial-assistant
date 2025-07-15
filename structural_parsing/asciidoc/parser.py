@@ -244,6 +244,12 @@ class AsciiDocParser:
         if context == 'attribute_entry':
             return True
         
+        # Never skip structural containers even if they have empty content
+        # Their content is typically in children blocks
+        structural_containers = {'preamble', 'section', 'document', 'sidebar', 'example'}
+        if context in structural_containers:
+            return False
+        
         # Skip blocks with no meaningful content
         if not content or not content.strip():
             return True

@@ -8,8 +8,9 @@ function displayAnalysisResults(analysis, content, structuralBlocks = null) {
     const resultsContainer = document.getElementById('analysis-results');
     if (!resultsContainer) return;
 
-    // Store current analysis for later use
+    // Store current analysis and content for later use
     currentAnalysis = analysis;
+    currentContent = content; // Store content for attribute block detection
 
     // Use enhanced PatternFly Grid layout for better responsiveness
     resultsContainer.innerHTML = `
@@ -79,9 +80,14 @@ function displayAnalysisResults(analysis, content, structuralBlocks = null) {
 function displayStructuralBlocks(blocks) {
     if (!blocks || blocks.length === 0) return displayEmptyStructure();
 
+    // Add attribute block placeholders using the dedicated module
+    const blocksWithPlaceholders = insertAttributePlaceholders(currentContent, blocks);
+
     let displayIndex = 0;
-    const blocksHtml = blocks.map(block => {
-        const html = createStructuralBlock(block, displayIndex);
+    const blocksHtml = blocksWithPlaceholders.map(block => {
+        const html = block.isAttributePlaceholder ? 
+            createAttributeBlock(block, displayIndex) : 
+            createStructuralBlock(block, displayIndex);
         if (html) { // Check for non-empty HTML
             displayIndex++;
         }

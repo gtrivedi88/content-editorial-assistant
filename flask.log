@@ -1,20 +1,31 @@
-2025-07-15 19:24:34,067 INFO app_modules.app_factory: Logging configured successfully
-2025-07-15 19:24:34,219 INFO app_modules.app_factory: ✅ DocumentProcessor imported successfully
-2025-07-15 19:24:34,567 INFO style_analyzer.base_analyzer: Rules registry loaded successfully
-2025-07-15 19:24:34,905 INFO style_analyzer.base_analyzer: SpaCy model loaded successfully
-2025-07-15 19:24:34,905 INFO app_modules.app_factory: ✅ StyleAnalyzer imported successfully
-2025-07-15 19:24:34,909 INFO rewriter.models: ✅ Ollama connected successfully. Using model: llama3:8b
-2025-07-15 19:24:34,917 INFO rewriter.prompts: ✅ Successfully loaded and merged prompt configurations for 'ibm_style'.
-2025-07-15 19:24:34,917 INFO rewriter.core: ✅ AIRewriter initialized with 5 components
-2025-07-15 19:24:34,917 INFO app_modules.app_factory: ✅ AIRewriter imported successfully
-2025-07-15 19:24:34,917 INFO app_modules.app_factory: AI Model: Ollama (llama3:8b)
-2025-07-15 19:24:34,918 INFO app_modules.app_factory: === Service Initialization Status ===
-2025-07-15 19:24:34,918 INFO app_modules.app_factory: Document Processor: ✅ Ready
-2025-07-15 19:24:34,918 INFO app_modules.app_factory: Style Analyzer: ✅ Ready
-2025-07-15 19:24:34,918 INFO app_modules.app_factory: AI Rewriter: ✅ Ready
-2025-07-15 19:24:34,919 INFO app_modules.app_factory: AI Configuration: ✅ Ready - Ollama (llama3:8b)
-2025-07-15 19:24:34,920 INFO app_modules.app_factory: =====================================
-2025-07-15 19:24:34,920 INFO app_modules.app_factory: Upload folder configured: /home/gtrivedi/Documents/GitHub/style-guide-ai/uploads (max: 16MB)
+2025-07-16 00:53:32,435 INFO app_modules.app_factory: Logging configured successfully
+2025-07-16 00:53:32,459 INFO structural_parsing.asciidoc.elements.bootstrap: Registering 8 element parsers...
+2025-07-16 00:53:32,459 INFO structural_parsing.asciidoc.elements.registry: Registered element parser: title
+2025-07-16 00:53:32,459 INFO structural_parsing.asciidoc.elements.registry: Registered element parser: admonition
+2025-07-16 00:53:32,459 INFO structural_parsing.asciidoc.elements.registry: Registered element parser: code_block
+2025-07-16 00:53:32,459 INFO structural_parsing.asciidoc.elements.registry: Registered element parser: table
+2025-07-16 00:53:32,459 INFO structural_parsing.asciidoc.elements.registry: Registered element parser: procedure
+2025-07-16 00:53:32,459 INFO structural_parsing.asciidoc.elements.registry: Registered element parser: list
+2025-07-16 00:53:32,459 INFO structural_parsing.asciidoc.elements.registry: Registered element parser: delimited_block
+2025-07-16 00:53:32,459 INFO structural_parsing.asciidoc.elements.registry: Registered element parser: paragraph
+2025-07-16 00:53:32,459 INFO structural_parsing.asciidoc.elements.bootstrap: Successfully registered parsers for: title, admonition, code_block, table, procedure, list, delimited_block, paragraph
+2025-07-16 00:53:32,459 INFO structural_parsing.asciidoc.elements.bootstrap: Element parsers auto-registration completed
+2025-07-16 00:53:32,606 INFO app_modules.app_factory: ✅ DocumentProcessor imported successfully
+2025-07-16 00:53:33,862 INFO style_analyzer.base_analyzer: Rules registry loaded successfully
+2025-07-16 00:53:34,136 INFO style_analyzer.base_analyzer: SpaCy model loaded successfully
+2025-07-16 00:53:34,136 INFO app_modules.app_factory: ✅ StyleAnalyzer imported successfully
+2025-07-16 00:53:36,019 INFO rewriter.models: ✅ Ollama connected successfully. Using model: llama3:8b
+2025-07-16 00:53:36,028 INFO rewriter.prompts: ✅ Successfully loaded and merged prompt configurations for 'ibm_style'.
+2025-07-16 00:53:36,028 INFO rewriter.core: ✅ AIRewriter initialized with 5 components
+2025-07-16 00:53:36,028 INFO app_modules.app_factory: ✅ AIRewriter imported successfully
+2025-07-16 00:53:36,028 INFO app_modules.app_factory: AI Model: Ollama (llama3:8b)
+2025-07-16 00:53:36,029 INFO app_modules.app_factory: === Service Initialization Status ===
+2025-07-16 00:53:36,029 INFO app_modules.app_factory: Document Processor: ✅ Ready
+2025-07-16 00:53:36,029 INFO app_modules.app_factory: Style Analyzer: ✅ Ready
+2025-07-16 00:53:36,029 INFO app_modules.app_factory: AI Rewriter: ✅ Ready
+2025-07-16 00:53:36,030 INFO app_modules.app_factory: AI Configuration: ✅ Ready - Ollama (llama3:8b)
+2025-07-16 00:53:36,031 INFO app_modules.app_factory: =====================================
+2025-07-16 00:53:36,031 INFO app_modules.app_factory: Upload folder configured: /home/gtrivedi/Documents/GitHub/style-guide-ai/uploads (max: 16MB)
 🔍 Scanning for rules in: /home/gtrivedi/Documents/GitHub/style-guide-ai/rules
 🔍 Attempting to load: sentence_length_rule (depth: 0)
 ✅ Found and instantiated rule class: SentenceLengthRule
@@ -106,9 +117,6 @@
 🔍 Attempting to load: language_and_grammar.pronouns_rule (depth: 1)
 ✅ Found and instantiated rule class: PronounsRule
 ✅ Loaded rule: pronouns (from language_and_grammar)
-🔍 Attempting to load: structure_and_format.headings_rule (depth: 1)
-✅ Found and instantiated rule class: HeadingsRule
-✅ Loaded rule: headings (from structure_and_format)
 🔍 Attempting to load: structure_and_format.lists_rule (depth: 1)
 ✅ Found and instantiated rule class: ListsRule
 ✅ Loaded rule: lists (from structure_and_format)
@@ -130,25 +138,25 @@
 🔍 Attempting to load: structure_and_format.procedures_rule (depth: 1)
 ✅ Found and instantiated rule class: ProceduresRule
 ✅ Loaded rule: procedures (from structure_and_format)
+🔍 Attempting to load: structure_and_format.headings_rule (depth: 1)
+✅ Found and instantiated rule class: HeadingsRule
+✅ Loaded rule: headings (from structure_and_format)
 📊 Rules discovery complete. Loaded 38 rules from 4 locations.
 📋 Loading rule mappings from: /home/gtrivedi/Documents/GitHub/style-guide-ai/rules/rule_mappings.yaml
 ✅ Successfully loaded 26 block type rules and 6 exclusions
- * Debug mode: on
-2025-07-15 19:24:35,123 INFO app_modules.app_factory: Logging configured successfully
-2025-07-15 19:24:35,273 INFO app_modules.app_factory: ✅ DocumentProcessor imported successfully
-2025-07-15 19:24:35,627 INFO style_analyzer.base_analyzer: Rules registry loaded successfully
-2025-07-15 19:24:35,942 INFO style_analyzer.base_analyzer: SpaCy model loaded successfully
-2025-07-15 19:24:35,942 INFO app_modules.app_factory: ✅ StyleAnalyzer imported successfully
-2025-07-15 19:24:35,945 INFO rewriter.models: ✅ Ollama connected successfully. Using model: llama3:8b
-2025-07-15 19:24:35,953 INFO rewriter.prompts: ✅ Successfully loaded and merged prompt configurations for 'ibm_style'.
-2025-07-15 19:24:35,953 INFO rewriter.core: ✅ AIRewriter initialized with 5 components
-2025-07-15 19:24:35,953 INFO app_modules.app_factory: ✅ AIRewriter imported successfully
-2025-07-15 19:24:35,953 INFO app_modules.app_factory: AI Model: Ollama (llama3:8b)
-2025-07-15 19:24:35,954 INFO app_modules.app_factory: === Service Initialization Status ===
-2025-07-15 19:24:35,954 INFO app_modules.app_factory: Document Processor: ✅ Ready
-2025-07-15 19:24:35,954 INFO app_modules.app_factory: Style Analyzer: ✅ Ready
-2025-07-15 19:24:35,954 INFO app_modules.app_factory: AI Rewriter: ✅ Ready
-2025-07-15 19:24:35,955 INFO app_modules.app_factory: AI Configuration: ✅ Ready - Ollama (llama3:8b)
-2025-07-15 19:24:35,955 INFO app_modules.app_factory: =====================================
-2025-07-15 19:24:35,956 INFO app_modules.app_factory: Upload folder configured: /home/gtrivedi/Documents/GitHub/style-guide-ai/uploads (max: 16MB)
-2025-07-15 19:24:35,958 WARNING werkzeug:  * Debugger is active!
+🚀 Starting Content Editorial Assistant Application...
+📱 Access the application at: http://127.0.0.1:5000
+📊 Real-time progress tracking enabled via WebSocket
+🤖 AI rewriting with Ollama integration ready
+============================================================
+ * Serving Flask app 'app_modules.app_factory'
+ * Debug mode: off
+2025-07-16 00:53:39,799 INFO app_modules.websocket_handlers: Client connected with session ID: f4b93068-5d1a-4cb3-8017-fe0bf6181977
+2025-07-16 00:53:40,444 INFO app_modules.websocket_handlers: Client connected with session ID: 8c7db37b-fd27-42ae-b80b-de7ae9f6ff84
+2025-07-16 00:53:40,698 INFO app_modules.websocket_handlers: Client connected with session ID: c8af75fc-dd62-42ad-b09e-f5de040de7d5
+2025-07-16 00:54:13,776 INFO app_modules.api_routes: Generated session ID for analysis: 534b8fed-260d-40e2-a5bd-c11882f19d12
+2025-07-16 00:54:13,870 INFO structural_parsing.asciidoc.ruby_client: ✅ Ruby and asciidoctor are available
+2025-07-16 00:54:13,871 INFO style_analyzer.structural_analyzer: Structural parsing enabled - context-aware analysis available
+2025-07-16 00:54:14,062 INFO style_analyzer.analysis_modes: Context-aware modular rules analysis found 1 issues
+2025-07-16 00:54:14,105 INFO style_analyzer.analysis_modes: Context-aware modular rules analysis found 0 issues
+2025-07-16 00:54:14,105 INFO style_analyzer.structural_analyzer: Successfully created 2 structural blocks with individual analysis

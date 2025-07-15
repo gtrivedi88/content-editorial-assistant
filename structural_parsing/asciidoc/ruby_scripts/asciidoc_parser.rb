@@ -38,6 +38,9 @@ def preprocess_header(content)
       # Heuristic to detect the start of the document body.
       # This includes section titles, block delimiters, list items, etc.
       is_body_block = stripped_line.start_with?('==', '----', '****', '|===', '++++', '[', '*') || stripped_line.match?(/^\.[\w\s]+/)
+      
+      # Check if this looks like an author/revision line (common header patterns)
+      is_author_line = stripped_line.match?(/^[A-Za-z].*<.*@.*>.*$/) || stripped_line.match?(/^v\d+\.\d+.*\d{4}-\d{2}-\d{2}.*$/)
 
       if is_blank
         # Forgive the user for adding a blank line by skipping it.
@@ -45,13 +48,17 @@ def preprocess_header(content)
       elsif is_attribute || is_comment
         # This is an attribute or a comment, still part of the header.
         processed_lines << line
-      elsif !is_body_block
-        # This line doesn't look like a body block, so we assume it's
-        # an author or revision line, which is part of the header.
+      elsif is_author_line
+        # This looks like an author or revision line, part of the header.
         processed_lines << line
-      else
+      elsif is_body_block
         # This line marks the beginning of the body.
         # Stop header processing and switch to copying all subsequent lines as-is.
+        state = :in_body
+        processed_lines << line
+      else
+        # Any other content marks the start of the document body.
+        # This handles regular paragraphs that come after the header.
         state = :in_body
         processed_lines << line
       end

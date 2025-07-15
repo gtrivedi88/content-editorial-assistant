@@ -1,0 +1,14 @@
+= My Document Title
+
+John Doe <john.doe@example.com>
+v1.0, 2023-01-01: Initial version
+:toc:
+:numbered:
+:source-highlighter: highlight.js
+:!experimental:
+
+This is the first paragraph of content after the attributes.
+
+== Section Heading
+
+This is a regular paragraph in the document body.

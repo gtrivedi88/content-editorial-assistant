@@ -44,6 +44,11 @@ function registerAllModules(registry) {
             module: () => ({ createTitleBlock, canHandleTitle })
         },
         {
+            type: 'attributes',
+            checkGlobal: () => typeof createAttributeBlock === 'function' && typeof canHandleAttribute === 'function',
+            module: () => ({ createAttributeBlock, insertAttributePlaceholders, canHandleAttribute })
+        },
+        {
             type: 'paragraphs',
             checkGlobal: () => typeof createParagraphBlock === 'function' && typeof canHandleParagraph === 'function',
             module: () => ({ createParagraphBlock, canHandleParagraph })

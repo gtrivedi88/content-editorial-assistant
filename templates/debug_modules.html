@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Module Debug Test</title>
+</head>
+<body>
+    <h1>Debug Test</h1>
+    <div id="output"></div>
+
+    <!-- Load all the JS files in the same order as the app -->
+    <script src="/static/js/core.js"></script>
+    <script src="/static/js/utility-functions.js"></script>
+    <script src="/static/js/style-helpers.js"></script>
+    <script src="/static/js/error-display.js"></script>
+    <script src="/static/js/statistics-display.js"></script>
+    
+    <!-- AsciiDoc Element Modules -->
+    <script src="/static/js/elements/adoc/registry.js"></script>
+    <script src="/static/js/elements/adoc/titles/title-ui.js"></script>
+    <script src="/static/js/elements/adoc/attributes/attribute-ui.js"></script>
+    <script src="/static/js/elements/adoc/paragraphs/paragraph-ui.js"></script>
+    <script src="/static/js/elements/adoc/admonitions/admonition-ui.js"></script>
+    <script src="/static/js/elements/adoc/code_blocks/code-block-ui.js"></script>
+    <script src="/static/js/elements/adoc/lists/list-ui.js"></script>
+    <script src="/static/js/elements/adoc/tables/table-ui.js"></script>
+    <script src="/static/js/elements/adoc/delimited_blocks/delimited-block-ui.js"></script>
+    <script src="/static/js/elements/adoc/sections/section-ui.js"></script>
+    <script src="/static/js/elements/adoc/procedures/procedure-ui.js"></script>
+    <script src="/static/js/elements/adoc/bootstrap.js"></script>
+    
+    <script>
+        const requiredFunctions = [
+            'AsciiDocElementRegistry',
+            'initializeAsciiDocElements', 
+            'createModularBlock',
+            'createTitleBlock', 'canHandleTitle',
+            'createParagraphBlock', 'canHandleParagraph',
+            'createAdmonitionBlock', 'canHandleAdmonition',
+            'createCodeBlockElement', 'canHandleCodeBlock',
+            'createListBlockElement', 'canHandleList',
+            'createTableBlockElement', 'canHandleTable',
+            'createDelimitedBlockElement', 'canHandleDelimitedBlock',
+            'createSectionBlockElement', 'canHandleSection',
+            'createProcedureBlockElement', 'canHandleProcedure'
+        ];
+
+        const missing = [];
+        const available = [];
+
+        requiredFunctions.forEach(funcName => {
+            if (typeof window[funcName] === 'function') {
+                available.push(funcName);
+            } else {
+                missing.push(funcName);
+            }
+        });
+
+        document.getElementById('output').innerHTML = `
+            <h2>Available Functions (${available.length})</h2>
+            <ul>${available.map(f => '<li>' + f + '</li>').join('')}</ul>
+            
+            <h2>Missing Functions (${missing.length})</h2>
+            <ul>${missing.map(f => '<li style="color: red;">' + f + '</li>').join('')}</ul>
+        `;
+        
+        console.log('Available:', available);
+        console.log('Missing:', missing);
+    </script>
+</body>
+</html>

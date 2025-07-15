@@ -71,6 +71,12 @@ def get_available_parsers() -> List[Type[ElementParser]]:
     except ImportError as e:
         logger.warning(f"Could not import ParagraphParser: {e}")
     
+    try:
+        from .sections.parser import SectionParser
+        parsers.append(SectionParser)
+    except ImportError as e:
+        logger.warning(f"Could not import SectionParser: {e}")
+    
     return parsers
 
 def register_all_parsers(registry=None) -> None:

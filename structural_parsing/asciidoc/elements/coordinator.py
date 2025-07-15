@@ -153,9 +153,13 @@ class ElementCoordinator:
             'context': block_data.get('context'),
             'content': block_data.get('content', ''),
             'level': block_data.get('level', 0),
+            'title': block_data.get('title'),  # Preserve original title
+            'style': block_data.get('style'),  # Preserve original style
+            'id': block_data.get('id'),       # Preserve original id
             'attributes': block_data.get('attributes', {}),
             'lines': block_data.get('lines', []),
             'source_location': block_data.get('source_location'),
+            'raw_content': block_data.get('raw_content', block_data.get('content', '')),
             
             # Element-specific enhancements
             'element_type': parser.element_type,
@@ -186,9 +190,13 @@ class ElementCoordinator:
             'context': context,
             'content': block_data.get('content', ''),
             'level': block_data.get('level', 0),
+            'title': block_data.get('title'),  # Preserve original title
+            'style': block_data.get('style'),  # Preserve original style
+            'id': block_data.get('id'),       # Preserve original id
             'attributes': block_data.get('attributes', {}),
             'lines': block_data.get('lines', []),
             'source_location': block_data.get('source_location'),
+            'raw_content': block_data.get('raw_content', block_data.get('content', '')),
             
             # Fallback information
             'element_type': 'fallback',
