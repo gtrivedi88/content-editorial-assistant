@@ -1,10 +1,16 @@
 /**
- * Tables Display Module - Enhanced PatternFly Table Rendering
- * Handles complex table display with proper formatting and style analysis using PatternFly components
+ * AsciiDoc Table Element UI Module
+ * Handles rendering of table structures with enhanced PatternFly styling
+ * Enhanced version incorporating advanced table parsing from tables-display.js
  */
 
-// Create a comprehensive table block with PatternFly table rendering
-function createTableBlock(block, displayIndex) {
+/**
+ * Create a comprehensive table block display
+ * @param {Object} block - The table block data
+ * @param {number} displayIndex - Display index for the block
+ * @returns {string} HTML string for the table block
+ */
+function createTableBlockElement(block, displayIndex) {
     const blockTitle = getBlockTypeDisplayName(block.block_type, {
         level: block.level,
         admonition_type: block.admonition_type
@@ -97,7 +103,12 @@ function createTableBlock(block, displayIndex) {
     `;
 }
 
-// Parse table content and create PatternFly HTML table structure
+/**
+ * Parse table content and create PatternFly HTML table structure
+ * Enhanced version with multiple parsing strategies
+ * @param {Object} block - The table block data
+ * @returns {string} HTML string for the table content
+ */
 function parseTableContent(block) {
     // If the block has raw content that looks like AsciiDoc table format
     if (block.raw_content && block.raw_content.includes('|===')) {
@@ -133,7 +144,11 @@ function parseTableContent(block) {
     `;
 }
 
-// Parse AsciiDoc table format from raw content
+/**
+ * Parse AsciiDoc table format from raw content
+ * @param {string} rawContent - Raw AsciiDoc table content
+ * @returns {string} HTML table structure
+ */
 function parseAsciiDocTable(rawContent) {
     try {
         // Extract table content between |=== markers
@@ -185,7 +200,11 @@ function parseAsciiDocTable(rawContent) {
     }
 }
 
-// Parse structured table from children blocks (if parser provides table_row/table_cell)
+/**
+ * Parse structured table from children blocks (if parser provides table_row/table_cell)
+ * @param {Array} children - Array of child blocks
+ * @returns {string} HTML table structure
+ */
 function parseStructuredTable(children) {
     const rows = [];
     
@@ -203,7 +222,11 @@ function parseStructuredTable(children) {
     return generatePatternFlyTable(rows, true);
 }
 
-// Parse simple table format (fallback)
+/**
+ * Parse simple table format (fallback)
+ * @param {string} content - Simple table content
+ * @returns {string} HTML table structure
+ */
 function parseSimpleTable(content) {
     if (!content) {
         return `
@@ -250,7 +273,12 @@ function parseSimpleTable(content) {
     return generatePatternFlyTable(rows, true);
 }
 
-// Generate PatternFly HTML table from rows array
+/**
+ * Generate PatternFly HTML table from rows array
+ * @param {Array} rows - Array of row arrays
+ * @param {boolean} hasHeader - Whether first row should be treated as header
+ * @returns {string} HTML table structure
+ */
 function generatePatternFlyTable(rows, hasHeader = false) {
     if (rows.length === 0) {
         return `
@@ -294,4 +322,51 @@ function generatePatternFlyTable(rows, hasHeader = false) {
     
     html += '</table>';
     return html;
+}
+
+/**
+ * Safely render table cell content with proper HTML escaping
+ * @param {string} cellContent - Raw cell content
+ * @returns {string} Safe HTML content
+ */
+function renderSafeTableCellHtml(cellContent) {
+    if (!cellContent || cellContent.trim() === '') {
+        return '<span style="color: var(--pf-v5-global--Color--200); font-style: italic;">Empty</span>';
+    }
+    
+    const escaped = escapeHtml(cellContent.trim());
+    
+    // Add some basic formatting for common patterns
+    let formatted = escaped;
+    
+    // Make URLs clickable (simple pattern)
+    formatted = formatted.replace(
+        /(https?:\/\/[^\s]+)/g,
+        '<a href="$1" target="_blank" class="pf-v5-c-button pf-m-link pf-m-inline">$1</a>'
+    );
+    
+    return formatted;
+}
+
+/**
+ * Check if this module can handle the given block type
+ * @param {Object} block - Block to check
+ * @returns {boolean} True if this module can handle the block
+ */
+function canHandleTable(block) {
+    return block.block_type === 'table';
+}
+
+// Export functions for module system
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        createTableBlockElement,
+        parseTableContent,
+        parseAsciiDocTable,
+        parseStructuredTable,
+        parseSimpleTable,
+        generatePatternFlyTable,
+        renderSafeTableCellHtml,
+        canHandleTable
+    };
 } 

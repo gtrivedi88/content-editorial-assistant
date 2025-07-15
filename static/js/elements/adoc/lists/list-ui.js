@@ -1,9 +1,15 @@
 /**
- * Complex Block Creators Module - List and Table Creation (PatternFly Version)
+ * AsciiDoc List Element UI Module
+ * Handles rendering of ordered and unordered lists
  */
 
-// Create a list block with proper formatting using PatternFly List
-function createListBlock(block, displayIndex) {
+/**
+ * Create a list block display
+ * @param {Object} block - The list block data
+ * @param {number} displayIndex - Display index for the block
+ * @returns {string} HTML string for the list block
+ */
+function createListBlockElement(block, displayIndex) {
     const isOrdered = block.block_type === 'ordered_list';
     let totalIssues = block.errors ? block.errors.length : 0;
     if (block.children) {
@@ -48,9 +54,9 @@ function createListBlock(block, displayIndex) {
             ${block.errors && block.errors.length > 0 ? `
             <div class="pf-v5-c-card__footer">
                 <div class="pf-v5-c-content">
-                    <h6>List-Level Issues:</h6>
+                    <h3 class="pf-v5-c-title pf-m-md">List Structure Issues:</h3>
                     <div class="pf-v5-l-stack pf-m-gutter">
-                        ${(block.errors || []).map(error => createInlineError(error)).join('')}
+                        ${block.errors.map(error => createInlineError(error)).join('')}
                     </div>
                 </div>
             </div>` : ''}
@@ -58,25 +64,19 @@ function createListBlock(block, displayIndex) {
     `;
 }
 
-// Create a placeholder for the table block
-function createTableBlock(block, displayIndex) {
-    return `
-        <div class="pf-v5-c-card pf-m-compact pf-m-bordered-top" id="block-${displayIndex}">
-            <div class="pf-v5-c-card__header">
-                <div class="pf-v5-c-card__header-main">
-                    <i class="fas fa-table pf-v5-u-mr-sm"></i>
-                    <span class="pf-v5-u-font-weight-bold">BLOCK ${displayIndex + 1}: TABLE</span>
-                </div>
-            </div>
-            <div class="pf-v5-c-card__body">
-                <div class="pf-v5-c-empty-state pf-m-sm">
-                    <div class="pf-v5-c-empty-state__content">
-                        <i class="fas fa-table pf-v5-c-empty-state__icon"></i>
-                        <h3 class="pf-v5-c-title pf-m-md">Table Block</h3>
-                        <div class="pf-v5-c-empty-state__body">Full table rendering is supported. This content will be displayed in a PatternFly table.</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
+/**
+ * Check if this module can handle the given block type
+ * @param {Object} block - Block to check
+ * @returns {boolean} True if this module can handle the block
+ */
+function canHandleList(block) {
+    return block.block_type === 'ordered_list' || block.block_type === 'unordered_list';
 }
+
+// Export functions for module system
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        createListBlockElement,
+        canHandleList
+    };
+} 
