@@ -3,6 +3,68 @@
 require 'asciidoctor'
 require 'json'
 
+def preprocess_header(content)
+  """
+  Pre-processes the AsciiDoc content to make the header parsing more lenient.
+  It removes blank lines within the header block (from the title until the
+  first non-header content) before passing it to the main Asciidoctor parser.
+  This makes the parser more forgiving to users adding extra newlines.
+  """
+  lines = content.lines
+  processed_lines = []
+  state = :seeking_title
+
+  lines.each_with_index do |line, index|
+    stripped_line = line.strip
+
+    case state
+    when :seeking_title
+      # We are looking for the document title to start header processing.
+      processed_lines << line
+      if stripped_line.start_with?('= ')
+        state = :in_header
+      elsif !stripped_line.empty? && !stripped_line.start_with?('//')
+        # The first significant line is not a title, so there's no header to process.
+        # We append the rest of the file and stop processing.
+        processed_lines.concat(lines[(index + 1)..-1])
+        return processed_lines.join
+      end
+    when :in_header
+      # We are inside the header block. We will strip blank lines here.
+      is_attribute = stripped_line.match?(/^:[^:]+:/)
+      is_comment = stripped_line.start_with?('//')
+      is_blank = stripped_line.empty?
+
+      # Heuristic to detect the start of the document body.
+      # This includes section titles, block delimiters, list items, etc.
+      is_body_block = stripped_line.start_with?('==', '----', '****', '|===', '++++', '[', '*') || stripped_line.match?(/^\.[\w\s]+/)
+
+      if is_blank
+        # Forgive the user for adding a blank line by skipping it.
+        next
+      elsif is_attribute || is_comment
+        # This is an attribute or a comment, still part of the header.
+        processed_lines << line
+      elsif !is_body_block
+        # This line doesn't look like a body block, so we assume it's
+        # an author or revision line, which is part of the header.
+        processed_lines << line
+      else
+        # This line marks the beginning of the body.
+        # Stop header processing and switch to copying all subsequent lines as-is.
+        state = :in_body
+        processed_lines << line
+      end
+    when :in_body
+      # We are in the main document body, so we preserve all lines, including blanks.
+      processed_lines << line
+    end
+  end
+
+  processed_lines.join
+end
+
+
 def extract_block_info(block, level = 0)
   # Extract content using simple approach
   content = ''
@@ -223,8 +285,11 @@ end
 
 def parse_asciidoc(content)
   begin
-    # Parse the document
-    doc = Asciidoctor.load(content, 
+    # Pre-process the content to handle blank lines in the header forgivingly
+    processed_content = preprocess_header(content)
+
+    # Parse the document - AsciiDoctor handles header/body separation automatically
+    doc = Asciidoctor.load(processed_content, 
       sourcemap: true, 
       safe: :unsafe,
       parse_header_only: false,
@@ -259,8 +324,12 @@ def parse_asciidoc(content)
       result['blocks'] << title_block
     end
     
-    # Extract all blocks from the document
+    # Extract blocks from the document body only (AsciiDoctor separates header automatically)
     doc.blocks.each do |block|
+      # AsciiDoctor should already exclude header content from doc.blocks
+      # Only skip blocks that are clearly empty or whitespace-only
+      next if block_is_empty_or_whitespace(block)
+      
       block_info = extract_block_info(block)
       result['blocks'] << block_info if block_info
     end
@@ -275,6 +344,22 @@ def parse_asciidoc(content)
       'error' => e.message
     }
   end
+end
+
+def block_is_empty_or_whitespace(block)
+  """Check if a block is empty or contains only whitespace."""
+  
+  # Trust AsciiDoctor for most block types
+  return false unless block.context == :paragraph
+  
+  # For paragraphs, check if content is effectively empty
+  content = block.content.to_s.strip
+  return true if content.empty?
+  
+  # Check if it's just whitespace or very short non-meaningful content
+  return true if content.length <= 3 && content.match?(/^[\s\-\.\:]*$/)
+  
+  false
 end
 
 # Main execution
@@ -299,4 +384,4 @@ if __FILE__ == $0
     File.write(output_file, JSON.generate(error_result))
     exit 1
   end
-end 
+end

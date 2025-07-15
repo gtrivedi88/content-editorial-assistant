@@ -43,13 +43,24 @@ class HeadingsRule(BaseStructureRule):
                 ))
 
             # --- Rule 2: Use sentence-style capitalization ---
-            # This logic remains sound.
+            # Enhanced logic to catch more headline-style patterns
             words = sentence.split()
             if len(words) >= 2:
                 words_after_first = words[1:]
-                title_cased_words = [word for word in words_after_first if word.istitle() and not word.isupper()]
                 
-                if len(words) == 2 and len(title_cased_words) > 0:
+                # Traditional title-case words (first letter upper, rest lower)
+                traditional_title_words = [word for word in words_after_first if word.istitle() and not word.isupper()]
+                
+                # Mixed-case words that might be improper capitalization (like "AsciiDoc", "iPhone", etc.)
+                mixed_case_words = [word for word in words_after_first 
+                                  if not word.islower() and not word.isupper() and not word.istitle() 
+                                  and any(c.isupper() for c in word[1:])]
+                
+                # All potentially problematic capitalized words
+                all_problematic_words = traditional_title_words + mixed_case_words
+                
+                # Check for 2-word headings with obvious title case
+                if len(words) == 2 and len(traditional_title_words) > 0:
                     if doc and len(doc) > 1 and doc[1].pos_ == 'NOUN':
                         errors.append(self._create_error(
                             sentence=sentence, sentence_index=i,
@@ -57,13 +68,27 @@ class HeadingsRule(BaseStructureRule):
                             suggestions=[f"Use lowercase for common words: '{words[0]} {words[1].lower()}'"],
                             severity='low'
                         ))
-                elif len(words) > 2 and len(title_cased_words) > len(words) / 3:
-                    errors.append(self._create_error(
-                        sentence=sentence, sentence_index=i,
-                        message="Headings should use sentence-style capitalization, not headline-style.",
-                        suggestions=["Capitalize only the first word and any proper nouns in the heading."],
-                        severity='low'
-                    ))
+                
+                # Check for longer headings with too many capitalized words
+                elif len(words) > 2:
+                    # More sensitive threshold - if more than 1/3 of words after first are capitalized
+                    threshold = max(1, len(words) / 3)  # At least 1 word, but scale with length
+                    
+                    if len(all_problematic_words) > threshold:
+                        # Provide specific suggestions based on what we found
+                        suggestions = ["Capitalize only the first word and any proper nouns in the heading."]
+                        
+                        # Add specific suggestion if we found mixed-case words
+                        if mixed_case_words:
+                            mixed_examples = ', '.join(mixed_case_words[:2])  # Show first 2 examples
+                            suggestions.append(f"Consider if words like '{mixed_examples}' are proper nouns that need to stay capitalized.")
+                        
+                        errors.append(self._create_error(
+                            sentence=sentence, sentence_index=i,
+                            message="Headings should use sentence-style capitalization, not headline-style.",
+                            suggestions=suggestions,
+                            severity='low'
+                        ))
 
             # --- Rule 3: Avoid question-style headings ---
             if sentence.strip().endswith('?'):

@@ -245,8 +245,8 @@ class StructuralAnalyzer:
                 # Get content, handling different block types appropriately
                 content = BlockProcessor.get_block_display_content(block)
                 
-                # Skip blocks that truly have no content
-                if not content.strip():
+                # Enhanced filtering for blocks that should be skipped
+                if self._should_skip_block_enhanced(block, content):
                     continue
                 
                 # Determine block type (check for synthetic type first)
@@ -286,6 +286,34 @@ class StructuralAnalyzer:
             logger.error(f"Error creating structural blocks with analysis: {e}")
             
         return structural_blocks
+
+    def _should_skip_block_enhanced(self, block, content: str) -> bool:
+        """Enhanced block filtering to skip non-content blocks and whitespace."""
+        # Skip blocks with no meaningful content
+        if not content or not content.strip():
+            return True
+        
+        # Skip blocks that contain only whitespace, colons, or attribute-like content
+        stripped_content = content.strip()
+        if (len(stripped_content) <= 3 and 
+            all(c in ' \t\n\r:' for c in stripped_content)):
+            return True
+        
+        # Skip blocks that look like attribute entries (pattern: :key: value)
+        if (stripped_content.startswith(':') and 
+            stripped_content.count(':') >= 2 and 
+            len(stripped_content.split()) <= 4):
+            return True
+        
+        # Use the block's built-in skip logic
+        if hasattr(block, 'should_skip_analysis') and block.should_skip_analysis():
+            return True
+        
+        # Skip blocks with only punctuation or symbols
+        if all(not c.isalnum() for c in stripped_content.replace(' ', '')):
+            return True
+        
+        return False
     
     def _analyze_without_structure(self, text: str, sentences: List[str], analysis_mode: AnalysisMode) -> List[ErrorDict]:
         """Fall back to traditional text-based analysis."""

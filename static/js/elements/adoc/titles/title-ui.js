@@ -34,7 +34,7 @@ function createTitleBlock(block, displayIndex) {
             </div>
             <div class="pf-v5-c-card__body">
                 <div class="pf-v5-u-p-md pf-v5-u-background-color-200" style="white-space: pre-wrap; word-wrap: break-word; border-radius: var(--pf-v5-global--BorderRadius--sm);">
-                    ${level === 0 ? '= ' : '='.repeat(level + 1) + ' '}${escapeHtml(block.content)}
+                    ${escapeHtml(block.content)}
                 </div>
             </div>
             ${issueCount > 0 ? `

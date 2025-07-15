@@ -134,8 +134,12 @@ class AsciiDocParser:
             parent: Parent block if any
             
         Returns:
-            AsciiDocBlock or None if conversion fails
+            AsciiDocBlock or None if conversion fails or block should be skipped
         """
+        # Enhanced filtering for non-content blocks
+        if self._should_skip_block_data(block_data):
+            return None
+        
         # Get block context and map to enum type dynamically
         context = block_data.get('context', '')
         
@@ -229,4 +233,28 @@ class AsciiDocParser:
             if child_block:
                 block.children.append(child_block)
         
-        return block 
+        return block
+    
+    def _should_skip_block_data(self, block_data: Dict[str, Any]) -> bool:
+        """Check if block data should be skipped during parsing."""
+        context = block_data.get('context', '')
+        content = block_data.get('content', '')
+        
+        # Skip attribute entries
+        if context == 'attribute_entry':
+            return True
+        
+        # Skip blocks with no meaningful content
+        if not content or not content.strip():
+            return True
+        
+        # Skip whitespace-only content
+        stripped_content = content.strip()
+        if len(stripped_content) <= 2 and all(c in ' \t\n\r' for c in stripped_content):
+            return True
+        
+        # Skip blocks that are just punctuation
+        if all(not c.isalnum() for c in stripped_content.replace(' ', '')):
+            return True
+        
+        return False 
