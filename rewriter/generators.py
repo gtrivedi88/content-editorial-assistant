@@ -51,7 +51,8 @@ class TextGenerator:
                 result = response.json()
                 generated_text = result.get('response', '').strip()
                 
-                logger.info(f"Raw Ollama response: '{generated_text}'")
+                logger.info(f"✅ Raw Ollama response: '{generated_text}'")
+                logger.info(f"📊 Ollama response length: {len(generated_text)} chars vs original: {len(original_text)} chars")
                 
                 return generated_text if generated_text else original_text
             else:

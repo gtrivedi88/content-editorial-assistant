@@ -5,10 +5,10 @@
 rules:
   # PRIMARY COMMAND for critical structure and format fixes.
   structure_priority:
-    primary_command: "FIRST, apply these CRITICAL structure and format fixes: 1) Ensure all headings use sentence-style capitalization and have no ending period. 2) Ensure all procedural steps begin with a strong, imperative command verb."
+    primary_command: "CRITICAL: Output ONLY the corrected text. NO introductions like 'Here is', NO explanations, NO commentary, NO extra words. Just return the fixed text directly."
 
   headings:
-    instruction: "Fix issues in headings. Headings must use sentence-style capitalization (only the first word and proper nouns are capitalized) and must not end with a period."
+    instruction: "Fix heading issues. CRITICAL REQUIREMENTS: 1) Use sentence-style capitalization (only first word and proper nouns capitalized). 2) Avoid starting with gerunds like 'Configuring', 'Understanding', 'Managing' - use direct nouns instead (e.g., 'Configuration', 'Understanding' → 'Overview', 'Managing' → 'Management'). 3) No ending periods. IMPORTANT: Return ONLY the corrected heading text with no explanations, notes, or commentary."
 
   lists:
     instruction: "Ensure all items in a list are grammatically parallel. For example, if the first item starts with a verb, all subsequent items should also start with a verb."

@@ -176,31 +176,75 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter):
             def progress_callback(step, status, detail, progress):
                 emit_progress(session_id, step, status, detail, progress)
             
-            # Get system info for AI rewriter configuration
-            system_info = ai_rewriter.get_system_info()
-            model_info = system_info.get('model_info', {})
+            # Check if we have the structural rewriter
+            if hasattr(ai_rewriter, 'rewrite_document_with_structure_preservation'):
+                # Use structural rewriter for better document handling
+                emit_progress(session_id, 'structural_rewrite', 'Using structural document rewriter...',
+                             'Preserving document format and structure', 10)
+                
+                # Detect format from content
+                format_hint = 'asciidoc' if content.strip().startswith('=') else 'auto'
+                
+                rewrite_result = ai_rewriter.rewrite_document_with_structure_preservation(
+                    content=content,
+                    filename="",
+                    format_hint=format_hint,
+                    style_errors=errors
+                )
+                
+                if rewrite_result.get('error'):
+                    emit_completion(session_id, False, error=rewrite_result['error'])
+                    return jsonify({'error': rewrite_result['error']}), 500
+                
+                # Map structural rewriter results to expected format
+                response_data = {
+                    'success': True,
+                    'original': content,
+                    'rewritten': rewrite_result.get('rewritten_document', ''),
+                    'rewritten_text': rewrite_result.get('rewritten_document', ''),
+                    'improvements': rewrite_result.get('overall_improvements', []),
+                    'confidence': rewrite_result.get('overall_confidence', 0.0),
+                    'model_used': f"structural_{rewrite_result.get('parsing_method', 'unknown')}",
+                    'pass_number': 1,
+                    'can_refine': True,
+                    'original_errors': errors,
+                    'session_id': session_id,
+                    'blocks_processed': rewrite_result.get('blocks_processed', 0),
+                    'parsing_method': rewrite_result.get('parsing_method', 'unknown'),
+                    'structural_parsing_used': True
+                }
+            else:
+                # Fallback to simple rewriter
+                emit_progress(session_id, 'fallback_rewrite', 'Using fallback rewriter...',
+                             'Simple text-based rewriting', 10)
+                
+                # Get system info for AI rewriter configuration
+                system_info = ai_rewriter.get_system_info()
+                model_info = system_info.get('model_info', {})
+                
+                rewrite_result = ai_rewriter.rewrite(content, errors, context)
+                
+                # Add pass number and refinement capability
+                rewrite_result['pass_number'] = 1
+                rewrite_result['can_refine'] = True
+                
+                response_data = {
+                    'success': True,
+                    'original': content,
+                    'rewritten': rewrite_result.get('rewritten_text', ''),
+                    'rewritten_text': rewrite_result.get('rewritten_text', ''),
+                    'improvements': rewrite_result.get('improvements', []),
+                    'confidence': rewrite_result.get('confidence', 0.0),
+                    'model_used': rewrite_result.get('model_used', 'unknown'),
+                    'pass_number': rewrite_result.get('pass_number', 1),
+                    'can_refine': rewrite_result.get('can_refine', False),
+                    'original_errors': errors,
+                    'session_id': session_id,
+                    'structural_parsing_used': False
+                }
             
-            # For simple fallback, we don't need to recreate the rewriter
-            # Just use the existing one
-            rewrite_result = ai_rewriter.rewrite(content, errors, context)
-            
-            # Add pass number and refinement capability
-            rewrite_result['pass_number'] = 1
-            rewrite_result['can_refine'] = True  # Allow refinement for pass 2
-            
-            return jsonify({
-                'success': True,
-                'original': content,
-                'rewritten': rewrite_result.get('rewritten_text', ''),
-                'rewritten_text': rewrite_result.get('rewritten_text', ''),
-                'improvements': rewrite_result.get('improvements', []),
-                'confidence': rewrite_result.get('confidence', 0.0),
-                'model_used': rewrite_result.get('model_used', 'unknown'),
-                'pass_number': rewrite_result.get('pass_number', 1),
-                'can_refine': rewrite_result.get('can_refine', False),
-                'original_errors': errors,  # Store for potential Pass 2
-                'session_id': session_id  # Return session_id to frontend
-            })
+            emit_completion(session_id, True, data=response_data)
+            return jsonify(response_data)
             
         except Exception as e:
             logger.error(f"Rewrite error: {str(e)}")

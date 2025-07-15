@@ -34,21 +34,22 @@ class HeaderBuilder:
         self.include_attributes = include_attributes
         self.logger = logging.getLogger(__name__)
     
-    def build_header(self, document: Any, original_content: str = "") -> str:
+    def build_header(self, document: Any, original_content: str = "", rewritten_title: Optional[str] = None) -> str:
         """
         Build complete AsciiDoc header from document metadata.
         
         Args:
             document: Parsed AsciiDoc document
             original_content: Original document content for fallback
+            rewritten_title: Optional rewritten document title to use instead of original
             
         Returns:
             Formatted AsciiDoc header string
         """
         header_parts = []
         
-        # Build document title
-        title_part = self._build_document_title(document)
+        # Build document title (use rewritten title if available)
+        title_part = self._build_document_title(document, rewritten_title)
         if title_part:
             header_parts.append(title_part)
         
@@ -71,16 +72,21 @@ class HeaderBuilder:
         # Fallback: extract from original content
         return self._extract_header_from_original(original_content)
     
-    def _build_document_title(self, document: Any) -> Optional[str]:
+    def _build_document_title(self, document: Any, rewritten_title: Optional[str] = None) -> Optional[str]:
         """
         Build the document title line.
         
         Args:
             document: Parsed document
+            rewritten_title: Optional rewritten title to use instead of original
             
         Returns:
             Formatted document title or None
         """
+        # Use rewritten title if provided
+        if rewritten_title:
+            return f"= {rewritten_title}"
+        
         # Try to get title from document object
         title = None
         

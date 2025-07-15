@@ -94,10 +94,12 @@ class AsciiDocReconstructor(BaseReconstructor):
             # Extract block mapping
             block_mapping = self._extract_block_mapping(block_results)
             
-            # Build document header
+            # Build document header with rewritten content
             header_content = ""
             if self.preserve_metadata:
-                header_content = self.header_builder.build_header(document)
+                # Find rewritten title if available
+                rewritten_title = self._find_rewritten_title(block_results)
+                header_content = self.header_builder.build_header(document, "", rewritten_title)
             
             # Format individual blocks and build content directly
             body_parts = []
@@ -208,16 +210,35 @@ class AsciiDocReconstructor(BaseReconstructor):
         
         # Create mapping from block results for quick lookup
         block_content_map = {}
+        rewritten_blocks = set()  # Track which blocks have been rewritten
+        
         for i, result in enumerate(block_results):
             if hasattr(result, 'original_block') and hasattr(result, 'rewritten_content'):
-                block_content_map[id(result.original_block)] = result.rewritten_content
+                block_id = id(result.original_block)
+                block_content_map[block_id] = result.rewritten_content
+                rewritten_blocks.add(block_id)
+                logger.info(f"Mapping block {i} to rewritten content: '{result.rewritten_content[:50]}...'")
         
-        # Process document blocks hierarchically
+        # Process document blocks hierarchically - only include rewritten content
         if hasattr(document, 'blocks'):
             for block in document.blocks:
-                block_content = self._process_structured_block(block, block_content_map)
-                if block_content:
-                    content_parts.append(block_content)
+                block_id = id(block)
+                
+                # Only process blocks that have been rewritten
+                if block_id in rewritten_blocks:
+                    # Skip document titles (level 0 headings) since they're already in the header
+                    if self._is_document_title(block):
+                        logger.info(f"Skipping document title from body (already in header): {self._get_block_type(block)}")
+                        continue
+                    
+                    rewritten_content = block_content_map[block_id]
+                    formatted_block = self.content_formatter.format_block(block, rewritten_content)
+                    if formatted_block:
+                        content_parts.append(formatted_block)
+                        logger.info(f"Added rewritten block: '{formatted_block[:50]}...'")
+                else:
+                    # Skip blocks that weren't rewritten (like attributes, metadata)
+                    logger.info(f"Skipping non-rewritten block: {self._get_block_type(block)}")
         
         return content_parts
     
@@ -259,6 +280,38 @@ class AsciiDocReconstructor(BaseReconstructor):
                 parts.extend(child_parts)
         
         return "\n".join(parts) if parts else ""
+    
+    def _find_rewritten_title(self, block_results: List[Any]) -> Optional[str]:
+        """Find rewritten title from block results."""
+        for result in block_results:
+            if hasattr(result, 'original_block') and hasattr(result, 'rewritten_content'):
+                block = result.original_block
+                if self._is_document_title(block):
+                    return result.rewritten_content
+        return None
+    
+    def _is_document_title(self, block: Any) -> bool:
+        """Check if a block is a document title (level 0 heading)."""
+        if hasattr(block, 'block_type') and hasattr(block.block_type, 'value'):
+            if block.block_type.value == 'heading':
+                # Check if this is the document title (level 0)
+                level = getattr(block, 'level', 1)
+                return level == 0
+        return False
+    
+    def _get_block_type(self, block: Any) -> str:
+        """Get the block type string."""
+        if hasattr(block, 'block_type'):
+            if hasattr(block.block_type, 'value'):
+                return block.block_type.value
+            else:
+                return str(block.block_type)
+        
+        # Fallback: try to infer from other attributes
+        if hasattr(block, 'context'):
+            return block.context
+        
+        return 'unknown'
     
     def get_reconstruction_options(self) -> Dict[str, Any]:
         """

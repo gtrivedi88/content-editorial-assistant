@@ -8,7 +8,7 @@ rules:
     # This more nuanced command tells the AI to distinguish between instructions
     # (which should be second person) and descriptions (which should be third person).
     # This prevents the AI from over-correcting and changing the meaning of the text.
-    primary_command: "FIRST, apply these CRITICAL language and grammar fixes: 1) Rewrite the text to address the user directly. Use the second person ('you') for all instructions or actions the user should take. Remove first-person pronouns like 'we' and 'our'. For descriptive statements about how a system or framework behaves on its own, maintain the third person. 2) Convert all passive voice to active voice."
+    primary_command: "CRITICAL: Return ONLY the corrected text with NO explanations. Apply these fixes: 1) Use second person ('you') for instructions, third person for system descriptions. Remove 'we', 'our'. 2) Convert passive to active voice."
 
   abbreviations:
     instruction: "Fix issues with abbreviations. Do not use Latin abbreviations like 'e.g.' or 'i.e.'; use their English equivalents. Spell out unfamiliar abbreviations on first use."
@@ -23,7 +23,7 @@ rules:
     instruction: "Correct any article errors, ensuring 'a' is used before consonant sounds and 'an' is used before vowel sounds."
 
   capitalization:
-    instruction: "Apply sentence-style capitalization. Do not use headline-style capitalization for headings or titles. Only capitalize the first word and any proper nouns."
+    instruction: "Apply sentence-style capitalization. Only capitalize the first word and proper nouns. Return ONLY the corrected text."
 
   conjunctions:
     instruction: "Ensure conjunctions are used correctly. For example, use 'since' only to refer to time (not as a replacement for 'because') and 'while' only to refer to a period of time (not as a replacement for 'although')."

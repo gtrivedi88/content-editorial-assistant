@@ -126,27 +126,26 @@ def initialize_services():
         services['style_analyzer_available'] = False
         logger.warning(f"⚠️ Style analyzer not available - {e}")
     
-    # Initialize AI Rewriter
+    # Initialize AI Rewriter (use structural version for better document handling)
     try:
-        from rewriter import AIRewriter
+        from src.format_aware_ai_rewriter import StructuralAIRewriter
         from src.config import Config
         
         # Get AI configuration
         ai_config = Config.get_ai_config()
         
         # Initialize with proper configuration
-        services['ai_rewriter'] = AIRewriter(
-            model_name=ai_config['hf_model_name'],
+        services['ai_rewriter'] = StructuralAIRewriter(
             use_ollama=ai_config['use_ollama'],
             ollama_model=ai_config['ollama_model']
         )
         services['ai_rewriter_available'] = True
-        logger.info("✅ AIRewriter imported successfully")
+        logger.info("✅ StructuralAIRewriter imported successfully")
         logger.info(f"AI Model: {'Ollama (' + ai_config['ollama_model'] + ')' if ai_config['use_ollama'] else 'HuggingFace'}")
     except ImportError as e:
         services['ai_rewriter'] = SimpleAIRewriter()
         services['ai_rewriter_available'] = False
-        logger.warning(f"⚠️ AI rewriter not available - {e}")
+        logger.warning(f"⚠️ Structural AI rewriter not available - {e}")
     
     return services
 

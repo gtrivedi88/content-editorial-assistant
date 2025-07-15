@@ -24,18 +24,25 @@ class TextProcessor:
             return original_text
         
         cleaned = generated_text.strip()
-        logger.info(f"Raw AI response: '{cleaned[:200]}...'")
+        logger.info(f"🔧 Processing raw AI response: '{cleaned[:100]}...'")
+        logger.info(f"📊 Raw response length: {len(cleaned)} chars vs original: {len(original_text)} chars")
         
         # Remove meta-commentary and explanations more aggressively
         
         # First, try to extract content between common delimiters
         # Look for patterns like "Here's the rewritten text:" or "Improved text:"
         content_patterns = [
+            r"corrected heading:\s*(.*?)(?:\s+No changes|\s+The|\s*$)",  # For heading prompts
+            r"here is the rewritten heading:\s*(.*?)(?:\n\*|\*|$)",  # Specific pattern AI is using
+            r"here's the rewritten heading:\s*(.*?)(?:\n\*|\*|$)",
+            r"here is the corrected heading:\s*(.*?)(?:\n\*|\*|$)",
             r"here's the improved version:\s*(.*?)(?:\n\*|\*|$)",
+            r"here is the improved version:\s*(.*?)(?:\n\*|\*|$)",
             r"certainly!\s*here's the rewrite:\s*(.*?)(?:\n\*|\*|$)",
             r"i'll help you improve this:\s*(.*?)(?:\n\*|\*|$)",
             r"let me rewrite this for you:\s*(.*?)(?:\n\*|\*|$)",
             r"here's the rewritten text:\s*(.*?)(?:\n\*|\*|$)",
+            r"here is the rewritten text:\s*(.*?)(?:\n\*|\*|$)",
             r"improved text:\s*(.*?)(?:\n\*|\*|$)",  
             r"rewritten text:\s*(.*?)(?:\n\*|\*|$)",
             r"final version:\s*(.*?)(?:\n\*|\*|$)",
@@ -70,6 +77,9 @@ class TextProcessor:
                 line.lower().startswith('note:') or
                 line.lower().startswith('explanation:') or
                 line.lower().startswith('changes made:') or
+                line.lower().startswith('improved heading:') or
+                line.lower().startswith('better version:') or
+                line.lower().startswith('enhanced:') or
                 'converted' in line.lower() and 'passive' in line.lower() or
                 'replaced' in line.lower() and 'vague' in line.lower()):
                 continue
@@ -83,12 +93,19 @@ class TextProcessor:
         
         # Remove common AI response prefixes
         prefixes_to_remove = [
+            "here is the rewritten heading:",
+            "here's the rewritten heading:",
+            "here is the corrected heading:",
+            "here's the corrected heading:",
             "here's the improved version:",
+            "here is the improved version:",
             "certainly! here's the rewrite:",
             "i'll help you improve this:",
             "let me rewrite this for you:",
             "here is the improved text:",
             "here's the improved text:",
+            "here is the rewritten text:",
+            "here's the rewritten text:",
             "improved text:",
             "rewritten text:",
             "revised text:",
@@ -98,7 +115,6 @@ class TextProcessor:
             "sure, here's",
             "certainly, here's",
             "here's a rewritten version:",
-            "here's the rewritten text:",
             "rewritten:",
             "improved:",
             "final version:",
@@ -173,19 +189,29 @@ class TextProcessor:
         
         logger.info(f"Cleaned AI response: '{cleaned[:200]}...'")
         
-        # Validation
-        if len(cleaned) < 5:
+        # Validation (be less aggressive for short content like headings)
+        if len(cleaned) < 3:
             logger.warning("Generated text too short after cleaning")
             return original_text
         
-        # Check if it's meaningfully different from original
+        # For very short content (like headings), be more lenient about changes
+        if len(original_text.split()) <= 5:  # Short content like headings
+            # Remove common AI additions to headings
+            heading_cleaned = self._clean_heading_additions(cleaned, original_text)
+            
+            # Accept any reasonable change, even small ones
+            if len(heading_cleaned.strip()) >= 2 and heading_cleaned.strip() != original_text.strip():
+                logger.info(f"Accepting heading/short content change: '{original_text}' → '{heading_cleaned}'")
+                return heading_cleaned
+        
+        # Check if it's meaningfully different from original (normal validation)
         if cleaned.lower().strip() == original_text.lower().strip():
             logger.warning("Generated text identical to original after cleaning")
             return original_text
         
-        # Ensure proper sentence endings
-        if cleaned and not cleaned.endswith(('.', '!', '?')):
-            # Find the last complete sentence
+        # Ensure proper sentence endings (but not for headings/short content)
+        if cleaned and not cleaned.endswith(('.', '!', '?')) and len(original_text.split()) > 5:
+            # Only add sentence endings to longer content, not headings
             sentences = re.split(r'[.!?]+', cleaned)
             if len(sentences) > 1:
                 # Take all complete sentences except the last incomplete one
@@ -246,6 +272,100 @@ class TextProcessor:
         except Exception as e:
             logger.error(f"Rule-based rewrite failed: {e}")
             return content
+    
+    def _clean_heading_additions(self, cleaned_text: str, original_text: str) -> str:
+        """
+        Remove common AI additions to headings like 'Improved functionality'.
+        
+        Args:
+            cleaned_text: The cleaned AI response
+            original_text: The original heading text
+            
+        Returns:
+            Heading with AI additions removed
+        """
+        try:
+            # First, handle the specific case where AI adds explanations after the heading
+            result = cleaned_text.strip()
+            
+            # Extract text before explanatory phrases
+            explanatory_patterns = [
+                r"(.+?)\s+No changes were made",
+                r"(.+?)\s+The heading",
+                r"(.+?)\s+This heading",  
+                r"(.+?)\s+I have",
+                r"(.+?)\s+I've",
+                r"(.+?)\s+As requested",
+                r"(.+?)\s+Note:",
+                r"(.+?)\s+\(Note:",
+                r"(.+?)\s+already follows",
+                r"(.+?)\s+meets the",
+                r"(.+?)\s+since it meets",
+                r"(.+?)\s+Let me explain",
+                r"(.+?)\s+Here's why",
+                r"(.+?)\s+The reason",
+                r"(.+?)\s+I made the following changes:?",
+                r"(.+?)\s+The changes made:?",
+                r"(.+?)\s+Changes made:?",
+                r"(.+?)\s+I applied",
+                r"(.+?)\s+I removed",
+                r"(.+?)\s+I fixed",
+                r"(.+?)\s+Key changes:?",
+                r"(.+?)\s+Main changes:?"
+            ]
+            
+            for pattern in explanatory_patterns:
+                match = re.search(pattern, result, re.IGNORECASE)
+                if match:
+                    result = match.group(1).strip()
+                    logger.info(f"Extracted heading before explanation: '{result}'")
+                    break
+            
+            # Common AI additions that should be removed from headings
+            ai_additions = [
+                'improved functionality',
+                'enhanced functionality', 
+                'better version',
+                'improved version',
+                'enhanced version',
+                'updated content',
+                'revised content',
+                'optimized content',
+                'clearer version',
+                'professional version',
+                'improved',
+                'enhanced',
+                'better',
+                'updated',
+                'revised',
+                'optimized',
+                'clearer'
+            ]
+            
+            # Remove these additions from the end of headings
+            for addition in ai_additions:
+                # Remove from end (case insensitive)
+                if result.lower().endswith(addition.lower()):
+                    result = result[:-len(addition)].strip()
+                
+                # Remove from middle/end if preceded by space
+                pattern = f" {addition}"
+                if pattern.lower() in result.lower():
+                    result = re.sub(pattern, '', result, flags=re.IGNORECASE).strip()
+            
+            # Clean up any duplicate spaces
+            result = re.sub(r'\s+', ' ', result).strip()
+            
+            # If we removed everything, return original
+            if not result or len(result) < 2:
+                return original_text
+            
+            logger.info(f"Cleaned heading: '{cleaned_text}' → '{result}'")
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error cleaning heading additions: {e}")
+            return cleaned_text
     
     def validate_text(self, text: str, original_text: str) -> Dict[str, Any]:
         """

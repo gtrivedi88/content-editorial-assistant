@@ -56,22 +56,24 @@ class StructuralAIRewriter:
         )
         self.parser_factory = StructuralParserFactory()
         
-        # Content-type specific prompting strategies
-        self.content_prompts = {
-            ContentType.HEADING: self._get_heading_prompt,
-            ContentType.PARAGRAPH: self._get_paragraph_prompt,
-            ContentType.ADMONITION: self._get_admonition_prompt,
-            ContentType.LIST_ITEM: self._get_list_item_prompt,
-            ContentType.CODE_BLOCK: self._get_code_prompt,
-            ContentType.QUOTE: self._get_quote_prompt,
-            ContentType.TABLE_CELL: self._get_table_cell_prompt
-        }
+        # Initialize style analyzer for SpaCy error detection
+        try:
+            from style_analyzer.core_analyzer import StyleAnalyzer
+            self.style_analyzer = StyleAnalyzer({})  # Pass empty rules dict as required
+            logger.info("✅ StyleAnalyzer loaded for SpaCy error detection")
+        except ImportError as e:
+            logger.warning(f"⚠️ StyleAnalyzer not available: {e}")
+            self.style_analyzer = None
+        except Exception as e:
+            logger.warning(f"⚠️ Error initializing StyleAnalyzer: {e}")
+            self.style_analyzer = None
     
     def rewrite_document_with_structure_preservation(
         self, 
         content: str, 
         filename: str = "",
-        format_hint: Literal['asciidoc', 'markdown', 'auto'] = 'auto'
+        format_hint: Literal['asciidoc', 'markdown', 'auto'] = 'auto',
+        style_errors: Optional[List[Dict[str, Any]]] = None
     ) -> Dict[str, Any]:
         """
         Rewrite document using structural parsing for context-aware improvements.
@@ -80,11 +82,37 @@ class StructuralAIRewriter:
             content: Raw document content
             filename: Optional filename for parsing context
             format_hint: Format hint ('asciidoc', 'markdown', or 'auto')
+            style_errors: Real style analysis errors to fix (instead of mock errors)
             
         Returns:
             Complete rewrite results with preserved structure
         """
         try:
+            # Perform SpaCy analysis if no errors provided
+            if not style_errors and self.style_analyzer:
+                logger.info("No style errors provided, performing SpaCy analysis...")
+                try:
+                    analysis_result = self.style_analyzer.analyze(content, format_hint)
+                    
+                    if analysis_result:
+                        # The StyleAnalyzer returns errors directly in the top-level result, not nested under 'analysis'
+                        style_errors = analysis_result.get('errors', [])
+                        if style_errors:
+                            logger.info(f"SpaCy analysis found {len(style_errors)} errors")
+                        else:
+                            logger.info("SpaCy analysis found no errors")
+                    else:
+                        logger.warning("SpaCy analysis returned no result")
+                        style_errors = []
+                except Exception as e:
+                    logger.error(f"Error during SpaCy analysis: {e}")
+                    style_errors = []
+            elif style_errors:
+                logger.info(f"Using provided style errors: {len(style_errors)} errors")
+            else:
+                logger.info("No style analyzer available and no errors provided")
+                style_errors = []
+            
             # Parse document using structural parser
             if self.base_rewriter.progress_callback:
                 self.base_rewriter.progress_callback(
@@ -126,8 +154,8 @@ class StructuralAIRewriter:
                 
                 logger.info(f"Processing block {i+1}/{len(content_blocks)}: {block.block_type.value}")
                 
-                # Rewrite block with context-aware prompting
-                block_result = self._rewrite_content_block(block)
+                # Rewrite block with context-aware prompting and real errors
+                block_result = self._rewrite_content_block(block, style_errors or [])
                 block_results.append(block_result)
                 
                 total_errors_fixed += block_result.errors_fixed
@@ -189,47 +217,63 @@ class StructuralAIRewriter:
                 'structural_parsing_used': True
             }
     
-    def _rewrite_content_block(self, block) -> BlockRewriteResult:
-        """Rewrite a single content block with type-specific context."""
+    def _rewrite_content_block(self, block, style_errors: List[Dict[str, Any]]) -> BlockRewriteResult:
+        """Rewrite a single content block using SpaCy errors to generate dynamic prompts."""
         try:
             # Determine content type from block type
             content_type = self._map_block_to_content_type(block)
             
-            # Get context-aware prompt strategy
-            prompt_generator = self.content_prompts.get(
-                content_type, 
-                self._get_paragraph_prompt
-            )
+            # Filter errors relevant to this specific block's content
+            block_content = block.get_text_content()
+            relevant_errors = []
             
-            # Generate enhanced prompt with block context
-            enhanced_prompt = prompt_generator(block)
+            for error in style_errors:
+                # Check if this error is relevant to this block
+                error_sentence = error.get('sentence', '')
+                if error_sentence and error_sentence.strip() in block_content:
+                    relevant_errors.append(error)
+                elif content_type == ContentType.HEADING and error.get('type') in ['headings', 'capitalization']:
+                    # For headings, include heading-specific errors even if sentence doesn't match exactly
+                    relevant_errors.append(error)
             
-            # Simulate errors for demonstration (in practice, integrate with style analyzer)
-            mock_errors = self._simulate_block_errors(block)
+            # If no specific errors for this block, skip rewriting
+            if not relevant_errors:
+                logger.info(f"No relevant errors for {content_type.value} block, skipping rewrite")
+                return BlockRewriteResult(
+                    original_block=block,
+                    rewritten_content=block.get_text_content(),
+                    improvements=[],
+                    confidence=1.0,  # No changes needed
+                    content_type=content_type,
+                    errors_fixed=0
+                )
             
-            # Rewrite using AI with enhanced context
-            # Create mock errors for the rewriter (in practice, would use real style analysis)
+            logger.info(f"Processing {content_type.value} block with {len(relevant_errors)} SpaCy errors")
+            
+            # Use base rewriter with SpaCy errors to generate dynamic prompts
+            # This will use the prompt configs in /rewriter/prompt_configs/ to convert errors to prompts
+            # Map content type to appropriate context for prompt generation
+            context = self._map_content_type_to_context(content_type)
+            
             rewrite_result = self.base_rewriter.rewrite(
                 block.get_text_content(), 
-                mock_errors, 
-                "paragraph", 
-                1
+                relevant_errors, 
+                context,  # Use appropriate context for prompt generation
+                1  # Pass 1
             )
             rewritten_content = rewrite_result.get('rewritten_text', block.get_text_content())
             
-            # Extract improvements
-            improvements = self._extract_block_improvements(
-                block.get_text_content(), 
-                rewritten_content, 
-                content_type
-            )
+            # Extract improvements from rewrite result
+            improvements = rewrite_result.get('improvements', [])
+            if not improvements:
+                improvements = self._extract_block_improvements(
+                    block.get_text_content(), 
+                    rewritten_content, 
+                    content_type
+                )
             
-            # Calculate confidence
-            confidence = self._calculate_block_confidence(
-                block.get_text_content(), 
-                rewritten_content, 
-                mock_errors
-            )
+            # Get confidence from rewrite result
+            confidence = rewrite_result.get('confidence', 0.8)
             
             return BlockRewriteResult(
                 original_block=block,
@@ -237,7 +281,7 @@ class StructuralAIRewriter:
                 improvements=improvements,
                 confidence=confidence,
                 content_type=content_type,
-                errors_fixed=len(mock_errors)
+                errors_fixed=len(relevant_errors)
             )
             
         except Exception as e:
@@ -275,149 +319,22 @@ class StructuralAIRewriter:
         # Default fallback
         return ContentType.PARAGRAPH
     
-    def _get_heading_prompt(self, block) -> str:
-        """Generate prompt for heading blocks."""
-        context_info = block.get_context_info()
-        level = context_info.get('level', 1)
-        
-        return f"""
-You are rewriting a document heading (level {level}). Headers should be clear and descriptive.
-
-REQUIREMENTS:
-- Keep this as a concise header/title
-- Use parallel structure with other headers
-- Make purpose immediately clear
-- Avoid unnecessary words
-- Keep under 8 words if possible
-
-ORIGINAL HEADING:
-{block.get_text_content()}
-
-Rewrite this heading to be clearer and more descriptive:
-"""
+    def _map_content_type_to_context(self, content_type: ContentType) -> str:
+        """Map content type to context string for prompt generation."""
+        mapping = {
+            ContentType.HEADING: "heading",
+            ContentType.PARAGRAPH: "paragraph", 
+            ContentType.LIST_ITEM: "list",
+            ContentType.CODE_BLOCK: "code",
+            ContentType.QUOTE: "quote",
+            ContentType.TABLE_CELL: "table",
+            ContentType.ADMONITION: "admonition"
+        }
+        return mapping.get(content_type, "paragraph")
     
-    def _get_paragraph_prompt(self, block) -> str:
-        """Generate prompt for paragraph blocks."""
-        context_info = block.get_context_info()
-        
-        return f"""
-You are rewriting a technical writing paragraph. Focus on clarity and conciseness.
 
-CONTEXT: This is a {context_info.get('block_type', 'paragraph')} in a technical document.
-
-REQUIREMENTS:
-- Convert passive voice to active voice
-- Reduce sentence length (aim for 15-20 words)
-- Eliminate redundant expressions
-- Use precise, concrete language
-- Maintain technical accuracy
-
-ORIGINAL PARAGRAPH:
-{block.get_text_content()}
-
-Rewrite this paragraph to be clearer and more concise:
-"""
     
-    def _get_admonition_prompt(self, block) -> str:
-        """Generate prompt for admonition blocks (notes, warnings, etc.)."""
-        context_info = block.get_context_info()
-        admonition_type = context_info.get('admonition_type', 'NOTE')
-        
-        return f"""
-You are rewriting a {admonition_type} admonition. These provide important supplementary information.
 
-REQUIREMENTS:
-- Keep this as a brief, focused {admonition_type.lower()}
-- Maintain the informational/warning purpose
-- Use direct, clear language
-- Make content scannable
-- Keep sentences under 20 words
-
-ORIGINAL {admonition_type}:
-{block.get_text_content()}
-
-Rewrite this {admonition_type.lower()} to be clearer and more direct:
-"""
-    
-    def _get_list_item_prompt(self, block) -> str:
-        """Generate prompt for list item blocks."""
-        return f"""
-You are rewriting a list item or step. These should be clear and actionable.
-
-REQUIREMENTS:
-- Keep this as a clear, actionable item
-- Use parallel structure with other list items
-- Maintain imperative voice for instructions
-- Be concise and specific
-
-ORIGINAL LIST ITEM:
-{block.get_text_content()}
-
-Rewrite this list item to be clearer and more concise:
-"""
-    
-    def _get_code_prompt(self, block) -> str:
-        """Generate prompt for code blocks (typically preserved)."""
-        return f"""
-This is a code block that should generally be preserved as-is.
-Only minor comment improvements should be considered.
-
-ORIGINAL CODE:
-{block.get_text_content()}
-
-Return the code unchanged unless comments need improvement:
-"""
-    
-    def _get_quote_prompt(self, block) -> str:
-        """Generate prompt for quote blocks."""
-        return f"""
-You are rewriting a blockquote. Maintain the quoted nature while improving clarity.
-
-REQUIREMENTS:
-- Preserve the quote context
-- Improve clarity if needed
-- Maintain the original meaning
-- Keep language appropriate for quotes
-
-ORIGINAL QUOTE:
-{block.get_text_content()}
-
-Improve this quote for clarity while preserving its meaning:
-"""
-    
-    def _get_table_cell_prompt(self, block) -> str:
-        """Generate prompt for table cell content."""
-        return f"""
-You are rewriting table cell content. Keep it concise and scannable.
-
-REQUIREMENTS:
-- Keep content brief and scannable
-- Use clear, direct language
-- Maintain tabular format appropriateness
-- Eliminate unnecessary words
-
-ORIGINAL CELL CONTENT:
-{block.get_text_content()}
-
-Rewrite this table cell content to be clearer and more concise:
-"""
-    
-    def _simulate_block_errors(self, block) -> List[Dict[str, Any]]:
-        """Simulate style errors for demonstration."""
-        errors = []
-        content = block.get_text_content().lower()
-        
-        # Simulate passive voice detection
-        if 'was ' in content or 'were ' in content or 'been ' in content:
-            errors.append({'type': 'passive_voice', 'message': 'Passive voice detected'})
-        
-        # Simulate long sentence detection
-        sentences = re.split(r'[.!?]+', block.get_text_content())
-        for sentence in sentences:
-            if len(sentence.split()) > 25:
-                errors.append({'type': 'sentence_length', 'message': 'Long sentence detected'})
-        
-        return errors
     
     def _extract_block_improvements(self, original: str, rewritten: str, content_type: ContentType) -> List[str]:
         """Extract improvements made to a block."""
@@ -528,6 +445,62 @@ Rewrite this table cell content to be clearer and more concise:
                 reconstructed_blocks.append(rewritten_content)
         
         return '\n\n'.join(reconstructed_blocks)
+
+
+    def get_system_info(self) -> Dict[str, Any]:
+        """Get system information for AI rewriting (compatibility method)."""
+        try:
+            base_info = self.base_rewriter.get_system_info() if hasattr(self.base_rewriter, 'get_system_info') else {}
+            
+            return {
+                'ai_available': True,
+                'model_info': base_info.get('model_info', {}),
+                'structural_parsing_available': True,
+                'reconstructor_available': True,
+                'fallback_available': True
+            }
+        except Exception as e:
+            logger.error(f"Error getting system info: {e}")
+            return {
+                'ai_available': False,
+                'structural_parsing_available': True,
+                'reconstructor_available': True,
+                'fallback_available': True
+            }
+    
+    def rewrite(self, content: str, errors: Optional[List[Dict[str, Any]]] = None, context: str = "sentence") -> Dict[str, Any]:
+        """Compatibility method for simple rewriting (fallback to base rewriter)."""
+        try:
+            if errors is None:
+                errors = []
+            
+            # Use base rewriter for simple rewriting
+            return self.base_rewriter.rewrite(content, errors, context, 1)
+        except Exception as e:
+            logger.error(f"Error in compatibility rewrite: {e}")
+            return {
+                'rewritten_text': content,
+                'improvements': [],
+                'confidence': 0.0,
+                'error': f'Rewrite failed: {str(e)}'
+            }
+    
+    def refine_text(self, content: str, errors: Optional[List[Dict[str, Any]]] = None, context: str = "sentence") -> Dict[str, Any]:
+        """Compatibility method for text refinement (Pass 2)."""
+        try:
+            if errors is None:
+                errors = []
+            
+            # Use base rewriter for refinement
+            return self.base_rewriter.rewrite(content, errors, context, 2)
+        except Exception as e:
+            logger.error(f"Error in text refinement: {e}")
+            return {
+                'rewritten_text': content,
+                'improvements': [],
+                'confidence': 0.0,
+                'error': f'Refinement failed: {str(e)}'
+            }
 
 
 # Backward compatibility alias
