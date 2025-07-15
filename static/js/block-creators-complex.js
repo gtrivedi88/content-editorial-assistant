@@ -317,17 +317,5 @@ function createListTitleBlock(block, displayIndex) {
     `;
 }
 
-// Create simplified table block (table creation is too complex for this limit)
-// Full table implementation will be part of a separate tables-display.js module
-function createTableBlock(block, displayIndex) {
-    return `
-        <div class="table-placeholder mb-4 p-4 border rounded" style="background: #f8f9fa;">
-            <div class="text-center">
-                <i class="fas fa-table fa-2x mb-3" style="color: #6c757d;"></i>
-                <h6>Table Block ${displayIndex + 1}</h6>
-                <p class="text-muted small">Complex table rendering moved to tables-display.js module</p>
-                <div class="badge bg-info">Modularization in Progress</div>
-            </div>
-        </div>
-    `;
-} 
+// Table creation is handled by tables-display.js module
+// The createTableBlock function is defined in tables-display.js and will be called automatically 
