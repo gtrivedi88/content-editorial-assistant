@@ -1,45 +1,203 @@
 # IBM Style Guide - Punctuation Rules
-# This file maps error types from the analyzer to specific, human-readable
-# instructions for the AI Rewriter model, with prioritization.
+# ROBUST CONFIGURATION - Systematic approach with concrete examples for every rule
+# Each rule follows the pattern: primary_command + instruction + transformations + fallback
 
 rules:
-  # PRIMARY COMMAND for critical punctuation fixes. This gives the AI a
-  # high-priority, initial instruction to follow.
+  # GLOBAL PRIMARY COMMAND - applies to all punctuation rules
   punctuation_priority:
-    primary_command: "FIRST, apply these CRITICAL punctuation fixes to ensure the text follows the corporate style guide."
-  
+    primary_command: "CRITICAL: Output ONLY the corrected text. NO introductions, NO explanations. Apply punctuation fixes systematically to ensure corporate style guide compliance."
+
   punctuation_and_symbols:
-    instruction: "Do not use symbols like '&' or '+' in place of words like 'and'."
-  
+    primary_command: "CRITICAL: Output ONLY the corrected text. NO introductions, NO explanations."
+    instruction: "Replace symbols with proper words"
+    transformations:
+      - pattern: "Symbols → words"
+        examples:
+          - "Configure settings & restart → Configure settings and restart"
+          - "Use + to add → Use plus to add"
+          - "User @ login → User at login"
+          - "Settings / preferences → Settings or preferences"
+    fallback: "Replace &, +, @, / with their word equivalents (and, plus, at, or)"
+
   colons:
-    instruction: "Fix incorrect colon usage. Do not place a colon directly after a verb."
+    primary_command: "CRITICAL: Output ONLY the corrected text. NO introductions, NO explanations."
+    instruction: "Fix incorrect colon usage"
+    transformations:
+      - pattern: "Remove colons after verbs"
+        examples:
+          - "Click on: the button → Click the button"
+          - "Navigate to: the folder → Navigate to the folder"
+          - "Configure: the settings → Configure the settings"
+      - pattern: "Proper colon usage → introduce lists or explanations"
+        examples:
+          - "You need three items: username, password, and URL → You need three items: username, password, and URL (correct)"
+          - "The result is: success → The result is success"
+    fallback: "Remove colons after verbs; keep colons only to introduce lists or explanations"
 
   commas:
-    instruction: "Ensure all lists of three or more items use a serial (Oxford) comma before the final conjunction."
+    primary_command: "CRITICAL: Output ONLY the corrected text. NO introductions, NO explanations."
+    instruction: "Apply serial comma rule consistently"
+    transformations:
+      - pattern: "Lists of 3+ items → add serial comma"
+        examples:
+          - "Configure, restart and verify → Configure, restart, and verify"
+          - "Username, password and URL → Username, password, and URL"
+          - "Red, blue and green → Red, blue, and green"
+      - pattern: "Two items → no comma before 'and'"
+        examples:
+          - "Username, and password → Username and password"
+          - "Configure, and restart → Configure and restart"
+    fallback: "Use serial comma for 3+ items, no comma for 2 items"
 
   dashes:
-    instruction: "Do not use em dashes (—) in technical writing; rewrite the sentence using other punctuation."
+    primary_command: "CRITICAL: Output ONLY the corrected text. NO introductions, NO explanations."
+    instruction: "Remove em dashes and restructure sentences"
+    transformations:
+      - pattern: "Em dashes → alternative punctuation"
+        examples:
+          - "The system—which is fast—processes data → The system, which is fast, processes data"
+          - "Configure the settings—this is important → Configure the settings. This is important."
+          - "Three options—save, cancel, or exit → Three options: save, cancel, or exit"
+      - pattern: "Hyphens for compound words (keep these)"
+        examples:
+          - "real-time processing → real-time processing (correct)"
+          - "state-of-the-art → state-of-the-art (correct)"
+    fallback: "Replace em dashes (—) with commas, periods, or colons; keep hyphens for compound words"
 
   ellipses:
-    instruction: "Remove ellipses (...) from the text."
+    primary_command: "CRITICAL: Output ONLY the corrected text. NO introductions, NO explanations."
+    instruction: "Remove ellipses completely"
+    transformations:
+      - pattern: "Ellipses → periods or complete thoughts"
+        examples:
+          - "Click the button... → Click the button."
+          - "The system processes data... → The system processes data."
+          - "Configure settings... then restart → Configure settings, then restart."
+          - "Loading... → Loading"
+    fallback: "Remove all ellipses (...) and end sentences with periods"
 
   exclamation_points:
-    instruction: "CRITICAL: Remove ALL exclamation points (!) and replace them with periods (.)."
+    primary_command: "CRITICAL: Output ONLY the corrected text. NO introductions, NO explanations."
+    instruction: "Replace all exclamation points with periods"
+    transformations:
+      - pattern: "Exclamation points → periods"
+        examples:
+          - "Success! → Success."
+          - "Configuration complete! → Configuration complete."
+          - "Error! Check your settings! → Error. Check your settings."
+          - "Important! → Important."
+    fallback: "Replace ALL exclamation points (!) with periods (.) for professional tone"
 
   hyphens:
-    instruction: "CRITICAL: Fix ALL hyphenation errors. Remove hyphens from prefixes like 'pre-configure' to 'preconfigure'."
-  
+    primary_command: "CRITICAL: Output ONLY the corrected text. NO introductions, NO explanations."
+    instruction: "Fix hyphenation errors, especially prefixes"
+    transformations:
+      - pattern: "Remove hyphens from prefixes"
+        examples:
+          - "pre-configure → preconfigure"
+          - "re-install → reinstall"
+          - "un-install → uninstall"
+          - "anti-virus → antivirus"
+          - "co-operate → cooperate"
+      - pattern: "Keep hyphens for compound adjectives"
+        examples:
+          - "real-time → real-time (correct)"
+          - "high-level → high-level (correct)"
+          - "user-friendly → user-friendly (correct)"
+      - pattern: "Remove hyphens from compound nouns"
+        examples:
+          - "e-mail → email"
+          - "data-base → database"
+          - "web-site → website"
+    fallback: "Remove hyphens from prefixes and compound nouns; keep for compound adjectives"
+
   parentheses:
-    instruction: "Correct punctuation placement around parentheses."
+    primary_command: "CRITICAL: Output ONLY the corrected text. NO introductions, NO explanations."
+    instruction: "Fix punctuation placement around parentheses"
+    transformations:
+      - pattern: "Punctuation placement → outside parentheses"
+        examples:
+          - "Configure settings (see manual.) → Configure settings (see manual)."
+          - "Click Save (or Cancel.) → Click Save (or Cancel)."
+          - "The result (success,) is displayed → The result (success) is displayed."
+      - pattern: "Independent sentences in parentheses → punctuation inside"
+        examples:
+          - "(This is important) → (This is important.)"
+          - "(See the manual) → (See the manual.)"
+    fallback: "Place punctuation outside parentheses unless the parentheses contain a complete sentence"
 
   periods:
-    instruction: "Remove periods from within uppercase abbreviations (e.g., change 'U.S.' to 'US')."
+    primary_command: "CRITICAL: Output ONLY the corrected text. NO introductions, NO explanations."
+    instruction: "Remove periods from abbreviations"
+    transformations:
+      - pattern: "Abbreviations → no internal periods"
+        examples:
+          - "U.S.A. → USA"
+          - "F.A.Q. → FAQ"
+          - "P.D.F. → PDF"
+          - "A.P.I. → API"
+          - "U.R.L. → URL"
+      - pattern: "Keep periods for sentences"
+        examples:
+          - "Configure the settings → Configure the settings."
+          - "The system is ready → The system is ready."
+    fallback: "Remove periods from within abbreviations; keep periods at sentence ends"
 
   quotation_marks:
-    instruction: "Ensure punctuation (like periods and commas) is placed inside closing quotation marks."
+    primary_command: "CRITICAL: Output ONLY the corrected text. NO introductions, NO explanations."
+    instruction: "Place punctuation inside quotation marks"
+    transformations:
+      - pattern: "Periods and commas → inside quotes"
+        examples:
+          - "Click \"Save\". → Click \"Save.\""
+          - "Select \"Options\", then continue → Select \"Options,\" then continue"
+          - "The value is \"true\". → The value is \"true.\""
+      - pattern: "Question marks and exclamations → based on context"
+        examples:
+          - "Did you click \"Save\"? → Did you click \"Save?\""
+          - "Why select \"Cancel\"? → Why select \"Cancel?\""
+    fallback: "Place periods and commas inside quotation marks; other punctuation based on sentence context"
 
   semicolons:
-    instruction: "Avoid semicolons; rewrite complex sentences into shorter, separate sentences."
+    primary_command: "CRITICAL: Output ONLY the corrected text. NO introductions, NO explanations."
+    instruction: "Replace semicolons with separate sentences"
+    transformations:
+      - pattern: "Semicolons → periods (separate sentences)"
+        examples:
+          - "Configure settings; restart system → Configure settings. Restart system."
+          - "Save your work; close the application → Save your work. Close the application."
+          - "Click Save; then click Exit → Click Save. Then click Exit."
+      - pattern: "Semicolons in lists → commas or restructure"
+        examples:
+          - "Use these: option A; option B; option C → Use these options: A, B, and C"
+          - "First, configure; second, test; third, deploy → First, configure. Second, test. Third, deploy."
+    fallback: "Replace semicolons with periods to create separate sentences"
 
   slashes:
-    instruction: "Do not use a slash (/) to mean 'and/or'; rewrite to clarify the meaning."
+    primary_command: "CRITICAL: Output ONLY the corrected text. NO introductions, NO explanations."
+    instruction: "Replace slashes with clear alternatives"
+    transformations:
+      - pattern: "And/or → specific choice"
+        examples:
+          - "Save and/or close → Save or close"
+          - "Username and/or email → Username or email"
+          - "Configure and/or restart → Configure, restart, or both"
+      - pattern: "Either/or → 'either...or'"
+        examples:
+          - "Select option A/B → Select either option A or option B"
+          - "Use method 1/2 → Use either method 1 or method 2"
+      - pattern: "File paths → keep slashes"
+        examples:
+          - "/home/user/documents → /home/user/documents (correct)"
+          - "C:/Program Files → C:/Program Files (correct)"
+    fallback: "Replace and/or with 'or'; keep slashes only in file paths and URLs"
+
+  # UNIVERSAL PUNCTUATION PATTERNS
+  punctuation_fallback:
+    primary_command: "CRITICAL: Output ONLY the corrected text. NO introductions, NO explanations."
+    instruction: "Apply IBM Style Guide punctuation standards"
+    transformations:
+      - pattern: "Consistent punctuation for professional tone"
+      - pattern: "Remove unnecessary punctuation"
+      - pattern: "Use standard punctuation placement"
+    fallback: "Follow conservative punctuation: periods for sentences, commas for lists, remove symbols"

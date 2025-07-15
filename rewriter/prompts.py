@@ -97,7 +97,7 @@ class PromptGenerator:
         current_prompt_length = 0
         MAX_PROMPT_LENGTH = 1500  # Automatic limit to prevent overwhelm
 
-        # SMART PROMPT BUILDING with automatic length management
+        # SMART PROMPT BUILDING with automatic length management - ENHANCED for systematic structure
         for error_type, error_list in error_groups.items():
             rule_config = self.prompt_config.get(error_type)
             if rule_config:
@@ -108,8 +108,19 @@ class PromptGenerator:
                     primary_command = rule_config['primary_command']
                     instruction_text += primary_command + " "
                 
+                # SYSTEMATIC INSTRUCTION BUILDING - handles both old and new formats
                 if 'instruction' in rule_config:
                     instruction_text += rule_config['instruction'] + " "
+                
+                # NEW: Process transformations with examples (systematic approach)
+                if 'transformations' in rule_config:
+                    for transformation in rule_config['transformations']:
+                        if 'pattern' in transformation:
+                            instruction_text += f"Apply: {transformation['pattern']}. "
+                        if 'examples' in transformation:
+                            # Add specific examples from transformations
+                            examples_text = "; ".join(transformation['examples'][:3])  # Limit to 3 examples per pattern
+                            instruction_text += f"Examples: {examples_text}. "
                 
                 # CHECK LENGTH before adding (automatic overflow protection)
                 if current_prompt_length + len(instruction_text) > MAX_PROMPT_LENGTH:
@@ -120,9 +131,32 @@ class PromptGenerator:
                 if 'primary_command' in rule_config and not primary_command:
                     primary_command = rule_config['primary_command']
                 
-                if 'instruction' in rule_config:
-                    specific_instructions.append(rule_config['instruction'])
+                # BUILD SYSTEMATIC INSTRUCTIONS
+                instruction_parts = []
                 
+                # Add main instruction
+                if 'instruction' in rule_config:
+                    instruction_parts.append(rule_config['instruction'])
+                
+                # Add transformation patterns and examples
+                if 'transformations' in rule_config:
+                    for i, transformation in enumerate(rule_config['transformations'][:3]):  # Limit to 3 transformations
+                        if 'pattern' in transformation:
+                            pattern_text = f"Pattern {i+1}: {transformation['pattern']}"
+                            if 'examples' in transformation:
+                                examples = transformation['examples'][:2]  # Limit to 2 examples per pattern
+                                pattern_text += f" (e.g., {'; '.join(examples)})"
+                            instruction_parts.append(pattern_text)
+                
+                # Add fallback guidance
+                if 'fallback' in rule_config:
+                    instruction_parts.append(f"Fallback: {rule_config['fallback']}")
+                
+                # Combine all instruction parts
+                if instruction_parts:
+                    specific_instructions.extend(instruction_parts)
+                
+                # Legacy support for old format
                 if 'instructions' in rule_config:
                     specific_instructions.extend(rule_config['instructions'])
                 

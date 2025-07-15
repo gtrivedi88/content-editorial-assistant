@@ -1,24 +1,102 @@
 # IBM Style Guide - Structure and Format Rules
-# This file maps error types from the analyzer to specific, human-readable
-# instructions for the AI Rewriter model, now with prioritization.
+# ROBUST CONFIGURATION - Systematic approach with concrete examples for every rule
+# Each rule follows the pattern: primary_command + instruction + examples + fallback
 
 rules:
-  # PRIMARY COMMAND for critical structure and format fixes.
+  # GLOBAL PRIMARY COMMAND - applies to all structure/format rules
   structure_priority:
     primary_command: "CRITICAL: Output ONLY the corrected text. NO introductions like 'Here is', NO explanations, NO commentary, NO extra words. Just return the fixed text directly."
 
   headings:
-    instruction: "Fix heading issues. CRITICAL REQUIREMENTS: 1) Use sentence-style capitalization (only first word and proper nouns capitalized). 2) Avoid starting with gerunds like 'Configuring', 'Understanding', 'Managing' - use direct nouns instead (e.g., 'Configuration', 'Understanding' → 'Overview', 'Managing' → 'Management'). 3) No ending periods. IMPORTANT: Return ONLY the corrected heading text with no explanations, notes, or commentary."
+    primary_command: "CRITICAL: Output ONLY the corrected heading text. NO introductions, NO explanations, NO commentary. ALWAYS capitalize the first word - sentence capitalization means FIRST word is capitalized, others lowercase except proper nouns."
+    instruction: "Apply IBM Style Guide heading rules systematically - BOTH transformations are mandatory"
+    transformations:
+      - pattern: "MANDATORY: Gerund starts → noun equivalents (ALWAYS APPLY FIRST)"
+        examples:
+          - "Implementing The Fun Rules → Implementation of the fun rules"
+          - "Configuring System Settings → Configuration of system settings" 
+          - "Managing User Data → Management of user data"
+          - "Understanding API → Overview of API"
+          - "Installing Software → Installation of software"
+          - "Configuring → Configuration"
+          - "Managing → Management"
+      - pattern: "MANDATORY: Headline Capitalization → sentence capitalization (FIRST word ALWAYS capitalized)"
+        examples:
+          - "Managing User Settings → Managing user settings"
+          - "The Fun Rules → The fun rules" 
+          - "Understanding API Basics → Understanding API basics"
+          - "System Configuration → System configuration"
+          - "WRONG: the fun rules → CORRECT: The fun rules"
+      - pattern: "Remove ending periods"
+        examples:
+          - "User guide. → user guide"
+    fallback: "CRITICAL: If heading starts with gerund (-ing word), convert to noun form first, then apply sentence capitalization"
 
   lists:
-    instruction: "Ensure all items in a list are grammatically parallel. For example, if the first item starts with a verb, all subsequent items should also start with a verb."
+    primary_command: "CRITICAL: Output ONLY the corrected list text. NO introductions, NO explanations."
+    instruction: "Make all list items grammatically parallel"
+    transformations:
+      - pattern: "Match first item's grammatical form"
+        examples:
+          - "If first item = verb phrase, all items = verb phrases"
+          - "If first item = noun phrase, all items = noun phrases"
+          - "Configure settings, Install software → Configure settings, Install software"
+          - "User management, System configuration → User management, System configuration"
+    fallback: "Convert all items to imperative verbs (Click, Enter, Select) if mixed forms"
 
   messages:
-    instruction: "Rewrite messages to be clear and professional. Avoid using exaggerated or alarming adjectives like 'fatal' or 'catastrophic'. Focus on describing the problem and the solution."
+    primary_command: "CRITICAL: Output ONLY the corrected message text. NO introductions, NO explanations."
+    instruction: "Apply professional, clear message standards"
+    transformations:
+      - pattern: "Remove exaggerated adjectives"
+        examples:
+          - "catastrophic error → connection error"
+          - "fatal failure → system failure"
+          - "illegal operation → invalid operation"
+      - pattern: "Focus on solution, not severity"
+        examples:
+          - "Fatal error occurred → Cannot connect to database"
+          - "Catastrophic failure → Service temporarily unavailable"
+    fallback: "Use neutral, descriptive language focusing on the actual problem"
 
   notes:
-    instruction: "Format notes correctly. A note label (like 'Note', 'Important', or 'Restriction') must be followed by a colon."
+    primary_command: "CRITICAL: Output ONLY the corrected note text. NO introductions, NO explanations."
+    instruction: "Apply IBM Style Guide note formatting"
+    transformations:
+      - pattern: "Ensure proper label format"
+        examples:
+          - "Note → NOTE:"
+          - "Important → IMPORTANT:"
+          - "Warning → WARNING:"
+      - pattern: "Complete sentences only"
+        examples:
+          - "Save your work → Save your work before proceeding."
+          - "Check settings → Check your settings before continuing."
+    fallback: "Use 'NOTE:' label followed by complete sentence with period"
 
   procedures:
-    instruction: "Ensure all steps in a procedure begin with a strong, imperative verb (e.g., 'Click', 'Enter', 'Select'). Optional or conditional steps (starting with 'Optional' or 'If') are acceptable."
+    primary_command: "CRITICAL: Output ONLY the corrected procedure text. NO introductions, NO explanations."
+    instruction: "Apply procedural step formatting standards"
+    transformations:
+      - pattern: "Start with imperative verbs"
+        examples:
+          - "You should click → Click"
+          - "Next, navigate to → Navigate to"
+          - "Then select → Select"
+      - pattern: "Allow specific exceptions"
+        examples:
+          - "Optional: Configure → Optional: Configure"
+          - "If needed, adjust → If needed, adjust"
+    fallback: "Convert to imperative form: Click, Enter, Select, Navigate, Choose"
+
+  # UNIVERSAL PATTERNS - apply to any structure/format issue not covered above
+  structure_fallback:
+    primary_command: "CRITICAL: Output ONLY the corrected text. NO introductions, NO explanations."
+    instruction: "Apply IBM Style Guide formatting standards"
+    transformations:
+      - pattern: "Use sentence-style capitalization"
+      - pattern: "Remove unnecessary punctuation"  
+      - pattern: "Make language direct and clear"
+      - pattern: "Use parallel structure"
+    fallback: "Apply conservative formatting: lowercase except proper nouns, direct language, parallel structure"
 
