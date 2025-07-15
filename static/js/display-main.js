@@ -53,8 +53,8 @@ function displayAnalysisResults(analysis, content, structuralBlocks = null) {
                         ${structuralBlocks ? displayStructuralBlocks(structuralBlocks) : displayFlatContent(content, analysis.errors)}
                     </div>
 
-                    <!-- Error Summary -->
-                    ${analysis.errors?.length > 0 ? `
+                    <!-- Error Summary - Only show for plain text analysis, not for structural blocks -->
+                    ${!structuralBlocks && analysis.errors?.length > 0 ? `
                         <div class="pf-v5-l-stack__item">
                             ${createErrorSummary(analysis.errors)}
                         </div>
