@@ -8,7 +8,6 @@ block_type_rules:
     - headings
     - capitalization
     - pronouns
-    - second_person
     - slashes
     - hyphens
     - colons
@@ -21,6 +20,7 @@ block_type_rules:
     - punctuation_and_symbols
     - quotation_marks
     - semicolons
+    - highlighting
 
   # Paragraph blocks - apply general language and grammar rules but exclude structure-specific rules
   paragraph:
@@ -53,8 +53,67 @@ block_type_rules:
     - quotation_marks
     - semicolons
     - slashes
+    # Audience and Medium Rules
+    - conversational_style
+    - global_audiences
+    - llm_consumability
+    - tone
+    # Numbers and Measurement Rules
+    - currency
+    - dates_and_times
+    - numbers_general
+    - numerals_vs_words
+    - units_of_measurement
+    # References Rules
+    - references_citations
+    - references_geographic_locations
+    - references_names_titles
+    - references_product_names
+    - references_product_versions
+    # Technical Elements Rules
+    - technical_commands
+    - technical_files_directories
+    - technical_keyboard_keys
+    - technical_mouse_buttons
+    - technical_programming_elements
+    - technical_ui_elements
+    - technical_web_addresses
+    # Structure and Format Rules
+    - examples
+    - highlighting
+    # Legal Information Rules
+    - legal_claims
+    - legal_company_names
+    - legal_personal_information
+    # Word Usage Rules
+    - word_usage_a
+    - word_usage_b
+    - word_usage_c
+    - word_usage_d
+    - word_usage_e
+    - word_usage_f
+    - word_usage_g
+    - word_usage_h
+    - word_usage_i
+    - word_usage_j
+    - word_usage_k
+    - word_usage_l
+    - word_usage_m
+    - word_usage_n
+    - word_usage_o
+    - word_usage_p
+    - word_usage_q
+    - word_usage_r
+    - word_usage_s
+    - word_usage_t
+    - word_usage_u
+    - word_usage_v
+    - word_usage_w
+    - word_usage_x
+    - word_usage_y
+    - word_usage_z
+    - word_usage_special
     # General rules
-    - second_person
     - sentence_length
     - ambiguity
 
@@ -91,11 +150,71 @@ block_type_rules:
     - quotation_marks
     - semicolons
     - slashes
+    # Audience and Medium Rules
+    - conversational_style
+    - global_audiences
+    - llm_consumability
+    - tone
+    # Numbers and Measurement Rules
+    - currency
+    - dates_and_times
+    - numbers_general
+    - numerals_vs_words
+    - units_of_measurement
+    # References Rules
+    - references_citations
+    - references_geographic_locations
+    - references_names_titles
+    - references_product_names
+    - references_product_versions
+    # Technical Elements Rules
+    - technical_commands
+    - technical_files_directories
+    - technical_keyboard_keys
+    - technical_mouse_buttons
+    - technical_programming_elements
+    - technical_ui_elements
+    - technical_web_addresses
+    # Structure and Format Rules
+    - examples
+    - glossaries
+    - highlighting
+    # Legal Information Rules
+    - legal_claims
+    - legal_company_names
+    - legal_personal_information
+    # Word Usage Rules
+    - word_usage_a
+    - word_usage_b
+    - word_usage_c
+    - word_usage_d
+    - word_usage_e
+    - word_usage_f
+    - word_usage_g
+    - word_usage_h
+    - word_usage_i
+    - word_usage_j
+    - word_usage_k
+    - word_usage_l
+    - word_usage_m
+    - word_usage_n
+    - word_usage_o
+    - word_usage_p
+    - word_usage_q
+    - word_usage_r
+    - word_usage_s
+    - word_usage_t
+    - word_usage_u
+    - word_usage_v
+    - word_usage_w
+    - word_usage_x
+    - word_usage_y
+    - word_usage_z
+    - word_usage_special
     # General rules
-    - second_person
     - sentence_length
     - ambiguity
-    
+
   list_item_ordered:
     - lists
     - procedures
@@ -128,11 +247,71 @@ block_type_rules:
     - quotation_marks
     - semicolons
     - slashes
+    # Audience and Medium Rules
+    - conversational_style
+    - global_audiences
+    - llm_consumability
+    - tone
+    # Numbers and Measurement Rules
+    - currency
+    - dates_and_times
+    - numbers_general
+    - numerals_vs_words
+    - units_of_measurement
+    # References Rules
+    - references_citations
+    - references_geographic_locations
+    - references_names_titles
+    - references_product_names
+    - references_product_versions
+    # Technical Elements Rules
+    - technical_commands
+    - technical_files_directories
+    - technical_keyboard_keys
+    - technical_mouse_buttons
+    - technical_programming_elements
+    - technical_ui_elements
+    - technical_web_addresses
+    # Structure and Format Rules
+    - examples
+    - glossaries
+    - highlighting
+    # Legal Information Rules
+    - legal_claims
+    - legal_company_names
+    - legal_personal_information
+    # Word Usage Rules
+    - word_usage_a
+    - word_usage_b
+    - word_usage_c
+    - word_usage_d
+    - word_usage_e
+    - word_usage_f
+    - word_usage_g
+    - word_usage_h
+    - word_usage_i
+    - word_usage_j
+    - word_usage_k
+    - word_usage_l
+    - word_usage_m
+    - word_usage_n
+    - word_usage_o
+    - word_usage_p
+    - word_usage_q
+    - word_usage_r
+    - word_usage_s
+    - word_usage_t
+    - word_usage_u
+    - word_usage_v
+    - word_usage_w
+    - word_usage_x
+    - word_usage_y
+    - word_usage_z
+    - word_usage_special
     # General rules
-    - second_person
     - sentence_length
     - ambiguity
-    
+
   list_item_unordered:
     - lists
     - capitalization
@@ -164,11 +343,71 @@ block_type_rules:
     - quotation_marks
     - semicolons
     - slashes
+    # Audience and Medium Rules
+    - conversational_style
+    - global_audiences
+    - llm_consumability
+    - tone
+    # Numbers and Measurement Rules
+    - currency
+    - dates_and_times
+    - numbers_general
+    - numerals_vs_words
+    - units_of_measurement
+    # References Rules
+    - references_citations
+    - references_geographic_locations
+    - references_names_titles
+    - references_product_names
+    - references_product_versions
+    # Technical Elements Rules
+    - technical_commands
+    - technical_files_directories
+    - technical_keyboard_keys
+    - technical_mouse_buttons
+    - technical_programming_elements
+    - technical_ui_elements
+    - technical_web_addresses
+    # Structure and Format Rules
+    - examples
+    - glossaries
+    - highlighting
+    # Legal Information Rules
+    - legal_claims
+    - legal_company_names
+    - legal_personal_information
+    # Word Usage Rules
+    - word_usage_a
+    - word_usage_b
+    - word_usage_c
+    - word_usage_d
+    - word_usage_e
+    - word_usage_f
+    - word_usage_g
+    - word_usage_h
+    - word_usage_i
+    - word_usage_j
+    - word_usage_k
+    - word_usage_l
+    - word_usage_m
+    - word_usage_n
+    - word_usage_o
+    - word_usage_p
+    - word_usage_q
+    - word_usage_r
+    - word_usage_s
+    - word_usage_t
+    - word_usage_u
+    - word_usage_v
+    - word_usage_w
+    - word_usage_x
+    - word_usage_y
+    - word_usage_z
+    - word_usage_special
     # General rules
-    - second_person
     - sentence_length
     - ambiguity
-    
+
   list_title:
     - lists
     - capitalization
@@ -176,14 +415,14 @@ block_type_rules:
   # List container blocks - apply lists rule for parallelism analysis
   unordered_list:
     - lists
-    
+
   ordered_list:
     - lists
     - procedures
 
   # Special blocks - apply specific rules
   admonition:
-    - admonitions
+    - notes # Renamed from admonitions
     - capitalization
     # Language and grammar rules
     - abbreviations
@@ -212,8 +451,10 @@ block_type_rules:
     - quotation_marks
     - semicolons
     - slashes
+    # Audience and Medium Rules
+    - global_audiences
+    - tone
     # General rules
-    - second_person
     - sentence_length
     - ambiguity
 
@@ -225,11 +466,11 @@ block_type_rules:
   sidebar:
     - capitalization
     - lists
-    - second_person
     - sentence_length
     - ambiguity
     - contractions
     - ellipses
+    - tone
 
   # Code blocks - skip all analysis
   listing: []
@@ -260,11 +501,10 @@ block_type_rules:
     - headings
     - lists
     - procedures
-    - second_person
     - sentence_length
     - ambiguity
-    - contractions
     - ellipses
+    - tone
 
   # Table rows - structural analysis
   table_row:
@@ -279,6 +519,8 @@ block_type_rules:
     - inclusive_language
     - contractions
     - spelling
+    - units_of_measurement
+    - numbers_general
 
   # Blockquotes - similar to paragraphs but more limited
   blockquote:
@@ -294,29 +536,29 @@ rule_exclusions:
   heading:
     - lists
     - procedures
-    
+
   # Paragraphs should never have heading or list-specific rules
   paragraph:
     - headings
     - lists
     - procedures
-    - admonitions
-    
+    - notes # Renamed from admonitions
+
   # List items should never have heading-specific rules
   list_item:
     - headings
-    - admonitions
-    
+    - notes # Renamed from admonitions
+
   list_item_ordered:
     - headings
-    - admonitions
-    
+    - notes # Renamed from admonitions
+
   list_item_unordered:
     - headings
-    - admonitions
-    
+    - notes # Renamed from admonitions
+
   # Admonitions should never have heading or list rules
   admonition:
     - headings
     - lists
-    - procedures 
+    - procedures

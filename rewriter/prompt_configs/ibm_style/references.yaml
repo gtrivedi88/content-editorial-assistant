@@ -1,0 +1,68 @@
+# IBM Style Guide - References Rules
+# Each rule follows the pattern: primary_command + instruction + examples + fallback
+
+rules:
+  # GLOBAL PRIMARY COMMAND
+  references_priority:
+    primary_command: "CRITICAL: Output ONLY the corrected text. NO explanations. Apply reference, naming, and versioning rules for clarity and consistency."
+
+  references_citations:
+    primary_command: "CRITICAL: Output ONLY the corrected text. NO explanations."
+    instruction: "Fix citation and link formatting."
+    transformations:
+      - pattern: "Generic link text -> Meaningful link text"
+        examples:
+          - "For details, click here. -> For details, see the product documentation."
+      - pattern: "Capitalized reference type -> Lowercase reference type"
+        examples:
+          - "See Chapter 9 for details. -> See chapter 9 for details."
+          - "As shown in Figure 3... -> As shown in figure 3..."
+    fallback: "Use descriptive link text and lowercase for words like 'chapter' and 'figure' in citations."
+
+  references_geographic_locations:
+    primary_command: "CRITICAL: Output ONLY the corrected text. NO explanations."
+    instruction: "Correct capitalization of geographic locations."
+    transformations:
+      - pattern: "lowercase location -> Title Case Location"
+        examples:
+          - "He works in new york. -> He works in New York."
+          - "The server is in london. -> The server is in London."
+    fallback: "Ensure all parts of a city, state, or country name are properly capitalized."
+
+  references_names_titles:
+    primary_command: "CRITICAL: Output ONLY the corrected text. NO explanations."
+    instruction: "Correct capitalization of professional titles."
+    transformations:
+      - pattern: "Title with name -> Capitalized Title"
+        examples:
+          - "Contact Jane Doe, project manager. -> Contact Jane Doe, Project Manager."
+      - pattern: "Generic title -> Lowercase title"
+        examples:
+          - "A Project Manager is needed. -> A project manager is needed."
+    fallback: "Capitalize titles when they are attached to a person's name; otherwise, use lowercase."
+
+  references_product_names:
+    primary_command: "CRITICAL: Output ONLY the corrected text. NO explanations."
+    instruction: "Apply correct IBM product naming conventions."
+    transformations:
+      - pattern: "Product name first use -> IBM Product Name"
+        examples:
+          - "We installed Db2. -> We installed IBM Db2."
+      - pattern: "Incorrect abbreviation -> Full product name"
+        examples:
+          - "Configure the WAS server. -> Configure the WebSphere Application Server server."
+    fallback: "Prefix the first use of a product with 'IBM' and always use the full product name instead of abbreviations."
+
+  references_product_versions:
+    primary_command: "CRITICAL: Output ONLY the corrected text. NO explanations."
+    instruction: "Standardize product version formatting."
+    transformations:
+      - pattern: "Prefixes like 'V.' or 'Version' -> Numbers only"
+        examples:
+          - "This applies to Version 8.1. -> This applies to 8.1."
+          - "Use V5.2 or later. -> Use 5.2 or later."
+      - pattern: "Wildcard '.x' -> Descriptive text"
+        examples:
+          - "This works on all 5.x releases. -> This works on all releases of version 5."
+    fallback: "Remove prefixes like 'V.' and 'Version' from version numbers and replace wildcards with descriptive text."
+

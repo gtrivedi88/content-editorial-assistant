@@ -1,0 +1,38 @@
+# IBM Style Guide - Legal Information Rules
+# Each rule follows the pattern: primary_command + instruction + examples + fallback
+
+rules:
+  # GLOBAL PRIMARY COMMAND
+  legal_priority:
+    primary_command: "CRITICAL: Output ONLY the corrected text. NO explanations. Apply legal information rules to reduce risk and ensure clarity."
+
+  legal_claims:
+    primary_command: "CRITICAL: Output ONLY the corrected text. NO explanations."
+    instruction: "Replace subjective or unsupported claims with objective, descriptive language."
+    transformations:
+      - pattern: "Subjective claim -> Objective description"
+        examples:
+          - "The system is secure. -> The system has security-enhanced features."
+          - "This process is easy. -> This process involves three steps."
+          - "This is the best practice. -> This is a recommended practice."
+    fallback: "Remove words like 'secure', 'easy', and 'best practice'. Describe the feature or process factually."
+
+  legal_company_names:
+    primary_command: "CRITICAL: Output ONLY the corrected text. NO explanations."
+    instruction: "Use the full legal name for companies."
+    transformations:
+      - pattern: "Common name -> Full legal name"
+        examples:
+          - "This feature integrates with Oracle. -> This feature integrates with Oracle Corporation."
+          - "This is compatible with Microsoft. -> This is compatible with Microsoft Corporation."
+    fallback: "Append the appropriate legal suffix (e.g., 'Corporation', 'Inc.') to company names."
+
+  legal_personal_information:
+    primary_command: "CRITICAL: Output ONLY the corrected text. NO explanations."
+    instruction: "Use globally understood terms for personal names."
+    transformations:
+      - pattern: "Culturally specific term -> Global term"
+        examples:
+          - "Enter your first name. -> Enter your given name."
+          - "Enter your last name. -> Enter your surname."
+    fallback: "Replace 'first name' with 'given name' and 'last name' with 'surname'."

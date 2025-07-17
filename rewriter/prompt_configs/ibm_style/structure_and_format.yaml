@@ -32,6 +32,23 @@ rules:
           - "User guide. → user guide"
     fallback: "CRITICAL: If heading starts with gerund (-ing word), convert to noun form first, then apply sentence capitalization"
 
+  highlighting:
+    primary_command: "CRITICAL: Output ONLY the corrected text using appropriate markup. NO explanations. Apply highlighting fixes for UI elements, variables, and emphasis."
+    instruction: "Apply correct highlighting markup based on IBM Style."
+    transformations:
+      - pattern: "UI control not bold -> bold"
+        examples:
+          - "Click the Save button. -> Click the **Save** button."
+          - "Select the File menu. -> Select the **File** menu."
+      - pattern: "Variable not monospace/italic -> monospace/italic"
+        examples:
+          - "Enter your username. -> Enter your `username`."
+          - "Set the value of filename. -> Set the value of *filename*."
+      - pattern: "Emphasis not italic -> italic"
+        examples:
+          - "Do not disconnect the server. -> *Do not* disconnect the server."
+    fallback: "Use bold for UI controls, italics for emphasis and variables, and monospace for code."
+
   lists:
     primary_command: "CRITICAL: Output ONLY the corrected list text. NO introductions, NO explanations."
     instruction: "Make all list items grammatically parallel"
@@ -99,4 +116,3 @@ rules:
       - pattern: "Make language direct and clear"
       - pattern: "Use parallel structure"
     fallback: "Apply conservative formatting: lowercase except proper nouns, direct language, parallel structure"
-
