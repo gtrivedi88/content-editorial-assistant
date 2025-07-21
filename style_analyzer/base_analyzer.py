@@ -47,12 +47,12 @@ class StyleAnalyzer:
         self.statistics_calculator = StatisticsCalculator(rules)
         self.suggestion_generator = SuggestionGenerator(rules)
         
-        # Initialize rules registry
+        # Initialize rules registry with consolidation enabled
         self.rules_registry = None
         if RULES_AVAILABLE and get_registry:
             try:
-                self.rules_registry = get_registry()
-                logger.info("Rules registry loaded successfully")
+                self.rules_registry = get_registry(enable_consolidation=True)
+                logger.info("Rules registry loaded successfully with error consolidation enabled")
             except Exception as e:
                 logger.warning(f"Failed to load rules registry: {e}")
                 self.rules_registry = None

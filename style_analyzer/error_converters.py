@@ -45,10 +45,16 @@ class ErrorConverter:
             if subtype:
                 error_dict['subtype'] = subtype
             
-            # Preserve any additional fields from the original error
+            # Preserve any additional fields from the original error (including consolidation metadata)
             for key, value in rules_error.items():
                 if key not in error_dict and key not in ['type', 'subtype', 'message', 'suggestions', 'severity', 'sentence', 'sentence_index']:
                     error_dict[key] = value
+            
+            # Specifically preserve consolidation metadata if present
+            consolidation_fields = ['consolidated_from', 'consolidation_type', 'text_span']
+            for field in consolidation_fields:
+                if field in rules_error:
+                    error_dict[field] = rules_error[field]
             
             return error_dict
         except Exception as e:

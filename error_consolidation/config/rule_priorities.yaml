@@ -1,0 +1,120 @@
+# Rule Priority Configuration
+# Defines precedence when multiple rules detect the same text spans
+
+# Rule categories ordered by priority (highest to lowest)
+category_priorities:
+  - legal_information      # Highest priority - legal compliance issues
+  - security              # Security-related concerns  
+  - accessibility         # Accessibility compliance
+  - technical_elements    # Technical accuracy (UI elements, commands, etc.)
+  - references           # Citations, links, geographic references
+  - language_and_grammar # Grammar and language correctness
+  - structure_and_format # Document structure and formatting
+  - audience_and_medium  # Tone, style, audience considerations
+  - word_usage          # Word choice and terminology
+  - punctuation         # Punctuation rules
+  - numbers_and_measurement # Number formatting
+
+# Specific rule priorities within categories
+# Format: rule_type: priority_score (higher = more important)
+rule_specific_priorities:
+  # Legal Information (highest priority)
+  claims: 100
+  personal_information: 95
+  company_names: 90
+  
+  # Accessibility (very high priority)
+  accessibility_citations: 85
+  ui_elements: 80
+  keyboard_keys: 75
+  
+  # Technical Elements (high priority)
+  commands: 70
+  files_and_directories: 68
+  programming_elements: 65
+  web_addresses: 63
+  mouse_buttons: 60
+  
+  # References (medium-high priority)
+  citations: 55
+  product_names: 53
+  product_versions: 50
+  geographic_locations: 48
+  names_and_titles: 45
+  
+  # Language and Grammar (medium priority)
+  anthropomorphism: 40
+  pronouns: 38
+  verbs: 35
+  articles: 33
+  contractions: 30
+  terminology: 28
+  inclusive_language: 25
+  
+  # Structure and Format (medium priority)
+  headings: 20
+  procedures: 18
+  admonitions: 15
+  lists: 13
+  paragraphs: 10
+  
+  # Audience and Medium (lower priority)
+  tone: 8
+  conversational_style: 6
+  llm_consumability: 4
+  
+  # Word Usage (lower priority)
+  word_usage: 2
+  
+  # Punctuation (lowest priority)
+  punctuation: 1
+
+# Consolidation strategies by rule combination
+consolidation_strategies:
+  # When accessibility and citations overlap
+  citations + accessibility_citations:
+    primary_rule: accessibility_citations
+    strategy: merge_with_accessibility_focus
+    message_template: "Interactive element accessibility issue"
+    
+  # When technical and citations overlap  
+  citations + mouse_buttons:
+    primary_rule: mouse_buttons
+    strategy: merge_with_technical_focus
+    message_template: "Interactive element usage issue"
+    
+  # When multiple citation rules overlap
+  citations + citations:
+    primary_rule: citations
+    strategy: merge_duplicate_citations
+    message_template: "Link text and accessibility issue"
+    
+  # When word usage and technical elements overlap
+  word_usage + mouse_buttons:
+    primary_rule: mouse_buttons
+    strategy: merge_with_technical_focus
+    message_template: "Interactive element terminology issue"
+
+# Message consolidation patterns
+message_patterns:
+  # Patterns for combining similar error types
+  overlapping_text_spans:
+    template: "{primary_issue} in '{text_span}'"
+    suggestion_merger: combine_and_prioritize
+    
+  nested_text_spans:
+    template: "{comprehensive_issue} affecting '{outer_span}'"
+    suggestion_merger: use_most_comprehensive
+    
+  adjacent_text_spans:
+    template: "{combined_issue} in consecutive elements"
+    suggestion_merger: merge_sequential_fixes
+
+# Severity escalation rules
+severity_escalation:
+  # When multiple medium errors overlap, escalate to high
+  multiple_medium: high
+  # When high + any other, keep high
+  high_plus_any: high
+  # When low + medium, use medium
+  low_plus_medium: medium 

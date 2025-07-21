@@ -11,6 +11,14 @@ import os
 import yaml
 from typing import List, Dict, Any, Optional
 
+# Import error consolidation system (with fallback if not available)
+try:
+    from error_consolidation import consolidate_errors
+    CONSOLIDATION_AVAILABLE = True
+except ImportError:
+    CONSOLIDATION_AVAILABLE = False
+    print("Warning: Error consolidation system not available. Duplicate errors will not be consolidated.")
+
 # Import base rule with proper path handling
 try:
     from .base_rule import BaseRule
@@ -24,9 +32,15 @@ except ImportError:
 class RulesRegistry:
     """Registry that automatically discovers and manages all writing rules from all subdirectories up to 4 levels deep."""
     
-    def __init__(self):
+    def __init__(self, enable_consolidation: bool = True):
         self.rules = {}
         self.rule_locations = {}  # Track where each rule was found
+        
+        # Error consolidation configuration
+        self.enable_consolidation = enable_consolidation and CONSOLIDATION_AVAILABLE
+        if enable_consolidation and not CONSOLIDATION_AVAILABLE:
+            print("Warning: Consolidation requested but system not available.")
+        
         self._load_all_rules()
         
         # Load rule-to-block type mappings from configuration file
@@ -435,6 +449,14 @@ class RulesRegistry:
                         'severity': 'low'
                     })
         
+        # Apply error consolidation if enabled
+        if self.enable_consolidation and all_errors:
+            try:
+                all_errors = consolidate_errors(all_errors)
+            except Exception as e:
+                print(f"Warning: Error consolidation failed: {e}")
+                # Continue with unconsolidated errors
+        
         return all_errors
     
     def _get_block_type_from_context(self, context: Optional[dict]) -> str:
@@ -506,16 +528,24 @@ class RulesRegistry:
                     'severity': 'low'
                 })
         
+        # Apply error consolidation if enabled
+        if self.enable_consolidation and all_errors:
+            try:
+                all_errors = consolidate_errors(all_errors)
+            except Exception as e:
+                print(f"Warning: Error consolidation failed: {e}")
+                # Continue with unconsolidated errors
+        
         return all_errors
 
 # Global registry instance (lazy-loaded to avoid circular imports)
 _registry = None
 
-def get_registry():
+def get_registry(enable_consolidation: bool = True):
     """Get the global registry instance, initializing if needed."""
     global _registry
     if _registry is None:
-        _registry = RulesRegistry()
+        _registry = RulesRegistry(enable_consolidation=enable_consolidation)
     return _registry
 
 # Create a registry proxy that initializes only when accessed
@@ -523,7 +553,7 @@ class RegistryProxy:
     """Proxy object that initializes the registry only when accessed."""
     
     def __getattr__(self, name):
-        return getattr(get_registry(), name)
+        return getattr(get_registry(enable_consolidation=True), name)
 
 # For backward compatibility
 registry = RegistryProxy() 

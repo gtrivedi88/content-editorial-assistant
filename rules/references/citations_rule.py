@@ -169,75 +169,72 @@ class CitationsRule(BaseReferencesRule):
                                           citation_context: Dict[str, Any]) -> List[Dict[str, Any]]:
         """
         Analyze citation-specific patterns that require correction.
+        Only detect issues that actually exist in this specific sentence.
         """
         errors = []
         
         if not doc:
             return errors
         
-        # Detect problematic link text
-        link_text_errors = self._detect_problematic_link_text(doc, citation_context)
-        for error in link_text_errors:
-            errors.append(self._create_error(
-                sentence=sentence,
-                sentence_index=sentence_index,
-                message=f"Problematic link text: '{error['link_text']}'. Use descriptive link text.",
-                suggestions=error['suggestions'],
-                severity='high',
-                linguistic_analysis={
-                    'link_text_error': error,
-                    'morphological_pattern': error.get('morphological_pattern'),
-                    'accessibility_impact': error.get('accessibility_impact')
-                }
-            ))
+        # Extract link patterns from THIS SENTENCE ONLY
+        sentence_link_patterns = self._extract_link_patterns(doc)
         
-        # Detect reference capitalization errors
-        ref_cap_errors = self._detect_reference_capitalization_errors(doc, citation_context)
-        for error in ref_cap_errors:
-            errors.append(self._create_error(
-                sentence=sentence,
-                sentence_index=sentence_index,
-                message=f"Reference '{error['reference']}' has incorrect capitalization.",
-                suggestions=error['suggestions'],
-                severity='medium',
-                linguistic_analysis={
-                    'reference_cap_error': error,
-                    'reference_context': error.get('context_type'),
-                    'capitalization_rule': error.get('applicable_rule')
-                }
-            ))
+        # Detect problematic link text (only in this sentence)
+        for link_pattern in sentence_link_patterns:
+            if link_pattern.get('is_problematic'):
+                problem_analysis = self._analyze_link_text_problems(link_pattern)
+                
+                # Create problematic link text error
+                errors.append(self._create_error(
+                    sentence=sentence,
+                    sentence_index=sentence_index,
+                    message=f"Problematic link text: '{link_pattern['text']}'. Use descriptive link text.",
+                    suggestions=problem_analysis['suggestions'],
+                    severity='high',
+                    linguistic_analysis={
+                        'link_text_error': problem_analysis,
+                        'morphological_pattern': link_pattern.get('morphological_pattern'),
+                        'accessibility_impact': problem_analysis.get('accessibility_impact')
+                    }
+                ))
+                
+                # Create accessibility concern error if applicable
+                accessibility_analysis = self._analyze_accessibility_impact(link_pattern)
+                if accessibility_analysis['has_concerns']:
+                    for concern in accessibility_analysis['concerns']:
+                        errors.append(self._create_error(
+                            sentence=sentence,
+                            sentence_index=sentence_index,
+                            message=f"Accessibility concern: '{link_pattern['text']}'. Improve for screen readers.",
+                            suggestions=concern['suggestions'],
+                            severity='low',
+                            linguistic_analysis={
+                                'accessibility_error': concern,
+                                'impact_type': concern.get('impact'),
+                                'user_groups_affected': concern.get('affected_users')
+                            }
+                        ))
         
-        # Detect citation formatting inconsistencies
-        format_errors = self._detect_citation_formatting_errors(doc, citation_context)
-        for error in format_errors:
-            errors.append(self._create_error(
-                sentence=sentence,
-                sentence_index=sentence_index,
-                message=f"Citation formatting issue: '{error['citation']}'. Use consistent style.",
-                suggestions=error['suggestions'],
-                severity='medium',
-                linguistic_analysis={
-                    'format_error': error,
-                    'expected_style': error.get('expected_style'),
-                    'style_consistency': error.get('consistency_analysis')
-                }
-            ))
+        # Extract reference patterns from THIS SENTENCE ONLY
+        sentence_ref_patterns = self._extract_reference_patterns(doc)
         
-        # Detect accessibility concerns
-        accessibility_errors = self._detect_accessibility_concerns(doc, citation_context)
-        for error in accessibility_errors:
-            errors.append(self._create_error(
-                sentence=sentence,
-                sentence_index=sentence_index,
-                message=f"Accessibility concern: '{error['element']}'. Improve for screen readers.",
-                suggestions=error['suggestions'],
-                severity='low',
-                linguistic_analysis={
-                    'accessibility_error': error,
-                    'impact_type': error.get('impact_type'),
-                    'user_groups_affected': error.get('affected_users')
-                }
-            ))
+        # Detect reference capitalization errors (only in this sentence)
+        for ref_pattern in sentence_ref_patterns:
+            if ref_pattern.get('capitalization_error'):
+                cap_analysis = self._analyze_reference_capitalization_error(ref_pattern)
+                
+                errors.append(self._create_error(
+                    sentence=sentence,
+                    sentence_index=sentence_index,
+                    message=f"Reference '{ref_pattern['text']}' has incorrect capitalization.",
+                    suggestions=cap_analysis['suggestions'],
+                    severity='medium',
+                    linguistic_analysis={
+                        'reference_cap_error': cap_analysis,
+                        'reference_context': ref_pattern.get('context_type'),
+                        'capitalization_rule': cap_analysis.get('rule')
+                    }
+                ))
         
         return errors
     

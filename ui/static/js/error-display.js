@@ -138,6 +138,22 @@ function createInlineError(error) {
                         </span>
                     </div>
                 ` : ''}
+                
+                ${error.consolidated_from && error.consolidated_from.length > 1 ? `
+                    <div class="pf-v5-u-mt-xs">
+                        <span class="pf-v5-c-label pf-m-compact pf-m-blue">
+                            <span class="pf-v5-c-label__content">
+                                <i class="fas fa-compress-arrows-alt pf-v5-u-mr-xs"></i>
+                                Consolidated from ${error.consolidated_from.length} rules
+                            </span>
+                        </span>
+                        ${error.text_span ? `
+                            <span class="pf-v5-c-label pf-m-compact pf-m-outline pf-v5-u-ml-xs">
+                                <span class="pf-v5-c-label__content">"${error.text_span}"</span>
+                            </span>
+                        ` : ''}
+                    </div>
+                ` : ''}
             </div>
         </div>
     `;
@@ -145,100 +161,127 @@ function createInlineError(error) {
 
 // Create enhanced error card for error summaries
 function createErrorCard(error, index) {
-    const errorTypes = {
-        'STYLE': { icon: 'fas fa-exclamation-circle', color: 'var(--app-danger-color)', modifier: 'danger' },
-        'GRAMMAR': { icon: 'fas fa-spell-check', color: 'var(--app-warning-color)', modifier: 'warning' },
-        'STRUCTURE': { icon: 'fas fa-sitemap', color: 'var(--app-primary-color)', modifier: 'info' },
-        'PUNCTUATION': { icon: 'fas fa-quote-right', color: '#6b21a8', modifier: 'info' },
-        'CAPITALIZATION': { icon: 'fas fa-font', color: 'var(--app-success-color)', modifier: 'success' },
-        'TERMINOLOGY': { icon: 'fas fa-book', color: '#c2410c', modifier: 'warning' },
-        'PASSIVE_VOICE': { icon: 'fas fa-exchange-alt', color: 'var(--app-warning-color)', modifier: 'warning' },
-        'READABILITY': { icon: 'fas fa-eye', color: '#0e7490', modifier: 'info' },
-        'ADMONITIONS': { icon: 'fas fa-info-circle', color: 'var(--app-primary-color)', modifier: 'info' },
-        'HEADINGS': { icon: 'fas fa-heading', color: '#7c2d12', modifier: 'warning' },
-        'LISTS': { icon: 'fas fa-list', color: 'var(--app-success-color)', modifier: 'success' },
-        'PROCEDURES': { icon: 'fas fa-tasks', color: '#0e7490', modifier: 'info' }
-    };
-    
-    const errorType = error.error_type || 'STYLE';
-    const typeStyle = errorTypes[errorType] || errorTypes['STYLE'];
+    const typeStyle = getErrorTypeStyle(error.type);
+    const suggestions = Array.isArray(error.suggestions) ? error.suggestions : [];
     
     return `
         <div class="pf-v5-c-card pf-m-compact app-card" style="border-left: 4px solid ${typeStyle.color};">
             <div class="pf-v5-c-card__header">
-                <div class="pf-v5-c-card__header-main">
-                    <div class="pf-v5-l-flex pf-m-align-items-center">
-                        <div class="pf-v5-l-flex__item">
-                            <i class="${typeStyle.icon}" style="color: ${typeStyle.color}; font-size: 1.2rem;"></i>
-                        </div>
-                        <div class="pf-v5-l-flex__item pf-v5-u-ml-sm">
-                            <h3 class="pf-v5-c-title pf-m-md">${errorType.replace(/_/g, ' ')}</h3>
-                        </div>
-                    </div>
-                </div>
-                <div class="pf-v5-c-card__actions">
-                    <span class="pf-v5-c-label pf-m-${typeStyle.modifier} pf-m-outline">
-                        <span class="pf-v5-c-label__content">#${index + 1}</span>
-                    </span>
+                <div class="pf-v5-c-card__title">
+                    <h3 class="pf-v5-c-title pf-m-md">
+                        <i class="${typeStyle.icon} pf-v5-u-mr-sm" style="color: ${typeStyle.color};"></i>
+                        ${formatRuleType(error.type)}
+                    </h3>
                 </div>
             </div>
             <div class="pf-v5-c-card__body">
-                <p class="pf-v5-u-mb-sm">${error.message || 'Style issue detected'}</p>
+                <p class="pf-v5-u-mb-sm">${error.message}</p>
                 
                 ${error.text_segment ? `
                     <div class="pf-v5-c-code-block pf-v5-u-mb-sm">
                         <div class="pf-v5-c-code-block__header">
-                            <div class="pf-v5-c-code-block__header-main">
-                                <span class="pf-v5-c-code-block__title">Found text:</span>
+                            <div class="pf-v5-c-code-block__actions">
+                                <div class="pf-v5-c-code-block__actions-item">
+                                    <span class="pf-v5-c-label pf-m-compact pf-m-outline">
+                                        <span class="pf-v5-c-label__content">Text segment</span>
+                                    </span>
+                                </div>
                             </div>
                         </div>
                         <div class="pf-v5-c-code-block__content">
-                            <pre class="pf-v5-c-code-block__pre"><code class="pf-v5-c-code-block__code">${escapeHtml(error.text_segment)}</code></pre>
+                            <pre class="pf-v5-c-code-block__pre">
+                                <code class="pf-v5-c-code-block__code">${escapeHtml(error.text_segment)}</code>
+                            </pre>
                         </div>
                     </div>
                 ` : ''}
                 
-                ${error.suggestion ? `
-                    <div class="pf-v5-c-alert pf-m-inline pf-m-plain" style="background-color: rgba(240, 171, 0, 0.1);">
-                        <div class="pf-v5-c-alert__icon">
-                            <i class="fas fa-lightbulb" style="color: var(--app-warning-color);"></i>
-                        </div>
-                        <div class="pf-v5-c-alert__title">
-                            <strong>Suggestion</strong>
-                        </div>
-                        <div class="pf-v5-c-alert__description">
-                            ${error.suggestion}
-                        </div>
+                ${error.consolidated_from && error.consolidated_from.length > 1 ? `
+                    <div class="pf-v5-u-mt-xs">
+                        <span class="pf-v5-c-label pf-m-compact pf-m-blue">
+                            <span class="pf-v5-c-label__content">
+                                <i class="fas fa-compress-arrows-alt pf-v5-u-mr-xs"></i>
+                                Consolidated from ${error.consolidated_from.length} rules
+                            </span>
+                        </span>
+                        ${error.text_span ? `
+                            <span class="pf-v5-c-label pf-m-compact pf-m-outline pf-v5-u-ml-xs">
+                                <span class="pf-v5-c-label__content">"${error.text_span}"</span>
+                            </span>
+                        ` : ''}
+                        ${error.consolidation_type ? `
+                            <span class="pf-v5-c-label pf-m-compact pf-m-outline pf-v5-u-ml-xs">
+                                <span class="pf-v5-c-label__content">${error.consolidation_type}</span>
+                            </span>
+                        ` : ''}
+                    </div>
+                ` : ''}
+                
+                ${error.fix_options && error.fix_options.length > 1 ? `
+                    <div class="pf-v5-u-mt-md">
+                        <h4 class="pf-v5-c-title pf-m-sm pf-v5-u-mb-sm">
+                            <i class="fas fa-tools pf-v5-u-mr-xs"></i>
+                            Fix Options
+                        </h4>
+                        ${error.fix_options.map((option, optionIndex) => `
+                            <div class="pf-v5-c-expandable-section pf-v5-u-mb-sm ${optionIndex === 0 ? 'pf-m-expanded' : ''}" 
+                                 data-option-index="${optionIndex}">
+                                <button type="button" class="pf-v5-c-expandable-section__toggle" 
+                                        onclick="toggleFixOption(${index}, ${optionIndex})">
+                                    <span class="pf-v5-c-expandable-section__toggle-icon">
+                                        <i class="fas fa-angle-right" aria-hidden="true"></i>
+                                    </span>
+                                    <span class="pf-v5-c-expandable-section__toggle-text">
+                                        <strong>${option.type === 'quick' ? '⚡ Quick Fix' : '🎯 Comprehensive Fix'}:</strong>
+                                        ${option.description}
+                                    </span>
+                                </button>
+                                <div class="pf-v5-c-expandable-section__content ${optionIndex === 0 ? '' : 'pf-m-hidden'}">
+                                    <div class="pf-v5-u-pl-lg pf-v5-u-pt-sm">
+                                        <div class="pf-v5-c-label-group pf-v5-u-mb-sm">
+                                            <span class="pf-v5-c-label pf-m-compact ${option.scope === 'minimal' ? 'pf-m-green' : 'pf-m-blue'}">
+                                                <span class="pf-v5-c-label__content">
+                                                    Target: "${option.text_span}"
+                                                </span>
+                                            </span>
+                                            <span class="pf-v5-c-label pf-m-compact pf-m-outline">
+                                                <span class="pf-v5-c-label__content">
+                                                    ${option.scope} scope
+                                                </span>
+                                            </span>
+                                        </div>
+                                        ${option.suggestions && option.suggestions.length > 0 ? `
+                                            <ul class="pf-v5-c-list">
+                                                ${option.suggestions.map(suggestion => `
+                                                    <li>${suggestion}</li>
+                                                `).join('')}
+                                            </ul>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : suggestions.length > 0 ? `
+                    <div class="pf-v5-u-mt-md">
+                        <h4 class="pf-v5-c-title pf-m-sm pf-v5-u-mb-sm">
+                            <i class="fas fa-lightbulb pf-v5-u-mr-xs"></i>
+                            Suggestions
+                        </h4>
+                        <ul class="pf-v5-c-list">
+                            ${suggestions.map(suggestion => `<li>${suggestion}</li>`).join('')}
+                        </ul>
+                    </div>
+                ` : ''}
+                
+                ${error.line_number ? `
+                    <div class="pf-v5-u-mt-sm">
+                        <span class="pf-v5-c-label pf-m-compact pf-m-outline">
+                            <span class="pf-v5-c-label__content">Line ${error.line_number}</span>
+                        </span>
                     </div>
                 ` : ''}
             </div>
-            
-            ${error.line_number || error.position ? `
-                <div class="pf-v5-c-card__footer">
-                    <div class="pf-v5-l-flex pf-m-space-items-sm">
-                        ${error.line_number ? `
-                            <div class="pf-v5-l-flex__item">
-                                <span class="pf-v5-c-label pf-m-compact">
-                                    <span class="pf-v5-c-label__content">
-                                        <i class="fas fa-map-marker-alt pf-v5-c-label__icon"></i>
-                                        Line ${error.line_number}
-                                    </span>
-                                </span>
-                            </div>
-                        ` : ''}
-                        ${error.position ? `
-                            <div class="pf-v5-l-flex__item">
-                                <span class="pf-v5-c-label pf-m-compact">
-                                    <span class="pf-v5-c-label__content">
-                                        <i class="fas fa-crosshairs pf-v5-c-label__icon"></i>
-                                        Pos ${error.position}
-                                    </span>
-                                </span>
-                            </div>
-                        ` : ''}
-                    </div>
-                </div>
-            ` : ''}
         </div>
     `;
 }
@@ -346,4 +389,25 @@ function createErrorSummary(errors) {
             </div>
         </div>
     `;
+} 
+
+// Add toggle function for fix options
+function toggleFixOption(errorIndex, optionIndex) {
+    const expandableSection = document.querySelector(`[data-option-index="${optionIndex}"]`);
+    if (!expandableSection) return;
+    
+    const content = expandableSection.querySelector('.pf-v5-c-expandable-section__content');
+    const icon = expandableSection.querySelector('.pf-v5-c-expandable-section__toggle-icon i');
+    
+    if (content.classList.contains('pf-m-hidden')) {
+        // Expand
+        content.classList.remove('pf-m-hidden');
+        expandableSection.classList.add('pf-m-expanded');
+        icon.style.transform = 'rotate(90deg)';
+    } else {
+        // Collapse
+        content.classList.add('pf-m-hidden');
+        expandableSection.classList.remove('pf-m-expanded');
+        icon.style.transform = 'rotate(0deg)';
+    }
 } 
