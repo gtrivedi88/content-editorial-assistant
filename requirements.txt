@@ -1,122 +1,206 @@
-# ===================================================================
-# Peer lens - Cross-Platform Requirements
-# Compatible with: Windows, macOS, Linux, Unix, Fedora, Ubuntu, etc.
-# Python 3.8+ required
-# ===================================================================
+# ================================
+# CORE FRAMEWORK & WEB
+# ================================
+Flask==3.1.1
+Flask-Cors==4.0.2
+Flask-Login==0.6.3
+Flask-Migrate==4.1.0
+Flask-SocketIO==5.5.1
+Flask-SQLAlchemy==3.1.1
+Flask-WTF==1.2.2
+Werkzeug==3.1.3
+Jinja2==3.1.6
+MarkupSafe==2.1.5
+WTForms==3.2.1
+itsdangerous==2.2.0
 
-# Core Web Framework
-Flask>=3.0.0,<4.0.0
-Flask-CORS>=4.0.0,<5.0.0
-Flask-Login>=0.6.0,<1.0.0
-Flask-WTF>=1.1.0,<2.0.0
-Werkzeug>=3.0.0,<4.0.0
+# ================================
+# DATABASE & ORM
+# ================================
+SQLAlchemy==2.0.41
+alembic==1.16.2
+greenlet==3.2.3
+Mako==1.3.10
 
-# Text Processing and NLP
-spacy>=3.7.2,<4.0.0
-nltk>=3.8.1,<4.0.0
-textstat>=0.7.3,<1.0.0
-language-tool-python>=2.7.0,<3.0.0
-textdistance>=4.6.0,<5.0.0
+# ================================
+# AI/ML & NLP FRAMEWORKS
+# ================================
+torch==2.7.1
+transformers==4.52.4
+sentence-transformers==2.7.0
+huggingface-hub==0.33.0
+tokenizers==0.21.1
+safetensors==0.5.3
+triton==3.3.1
 
-# Document Processing (Cross-platform)
-PyMuPDF>=1.23.0,<2.0.0
-python-docx>=1.1.0,<2.0.0
-python-magic>=0.4.27,<1.0.0; sys_platform != "win32"
-python-magic-bin>=0.4.14,<1.0.0; sys_platform == "win32"
-markdown>=3.5.0,<4.0.0
-beautifulsoup4>=4.12.0,<5.0.0
-lxml>=4.9.0,<5.0.0
+# spaCy and NLP
+spacy==3.8.7
+spacy-legacy==3.0.12
+spacy-loggers==1.0.5
+en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl#sha256=1932429db727d4bff3deed6b34cfc05df17794f4a52eeb26cf8928f7c1a0fb85
+nltk==3.9.1
+language_tool_python==2.9.4
+langdetect==1.0.9
+langcodes==3.5.0
+language_data==1.3.0
 
-# Data Processing
-pandas>=2.1.0,<3.0.0
-numpy>=1.24.0,<2.0.0
+# spaCy dependencies
+thinc==8.3.4
+blis==1.2.1
+catalogue==2.0.10
+confection==0.1.5
+cymem==2.0.11
+murmurhash==1.0.13
+preshed==3.0.10
+srsly==2.5.1
+typer==0.16.0
+wasabi==1.1.3
+weasel==0.4.1
 
-# AI/ML Libraries (Cross-platform PyTorch)
-transformers>=4.36.0,<5.0.0
-torch>=2.1.0,<3.0.0
-sentence-transformers>=2.2.2,<3.0.0
-openai>=1.3.0,<2.0.0
-requests>=2.31.0,<3.0.0
-urllib3>=2.0.0,<3.0.0
+# AI Services
+ollama==0.5.1
+openai==1.88.0
 
-# Database
-SQLAlchemy>=2.0.0,<3.0.0
-Flask-SQLAlchemy>=3.1.0,<4.0.0
-Flask-Migrate>=4.0.0,<5.0.0
-Flask-SocketIO>=5.3.6,<6.0.0
+# ================================
+# NVIDIA CUDA DEPENDENCIES
+# ================================
+nvidia-cublas-cu12==12.6.4.1
+nvidia-cuda-cupti-cu12==12.6.80
+nvidia-cuda-nvrtc-cu12==12.6.77
+nvidia-cuda-runtime-cu12==12.6.77
+nvidia-cudnn-cu12==9.5.1.17
+nvidia-cufft-cu12==11.3.0.4
+nvidia-cufile-cu12==1.11.1.6
+nvidia-curand-cu12==10.3.7.77
+nvidia-cusolver-cu12==11.7.1.2
+nvidia-cusparse-cu12==12.5.4.2
+nvidia-cusparselt-cu12==0.6.3
+nvidia-nccl-cu12==2.26.2
+nvidia-nvjitlink-cu12==12.6.85
+nvidia-nvtx-cu12==12.6.77
 
-# File Processing (Cross-platform image handling)
-Pillow>=10.0.0,<11.0.0
+# ================================
+# DATA PROCESSING & ANALYSIS
+# ================================
+pandas==2.3.0
+numpy==1.26.4
+scipy==1.15.3
+scikit-learn==1.7.0
+joblib==1.5.1
+threadpoolctl==3.6.0
 
-# Configuration and Environment
-python-dotenv>=1.0.0,<2.0.0
-pyyaml>=6.0.0,<7.0.0
+# Text Analysis
+textstat==0.7.7
+textdistance==4.6.3
+cmudict==1.0.32
+pyinflect==0.5.1
+pyphen==0.17.2
+regex==2023.12.25
 
-# Security and File Handling
-Werkzeug>=3.0.0,<4.0.0
+# ================================
+# FILE PROCESSING & PARSING
+# ================================
+PyPDF2==3.0.1
+PyMuPDF==1.26.1
+python-docx==1.2.0
+python-magic==0.4.27
+filetype==1.2.0
+pillow==10.4.0
 
-# Utility Libraries
-click>=8.1.0,<9.0.0
-python-dateutil>=2.8.2,<3.0.0
-regex>=2023.10.0,<2024.0.0
+# Markup & Documentation
+Markdown==3.8
+markdown-it-py==3.0.0
+mdurl==0.1.2
+beautifulsoup4==4.13.4
+lxml==4.9.4
+soupsieve==2.7
 
-# Testing Framework
-pytest>=8.0.0,<9.0.0
-pytest-flask>=1.3.0,<2.0.0
-pytest-cov>=4.1.0,<5.0.0
+# ================================
+# WEBSOCKETS & REAL-TIME
+# ================================
+python-socketio==5.13.0
+python-engineio==4.12.2
+simple-websocket==1.1.0
+bidict==0.23.1
+wsproto==1.2.0
 
-# Development Tools (Optional - for development only)
-black>=23.0.0,<25.0.0; extra == "dev"
-flake8>=6.0.0,<8.0.0; extra == "dev"
-isort>=5.12.0,<6.0.0; extra == "dev"
+# ================================
+# HTTP & NETWORKING
+# ================================
+requests==2.32.4
+httpx==0.28.1
+httpcore==1.0.9
+urllib3==2.4.0
+h11==0.16.0
+certifi==2025.6.15
+charset-normalizer==3.4.2
+idna==3.10
+sniffio==1.3.1
+anyio==4.9.0
 
-# Web UI Enhancement
-Jinja2>=3.1.0,<4.0.0
-MarkupSafe>=2.1.0,<3.0.0
+# ================================
+# TESTING & DEVELOPMENT
+# ================================
+pytest==8.4.0
+pytest-cov==4.1.0
+pytest-flask==1.3.0
+coverage==7.9.1
+iniconfig==2.1.0
+pluggy==1.6.0
 
-# Background Tasks (Optional)
-celery>=5.3.0,<6.0.0 ; extra == "async"
-redis>=5.0.0,<6.0.0 ; extra == "async"
+# ================================
+# UTILITIES & DEPENDENCIES
+# ================================
+click==8.2.1
+PyYAML==6.0.2
+python-dotenv==1.1.0
+python-dateutil==2.9.0.post0
+pytz==2025.2
+tzdata==2025.2
+packaging==25.0
+setuptools==80.9.0
+toml==0.10.2
 
-# Logging and Monitoring
-python-json-logger>=2.0.0,<3.0.0
+# Configuration & Validation
+pydantic==2.11.7
+pydantic_core==2.33.2
+annotated-types==0.7.0
 
-# Additional NLP Tools
-langdetect>=1.0.9,<2.0.0
+# File System & Cloud
+fsspec==2025.5.1
+cloudpathlib==0.21.1
+filelock==3.18.0
+smart-open==7.1.0
+hf-xet==1.1.4
 
-# Platform-specific optimizations
-# Windows-specific
-pywin32>=306; sys_platform == "win32"
-wmi>=1.5.1 ; platform_system == "Windows"
+# System & Utilities
+psutil==7.0.0
+distro==1.9.0
+shellingham==1.5.4
+blinker==1.9.0
+six==1.17.0
+wrapt==1.17.2
+zipp==3.23.0
 
-# macOS-specific  
-pyobjc-core>=10.0; sys_platform == "darwin"
+# Type System & Introspection
+typing_extensions==4.14.0
+typing-inspection==0.4.1
+importlib_metadata==8.7.0
+importlib_resources==6.5.2
 
-# Linux/Unix-specific
-python-magic>=0.4.27,<1.0.0 ; platform_system == "Linux"
+# Specialized Data Structures
+marisa-trie==1.2.1
+networkx==3.5
 
-# Cross-platform file type detection fallback
-filetype>=1.2.0,<2.0.0
+# Math & Symbolic Computing
+sympy==1.14.0
+mpmath==1.3.0
 
-# Ollama Integration
-ollama>=0.1.7,<1.0.0
+# Progress & Display
+tqdm==4.67.1
+rich==14.0.0
+Pygments==2.19.1
 
-# Async Support (Optional)
-aiohttp>=3.9.0,<4.0.0; extra == "async"
-asyncio>=3.4.3,<4.0.0; extra == "async"
-
-# ===================================================================
-# Installation Instructions:
-# 
-# Basic installation:
-#   pip install -r requirements.txt
-#
-# With development tools:
-#   pip install -r requirements.txt[dev]
-#
-# With async support:
-#   pip install -r requirements.txt[async]
-#
-# Full installation:
-#   pip install -r requirements.txt[dev,async]
-# =================================================================== 
+# JSON & Serialization
+jiter==0.10.0
+python-json-logger==2.0.7
