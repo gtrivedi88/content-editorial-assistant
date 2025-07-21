@@ -14,9 +14,8 @@ except ImportError:
 
 class VerbsRule(BaseLanguageRule):
     """
-    Checks for a comprehensive set of verb-related style issues.
-    NOTE: The specific check for 'setup' vs 'set up' has been moved to the
-    s_words_rule.py to eliminate redundant error reporting.
+    Checks for a comprehensive set of verb-related style issues, including
+    passive voice, incorrect tense, subjunctive mood, and specific word usage.
     """
     def _get_rule_type(self) -> str:
         """Returns the unique identifier for this rule."""
@@ -74,8 +73,30 @@ class VerbsRule(BaseLanguageRule):
                     span=(root_verb.idx, root_verb.idx + len(root_verb.text)),
                     flagged_text=root_verb.text
                 ))
+                
+            # --- Rule 4: Subjunctive Mood Check (Corrected Logic) ---
+            # Linguistic Anchor: Find trigger adjectives ("important") that have a clausal
+            # complement (ccomp) which, in turn, contains the base form of 'be'.
+            for token in sent:
+                if token.lemma_ in ["important", "necessary", "essential", "required"] and token.dep_ == "acomp":
+                    # Find the clausal complement attached to the main verb (e.g., 'is')
+                    main_verb = token.head
+                    for child in main_verb.children:
+                        if child.dep_ == "ccomp":
+                            # Check if 'be' (as an auxiliary) exists in the subtree of this clause.
+                            if any(sub_token.lemma_ == "be" and sub_token.pos_ == "AUX" for sub_token in child.subtree):
+                                errors.append(self._create_error(
+                                    sentence=sent.text,
+                                    sentence_index=i,
+                                    message="Sentence uses the subjunctive mood, which can be overly formal.",
+                                    suggestions=["Rewrite using the imperative mood for clarity. For example, change 'It is important that the file be saved' to 'Important: Save the file'."],
+                                    severity='low',
+                                    span=(token.idx, sent.end_char - sent.start_char),
+                                    flagged_text=sent.text[token.idx - sent.start_char:]
+                                ))
+                                break # Found it, no need to check other children
 
-            # --- Rule 4: Check for "login" used as a verb ---
+            # --- Rule 5: Check for "login" used as a verb ---
             for token in sent:
                 if token.text.lower() == 'login' and token.pos_ == 'VERB':
                     errors.append(self._create_error(

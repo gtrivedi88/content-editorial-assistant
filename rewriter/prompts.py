@@ -289,28 +289,27 @@ SPECIFIC FIX GUIDANCE:
 {chr(10).join(fix_option_instructions)}
 """
 
-        prompt = f"""You are a professional technical editor making TARGETED CORRECTIONS to fix specific style issues.
+        prompt = f"""You are a professional editor making MINIMAL, SURGICAL corrections to fix specific detected issues.
 
-CRITICAL INSTRUCTIONS:
-- Make ONLY the necessary corrections to fix the detected style issues
-- DO NOT paraphrase or rewrite the entire text
-- PRESERVE the original structure, tone, and meaning
-- Fix ONLY what needs to be fixed based on the guidance below
+CRITICAL: Make the SMALLEST possible changes to fix only the detected problems. DO NOT:
+- Add any new information not in the original
+- Change the meaning or intent
+- Rewrite sentences unless absolutely necessary  
+- Add details, examples, or explanations
+- Use different words unless required for the specific fix
 
 PRIMARY GOAL:
 {primary_command}
 
-SPECIFIC CORRECTIONS NEEDED:
+SPECIFIC FIXES REQUIRED:
 {instructions_text}{fix_options_text}
 
-CORRECTION GUIDELINES:
-- Fix detected issues precisely and minimally
-- Keep the original wording where no issues exist
-- Maintain the original sentence structure when possible
-- For consolidated issues, apply the most appropriate single fix
-- Output ONLY the corrected text, no explanations
-
-Apply these targeted corrections to the following text:
+SURGICAL CORRECTION RULES:
+- Fix ONLY the detected issue (e.g., if it's passive voice, make it active but change nothing else)
+- Keep ALL original information and meaning intact
+- Use the original words wherever possible
+- Make the minimum change necessary
+- Output ONLY the corrected text with NO additions
 
 Original text:
 {content}
@@ -333,15 +332,16 @@ Corrected text:"""
             fix_options_section = f"\nFIX STRATEGY: {fix_strategy.upper()}\nSPECIFIC FIX GUIDANCE:\n{chr(10).join(fix_option_instructions)}"
 
         prompt_parts = [
-            "Task: Apply TARGETED CORRECTIONS to fix specific style issues in the text.",
-            "CRITICAL: Make only necessary corrections. Do NOT paraphrase or rewrite unnecessarily.",
+            "Task: Apply MINIMAL, SURGICAL fixes to specific detected problems only.",
+            "CRITICAL: Make the SMALLEST changes possible. DO NOT add information, change meaning, or rewrite content.",
             f"\nPRIMARY GOAL: {primary_command}",
-            f"\nSPECIFIC CORRECTIONS NEEDED:\n{instructions_text}",
+            f"\nSPECIFIC FIXES REQUIRED:\n{instructions_text}",
             fix_options_section,
-            "\nCORRECTION GUIDELINES:",
-            "- Fix detected issues precisely and minimally",
-            "- Preserve original structure and meaning",
-            "- Keep unchanged text exactly as-is",
+            "\nSURGICAL FIX RULES:",
+            "- Fix ONLY the detected issue, change nothing else",
+            "- Keep ALL original information and wording intact",
+            "- Make minimal changes necessary for the specific fix",
+            "- DO NOT add details, explanations, or new information",
             f"\nOriginal text: {content}",
             "\nCorrected text:"
         ]

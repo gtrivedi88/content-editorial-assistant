@@ -8,8 +8,8 @@ rules:
     primary_command: "CRITICAL: Output ONLY the corrected text. NO introductions like 'Here is', NO explanations, NO commentary, NO extra words. Just return the fixed text directly."
 
   headings:
-    primary_command: "CRITICAL: Output ONLY the corrected heading text. NO introductions, NO explanations, NO commentary. ALWAYS capitalize the first word - sentence capitalization means FIRST word is capitalized, others lowercase except proper nouns."
-    instruction: "Apply IBM Style Guide heading rules systematically - BOTH transformations are mandatory"
+    primary_command: "CRITICAL: Output ONLY the corrected heading text. NO introductions, NO explanations, NO commentary. Make MINIMAL changes - fix ONLY the specific issues detected. Do NOT change the meaning or add new information."
+    instruction: "Apply ONLY the detected heading fixes: 1) Remove periods 2) Fix capitalization 3) Convert gerunds to nouns. DO NOT rewrite the entire heading."
     transformations:
       - pattern: "MANDATORY: Gerund starts → noun equivalents (ALWAYS APPLY FIRST)"
         examples:

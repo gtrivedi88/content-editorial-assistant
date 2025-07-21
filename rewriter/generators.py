@@ -31,11 +31,11 @@ class TextGenerator:
                 "prompt": prompt,
                 "stream": False,
                 "options": {
-                    "temperature": 0.4,  # Increased from 0.1 for more creative rewrites
-                    "top_p": 0.7,        # Increased from 0.5 for more variety
-                    "top_k": 20,         # Increased from 10 for more vocabulary options
-                    "num_predict": 512,  # Increased from 100 to allow full text completion
-                    "stop": ["\n\nOriginal:", "\n\nRewrite:", "###", "---"]  # Clear stop tokens
+                    "temperature": 0.1,  # CONSERVATIVE: Minimize creativity, maximize precision
+                    "top_p": 0.3,        # CONSERVATIVE: Limit token variety for surgical fixes
+                    "top_k": 5,          # CONSERVATIVE: Focus on most probable corrections only
+                    "num_predict": 256,  # Sufficient for targeted fixes, not full rewrites
+                    "stop": ["\n\nOriginal:", "\n\nRewrite:", "###", "---", "Here is", "Here's", "I'll", "Let me"]  # Stop AI commentary
                 }
             }
             

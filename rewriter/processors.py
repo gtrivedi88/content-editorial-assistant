@@ -29,11 +29,13 @@ class TextProcessor:
         
         # Remove meta-commentary and explanations more aggressively
         
-        # First, try to extract content between common delimiters
-        # Look for patterns like "Here's the rewritten text:" or "Improved text:"
+        # AGGRESSIVE AI COMMENTARY REMOVAL - Extract only the actual corrected content
         content_patterns = [
-            r"corrected heading:\s*(.*?)(?:\s+No changes|\s+The|\s*$)",  # For heading prompts
-            r"here is the rewritten heading:\s*(.*?)(?:\n\*|\*|$)",  # Specific pattern AI is using
+            r"corrected text:\s*(.*?)(?:\s*$)",  # Most common pattern
+            r"here is the corrected text:\s*(.*?)(?:\s*$)",
+            r"here's the corrected text:\s*(.*?)(?:\s*$)", 
+            r"corrected heading:\s*(.*?)(?:\s+No changes|\s+The|\s*$)",
+            r"here is the rewritten heading:\s*(.*?)(?:\n\*|\*|$)",
             r"here's the rewritten heading:\s*(.*?)(?:\n\*|\*|$)",
             r"here is the corrected heading:\s*(.*?)(?:\n\*|\*|$)",
             r"here's the improved version:\s*(.*?)(?:\n\*|\*|$)",

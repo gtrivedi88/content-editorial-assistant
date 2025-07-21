@@ -93,13 +93,46 @@ def extract_block_info(block, level = 0)
   case block.context
   when :list_item
     content = block.respond_to?(:text) && !block.text.nil? ? block.text.to_s : ''
-  when :paragraph, :sidebar, :example, :quote, :verse, :literal, :admonition
+  when :paragraph, :sidebar, :example, :quote, :verse, :literal
     if block.respond_to?(:lines) && block.lines && !block.lines.empty?
       content = block.lines.join("\n")
     elsif block.respond_to?(:source) && !block.source.nil?
       content = block.source.to_s
     elsif !block.content.nil?
       content = block.content.to_s
+    end
+  when :admonition
+    # SPECIAL HANDLING for admonitions (including delimited block admonitions)
+    if block.respond_to?(:lines) && block.lines && !block.lines.empty?
+      content = block.lines.join("\n")
+    elsif block.respond_to?(:source) && !block.source.nil?
+      content = block.source.to_s
+    elsif block.respond_to?(:blocks) && block.blocks && !block.blocks.empty?
+      # For delimited block admonitions, content is in child blocks
+      child_contents = []
+      block.blocks.each do |child_block|
+        child_content = ''
+        if !child_block.content.nil?
+          child_content = child_block.content.to_s
+        elsif child_block.respond_to?(:source) && !child_block.source.nil?
+          child_content = child_block.source.to_s
+        elsif child_block.respond_to?(:lines) && child_block.lines && !child_block.lines.empty?
+          child_content = child_block.lines.join("\n")
+        end
+        child_contents << child_content unless child_content.empty?
+      end
+      content = child_contents.join("\n") unless child_contents.empty?
+    end
+    
+    # FALLBACK: If still no content, try HTML extraction from main content
+    if content.empty? && !block.content.nil?
+      html_content = block.content.to_s
+      if html_content.include?('<') && html_content.include?('>')
+        # Strip HTML tags to get plain text
+        content = html_content.gsub(/<[^>]+>/, '').gsub(/\s+/, ' ').strip
+      else
+        content = html_content
+      end
     end
   when :listing
     if block.respond_to?(:source) && !block.source.nil?
@@ -353,6 +386,58 @@ def parse_asciidoc(content)
       
       block_info = extract_block_info(block)
       result['blocks'] << block_info if block_info
+    end
+    
+    # CRITICAL FIX: Handle case where AsciiDoctor misses standalone paragraphs
+    # This happens when content follows title without section structure
+    if result['blocks'].length == 1 && result['blocks'][0]['context'] == 'heading'
+      # Check if there's content after the title that wasn't parsed as blocks
+      lines = content.lines.map(&:strip)
+      title_line_index = lines.find_index { |line| line.start_with?('= ') }
+      
+      if title_line_index
+        # Look for content after title and any attributes/blank lines
+        content_start_index = title_line_index + 1
+        
+        # Skip attribute lines and blank lines
+        while content_start_index < lines.length
+          line = lines[content_start_index]
+          if line.empty? || line.start_with?(':') || line.start_with?('//')
+            content_start_index += 1
+          else
+            break
+          end
+        end
+        
+        # If we found content after the header, create a paragraph block for it
+        if content_start_index < lines.length
+          paragraph_lines = lines[content_start_index..-1].reject(&:empty?)
+          
+          if !paragraph_lines.empty?
+            paragraph_content = paragraph_lines.join("\n")
+            
+            paragraph_block = {
+              'context' => 'paragraph',
+              'content_model' => 'simple',
+              'content' => paragraph_content,
+              'level' => 1,
+              'style' => nil,
+              'title' => nil,
+              'id' => nil,
+              'attributes' => {},
+              'source_location' => {
+                'file' => '<content>',
+                'lineno' => content_start_index + 1,
+                'path' => '<content>'
+              },
+              'lines' => paragraph_lines,
+              'children' => []
+            }
+            
+            result['blocks'] << paragraph_block
+          end
+        end
+      end
     end
     
     {
