@@ -146,22 +146,12 @@ class PromptGenerator:
                 is_critical_rule = self._is_critical_rule_type(error_type)
                 is_critical_error = has_high_severity or is_critical_rule
                 
-                if is_critical_error:
-                    # Always include critical errors, even if we exceed normal limit slightly
-                    max_allowed = MAX_PROMPT_LENGTH + 300  # Allow extra space for critical issues
-                else:
-                    max_allowed = MAX_PROMPT_LENGTH
-                
-                # CHECK LENGTH before adding (automatic overflow protection)
-                if current_prompt_length + len(instruction_text) > max_allowed:
-                    if is_critical_error:
-                        logger.warning(f"🚨 CRITICAL error type '{error_type}' being included despite length limit!")
-                        # Include it anyway for critical rules
-                    else:
-                    logger.info(f"⚠️ Prompt length limit reached. Skipping lower priority rules: {error_type}")
+                # Check length and break if a non-critical error exceeds the limit
+                if not is_critical_error and (current_prompt_length + len(instruction_text) > MAX_PROMPT_LENGTH):
+                    logger.info(f"⚠️ Prompt length limit reached. Skipping lower priority rule: {error_type}")
                     break
                 
-                # Add instructions if within limit
+                # Add instructions
                 if 'primary_command' in rule_config and not primary_command:
                     primary_command = rule_config['primary_command']
                 
@@ -203,8 +193,8 @@ class PromptGenerator:
                     for sentence in list(passive_sentences)[:2]:  # Limit to 2 examples
                         specific_instructions.append(f"  Example: '{sentence[:50]}...' needs active voice")
                 
-                # Update current length
-                current_prompt_length += len(instruction_text)
+                # Update current length after adding instructions
+                current_prompt_length += len(" ".join(instruction_parts))
 
         # AUTOMATIC FALLBACK if no instructions found
         if not specific_instructions:
