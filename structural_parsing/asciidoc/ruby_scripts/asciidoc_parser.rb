@@ -43,7 +43,21 @@ def preprocess_header(content)
       is_author_line = stripped_line.match?(/^[A-Za-z].*<.*@.*>.*$/) || stripped_line.match?(/^v\d+\.\d+.*\d{4}-\d{2}-\d{2}.*$/)
 
       if is_blank
-        # Forgive the user for adding a blank line by skipping it.
+        # Check if the next non-blank line is body content
+        # If so, preserve this blank line as header/body separator
+        next_content_line_index = lines[(index + 1)..-1].find_index { |line| !line.strip.empty? }
+        if next_content_line_index
+          next_line = lines[index + 1 + next_content_line_index].strip
+          is_next_body_block = next_line.start_with?('==', '----', '****', '|===', '++++', '[', '*') || next_line.match?(/^\.[\w\s]+/)
+          
+          if is_next_body_block
+            # This blank line separates header from body - preserve it and transition
+            processed_lines << line
+            state = :in_body
+            next
+          end
+        end
+        # Otherwise, skip the blank line (forgive extra blank lines in header)
         next
       elsif is_attribute || is_comment
         # This is an attribute or a comment, still part of the header.

@@ -98,7 +98,26 @@ class PromptGenerator:
         MAX_PROMPT_LENGTH = 1500  # Automatic limit to prevent overwhelm
 
         # SMART PROMPT BUILDING with automatic length management - ENHANCED for systematic structure
+        # CRITICAL FIX: Process high-severity errors FIRST to prevent them from being skipped
+        high_priority_types = []
+        other_types = []
+
         for error_type, error_list in error_groups.items():
+            # Check if any errors in this group are high/urgent severity OR if it's a critical rule type
+            has_high_severity = any(error.get('severity') in ['high', 'urgent'] for error in error_list)
+            is_critical_rule = self._is_critical_rule_type(error_type)
+            
+            if has_high_severity or is_critical_rule:
+                high_priority_types.append((error_type, error_list))
+                if is_critical_rule:
+                    logger.info(f"🚨 Critical rule type '{error_type}' prioritized for processing")
+            else:
+                other_types.append((error_type, error_list))
+
+        # Process high-priority types FIRST (inclusive_language, second_person, etc.)
+        processing_order = high_priority_types + other_types
+
+        for error_type, error_list in processing_order:
             rule_config = self.prompt_config.get(error_type)
             if rule_config:
                 # Calculate potential instruction length
@@ -122,8 +141,23 @@ class PromptGenerator:
                             examples_text = "; ".join(transformation['examples'][:3])  # Limit to 3 examples per pattern
                             instruction_text += f"Examples: {examples_text}. "
                 
+                # ENHANCED LENGTH CHECK: Reserve space for critical errors
+                has_high_severity = any(error.get('severity') in ['high', 'urgent'] for error in error_list)
+                is_critical_rule = self._is_critical_rule_type(error_type)
+                is_critical_error = has_high_severity or is_critical_rule
+                
+                if is_critical_error:
+                    # Always include critical errors, even if we exceed normal limit slightly
+                    max_allowed = MAX_PROMPT_LENGTH + 300  # Allow extra space for critical issues
+                else:
+                    max_allowed = MAX_PROMPT_LENGTH
+                
                 # CHECK LENGTH before adding (automatic overflow protection)
-                if current_prompt_length + len(instruction_text) > MAX_PROMPT_LENGTH:
+                if current_prompt_length + len(instruction_text) > max_allowed:
+                    if is_critical_error:
+                        logger.warning(f"🚨 CRITICAL error type '{error_type}' being included despite length limit!")
+                        # Include it anyway for critical rules
+                    else:
                     logger.info(f"⚠️ Prompt length limit reached. Skipping lower priority rules: {error_type}")
                     break
                 
@@ -188,8 +222,12 @@ class PromptGenerator:
         # LOG SMART PROCESSING INFO
         total_errors = len(errors)
         processed_types = len(error_groups)
+        critical_types = [error_type for error_type, _ in high_priority_types if self._is_critical_rule_type(error_type)]
+        
         logger.info(f"🎯 Smart processing: {processed_types} rule types from {total_errors} errors")
         logger.info(f"📊 Priority distribution: U:{len(priority_groups['urgent'])} H:{len(priority_groups['high'])} M:{len(priority_groups['medium'])} L:{len(priority_groups['low'])}")
+        logger.info(f"🚨 Critical rule types prioritized: {critical_types}")
+        logger.info(f"📏 Final prompt length: {len(prompt)} characters (limit: {MAX_PROMPT_LENGTH})")
         
         return prompt
     
@@ -447,3 +485,18 @@ Improved text:"""
         }
         
         return severity_to_priority.get(severity, 'medium')  # Safe default
+
+    def _is_critical_rule_type(self, error_type: str) -> bool:
+        """
+        Identify rule types that are ALWAYS critical regardless of detected severity.
+        These rules address legal/compliance issues and should never be skipped.
+        """
+        critical_rule_types = {
+            'inclusive_language',  # Legal compliance - master/slave, whitelist/blacklist
+            'second_person',       # Corporate style requirement - we/our removal
+            'legal_claims',        # Legal risk - subjective claims like "secure", "easy"
+            'unsupported_claims',  # Fabrication prevention
+            'fabrication_risk'     # Information accuracy
+        }
+        
+        return error_type in critical_rule_types

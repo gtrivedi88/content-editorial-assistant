@@ -42,7 +42,7 @@ function renderSafeTableCellHtml(text) {
 
 // Get a human-readable display name for a block type
 function getBlockTypeDisplayName(blockType, context) {
-    const level = context.level || 0;
+    const level = context.level !== undefined ? context.level : 0;
     const admonitionType = context.admonition_type;
     
     const displayNames = {

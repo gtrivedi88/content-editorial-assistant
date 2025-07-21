@@ -10,7 +10,7 @@
  * @returns {string} HTML string for the title block
  */
 function createTitleBlock(block, displayIndex) {
-    const level = block.level || 1;
+    const level = block.level !== undefined ? block.level : 1;
     const levelText = level === 0 ? 'Document Title' : `Level ${level} Heading`;
     const icon = level === 0 ? 'fas fa-file-text' : 'fas fa-heading';
     
