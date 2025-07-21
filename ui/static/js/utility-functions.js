@@ -1,5 +1,102 @@
 // Enhanced Utility functions for PatternFly UI
 
+// Format rule type for display - handles special cases like word usage rules
+function formatRuleType(ruleType) {
+    if (!ruleType) return 'Style Issue';
+    
+    // Group all word usage rules under "Word Usage"
+    if (ruleType.startsWith('word_usage_')) {
+        return 'Word Usage';
+    }
+    
+    // Group all numbers rules under better names
+    if (ruleType.startsWith('numbers_')) {
+        const numberTypeMap = {
+            'numbers_currency': 'Currency',
+            'numbers_dates_times': 'Dates and Times', 
+            'numbers_general': 'Numbers',
+            'numbers_numerals_vs_words': 'Numbers vs Words',
+            'numbers_units_of_measurement': 'Units of Measurement'
+        };
+        return numberTypeMap[ruleType] || 'Numbers';
+    }
+    
+    // Group all references rules under better names
+    if (ruleType.startsWith('references_')) {
+        const referenceTypeMap = {
+            'references_citations': 'Citations',
+            'references_geographic_locations': 'Geographic Locations',
+            'references_names_titles': 'Names and Titles',
+            'references_product_names': 'Product Names',
+            'references_product_versions': 'Product Versions'
+        };
+        return referenceTypeMap[ruleType] || 'References';
+    }
+    
+    // Group all technical elements under better names
+    if (ruleType.startsWith('technical_')) {
+        const technicalTypeMap = {
+            'technical_commands': 'Commands',
+            'technical_files_directories': 'Files and Directories',
+            'technical_keyboard_keys': 'Keyboard Keys',
+            'technical_mouse_buttons': 'Mouse Buttons',
+            'technical_programming_elements': 'Programming Elements',
+            'technical_ui_elements': 'UI Elements',
+            'technical_web_addresses': 'Web Addresses'
+        };
+        return technicalTypeMap[ruleType] || 'Technical Elements';
+    }
+    
+    // Group all legal rules under better names
+    if (ruleType.startsWith('legal_')) {
+        const legalTypeMap = {
+            'legal_claims': 'Claims',
+            'legal_company_names': 'Company Names',
+            'legal_personal_information': 'Personal Information'
+        };
+        return legalTypeMap[ruleType] || 'Legal Information';
+    }
+    
+    // Group all audience rules under better names
+    if (ruleType.startsWith('audience_')) {
+        const audienceTypeMap = {
+            'audience_tone': 'Tone',
+            'audience_global': 'Global Audience',
+            'audience_conversational': 'Conversational Style',
+            'audience_llm_consumability': 'LLM Consumability'
+        };
+        return audienceTypeMap[ruleType] || 'Audience and Medium';
+    }
+    
+    // Group all structure format rules under better names
+    if (ruleType.startsWith('structure_format_')) {
+        const structureTypeMap = {
+            'structure_format_highlighting': 'Highlighting',
+            'structure_format_glossaries': 'Glossaries'
+        };
+        return structureTypeMap[ruleType] || 'Structure and Format';
+    }
+    
+    // Handle other specific cases
+    const specificTypeMap = {
+        'second_person': 'Second Person',
+        'sentence_length': 'Sentence Length',
+        'anthropomorphism': 'Anthropomorphism',
+        'abbreviations': 'Abbreviations',
+        'adverbs_only': 'Adverbs',
+        'quotation_marks': 'Quotation Marks',
+        'punctuation_and_symbols': 'Punctuation and Symbols',
+        'exclamation_points': 'Exclamation Points'
+    };
+    
+    if (specificTypeMap[ruleType]) {
+        return specificTypeMap[ruleType];
+    }
+    
+    // Default: replace underscores with spaces and title case
+    return ruleType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+}
+
 // Show loading state using PatternFly EmptyState and Spinner
 function showLoading(elementId, message = 'Processing...') {
     const element = document.getElementById(elementId);
@@ -140,7 +237,7 @@ function createErrorCard(error, index = 0) {
             <div class="pf-v5-c-alert__icon">
                 <i class="fas fa-exclamation-triangle"></i>
             </div>
-            <div class="pf-v5-c-alert__title">${errorType.replace(/_/g, ' ')}</div>
+            <div class="pf-v5-c-alert__title">${formatRuleType(errorType)}</div>
             <div class="pf-v5-c-alert__description">${message}</div>
         </div>
     `;

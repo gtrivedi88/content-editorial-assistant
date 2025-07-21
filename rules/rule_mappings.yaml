@@ -59,7 +59,7 @@ block_type_rules:
     - llm_consumability
     - tone
     # Numbers and Measurement Rules
-    - currency
+    - numbers_currency
     - dates_and_times
     - numbers_general
     - numerals_vs_words
@@ -115,6 +115,7 @@ block_type_rules:
     - word_usage_special
     # General rules
     - sentence_length
+    - second_person
     - ambiguity
 
   # List items - apply list-specific rules plus general content rules
@@ -156,7 +157,7 @@ block_type_rules:
     - llm_consumability
     - tone
     # Numbers and Measurement Rules
-    - currency
+    - numbers_currency
     - dates_and_times
     - numbers_general
     - numerals_vs_words
@@ -213,6 +214,7 @@ block_type_rules:
     - word_usage_special
     # General rules
     - sentence_length
+    - second_person
     - ambiguity
 
   list_item_ordered:
@@ -253,7 +255,7 @@ block_type_rules:
     - llm_consumability
     - tone
     # Numbers and Measurement Rules
-    - currency
+    - numbers_currency
     - dates_and_times
     - numbers_general
     - numerals_vs_words
@@ -310,6 +312,7 @@ block_type_rules:
     - word_usage_special
     # General rules
     - sentence_length
+    - second_person
     - ambiguity
 
   list_item_unordered:
@@ -349,7 +352,7 @@ block_type_rules:
     - llm_consumability
     - tone
     # Numbers and Measurement Rules
-    - currency
+    - numbers_currency
     - dates_and_times
     - numbers_general
     - numerals_vs_words
@@ -406,6 +409,7 @@ block_type_rules:
     - word_usage_special
     # General rules
     - sentence_length
+    - second_person
     - ambiguity
 
   list_title:
@@ -456,6 +460,7 @@ block_type_rules:
     - tone
     # General rules
     - sentence_length
+    - second_person
     - ambiguity
 
   quote:

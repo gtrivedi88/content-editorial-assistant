@@ -3,6 +3,7 @@
  * Handles all error-related UI components and styling with modern PatternFly design
  */
 
+
 // Create enhanced inline error display with modern design
 function createInlineError(error) {
     const errorTypes = {
@@ -115,7 +116,7 @@ function createInlineError(error) {
                 <i class="${typeStyle.icon}" style="color: ${typeStyle.color};"></i>
             </div>
             <div class="pf-v5-c-alert__title">
-                <span class="pf-v5-u-font-weight-bold">${(error.type || error.error_type || 'Style Issue').replace(/_/g, ' ')}</span>
+                <span class="pf-v5-u-font-weight-bold">${formatRuleType(error.type || error.error_type)}</span>
             </div>
             <div class="pf-v5-c-alert__description">
                 <p class="pf-v5-u-mb-sm">${error.message || 'Style issue detected'}</p>
@@ -370,7 +371,7 @@ function createErrorSummary(errors) {
                                             <i class="fas fa-angle-right" aria-hidden="true"></i>
                                         </span>
                                         <span class="pf-v5-c-expandable-section__toggle-text">
-                                            ${type.replace(/_/g, ' ')} Issues (${errorsByType[type].length})
+                                            ${formatRuleType(type)} Issues (${errorsByType[type].length})
                                         </span>
                                     </button>
                                     <div class="pf-v5-c-expandable-section__content">

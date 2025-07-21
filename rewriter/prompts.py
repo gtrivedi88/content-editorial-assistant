@@ -64,6 +64,7 @@ class PromptGenerator:
         """
         Generate a context-aware prompt by looking up instructions in the
         loaded configuration file based on the detected errors.
+        Enhanced to handle consolidated errors with fix options.
         """
         if not self.prompt_config:
             logger.warning("No prompt configuration loaded. Using a generic prompt.")
@@ -71,7 +72,16 @@ class PromptGenerator:
 
         # AUTO-CATEGORIZE using existing rule severity (zero maintenance!)
         priority_groups = {'urgent': [], 'high': [], 'medium': [], 'low': []}
+        consolidated_error_count = 0
+        fix_options_available = 0
+        
         for error in errors:
+            # Track consolidated errors and fix options
+            if error.get('consolidated_from'):
+                consolidated_error_count += 1
+            if error.get('fix_options'):
+                fix_options_available += 1
+                
             severity = error.get('severity', 'medium')  # Rules already set this automatically
             priority = self._map_severity_to_priority(severity)  # Simple mapping, no hardcoded keywords
             if priority in priority_groups:
@@ -94,6 +104,7 @@ class PromptGenerator:
 
         primary_command = ""
         specific_instructions = []
+        fix_option_instructions = []  # New: Track fix option specific instructions
         current_prompt_length = 0
         MAX_PROMPT_LENGTH = 1500  # Automatic limit to prevent overwhelm
 
@@ -203,11 +214,22 @@ class PromptGenerator:
                 "Use active voice and clear, concise language"
             ]
 
+        # ENHANCED: Process fix options for consolidated errors
+        fix_option_instructions = []
+        if fix_options_available > 0:
+            fix_option_instructions = self._enhance_instructions_with_fix_options(error_groups, processing_order)
+            logger.info(f"🛠️ Generated {len(fix_option_instructions)} fix option instructions")
+        
+        # Determine fix strategy based on available options
+        fix_strategy = self._get_dominant_fix_strategy(errors)
+        
         # Build the final prompt using a helper method
         if self.use_ollama:
-            prompt = self._build_ollama_prompt_v3(content, primary_command, specific_instructions)
+            prompt = self._build_ollama_prompt_v3(content, primary_command, specific_instructions, 
+                                                fix_option_instructions, fix_strategy)
         else:
-            prompt = self._build_hf_prompt_v3(content, primary_command, specific_instructions)
+            prompt = self._build_hf_prompt_v3(content, primary_command, specific_instructions,
+                                            fix_option_instructions, fix_strategy)
         
         # LOG SMART PROCESSING INFO
         total_errors = len(errors)
@@ -217,6 +239,8 @@ class PromptGenerator:
         logger.info(f"🎯 Smart processing: {processed_types} rule types from {total_errors} errors")
         logger.info(f"📊 Priority distribution: U:{len(priority_groups['urgent'])} H:{len(priority_groups['high'])} M:{len(priority_groups['medium'])} L:{len(priority_groups['low'])}")
         logger.info(f"🚨 Critical rule types prioritized: {critical_types}")
+        if consolidated_error_count > 0:
+            logger.info(f"🔗 Consolidated errors: {consolidated_error_count}, Fix strategies: {fix_strategy}")
         logger.info(f"📏 Final prompt length: {len(prompt)} characters (limit: {MAX_PROMPT_LENGTH})")
         
         return prompt
@@ -247,49 +271,82 @@ FINAL POLISHED VERSION:"""
         
         return prompt
     
-    def _build_ollama_prompt_v3(self, content: str, primary_command: str, specific_instructions: List[str]) -> str:
+    def _build_ollama_prompt_v3(self, content: str, primary_command: str, specific_instructions: List[str], 
+                               fix_option_instructions: List[str] = None, fix_strategy: str = "balanced") -> str:
         """
         Builds a more forceful, structured prompt for Ollama/Llama models.
+        Enhanced to handle fix options and consolidated errors.
         """
         instructions_text = "\n".join(f"- {instruction}" for instruction in specific_instructions)
+        
+        # Add fix option instructions if available
+        fix_options_text = ""
+        if fix_option_instructions:
+            fix_options_text = f"""
 
-        prompt = f"""You are a professional technical editor following a strict corporate style guide.
+FIX STRATEGY: {fix_strategy.upper()}
+SPECIFIC FIX GUIDANCE:
+{chr(10).join(fix_option_instructions)}
+"""
+
+        prompt = f"""You are a professional technical editor making TARGETED CORRECTIONS to fix specific style issues.
+
+CRITICAL INSTRUCTIONS:
+- Make ONLY the necessary corrections to fix the detected style issues
+- DO NOT paraphrase or rewrite the entire text
+- PRESERVE the original structure, tone, and meaning
+- Fix ONLY what needs to be fixed based on the guidance below
 
 PRIMARY GOAL:
 {primary_command}
 
-ADDITIONAL INSTRUCTIONS:
-{instructions_text}
+SPECIFIC CORRECTIONS NEEDED:
+{instructions_text}{fix_options_text}
 
-GENERAL GUIDELINES:
-- Use active voice.
-- Keep sentences short and clear.
-- Maintain the original meaning.
+CORRECTION GUIDELINES:
+- Fix detected issues precisely and minimally
+- Keep the original wording where no issues exist
+- Maintain the original sentence structure when possible
+- For consolidated issues, apply the most appropriate single fix
+- Output ONLY the corrected text, no explanations
 
-Rewrite the following text according to all the rules above.
+Apply these targeted corrections to the following text:
 
 Original text:
 {content}
 
-Improved text:"""
+Corrected text:"""
         
         return prompt
     
-    def _build_hf_prompt_v3(self, content: str, primary_command: str, specific_instructions: List[str]) -> str:
+    def _build_hf_prompt_v3(self, content: str, primary_command: str, specific_instructions: List[str],
+                          fix_option_instructions: List[str] = None, fix_strategy: str = "balanced") -> str:
         """
         Builds a more forceful, structured prompt for Hugging Face models.
+        Enhanced to handle fix options and consolidated errors.
         """
         instructions_text = "\n".join(f"- {instruction}" for instruction in specific_instructions)
+        
+        # Add fix option instructions if available
+        fix_options_section = ""
+        if fix_option_instructions:
+            fix_options_section = f"\nFIX STRATEGY: {fix_strategy.upper()}\nSPECIFIC FIX GUIDANCE:\n{chr(10).join(fix_option_instructions)}"
 
         prompt_parts = [
-            "Task: Rewrite the following text according to a strict corporate style guide.",
+            "Task: Apply TARGETED CORRECTIONS to fix specific style issues in the text.",
+            "CRITICAL: Make only necessary corrections. Do NOT paraphrase or rewrite unnecessarily.",
             f"\nPRIMARY GOAL: {primary_command}",
-            f"\nADDITIONAL INSTRUCTIONS:\n{instructions_text}",
+            f"\nSPECIFIC CORRECTIONS NEEDED:\n{instructions_text}",
+            fix_options_section,
+            "\nCORRECTION GUIDELINES:",
+            "- Fix detected issues precisely and minimally",
+            "- Preserve original structure and meaning",
+            "- Keep unchanged text exactly as-is",
             f"\nOriginal text: {content}",
-            "\nImproved text:"
+            "\nCorrected text:"
         ]
         
-        return "\n".join(prompt_parts)
+        return "\n".join(part for part in prompt_parts if part)
 
     def generate_multi_pass_prompts(self, content: str, errors: List[Dict[str, Any]], context: str) -> List[Dict[str, Any]]:
         """
@@ -490,3 +547,91 @@ Improved text:"""
         }
         
         return error_type in critical_rule_types
+
+    def _process_fix_options(self, error: Dict[str, Any]) -> List[str]:
+        """
+        Process fix options from consolidated errors to generate specific AI instructions.
+        """
+        fix_instructions = []
+        
+        if not error.get('fix_options'):
+            return fix_instructions
+        
+        error_message = error.get('message', '')
+        text_span = error.get('text_span', '')
+        
+        # Add consolidated error context
+        if error.get('consolidated_from'):
+            fix_instructions.append(
+                f"CONSOLIDATED ISSUE: '{text_span}' has {len(error['consolidated_from'])} overlapping problems"
+            )
+        
+        # Process each fix option
+        for i, option in enumerate(error['fix_options']):
+            option_type = option.get('type', 'unknown')
+            target_span = option.get('text_span', '')
+            suggestions = option.get('suggestions', [])
+            scope = option.get('scope', 'unknown')
+            
+            if option_type == 'quick':
+                if suggestions:
+                    fix_instructions.append(
+                        f"QUICK FIX for '{target_span}': {suggestions[0]}"
+                    )
+            elif option_type == 'comprehensive':
+                if suggestions:
+                    fix_instructions.append(
+                        f"COMPREHENSIVE FIX for '{target_span}': {suggestions[0]}"
+                    )
+            
+            # Add additional suggestions if available
+            for suggestion in suggestions[1:2]:  # Add max 1 more suggestion per option
+                fix_instructions.append(f"  Alternative: {suggestion}")
+        
+        return fix_instructions
+    
+    def _enhance_instructions_with_fix_options(self, error_groups: Dict[str, List[Dict]], 
+                                             processing_order: List[tuple]) -> List[str]:
+        """
+        Generate enhanced instructions that include fix option guidance.
+        """
+        enhanced_instructions = []
+        
+        for error_type, error_list in processing_order:
+            # Check if any errors in this group have fix options
+            errors_with_options = [e for e in error_list if e.get('fix_options')]
+            
+            if errors_with_options:
+                enhanced_instructions.append(f"=== {error_type.upper()} FIXES ===")
+                
+                for error in errors_with_options:
+                    fix_option_instructions = self._process_fix_options(error)
+                    enhanced_instructions.extend(fix_option_instructions)
+                    
+                    # Add separator between different errors
+                    if len(errors_with_options) > 1:
+                        enhanced_instructions.append("---")
+        
+        return enhanced_instructions
+    
+    def _get_dominant_fix_strategy(self, errors: List[Dict[str, Any]]) -> str:
+        """
+        Determine the dominant fix strategy based on the available fix options.
+        """
+        quick_fixes = 0
+        comprehensive_fixes = 0
+        
+        for error in errors:
+            if error.get('fix_options'):
+                for option in error['fix_options']:
+                    if option.get('type') == 'quick':
+                        quick_fixes += 1
+                    elif option.get('type') == 'comprehensive':
+                        comprehensive_fixes += 1
+        
+        if comprehensive_fixes > quick_fixes:
+            return "comprehensive"
+        elif quick_fixes > comprehensive_fixes:
+            return "targeted"
+        else:
+            return "balanced"
