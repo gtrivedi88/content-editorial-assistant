@@ -76,15 +76,16 @@ class VerbsRule(BaseLanguageRule):
                 
             # --- Rule 4: Subjunctive Mood Check (Corrected Logic) ---
             # Linguistic Anchor: Find trigger adjectives ("important") that have a clausal
-            # complement (ccomp) which, in turn, contains the base form of 'be'.
+            # complement (ccomp). Then, check within that clause for the base form of 'be'.
             for token in sent:
-                if token.lemma_ in ["important", "necessary", "essential", "required"] and token.dep_ == "acomp":
-                    # Find the clausal complement attached to the main verb (e.g., 'is')
-                    main_verb = token.head
-                    for child in main_verb.children:
+                if token.lemma_ in ["important", "necessary", "essential", "required"] and token.dep_ in ["acomp", "advcl"]:
+                    # The verb this adjective modifies (e.g., 'is') is its head.
+                    head_verb = token.head
+                    # Find the clausal complement attached to that verb.
+                    for child in head_verb.children:
                         if child.dep_ == "ccomp":
-                            # Check if 'be' (as an auxiliary) exists in the subtree of this clause.
-                            if any(sub_token.lemma_ == "be" and sub_token.pos_ == "AUX" for sub_token in child.subtree):
+                            # Now, check if the base verb 'be' exists as an auxiliary in that clause.
+                            if any(sub.lemma_ == "be" and sub.pos_ == "AUX" for sub in child.subtree):
                                 errors.append(self._create_error(
                                     sentence=sent.text,
                                     sentence_index=i,
