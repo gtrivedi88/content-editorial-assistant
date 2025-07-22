@@ -1,42 +1,48 @@
 """
-Core AI Rewriter Module
-Main orchestration class that coordinates all rewriter components.
+AI Rewriter Core Module
+Uses Assembly Line approach exclusively for surgical precision.
 """
 
 import logging
-from typing import List, Dict, Any, Optional
+import time
+from typing import Dict, List, Any, Optional, Callable
 
 from .models import ModelManager
-from .prompts import PromptGenerator
-from .generators import TextGenerator
+from .generators import TextGenerator  
 from .processors import TextProcessor
 from .evaluators import RewriteEvaluator
+from .assembly_line_rewriter import AssemblyLineRewriter
 
 logger = logging.getLogger(__name__)
 
 
 class AIRewriter:
-    """Main AI Rewriter class that orchestrates the rewriting process."""
+    """AI-powered text rewriter with assembly line precision."""
     
-    def __init__(self, model_name: str = "microsoft/DialoGPT-medium", 
-                 use_ollama: bool = False, ollama_model: str = "llama3:8b", 
-                 progress_callback=None):
-        """Initialize the AI rewriter with all components."""
+    def __init__(self, use_ollama: bool = True, ollama_model: str = "llama3:8b", 
+                 progress_callback: Optional[Callable] = None):
+        """Initialize the AI rewriter with assembly line capability."""
         self.progress_callback = progress_callback
         
-        # Initialize all components
-        self.model_manager = ModelManager(model_name, use_ollama, ollama_model)
-        self.prompt_generator = PromptGenerator(style_guide='ibm_style', use_ollama=use_ollama)
+        # Initialize components
+        self.model_manager = ModelManager(use_ollama, ollama_model)
         self.text_generator = TextGenerator(self.model_manager)
         self.text_processor = TextProcessor()
         self.evaluator = RewriteEvaluator()
         
-        logger.info(f"✅ AIRewriter initialized with {len(self._get_available_components())} components")
+        # Initialize assembly line rewriter (ONLY approach now)
+        self.assembly_line = AssemblyLineRewriter(
+            self.text_generator, 
+            self.text_processor, 
+            progress_callback
+        )
+        
+        logger.info("AIRewriter initialized - Assembly Line ONLY approach")
     
     def rewrite(self, content: str, errors: List[Dict[str, Any]], 
                 context: str = "sentence", pass_number: int = 1) -> Dict[str, Any]:
         """
-        Generate AI-powered rewrite suggestions.
+        Generate AI-powered rewrite suggestions using assembly line approach.
         
         Args:
             content: Original text content
@@ -72,10 +78,11 @@ class AIRewriter:
                     'error': 'AI models are not available. Please check your model configuration.'
                 }
             
+            # Use assembly line for BOTH passes
             if pass_number == 1:
-                return self._perform_first_pass(content, errors, context)
+                return self._perform_assembly_line_pass(content, errors, context)
             else:
-                return self._perform_second_pass(content, errors, context)
+                return self._perform_assembly_line_refinement(content, errors, context)
             
         except Exception as e:
             logger.error(f"Error in rewrite: {str(e)}")
@@ -86,158 +93,93 @@ class AIRewriter:
                 'error': f'AI rewrite failed: {str(e)}'
             }
     
-    def _perform_first_pass(self, content: str, errors: List[Dict[str, Any]], context: str) -> Dict[str, Any]:
-        """Perform the first pass of AI rewriting."""
-        logger.info("🔄 Starting AI Pass 1: Initial rewrite based on detected errors")
-        logger.info(f"📊 Processing {len(errors)} detected errors: {[e.get('type', 'unknown') for e in errors]}")
+    def _perform_assembly_line_pass(self, content: str, errors: List[Dict[str, Any]], context: str) -> Dict[str, Any]:
+        """Perform assembly line rewriting with sequential error fixing."""
+        logger.info("🏭 Starting Assembly Line Rewriting (Pass 1)")
+        logger.info(f"📊 Processing {len(errors)} errors with surgical precision")
         
         if self.progress_callback:
-            self.progress_callback('pass1_start', 'Pass 1: Generating initial improvements...', 
-                                 'AI addressing specific style issues', 20)
+            self.progress_callback('assembly_start', 'Assembly Line: Starting precision rewriting...', 
+                                 'Organizing errors by priority', 10)
         
-        # Generate context-aware prompt for first pass
-        initial_prompt = self.prompt_generator.generate_prompt(content, errors, context)
-        logger.info(f"🎯 Pass 1 prompt length: {len(initial_prompt)} characters")
+        # Apply assembly line fixes
+        result = self.assembly_line.apply_assembly_line_fixes(content, errors, context)
         
-        if self.progress_callback:
-            self.progress_callback('pass1_processing', 'Pass 1: AI processing detected issues...', 
-                                 'Converting passive voice, shortening sentences', 60)
-        
-        # Generate first rewrite
-        raw_rewrite = self.text_generator.generate_text(initial_prompt, content)
-        
-        # Clean and process the generated text
-        first_rewrite = self.text_processor.clean_generated_text(raw_rewrite, content)
-        logger.info(f"✅ Pass 1 complete. Length: {len(first_rewrite)} chars (original: {len(content)} chars)")
-        
-        # Check if first pass made changes
-        if first_rewrite == content:
-            logger.warning("❌ Pass 1 failed to make changes")
-            return {
-                'rewritten_text': content,
-                'improvements': [],
-                'confidence': 0.0,
-                'error': 'AI model failed to make meaningful improvements to the text'
-            }
-        
-        if self.progress_callback:
-            self.progress_callback('pass1_complete', 'Pass 1: Initial rewrite completed', 
-                                 'First pass improvements applied', 100)
-        
-        # Evaluate the rewrite
-        evaluation = self.evaluator.evaluate_rewrite_quality(
-            content, first_rewrite, errors, 
-            self.model_manager.use_ollama, pass_number=1
-        )
-        
-        logger.info(f"✅ Pass 1 complete. Confidence: {evaluation['confidence']:.2f}")
-        logger.info(f"📊 Pass 1 stats - Original: {len(content.split())} words, Rewritten: {len(first_rewrite.split())} words")
-        
-        return {
-            'rewritten_text': first_rewrite,
-            'improvements': evaluation['improvements'],
-            'confidence': evaluation['confidence'],
-            'original_errors': len(errors),
-            'model_used': evaluation['model_used'] + '_pass1',
-            'pass_number': 1,
-            'can_refine': True,  # Indicate that Pass 2 is available
-            'evaluation': evaluation
-        }
-    
-    def _perform_second_pass(self, first_pass_result: str, original_errors: List[Dict[str, Any]], context: str) -> Dict[str, Any]:
-        """Perform the second pass of AI rewriting (refinement)."""
-        logger.info("🔍 Starting AI Pass 2: Self-review and refinement")
-        logger.info(f"🔄 Reviewing first pass output for further improvements...")
-        
-        if self.progress_callback:
-            self.progress_callback('pass2_start', 'Pass 2: AI self-review and refinement...', 
-                                 'AI critically reviewing its own work', 20)
-        
-        # Generate self-review prompt
-        review_prompt = self.prompt_generator.generate_self_review_prompt(first_pass_result, original_errors)
-        logger.info(f"🎯 Pass 2 prompt length: {len(review_prompt)} characters")
-        
-        if self.progress_callback:
-            self.progress_callback('pass2_processing', 'Pass 2: Applying final polish...', 
-                                 'Enhancing clarity and flow', 60)
-        
-        # Get AI's self-assessment and refinement
-        raw_final_rewrite = self.text_generator.generate_text(review_prompt, first_pass_result)
-        final_rewrite = self.text_processor.clean_generated_text(raw_final_rewrite, first_pass_result)
-        logger.info(f"✅ Pass 2 complete. Length: {len(final_rewrite)} chars")
-        
-        # If second pass didn't improve, use first pass
-        if not final_rewrite or final_rewrite == first_pass_result or len(final_rewrite.strip()) < 10:
-            logger.info("🔄 Second pass: No further improvements made, using first pass result")
-            final_rewrite = first_pass_result
-            second_pass_improvements = ['Second pass: No further refinements needed']
-        else:
-            second_pass_improvements = self.evaluator.extract_second_pass_improvements(first_pass_result, final_rewrite)
-            logger.info(f"🎯 Second pass improvements: {second_pass_improvements}")
-        
-        if self.progress_callback:
-            self.progress_callback('pass2_complete', 'Pass 2: Refinement completed successfully!', 
-                                 'Your polished text is ready', 100)
-        
-        # Calculate enhanced confidence for second pass
-        final_confidence = self.evaluator.calculate_second_pass_confidence(first_pass_result, final_rewrite, original_errors)
-        
-        logger.info(f"✅ Pass 2 complete. Final confidence: {final_confidence:.2f}")
-        logger.info(f"📊 Final stats - Pass 1: {len(first_pass_result.split())} words, Final: {len(final_rewrite.split())} words")
-        
-        return {
-            'rewritten_text': final_rewrite,
-            'improvements': second_pass_improvements,
-            'confidence': final_confidence,
-            'original_errors': len(original_errors),
-            'model_used': ('ollama' if self.model_manager.use_ollama else 'huggingface') + '_pass2',
-            'pass_number': 2,
-            'can_refine': False  # No further refinement available
-        }
-    
-    def refine_text(self, first_pass_result: str, original_errors: List[Dict[str, Any]], 
-                    context: str = "sentence") -> Dict[str, Any]:
-        """
-        Refine the first pass result with AI Pass 2.
-        
-        Args:
-            first_pass_result: The result from the first AI pass
-            original_errors: Original errors detected by style analyzer
-            context: Context level
+        if result.get('assembly_line_used'):
+            # Evaluate improvements made
+            improvements = self.evaluator.extract_improvements(content, result['rewritten_text'])
+            if improvements:
+                result['improvements'] = improvements
             
-        Returns:
-            Dictionary with refined rewrite results
-        """
-        return self._perform_second_pass(first_pass_result, original_errors, context)
+            # Add pass metadata
+            result['pass_number'] = 1
+            result['can_refine'] = True
+            result['model_used'] = f"{self.model_manager.ollama_model if self.model_manager.use_ollama else 'hf_transformers'}"
+            
+            logger.info(f"✅ Assembly Line Pass 1 complete: {result.get('errors_fixed', 0)}/{result.get('original_errors', 0)} errors fixed")
+            
+            if self.progress_callback:
+                self.progress_callback('assembly_complete', 'Assembly Line: Precision rewriting completed!', 
+                                     f"Fixed {result.get('errors_fixed', 0)} errors with surgical precision", 100)
+        
+        return result
     
-    def batch_rewrite(self, content_list: List[str], errors_list: List[List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
-        """Rewrite multiple pieces of content in batch."""
-        results = []
+    def _perform_assembly_line_refinement(self, content: str, errors: List[Dict[str, Any]], context: str) -> Dict[str, Any]:
+        """Perform assembly line refinement (Pass 2) - re-analyze and fix remaining issues."""
+        logger.info("🔍 Starting Assembly Line Refinement (Pass 2)")
+        logger.info("🔄 Re-analyzing content for any remaining issues...")
         
-        for content, errors in zip(content_list, errors_list):
-            result = self.rewrite(content, errors)
-            results.append(result)
+        if self.progress_callback:
+            self.progress_callback('pass2_start', 'Assembly Line Refinement: Re-analyzing content...', 
+                                 'Detecting any remaining style issues', 20)
         
-        return results
+        # For refinement, we could:
+        # 1. Re-run analysis on the refined content to find new errors
+        # 2. Or use a "refinement mode" that focuses on polish
+        # For now, let's run the assembly line again with any errors passed in
+        
+        result = self.assembly_line.apply_assembly_line_fixes(content, errors, context)
+        
+        if result.get('assembly_line_used'):
+            # Evaluate refinement improvements
+            improvements = self.evaluator.extract_improvements(content, result['rewritten_text'])
+            if improvements:
+                result['improvements'] = improvements
+            
+            # Add refinement pass metadata
+            result['pass_number'] = 2
+            result['can_refine'] = False  # No third pass
+            result['model_used'] = f"{self.model_manager.ollama_model if self.model_manager.use_ollama else 'hf_transformers'}"
+            
+            logger.info(f"✅ Assembly Line Refinement complete: {result.get('errors_fixed', 0)} additional fixes applied")
+            
+            if self.progress_callback:
+                self.progress_callback('pass2_complete', 'Assembly Line Refinement: Completed!', 
+                                     f"Applied {result.get('errors_fixed', 0)} refinement fixes", 100)
+        
+        return result
+    
+    def refine(self, content: str, errors: List[Dict[str, Any]], context: str = "sentence") -> Dict[str, Any]:
+        """
+        Perform refinement using assembly line approach.
+        This is a convenience method that calls rewrite with pass_number=2.
+        """
+        return self.rewrite(content, errors, context, pass_number=2)
     
     def get_system_info(self) -> Dict[str, Any]:
-        """Get comprehensive information about the rewriter system."""
+        """Get comprehensive system information."""
         return {
-            'model_info': self.model_manager.get_model_info(),
-            'generation_info': self.text_generator.get_model_info(),
-            'available_components': self._get_available_components(),
-            'is_ready': self.is_ready()
-        }
-    
-    def is_ready(self) -> bool:
-        """Check if the rewriter system is ready for use."""
-        return self.text_generator.is_available()
-    
-    def _get_available_components(self) -> List[str]:
-        """Get list of available components."""
-        components = ['model_manager', 'prompt_generator', 'text_processor', 'evaluator']
-        
-        if self.text_generator.is_available():
-            components.append('text_generator')
-        
-        return components 
+            'ai_available': self.text_generator.is_available(),
+            'assembly_line_enabled': True, # Always true with this new approach
+            'model_info': {
+                'use_ollama': self.model_manager.use_ollama,
+                'ollama_model': self.model_manager.ollama_model,
+                'ollama_available': self.model_manager.is_ollama_available()
+            },
+            'capabilities': {
+                'assembly_line_rewriting': True,
+                'legacy_rewriting': False, # No legacy rewriting
+                'two_pass_refinement': False, # No two-pass refinement
+                'error_validation': True
+            }
+        } 

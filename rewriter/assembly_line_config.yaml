@@ -1,0 +1,154 @@
+# Assembly Line Configuration - COMPLETE COVERAGE
+# Automatically generates specialized instructions for ALL error types
+# Based on comprehensive analysis of /rules directory
+
+# Processing passes in priority order
+processing_passes:
+  urgent:
+    name: "Critical/Legal Pass"
+    categories: ["legal", "inclusive_language", "second_person", "claims"]
+  
+  high:
+    name: "Structural Pass" 
+    categories: ["passive_voice", "sentence_length", "subjunctive_mood", "verbs", "headings"]
+  
+  medium:
+    name: "Grammar Pass"
+    categories: ["word_usage", "anthropomorphism", "capitalization", "contractions", "plurals", "spelling", "terminology"]
+  
+  low:
+    name: "Style Pass"
+    categories: ["citations", "currency", "pronouns", "ambiguity", "punctuation", "tone"]
+
+# Comprehensive instruction templates covering ALL rule types
+instruction_templates:
+  # ===== LEGAL/CRITICAL (URGENT) =====
+  legal_claims: "Replace subjective claims with objective statements. Make no other changes."
+  legal_company_names: "Fix company name formatting according to legal requirements. Make no other changes."
+  legal_personal_information: "Remove or anonymize personal information. Make no other changes."
+  inclusive_language: "Replace non-inclusive terms with inclusive alternatives. Make no other changes."
+  second_person: "Remove first-person 'we/our' and use second person 'you' for user actions. Make no other changes."
+  
+  # ===== STRUCTURAL (HIGH) =====
+  passive_voice: "Convert passive voice to active voice. Make no other changes."
+  sentence_length: "Break long sentence into shorter sentences. Make no other changes."
+  subjunctive_mood: "Convert subjunctive mood to imperative. Change 'It is important that X be done' to 'Important: Do X'. Make no other changes."
+  verbs: "Fix verb tense issues. Use present tense for instructions. Make no other changes."
+  headings: "Fix heading capitalization and structure. Make no other changes."
+  
+  # ===== LANGUAGE & GRAMMAR (MEDIUM) =====
+  abbreviations: "Fix abbreviation formatting and usage according to style guide. Make no other changes."
+  adverbs_only: "Remove unnecessary adverbs or replace with stronger verbs. Make no other changes."
+  anthropomorphism: "Remove anthropomorphism. Change 'system wants' to 'system requires'. Make no other changes."
+  articles: "Fix article usage (a, an, the) according to grammar rules. Make no other changes."
+  capitalization: "Fix capitalization issues according to style guide. Make no other changes."
+  conjunctions: "Fix conjunction usage and placement. Make no other changes."
+  contractions: "Expand contractions in formal writing. Make no other changes."
+  plurals: "Fix parenthetical plurals. Change 'file(s)' to 'files'. Make no other changes."
+  possessives: "Fix possessive forms and apostrophe usage. Make no other changes."
+  prepositions: "Fix preposition usage and placement. Make no other changes."
+  pronouns: "Replace ambiguous pronouns with specific nouns. Make no other changes."
+  spelling: "Fix spelling errors according to preferred dictionary. Make no other changes."
+  terminology: "Replace non-preferred terms with approved terminology. Make no other changes."
+  
+  # ===== WORD USAGE (A-Z) - All alphabet rules =====
+  word_usage_a: "Fix usage of words starting with 'A' according to style guide. Make no other changes."
+  word_usage_b: "Fix usage of words starting with 'B' according to style guide. Make no other changes."
+  word_usage_c: "Fix usage of words starting with 'C' according to style guide. Make no other changes."
+  word_usage_d: "Fix usage of words starting with 'D' according to style guide. Make no other changes."
+  word_usage_e: "Fix usage of words starting with 'E' according to style guide. Make no other changes."
+  word_usage_f: "Fix usage of words starting with 'F' according to style guide. Make no other changes."
+  word_usage_g: "Fix usage of words starting with 'G' according to style guide. Make no other changes."
+  word_usage_h: "Fix usage of words starting with 'H' according to style guide. Make no other changes."
+  word_usage_i: "Fix usage of words starting with 'I' according to style guide. Make no other changes."
+  word_usage_j: "Fix usage of words starting with 'J' according to style guide. Make no other changes."
+  word_usage_k: "Fix usage of words starting with 'K' according to style guide. Make no other changes."
+  word_usage_l: "Fix usage of words starting with 'L' according to style guide. Make no other changes."
+  word_usage_m: "Fix usage of words starting with 'M' according to style guide. Make no other changes."
+  word_usage_n: "Fix usage of words starting with 'N' according to style guide. Make no other changes."
+  word_usage_o: "Fix usage of words starting with 'O' according to style guide. Make no other changes."
+  word_usage_p: "Fix usage of words starting with 'P' according to style guide. Make no other changes."
+  word_usage_q: "Fix usage of words starting with 'Q' according to style guide. Make no other changes."
+  word_usage_r: "Fix usage of words starting with 'R' according to style guide. Make no other changes."
+  word_usage_s: "Fix usage of words starting with 'S' according to style guide. Make no other changes."
+  word_usage_t: "Fix usage of words starting with 'T' according to style guide. Make no other changes."
+  word_usage_u: "Fix usage of words starting with 'U' according to style guide. Make no other changes."
+  word_usage_v: "Fix usage of words starting with 'V' according to style guide. Make no other changes."
+  word_usage_w: "Fix usage of words starting with 'W' according to style guide. Make no other changes."
+  word_usage_x: "Fix usage of words starting with 'X' according to style guide. Make no other changes."
+  word_usage_y: "Fix usage of words starting with 'Y' according to style guide. Make no other changes."
+  word_usage_z: "Fix usage of words starting with 'Z' according to style guide. Make no other changes."
+  word_usage_special: "Fix usage of special characters and symbols. Make no other changes."
+  
+  # ===== PUNCTUATION =====
+  colons: "Fix colon usage and placement according to style guide. Make no other changes."
+  commas: "Fix comma usage and placement according to style guide. Make no other changes."
+  dashes: "Fix dash usage (em dash, en dash) according to style guide. Make no other changes."
+  ellipses: "Fix ellipsis usage and formatting. Make no other changes."
+  exclamation_points: "Fix exclamation point usage according to style guide. Make no other changes."
+  hyphens: "Fix hyphen usage in compound words and modifiers. Make no other changes."
+  parentheses: "Fix parentheses usage and placement. Make no other changes."
+  periods: "Fix period usage and placement. Make no other changes."
+  punctuation_and_symbols: "Fix general punctuation and symbol usage. Make no other changes."
+  quotation_marks: "Fix quotation mark usage and placement. Make no other changes."
+  semicolons: "Fix semicolon usage and placement. Make no other changes."
+  slashes: "Fix slash usage and formatting. Make no other changes."
+  
+  # ===== NUMBERS & MEASUREMENT =====
+  numbers_currency: "Replace currency symbols with ISO codes. Change '$' to 'USD'. Make no other changes."
+  dates_and_times: "Fix date and time formatting according to style guide. Make no other changes."
+  numbers_general: "Fix number formatting and usage according to style guide. Make no other changes."
+  numerals_vs_words: "Fix when to use numerals vs spelled-out numbers. Make no other changes."
+  units_of_measurement: "Fix unit of measurement formatting and abbreviations. Make no other changes."
+  
+  # ===== AUDIENCE & MEDIUM =====
+  conversational_style: "Adjust tone to be appropriately conversational but professional. Make no other changes."
+  global_audiences: "Replace culturally specific terms with globally understood alternatives. Make no other changes."
+  llm_consumability: "Improve text structure for AI/LLM processing clarity. Make no other changes."
+  tone: "Adjust tone to match the target audience and content type. Make no other changes."
+  
+  # ===== TECHNICAL ELEMENTS =====
+  technical_commands: "Fix formatting of command names and syntax. Make no other changes."
+  technical_files_directories: "Fix formatting of file and directory paths. Make no other changes."
+  technical_keyboard_keys: "Fix formatting of keyboard key references. Make no other changes."
+  technical_mouse_buttons: "Fix formatting of mouse button references. Make no other changes."
+  technical_programming_elements: "Fix formatting of code elements and programming terms. Make no other changes."
+  technical_ui_elements: "Fix formatting of user interface element references. Make no other changes."
+  technical_web_addresses: "Fix formatting of URLs and web addresses. Make no other changes."
+  
+  # ===== REFERENCES =====
+  references_citations: "Fix citation formatting and link text quality. Replace 'click here' with descriptive text. Make no other changes."
+  references_geographic_locations: "Fix geographic location formatting and abbreviations. Make no other changes."
+  references_names_titles: "Fix person name and title formatting. Make no other changes."
+  references_product_names: "Fix product name formatting and capitalization. Make no other changes."
+  references_product_versions: "Fix product version formatting and notation. Make no other changes."
+  
+  # ===== STRUCTURE & FORMAT =====
+  examples: "Fix example formatting and presentation. Make no other changes."
+  glossaries: "Fix glossary term formatting and definitions. Make no other changes."
+  highlighting: "Fix text highlighting and emphasis formatting. Make no other changes."
+  lists: "Fix list formatting, parallelism, and structure. Make no other changes."
+  procedures: "Fix procedure step formatting and numbering. Make no other changes."
+  notes: "Fix note and admonition formatting. Make no other changes."
+  structure_format_notes: "Fix note and admonition formatting. Make no other changes."
+  
+  # ===== GENERAL RULES =====
+  ambiguity: "Replace ambiguous terms with specific terms. Make no other changes."
+  
+  # ===== PATTERN MATCHERS (Fallbacks) =====
+  word_usage_*: "Fix word usage issues. Replace incorrect terms with preferred alternatives. Make no other changes."
+  punctuation_*: "Fix punctuation issues according to style guide. Make no other changes."
+  numbers_*: "Fix number formatting according to style guide. Make no other changes."
+  technical_*: "Fix technical element formatting according to style guide. Make no other changes."
+  references_*: "Fix reference formatting according to style guide. Make no other changes."
+  structure_*: "Fix structural formatting according to style guide. Make no other changes."
+  legal_*: "Fix legal compliance issues. Make no other changes."
+
+# Fallback instruction for unknown error types
+fallback_instruction: "Fix {error_type} issues according to the style guide. Make minimal changes to preserve meaning."
+
+# Severity to priority mapping
+severity_mapping:
+  high: urgent
+  medium: high  
+  low: medium 

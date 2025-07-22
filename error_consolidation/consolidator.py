@@ -146,7 +146,7 @@ class ErrorConsolidator:
                 continue
             
             # Get rule types involved in this consolidation
-            rule_types = [error.get('type', '') for error in span_group.errors]
+            rule_types = [error.get('type', error.get('error_type', 'unknown')) for error in span_group.errors]
             
             # Determine primary rule and consolidation strategy
             primary_rule = self.priority_manager.determine_primary_rule(rule_types)
@@ -241,7 +241,7 @@ class ErrorConsolidator:
                     'text_span': span_group.dominant_span.text,
                     'consolidation_type': span_group.consolidation_type,
                     'error_count': len(span_group.errors),
-                    'rule_types': [error.get('type', '') for error in span_group.errors],
+                    'rule_types': [error.get('type', error.get('error_type', 'unknown')) for error in span_group.errors],
                     'sentence_index': span_group.dominant_span.sentence_index
                 }
                 consolidation_groups.append(group_info)

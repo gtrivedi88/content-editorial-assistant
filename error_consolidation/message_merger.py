@@ -27,7 +27,7 @@ class MessageMerger:
         Merge messages and suggestions from multiple errors within a span group.
         Enhanced to provide multiple fix options for nested spans.
         """
-        rule_types = [error['type'] for error in span_group.errors]
+        rule_types = [error.get('type', error.get('error_type', 'unknown')) for error in span_group.errors]
         messages = [error['message'] for error in span_group.errors]
         suggestion_lists = [error.get('suggestions', []) for error in span_group.errors]
         severities = [error.get('severity', 'medium') for error in span_group.errors]
@@ -48,7 +48,7 @@ class MessageMerger:
         
         # Build consolidated error
         consolidated_error = {
-            'type': span_group.errors[0]['type'],  # Use primary error type
+            'type': span_group.errors[0].get('type', span_group.errors[0].get('error_type', 'unknown')),  # Use primary error type with fallback
             'message': consolidated_message,
             'suggestions': merged_suggestions,
             'severity': consolidated_severity,
@@ -324,13 +324,14 @@ class MessageMerger:
             return 'low'
     
     def _find_primary_error(self, errors: List[Dict[str, Any]], primary_rule: str) -> Dict[str, Any]:
-        """Find the error that corresponds to the primary rule."""
+        """Find the error that should be used as the primary error for consolidation."""
+        # Look for exact rule type match first
         for error in errors:
-            if error.get('type') == primary_rule:
+            if error.get('type', error.get('error_type', '')) == primary_rule:
                 return error
         
-        # Fallback to first error if primary rule not found
-        return errors[0] if errors else {} 
+        # If no exact match, return the first error
+        return errors[0] if errors else {}
 
     def _merge_suggestions_with_options(self, suggestion_lists: List[List[str]], 
                                        merger_strategy: str, span_group: SpanGroup) -> List[str]:

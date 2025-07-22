@@ -111,6 +111,10 @@ class VerbsRule(BaseLanguageRule):
                     ))
         return errors
 
-    # This is a placeholder for the base class method
-    def _create_error(self, **kwargs) -> Dict[str, Any]:
-        return kwargs
+    # Helper method to get sentence index from SpaCy doc
+    def _get_sentence_index(self, doc, sent):
+        """Get the index of a sentence within the document."""
+        for i, sentence in enumerate(doc.sents):
+            if sentence == sent:
+                return i
+        return 0

@@ -63,7 +63,3 @@ class PronounsRule(BaseLanguageRule):
                             flagged_text=pronoun_token.text
                         ))
         return errors
-
-    # This is a placeholder for the base class method
-    def _create_error(self, **kwargs) -> Dict[str, Any]:
-        return kwargs

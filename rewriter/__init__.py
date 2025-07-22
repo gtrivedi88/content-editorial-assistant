@@ -1,20 +1,20 @@
 """
-AI Rewriter Package
-Modular AI-powered text rewriting system.
+Rewriter Module - Assembly Line Precision AI Rewriting
+Provides AI-powered text rewriting with surgical precision using assembly line approach.
 """
 
 from .core import AIRewriter
-from .models import ModelManager
-from .prompts import PromptGenerator
+from .assembly_line_rewriter import AssemblyLineRewriter
 from .generators import TextGenerator
 from .processors import TextProcessor
 from .evaluators import RewriteEvaluator
+from .models import ModelManager
 
 __all__ = [
     'AIRewriter',
-    'ModelManager', 
-    'PromptGenerator',
+    'AssemblyLineRewriter', 
     'TextGenerator',
     'TextProcessor',
-    'RewriteEvaluator'
+    'RewriteEvaluator',
+    'ModelManager'
 ] 
