@@ -5,6 +5,11 @@ from typing import List, Dict, Any
 from .base_word_usage_rule import BaseWordUsageRule
 import re
 
+try:
+    from spacy.tokens import Doc
+except ImportError:
+    Doc = None
+
 class YWordsRule(BaseWordUsageRule):
     """
     Checks for the incorrect usage of specific words starting with 'Y'.
@@ -12,23 +17,22 @@ class YWordsRule(BaseWordUsageRule):
     def _get_rule_type(self) -> str:
         return 'word_usage_y'
 
-    def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
+    def analyze(self, text: str, sentences: List[str], spacy_doc=None, context=None) -> List[Dict[str, Any]]:
         errors = []
-        word_map = {
-            "you": {"suggestion": "Use second person ('you') to address the user directly. Avoid first person ('we', 'I').", "severity": "low"},
-            "your": {"suggestion": "Use 'your' in reference to assets only after the user has customized them.", "severity": "medium"},
-        }
+        if not spacy_doc:
+            return errors
+        doc = spacy_doc
 
-        for i, sentence in enumerate(sentences):
-            for word, details in word_map.items():
-                if re.search(r'\b' + re.escape(word) + r'\b', sentence, re.IGNORECASE):
-                    # This is a general guidance check, so it's best flagged for review.
-                    if word == "your":
-                         errors.append(self._create_error(
-                            sentence=sentence,
-                            sentence_index=i,
-                            message=f"Review usage of the possessive pronoun '{word}'.",
-                            suggestions=[details['suggestion']],
-                            severity=details['severity']
-                        ))
+        # This rule provides contextual advice, so it's a good candidate for a low-severity check.
+        for i, sent in enumerate(doc.sents):
+            for match in re.finditer(r'\b(your)\b', sent.text, re.IGNORECASE):
+                errors.append(self._create_error(
+                    sentence=sent.text,
+                    sentence_index=i,
+                    message="Review usage of the possessive pronoun 'your'.",
+                    suggestions=["Use 'your' in reference to assets only after the user has customized them."],
+                    severity='low',
+                    span=(sent.start_char + match.start(), sent.start_char + match.end()),
+                    flagged_text=match.group(0)
+                ))
         return errors

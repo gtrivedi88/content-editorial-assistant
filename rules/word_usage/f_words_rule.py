@@ -5,6 +5,11 @@ from typing import List, Dict, Any
 from .base_word_usage_rule import BaseWordUsageRule
 import re
 
+try:
+    from spacy.tokens import Doc
+except ImportError:
+    Doc = None
+
 class FWordsRule(BaseWordUsageRule):
     """
     Checks for the incorrect usage of specific words starting with 'F'.
@@ -12,14 +17,19 @@ class FWordsRule(BaseWordUsageRule):
     def _get_rule_type(self) -> str:
         return 'word_usage_f'
 
-    def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
+    def analyze(self, text: str, sentences: List[str], spacy_doc=None, context=None) -> List[Dict[str, Any]]:
         errors = []
+        if not spacy_doc:
+            return errors
+        doc = spacy_doc
+
+        # General word map
         word_map = {
             "failback": {"suggestion": "Use 'failback' (one word) as a noun/adjective, and 'fail back' (two words) as a verb.", "severity": "low"},
             "failover": {"suggestion": "Use 'failover' (one word) as a noun/adjective, and 'fail over' (two words) as a verb.", "severity": "low"},
             "fallback": {"suggestion": "Use 'fallback' (one word) as a noun/adjective, and 'fall back' (two words) as a verb.", "severity": "low"},
             "farther": {"suggestion": "Use 'farther' for physical distance and 'further' for degree or quantity.", "severity": "medium"},
-            " Fibre Channel": {"suggestion": "Use 'Fibre Channel', not 'Fiber Channel'.", "severity": "high"},
+            "Fibre Channel": {"suggestion": "Use 'Fibre Channel', not 'Fiber Channel'.", "severity": "high"},
             "file name": {"suggestion": "Use 'filename' only as a variable. Otherwise, use 'file name' (two words).", "severity": "low"},
             "fill out": {"suggestion": "Use a more precise verb like 'complete', 'specify', or 'enter'.", "severity": "medium"},
             "fine tune": {"suggestion": "Use 'fine-tune' as an adjective (e.g., 'fine-tuned model') and 'fine tune' as a verb.", "severity": "low"},
@@ -35,14 +45,16 @@ class FWordsRule(BaseWordUsageRule):
             "future-proof": {"suggestion": "Use with caution. This is an unsupported claim.", "severity": "high"},
         }
 
-        for i, sentence in enumerate(sentences):
+        for i, sent in enumerate(doc.sents):
             for word, details in word_map.items():
-                if re.search(r'\b' + re.escape(word) + r'\b', sentence, re.IGNORECASE):
+                for match in re.finditer(r'\b' + re.escape(word) + r'\b', sent.text, re.IGNORECASE):
                     errors.append(self._create_error(
-                        sentence=sentence,
+                        sentence=sent.text,
                         sentence_index=i,
-                        message=f"Review usage of the term '{word}'.",
+                        message=f"Review usage of the term '{match.group()}'.",
                         suggestions=[details['suggestion']],
-                        severity=details['severity']
+                        severity=details['severity'],
+                        span=(sent.start_char + match.start(), sent.start_char + match.end()),
+                        flagged_text=match.group(0)
                     ))
         return errors

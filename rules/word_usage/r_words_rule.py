@@ -5,6 +5,11 @@ from typing import List, Dict, Any
 from .base_word_usage_rule import BaseWordUsageRule
 import re
 
+try:
+    from spacy.tokens import Doc
+except ImportError:
+    Doc = None
+
 class RWordsRule(BaseWordUsageRule):
     """
     Checks for the incorrect usage of specific words starting with 'R'.
@@ -14,9 +19,29 @@ class RWordsRule(BaseWordUsageRule):
 
     def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         errors = []
+        if not nlp:
+            return errors
+        doc = nlp(text)
+
+        # Context-aware checks for compound words
+        for token in doc:
+            # Linguistic Anchor: Check for 'real time' used as an adjective.
+            if token.lemma_ == "real" and token.i + 1 < len(doc) and doc[token.i + 1].lemma_ == "time":
+                if doc[token.i + 1].dep_ == "amod" or token.dep_ == "amod":
+                     sent = token.sent
+                     next_token = doc[token.i + 1]
+                     errors.append(self._create_error(
+                        sentence=sent.text,
+                        message="Incorrect adjective form: 'real time' should be 'real-time'.",
+                        suggestions=["Use 'real-time' (hyphenated) as an adjective before a noun."],
+                        severity='medium',
+                        span=(token.idx, next_token.idx + len(next_token.text)),
+                        flagged_text=f"{token.text} {next_token.text}"
+                     ))
+
+        # General word map
         word_map = {
             "read-only": {"suggestion": "Write as 'read-only' (hyphenated).", "severity": "low"},
-            "real time": {"suggestion": "Use 'real-time' (hyphenated) as an adjective, and 'real time' (two words) as a noun.", "severity": "low"},
             "re-": {"suggestion": "Most words with the 're-' prefix are not hyphenated (e.g., 'reenter', 'reorder').", "severity": "low"},
             "Redbook": {"suggestion": "The correct term is 'IBM Redbooks publication'.", "severity": "high"},
             "refer to": {"suggestion": "For cross-references, prefer 'see'.", "severity": "low"},
@@ -26,14 +51,16 @@ class RWordsRule(BaseWordUsageRule):
             "run time": {"suggestion": "Use 'runtime' (one word) as an adjective, and 'run time' (two words) as a noun.", "severity": "low"},
         }
 
-        for i, sentence in enumerate(sentences):
+        for i, sent in enumerate(doc.sents):
             for word, details in word_map.items():
-                if re.search(r'\b' + re.escape(word) + r'\b', sentence, re.IGNORECASE):
+                for match in re.finditer(r'\b' + re.escape(word) + r'\b', sent.text, re.IGNORECASE):
                     errors.append(self._create_error(
-                        sentence=sentence,
+                        sentence=sent.text,
                         sentence_index=i,
-                        message=f"Review usage of the term '{word}'.",
+                        message=f"Review usage of the term '{match.group()}'.",
                         suggestions=[details['suggestion']],
-                        severity=details['severity']
+                        severity=details['severity'],
+                        span=(sent.start_char + match.start(), sent.start_char + match.end()),
+                        flagged_text=match.group(0)
                     ))
         return errors

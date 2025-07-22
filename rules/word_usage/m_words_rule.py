@@ -5,6 +5,11 @@ from typing import List, Dict, Any
 from .base_word_usage_rule import BaseWordUsageRule
 import re
 
+try:
+    from spacy.tokens import Doc
+except ImportError:
+    Doc = None
+
 class MWordsRule(BaseWordUsageRule):
     """
     Checks for the incorrect usage of specific words starting with 'M'.
@@ -12,8 +17,12 @@ class MWordsRule(BaseWordUsageRule):
     def _get_rule_type(self) -> str:
         return 'word_usage_m'
 
-    def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
+    def analyze(self, text: str, sentences: List[str], spacy_doc=None, context=None) -> List[Dict[str, Any]]:
         errors = []
+        if not spacy_doc:
+            return errors
+        doc = spacy_doc
+
         word_map = {
             "man-hour": {"suggestion": "Use inclusive language. Use 'person hour' or 'labor hour'.", "severity": "high"},
             "man day": {"suggestion": "Use inclusive language. Use 'person day'.", "severity": "high"},
@@ -25,14 +34,20 @@ class MWordsRule(BaseWordUsageRule):
             "migrate": {"suggestion": "Use correctly. 'Migrate' (move between systems) is not the same as 'upgrade' (new version) or 'port' (different OS).", "severity": "medium"},
         }
 
-        for i, sentence in enumerate(sentences):
+        for i, sent in enumerate(doc.sents):
             for word, details in word_map.items():
-                if re.search(r'\b' + re.escape(word) + r'\b', sentence, re.IGNORECASE):
+                for match in re.finditer(r'\b' + re.escape(word) + r'\b', sent.text, re.IGNORECASE):
+                    # Context check for 'master' to avoid false positives
+                    if word == 'master' and 'slave' not in sent.text.lower():
+                        continue
+
                     errors.append(self._create_error(
-                        sentence=sentence,
+                        sentence=sent.text,
                         sentence_index=i,
-                        message=f"Review usage of the term '{word}'.",
+                        message=f"Review usage of the term '{match.group()}'.",
                         suggestions=[details['suggestion']],
-                        severity=details['severity']
+                        severity=details['severity'],
+                        span=(sent.start_char + match.start(), sent.start_char + match.end()),
+                        flagged_text=match.group(0)
                     ))
         return errors
