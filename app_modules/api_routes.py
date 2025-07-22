@@ -187,9 +187,9 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter):
                 
                 rewrite_result = ai_rewriter.rewrite_document_with_structure_preservation(
                     content=content,
-                    filename="",
                     format_hint=format_hint,
-                    style_errors=errors
+                    session_id=session_id,
+                    pass_number=1
                 )
                 
                 if rewrite_result.get('error'):
@@ -200,17 +200,19 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter):
                 response_data = {
                     'success': True,
                     'original': content,
-                    'rewritten': rewrite_result.get('rewritten_document', ''),
-                    'rewritten_text': rewrite_result.get('rewritten_document', ''),
-                    'improvements': rewrite_result.get('overall_improvements', []),
-                    'confidence': rewrite_result.get('overall_confidence', 0.0),
+                    'rewritten': rewrite_result.get('rewritten_text', ''),
+                    'rewritten_text': rewrite_result.get('rewritten_text', ''),
+                    'improvements': rewrite_result.get('improvements', []),
+                    'confidence': rewrite_result.get('confidence', 0.0),
                     'model_used': f"structural_{rewrite_result.get('parsing_method', 'unknown')}",
                     'pass_number': 1,
                     'can_refine': True,
                     'original_errors': errors,
                     'session_id': session_id,
-                    'blocks_processed': rewrite_result.get('blocks_processed', 0),
-                    'parsing_method': rewrite_result.get('parsing_method', 'unknown'),
+                    'errors_fixed': rewrite_result.get('errors_fixed', 0),
+                    'original_errors': rewrite_result.get('original_errors', len(errors)),
+                    'passes_completed': rewrite_result.get('passes_completed', 1),
+                    'assembly_line_used': rewrite_result.get('assembly_line_used', True),
                     'structural_parsing_used': True
                 }
             else:
@@ -239,6 +241,9 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter):
                     'pass_number': rewrite_result.get('pass_number', 1),
                     'can_refine': rewrite_result.get('can_refine', False),
                     'original_errors': errors,
+                    'errors_fixed': rewrite_result.get('errors_fixed', 0),
+                    'passes_completed': rewrite_result.get('passes_completed', 1), 
+                    'assembly_line_used': rewrite_result.get('assembly_line_used', True),
                     'session_id': session_id,
                     'structural_parsing_used': False
                 }

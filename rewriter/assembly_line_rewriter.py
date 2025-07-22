@@ -5,6 +5,7 @@ Uses config-driven approach to automatically handle all error types.
 """
 
 import logging
+import re
 import time
 import yaml
 import os
@@ -231,6 +232,9 @@ class AssemblyLineRewriter:
             
             # Reconstruct full content
             rewritten_content = self._reconstruct_content(rewritten_sentences, content)
+            
+            # FINAL DOCUMENT CLEANUP: Remove any remaining AI artifacts from the assembled document
+            rewritten_content = self._final_document_cleanup(rewritten_content)
             
             # Calculate confidence
             confidence = min(0.95, 0.7 + (total_fixes_applied / len(errors)) * 0.25)
@@ -538,4 +542,40 @@ CORRECTED TEXT:"""
         """Reconstruct content from processed sentences, preserving original structure."""
         # Simple reconstruction - join sentences with appropriate spacing
         # This can be enhanced to preserve original formatting better
-        return ' '.join(sentences) 
+        return ' '.join(sentences)
+    
+    def _final_document_cleanup(self, text: str) -> str:
+        """Final cleanup to remove any remaining AI artifacts from the assembled document."""
+        if not text:
+            return text
+            
+        cleaned = text
+        
+        # Remove AI prefixes that might have slipped through sentence-level processing
+        ai_prefix_patterns = [
+            r'Here is the corrected sentence:\s*',
+            r'Here\'s the corrected sentence:\s*',
+            r'Here is the corrected text:\s*',
+            r'Here\'s the corrected text:\s*',
+            r'CORRECTED TEXT:\s*',
+            r'Corrected text:\s*',
+            r'Here is the revised text:\s*',
+            r'Here\'s the revised text:\s*',
+            r'The corrected text is:\s*',
+            r'Here is a revised version:\s*',
+            r'Here\'s a revised version:\s*',
+        ]
+        
+        for pattern in ai_prefix_patterns:
+            before_clean = cleaned
+            cleaned = re.sub(pattern, '', cleaned, flags=re.IGNORECASE).strip()
+            if cleaned != before_clean:
+                logger.info(f"🧹 DOCUMENT cleanup removed AI prefix: '{pattern}'")
+        
+        # Remove duplicate spaces and normalize whitespace
+        cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+        
+        # Ensure proper sentence spacing (single space between sentences)
+        cleaned = re.sub(r'([.!?])\s+([A-Z])', r'\1 \2', cleaned)
+        
+        return cleaned 
