@@ -94,20 +94,20 @@ class AIRewriter:
             }
     
     def _perform_assembly_line_pass(self, content: str, errors: List[Dict[str, Any]], context: str) -> Dict[str, Any]:
-        """Perform assembly line rewriting with sequential error fixing."""
-        logger.info("🏭 Starting Assembly Line Rewriting (Pass 1)")
-        logger.info(f"📊 Processing {len(errors)} errors with surgical precision")
+        """Perform assembly line rewriting with sentence-level sequential error fixing."""
+        logger.info("🏭 Starting Assembly Line Rewriting (Pass 1) - Sentence Level")
+        logger.info(f"📊 Processing {len(errors)} errors with sentence-level surgical precision")
         
         if self.progress_callback:
-            self.progress_callback('assembly_start', 'Assembly Line: Starting precision rewriting...', 
-                                 'Organizing errors by priority', 10)
+            self.progress_callback('assembly_start', 'Assembly Line: Starting sentence-level precision rewriting...', 
+                                 'Processing each sentence through sequential passes', 10)
         
-        # Apply assembly line fixes
-        result = self.assembly_line.apply_assembly_line_fixes(content, errors, context)
+        # Apply sentence-level assembly line fixes
+        result = self.assembly_line.apply_sentence_level_assembly_line_fixes(content, errors, context)
         
         if result.get('assembly_line_used'):
             # Evaluate improvements made
-            improvements = self.evaluator.extract_improvements(content, result['rewritten_text'])
+            improvements = self.evaluator.extract_improvements(content, result['rewritten_text'], errors)
             if improvements:
                 result['improvements'] = improvements
             
@@ -116,33 +116,29 @@ class AIRewriter:
             result['can_refine'] = True
             result['model_used'] = f"{self.model_manager.ollama_model if self.model_manager.use_ollama else 'hf_transformers'}"
             
-            logger.info(f"✅ Assembly Line Pass 1 complete: {result.get('errors_fixed', 0)}/{result.get('original_errors', 0)} errors fixed")
+            logger.info(f"✅ Assembly Line Pass 1 complete: {result.get('errors_fixed', 0)}/{result.get('original_errors', 0)} errors fixed across {result.get('sentences_processed', 0)} sentences")
             
             if self.progress_callback:
-                self.progress_callback('assembly_complete', 'Assembly Line: Precision rewriting completed!', 
+                self.progress_callback('assembly_complete', 'Assembly Line: Sentence-level precision rewriting completed!', 
                                      f"Fixed {result.get('errors_fixed', 0)} errors with surgical precision", 100)
         
         return result
     
     def _perform_assembly_line_refinement(self, content: str, errors: List[Dict[str, Any]], context: str) -> Dict[str, Any]:
-        """Perform assembly line refinement (Pass 2) - re-analyze and fix remaining issues."""
-        logger.info("🔍 Starting Assembly Line Refinement (Pass 2)")
+        """Perform assembly line refinement (Pass 2) - re-analyze and fix remaining issues with sentence-level processing."""
+        logger.info("🔍 Starting Assembly Line Refinement (Pass 2) - Sentence Level")
         logger.info("🔄 Re-analyzing content for any remaining issues...")
         
         if self.progress_callback:
             self.progress_callback('pass2_start', 'Assembly Line Refinement: Re-analyzing content...', 
-                                 'Detecting any remaining style issues', 20)
+                                 'Detecting any remaining style issues with sentence-level precision', 20)
         
-        # For refinement, we could:
-        # 1. Re-run analysis on the refined content to find new errors
-        # 2. Or use a "refinement mode" that focuses on polish
-        # For now, let's run the assembly line again with any errors passed in
-        
-        result = self.assembly_line.apply_assembly_line_fixes(content, errors, context)
+        # For refinement, we use the same sentence-level assembly line approach
+        result = self.assembly_line.apply_sentence_level_assembly_line_fixes(content, errors, context)
         
         if result.get('assembly_line_used'):
             # Evaluate refinement improvements
-            improvements = self.evaluator.extract_improvements(content, result['rewritten_text'])
+            improvements = self.evaluator.extract_improvements(content, result['rewritten_text'], errors)
             if improvements:
                 result['improvements'] = improvements
             
@@ -151,11 +147,11 @@ class AIRewriter:
             result['can_refine'] = False  # No third pass
             result['model_used'] = f"{self.model_manager.ollama_model if self.model_manager.use_ollama else 'hf_transformers'}"
             
-            logger.info(f"✅ Assembly Line Refinement complete: {result.get('errors_fixed', 0)} additional fixes applied")
+            logger.info(f"✅ Assembly Line Refinement complete: {result.get('errors_fixed', 0)} additional fixes applied across {result.get('sentences_processed', 0)} sentences")
             
             if self.progress_callback:
                 self.progress_callback('pass2_complete', 'Assembly Line Refinement: Completed!', 
-                                     f"Applied {result.get('errors_fixed', 0)} refinement fixes", 100)
+                                     f"Applied {result.get('errors_fixed', 0)} refinement fixes with sentence-level precision", 100)
         
         return result
     

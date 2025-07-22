@@ -64,16 +64,36 @@ class SimpleAIRewriter:
             # Analyze document structure and errors
             analysis_result = self.style_analyzer.analyze_with_blocks(content, format_hint=format_hint)
             
-            if not analysis_result.get('success', False):
-                return {
-                    'rewritten_text': content,
-                    'improvements': [],
-                    'confidence': 0.0,
-                    'error': analysis_result.get('error', 'Analysis failed')
-                }
-            
-            errors = analysis_result.get('errors', [])
+            # Extract analysis and structural blocks from the result
+            analysis = analysis_result.get('analysis', {})
             structural_blocks = analysis_result.get('structural_blocks', [])
+            has_structure = analysis_result.get('has_structure', False)
+            
+            # Check if analysis succeeded (look at the nested analysis object)
+            if not analysis.get('success', False):
+                # Try to extract errors from structural blocks as fallback
+                errors_from_blocks = []
+                for block in structural_blocks:
+                    errors_from_blocks.extend(block.get('errors', []))
+                
+                if not errors_from_blocks:
+                    return {
+                        'rewritten_text': content,
+                        'improvements': [],
+                        'confidence': 0.0,
+                        'error': analysis.get('error', 'Analysis failed')
+                    }
+                else:
+                    # Use errors from structural blocks if analysis failed but errors exist
+                    errors = errors_from_blocks
+                    logger.info(f"📊 Using {len(errors)} errors from structural blocks (analysis failed but errors detected)")
+            else:
+                # Extract errors from the nested analysis result
+                errors = analysis.get('errors', [])
+                
+                # Also collect any additional errors from structural blocks
+                for block in structural_blocks:
+                    errors.extend(block.get('errors', []))
             
             logger.info(f"📊 Found {len(errors)} errors across {len(structural_blocks)} blocks")
             

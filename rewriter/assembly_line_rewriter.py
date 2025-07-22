@@ -11,6 +11,7 @@ import os
 from typing import List, Dict, Any, Optional, Callable
 from collections import defaultdict
 import fnmatch
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -170,6 +171,93 @@ class AssemblyLineRewriter:
                 'assembly_line_used': False
             }
     
+    def apply_sentence_level_assembly_line_fixes(self, content: str, errors: List[Dict[str, Any]], 
+                                               context: str = "sentence") -> Dict[str, Any]:
+        """
+        Apply assembly line fixes at sentence level - each sentence goes through sequential passes.
+        
+        Args:
+            content: Original text content
+            errors: List of detected errors
+            context: Context level ('sentence' or 'paragraph')
+            
+        Returns:
+            Dictionary with rewrite results
+        """
+        try:
+            if not errors:
+                return {
+                    'rewritten_text': content,
+                    'improvements': ['No errors detected'],
+                    'confidence': 1.0,
+                    'passes_completed': 0,
+                    'errors_fixed': 0,
+                    'assembly_line_used': True
+                }
+            
+            logger.info("🏭 Starting Sentence-Level Assembly Line Processing")
+            logger.info(f"📊 Processing {len(errors)} errors with sentence-level precision")
+            
+            # Segment content into sentences
+            sentences = self._segment_sentences(content)
+            logger.info(f"📝 Segmented into {len(sentences)} sentences")
+            
+            # Group errors by sentence
+            errors_by_sentence = self._group_errors_by_sentence(errors, sentences)
+            
+            # Process each sentence through assembly line
+            rewritten_sentences = []
+            total_fixes_applied = 0
+            all_improvements = []
+            total_passes_completed = 0
+            
+            for i, sentence in enumerate(sentences):
+                sentence_errors = errors_by_sentence.get(i, [])
+                
+                if not sentence_errors:
+                    # No errors for this sentence, keep as-is
+                    rewritten_sentences.append(sentence)
+                    continue
+                
+                logger.info(f"🔧 Processing sentence {i+1}: {len(sentence_errors)} errors")
+                
+                # Apply assembly line to this sentence
+                sentence_result = self._process_sentence_assembly_line(sentence, sentence_errors, i+1)
+                
+                rewritten_sentences.append(sentence_result['rewritten_text'])
+                total_fixes_applied += sentence_result['fixes_applied']
+                all_improvements.extend(sentence_result['improvements'])
+                total_passes_completed += sentence_result['passes_completed']
+            
+            # Reconstruct full content
+            rewritten_content = self._reconstruct_content(rewritten_sentences, content)
+            
+            # Calculate confidence
+            confidence = min(0.95, 0.7 + (total_fixes_applied / len(errors)) * 0.25)
+            
+            logger.info(f"✅ Sentence-Level Assembly Line complete: {total_fixes_applied}/{len(errors)} errors fixed")
+            
+            return {
+                'rewritten_text': rewritten_content,
+                'improvements': all_improvements if all_improvements else ['Text processed through sentence-level assembly line'],
+                'confidence': confidence,
+                'passes_completed': total_passes_completed,
+                'errors_fixed': total_fixes_applied,
+                'original_errors': len(errors),
+                'sentences_processed': len([s for s in sentences if s.strip()]),
+                'assembly_line_used': True
+            }
+            
+        except Exception as e:
+            logger.error(f"Sentence-level assembly line rewriting failed: {e}")
+            return {
+                'rewritten_text': content,
+                'improvements': [],
+                'confidence': 0.0,
+                'error': f'Sentence-level assembly line rewriting failed: {str(e)}',
+                'assembly_line_used': False
+            }
+    
     def _group_errors_by_priority(self, errors: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
         """Group errors by priority using config-driven severity mapping."""
         priority_groups = defaultdict(list)
@@ -270,27 +358,184 @@ CORRECTED TEXT:"""
             }
     
     def _validate_fix(self, original: str, fixed: str, error_type: str) -> bool:
-        """Basic validation that fix was reasonable."""
+        """Basic validation that fix was reasonable - now more lenient for surgical changes."""
         try:
-            # Must be different but not completely different
-            if original == fixed:
-                return False  # No change made
-            
             # Must not be empty
             if not fixed.strip():
                 return False
             
-            # Must not be dramatically longer (likely hallucination)
+            # Check for surgical changes (small word differences)
+            original_words = original.split()
+            fixed_words = fixed.split()
+            word_diff = abs(len(fixed_words) - len(original_words))
+            
+            # For surgical changes, be more accepting
+            if word_diff <= 3:  # Very small change
+                logger.info(f"🔧 Surgical change detected for {error_type}: '{original}' → '{fixed}'")
+                
+                # Accept if ANY words changed (even if just spacing/hyphenation)
+                if original.strip() != fixed.strip():
+                    return True
+                    
+                # Check for subtle changes like "setup" → "set up"
+                original_normalized = re.sub(r'\s+', ' ', original.strip().lower())
+                fixed_normalized = re.sub(r'\s+', ' ', fixed.strip().lower())
+                
+                if original_normalized != fixed_normalized:
+                    logger.info(f"✅ Surgical word change accepted: '{original.strip()}' → '{fixed.strip()}'")
+                    return True
+            
+            # Original validation for larger changes
+            if original == fixed:
+                logger.info(f"❌ No change detected for {error_type}")
+                return False  # No change made
+            
+            # RELAXED: More permissive length validation for meaningful changes
             length_ratio = len(fixed) / len(original) if len(original) > 0 else 1
-            if length_ratio > 1.5:  # More than 50% longer
-                return False
             
-            # Must not be dramatically shorter (likely truncation)
-            if length_ratio < 0.5:  # Less than 50% of original length
-                return False
+            # Special cases for specific error types that may need longer/shorter fixes
+            if error_type in ['references_citations', 'ambiguity', 'verbs']:
+                # More permissive for these types that often need substantial changes
+                if length_ratio > 10.0:  # Only reject extreme cases
+                    logger.warning(f"❌ Change extremely long for {error_type}: {length_ratio:.1f}x longer")
+                    return False
+                if length_ratio < 0.1:  # Only reject extreme truncation
+                    logger.warning(f"❌ Change extremely short for {error_type}: {length_ratio:.1f}x shorter")
+                    return False
+            else:
+                # Standard validation for other types
+                if length_ratio > 3.0:  # More permissive than 1.5x
+                    logger.warning(f"❌ Change too long for {error_type}: {length_ratio:.1f}x longer")
+                    return False
+                if length_ratio < 0.3:  # More permissive than 0.5x
+                    logger.warning(f"❌ Change too short for {error_type}: {length_ratio:.1f}x shorter")
+                    return False
             
+            logger.info(f"✅ Standard change accepted for {error_type} (ratio: {length_ratio:.1f}x)")
             return True
             
         except Exception as e:
             logger.error(f"Validation error: {e}")
             return False 
+    
+    def _segment_sentences(self, content: str) -> List[str]:
+        """Segment content into sentences."""
+        # Simple sentence segmentation - can be enhanced later
+        sentences = re.split(r'(?<=[.!?])\s+', content)
+        return [s.strip() for s in sentences if s.strip()]
+    
+    def _group_errors_by_sentence(self, errors: List[Dict[str, Any]], sentences: List[str]) -> Dict[int, List[Dict[str, Any]]]:
+        """Group errors by sentence index."""
+        errors_by_sentence = defaultdict(list)
+        
+        for error in errors:
+            sentence_index = error.get('sentence_index', 0)
+            # Ensure sentence index is valid
+            if 0 <= sentence_index < len(sentences):
+                errors_by_sentence[sentence_index].append(error)
+            else:
+                # Default to first sentence if index is invalid
+                errors_by_sentence[0].append(error)
+        
+        return dict(errors_by_sentence)
+    
+    def _process_sentence_assembly_line(self, sentence: str, sentence_errors: List[Dict[str, Any]], 
+                                      sentence_num: int) -> Dict[str, Any]:
+        """
+        Process a single sentence through assembly line passes.
+        
+        Args:
+            sentence: The sentence to process
+            sentence_errors: Errors detected in this sentence
+            sentence_num: Sentence number for logging
+            
+        Returns:
+            Dictionary with sentence processing results
+        """
+        current_sentence = sentence
+        fixes_applied = 0
+        improvements = []
+        passes_completed = 0
+        
+        # Group errors by priority for this sentence
+        priority_groups = self._group_errors_by_priority(sentence_errors)
+        
+        # Process in priority order: urgent -> high -> medium -> low
+        for priority in ['urgent', 'high', 'medium', 'low']:
+            priority_errors = priority_groups.get(priority, [])
+            
+            if not priority_errors:
+                # Skip empty passes entirely
+                continue
+            
+            pass_info = self.processing_passes.get(priority, {'name': f'{priority.title()} Pass'})
+            pass_name = pass_info['name']
+            
+            logger.info(f"    🔄 Sentence {sentence_num} - {pass_name}: {len(priority_errors)} errors")
+            
+            # Apply this priority pass to the sentence
+            pass_result = self._apply_priority_pass_to_sentence(current_sentence, priority_errors, pass_name, sentence_num)
+            
+            if pass_result['success']:
+                current_sentence = pass_result['text']
+                fixes_applied += pass_result['fixes_applied']
+                improvements.extend(pass_result['improvements'])
+                passes_completed += 1
+                
+                logger.info(f"    ✅ Sentence {sentence_num} - {pass_name}: {pass_result['fixes_applied']} fixes applied")
+            else:
+                logger.warning(f"    ⚠️ Sentence {sentence_num} - {pass_name}: {pass_result.get('error', 'Unknown error')}")
+        
+        return {
+            'rewritten_text': current_sentence,
+            'fixes_applied': fixes_applied,
+            'improvements': improvements,
+            'passes_completed': passes_completed
+        }
+    
+    def _apply_priority_pass_to_sentence(self, sentence: str, errors: List[Dict[str, Any]], 
+                                       pass_name: str, sentence_num: int) -> Dict[str, Any]:
+        """Apply a priority pass to a single sentence."""
+        try:
+            # Group by error type to process similar errors together
+            error_groups = defaultdict(list)
+            for error in errors:
+                error_type = error.get('type', 'unknown')
+                error_groups[error_type].append(error)
+            
+            current_text = sentence
+            fixes_applied = 0
+            improvements = []
+            
+            # Apply fixes for each error type in this priority
+            for error_type, error_list in error_groups.items():
+                fix_result = self._apply_error_type_fix(current_text, error_type, error_list)
+                
+                if fix_result['success']:
+                    current_text = fix_result['text']
+                    fixes_applied += len(error_list)
+                    improvements.append(f"S{sentence_num} {pass_name}: Fixed {error_type} ({len(error_list)} instances)")
+                else:
+                    logger.warning(f"Failed to fix {error_type} in sentence {sentence_num}: {fix_result.get('error', 'Unknown')}")
+            
+            return {
+                'success': True,
+                'text': current_text,
+                'fixes_applied': fixes_applied,
+                'improvements': improvements
+            }
+            
+        except Exception as e:
+            return {
+                'success': False,
+                'text': sentence,
+                'fixes_applied': 0,
+                'improvements': [],
+                'error': str(e)
+            }
+    
+    def _reconstruct_content(self, sentences: List[str], original_content: str) -> str:
+        """Reconstruct content from processed sentences, preserving original structure."""
+        # Simple reconstruction - join sentences with appropriate spacing
+        # This can be enhanced to preserve original formatting better
+        return ' '.join(sentences) 

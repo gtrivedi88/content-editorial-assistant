@@ -27,172 +27,228 @@ class TextProcessor:
         logger.info(f"🔧 Processing raw AI response: '{cleaned[:100]}...'")
         logger.info(f"📊 Raw response length: {len(cleaned)} chars vs original: {len(original_text)} chars")
         
-        # Remove meta-commentary and explanations more aggressively
+        # GENTLE CLEANING: For surgical changes, be less aggressive
+        # Check if this looks like a surgical change (minimal difference)
+        word_diff = abs(len(cleaned.split()) - len(original_text.split()))
+        is_surgical_change = word_diff <= 3  # Very small word count difference
         
-        # AGGRESSIVE AI COMMENTARY REMOVAL - Extract only the actual corrected content
-        content_patterns = [
-            r"corrected text:\s*(.*?)(?:\s*$)",  # Most common pattern
-            r"here is the corrected text:\s*(.*?)(?:\s*$)",
-            r"here's the corrected text:\s*(.*?)(?:\s*$)", 
-            r"corrected heading:\s*(.*?)(?:\s+No changes|\s+The|\s*$)",
-            r"here is the rewritten heading:\s*(.*?)(?:\n\*|\*|$)",
-            r"here's the rewritten heading:\s*(.*?)(?:\n\*|\*|$)",
-            r"here is the corrected heading:\s*(.*?)(?:\n\*|\*|$)",
-            r"here's the improved version:\s*(.*?)(?:\n\*|\*|$)",
-            r"here is the improved version:\s*(.*?)(?:\n\*|\*|$)",
-            r"certainly!\s*here's the rewrite:\s*(.*?)(?:\n\*|\*|$)",
-            r"i'll help you improve this:\s*(.*?)(?:\n\*|\*|$)",
-            r"let me rewrite this for you:\s*(.*?)(?:\n\*|\*|$)",
-            r"here's the rewritten text:\s*(.*?)(?:\n\*|\*|$)",
-            r"here is the rewritten text:\s*(.*?)(?:\n\*|\*|$)",
-            r"improved text:\s*(.*?)(?:\n\*|\*|$)",  
-            r"rewritten text:\s*(.*?)(?:\n\*|\*|$)",
-            r"final version:\s*(.*?)(?:\n\*|\*|$)",
-            r"polished version:\s*(.*?)(?:\n\*|\*|$)",
-        ]
-        
-        for pattern in content_patterns:
-            match = re.search(pattern, cleaned, re.IGNORECASE | re.DOTALL)
-            if match:
-                cleaned = match.group(1).strip()
-                logger.info(f"Extracted content using pattern: '{pattern}'")
-                break
-        
-        # Remove lines that start with bullets or asterisks (explanations)
-        lines = cleaned.split('\n')
-        content_lines = []
-        
-        for line in lines:
-            line = line.strip()
-            if not line:
-                continue
+        if is_surgical_change:
+            logger.info("🔧 Detected surgical change - using gentle cleaning")
+            # For surgical changes, only remove obvious AI commentary, preserve content changes
             
-            # Skip lines that are clearly explanations or meta-commentary
-            if (line.startswith('*') or 
-                line.startswith('-') or 
-                line.startswith('•') or
-                line.lower().startswith('let me know') or
-                line.lower().startswith('converted') or
-                line.lower().startswith('identified') or
-                line.lower().startswith('replaced') or
-                line.lower().startswith('clarified') or
-                line.lower().startswith('note:') or
-                line.lower().startswith('explanation:') or
-                line.lower().startswith('changes made:') or
-                line.lower().startswith('improved heading:') or
-                line.lower().startswith('better version:') or
-                line.lower().startswith('enhanced:') or
-                'converted' in line.lower() and 'passive' in line.lower() or
-                'replaced' in line.lower() and 'vague' in line.lower()):
-                continue
+            # Enhanced extraction for specific error types that had issues
+            if any(keyword in cleaned.lower() for keyword in ['corrected text', 'here is', 'here\'s']):
+                # Remove only the most obvious AI patterns
+                simple_patterns = [
+                    r"here is the corrected text:\s*(.*?)(?:\s*$)",
+                    r"here's the corrected text:\s*(.*?)(?:\s*$)",
+                    r"corrected text:\s*(.*?)(?:\s*$)",
+                    r"here is the (?:revised|corrected|fixed) (?:text|sentence):\s*(.*?)(?:\s*$)",
+                    r"here's the (?:revised|corrected|fixed) (?:text|sentence):\s*(.*?)(?:\s*$)"
+                ]
+                
+                for pattern in simple_patterns:
+                    match = re.search(pattern, cleaned, re.IGNORECASE | re.DOTALL)
+                    if match:
+                        cleaned = match.group(1).strip()
+                        logger.info(f"Extracted surgical change using enhanced pattern")
+                        break
+                
+                # Remove AI prefixes but preserve the actual content change
+                simple_prefixes = [
+                    "corrected text:",
+                    "here is the corrected text:",
+                    "here's the corrected text:",
+                    "here is the revised text:",
+                    "here's the revised text:",
+                    "here is the fixed text:",
+                    "here's the fixed text:"
+                ]
+                
+                for prefix in simple_prefixes:
+                    if cleaned.lower().startswith(prefix):
+                        cleaned = cleaned[len(prefix):].strip()
+                        break
             
-            content_lines.append(line)
-        
-        if content_lines:
-            cleaned = ' '.join(content_lines)
+            # Remove explanatory text in parentheses for surgical fixes
+            cleaned = re.sub(r'\s*\([^)]*replaced[^)]*\)', '', cleaned)
+            cleaned = re.sub(r'\s*\([^)]*changed[^)]*\)', '', cleaned)
+            cleaned = re.sub(r'\s*\([^)]*fixed[^)]*\)', '', cleaned)
+            cleaned = re.sub(r'\s*\([^)]*"[^"]*"\s+is\s+[^)]*\)', '', cleaned)  # "(word" is explanation)"
+            cleaned = re.sub(r'\s*\([^)]*correct[^)]*\)', '', cleaned)
+            cleaned = re.sub(r'\s*\([^)]*proper[^)]*\)', '', cleaned)
+            
+            # Skip complex filtering for surgical changes
+            cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+            
         else:
-            cleaned = ""  # All lines were filtered out
-        
-        # Remove common AI response prefixes
-        prefixes_to_remove = [
-            "here is the rewritten heading:",
-            "here's the rewritten heading:",
-            "here is the corrected heading:",
-            "here's the corrected heading:",
-            "here's the improved version:",
-            "here is the improved version:",
-            "certainly! here's the rewrite:",
-            "i'll help you improve this:",
-            "let me rewrite this for you:",
-            "here is the improved text:",
-            "here's the improved text:",
-            "here is the rewritten text:",
-            "here's the rewritten text:",
-            "improved text:",
-            "rewritten text:",
-            "revised text:",
-            "the improved version:",
-            "here is the rewrite:",
-            "here's the rewrite:",
-            "sure, here's",
-            "certainly, here's",
-            "here's a rewritten version:",
-            "rewritten:",
-            "improved:",
-            "final version:",
-            "polished version:"
-        ]
-        
-        for prefix in prefixes_to_remove:
-            if cleaned.lower().startswith(prefix):
-                cleaned = cleaned[len(prefix):].strip()
-                break
-        
-        # Remove sentences that are clearly explanatory
-        sentences = re.split(r'(?<=[.!?])\s+', cleaned)
-        content_sentences = []
-        
-        for sentence in sentences:
-            sentence = sentence.strip()
-            if not sentence:
-                continue
+            # Original aggressive cleaning for complex changes
+            # Remove meta-commentary and explanations more aggressively
             
-            sentence_lower = sentence.lower()
-            
-            # Skip numbered explanations (1., 2., 3., etc.)
-            if re.match(r'^\d+\.', sentence):
-                continue
-            
-            # Skip explanatory sentences but be more selective
-            explanatory_starts = [
-                'note:', 'i\'ve', 'i have', 'i applied', 'i made', 'i converted',
-                'i removed', 'i shortened', 'i replaced', 'this addresses',
-                'these changes', 'the rewrite', 'as requested', 'per your',
-                'let me know', 'if you\'d like', 'would you like', 'i can help',
-                'here are the', 'the changes', 'improvements made', 'changes include',
-                'critical:', 'important:', 'note that', 'i did not', 'i ensured',
-                'i maintained', 'i used', 'i kept', 'i split', 'i toned'
+            # AGGRESSIVE AI COMMENTARY REMOVAL - Extract only the actual corrected content
+            content_patterns = [
+                r"corrected text:\s*(.*?)(?:\s*$)",  # Most common pattern
+                r"here is the corrected text:\s*(.*?)(?:\s*$)",
+                r"here's the corrected text:\s*(.*?)(?:\s*$)", 
+                r"corrected heading:\s*(.*?)(?:\s+No changes|\s+The|\s*$)",
+                r"here is the rewritten heading:\s*(.*?)(?:\n\*|\*|$)",
+                r"here's the rewritten heading:\s*(.*?)(?:\n\*|\*|$)",
+                r"here is the corrected heading:\s*(.*?)(?:\n\*|\*|$)",
+                r"here's the improved version:\s*(.*?)(?:\n\*|\*|$)",
+                r"here is the improved version:\s*(.*?)(?:\n\*|\*|$)",
+                r"certainly!\s*here's the rewrite:\s*(.*?)(?:\n\*|\*|$)",
+                r"i'll help you improve this:\s*(.*?)(?:\n\*|\*|$)",
+                r"let me rewrite this for you:\s*(.*?)(?:\n\*|\*|$)",
+                r"here's the rewritten text:\s*(.*?)(?:\n\*|\*|$)",
+                r"here is the rewritten text:\s*(.*?)(?:\n\*|\*|$)",
+                r"improved text:\s*(.*?)(?:\n\*|\*|$)",  
+                r"rewritten text:\s*(.*?)(?:\n\*|\*|$)",
+                r"final version:\s*(.*?)(?:\n\*|\*|$)",
+                r"polished version:\s*(.*?)(?:\n\*|\*|$)",
             ]
             
-            is_explanatory = any(sentence_lower.startswith(start) for start in explanatory_starts)
+            for pattern in content_patterns:
+                match = re.search(pattern, cleaned, re.IGNORECASE | re.DOTALL)
+                if match:
+                    cleaned = match.group(1).strip()
+                    logger.info(f"Extracted content using pattern: '{pattern}'")
+                    break
             
-            # Also skip sentences that contain meta-commentary about the rewriting process
-            meta_commentary_patterns = [
-                r'\bthese changes address\b',
-                r'\bthe rewrite maintains\b',
-                r'\bby converting\b.*\bpassive voice\b',
-                r'\bimproving clarity\b.*\breadability\b',
-                r'\benhancing readability\b'
+            # Remove lines that start with bullets or asterisks (explanations)
+            lines = cleaned.split('\n')
+            content_lines = []
+            
+            for line in lines:
+                line = line.strip()
+                if not line:
+                    continue
+                
+                # Skip lines that are clearly explanations or meta-commentary
+                if (line.startswith('*') or 
+                    line.startswith('-') or 
+                    line.startswith('•') or
+                    line.lower().startswith('let me know') or
+                    line.lower().startswith('converted') or
+                    line.lower().startswith('identified') or
+                    line.lower().startswith('replaced') or
+                    line.lower().startswith('clarified') or
+                    line.lower().startswith('note:') or
+                    line.lower().startswith('explanation:') or
+                    line.lower().startswith('changes made:') or
+                    line.lower().startswith('improved heading:') or
+                    line.lower().startswith('better version:') or
+                    line.lower().startswith('enhanced:') or
+                    'converted' in line.lower() and 'passive' in line.lower() or
+                    'replaced' in line.lower() and 'vague' in line.lower()):
+                    continue
+                
+                content_lines.append(line)
+            
+            if content_lines:
+                cleaned = ' '.join(content_lines)
+            else:
+                cleaned = ""  # All lines were filtered out
+            
+            # Remove common AI response prefixes
+            prefixes_to_remove = [
+                "here is the rewritten heading:",
+                "here's the rewritten heading:",
+                "here is the corrected heading:",
+                "here's the corrected heading:",
+                "here's the improved version:",
+                "here is the improved version:",
+                "certainly! here's the rewrite:",
+                "i'll help you improve this:",
+                "let me rewrite this for you:",
+                "here is the improved text:",
+                "here's the improved text:",
+                "here is the rewritten text:",
+                "here's the rewritten text:",
+                "improved text:",
+                "rewritten text:",
+                "revised text:",
+                "the improved version:",
+                "here is the rewrite:",
+                "here's the rewrite:",
+                "sure, here's",
+                "certainly, here's",
+                "here's a rewritten version:",
+                "rewritten:",
+                "improved:",
+                "final version:",
+                "polished version:"
             ]
             
-            has_meta_commentary = any(re.search(pattern, sentence_lower) for pattern in meta_commentary_patterns)
+            for prefix in prefixes_to_remove:
+                if cleaned.lower().startswith(prefix):
+                    cleaned = cleaned[len(prefix):].strip()
+                    break
             
-            # Skip sentences that sound like AI explanations
-            ai_explanation_patterns = [
-                r'\bi (did|have|used|kept|split|maintained|ensured|toned)\b',
-                r'\bto avoid\b.*\b(guarantees|promises|claims)\b',
-                r'\binstead of\b.*\boriginal\b',
-                r'\bfor better\b.*\bclarity\b',
-                r'\blevel of\b.*\bdetail\b.*\boriginal\b'
-            ]
+            # Remove sentences that are clearly explanatory
+            sentences = re.split(r'(?<=[.!?])\s+', cleaned)
+            content_sentences = []
             
-            has_ai_patterns = any(re.search(pattern, sentence_lower) for pattern in ai_explanation_patterns)
+            for sentence in sentences:
+                sentence = sentence.strip()
+                if not sentence:
+                    continue
+                
+                sentence_lower = sentence.lower()
+                
+                # Skip numbered explanations (1., 2., 3., etc.)
+                if re.match(r'^\d+\.', sentence):
+                    continue
+                
+                # Skip explanatory sentences but be more selective
+                explanatory_starts = [
+                    'note:', 'i\'ve', 'i have', 'i applied', 'i made', 'i converted',
+                    'i removed', 'i shortened', 'i replaced', 'this addresses',
+                    'these changes', 'the rewrite', 'as requested', 'per your',
+                    'let me know', 'if you\'d like', 'would you like', 'i can help',
+                    'here are the', 'the changes', 'improvements made', 'changes include',
+                    'critical:', 'important:', 'note that', 'i did not', 'i ensured',
+                    'i maintained', 'i used', 'i kept', 'i split', 'i toned'
+                ]
+                
+                is_explanatory = any(sentence_lower.startswith(start) for start in explanatory_starts)
+                
+                # Also skip sentences that contain meta-commentary about the rewriting process
+                meta_commentary_patterns = [
+                    r'\bthese changes address\b',
+                    r'\bthe rewrite maintains\b',
+                    r'\bby converting\b.*\bpassive voice\b',
+                    r'\bimproving clarity\b.*\breadability\b',
+                    r'\benhancing readability\b'
+                ]
+                
+                has_meta_commentary = any(re.search(pattern, sentence_lower) for pattern in meta_commentary_patterns)
+                
+                # Skip sentences that sound like AI explanations
+                ai_explanation_patterns = [
+                    r'\bi (did|have|used|kept|split|maintained|ensured|toned)\b',
+                    r'\bto avoid\b.*\b(guarantees|promises|claims)\b',
+                    r'\binstead of\b.*\boriginal\b',
+                    r'\bfor better\b.*\bclarity\b',
+                    r'\blevel of\b.*\bdetail\b.*\boriginal\b'
+                ]
+                
+                has_ai_patterns = any(re.search(pattern, sentence_lower) for pattern in ai_explanation_patterns)
+                
+                if not is_explanatory and not has_meta_commentary and not has_ai_patterns:
+                    content_sentences.append(sentence)
             
-            if not is_explanatory and not has_meta_commentary and not has_ai_patterns:
-                content_sentences.append(sentence)
-        
-        if content_sentences:
-            cleaned = ' '.join(content_sentences)
-        
-        # Remove any remaining artifacts
-        cleaned = re.sub(r'\[insert[^\]]*\]', '', cleaned)  # Remove placeholder text like [insert specific examples]
-        cleaned = re.sub(r'\s+', ' ', cleaned)  # Normalize whitespace
-        cleaned = cleaned.strip()
+            if content_sentences:
+                cleaned = ' '.join(content_sentences)
+            
+            # Remove any remaining artifacts
+            cleaned = re.sub(r'\[insert[^\]]*\]', '', cleaned)  # Remove placeholder text like [insert specific examples]
+            cleaned = re.sub(r'\s+', ' ', cleaned)  # Normalize whitespace
+            cleaned = cleaned.strip()
         
         logger.info(f"Cleaned AI response: '{cleaned[:200]}...'")
         
-        # Validation (be less aggressive for short content like headings)
-        if len(cleaned) < 3:
+        # RELAXED validation for surgical changes
+        if len(cleaned) < 2:  # More lenient minimum length
             logger.warning("Generated text too short after cleaning")
             return original_text
         
@@ -206,7 +262,7 @@ class TextProcessor:
                 logger.info(f"Accepting heading/short content change: '{original_text}' → '{heading_cleaned}'")
                 return heading_cleaned
         
-        # Check if it's meaningfully different from original (normal validation)
+        # RELAXED validation: Accept even small changes for surgical fixes
         if cleaned.lower().strip() == original_text.lower().strip():
             logger.warning("Generated text identical to original after cleaning")
             return original_text

@@ -33,7 +33,7 @@ instruction_templates:
   passive_voice: "Convert passive voice to active voice. Make no other changes."
   sentence_length: "Break long sentence into shorter sentences. Make no other changes."
   subjunctive_mood: "Convert subjunctive mood to imperative. Change 'It is important that X be done' to 'Important: Do X'. Make no other changes."
-  verbs: "Fix verb tense issues. Use present tense for instructions. Make no other changes."
+  verbs: "Convert passive voice to active voice. Use present tense for instructions. Convert subjunctive mood to imperative. Output ONLY the corrected sentence."
   headings: "Fix heading capitalization and structure. Make no other changes."
   
   # ===== LANGUAGE & GRAMMAR (MEDIUM) =====
@@ -117,7 +117,7 @@ instruction_templates:
   technical_web_addresses: "Fix formatting of URLs and web addresses. Make no other changes."
   
   # ===== REFERENCES =====
-  references_citations: "Fix citation formatting and link text quality. Replace 'click here' with descriptive text. Make no other changes."
+  references_citations: "Replace 'click here' with descriptive link text. Replace vague references with specific ones. Output ONLY the corrected sentence."
   references_geographic_locations: "Fix geographic location formatting and abbreviations. Make no other changes."
   references_names_titles: "Fix person name and title formatting. Make no other changes."
   references_product_names: "Fix product name formatting and capitalization. Make no other changes."
@@ -133,10 +133,10 @@ instruction_templates:
   structure_format_notes: "Fix note and admonition formatting. Make no other changes."
   
   # ===== GENERAL RULES =====
-  ambiguity: "Replace ambiguous terms with specific terms. Make no other changes."
+  ambiguity: "Replace unclear pronouns with specific nouns. Replace ambiguous terms with precise terms. Output ONLY the corrected sentence."
   
   # ===== PATTERN MATCHERS (Fallbacks) =====
-  word_usage_*: "Fix word usage issues. Replace incorrect terms with preferred alternatives. Make no other changes."
+  word_usage_*: "Fix word usage issues. Replace incorrect terms with preferred alternatives. Return ONLY the corrected sentence with NO explanations."
   punctuation_*: "Fix punctuation issues according to style guide. Make no other changes."
   numbers_*: "Fix number formatting according to style guide. Make no other changes."
   technical_*: "Fix technical element formatting according to style guide. Make no other changes."

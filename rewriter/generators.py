@@ -25,17 +25,18 @@ class TextGenerator:
             return original_text
             
         try:
-            # Conservative parameters but with sufficient length for full rewrites
+            # More balanced parameters for effective corrections
             payload = {
                 "model": self.model_manager.ollama_model,
                 "prompt": prompt,
                 "stream": False,
                 "options": {
-                    "temperature": 0.1,  # CONSERVATIVE: Minimize creativity, maximize precision
-                    "top_p": 0.3,        # CONSERVATIVE: Limit token variety for surgical fixes
-                    "top_k": 5,          # CONSERVATIVE: Focus on most probable corrections only
+                    "temperature": 0.3,  # BALANCED: Allow some flexibility for corrections
+                    "top_p": 0.7,        # BALANCED: Reasonable token variety for style fixes
+                    "top_k": 20,         # BALANCED: Sufficient options for corrections
                     "num_predict": 256,  # Sufficient for targeted fixes, not full rewrites
-                    "stop": ["\n\nOriginal:", "\n\nRewrite:", "###", "---", "Here is", "Here's", "I'll", "Let me"]  # Stop AI commentary
+                    # FIXED: Remove problematic stop tokens that were stopping generation immediately
+                    "stop": ["###", "---"]  # Only use safe stop tokens that won't interfere
                 }
             }
             
