@@ -44,8 +44,8 @@ class TextGenerator:
             
             response = requests.post(
                 self.model_manager.ollama_url,
-                json=payload
-                # No timeout - let the model take the time it needs
+                json=payload,
+                timeout=30  # Fixed: Add proper timeout to prevent hanging
             )
             
             if response.status_code == 200:

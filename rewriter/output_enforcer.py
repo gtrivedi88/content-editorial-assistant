@@ -31,6 +31,16 @@ class OutputEnforcer:
                 "input": "Setup the server.",
                 "bad_output": "Corrected text: Set up the server. I fixed the verb form as per your instruction.",
                 "good_output": "Set up the server."
+            },
+            {
+                "input": "The system wants you to input your first name.",
+                "bad_output": "Here is the corrected sentence: The system requires you to enter your user name. (I removed anthropomorphism and personal information concerns.)",
+                "good_output": "The system requires you to enter your user name."
+            },
+            {
+                "input": "We will begin by having you click on the Start button.",
+                "bad_output": "Corrected: You begin by selecting the Start button. I changed 'we will' to 'you' and 'click' to 'select'.",
+                "good_output": "You begin by selecting the Start button."
             }
         ]
     
@@ -123,10 +133,16 @@ JSON RESPONSE:"""
         # For non-structured responses, apply minimal cleaning
         cleaned = self._remove_obvious_prefixes(cleaned)
         
-        # Validate the response quality
+        # NEW: Extract good content even from chatty responses
         if self._is_chatty_response(cleaned):
-            logger.warning(f"Detected chatty response: '{cleaned[:100]}...'")
-            return original_text  # Return original rather than chatty response
+            logger.warning(f"Detected chatty response, attempting to extract good content: '{cleaned[:100]}...'")
+            extracted_content = self._extract_content_from_chatty_response(cleaned, original_text)
+            if extracted_content and extracted_content != original_text:
+                logger.info(f"✅ Successfully extracted content from chatty response: '{extracted_content[:50]}...'")
+                return self._validate_and_clean(extracted_content, original_text)
+            else:
+                logger.warning("Failed to extract good content from chatty response, using original")
+                return original_text
         
         return self._validate_and_clean(cleaned, original_text)
     
@@ -220,6 +236,72 @@ JSON RESPONSE:"""
             
         return False
     
+    def _extract_content_from_chatty_response(self, chatty_response: str, original_text: str) -> str:
+        """
+        Extract the actual corrected content from a chatty AI response.
+        
+        Args:
+            chatty_response: The chatty AI response
+            original_text: Original text for reference
+            
+        Returns:
+            Extracted clean content or original text if extraction fails
+        """
+        try:
+            # Strategy 1: Look for patterns like "The corrected text would be: [CONTENT]"
+            patterns = [
+                r'(?:the\s+)?corrected\s+text\s+(?:would\s+be|is):\s*(.+?)(?:\n|$|\.(?:\s|$))',
+                r'here\s+is\s+the\s+corrected\s+(?:text|sentence):\s*(.+?)(?:\n|$)',
+                r'(?:corrected|fixed|revised):\s*(.+?)(?:\n|$)',
+                r'^(.+?)(?:\n|$|\.(?:\s*I\s+))',  # Take first sentence before explanation
+            ]
+            
+            for pattern in patterns:
+                match = re.search(pattern, chatty_response, re.IGNORECASE | re.DOTALL)
+                if match:
+                    extracted = match.group(1).strip()
+                    # Remove trailing periods that might be part of the explanation
+                    extracted = re.sub(r'\.\s*$', '', extracted).strip()
+                    
+                    # Validate it's different from original and reasonable
+                    if extracted and extracted.lower() != original_text.lower() and len(extracted) > 3:
+                        logger.info(f"Extracted using pattern '{pattern[:30]}...': '{extracted[:50]}...'")
+                        return extracted
+            
+            # Strategy 2: Split by explanation markers and take the first meaningful sentence
+            explanation_markers = [
+                'I replaced', 'I changed', 'I fixed', 'I removed', 'I added',
+                'In this correction', 'The change', 'This fixes', 'Note:'
+            ]
+            
+            for marker in explanation_markers:
+                if marker.lower() in chatty_response.lower():
+                    parts = re.split(re.escape(marker), chatty_response, flags=re.IGNORECASE)
+                    if len(parts) > 1:
+                        candidate = parts[0].strip()
+                        # Clean up any prefixes
+                        candidate = self._remove_obvious_prefixes(candidate)
+                        if candidate and candidate.lower() != original_text.lower():
+                            logger.info(f"Extracted before explanation marker '{marker}': '{candidate[:50]}...'")
+                            return candidate
+            
+            # Strategy 3: Take the longest sentence that's different from original
+            sentences = re.split(r'[.!?]+', chatty_response)
+            for sentence in sentences:
+                cleaned = sentence.strip()
+                cleaned = self._remove_obvious_prefixes(cleaned)
+                if (cleaned and 
+                    len(cleaned) > 5 and 
+                    cleaned.lower() != original_text.lower() and
+                    not any(marker.lower() in cleaned.lower() for marker in ['I replaced', 'I changed', 'I fixed'])):
+                    logger.info(f"Extracted longest different sentence: '{cleaned[:50]}...'")
+                    return cleaned
+            
+        except Exception as e:
+            logger.error(f"Error extracting content from chatty response: {e}")
+        
+        return original_text
+
     def _validate_and_clean(self, text: str, original_text: str) -> str:
         """Final validation and minimal cleaning."""
         if len(text.strip()) < 2:

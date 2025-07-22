@@ -23,23 +23,23 @@ processing_passes:
 # Comprehensive instruction templates covering ALL rule types
 instruction_templates:
   # ===== LEGAL/CRITICAL (URGENT) =====
-  legal_claims: "Replace subjective claims with objective statements. Make no other changes."
-  legal_company_names: "Fix company name formatting according to legal requirements. Make no other changes."
-  legal_personal_information: "Remove or anonymize personal information. Make no other changes."
-  inclusive_language: "Replace non-inclusive terms with inclusive alternatives. Make no other changes."
-  second_person: "Remove first-person 'we/our' and use second person 'you' for user actions. Make no other changes."
+  legal_claims: "Replace subjective claims with objective statements. Common fixes: 'easy' → 'straightforward', 'simple' → 'direct', 'great' → 'useful'. Output ONLY the corrected text."
+  legal_company_names: "Fix company name formatting according to legal requirements. Use proper trademark symbols where required. Output ONLY the corrected text."
+  legal_personal_information: "Replace specific personal information terms with generic equivalents while preserving meaning. 'first name and last name' → 'given name and surname', 'your name' → 'a name'. Keep the functional requirement. Output ONLY the corrected text."
+  inclusive_language: "Replace non-inclusive terms with inclusive alternatives. Common fixes: 'guys' → 'everyone', 'man-hours' → 'person-hours'. Output ONLY the corrected text."
+  second_person: "Remove first-person 'we/our' and use second person 'you' for user actions. Change 'We will' → 'You can', 'Our system' → 'The system'. Output ONLY the corrected text."
   
   # ===== STRUCTURAL (HIGH) =====
   passive_voice: "Convert passive voice to active voice. Make no other changes."
   sentence_length: "Break long sentence into shorter sentences. Make no other changes."
   subjunctive_mood: "Convert subjunctive mood to imperative. Change 'It is important that X be done' to 'Important: Do X'. Make no other changes."
-  verbs: "Convert passive voice to active voice. Use present tense for instructions. Convert subjunctive mood to imperative. Output ONLY the corrected sentence."
+  verbs: "Convert only clearly passive voice to active voice when it improves clarity. For subjunctive mood like 'It is important that X be done', convert to 'Important: Do X' or 'You must do X'. Preserve meaning and avoid creating ambiguous pronouns. Output ONLY the corrected sentence."
   headings: "Fix heading capitalization and structure. Make no other changes."
   
   # ===== LANGUAGE & GRAMMAR (MEDIUM) =====
   abbreviations: "Fix abbreviation formatting and usage according to style guide. Make no other changes."
   adverbs_only: "Remove unnecessary adverbs or replace with stronger verbs. Make no other changes."
-  anthropomorphism: "Remove anthropomorphism. Change 'system wants' to 'system requires'. Make no other changes."
+  anthropomorphism: "Remove anthropomorphism. Change 'system wants' → 'system requires', 'system thinks' → 'system determines', 'system feels' → 'system indicates'. Output ONLY the corrected text."
   articles: "Fix article usage (a, an, the) according to grammar rules. Make no other changes."
   capitalization: "Fix capitalization issues according to style guide. Make no other changes."
   conjunctions: "Fix conjunction usage and placement. Make no other changes."
@@ -47,45 +47,45 @@ instruction_templates:
   plurals: "Fix parenthetical plurals. Change 'file(s)' to 'files'. Make no other changes."
   possessives: "Fix possessive forms and apostrophe usage. Make no other changes."
   prepositions: "Fix preposition usage and placement. Make no other changes."
-  pronouns: "Replace ambiguous pronouns with specific nouns. Make no other changes."
+  pronouns: "Replace ambiguous pronouns with specific nouns from the context. 'It is important that the configuration be saved' → 'The configuration must be saved'. Preserve the subject and meaning. Output ONLY the corrected sentence with NO explanations."
   spelling: "Fix spelling errors according to preferred dictionary. Make no other changes."
   terminology: "Replace non-preferred terms with approved terminology. Make no other changes."
   
   # ===== WORD USAGE (A-Z) - All alphabet rules =====
-  word_usage_a: "Fix usage of words starting with 'A' according to style guide. Make no other changes."
-  word_usage_b: "Fix usage of words starting with 'B' according to style guide. Make no other changes."
-  word_usage_c: "Fix usage of words starting with 'C' according to style guide. Make no other changes."
-  word_usage_d: "Fix usage of words starting with 'D' according to style guide. Make no other changes."
-  word_usage_e: "Fix usage of words starting with 'E' according to style guide. Make no other changes."
-  word_usage_f: "Fix usage of words starting with 'F' according to style guide. Make no other changes."
-  word_usage_g: "Fix usage of words starting with 'G' according to style guide. Make no other changes."
-  word_usage_h: "Fix usage of words starting with 'H' according to style guide. Make no other changes."
-  word_usage_i: "Fix usage of words starting with 'I' according to style guide. Make no other changes."
-  word_usage_j: "Fix usage of words starting with 'J' according to style guide. Make no other changes."
-  word_usage_k: "Fix usage of words starting with 'K' according to style guide. Make no other changes."
-  word_usage_l: "Fix usage of words starting with 'L' according to style guide. Make no other changes."
-  word_usage_m: "Fix usage of words starting with 'M' according to style guide. Make no other changes."
-  word_usage_n: "Fix usage of words starting with 'N' according to style guide. Make no other changes."
-  word_usage_o: "Fix usage of words starting with 'O' according to style guide. Make no other changes."
-  word_usage_p: "Fix usage of words starting with 'P' according to style guide. Make no other changes."
-  word_usage_q: "Fix usage of words starting with 'Q' according to style guide. Make no other changes."
-  word_usage_r: "Fix usage of words starting with 'R' according to style guide. Make no other changes."
-  word_usage_s: "Fix usage of words starting with 'S' according to style guide. Make no other changes."
-  word_usage_t: "Fix usage of words starting with 'T' according to style guide. Make no other changes."
-  word_usage_u: "Fix usage of words starting with 'U' according to style guide. Make no other changes."
-  word_usage_v: "Fix usage of words starting with 'V' according to style guide. Make no other changes."
-  word_usage_w: "Fix usage of words starting with 'W' according to style guide. Make no other changes."
-  word_usage_x: "Fix usage of words starting with 'X' according to style guide. Make no other changes."
-  word_usage_y: "Fix usage of words starting with 'Y' according to style guide. Make no other changes."
-  word_usage_z: "Fix usage of words starting with 'Z' according to style guide. Make no other changes."
-  word_usage_special: "Fix usage of special characters and symbols. Make no other changes."
+  word_usage_a: "Replace problematic words as specified. Common fixes: 'allow' → 'enable', 'appears' → 'is displayed'. Output ONLY the corrected text."
+  word_usage_b: "Replace problematic words as specified. Common fixes: 'below' → 'following', 'basically' → remove. Output ONLY the corrected text."
+  word_usage_c: "Replace problematic words as specified. Common fixes: 'click' → 'select', 'currently' → remove. Output ONLY the corrected text."
+  word_usage_d: "Replace problematic words as specified. Common fixes: 'desired' → 'required', 'displays' → 'shows'. Output ONLY the corrected text."
+  word_usage_e: "Replace problematic words as specified. Common fixes: 'easy' → 'straightforward', 'enter' → 'type'. Output ONLY the corrected text."
+  word_usage_f: "Replace problematic words as specified. Common fixes: 'feel free' → remove, 'functionality' → 'function'. Output ONLY the corrected text."
+  word_usage_g: "Replace problematic words as specified. Common fixes: 'go to' → 'navigate to', 'great' → 'useful'. Output ONLY the corrected text."
+  word_usage_h: "Replace problematic words as specified. Common fixes: 'hit' → 'press', 'however' → 'but'. Output ONLY the corrected text."
+  word_usage_i: "Replace problematic words as specified. Common fixes: 'input' → 'enter', 'in order to' → 'to'. Output ONLY the corrected text."
+  word_usage_j: "Replace problematic words as specified. Common fixes: 'just' → remove, 'jump to' → 'go to'. Output ONLY the corrected text."
+  word_usage_k: "Replace problematic words as specified. Common fixes: 'kill' → 'stop', 'key in' → 'enter'. Output ONLY the corrected text."
+  word_usage_l: "Replace problematic words as specified. Common fixes: 'login' → 'log in' (verb), 'lots of' → 'many'. Output ONLY the corrected text."
+  word_usage_m: "Replace problematic words as specified. Common fixes: 'make sure' → 'ensure', 'may' → 'might'. Output ONLY the corrected text."
+  word_usage_n: "Replace problematic words as specified. Common fixes: 'new' → remove if redundant, 'now' → remove if unnecessary. Output ONLY the corrected text."
+  word_usage_o: "Replace problematic words as specified. Common fixes: 'obviously' → remove, 'ok' → 'acceptable'. Output ONLY the corrected text."
+  word_usage_p: "Replace problematic words as specified. Common fixes: 'please' → remove, 'pretty' → remove. Output ONLY the corrected text."
+  word_usage_q: "Replace problematic words as specified. Common fixes: 'quickly' → remove, 'quite' → remove. Output ONLY the corrected text."
+  word_usage_r: "Replace problematic words as specified. Common fixes: 'really' → remove, 'right-click' → 'secondary-click'. Output ONLY the corrected text."
+  word_usage_s: "Replace problematic words as specified. Common fixes: 'setup' (noun) → 'set up' (verb), 'simply' → remove. Output ONLY the corrected text."
+  word_usage_t: "Replace problematic words as specified. Common fixes: 'that' (unnecessary) → remove, 'turn on' → 'enable'. Output ONLY the corrected text."
+  word_usage_u: "Replace problematic words as specified. Common fixes: 'utilize' → 'use', 'update' → 'modify'. Output ONLY the corrected text."
+  word_usage_v: "Replace problematic words as specified. Common fixes: 'very' → remove, 'via' → 'through'. Output ONLY the corrected text."
+  word_usage_w: "Replace problematic words as specified. Common fixes: 'want' → 'need', 'will' → 'can'. Output ONLY the corrected text."
+  word_usage_x: "Replace problematic words as specified. Common fixes: 'x out' → 'close', 'x-ing' → proper term. Output ONLY the corrected text."
+  word_usage_y: "Replace problematic words as specified. Common fixes: 'you can' → direct instruction, 'yet' → 'but'. Output ONLY the corrected text."
+  word_usage_z: "Replace problematic words as specified. Common fixes: 'zip' → 'compress', 'zero out' → 'clear'. Output ONLY the corrected text."
+  word_usage_special: "Fix usage of special characters and symbols as specified. Output ONLY the corrected text."
   
   # ===== PUNCTUATION =====
   colons: "Fix colon usage and placement according to style guide. Make no other changes."
   commas: "Fix comma usage and placement according to style guide. Make no other changes."
   dashes: "Fix dash usage (em dash, en dash) according to style guide. Make no other changes."
   ellipses: "Fix ellipsis usage and formatting. Make no other changes."
-  exclamation_points: "Fix exclamation point usage according to style guide. Make no other changes."
+  exclamation_points: "Remove exclamation points from technical writing. Replace with periods. 'Save it!' → 'Save it.' Output ONLY the corrected text."
   hyphens: "Fix hyphen usage in compound words and modifiers. Make no other changes."
   parentheses: "Fix parentheses usage and placement. Make no other changes."
   periods: "Fix period usage and placement. Make no other changes."
@@ -95,7 +95,7 @@ instruction_templates:
   slashes: "Fix slash usage and formatting. Make no other changes."
   
   # ===== NUMBERS & MEASUREMENT =====
-  numbers_currency: "Replace currency symbols with ISO codes. Change '$' to 'USD'. Make no other changes."
+  numbers_currency: "Replace currency symbols with ISO codes. Change '$' → 'USD', '€' → 'EUR', '£' → 'GBP'. Output ONLY the corrected text."
   dates_and_times: "Fix date and time formatting according to style guide. Make no other changes."
   numbers_general: "Fix number formatting and usage according to style guide. Make no other changes."
   numerals_vs_words: "Fix when to use numerals vs spelled-out numbers. Make no other changes."
@@ -117,7 +117,7 @@ instruction_templates:
   technical_web_addresses: "Fix formatting of URLs and web addresses. Make no other changes."
   
   # ===== REFERENCES =====
-  references_citations: "Replace 'click here' with descriptive link text. Replace vague references with specific ones. Output ONLY the corrected sentence."
+  references_citations: "Replace 'click here' with meaningful link text that describes the destination. Examples: 'click here' → 'see the documentation', 'for details, click here' → 'for details, see the user guide'. Output ONLY the corrected sentence."
   references_geographic_locations: "Fix geographic location formatting and abbreviations. Make no other changes."
   references_names_titles: "Fix person name and title formatting. Make no other changes."
   references_product_names: "Fix product name formatting and capitalization. Make no other changes."
@@ -133,7 +133,7 @@ instruction_templates:
   structure_format_notes: "Fix note and admonition formatting. Make no other changes."
   
   # ===== GENERAL RULES =====
-  ambiguity: "Replace unclear pronouns with specific nouns. Replace ambiguous terms with precise terms. Output ONLY the corrected sentence."
+  ambiguity: "Replace unclear pronouns like 'This', 'It', 'That' with specific nouns. Example: 'This is easy' → 'The process is easy'. Output ONLY the corrected sentence with NO explanations."
   
   # ===== PATTERN MATCHERS (Fallbacks) =====
   word_usage_*: "Fix word usage issues. Replace incorrect terms with preferred alternatives. Return ONLY the corrected sentence with NO explanations."
@@ -144,8 +144,17 @@ instruction_templates:
   structure_*: "Fix structural formatting according to style guide. Make no other changes."
   legal_*: "Fix legal compliance issues. Make no other changes."
 
+# Quality preservation rules (applied to ALL fixes)
+quality_preservation:
+  - "Preserve all functional requirements and specific information"
+  - "Do not lose important details or context"
+  - "Avoid creating new ambiguous pronouns" 
+  - "Do not add exclamation points in technical writing"
+  - "Keep changes minimal and surgical"
+  - "Maintain the original intent and meaning"
+
 # Fallback instruction for unknown error types
-fallback_instruction: "Fix {error_type} issues according to the style guide. Make minimal changes to preserve meaning."
+fallback_instruction: "Fix {error_type} issues according to the style guide. Make minimal changes to preserve meaning and context. Do not lose important information."
 
 # Severity to priority mapping
 severity_mapping:
