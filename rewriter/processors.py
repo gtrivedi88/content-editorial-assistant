@@ -27,8 +27,31 @@ class TextProcessor:
         logger.info(f"🔧 Processing raw AI response: '{cleaned[:100]}...'")
         logger.info(f"📊 Raw response length: {len(cleaned)} chars vs original: {len(original_text)} chars")
         
-        # GENTLE CLEANING: For surgical changes, be less aggressive
-        # Check if this looks like a surgical change (minimal difference)
+        # PRIORITY 1: Try to extract surgical fixes from verbose AI responses FIRST
+        # This handles cases where AI gives good surgical fix but wraps it in verbose explanation
+        if any(keyword in cleaned.lower() for keyword in ['corrected text', 'here is', 'here\'s', 'revised version']):
+            logger.info("🎯 Detected verbose AI response - attempting extraction")
+            
+            # Extract content between quotes (most reliable for AI responses)
+            quote_patterns = [
+                r'"([^"]+)"',  # Content between double quotes
+                r"'([^']+)'",  # Content between single quotes
+            ]
+            
+            for pattern in quote_patterns:
+                matches = re.findall(pattern, cleaned)
+                if matches:
+                    # Find the longest meaningful match (likely the corrected text)
+                    longest_match = max(matches, key=len)
+                    if len(longest_match.strip()) > 10:  # Must be substantial content
+                        extracted = longest_match.strip()
+                        logger.info(f"✅ Extracted quoted content: '{extracted[:50]}...'")
+                        # Verify this looks like a reasonable fix
+                        if len(extracted.split()) >= len(original_text.split()) * 0.5:  # At least half the words
+                            cleaned = extracted
+                            logger.info("✅ Using extracted quoted content as the fix")
+        
+        # PRIORITY 2: Check if this looks like a surgical change (minimal difference)
         word_diff = abs(len(cleaned.split()) - len(original_text.split()))
         is_surgical_change = word_diff <= 3  # Very small word count difference
         
@@ -38,21 +61,32 @@ class TextProcessor:
             
             # Enhanced extraction for specific error types that had issues
             if any(keyword in cleaned.lower() for keyword in ['corrected text', 'here is', 'here\'s']):
-                # Remove only the most obvious AI patterns
-                simple_patterns = [
-                    r"here is the corrected text:\s*(.*?)(?:\s*$)",
-                    r"here's the corrected text:\s*(.*?)(?:\s*$)",
-                    r"corrected text:\s*(.*?)(?:\s*$)",
-                    r"here is the (?:revised|corrected|fixed) (?:text|sentence):\s*(.*?)(?:\s*$)",
-                    r"here's the (?:revised|corrected|fixed) (?:text|sentence):\s*(.*?)(?:\s*$)"
-                ]
-                
-                for pattern in simple_patterns:
-                    match = re.search(pattern, cleaned, re.IGNORECASE | re.DOTALL)
-                    if match:
-                        cleaned = match.group(1).strip()
-                        logger.info(f"Extracted surgical change using enhanced pattern")
-                        break
+                # PRIORITY 2: If no quotes, try standard extraction patterns
+                if '"' in cleaned or "'" in cleaned:
+                    pass  # Already processed quotes above
+                else:
+                    simple_patterns = [
+                        r"here is the corrected text:\s*(.*?)(?:\s*$)",
+                        r"here's the corrected text:\s*(.*?)(?:\s*$)",
+                        r"corrected text:\s*(.*?)(?:\s*$)",
+                        r"here is the (?:revised|corrected|fixed) (?:text|sentence):\s*(.*?)(?:\s*$)",
+                        r"here's the (?:revised|corrected|fixed) (?:text|sentence):\s*(.*?)(?:\s*$)",
+                        # ADD MISSING PATTERNS for verbose AI responses
+                        r"here's a revised version of the text that's (?:even )?(?:clearer and more concise|better):\s*(.*?)(?:\s*$)",
+                        r"here is a revised version of the text that's (?:even )?(?:clearer and more concise|better):\s*(.*?)(?:\s*$)",
+                        r"here's a (?:better|improved|cleaner) version:\s*(.*?)(?:\s*$)",
+                        r"here is a (?:better|improved|cleaner) version:\s*(.*?)(?:\s*$)",
+                        # Extract content between quotes for common AI patterns
+                        r"(?:here's|here is).{0,50}:\s*\"([^\"]+)\"",
+                        r"(?:revised|corrected|improved).{0,30}:\s*\"([^\"]+)\""
+                    ]
+                    
+                    for pattern in simple_patterns:
+                        match = re.search(pattern, cleaned, re.IGNORECASE | re.DOTALL)
+                        if match:
+                            cleaned = match.group(1).strip()
+                            logger.info(f"✅ Extracted using pattern: '{cleaned[:50]}...'")
+                            break
                 
                 # Remove AI prefixes but preserve the actual content change
                 simple_prefixes = [
@@ -62,7 +96,20 @@ class TextProcessor:
                     "here is the revised text:",
                     "here's the revised text:",
                     "here is the fixed text:",
-                    "here's the fixed text:"
+                    "here's the fixed text:",
+                    # ADD MISSING PREFIXES for verbose AI responses
+                    "here's a revised version of the text that's even clearer and more concise:",
+                    "here is a revised version of the text that's even clearer and more concise:",
+                    "here's a revised version of the text that's clearer and more concise:",
+                    "here is a revised version of the text that's clearer and more concise:",
+                    "here's a revised version of the text that's better:",
+                    "here is a revised version of the text that's better:",
+                    "here's a better version:",
+                    "here is a better version:",
+                    "here's an improved version:",
+                    "here is an improved version:",
+                    "here's a cleaner version:",
+                    "here is a cleaner version:"
                 ]
                 
                 for prefix in simple_prefixes:
@@ -78,7 +125,19 @@ class TextProcessor:
             cleaned = re.sub(r'\s*\([^)]*correct[^)]*\)', '', cleaned)
             cleaned = re.sub(r'\s*\([^)]*proper[^)]*\)', '', cleaned)
             
-            # Skip complex filtering for surgical changes
+            # REMOVE TRAILING AI POLITENESS that contributes to length inflation
+            trailing_patterns = [
+                r'\s*let me know if you (?:have any other|need any).*$',
+                r'\s*(?:is there anything else|anything else) (?:you\'d like|you would like|i can help).*$',
+                r'\s*i hope this helps.*$',
+                r'\s*feel free to (?:ask|let me know).*$',
+                r'\s*please let me know if.*$'
+            ]
+            
+            for pattern in trailing_patterns:
+                cleaned = re.sub(pattern, '', cleaned, flags=re.IGNORECASE | re.DOTALL)
+            
+            # Clean up extra whitespace and newlines
             cleaned = re.sub(r'\s+', ' ', cleaned).strip()
             
         else:
