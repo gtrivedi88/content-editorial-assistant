@@ -17,11 +17,11 @@ class HWordsRule(BaseWordUsageRule):
     def _get_rule_type(self) -> str:
         return 'word_usage_h'
 
-    def analyze(self, text: str, sentences: List[str], spacy_doc=None, context=None) -> List[Dict[str, Any]]:
+    def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         errors = []
-        if not spacy_doc:
+        if not nlp:
             return errors
-        doc = spacy_doc
+        doc = nlp(text)
 
         word_map = {
             "hamburger menu": {"suggestion": "Avoid food-related UI terms. Use the element's tooltip name or a generic term like 'main menu'.", "severity": "medium"},

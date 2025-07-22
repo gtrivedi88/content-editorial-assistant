@@ -17,11 +17,11 @@ class KWordsRule(BaseWordUsageRule):
     def _get_rule_type(self) -> str:
         return 'word_usage_k'
 
-    def analyze(self, text: str, sentences: List[str], spacy_doc=None, context=None) -> List[Dict[str, Any]]:
+    def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         errors = []
-        if not spacy_doc:
+        if not nlp:
             return errors
-        doc = spacy_doc
+        doc = nlp(text)
 
         word_map = {
             "kebab menu": {"suggestion": "Avoid food-related UI terms. Use the element's tooltip name or 'overflow menu'.", "severity": "medium"},

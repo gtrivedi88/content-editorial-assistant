@@ -17,11 +17,11 @@ class TWordsRule(BaseWordUsageRule):
     def _get_rule_type(self) -> str:
         return 'word_usage_t'
 
-    def analyze(self, text: str, sentences: List[str], spacy_doc=None, context=None) -> List[Dict[str, Any]]:
+    def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         errors = []
-        if not spacy_doc:
+        if not nlp:
             return errors
-        doc = spacy_doc
+        doc = nlp(text)
 
         word_map = {
             "tap on": {"suggestion": "Omit 'on'. Use 'tap the icon'.", "severity": "medium"},

@@ -6,6 +6,11 @@ from typing import List, Dict, Any
 from .base_legal_rule import BaseLegalRule
 import re
 
+try:
+    from spacy.tokens import Doc
+except ImportError:
+    Doc = None
+
 class PersonalInformationRule(BaseLegalRule):
     """
     Checks for the use of culturally specific terms like "first name" or
@@ -19,6 +24,10 @@ class PersonalInformationRule(BaseLegalRule):
         Analyzes text for incorrect terminology for personal names.
         """
         errors = []
+        if not nlp:
+            return errors
+        doc = nlp(text)
+
         # Linguistic Anchor: A mapping of discouraged terms to preferred terms.
         name_terms = {
             "first name": "given name",
@@ -26,15 +35,16 @@ class PersonalInformationRule(BaseLegalRule):
             "last name": "surname"
         }
 
-        for i, sentence in enumerate(sentences):
-            sentence_lower = sentence.lower()
+        for i, sent in enumerate(doc.sents):
             for bad_term, good_term in name_terms.items():
-                if bad_term in sentence_lower:
+                for match in re.finditer(r'\b' + re.escape(bad_term) + r'\b', sent.text, re.IGNORECASE):
                     errors.append(self._create_error(
-                        sentence=sentence,
+                        sentence=sent.text,
                         sentence_index=i,
-                        message=f"Avoid using the term '{bad_term}'. Use a more globally understood term.",
-                        suggestions=[f"Replace '{bad_term}' with '{good_term}'."],
-                        severity='medium'
+                        message=f"Avoid using the term '{match.group()}'. Use a more globally understood term.",
+                        suggestions=[f"Replace '{match.group()}' with '{good_term}'."],
+                        severity='medium',
+                        span=(sent.start_char + match.start(), sent.start_char + match.end()),
+                        flagged_text=match.group(0)
                     ))
         return errors

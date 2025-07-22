@@ -17,11 +17,11 @@ class QWordsRule(BaseWordUsageRule):
     def _get_rule_type(self) -> str:
         return 'word_usage_q'
 
-    def analyze(self, text: str, sentences: List[str], spacy_doc=None, context=None) -> List[Dict[str, Any]]:
+    def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         errors = []
-        if not spacy_doc:
+        if not nlp:
             return errors
-        doc = spacy_doc
+        doc = nlp(text)
 
         # Context-aware check for 'quote' as a noun
         for token in doc:
