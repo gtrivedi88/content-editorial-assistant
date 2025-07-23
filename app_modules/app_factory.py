@@ -12,7 +12,7 @@ from flask import Flask
 from flask_cors import CORS
 from flask_socketio import SocketIO
 
-from src.config import Config
+from config import Config
 from .api_routes import setup_routes
 from .error_handlers import setup_error_handlers
 from .websocket_handlers import setup_websocket_handlers
@@ -128,24 +128,21 @@ def initialize_services():
     
     # Initialize AI Rewriter (use simple version to avoid complexity)
     try:
-        from src.simple_ai_rewriter import SimpleAIRewriter
-        from src.config import Config
+        from rewriter import DocumentRewriter
+        from models import ModelConfig
         
-        # Get AI configuration
-        ai_config = Config.get_ai_config()
+        # Get model configuration
+        model_info = ModelConfig.get_model_info()
         
         # Initialize with proper configuration
-        services['ai_rewriter'] = SimpleAIRewriter(
-            use_ollama=ai_config['use_ollama'],
-            ollama_model=ai_config['ollama_model']
-        )
+        services['ai_rewriter'] = DocumentRewriter()
         services['ai_rewriter_available'] = True
-        logger.info("✅ SimpleAIRewriter imported successfully")
-        logger.info(f"AI Model: {'Ollama (' + ai_config['ollama_model'] + ')' if ai_config['use_ollama'] else 'HuggingFace'}")
+        logger.info("✅ DocumentRewriter imported successfully")
+        logger.info(f"AI Model: {model_info.get('type', 'Unknown')} - {model_info.get('model', 'Unknown')}")
     except ImportError as e:
         services['ai_rewriter'] = SimpleAIRewriter()
         services['ai_rewriter_available'] = False
-        logger.warning(f"⚠️ Simple AI rewriter not available - {e}")
+        logger.warning(f"⚠️ DocumentRewriter not available, using fallback - {e}")
     
     return services
 
@@ -168,21 +165,22 @@ def log_initialization_status(services):
         
         # Log AI configuration with status
         try:
-            ai_config = Config.get_ai_config()
-            if ai_config['use_ollama']:
+            from models import ModelConfig, is_model_available
+            model_info = ModelConfig.get_model_info()
+            active_config = ModelConfig.get_active_config()
+            
+            if active_config.get('provider_type') == 'ollama':
                 # Check if Ollama is actually available
-                ollama_status = "✅ Ready"
-                try:
-                    import requests
-                    response = requests.get(f"{ai_config['ollama_url'].replace('/api/generate', '/api/tags')}", timeout=5)
-                    if response.status_code != 200:
-                        ollama_status = "⚠️ Connection Issue"
-                except:
-                    ollama_status = "⚠️ Connection Issue"
-                
-                logger.info(f"AI Configuration: {ollama_status} - Ollama ({ai_config['ollama_model']})")
+                ollama_status = "✅ Ready" if is_model_available() else "⚠️ Connection Issue"
+                model_name = active_config.get('model', 'Unknown')
+                logger.info(f"AI Configuration: {ollama_status} - Ollama ({model_name})")
+            elif active_config.get('provider_type') == 'api':
+                api_status = "✅ Ready" if is_model_available() else "⚠️ API Issue"
+                provider_name = active_config.get('provider_name', 'Unknown')
+                model_name = active_config.get('model', 'Unknown')
+                logger.info(f"AI Configuration: {api_status} - {provider_name} API ({model_name})")
             else:
-                logger.info("AI Configuration: ✅ Rule-based fallback")
+                logger.info("AI Configuration: ✅ Models system available")
         except Exception as e:
             logger.warning(f"Could not determine AI configuration: {e}")
         

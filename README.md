@@ -154,7 +154,7 @@ ollama pull llama3:8b
 If you prefer to use a different model than our recommended `llama3:8b`, you can easily customize it:
 
 **Step 1: Update Configuration**
-Edit `src/config.py` and change line 45:
+Edit `config.py` and change line 45:
 ```python
 # Change this line:
 OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'llama3:8b')
@@ -324,7 +324,7 @@ Peer-Review-Platform/
 ├── app.py                 # Main Flask application
 ├── setup.py              # Complete setup script
 ├── requirements.txt      # All dependencies
-├── src/
+├── config.py                      # Main application configuration
 │   ├── style_analyzer.py # SpaCy-based analysis
 │   ├── ai_rewriter.py    # Iterative AI rewriting
 │   ├── document_processor.py # Multi-format support

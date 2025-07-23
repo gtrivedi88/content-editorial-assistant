@@ -6,7 +6,7 @@ Uses the application factory pattern for better organization and maintainability
 
 import os
 from app_modules.app_factory import create_app, configure_upload_folder
-from src.config import Config
+from config import Config
 
 # Create application using factory pattern
 app, socketio = create_app(Config)

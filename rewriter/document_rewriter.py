@@ -1,6 +1,6 @@
 """
-Simple AI Rewriter - Assembly Line Precision Only
-Uses the well-designed modular system with assembly line error fixing exclusively.
+Document Rewriter - Assembly Line Precision
+High-level document rewriting with structure preservation using assembly line approach.
 """
 
 import logging
@@ -8,15 +8,15 @@ from typing import List, Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
 
-class SimpleAIRewriter:
-    """Simple AI rewriter that uses assembly line precision exclusively."""
+class DocumentRewriter:
+    """Document rewriter that preserves structure using assembly line precision."""
     
     def __init__(self, use_ollama: bool = True, ollama_model: str = "llama3:8b", progress_callback=None):
         """Initialize with assembly line capability only."""
         self.progress_callback = progress_callback
         
         # Use existing components - no duplication
-        from rewriter.core import AIRewriter
+        from .core import AIRewriter
         from style_analyzer.core_analyzer import StyleAnalyzer
         from reconstructors import get_reconstructor
         
@@ -28,7 +28,7 @@ class SimpleAIRewriter:
         self.style_analyzer = StyleAnalyzer()
         self.get_reconstructor = get_reconstructor
         
-        logger.info("SimpleAIRewriter initialized - Assembly Line ONLY")
+        logger.info("DocumentRewriter initialized - Assembly Line ONLY")
     
     def rewrite_document_with_structure_preservation(self, content: str, format_hint: str = None, 
                                                    session_id: str = None, pass_number: int = 1) -> Dict[str, Any]:

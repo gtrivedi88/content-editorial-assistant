@@ -8,6 +8,7 @@ from .assembly_line_rewriter import AssemblyLineRewriter
 from .generators import TextGenerator
 from .processors import TextProcessor
 from .evaluators import RewriteEvaluator
+from .document_rewriter import DocumentRewriter
 from models import ModelManager
 
 __all__ = [
@@ -16,5 +17,6 @@ __all__ = [
     'TextGenerator',
     'TextProcessor',
     'RewriteEvaluator',
+    'DocumentRewriter',
     'ModelManager'
 ] 

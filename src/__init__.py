@@ -1,1 +1,0 @@
-# Style Guide Application - Source Package 

@@ -12,7 +12,7 @@ from flask import render_template, request, jsonify, flash, redirect, url_for
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import RequestEntityTooLarge
 
-from src.config import Config
+from config import Config
 from .websocket_handlers import emit_progress, emit_completion
 
 logger = logging.getLogger(__name__)

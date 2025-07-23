@@ -8,7 +8,7 @@ import re
 import logging
 import requests
 from typing import Dict, Any, List, Optional
-from src.config import Config
+from config import Config
 
 logger = logging.getLogger(__name__)
 
@@ -104,12 +104,20 @@ class SimpleAIRewriter:
     """Simple AI rewriter fallback with Ollama integration."""
     
     def __init__(self):
-        """Initialize with AI configuration."""
+        """Initialize with model configuration."""
         self.requests = requests
-        ai_config = Config.get_ai_config()
-        self.use_ollama = ai_config['use_ollama']
-        self.ollama_model = ai_config['ollama_model']
-        self.ollama_url = ai_config['ollama_url']
+        try:
+            from models import ModelConfig
+            model_info = ModelConfig.get_model_info()
+            active_config = ModelConfig.get_active_config()
+            self.use_ollama = active_config.get('provider_type') == 'ollama'
+            self.ollama_model = active_config.get('model', 'llama3:8b')
+            self.ollama_url = f"{active_config.get('base_url', 'http://localhost:11434')}/api/generate"
+        except ImportError:
+            # Fallback if models system not available
+            self.use_ollama = True
+            self.ollama_model = 'llama3:8b'
+            self.ollama_url = 'http://localhost:11434/api/generate'
     
     def rewrite(self, content: str, errors: Optional[List[Dict[str, Any]]] = None, context: str = "sentence") -> Dict[str, Any]:
         """Generate AI-powered rewrite."""
