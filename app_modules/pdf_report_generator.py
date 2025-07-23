@@ -1,6 +1,18 @@
 """
 Professional PDF Report Generator
 Creates comprehensive writing analytics reports with charts, diagrams, and detailed explanations.
+
+Recent Improvements (Text Overlapping Fixes):
+- Increased chart figure size from 12x10 to 14x12 inches
+- Added more spacing between chart subplots (hspace=0.5, wspace=0.4)
+- Positioned chart labels further from bar tops to avoid title overlap
+- Shortened chart labels to prevent x-axis crowding
+- Limited pie chart to top 4 error types with truncated labels
+- Improved table column width distribution for better text fit
+- Reduced font sizes in tables (9pt vs 10pt) for better fit
+- Added proper padding and alignment to table cells
+- Shortened interpretation text for better table display
+- Fixed chart value label positioning to prevent overlap with titles
 """
 
 import os
@@ -77,7 +89,8 @@ class PDFReportGenerator:
                 textColor=colors.Color(0, 0.4, 0.8),
                 spaceBefore=20,
                 spaceAfter=12,
-                fontName='Helvetica-Bold'
+                fontName='Helvetica-Bold',
+                keepWithNext=1
             ),
             'SubsectionTitle': ParagraphStyle(
                 'SubsectionTitle',
@@ -86,7 +99,8 @@ class PDFReportGenerator:
                 textColor=colors.Color(0.3, 0.3, 0.3),
                 spaceBefore=15,
                 spaceAfter=8,
-                fontName='Helvetica-Bold'
+                fontName='Helvetica-Bold',
+                keepWithNext=1
             ),
             'MetricValue': ParagraphStyle(
                 'MetricValue',
@@ -133,6 +147,54 @@ class PDFReportGenerator:
             )
         }
     
+    def _extract_grade_level(self, analysis_data: Dict[str, Any]) -> float:
+        """Extract grade level from analysis data, checking multiple possible sources."""
+        try:
+            # Check multiple possible sources for grade level data
+            technical_metrics = analysis_data.get('technical_writing_metrics', {})
+            statistics = analysis_data.get('statistics', {})
+            
+            # Priority order for grade level sources
+            grade_level_sources = [
+                technical_metrics.get('estimated_grade_level'),
+                technical_metrics.get('flesch_kincaid_grade'),
+                technical_metrics.get('text_standard'),
+                statistics.get('flesch_kincaid_grade'),
+                statistics.get('estimated_grade_level'),
+                statistics.get('text_standard')
+            ]
+            
+            # Return the first valid numeric value found
+            for source in grade_level_sources:
+                if source is not None and isinstance(source, (int, float)) and source > 0:
+                    return float(source)
+            
+            # If no valid grade level found, estimate from Flesch Reading Ease
+            flesch_score = technical_metrics.get('flesch_reading_ease') or statistics.get('flesch_reading_ease', 0)
+            if flesch_score > 0:
+                # Rough conversion from Flesch Reading Ease to grade level
+                if flesch_score >= 90:
+                    return 5.0
+                elif flesch_score >= 80:
+                    return 6.0
+                elif flesch_score >= 70:
+                    return 7.0
+                elif flesch_score >= 60:
+                    return 8.5
+                elif flesch_score >= 50:
+                    return 10.0
+                elif flesch_score >= 30:
+                    return 13.0
+                else:
+                    return 16.0
+            
+            # Default fallback
+            return 10.0
+            
+        except Exception as e:
+            logger.error(f"Error extracting grade level: {e}")
+            return 10.0
+    
     def generate_report(self, analysis_data: Dict[str, Any], content: str, 
                        structural_blocks: Optional[List[Dict]] = None) -> bytes:
         """
@@ -170,7 +232,7 @@ class PDFReportGenerator:
             story.extend(self._create_executive_summary(analysis_data))
             story.append(PageBreak())
             
-            # Writing Analytics section
+            # Writing Analytics section with proper spacing
             story.extend(self._create_writing_analytics_section(analysis_data))
             story.append(PageBreak())
             
@@ -222,11 +284,14 @@ class PDFReportGenerator:
         technical_metrics = analysis_data.get('technical_writing_metrics', {})
         errors = analysis_data.get('errors', [])
         
+        # Extract grade level properly
+        grade_level = self._extract_grade_level(analysis_data)
+        
         # Create metrics table
         metrics_data = [
             ['Document Statistics', '', 'Quality Metrics', ''],
             [f"Words: {statistics.get('word_count', 0):,}", '', 
-             f"Grade Level: {technical_metrics.get('estimated_grade_level', 'N/A')}", ''],
+             f"Grade Level: {grade_level:.1f}", ''],
             [f"Sentences: {statistics.get('sentence_count', 0):,}", '', 
              f"Readability: {self._get_readability_category(technical_metrics.get('flesch_reading_ease', 0))}", ''],
             [f"Paragraphs: {statistics.get('paragraph_count', 0):,}", '', 
@@ -235,16 +300,18 @@ class PDFReportGenerator:
              f"Overall Score: {analysis_data.get('overall_score', 0):.0f}/100", '']
         ]
         
-        metrics_table = Table(metrics_data, colWidths=[2.5*inch, 0.5*inch, 2.5*inch, 0.5*inch])
+        metrics_table = Table(metrics_data, colWidths=[2.2*inch, 0.3*inch, 2.8*inch, 0.3*inch])
         metrics_table.setStyle(TableStyle([
             ('FONT', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, -1), 12),
+            ('FONTSIZE', (0, 0), (-1, -1), 11),  # Slightly smaller font
             ('TEXTCOLOR', (0, 0), (-1, 0), self.colors['primary']),
             ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('TOPPADDING', (0, 1), (-1, -1), 8),
-            ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 15),  # More space after headers
+            ('TOPPADDING', (0, 1), (-1, -1), 10),  # More padding for content rows
+            ('BOTTOMPADDING', (0, 1), (-1, -1), 10),
+            ('LEFTPADDING', (0, 0), (-1, -1), 5),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 5),
         ]))
         
         elements.append(metrics_table)
@@ -274,7 +341,9 @@ class PDFReportGenerator:
         """Create executive summary section."""
         elements = []
         
-        elements.append(Paragraph("Executive Summary", self.custom_styles['SectionTitle']))
+        # Use KeepTogether for title and content
+        title_and_intro = []
+        title_and_intro.append(Paragraph("Executive Summary", self.custom_styles['SectionTitle']))
         
         statistics = analysis_data.get('statistics', {})
         technical_metrics = analysis_data.get('technical_writing_metrics', {})
@@ -282,7 +351,7 @@ class PDFReportGenerator:
         
         # Key findings
         word_count = statistics.get('word_count', 0)
-        grade_level = technical_metrics.get('estimated_grade_level', 0)
+        grade_level = self._extract_grade_level(analysis_data)
         flesch_score = technical_metrics.get('flesch_reading_ease', 0)
         overall_score = analysis_data.get('overall_score', 0)
         
@@ -299,27 +368,33 @@ class PDFReportGenerator:
         in the sections that follow.
         """
         
-        elements.append(Paragraph(summary_text, self.custom_styles['BodyText']))
+        title_and_intro.append(Paragraph(summary_text, self.custom_styles['BodyText']))
+        elements.append(KeepTogether(title_and_intro))
         elements.append(Spacer(1, 0.3 * inch))
         
-        # Key metrics visualization
-        elements.append(self._create_metrics_chart(analysis_data))
+        # Key metrics visualization with better spacing
+        chart_section = []
+        chart_section.append(Paragraph("Key Metrics Overview", self.custom_styles['SubsectionTitle']))
+        chart_section.append(self._create_metrics_chart(analysis_data))
+        elements.append(KeepTogether(chart_section))
         
         return elements
     
     def _create_writing_analytics_section(self, analysis_data: Dict[str, Any]) -> List[Flowable]:
-        """Create detailed writing analytics section."""
+        """Create detailed writing analytics section with better spacing."""
         elements = []
         
+        # Section title
         elements.append(Paragraph("Writing Analytics", self.custom_styles['SectionTitle']))
         
         statistics = analysis_data.get('statistics', {})
         technical_metrics = analysis_data.get('technical_writing_metrics', {})
         
-        # Grade Level Analysis
-        elements.append(Paragraph("Grade Level Assessment", self.custom_styles['SubsectionTitle']))
+        # Grade Level Analysis with KeepTogether
+        grade_section = []
+        grade_section.append(Paragraph("Grade Level Assessment", self.custom_styles['SubsectionTitle']))
         
-        grade_level = technical_metrics.get('estimated_grade_level', 0)
+        grade_level = self._extract_grade_level(analysis_data)
         grade_text = f"""
         <b>Current Grade Level:</b> {grade_level:.1f}<br/>
         <b>Target Range:</b> 9-11 (Professional Technical Writing)<br/>
@@ -327,40 +402,49 @@ class PDFReportGenerator:
         <b>Recommendation:</b> {self._get_grade_level_recommendation(grade_level)}
         """
         
-        elements.append(Paragraph(grade_text, self.custom_styles['BodyText']))
-        elements.append(Spacer(1, 0.2 * inch))
+        grade_section.append(Paragraph(grade_text, self.custom_styles['BodyText']))
+        elements.append(KeepTogether(grade_section))
+        elements.append(Spacer(1, 0.3 * inch))
         
-        # Readability Scores
-        elements.append(Paragraph("Readability Analysis", self.custom_styles['SubsectionTitle']))
+        # Readability Scores with KeepTogether
+        readability_section = []
+        readability_section.append(Paragraph("Readability Analysis", self.custom_styles['SubsectionTitle']))
         
         readability_data = [
             ['Metric', 'Score', 'Interpretation', 'Target'],
             ['Flesch Reading Ease', f"{technical_metrics.get('flesch_reading_ease', 0):.1f}", 
              self._get_readability_category(technical_metrics.get('flesch_reading_ease', 0)), '60-70'],
-            ['Flesch-Kincaid Grade', f"{technical_metrics.get('flesch_kincaid_grade', 0):.1f}", 
-             f"Grade {technical_metrics.get('flesch_kincaid_grade', 0):.0f} level", '9-11'],
+            ['Flesch-Kincaid Grade', f"{technical_metrics.get('flesch_kincaid_grade', grade_level):.1f}", 
+             f"Grade {technical_metrics.get('flesch_kincaid_grade', grade_level):.0f} level", '9-11'],
             ['Gunning Fog Index', f"{technical_metrics.get('gunning_fog_index', 0):.1f}", 
              self._interpret_fog_index(technical_metrics.get('gunning_fog_index', 0)), '< 12'],
             ['SMOG Index', f"{technical_metrics.get('smog_index', 0):.1f}", 
              f"{technical_metrics.get('smog_index', 0):.0f} years education", '< 13']
         ]
         
-        readability_table = Table(readability_data, colWidths=[1.5*inch, 1*inch, 2*inch, 1*inch])
+        readability_table = Table(readability_data, colWidths=[1.6*inch, 1.0*inch, 2.6*inch, 0.8*inch])
         readability_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), self.colors['light_gray']),
             ('TEXTCOLOR', (0, 0), (-1, 0), self.colors['dark_gray']),
             ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('FONTSIZE', (0, 0), (-1, -1), 9),  # Smaller font to fit content
             ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, self.colors['light_gray']]),
-            ('GRID', (0, 0), (-1, -1), 1, self.colors['gray'])
+            ('GRID', (0, 0), (-1, -1), 1, self.colors['gray']),
+            ('TOPPADDING', (0, 0), (-1, -1), 10),  # More padding
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+            ('LEFTPADDING', (0, 0), (-1, -1), 6),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),  # Vertical center alignment
         ]))
         
-        elements.append(readability_table)
-        elements.append(Spacer(1, 0.3 * inch))
+        readability_section.append(readability_table)
+        elements.append(KeepTogether(readability_section))
+        elements.append(Spacer(1, 0.4 * inch))
         
-        # Writing Quality Metrics
-        elements.append(Paragraph("Writing Quality Metrics", self.custom_styles['SubsectionTitle']))
+        # Writing Quality Metrics with KeepTogether
+        quality_section = []
+        quality_section.append(Paragraph("Writing Quality Metrics", self.custom_styles['SubsectionTitle']))
         
         quality_text = f"""
         <b>Sentence Length:</b> {statistics.get('avg_sentence_length', 0):.1f} words (Target: 15-20 words)<br/>
@@ -376,11 +460,13 @@ class PDFReportGenerator:
         Ratio of unique words to total words. {self._interpret_vocabulary_diversity(statistics.get('vocabulary_diversity', 0))}
         """
         
-        elements.append(Paragraph(quality_text, self.custom_styles['BodyText']))
-        elements.append(Spacer(1, 0.3 * inch))
+        quality_section.append(Paragraph(quality_text, self.custom_styles['BodyText']))
+        elements.append(KeepTogether(quality_section))
+        elements.append(Spacer(1, 0.4 * inch))
         
-        # AI/LLM Compatibility
-        elements.append(Paragraph("AI & LLM Compatibility", self.custom_styles['SubsectionTitle']))
+        # AI/LLM Compatibility with KeepTogether
+        llm_section = []
+        llm_section.append(Paragraph("AI & LLM Compatibility", self.custom_styles['SubsectionTitle']))
         
         llm_score = self._calculate_llm_score(statistics, technical_metrics)
         
@@ -396,7 +482,8 @@ class PDFReportGenerator:
         more effectively through LLM systems, resulting in higher quality automated improvements.
         """
         
-        elements.append(Paragraph(llm_text, self.custom_styles['BodyText']))
+        llm_section.append(Paragraph(llm_text, self.custom_styles['BodyText']))
+        elements.append(KeepTogether(llm_section))
         
         return elements
     
@@ -407,15 +494,18 @@ class PDFReportGenerator:
         
         elements.append(Paragraph("Document Structure Analysis", self.custom_styles['SectionTitle']))
         
-        # Original content preview
-        elements.append(Paragraph("Original Content (First 500 characters)", self.custom_styles['SubsectionTitle']))
+        # Original content preview with KeepTogether
+        content_section = []
+        content_section.append(Paragraph("Original Content (First 500 characters)", self.custom_styles['SubsectionTitle']))
         
         content_preview = content[:500] + "..." if len(content) > 500 else content
-        elements.append(Paragraph(content_preview, self.custom_styles['CodeText']))
-        elements.append(Spacer(1, 0.2 * inch))
+        content_section.append(Paragraph(content_preview, self.custom_styles['CodeText']))
+        elements.append(KeepTogether(content_section))
+        elements.append(Spacer(1, 0.3 * inch))
         
-        # Document statistics
-        elements.append(Paragraph("Document Statistics", self.custom_styles['SubsectionTitle']))
+        # Document statistics with KeepTogether
+        stats_section = []
+        stats_section.append(Paragraph("Document Statistics", self.custom_styles['SubsectionTitle']))
         
         statistics = analysis_data.get('statistics', {})
         stats_text = f"""
@@ -428,11 +518,13 @@ class PDFReportGenerator:
         <b>Estimated Reading Time:</b> {self._estimate_reading_time(statistics.get('word_count', 0))}
         """
         
-        elements.append(Paragraph(stats_text, self.custom_styles['BodyText']))
-        elements.append(Spacer(1, 0.3 * inch))
+        stats_section.append(Paragraph(stats_text, self.custom_styles['BodyText']))
+        elements.append(KeepTogether(stats_section))
+        elements.append(Spacer(1, 0.4 * inch))
         
-        # Error summary by type
-        elements.append(Paragraph("Error Analysis Summary", self.custom_styles['SubsectionTitle']))
+        # Error summary by type with KeepTogether
+        error_summary_section = []
+        error_summary_section.append(Paragraph("Error Analysis Summary", self.custom_styles['SubsectionTitle']))
         
         errors = analysis_data.get('errors', [])
         error_counts = Counter([error.get('type', 'unknown') for error in errors])
@@ -449,32 +541,40 @@ class PDFReportGenerator:
                     f"{percentage:.1f}%"
                 ])
             
-            error_table = Table(error_data, colWidths=[2.5*inch, 1*inch, 1.5*inch])
+            error_table = Table(error_data, colWidths=[3.2*inch, 1.0*inch, 1.0*inch])
             error_table.setStyle(TableStyle([
                 ('BACKGROUND', (0, 0), (-1, 0), self.colors['light_gray']),
                 ('TEXTCOLOR', (0, 0), (-1, 0), self.colors['dark_gray']),
                 ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('ALIGN', (1, 0), (-1, -1), 'CENTER'),  # Center align count and percentage
                 ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                ('FONTSIZE', (0, 0), (-1, -1), 10),
-                ('GRID', (0, 0), (-1, -1), 1, self.colors['gray'])
+                ('FONTSIZE', (0, 0), (-1, -1), 9),  # Smaller font for better fit
+                ('GRID', (0, 0), (-1, -1), 1, self.colors['gray']),
+                ('TOPPADDING', (0, 0), (-1, -1), 10),  # More padding
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+                ('LEFTPADDING', (0, 0), (-1, -1), 6),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
             ]))
             
-            elements.append(error_table)
+            error_summary_section.append(error_table)
         else:
-            elements.append(Paragraph("No errors detected in the document.", self.custom_styles['BodyText']))
+            error_summary_section.append(Paragraph("No errors detected in the document.", self.custom_styles['BodyText']))
         
-        elements.append(Spacer(1, 0.3 * inch))
+        elements.append(KeepTogether(error_summary_section))
+        elements.append(Spacer(1, 0.4 * inch))
         
-        # Structural blocks analysis (if available)
+        # Structural blocks analysis (if available) with KeepTogether
         if structural_blocks:
-            elements.append(Paragraph("Structural Block Analysis", self.custom_styles['SubsectionTitle']))
+            blocks_section = []
+            blocks_section.append(Paragraph("Structural Block Analysis", self.custom_styles['SubsectionTitle']))
             
             blocks_text = f"""
             The document was parsed into {len(structural_blocks)} structural blocks for detailed analysis. 
             This allows for context-aware error detection and more precise recommendations.
             """
             
-            elements.append(Paragraph(blocks_text, self.custom_styles['BodyText']))
+            blocks_section.append(Paragraph(blocks_text, self.custom_styles['BodyText']))
             
             # Block type summary
             block_types = Counter([block.get('block_type', 'unknown') for block in structural_blocks])
@@ -487,17 +587,25 @@ class PDFReportGenerator:
                         str(count)
                     ])
                 
-                block_table = Table(block_data, colWidths=[3*inch, 1*inch])
+                block_table = Table(block_data, colWidths=[3.8*inch, 1.2*inch])
                 block_table.setStyle(TableStyle([
                     ('BACKGROUND', (0, 0), (-1, 0), self.colors['light_gray']),
                     ('TEXTCOLOR', (0, 0), (-1, 0), self.colors['dark_gray']),
                     ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                    ('ALIGN', (1, 0), (-1, -1), 'CENTER'),  # Center align count
                     ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                    ('FONTSIZE', (0, 0), (-1, -1), 10),
-                    ('GRID', (0, 0), (-1, -1), 1, self.colors['gray'])
+                    ('FONTSIZE', (0, 0), (-1, -1), 9),  # Smaller font for better fit
+                    ('GRID', (0, 0), (-1, -1), 1, self.colors['gray']),
+                    ('TOPPADDING', (0, 0), (-1, -1), 10),  # More padding
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+                    ('LEFTPADDING', (0, 0), (-1, -1), 6),
+                    ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
                 ]))
                 
-                elements.append(block_table)
+                blocks_section.append(block_table)
+            
+            elements.append(KeepTogether(blocks_section))
         
         return elements
     
@@ -522,10 +630,11 @@ class PDFReportGenerator:
                 error_groups[error_type] = []
             error_groups[error_type].append(error)
         
-        # Display each error type
+        # Display each error type with KeepTogether
         for error_type, error_list in error_groups.items():
-            elements.append(Paragraph(f"{error_type.replace('_', ' ').title()} ({len(error_list)} issues)", 
-                                    self.custom_styles['SubsectionTitle']))
+            error_type_section = []
+            error_type_section.append(Paragraph(f"{error_type.replace('_', ' ').title()} ({len(error_list)} issues)", 
+                                              self.custom_styles['SubsectionTitle']))
             
             # Show first few examples
             examples_to_show = min(3, len(error_list))
@@ -535,24 +644,25 @@ class PDFReportGenerator:
                 suggestions = error.get('suggestions', [])
                 
                 if sentence:
-                    elements.append(Paragraph(f"<b>Example {i+1}:</b> {sentence}", 
-                                            self.custom_styles['BodyText']))
+                    error_type_section.append(Paragraph(f"<b>Example {i+1}:</b> {sentence}", 
+                                                      self.custom_styles['BodyText']))
                 
-                elements.append(Paragraph(f"<b>Issue:</b> {message}", self.custom_styles['BodyText']))
+                error_type_section.append(Paragraph(f"<b>Issue:</b> {message}", self.custom_styles['BodyText']))
                 
                 if suggestions:
-                    elements.append(Paragraph("<b>Suggestions:</b>", self.custom_styles['BodyText']))
+                    error_type_section.append(Paragraph("<b>Suggestions:</b>", self.custom_styles['BodyText']))
                     for suggestion in suggestions[:2]:  # Show max 2 suggestions
-                        elements.append(Paragraph(f"• {suggestion}", self.custom_styles['BulletText']))
+                        error_type_section.append(Paragraph(f"• {suggestion}", self.custom_styles['BulletText']))
                 
                 if i < examples_to_show - 1:
-                    elements.append(Spacer(1, 0.1 * inch))
+                    error_type_section.append(Spacer(1, 0.1 * inch))
             
             if len(error_list) > examples_to_show:
-                elements.append(Paragraph(f"... and {len(error_list) - examples_to_show} more similar issues.", 
-                                        self.custom_styles['BodyText']))
+                error_type_section.append(Paragraph(f"... and {len(error_list) - examples_to_show} more similar issues.", 
+                                                  self.custom_styles['BodyText']))
             
-            elements.append(Spacer(1, 0.2 * inch))
+            elements.append(KeepTogether(error_type_section))
+            elements.append(Spacer(1, 0.3 * inch))
         
         return elements
     
@@ -566,28 +676,33 @@ class PDFReportGenerator:
         statistics = analysis_data.get('statistics', {})
         technical_metrics = analysis_data.get('technical_writing_metrics', {})
         
-        # Priority recommendations
-        elements.append(Paragraph("High Priority Actions", self.custom_styles['SubsectionTitle']))
+        # Priority recommendations with KeepTogether
+        priority_section = []
+        priority_section.append(Paragraph("High Priority Actions", self.custom_styles['SubsectionTitle']))
         
         high_priority_recs = self._generate_priority_recommendations(statistics, technical_metrics, analysis_data.get('errors', []))
         
         for rec in high_priority_recs:
-            elements.append(Paragraph(f"• {rec}", self.custom_styles['BulletText']))
+            priority_section.append(Paragraph(f"• {rec}", self.custom_styles['BulletText']))
         
-        elements.append(Spacer(1, 0.2 * inch))
+        elements.append(KeepTogether(priority_section))
+        elements.append(Spacer(1, 0.3 * inch))
         
-        # General suggestions
+        # General suggestions with KeepTogether
         if suggestions:
-            elements.append(Paragraph("Additional Suggestions", self.custom_styles['SubsectionTitle']))
+            suggestions_section = []
+            suggestions_section.append(Paragraph("Additional Suggestions", self.custom_styles['SubsectionTitle']))
             
             for suggestion in suggestions[:5]:  # Show top 5 suggestions
                 message = suggestion.get('message', '')
-                elements.append(Paragraph(f"• {message}", self.custom_styles['BulletText']))
+                suggestions_section.append(Paragraph(f"• {message}", self.custom_styles['BulletText']))
+            
+            elements.append(KeepTogether(suggestions_section))
+            elements.append(Spacer(1, 0.3 * inch))
         
-        elements.append(Spacer(1, 0.3 * inch))
-        
-        # Time savings potential
-        elements.append(Paragraph("Potential Time Savings", self.custom_styles['SubsectionTitle']))
+        # Time savings potential with KeepTogether
+        time_savings_section = []
+        time_savings_section.append(Paragraph("Potential Time Savings", self.custom_styles['SubsectionTitle']))
         
         time_savings_text = f"""
         <b>Editing Time Reduction:</b> Implementing these recommendations could save 2-4 hours of manual editing time.<br/>
@@ -596,7 +711,8 @@ class PDFReportGenerator:
         <b>Professional Impact:</b> Higher quality writing enhances credibility and professional image.
         """
         
-        elements.append(Paragraph(time_savings_text, self.custom_styles['BodyText']))
+        time_savings_section.append(Paragraph(time_savings_text, self.custom_styles['BodyText']))
+        elements.append(KeepTogether(time_savings_section))
         
         return elements
     
@@ -606,7 +722,9 @@ class PDFReportGenerator:
         
         elements.append(Paragraph("Appendix: Original Content", self.custom_styles['SectionTitle']))
         
-        elements.append(Paragraph("Complete original text as analyzed:", self.custom_styles['BodyText']))
+        appendix_intro = []
+        appendix_intro.append(Paragraph("Complete original text as analyzed:", self.custom_styles['BodyText']))
+        elements.append(KeepTogether(appendix_intro))
         elements.append(Spacer(1, 0.2 * inch))
         
         # Split content into chunks for better formatting
@@ -626,69 +744,134 @@ class PDFReportGenerator:
         return elements
     
     def _create_metrics_chart(self, analysis_data: Dict[str, Any]) -> Flowable:
-        """Create a metrics visualization chart."""
+        """Create a well-spaced metrics visualization chart."""
         try:
-            # Set up matplotlib for PDF generation
+            # Set up matplotlib for PDF generation with larger figure
             plt.style.use('default')
-            fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(10, 8))
-            fig.suptitle('Writing Analytics Overview', fontsize=16, fontweight='bold')
+            fig, axes = plt.subplots(2, 2, figsize=(14, 12))  # Even larger figure size
+            fig.suptitle('Writing Analytics Overview', fontsize=18, fontweight='bold', y=0.96)
+            
+            # Add more spacing between subplots to prevent overlapping
+            plt.subplots_adjust(hspace=0.5, wspace=0.4, top=0.88, bottom=0.12, left=0.08, right=0.95)
             
             statistics = analysis_data.get('statistics', {})
             technical_metrics = analysis_data.get('technical_writing_metrics', {})
             errors = analysis_data.get('errors', [])
             
-            # Chart 1: Grade Level vs Target
-            grade_level = technical_metrics.get('estimated_grade_level', 0)
-            ax1.bar(['Current', 'Target Min', 'Target Max'], [grade_level, 9, 11], 
-                   color=['#1f77b4', '#2ca02c', '#2ca02c'])
-            ax1.set_title('Grade Level Assessment')
-            ax1.set_ylabel('Grade Level')
+            # Chart 1: Grade Level vs Target (top left)
+            ax1 = axes[0, 0]
+            grade_level = self._extract_grade_level(analysis_data)
+            bars1 = ax1.bar(['Current', 'Target\nMin', 'Target\nMax'], [grade_level, 9, 11], 
+                           color=['#1f77b4', '#2ca02c', '#2ca02c'], alpha=0.8)
+            ax1.set_title('Grade Level Assessment', fontsize=13, fontweight='bold', pad=25)
+            ax1.set_ylabel('Grade Level', fontsize=11)
+            ax1.grid(True, alpha=0.3)
+            ax1.set_ylim(0, max(16, grade_level + 2))  # Dynamic y-limit to prevent cramping
             
-            # Chart 2: Readability Scores
+            # Add value labels on bars with better positioning
+            for bar in bars1:
+                height = bar.get_height()
+                # Position labels further from bar tops to avoid title overlap
+                ax1.text(bar.get_x() + bar.get_width()/2., height + 0.3,
+                        f'{height:.1f}', ha='center', va='bottom', fontweight='bold', fontsize=10)
+            
+            # Chart 2: Readability Scores (top right)
+            ax2 = axes[0, 1]
             readability_scores = [
                 technical_metrics.get('flesch_reading_ease', 0),
-                100 - technical_metrics.get('gunning_fog_index', 0) * 8,  # Normalize to 0-100
-                100 - technical_metrics.get('smog_index', 0) * 7  # Normalize to 0-100
+                max(0, 100 - technical_metrics.get('gunning_fog_index', 0) * 8),
+                max(0, 100 - technical_metrics.get('smog_index', 0) * 7)
             ]
-            ax2.bar(['Flesch Ease', 'Gunning Fog', 'SMOG'], readability_scores, 
-                   color=['#ff7f0e', '#2ca02c', '#d62728'])
-            ax2.set_title('Readability Metrics')
-            ax2.set_ylabel('Score (0-100)')
+            # Shorter labels to prevent overlap
+            bars2 = ax2.bar(['Flesch\nEase', 'Gunning\nFog', 'SMOG\nIndex'], 
+                           readability_scores, color=['#ff7f0e', '#2ca02c', '#d62728'], alpha=0.8)
+            ax2.set_title('Readability Metrics', fontsize=13, fontweight='bold', pad=25)
+            ax2.set_ylabel('Score (0-100)', fontsize=11)
+            ax2.grid(True, alpha=0.3)
+            ax2.set_ylim(0, 110)  # Fixed y-limit to prevent label overlap
             
-            # Chart 3: Error Distribution
+            # Add value labels with better spacing
+            for bar in bars2:
+                height = bar.get_height()
+                ax2.text(bar.get_x() + bar.get_width()/2., height + 3,
+                        f'{height:.0f}', ha='center', va='bottom', fontweight='bold', fontsize=10)
+            
+            # Chart 3: Error Distribution (bottom left)
+            ax3 = axes[1, 0]
             if errors:
                 error_types = [error.get('type', 'unknown') for error in errors]
                 error_counts = Counter(error_types)
                 if error_counts:
-                    ax3.pie(error_counts.values(), labels=error_counts.keys(), autopct='%1.1f%%')
-                    ax3.set_title('Error Distribution')
+                    # Limit to top 4 error types for better label spacing
+                    top_errors = error_counts.most_common(4)
+                    labels, values = zip(*top_errors)
+                    
+                    # Shorten labels to prevent overlap
+                    short_labels = []
+                    for label in labels:
+                        clean_label = label.replace('_', ' ').title()
+                        if len(clean_label) > 12:
+                            # Truncate long labels
+                            clean_label = clean_label[:10] + '...'
+                        short_labels.append(clean_label)
+                    
+                    wedges, texts, autotexts = ax3.pie(values, labels=short_labels, 
+                                                      autopct='%1.1f%%', startangle=90,
+                                                      pctdistance=0.85)  # Move percentages inward
+                    ax3.set_title('Top Error Types', fontsize=13, fontweight='bold', pad=25)
+                    
+                    # Improve text readability and positioning
+                    for text in texts:
+                        text.set_fontsize(9)  # Smaller font for labels
+                    for autotext in autotexts:
+                        autotext.set_color('white')
+                        autotext.set_fontweight('bold')
+                        autotext.set_fontsize(9)
             else:
-                ax3.text(0.5, 0.5, 'No Errors Found!', ha='center', va='center', 
-                        transform=ax3.transAxes, fontsize=14, color='green')
-                ax3.set_title('Error Analysis')
+                ax3.text(0.5, 0.5, 'No Errors Found!\n✓ Excellent Writing', ha='center', va='center', 
+                        transform=ax3.transAxes, fontsize=14, color='green', fontweight='bold')
+                ax3.set_title('Error Analysis', fontsize=13, fontweight='bold', pad=25)
+                ax3.set_xlim(-1, 1)
+                ax3.set_ylim(-1, 1)
             
-            # Chart 4: Quality Metrics
+            # Chart 4: Quality Metrics (bottom right)
+            ax4 = axes[1, 1]
             quality_metrics = [
                 min(100, 100 - statistics.get('passive_voice_percentage', 0) * 4),
                 min(100, 100 - abs(statistics.get('avg_sentence_length', 18) - 18) * 3),
                 min(100, 100 - statistics.get('complex_words_percentage', 0) * 3),
                 min(100, statistics.get('vocabulary_diversity', 0.5) * 100)
             ]
-            ax4.bar(['Passive Voice', 'Sentence Length', 'Complex Words', 'Vocabulary'], 
-                   quality_metrics, color=['#9467bd', '#8c564b', '#e377c2', '#7f7f7f'])
-            ax4.set_title('Writing Quality Metrics')
-            ax4.set_ylabel('Quality Score (0-100)')
             
-            plt.tight_layout()
+            # Shorter labels to prevent x-axis overlap
+            labels = ['Passive\nVoice', 'Sentence\nLength', 'Complex\nWords', 'Vocab\nDiversity']
+            bars4 = ax4.bar(labels, quality_metrics, 
+                           color=['#9467bd', '#8c564b', '#e377c2', '#7f7f7f'], alpha=0.8)
+            ax4.set_title('Writing Quality Metrics', fontsize=13, fontweight='bold', pad=25)
+            ax4.set_ylabel('Quality Score (0-100)', fontsize=11)
+            ax4.grid(True, alpha=0.3)
+            ax4.set_ylim(0, 110)  # Fixed y-limit to prevent overlap
             
-            # Save to bytes
+            # Add value labels with proper spacing
+            for bar in bars4:
+                height = bar.get_height()
+                ax4.text(bar.get_x() + bar.get_width()/2., height + 3,
+                        f'{height:.0f}', ha='center', va='bottom', fontweight='bold', fontsize=10)
+            
+            # Rotate x-axis labels to prevent overlap
+            for ax in [ax1, ax2, ax4]:
+                ax.tick_params(axis='x', labelsize=9)
+                plt.setp(ax.get_xticklabels(), rotation=0, ha='center')
+            
+            # Save to bytes with higher DPI for better quality
             img_buffer = BytesIO()
-            plt.savefig(img_buffer, format='png', dpi=150, bbox_inches='tight')
+            plt.savefig(img_buffer, format='png', dpi=200, bbox_inches='tight', 
+                       facecolor='white', edgecolor='none', pad_inches=0.2)
             img_buffer.seek(0)
             plt.close()
             
-            # Create ReportLab Image
-            img = Image(img_buffer, width=6*inch, height=4.8*inch)
+            # Create ReportLab Image with appropriate sizing
+            img = Image(img_buffer, width=7.5*inch, height=6.5*inch)
             return img
             
         except Exception as e:
@@ -726,9 +909,9 @@ class PDFReportGenerator:
     
     def _interpret_fog_index(self, fog_index: float) -> str:
         """Interpret Gunning Fog index."""
-        if fog_index <= 12: return "Acceptable for technical writing"
+        if fog_index <= 12: return "Good for technical docs"
         elif fog_index <= 15: return "Moderately complex"
-        else: return "Very complex - consider simplification"
+        else: return "Too complex"
     
     def _interpret_sentence_length(self, avg_length: float) -> str:
         """Interpret average sentence length."""
@@ -817,7 +1000,7 @@ class PDFReportGenerator:
         recommendations = []
         
         # Grade level recommendations
-        grade_level = technical_metrics.get('estimated_grade_level', 0)
+        grade_level = self._extract_grade_level({'statistics': statistics, 'technical_writing_metrics': technical_metrics})
         if grade_level > 13:
             recommendations.append("Simplify complex sentences to improve accessibility (current grade level too high)")
         elif grade_level < 9:
