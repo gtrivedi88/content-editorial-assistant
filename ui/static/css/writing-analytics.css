@@ -1,0 +1,506 @@
+/* Writing Analytics Enhanced Styles - Cross-Platform Compatible */
+
+/* Global reset for consistency across browsers and OS */
+* {
+    box-sizing: border-box;
+}
+
+/* Ensure consistent font rendering across all platforms */
+html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+}
+
+/* Main Writing Analytics card spacing */
+#statistics-card {
+    margin-bottom: 2rem;
+}
+
+#statistics-card .pf-v5-c-card__body {
+    padding: 1.5rem;
+}
+
+#statistics-card .pf-v5-l-stack {
+    gap: 2rem !important;
+}
+
+#statistics-card .pf-v5-l-stack__item {
+    margin-bottom: 0 !important;
+}
+
+/* Section titles with clean styling */
+.analytics-section-title {
+    position: relative;
+    padding-left: 1rem;
+    margin-bottom: 1rem !important;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #e3f2fd;
+    color: #1976d2;
+    font-weight: 600;
+    text-align: left;
+}
+
+.analytics-section-title::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(to bottom, #1976d2, #4caf50);
+    border-radius: 2px;
+}
+
+/* Grade Level hero section - Clean and readable */
+.grade-level-hero {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 2px solid #dee2e6;
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+    padding: 2rem 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.grade-level-hero .pf-v5-c-title {
+    color: #1976d2 !important;
+    font-weight: 700;
+}
+
+/* Readability score boxes - Clean white cards */
+.readability-score-box {
+    transition: all 0.3s ease;
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.readability-score-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: #1976d2;
+}
+
+/* Enhanced readability score display */
+.readability-score-display {
+    padding: 1.5rem;
+    border-radius: 12px;
+    background: #ffffff;
+    border-left: 4px solid transparent;
+    transition: all 0.3s ease;
+    height: 100%;
+    min-height: 140px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.readability-score-display.success {
+    border-left-color: #4caf50;
+    background: #ffffff;
+}
+
+.readability-score-display.warning {
+    border-left-color: #ff9800;
+    background: #ffffff;
+}
+
+.readability-score-display.danger {
+    border-left-color: #f44336;
+    background: #ffffff;
+}
+
+/* Score values with consistent typography and alignment */
+.score-value {
+    font-size: 1.5rem !important;
+    font-weight: 700 !important;
+    margin-bottom: 0.5rem;
+    color: #333 !important;
+    line-height: 1.2;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+}
+
+/* Document Overview cards - Consistent white background */
+.document-overview-grid .pf-v5-c-card {
+    height: 100%;
+    min-height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.document-overview-grid .pf-v5-c-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: #1976d2;
+}
+
+/* Writing Quality section clean spacing */
+.writing-quality-section {
+    margin-top: 2rem;
+}
+
+.writing-quality-section .pf-v5-l-stack {
+    gap: 1rem !important;
+}
+
+/* LLM Readiness section - Clean gradient */
+.llm-readiness-section {
+    margin-top: 2rem;
+}
+
+.llm-readiness-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+    padding: 2rem 1.5rem;
+    margin-top: 1rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* LLM score display with better contrast */
+.llm-score-display {
+    font-size: 3rem;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+    color: #1976d2;
+    text-align: left;
+}
+
+.llm-score-excellent {
+    color: #4caf50 !important;
+}
+
+.llm-score-good {
+    color: #2196f3 !important;
+}
+
+.llm-score-fair {
+    color: #ff9800 !important;
+}
+
+.llm-score-poor {
+    color: #f44336 !important;
+}
+
+/* Analysis Performance section - Clean cards */
+.analysis-performance-section {
+    margin-top: 2rem;
+}
+
+.analysis-performance-section .pf-v5-l-stack {
+    gap: 0.75rem !important;
+}
+
+.analysis-performance-section .pf-v5-l-stack__item {
+    margin-bottom: 0 !important;
+}
+
+/* Performance progress cards - improved layout */
+.performance-progress-card {
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.performance-progress-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-color: #1976d2;
+}
+
+.performance-progress-card .pf-v5-c-card__body {
+    padding: 1rem 1.5rem;
+}
+
+/* Performance value with proper text handling */
+.performance-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    max-width: 200px;
+    text-align: left;
+    line-height: 1.3;
+    margin-right: 0.5rem;
+}
+
+/* Performance metrics with better typography */
+.performance-metric {
+    text-align: center;
+    padding: 1.5rem;
+    border-radius: 12px;
+    background: #ffffff;
+    transition: all 0.2s ease;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.performance-metric-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    line-height: 1.2;
+    color: #333;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    max-width: 100%;
+    text-align: center;
+}
+
+.performance-metric-label {
+    font-size: 0.875rem;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+    line-height: 1.4;
+    text-align: center;
+}
+
+/* Long text handling for analysis mode - proper wrapping */
+.performance-metric-value.analysis-mode {
+    font-size: 1.2rem;
+    line-height: 1.3;
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    hyphens: auto;
+}
+
+/* Capability status indicators - Clean design */
+.capability-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin: 0.25rem;
+    transition: all 0.2s ease;
+    background: #ffffff;
+    border: 2px solid transparent;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.capability-status.available {
+    border-color: #4caf50;
+    color: #2e7d32;
+    background: #f1f8e9;
+}
+
+.capability-status.unavailable {
+    border-color: #bdbdbd;
+    color: #616161;
+    background: #fafafa;
+}
+
+.capability-status:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.capabilities-container {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 2px solid #e3f2fd;
+}
+
+/* Action buttons section - Clean styling */
+.action-buttons-section {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 2px solid #e3f2fd;
+}
+
+.action-buttons-section .pf-v5-c-button {
+    border-radius: 8px;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    transition: all 0.2s ease;
+}
+
+.action-buttons-section .pf-v5-c-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Responsive typography and spacing */
+@media (max-width: 768px) {
+    #statistics-card .pf-v5-c-card__body {
+        padding: 1rem;
+    }
+    
+    #statistics-card .pf-v5-l-stack {
+        gap: 1.5rem !important;
+    }
+    
+    .analytics-section-title {
+        margin-bottom: 0.75rem !important;
+        font-size: 1.1rem;
+    }
+    
+    .grade-level-hero {
+        padding: 1.5rem 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .readability-score-display {
+        min-height: 120px;
+        padding: 1rem;
+    }
+    
+    .performance-metric {
+        padding: 1rem;
+        min-height: 120px;
+    }
+    
+    .performance-metric-value {
+        font-size: 1.4rem;
+    }
+    
+    .performance-metric-value.analysis-mode {
+        font-size: 1rem;
+        line-height: 1.2;
+    }
+    
+    .llm-readiness-card {
+        padding: 1.5rem 1rem;
+    }
+    
+    .llm-score-display {
+        font-size: 2.2rem;
+    }
+    
+    .score-value {
+        font-size: 1.3rem !important;
+    }
+    
+    .capability-status {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8rem;
+        margin: 0.125rem;
+    }
+    
+    .performance-value {
+        font-size: 1rem;
+        max-width: 150px;
+    }
+}
+
+@media (max-width: 576px) {
+    .performance-metric-value {
+        font-size: 1.2rem;
+    }
+    
+    .performance-metric-value.analysis-mode {
+        font-size: 0.9rem;
+        line-height: 1.1;
+    }
+    
+    .llm-score-display {
+        font-size: 1.8rem;
+    }
+    
+    .score-value {
+        font-size: 1.1rem !important;
+    }
+    
+    .analytics-section-title {
+        font-size: 1rem;
+        padding-left: 0.75rem;
+    }
+    
+    .performance-value {
+        font-size: 0.9rem;
+        max-width: 120px;
+    }
+}
+
+/* Ensure consistent backgrounds across browsers */
+.pf-v5-c-card,
+.readability-score-box,
+.performance-progress-card,
+.document-overview-grid .pf-v5-c-card {
+    background-color: #ffffff !important;
+    background-image: none !important;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .analytics-section-title {
+        color: #000;
+        border-bottom-color: #000;
+    }
+    
+    .performance-metric-value,
+    .score-value,
+    .performance-value {
+        color: #000 !important;
+    }
+    
+    .capability-status.available {
+        color: #000;
+        background: #fff;
+        border-color: #000;
+    }
+}
+
+/* Cross-platform font consistency */
+.performance-metric-value,
+.score-value,
+.llm-score-display,
+.performance-value {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.025em;
+}
+
+/* Ensure text never overflows containers */
+.pf-v5-c-card__body * {
+    max-width: 100%;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+}
+
+/* Remove any conflicting text alignment */
+.performance-metric-value,
+.score-value,
+.llm-score-display {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-break: break-word;
+}
+
+/* Consistent flex alignment for performance cards */
+.performance-progress-card .pf-v5-l-flex {
+    align-items: flex-start;
+}
+
+.performance-progress-card .pf-v5-l-flex__item:last-child {
+    text-align: right;
+    min-width: 0;
+    flex-shrink: 1;
+} 

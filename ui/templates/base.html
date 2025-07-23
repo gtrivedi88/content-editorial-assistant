@@ -11,6 +11,9 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/patternfly.css') }}" />
     <link rel="stylesheet" href="{{ url_for('static', filename='css/patternfly-addons.css') }}" />
     
+    <!-- Writing Analytics Enhanced Styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/writing-analytics.css') }}" />
+    
     <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     
@@ -245,52 +248,21 @@
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     
     <!-- PatternFly JavaScript -->
-    <script>
-        // Initialize PatternFly sidebar toggle
-        document.addEventListener('DOMContentLoaded', function() {
-            const sidebarToggle = document.getElementById('page-sidebar-toggle');
-            const sidebar = document.getElementById('page-sidebar');
-            
-            if (sidebarToggle && sidebar) {
-                sidebarToggle.addEventListener('click', function() {
-                    const isExpanded = sidebar.classList.contains('pf-m-expanded');
-                    if (isExpanded) {
-                        sidebar.classList.remove('pf-m-expanded');
-                        sidebarToggle.setAttribute('aria-expanded', 'false');
-                    } else {
-                        sidebar.classList.add('pf-m-expanded');
-                        sidebarToggle.setAttribute('aria-expanded', 'true');
-                    }
-                });
-            }
-
-            // Auto-hide notifications after 5 seconds
-            const notifications = document.querySelectorAll('.app-notification .pf-v5-c-alert');
-            notifications.forEach(notification => {
-                setTimeout(() => {
-                    notification.style.animation = 'fadeOut 0.3s ease-out forwards';
-                    setTimeout(() => notification.remove(), 300);
-                }, 5000);
-            });
-        });
-
-        // Add fadeOut animation
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes fadeOut {
-                from { opacity: 1; transform: translateX(0); }
-                to { opacity: 0; transform: translateX(100%); }
-            }
-        `;
-        document.head.appendChild(style);
-    </script>
+    <script src="https://unpkg.com/@patternfly/patternfly@5/patternfly.min.js"></script>
     
-    <!-- Application JavaScript -->
-    <script src="{{ url_for('static', filename='js/core.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/utility-functions.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/style-helpers.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/error-display.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/statistics-display.js') }}"></script>
+    <!-- Socket.IO for real-time communication -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    
+         <!-- Application JavaScript -->
+     <script src="{{ url_for('static', filename='js/engagement-analyzer.js') }}"></script>
+     <script src="{{ url_for('static', filename='js/utility-functions.js') }}"></script>
+     <script src="{{ url_for('static', filename='js/style-helpers.js') }}"></script>
+     <script src="{{ url_for('static', filename='js/error-display.js') }}"></script>
+     <script src="{{ url_for('static', filename='js/statistics-display.js') }}"></script>
+     <script src="{{ url_for('static', filename='js/socket-handler.js') }}"></script>
+     <script src="{{ url_for('static', filename='js/file-handler.js') }}"></script>
+     <script src="{{ url_for('static', filename='js/display-main.js') }}"></script>
+     <script src="{{ url_for('static', filename='js/core.js') }}"></script>
     
     <!-- AsciiDoc Element Modules -->
     <script src="{{ url_for('static', filename='js/elements/adoc/registry.js') }}"></script>
@@ -309,9 +281,6 @@
     
     <!-- Legacy Block Creators (fallback support) -->
     <script src="{{ url_for('static', filename='js/block-creators-basic.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/display-main.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/socket-handler.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/file-handler.js') }}"></script>
     <script src="{{ url_for('static', filename='js/index-page.js') }}"></script>
 
     {% block extra_js %}{% endblock %}

@@ -192,6 +192,8 @@ function showFileUploadProgress(elementId, file) {
 
 // Enhanced content analysis with better progress tracking
 function analyzeContent(content, formatHint = 'auto') {
+    const analysisStartTime = performance.now(); // Track client-side timing
+    
     showLoading('analysis-results', 'Starting comprehensive analysis...');
 
     fetch('/analyze', {
@@ -208,9 +210,27 @@ function analyzeContent(content, formatHint = 'auto') {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
+            const analysisEndTime = performance.now();
+            const clientProcessingTime = (analysisEndTime - analysisStartTime) / 1000; // Convert to seconds
+            
+            // Store analysis data globally
             currentAnalysis = data.analysis;
+            
+            // Add timing information to currentAnalysis
+            currentAnalysis.client_processing_time = clientProcessingTime;
+            currentAnalysis.server_processing_time = data.processing_time || data.analysis.processing_time;
+            currentAnalysis.total_round_trip_time = clientProcessingTime;
+            
+            // Display results
             const structuralBlocks = data.structural_blocks || null;
             displayAnalysisResults(data.analysis, content, structuralBlocks);
+            
+            // Log performance metrics for debugging
+            console.log('Analysis Performance:', {
+                server_time: currentAnalysis.server_processing_time,
+                client_time: clientProcessingTime,
+                total_time: clientProcessingTime
+            });
         } else {
             showError('analysis-results', data.error || 'Analysis failed');
         }

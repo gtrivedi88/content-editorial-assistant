@@ -8,9 +8,10 @@ import os
 import time
 import logging
 from datetime import datetime
-from flask import render_template, request, jsonify, flash, redirect, url_for
+from flask import render_template, request, jsonify, flash, redirect, url_for, send_file
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import RequestEntityTooLarge
+from io import BytesIO
 
 from config import Config
 from .websocket_handlers import emit_progress, emit_completion
@@ -84,6 +85,7 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter):
     @app.route('/analyze', methods=['POST'])
     def analyze_content():
         """Analyze text content for style issues with real-time progress."""
+        start_time = time.time()  # Track processing time
         try:
             data = request.get_json()
             content = data.get('content', '')
@@ -97,258 +99,198 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter):
             if not session_id or not session_id.strip():
                 import uuid
                 session_id = str(uuid.uuid4())
-                logger.info(f"Generated session ID for analysis: {session_id}")
             
-            # Send initial progress
-            emit_progress(session_id, 'analysis_start', 'Starting text analysis...',
-                         'Initializing SpaCy NLP processor', 10)
+            # Start analysis with progress updates
+            logger.info(f"Starting analysis for session {session_id}")
+            emit_progress(session_id, 'analysis_start', 'Initializing analysis...', 'Setting up analysis pipeline', 10)
             
-            # Perform block-aware analysis with structural parsing
-            emit_progress(session_id, 'structural_parsing', 'Parsing document structure...',
-                         'Identifying headings, paragraphs, code blocks, etc.', 20)
+            # Analyze with structural blocks
+            analysis_result = style_analyzer.analyze_with_blocks(content, format_hint)
+            analysis = analysis_result.get('analysis', {})
+            structural_blocks = analysis_result.get('structural_blocks', [])
             
-            emit_progress(session_id, 'spacy_processing', 'Processing with SpaCy NLP...',
-                         'Detecting sentence structure and style issues', 40)
+            emit_progress(session_id, 'analysis_complete', 'Analysis complete!', f'Analysis completed successfully', 100)
             
-            emit_progress(session_id, 'block_analysis', 'Analyzing individual blocks...',
-                         'Running style analysis on each document element', 60)
+            # Calculate processing time
+            processing_time = time.time() - start_time
+            analysis['processing_time'] = processing_time
             
-            # Use the new block-aware analysis method
-            analysis_result = style_analyzer.analyze_with_blocks(content, format_hint=format_hint)
+            logger.info(f"Analysis completed in {processing_time:.2f}s for session {session_id}")
             
-            analysis = analysis_result['analysis']
-            structural_blocks = analysis_result['structural_blocks']
-            has_structure = analysis_result['has_structure']
-            
-            emit_progress(session_id, 'metrics_calculation', 'Calculating readability metrics...',
-                         'Computing Flesch, Fog, SMOG, and other scores', 80)
-            
-            # Add some processing time for metrics
-            time.sleep(0.5)  # Small delay to show progress
-            
-            emit_progress(session_id, 'analysis_complete', 'Analysis completed successfully!',
-                         f'Found {len(analysis.get("errors", []))} style issues', 100)
-            
+            # Return results
             response_data = {
                 'success': True,
                 'analysis': analysis,
-                'session_id': session_id,
-                'content': content
+                'processing_time': processing_time,
+                'session_id': session_id
             }
             
             # Include structural blocks if available
             if structural_blocks:
                 response_data['structural_blocks'] = structural_blocks
-            response_data['has_structure'] = has_structure
+            
+            emit_completion(session_id, True, response_data)
             
             return jsonify(response_data)
             
         except Exception as e:
-            logger.error(f"Analysis error: {str(e)}")
-            session_id = locals().get('session_id', '')
-            emit_completion(session_id, False, error=f'Analysis failed: {str(e)}')
-            return jsonify({'error': f'Analysis failed: {str(e)}'}), 500
+            logger.error(f"Analysis error for session {session_id}: {str(e)}")
+            error_response = {
+                'success': False,
+                'error': f'Analysis failed: {str(e)}',
+                'session_id': session_id
+            }
+            emit_completion(session_id, False, error_response)
+            return jsonify(error_response), 500
     
-    @app.route('/rewrite', methods=['POST'])
-    def rewrite_content():
-        """Generate AI-powered rewrite suggestions (Pass 1)."""
+    @app.route('/generate-pdf-report', methods=['POST'])
+    def generate_pdf_report():
+        """Generate a comprehensive PDF report of the writing analysis."""
         try:
             data = request.get_json()
+            
+            # Extract required data
+            analysis_data = data.get('analysis', {})
             content = data.get('content', '')
-            errors = data.get('errors', [])
-            context = data.get('context', 'sentence')
-            session_id = data.get('session_id', '') if data else ''
+            structural_blocks = data.get('structural_blocks', [])
+            
+            if not analysis_data:
+                return jsonify({'error': 'No analysis data provided'}), 400
             
             if not content:
                 return jsonify({'error': 'No content provided'}), 400
             
-            # If no session_id provided, generate one for this request
-            if not session_id or not session_id.strip():
-                import uuid
-                session_id = str(uuid.uuid4())
-                logger.info(f"Generated session ID for rewrite: {session_id}")
+            # Import PDF generator (lazy import to avoid startup delays)
+            try:
+                from .pdf_report_generator import PDFReportGenerator
+            except ImportError as e:
+                logger.error(f"Failed to import PDF generator: {e}")
+                return jsonify({'error': 'PDF generation not available - missing dependencies'}), 500
             
-            # Send initial progress
-            emit_progress(session_id, 'rewrite_start', 'Starting AI rewrite process...',
-                         f'Processing {len(errors)} detected issues', 5)
+            # Generate PDF report
+            logger.info("Generating PDF report...")
+            pdf_generator = PDFReportGenerator()
             
-            # Create progress callback function
-            def progress_callback(step, status, detail, progress):
-                emit_progress(session_id, step, status, detail, progress)
+            pdf_bytes = pdf_generator.generate_report(
+                analysis_data=analysis_data,
+                content=content,
+                structural_blocks=structural_blocks if structural_blocks else None
+            )
             
-            # Check if we have the structural rewriter
-            if hasattr(ai_rewriter, 'rewrite_document_with_structure_preservation'):
-                # Use structural rewriter for better document handling
-                emit_progress(session_id, 'structural_rewrite', 'Using structural document rewriter...',
-                             'Preserving document format and structure', 10)
-                
-                # Detect format from content
-                format_hint = 'asciidoc' if content.strip().startswith('=') else 'auto'
-                
-                rewrite_result = ai_rewriter.rewrite_document_with_structure_preservation(
-                    content=content,
-                    format_hint=format_hint,
-                    session_id=session_id,
-                    pass_number=1
+            # Create filename with timestamp
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"writing_analytics_report_{timestamp}.pdf"
+            
+            # Return PDF as downloadable file
+            pdf_buffer = BytesIO(pdf_bytes)
+            pdf_buffer.seek(0)
+            
+            logger.info(f"PDF report generated successfully ({len(pdf_bytes)} bytes)")
+            
+            return send_file(
+                pdf_buffer,
+                as_attachment=True,
+                download_name=filename,
+                mimetype='application/pdf'
+            )
+            
+        except Exception as e:
+            logger.error(f"PDF generation error: {str(e)}")
+            return jsonify({'error': f'PDF generation failed: {str(e)}'}), 500
+    
+    @app.route('/rewrite', methods=['POST'])
+    def rewrite_content():
+        """AI-powered content rewriting with assembly line support."""
+        start_time = time.time()
+        try:
+            data = request.get_json()
+            content = data.get('content', '')
+            errors = data.get('errors', [])
+            session_id = data.get('session_id', '')
+            use_assembly_line = data.get('use_assembly_line', True)
+            
+            if not content:
+                return jsonify({'error': 'No content provided'}), 400
+            
+            logger.info(f"Starting rewrite for session {session_id} (assembly_line: {use_assembly_line})")
+            
+            if use_assembly_line:
+                # Use assembly line rewriter
+                result = ai_rewriter.rewrite_content_assembly_line(
+                    content, errors, session_id
                 )
-                
-                if rewrite_result.get('error'):
-                    emit_completion(session_id, False, error=rewrite_result['error'])
-                    return jsonify({'error': rewrite_result['error']}), 500
-                
-                # Map structural rewriter results to expected format
-                response_data = {
-                    'success': True,
-                    'original': content,
-                    'rewritten': rewrite_result.get('rewritten_text', ''),
-                    'rewritten_text': rewrite_result.get('rewritten_text', ''),
-                    'improvements': rewrite_result.get('improvements', []),
-                    'confidence': rewrite_result.get('confidence', 0.0),
-                    'model_used': f"structural_{rewrite_result.get('parsing_method', 'unknown')}",
-                    'pass_number': 1,
-                    'can_refine': True,
-                    'original_errors': errors,
-                    'session_id': session_id,
-                    'errors_fixed': rewrite_result.get('errors_fixed', 0),
-                    'original_errors': rewrite_result.get('original_errors', len(errors)),
-                    'passes_completed': rewrite_result.get('passes_completed', 1),
-                    'assembly_line_used': rewrite_result.get('assembly_line_used', True),
-                    'structural_parsing_used': True
-                }
             else:
-                # Fallback to simple rewriter
-                emit_progress(session_id, 'fallback_rewrite', 'Using fallback rewriter...',
-                             'Simple text-based rewriting', 10)
-                
-                # Get system info for AI rewriter configuration
-                system_info = ai_rewriter.get_system_info()
-                model_info = system_info.get('model_info', {})
-                
-                rewrite_result = ai_rewriter.rewrite(content, errors, context)
-                
-                # Add pass number and refinement capability
-                rewrite_result['pass_number'] = 1
-                rewrite_result['can_refine'] = True
-                
-                response_data = {
-                    'success': True,
-                    'original': content,
-                    'rewritten': rewrite_result.get('rewritten_text', ''),
-                    'rewritten_text': rewrite_result.get('rewritten_text', ''),
-                    'improvements': rewrite_result.get('improvements', []),
-                    'confidence': rewrite_result.get('confidence', 0.0),
-                    'model_used': rewrite_result.get('model_used', 'unknown'),
-                    'pass_number': rewrite_result.get('pass_number', 1),
-                    'can_refine': rewrite_result.get('can_refine', False),
-                    'original_errors': errors,
-                    'errors_fixed': rewrite_result.get('errors_fixed', 0),
-                    'passes_completed': rewrite_result.get('passes_completed', 1), 
-                    'assembly_line_used': rewrite_result.get('assembly_line_used', True),
-                    'session_id': session_id,
-                    'structural_parsing_used': False
-                }
+                # Use traditional rewriter
+                result = ai_rewriter.rewrite_content(content, errors)
             
-            emit_completion(session_id, True, data=response_data)
-            return jsonify(response_data)
+            processing_time = time.time() - start_time
+            result['processing_time'] = processing_time
+            result['assembly_line_used'] = use_assembly_line
+            
+            logger.info(f"Rewrite completed in {processing_time:.2f}s")
+            return jsonify(result)
             
         except Exception as e:
             logger.error(f"Rewrite error: {str(e)}")
-            session_id = locals().get('session_id', '')
-            emit_completion(session_id, False, error=f'Rewrite failed: {str(e)}')
             return jsonify({'error': f'Rewrite failed: {str(e)}'}), 500
     
     @app.route('/refine', methods=['POST'])
     def refine_content():
-        """Generate AI-powered refinement (Pass 2)."""
+        """AI-powered content refinement (Pass 2)."""
+        start_time = time.time()
         try:
             data = request.get_json()
             first_pass_result = data.get('first_pass_result', '')
             original_errors = data.get('original_errors', [])
-            context = data.get('context', 'sentence')
-            session_id = data.get('session_id', '') if data else ''
+            session_id = data.get('session_id', '')
             
             if not first_pass_result:
                 return jsonify({'error': 'No first pass result provided'}), 400
             
-            # If no session_id provided, generate one for this request
-            if not session_id or not session_id.strip():
-                import uuid
-                session_id = str(uuid.uuid4())
-                logger.info(f"Generated session ID for refine: {session_id}")
+            logger.info(f"Starting refinement for session {session_id}")
             
-            # Send initial progress
-            emit_progress(session_id, 'refine_start', 'Starting AI refinement process...',
-                         'AI reviewing and polishing the first pass result', 5)
+            result = ai_rewriter.refine_content(first_pass_result, original_errors)
             
-            # Create progress callback function
-            def progress_callback(step, status, detail, progress):
-                emit_progress(session_id, step, status, detail, progress)
+            processing_time = time.time() - start_time
+            result['processing_time'] = processing_time
             
-            # Perform Pass 2 refinement
-            refinement_result = ai_rewriter.refine_text(first_pass_result, original_errors, context)
-            
-            return jsonify({
-                'success': True,
-                'first_pass': first_pass_result,
-                'refined': refinement_result.get('rewritten_text', ''),
-                'rewritten_text': refinement_result.get('rewritten_text', ''),
-                'improvements': refinement_result.get('improvements', []),
-                'confidence': refinement_result.get('confidence', 0.0),
-                'model_used': refinement_result.get('model_used', 'unknown'),
-                'pass_number': refinement_result.get('pass_number', 2),
-                'can_refine': refinement_result.get('can_refine', False),
-                'session_id': session_id  # Return session_id to frontend
-            })
+            logger.info(f"Refinement completed in {processing_time:.2f}s")
+            return jsonify(result)
             
         except Exception as e:
             logger.error(f"Refinement error: {str(e)}")
-            session_id = locals().get('session_id', '')
-            emit_completion(session_id, False, error=f'Refinement failed: {str(e)}')
             return jsonify({'error': f'Refinement failed: {str(e)}'}), 500
     
     @app.route('/health')
     def health_check():
-        """Health check endpoint to verify service status."""
+        """Health check endpoint."""
+        return jsonify({
+            'status': 'healthy',
+            'timestamp': datetime.now().isoformat(),
+            'services': {
+                'document_processor': document_processor is not None,
+                'style_analyzer': style_analyzer is not None,
+                'ai_rewriter': ai_rewriter is not None
+            }
+        })
+    
+    @app.errorhandler(404)
+    def not_found_error(error):
+        """Handle 404 errors."""
         try:
-            # Check if Ollama is available when configured
-            ollama_status = "not_configured"
-            if Config.is_ollama_enabled():
-                try:
-                    import requests
-                    response = requests.get(f"{Config.OLLAMA_BASE_URL}/api/tags", timeout=5)
-                    if response.status_code == 200:
-                        models = response.json().get('models', [])
-                        model_names = [m['name'] for m in models]
-                        ollama_status = "available" if Config.OLLAMA_MODEL in model_names else "model_not_found"
-                    else:
-                        ollama_status = "service_unavailable"
-                except:
-                    ollama_status = "connection_failed"
-            
-            # Check service availability
-            document_processor_status = 'ready' if hasattr(document_processor, 'extract_text') else 'fallback'
-            style_analyzer_status = 'ready' if hasattr(style_analyzer, 'analyze') else 'fallback'
-            ai_rewriter_status = 'ready' if hasattr(ai_rewriter, 'rewrite') else 'fallback'
-            
-            return jsonify({
-                'status': 'healthy',
-                'timestamp': datetime.now().isoformat(),
-                'version': '2.0.0',
-                'ai_model_type': getattr(Config, 'AI_MODEL_TYPE', 'unknown'),
-                'ollama_status': ollama_status,
-                'ollama_model': getattr(Config, 'OLLAMA_MODEL', None) if Config.is_ollama_enabled() else None,
-                'services': {
-                    'document_processor': document_processor_status,
-                    'style_analyzer': style_analyzer_status,
-                    'ai_rewriter': ai_rewriter_status,
-                    'ollama': ollama_status
-                }
-            }), 200
-            
-        except Exception as e:
-            logger.error(f"Health check failed: {str(e)}")
-            return jsonify({
-                'status': 'unhealthy',
-                'error': str(e),
-                'timestamp': datetime.now().isoformat()
-            }), 500 
+            return render_template('error.html', error_message="Page not found"), 404
+        except:
+            return "<h1>404 - Page Not Found</h1>", 404
+    
+    @app.errorhandler(500)
+    def internal_error(error):
+        """Handle 500 errors."""
+        try:
+            return render_template('error.html', error_message="Internal server error"), 500
+        except:
+            return "<h1>500 - Internal Server Error</h1>", 500
+    
+    @app.errorhandler(RequestEntityTooLarge)
+    def too_large_error(error):
+        """Handle file too large errors."""
+        return jsonify({'error': 'File too large'}), 413 
