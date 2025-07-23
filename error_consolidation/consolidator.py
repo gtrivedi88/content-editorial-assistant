@@ -84,17 +84,20 @@ class ErrorConsolidator:
         all_rule_types = set()
         
         for error in group:
-            all_rule_types.add(error.get('rule', 'unknown'))
+            all_rule_types.add(error.get('type', error.get('rule', 'unknown')))  # Use 'type' field consistently
             if 'suggestions' in error and isinstance(error['suggestions'], list):
                 all_suggestions.update(error['suggestions'])
         
         merged_error['suggestions'] = sorted(list(all_suggestions))
         
-        # Add a field to show that this error was consolidated
+        # Add metadata fields for consolidation info (for debugging/analytics only)
         merged_error['consolidated_from'] = sorted(list(all_rule_types))
+        merged_error['consolidation_count'] = len(group)
+        merged_error['is_consolidated'] = True
         
-        # Create a more informative message
-        merged_error['message'] = f"{primary_error['message']} (Consolidated from {len(group)} rules)"
+        # Keep the message CLEAN - no consolidation metadata in the message itself
+        # This ensures both UI and AI get clean, actionable text
+        merged_error['message'] = primary_error['message']
         
         return merged_error
 
