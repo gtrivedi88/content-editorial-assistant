@@ -27,6 +27,70 @@ class PromptGenerator:
         else:
             return self._construct_refinement_pass_prompt(original_text)
 
+    def create_context_aware_assembly_line_prompt(self, target_sentence: str, context_sentences: List[str], 
+                                                 errors: List[Dict[str, Any]], pass_number: int = 1) -> str:
+        """
+        Creates a context-aware prompt for fixing pronoun/ambiguity errors while maintaining assembly line precision.
+        
+        Args:
+            target_sentence: The specific sentence to fix
+            context_sentences: List of sentences providing context (includes target_sentence)
+            errors: List of errors to fix in the target sentence
+            pass_number: The pass number (1 for initial fix, 2 for refinement)
+            
+        Returns:
+            A formatted prompt string for context-aware fixing
+        """
+        if pass_number == 1:
+            return self._construct_context_aware_first_pass_prompt(target_sentence, context_sentences, errors)
+        else:
+            return self._construct_refinement_pass_prompt(target_sentence)
+
+    def _construct_context_aware_first_pass_prompt(self, target_sentence: str, context_sentences: List[str], 
+                                                  errors: List[Dict[str, Any]]) -> str:
+        """
+        Constructs a context-aware prompt for pronoun/ambiguity error fixing.
+        Maintains surgical precision by only allowing changes to the target sentence.
+        """
+        # Build context text
+        context_text = " ".join(context_sentences)
+        
+        # System-level instruction emphasizing surgical precision with context
+        system_prompt = (
+            "You are an expert technical editor with extreme precision. "
+            "Your task is to fix ONLY the specific errors listed below in the TARGET sentence. "
+            "Use the context ONLY to resolve pronouns and ambiguous references. "
+            "Make NO changes to any text except the TARGET sentence. "
+            "Apply fixes in the order listed, making only the specified changes. "
+            "Preserve the original meaning and sentence structure."
+        )
+
+        # Format error list for the prompt
+        error_list_str = self._format_error_list(errors)
+
+        # The final context-aware prompt structure
+        prompt = f"""{system_prompt}
+
+**Context (for reference only - DO NOT modify):**
+{context_text}
+
+**TARGET Sentence (fix errors here):**
+`{target_sentence}`
+
+**Errors to Fix in TARGET Sentence (in order of priority):**
+{error_list_str}
+
+**CRITICAL RULES:**
+- Fix ONLY the TARGET sentence shown above
+- Use context ONLY to resolve pronouns (what does "this", "it", "that" refer to?)
+- Make ONLY the specific changes listed in the errors
+- Return ONLY the corrected TARGET sentence
+- Do NOT modify any context sentences
+
+**Corrected TARGET Sentence:**
+"""
+        return prompt.strip()
+
     def _construct_first_pass_prompt(self, original_text: str, errors: List[Dict[str, Any]]) -> str:
         """Constructs the prompt for the primary error-fixing pass."""
         
@@ -75,32 +139,37 @@ class PromptGenerator:
         return prompt.strip()
 
     def _format_error_list(self, errors: List[Dict[str, Any]]) -> str:
-        """Formats the list of errors into a numbered string for the prompt."""
+        """
+        Format the list of errors for inclusion in the prompt.
+        
+        Args:
+            errors: List of error dictionaries
+            
+        Returns:
+            Formatted string listing all errors with instructions
+        """
         if not errors:
-            return "No specific errors to fix. Perform a general review for clarity and conciseness."
-
-        formatted_errors = []
-        for i, error in enumerate(errors):
-            # Providing the error message gives the LLM context on what to fix.
-            # Including the flagged text helps it locate the error precisely.
-            # Including suggestions gives the LLM specific guidance on how to fix it.
-            error_message = error.get('message', 'Unknown error')
+            return "No specific errors to fix."
+        
+        error_lines = []
+        for i, error in enumerate(errors, 1):
+            error_type = error.get('type', 'unknown')
             flagged_text = error.get('flagged_text', '')
+            message = error.get('message', '')
             suggestions = error.get('suggestions', [])
             
-            error_entry = f"{i + 1}. **Error:** {error_message}\n   **Text:** `{flagged_text}`"
-            
-            # Add suggestions if available
+            # Build error description
+            line = f"{i}. {error_type.upper()}"
+            if flagged_text:
+                line += f" in '{flagged_text}'"
+            if message:
+                line += f": {message}"
             if suggestions:
-                if isinstance(suggestions, list) and suggestions:
-                    # Use the first suggestion as the primary guidance
-                    error_entry += f"\n   **Fix:** {suggestions[0]}"
-                elif isinstance(suggestions, str):
-                    error_entry += f"\n   **Fix:** {suggestions}"
+                line += f" → {', '.join(suggestions[:2])}"  # Limit to first 2 suggestions
             
-            formatted_errors.append(error_entry)
+            error_lines.append(line)
         
-        return "\n".join(formatted_errors)
+        return "\n".join(error_lines)
 
     def create_simple_rewrite_prompt(self, text: str) -> str:
         """Creates a simple, general-purpose rewrite prompt (used for fallbacks)."""
