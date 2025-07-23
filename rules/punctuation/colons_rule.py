@@ -5,6 +5,12 @@ Based on IBM Style Guide topic: "Colons"
 from typing import List, Dict, Any
 from .base_punctuation_rule import BasePunctuationRule
 
+try:
+    from spacy.tokens import Doc, Token
+except ImportError:
+    Doc = None
+    Token = None
+
 class ColonsRule(BasePunctuationRule):
     """
     Checks for incorrect colon usage using dependency parsing to understand
@@ -14,7 +20,7 @@ class ColonsRule(BasePunctuationRule):
     """
     def _get_rule_type(self) -> str:
         """Returns the unique identifier for this rule."""
-        return 'colons'
+        return 'punctuation_colons'
 
     def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         """
@@ -22,40 +28,37 @@ class ColonsRule(BasePunctuationRule):
         """
         errors = []
         if not nlp:
-            # This rule requires dependency parsing, so NLP is essential.
             return errors
 
-        for i, sentence in enumerate(sentences):
-            doc = nlp(sentence)
-            for token in doc:
+        doc = nlp(text)
+        for i, sent in enumerate(doc.sents):
+            for token in sent:
                 if token.text == ':':
-                    # First, check if the colon is used in a legitimate context
-                    # that we should ignore. This prevents false positives.
-                    if self._is_legitimate_context(token, doc):
+                    # First, check for legitimate contexts to avoid false positives.
+                    if self._is_legitimate_context(token, sent):
                         continue
 
-                    # If not a legitimate context, check for the main error:
-                    # A colon must follow a complete independent clause.
-                    if not self._is_preceded_by_complete_clause(token, doc):
+                    # Main Rule: A colon must follow a complete independent clause.
+                    if not self._is_preceded_by_complete_clause(token, sent):
                         errors.append(self._create_error(
-                            sentence=sentence,
+                            sentence=sent.text,
                             sentence_index=i,
                             message="Incorrect colon usage: A colon must be preceded by a complete clause.",
                             suggestions=["Rewrite the text before the colon to form a complete sentence.", "Remove the colon if it is not introducing a list, quote, or explanation."],
-                            severity='high'
+                            severity='high',
+                            span=(token.idx, token.idx + len(token.text)),
+                            flagged_text=token.text
                         ))
-
         return errors
 
-    def _is_legitimate_context(self, colon_token, doc) -> bool:
+    def _is_legitimate_context(self, colon_token: Token, sent: Doc) -> bool:
         """
         Uses linguistic anchors to identify legitimate colon contexts that should be ignored.
-        This is the primary method for reducing false positives.
         """
         # Linguistic Anchor: Time expressions (e.g., 3:30 PM) and ratios (e.g., 5:1).
-        if colon_token.i > 0 and colon_token.i < len(doc) - 1:
-            prev_token = doc[colon_token.i - 1]
-            next_token = doc[colon_token.i + 1]
+        if colon_token.i > sent.start and colon_token.i < sent.end - 1:
+            prev_token = sent.doc[colon_token.i - 1]
+            next_token = sent.doc[colon_token.i + 1]
             if prev_token.like_num and next_token.like_num:
                 return True
 
@@ -65,30 +68,27 @@ class ColonsRule(BasePunctuationRule):
 
         # Linguistic Anchor: Title/subtitle patterns (e.g., "Chapter 1: Getting Started").
         if colon_token.head.pos_ in ("NOUN", "PROPN") and colon_token.head.is_title:
-             if colon_token.i < len(doc) - 1 and doc[colon_token.i + 1].is_title:
+             if colon_token.i < sent.end - 1 and sent.doc[colon_token.i + 1].is_title:
                 return True
 
         return False
 
-    def _is_preceded_by_complete_clause(self, colon_token, doc) -> bool:
+    def _is_preceded_by_complete_clause(self, colon_token: Token, sent: Doc) -> bool:
         """
         Checks if the tokens before the colon form a complete independent clause.
         A complete clause must have a subject and a verb.
         """
-        if colon_token.i == 0:
+        if colon_token.i == sent.start:
             return False
 
         # Analyze the part of the sentence before the colon.
-        clause_before_colon = doc[:colon_token.i]
+        clause_before_colon = sent.doc[sent.start : colon_token.i]
 
         # Linguistic Anchor: A complete clause has a subject and a root verb.
-        # We look for a nominal subject ('nsubj') and the main verb of the clause ('ROOT').
-        has_subject = any(token.dep_ == 'nsubj' for token in clause_before_colon)
+        has_subject = any(token.dep_ in ('nsubj', 'nsubjpass') for token in clause_before_colon)
         has_root_verb = any(token.dep_ == 'ROOT' for token in clause_before_colon)
         
         # Also check for a common error pattern: a verb directly preceding the colon.
-        verb_before_colon = doc[colon_token.i - 1].pos_ == "VERB"
+        verb_before_colon = sent.doc[colon_token.i - 1].pos_ == "VERB"
 
-        # A complete clause has a subject and verb, and doesn't end with the verb
-        # that the colon is separating from its object.
         return has_subject and has_root_verb and not verb_before_colon

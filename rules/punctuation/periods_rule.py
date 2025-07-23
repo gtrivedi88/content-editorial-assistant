@@ -5,6 +5,11 @@ Based on IBM Style Guide topic: "Periods"
 from typing import List, Dict, Any
 from .base_punctuation_rule import BasePunctuationRule
 
+try:
+    from spacy.tokens import Doc
+except ImportError:
+    Doc = None
+
 class PeriodsRule(BasePunctuationRule):
     """
     Checks for incorrect use of periods, focusing on the rule to omit
@@ -12,7 +17,7 @@ class PeriodsRule(BasePunctuationRule):
     """
     def _get_rule_type(self) -> str:
         """Returns the unique identifier for this rule."""
-        return 'periods'
+        return 'punctuation_periods'
 
     def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         """
@@ -20,34 +25,32 @@ class PeriodsRule(BasePunctuationRule):
         """
         errors = []
         if not nlp:
-            # This rule requires tokenization and part-of-speech tagging.
             return errors
 
-        for i, sentence in enumerate(sentences):
-            doc = nlp(sentence)
-            for token in doc:
-                # The rule triggers when a period token is found.
+        doc = nlp(text)
+        for i, sent in enumerate(doc.sents):
+            for token in sent:
                 if token.text == '.':
-                    # --- Context-Aware Check ---
-                    # To avoid false positives, we check the surrounding tokens to see
-                    # if they match the pattern of an abbreviation like U.S.A.
-                    if token.i > 0 and token.i < len(doc) - 1:
-                        prev_token = doc[token.i - 1]
-                        next_token = doc[token.i + 1]
+                    if token.i > sent.start and token.i < sent.end - 1:
+                        prev_token = sent.doc[token.i - 1]
+                        next_token = sent.doc[token.i + 1]
                         
-                        # Linguistic Anchor: The pattern for this error is a single uppercase
-                        # letter, followed by a period, followed by another single uppercase letter.
+                        # Linguistic Anchor: Pattern is a single uppercase letter,
+                        # followed by a period, followed by another single uppercase letter.
                         is_abbreviation_pattern = (
                             prev_token.is_upper and len(prev_token.text) == 1 and
                             next_token.is_upper and len(next_token.text) == 1
                         )
 
                         if is_abbreviation_pattern:
+                            flagged_text = f"{prev_token.text}.{next_token.text}"
                             errors.append(self._create_error(
-                                sentence=sentence,
+                                sentence=sent.text,
                                 sentence_index=i,
                                 message="Avoid using periods within uppercase abbreviations.",
                                 suggestions=["Remove the periods from the abbreviation (e.g., 'USA' instead of 'U.S.A.')."],
-                                severity='low'
+                                severity='low',
+                                span=(prev_token.idx, next_token.idx + len(next_token.text)),
+                                flagged_text=flagged_text
                             ))
         return errors

@@ -29,8 +29,7 @@ class CitationsRule(BaseReferencesRule):
 
         doc = nlp(text)
         
-        # --- Rule 1: Problematic Link Text ---
-        # Linguistic Anchor: Find imperative verbs like "click" followed by "here".
+        # Rule 1: Problematic Link Text
         for i, sent in enumerate(doc.sents):
             for match in re.finditer(r'\b(click|see|go)\s+here\b', sent.text, re.IGNORECASE):
                 errors.append(self._create_error(
@@ -43,14 +42,10 @@ class CitationsRule(BaseReferencesRule):
                     flagged_text=match.group(0)
                 ))
 
-        # --- Rule 2: Incorrect Reference Capitalization ---
-        # Linguistic Anchor: Find common reference nouns (chapter, figure) that are capitalized
-        # when they should be lowercase in cross-references.
+        # Rule 2: Incorrect Reference Capitalization
         reference_nouns = {"Chapter", "Appendix", "Figure", "Table", "Section"}
         for token in doc:
             if token.text in reference_nouns:
-                # Check context: if it's followed by a number, it's likely a cross-reference
-                # that should be lowercase.
                 if token.i + 1 < len(doc) and doc[token.i + 1].like_num:
                     sent = token.sent
                     sent_index = list(doc.sents).index(sent)

@@ -6,6 +6,11 @@ from typing import List, Dict, Any
 from .base_technical_rule import BaseTechnicalRule
 import re
 
+try:
+    from spacy.tokens import Doc
+except ImportError:
+    Doc = None
+
 class WebAddressesRule(BaseTechnicalRule):
     """
     Checks for common formatting errors in web addresses, such as trailing slashes.
@@ -18,17 +23,22 @@ class WebAddressesRule(BaseTechnicalRule):
         Analyzes text for web address formatting violations.
         """
         errors = []
+        if not nlp:
+            return errors
+        doc = nlp(text)
+        
         # Regex to find URLs ending with a slash that are not just the base domain
         trailing_slash_pattern = re.compile(r'https?://[^\s/]+/[^\s]*?/')
 
-        for i, sentence in enumerate(sentences):
-            matches = trailing_slash_pattern.finditer(sentence)
-            for match in matches:
+        for i, sent in enumerate(doc.sents):
+            for match in trailing_slash_pattern.finditer(sent.text):
                 errors.append(self._create_error(
-                    sentence=sentence,
+                    sentence=sent.text,
                     sentence_index=i,
                     message=f"Web address '{match.group()}' should not end with a forward slash.",
                     suggestions=["Remove the trailing slash from the URL."],
-                    severity='low'
+                    severity='low',
+                    span=(sent.start_char + match.start(), sent.start_char + match.end()),
+                    flagged_text=match.group(0)
                 ))
         return errors

@@ -5,6 +5,11 @@ Based on IBM Style Guide topic: "Adverbs - only"
 from typing import List, Dict, Any
 from .base_language_rule import BaseLanguageRule
 
+try:
+    from spacy.tokens import Doc
+except ImportError:
+    Doc = None
+
 class AdverbsOnlyRule(BaseLanguageRule):
     """
     Checks for the word "only" and advises the user to review its placement
@@ -20,21 +25,19 @@ class AdverbsOnlyRule(BaseLanguageRule):
         """
         errors = []
         if not nlp:
-            # This rule requires tokenization.
             return errors
 
-        for i, sentence in enumerate(sentences):
-            doc = nlp(sentence)
-            for token in doc:
-                # Linguistic Anchor: The target is the adverb "only".
-                # Because its correct placement is semantic, we flag it for review
-                # rather than attempting to auto-correct it, which prevents false positives.
+        doc = nlp(text)
+        for i, sent in enumerate(doc.sents):
+            for token in sent:
                 if token.lemma_ == 'only':
                     errors.append(self._create_error(
-                        sentence=sentence,
+                        sentence=sent.text,
                         sentence_index=i,
                         message="The word 'only' can be ambiguous depending on its placement.",
                         suggestions=["To ensure clarity, review the sentence and place 'only' immediately before the word or phrase it is intended to modify."],
-                        severity='low'
+                        severity='low',
+                        span=(token.idx, token.idx + len(token.text)),
+                        flagged_text=token.text
                     ))
         return errors

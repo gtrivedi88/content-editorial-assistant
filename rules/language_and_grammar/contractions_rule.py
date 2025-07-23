@@ -6,6 +6,11 @@ from typing import List, Dict, Any
 from .base_language_rule import BaseLanguageRule
 import re
 
+try:
+    from spacy.tokens import Doc
+except ImportError:
+    Doc = None
+
 class ContractionsRule(BaseLanguageRule):
     """
     Checks for the use of contractions, which are generally discouraged
@@ -16,18 +21,21 @@ class ContractionsRule(BaseLanguageRule):
 
     def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         errors = []
-        # A regex pattern to find common English contractions.
+        if not nlp:
+            return errors
+        doc = nlp(text)
+        
         contraction_pattern = re.compile(r"\b(n't|'re|'s|'ll|'d|'ve)\b", re.IGNORECASE)
         
-        for i, sentence in enumerate(sentences):
-            for match in contraction_pattern.finditer(sentence):
+        for i, sent in enumerate(doc.sents):
+            for match in contraction_pattern.finditer(sent.text):
                 errors.append(self._create_error(
-                    sentence=sentence,
+                    sentence=sent.text,
                     sentence_index=i,
                     message=f"Contraction found: '{match.group()}'.",
                     suggestions=["Expand contractions for a more formal tone (e.g., 'isn't' becomes 'is not')."],
                     severity='low',
-                    span=match.span(),
+                    span=(sent.start_char + match.start(), sent.start_char + match.end()),
                     flagged_text=match.group(0)
                 ))
         return errors

@@ -4,7 +4,11 @@ Based on IBM Style Guide topic: "Pronouns"
 """
 from typing import List, Dict, Any
 from .base_language_rule import BaseLanguageRule
-from spacy.tokens import Doc
+
+try:
+    from spacy.tokens import Doc
+except ImportError:
+    Doc = None
 
 class PronounsRule(BaseLanguageRule):
     """
@@ -44,12 +48,9 @@ class PronounsRule(BaseLanguageRule):
                     ))
 
             # --- Rule 2: Ambiguous Pronouns ('it', 'this') ---
-            # Linguistic Anchor: Check for sentences starting with 'It is', 'It's', or 'This'.
-            # This is a heuristic that becomes more reliable when the previous sentence is complex.
             if sent.text.lower().startswith(("it is", "it's", "this")):
-                if i > 0: # Ensure there is a previous sentence
+                if i > 0:
                     prev_sent = sents[i-1]
-                    # Heuristic: If the previous sentence has multiple nouns, the pronoun is more likely to be ambiguous.
                     noun_count = sum(1 for token in prev_sent if token.pos_ == 'NOUN')
                     if noun_count > 1:
                         pronoun_token = sent[0]

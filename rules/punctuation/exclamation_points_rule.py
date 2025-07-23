@@ -4,6 +4,12 @@ Based on IBM Style Guide topic: "Exclamation points"
 """
 from typing import List, Dict, Any
 from .base_punctuation_rule import BasePunctuationRule
+import re
+
+try:
+    from spacy.tokens import Doc
+except ImportError:
+    Doc = None
 
 class ExclamationPointsRule(BasePunctuationRule):
     """
@@ -12,24 +18,27 @@ class ExclamationPointsRule(BasePunctuationRule):
     """
     def _get_rule_type(self) -> str:
         """Returns the unique identifier for this rule."""
-        return 'exclamation_points'
+        return 'punctuation_exclamation_points'
 
     def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         """
         Analyzes sentences for the presence of exclamation points.
         """
         errors = []
-        # The IBM Style Guide is direct: "Avoid exclamation points where a primarily
-        # functional tone is appropriate." For technical documentation, this means
-        # their presence is almost always a style violation. Therefore, a simple
-        # and robust check for the character is the most reliable approach.
-        for i, sentence in enumerate(sentences):
-            if '!' in sentence:
+        if not nlp:
+            return errors
+            
+        doc = nlp(text)
+        # For technical documentation, their presence is almost always a style violation.
+        for i, sent in enumerate(doc.sents):
+            for match in re.finditer(r'!', sent.text):
                 errors.append(self._create_error(
-                    sentence=sentence,
+                    sentence=sent.text,
                     sentence_index=i,
                     message="Avoid exclamation points in technical writing to maintain a professional tone.",
                     suggestions=["Replace the exclamation point with a period."],
-                    severity='low'
+                    severity='low',
+                    span=(sent.start_char + match.start(), sent.start_char + match.end()),
+                    flagged_text=match.group(0)
                 ))
         return errors

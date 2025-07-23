@@ -6,6 +6,11 @@ from typing import List, Dict, Any
 from .base_technical_rule import BaseTechnicalRule
 import re
 
+try:
+    from spacy.tokens import Doc
+except ImportError:
+    Doc = None
+
 class FilesAndDirectoriesRule(BaseTechnicalRule):
     """
     Checks for incorrect usage of file names and extensions as nouns.
@@ -18,21 +23,25 @@ class FilesAndDirectoriesRule(BaseTechnicalRule):
         Analyzes text for file name and directory naming violations.
         """
         errors = []
-        # Regex to find common file extensions used without "file" or "directory"
+        if not nlp:
+            return errors
+        doc = nlp(text)
+
         file_extension_pattern = re.compile(r'\b\.(pdf|txt|exe|zip|html)\b', re.IGNORECASE)
 
-        for i, sentence in enumerate(sentences):
-            matches = file_extension_pattern.finditer(sentence)
-            for match in matches:
+        for i, sent in enumerate(doc.sents):
+            for match in file_extension_pattern.finditer(sent.text):
                 # Linguistic Anchor: Check if the preceding word is "a" or "the",
                 # suggesting it's being used as a noun.
-                preceding_text = sentence[:match.start()].strip()
+                preceding_text = sent.text[:match.start()].strip()
                 if preceding_text.endswith((' a', ' an', ' the')):
                     errors.append(self._create_error(
-                        sentence=sentence,
+                        sentence=sent.text,
                         sentence_index=i,
                         message=f"Do not use a file extension like '{match.group()}' as a stand-alone noun.",
                         suggestions=[f"Specify the type of object, e.g., 'Convert the document to a {match.group()} file.'"],
-                        severity='medium'
+                        severity='medium',
+                        span=(sent.start_char + match.start(), sent.start_char + match.end()),
+                        flagged_text=match.group(0)
                     ))
         return errors

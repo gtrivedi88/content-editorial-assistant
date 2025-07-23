@@ -6,6 +6,11 @@ import re
 from typing import List, Dict, Any, Set
 from .base_language_rule import BaseLanguageRule
 
+try:
+    from spacy.tokens import Doc
+except ImportError:
+    Doc = None
+
 class AbbreviationsRule(BaseLanguageRule):
     """
     Checks for multiple abbreviation-related style issues, including:
@@ -26,83 +31,65 @@ class AbbreviationsRule(BaseLanguageRule):
         if not nlp:
             return errors
 
-        # --- State Tracking for First Use ---
-        # This set will store abbreviations that have already been defined.
-        defined_abbreviations: Set[str] = set()
-
-        # --- Full Text Analysis ---
-        # We process the entire document text at once to find abbreviations.
         doc = nlp(text)
-
-        # Find all potential abbreviations (e.g., all-caps words of 2-5 letters)
-        # This regex is a linguistic anchor for common initialisms and acronyms.
-        potential_abbreviations = re.findall(r'\b[A-Z]{2,5}\b', text)
-
-        for i, token in enumerate(doc):
-            # --- Rule 1: Check for Latin Abbreviations ---
-            errors.extend(self._check_latin_abbreviations(doc, token, i, sentences))
-
-            # --- Rule 2: Check for Undefined First Use ---
-            if token.text in potential_abbreviations and token.text not in defined_abbreviations:
-                # Check if this first use is followed by a definition in parentheses.
-                if not self._is_defined(doc, i):
+        defined_abbreviations: Set[str] = set()
+        
+        # --- Rule 1: Check for Latin Abbreviations ---
+        latin_map = {'e.g.': 'for example', 'i.e.': 'that is', 'etc.': 'and so on'}
+        for i, sent in enumerate(doc.sents):
+            for term, replacement in latin_map.items():
+                for match in re.finditer(r'\b' + re.escape(term) + r'\b', sent.text, re.IGNORECASE):
                     errors.append(self._create_error(
-                        sentence=token.sent.text,
-                        sentence_index=self._get_sentence_index(sentences, token.sent.text),
+                        sentence=sent.text,
+                        sentence_index=i,
+                        message=f"Avoid using the Latin abbreviation '{match.group()}'.",
+                        suggestions=[f"Use its English equivalent, such as '{replacement}'."],
+                        severity='medium',
+                        span=(sent.start_char + match.start(), sent.start_char + match.end()),
+                        flagged_text=match.group(0)
+                    ))
+
+        # --- Rules 2 & 3: First Use Definition and Verb Usage ---
+        potential_abbreviations = re.findall(r'\b[A-Z]{2,5}\b', text)
+        for token in doc:
+            # Check for undefined first use
+            if token.text in potential_abbreviations and token.text not in defined_abbreviations:
+                if not self._is_defined(doc, token.i):
+                    sent = token.sent
+                    sent_index = list(doc.sents).index(sent)
+                    errors.append(self._create_error(
+                        sentence=sent.text,
+                        sentence_index=sent_index,
                         message=f"Abbreviation '{token.text}' may not be defined on first use.",
                         suggestions=[f"If '{token.text}' is not a commonly known abbreviation, spell it out on its first use, followed by the abbreviation in parentheses. For example: 'Application Programming Interface (API)'."],
-                        severity='medium'
+                        severity='medium',
+                        span=(token.idx, token.idx + len(token.text)),
+                        flagged_text=token.text
                     ))
-                # Once an abbreviation is seen (whether defined or not), add it to the set.
                 defined_abbreviations.add(token.text)
             
-            # --- Rule 3: Check for Abbreviations Used as Verbs ---
+            # Check for abbreviations used as verbs
             if token.is_upper and len(token.text) > 1 and token.pos_ == 'VERB':
+                sent = token.sent
+                sent_index = list(doc.sents).index(sent)
                 errors.append(self._create_error(
-                    sentence=token.sent.text,
-                    sentence_index=self._get_sentence_index(sentences, token.sent.text),
+                    sentence=sent.text,
+                    sentence_index=sent_index,
                     message=f"Avoid using abbreviations like '{token.text}' as verbs.",
                     suggestions=[f"Rewrite the sentence to use a proper verb. For example, instead of 'FTP the file', write 'Use FTP to send the file'."],
-                    severity='medium'
+                    severity='medium',
+                    span=(token.idx, token.idx + len(token.text)),
+                    flagged_text=token.text
                 ))
-
         return errors
 
-    def _check_latin_abbreviations(self, doc, token, token_index, sentences) -> List[Dict[str, Any]]:
-        """Checks for discouraged Latin abbreviations like e.g. and i.e."""
-        errors = []
-        # Linguistic Anchor for Latin abbreviations
-        latin_abbreviations = {'e.g.', 'i.e.', 'etc.'}
-        replacements = {'e.g.': 'for example', 'i.e.': 'that is', 'etc.': 'and so on'}
-
-        if token.text.lower() in latin_abbreviations:
-            errors.append(self._create_error(
-                sentence=token.sent.text,
-                sentence_index=self._get_sentence_index(sentences, token.sent.text),
-                message=f"Avoid using the Latin abbreviation '{token.text}'.",
-                suggestions=[f"Use its English equivalent, such as '{replacements.get(token.text.lower())}'."],
-                severity='medium'
-            ))
-        return errors
-
-    def _is_defined(self, doc, token_index: int) -> bool:
+    def _is_defined(self, doc: Doc, token_index: int) -> bool:
         """
         Checks if an abbreviation at a given index is immediately followed
         by its spelled-out form in parentheses.
         """
-        # Look ahead in the document for a pattern like: (Spelled Out Form)
         if token_index + 1 < len(doc) and doc[token_index + 1].text == '(':
             return True
-        # A more complex check could look for the spelled-out form *before* the abbreviation.
-        # Example: Application Programming Interface (API)
         if token_index > 0 and doc[token_index - 1].text == ')' and doc[token_index - 2].is_alpha:
             return True
-            
         return False
-
-    def _get_sentence_index(self, sentences: List[str], sentence_text: str) -> int:
-        """Helper to find the index of a sentence within the list."""
-        try:
-            return sentences.index(sentence_text)
-        except ValueError:
-            return -1 # Should not happen in practice

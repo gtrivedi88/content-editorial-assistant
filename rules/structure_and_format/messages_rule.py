@@ -4,6 +4,12 @@ Based on IBM Style Guide topic: "Messages"
 """
 from typing import List, Dict, Any
 from .base_structure_rule import BaseStructureRule
+import re
+
+try:
+    from spacy.tokens import Doc
+except ImportError:
+    Doc = None
 
 class MessagesRule(BaseStructureRule):
     """
@@ -12,7 +18,7 @@ class MessagesRule(BaseStructureRule):
     """
     def _get_rule_type(self) -> str:
         """Returns the unique identifier for this rule."""
-        return 'messages'
+        return 'structure_format_messages'
 
     def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         """
@@ -20,23 +26,20 @@ class MessagesRule(BaseStructureRule):
         """
         errors = []
         
-        # Linguistic Anchor: A set of exaggerated adjectives that are discouraged
-        # in messages according to the IBM Style Guide.
+        # Linguistic Anchor: Exaggerated adjectives discouraged in messages.
         exaggerated_adjectives = {'catastrophic', 'fatal', 'illegal'}
 
         for i, sentence in enumerate(sentences):
-            # Rule: Avoid exaggerated or overly alarming adjectives.
-            # We check the sentence for the presence of these specific words.
-            # This is a reliable check as these words are almost never appropriate
-            # in technical user-facing messages.
             for word in exaggerated_adjectives:
-                # Using word boundaries (\b) to ensure we match whole words only.
-                if f" {word} " in f" {sentence.lower()} ":
+                # Use word boundaries for accurate matching.
+                for match in re.finditer(rf'\b{word}\b', sentence, re.IGNORECASE):
                     errors.append(self._create_error(
                         sentence=sentence,
                         sentence_index=i,
-                        message=f"Avoid using exaggerated adjectives like '{word}' in messages.",
+                        message=f"Avoid using exaggerated adjectives like '{match.group(0)}' in messages.",
                         suggestions=["Focus on the problem and the solution, not the severity. For example, instead of 'A fatal error occurred', state 'The application could not connect to the database'."],
-                        severity='medium'
+                        severity='medium',
+                        span=(match.start(), match.end()),
+                        flagged_text=match.group(0)
                     ))
         return errors

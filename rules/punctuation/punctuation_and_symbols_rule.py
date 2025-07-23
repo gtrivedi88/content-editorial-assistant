@@ -5,6 +5,11 @@ Based on IBM Style Guide topic: "Punctuation and symbols"
 from typing import List, Dict, Any
 from .base_punctuation_rule import BasePunctuationRule
 
+try:
+    from spacy.tokens import Doc
+except ImportError:
+    Doc = None
+
 class PunctuationAndSymbolsRule(BasePunctuationRule):
     """
     Checks for the use of symbols instead of words in general text, using
@@ -20,32 +25,28 @@ class PunctuationAndSymbolsRule(BasePunctuationRule):
         """
         errors = []
         if not nlp:
-            # This rule requires dependency parsing for context.
             return errors
         
+        doc = nlp(text)
         # Linguistic Anchor: Symbols that should be spelled out in general text.
         discouraged_symbols = {'&', '+'}
 
-        for i, sentence in enumerate(sentences):
-            doc = nlp(sentence)
-            for token in doc:
+        for i, sent in enumerate(doc.sents):
+            for token in sent:
                 if token.text in discouraged_symbols:
-                    
-                    # --- Context-Aware Check ---
-                    # To avoid false positives, we check if the symbol is part of a
-                    # larger entity that is likely a proper name or code. We do this
-                    # by checking the part-of-speech of the symbol's ancestors in
-                    # the dependency tree.
+                    # Context-Aware Check: Avoid false positives in proper names or code.
                     is_part_of_proper_name_or_code = any(
                         ancestor.pos_ in ("PROPN", "X", "SYM") for ancestor in token.ancestors
                     )
                     
                     if not is_part_of_proper_name_or_code:
                         errors.append(self._create_error(
-                            sentence=sentence,
+                            sentence=sent.text,
                             sentence_index=i,
                             message=f"Avoid using the symbol '{token.text}' in general text.",
                             suggestions=[f"Replace '{token.text}' with 'and'."] if token.text in '&+' else [],
-                            severity='medium'
+                            severity='medium',
+                            span=(token.idx, token.idx + len(token.text)),
+                            flagged_text=token.text
                         ))
         return errors

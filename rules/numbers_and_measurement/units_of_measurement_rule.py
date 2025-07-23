@@ -6,6 +6,11 @@ from typing import List, Dict, Any
 from .base_numbers_rule import BaseNumbersRule
 import re
 
+try:
+    from spacy.tokens import Doc
+except ImportError:
+    Doc = None
+
 class UnitsOfMeasurementRule(BaseNumbersRule):
     """
     Checks for correct formatting of units of measurement, such as ensuring
@@ -19,17 +24,21 @@ class UnitsOfMeasurementRule(BaseNumbersRule):
         Analyzes text for unit of measurement formatting errors.
         """
         errors = []
-        # Regex to find a number immediately followed by a common unit, with no space.
+        if not nlp:
+            return errors
+        doc = nlp(text)
+        
         no_space_pattern = re.compile(r'\b\d+(mm|cm|m|km|mg|g|kg|ms|s|min|hr|Hz|MHz|GHz|KB|MB|GB|TB)\b')
 
-        for i, sentence in enumerate(sentences):
-            matches = no_space_pattern.finditer(sentence)
-            for match in matches:
+        for i, sent in enumerate(doc.sents):
+            for match in no_space_pattern.finditer(sent.text):
                 errors.append(self._create_error(
-                    sentence=sentence,
+                    sentence=sent.text,
                     sentence_index=i,
                     message=f"Missing space between number and unit of measurement: '{match.group()}'.",
                     suggestions=["Insert a space between the number and the unit (e.g., '600 MHz')."],
-                    severity='medium'
+                    severity='medium',
+                    span=(sent.start_char + match.start(), sent.start_char + match.end()),
+                    flagged_text=match.group(0)
                 ))
         return errors

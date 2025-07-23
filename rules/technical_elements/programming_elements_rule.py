@@ -5,6 +5,11 @@ Based on IBM Style Guide topic: "Programming elements"
 from typing import List, Dict, Any
 from .base_technical_rule import BaseTechnicalRule
 
+try:
+    from spacy.tokens import Doc
+except ImportError:
+    Doc = None
+
 class ProgrammingElementsRule(BaseTechnicalRule):
     """
     Checks for the incorrect use of programming keywords as verbs.
@@ -19,20 +24,21 @@ class ProgrammingElementsRule(BaseTechnicalRule):
         errors = []
         if not nlp:
             return errors
+        doc = nlp(text)
 
-        # A sample list of SQL/programming keywords.
         keywords = {"drop", "create", "select", "insert", "update", "delete"}
 
-        for i, sentence in enumerate(sentences):
-            doc = nlp(sentence)
-            for token in doc:
+        for i, sent in enumerate(doc.sents):
+            for token in sent:
                 # Linguistic Anchor: Check if a known keyword is tagged as a verb.
                 if token.lemma_.lower() in keywords and token.pos_ == 'VERB':
                     errors.append(self._create_error(
-                        sentence=sentence,
+                        sentence=sent.text,
                         sentence_index=i,
                         message=f"Do not use the programming keyword '{token.text}' as a verb.",
                         suggestions=[f"Rewrite the sentence to use the keyword as a noun, e.g., 'To delete an object, issue the DROP statement.'"],
-                        severity='high'
+                        severity='high',
+                        span=(token.idx, token.idx + len(token.text)),
+                        flagged_text=token.text
                     ))
         return errors

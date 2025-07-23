@@ -4,7 +4,11 @@ Based on IBM Style Guide topic: "Global audiences"
 """
 from typing import List, Dict, Any
 from .base_audience_rule import BaseAudienceRule
-from spacy.tokens import Doc
+
+try:
+    from spacy.tokens import Doc
+except ImportError:
+    Doc = None
 
 class GlobalAudiencesRule(BaseAudienceRule):
     """

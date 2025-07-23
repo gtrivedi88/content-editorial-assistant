@@ -6,6 +6,11 @@ from typing import List, Dict, Any
 from .base_technical_rule import BaseTechnicalRule
 import re
 
+try:
+    from spacy.tokens import Doc
+except ImportError:
+    Doc = None
+
 class KeyboardKeysRule(BaseTechnicalRule):
     """
     Checks for correct formatting of keyboard keys and key combinations.
@@ -18,28 +23,35 @@ class KeyboardKeysRule(BaseTechnicalRule):
         Analyzes text for keyboard key formatting errors.
         """
         errors = []
-        # Regex to find key combinations not separated by a plus sign
+        if not nlp:
+            return errors
+        doc = nlp(text)
+
         key_combo_pattern = re.compile(r'\b(Ctrl|Alt|Shift)\s+[A-Za-z0-9]+\b')
         key_names = {"enter", "shift", "alt", "ctrl", "esc", "tab", "return", "backspace"}
 
-        for i, sentence in enumerate(sentences):
-            if key_combo_pattern.search(sentence):
+        for i, sent in enumerate(doc.sents):
+            for match in key_combo_pattern.finditer(sent.text):
                 errors.append(self._create_error(
-                    sentence=sentence,
+                    sentence=sent.text,
                     sentence_index=i,
                     message="Use a plus sign (+) with no spaces to separate key names in a combination.",
                     suggestions=["For example, write 'Ctrl+Alt+Del' instead of 'Ctrl Alt Del'."],
-                    severity='medium'
+                    severity='medium',
+                    span=(sent.start_char + match.start(), sent.start_char + match.end()),
+                    flagged_text=match.group(0)
                 ))
 
             # Check for lowercase key names
-            for word in sentence.split():
-                if word.lower().strip(".,") in key_names and not word[0].isupper():
+            for token in sent:
+                if token.lemma_.lower() in key_names and token.is_lower:
                     errors.append(self._create_error(
-                        sentence=sentence,
+                        sentence=sent.text,
                         sentence_index=i,
-                        message=f"Keyboard key name '{word}' should be capitalized.",
-                        suggestions=[f"Use initial capitals for key names, e.g., '{word.capitalize()}'."],
-                        severity='medium'
+                        message=f"Keyboard key name '{token.text}' should be capitalized.",
+                        suggestions=[f"Use initial capitals for key names, e.g., '{token.text.capitalize()}'."],
+                        severity='medium',
+                        span=(token.idx, token.idx + len(token.text)),
+                        flagged_text=token.text
                     ))
         return errors

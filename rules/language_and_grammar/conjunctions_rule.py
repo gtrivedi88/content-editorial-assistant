@@ -4,7 +4,11 @@ Based on IBM Style Guide topic: "Conjunctions"
 """
 from typing import List, Dict, Any
 from .base_language_rule import BaseLanguageRule
-from spacy.tokens import Doc
+
+try:
+    from spacy.tokens import Doc
+except ImportError:
+    Doc = None
 
 class ConjunctionsRule(BaseLanguageRule):
     """
@@ -21,9 +25,7 @@ class ConjunctionsRule(BaseLanguageRule):
         doc = nlp(text)
         for i, sent in enumerate(doc.sents):
             for token in sent:
-                # Linguistic Anchor: Find 'while' or 'since' acting as a subordinating conjunction (mark).
                 if token.dep_ == 'mark' and token.lemma_.lower() in ['while', 'since']:
-                    # Check if the verb it modifies is NOT time-related.
                     main_verb = token.head
                     is_time_related = any(ent.label_ == 'TIME' for ent in main_verb.subtree.ents)
                     

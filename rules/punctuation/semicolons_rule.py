@@ -4,6 +4,12 @@ Based on IBM Style Guide topic: "Semicolons"
 """
 from typing import List, Dict, Any
 from .base_punctuation_rule import BasePunctuationRule
+import re
+
+try:
+    from spacy.tokens import Doc
+except ImportError:
+    Doc = None
 
 class SemicolonsRule(BasePunctuationRule):
     """
@@ -12,7 +18,7 @@ class SemicolonsRule(BasePunctuationRule):
     """
     def _get_rule_type(self) -> str:
         """Returns the unique identifier for this rule."""
-        return 'semicolons'
+        return 'punctuation_semicolons'
 
     def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         """
@@ -20,21 +26,19 @@ class SemicolonsRule(BasePunctuationRule):
         """
         errors = []
         if not nlp:
-            # This rule requires tokenization to be robust.
             return errors
-
-        for i, sentence in enumerate(sentences):
-            doc = nlp(sentence)
-            # The IBM Style Guide advises against semicolons for clarity.
-            # Therefore, we check for the presence of the semicolon token itself.
-            # This is more reliable than a simple string search, as it won't be
-            # confused by HTML entities or other special characters.
-            if any(token.text == ';' for token in doc):
+        
+        doc = nlp(text)
+        # The IBM Style Guide advises against semicolons for clarity.
+        for i, sent in enumerate(doc.sents):
+            for match in re.finditer(r';', sent.text):
                 errors.append(self._create_error(
-                    sentence=sentence,
+                    sentence=sent.text,
                     sentence_index=i,
                     message="Avoid semicolons in technical writing to improve clarity.",
                     suggestions=["Consider rewriting the sentence as two separate, shorter sentences."],
-                    severity='low'
+                    severity='low',
+                    span=(sent.start_char + match.start(), sent.start_char + match.end()),
+                    flagged_text=match.group(0)
                 ))
         return errors
