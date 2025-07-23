@@ -11,7 +11,7 @@ from unittest.mock import patch, MagicMock
 # Add the parent directory to the path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from rewriter.models import ModelManager
+from models import ModelManager
 from tests.test_utils import TestConfig, TestFixtures, TestValidators
 
 

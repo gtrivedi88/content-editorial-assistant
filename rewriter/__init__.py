@@ -8,7 +8,7 @@ from .assembly_line_rewriter import AssemblyLineRewriter
 from .generators import TextGenerator
 from .processors import TextProcessor
 from .evaluators import RewriteEvaluator
-from .models import ModelManager
+from models import ModelManager
 
 __all__ = [
     'AIRewriter',

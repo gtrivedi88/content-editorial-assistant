@@ -125,7 +125,7 @@ except ImportError:
 # AI rewriter imports
 try:
     from rewriter.core import AIRewriter
-    from rewriter.models import ModelManager
+    from models import ModelManager
     from rewriter.processors import TextProcessor
     from rewriter.generators import TextGenerator
     from rewriter.evaluators import RewriteEvaluator

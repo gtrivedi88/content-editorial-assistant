@@ -6,7 +6,7 @@ Handles actual AI text generation using various models.
 import logging
 import requests
 from typing import Optional, Dict, Any
-from .models import ModelManager
+from models import ModelManager
 
 logger = logging.getLogger(__name__)
 
@@ -18,100 +18,9 @@ class TextGenerator:
         """Initialize the text generator with a model manager."""
         self.model_manager = model_manager
     
-    def generate_with_ollama(self, prompt: str, original_text: str) -> str:
-        """Generate rewritten text using Ollama."""
-        if not self.model_manager.use_ollama:
-            logger.warning("Ollama not available for generation")
-            return original_text
-            
-        try:
-            # More balanced parameters for effective corrections
-            payload = {
-                "model": self.model_manager.ollama_model,
-                "prompt": prompt,
-                "stream": False,
-                "options": {
-                    "temperature": 0.3,  # BALANCED: Allow some flexibility for corrections
-                    "top_p": 0.7,        # BALANCED: Reasonable token variety for style fixes
-                    "top_k": 20,         # BALANCED: Sufficient options for corrections
-                    "num_predict": 256,  # Sufficient for targeted fixes, not full rewrites
-                    # FIXED: Remove problematic stop tokens that were stopping generation immediately
-                    "stop": ["###", "---"]  # Only use safe stop tokens that won't interfere
-                }
-            }
-            
-            logger.info(f"Sending prompt to Ollama: {prompt[:100]}...")
-            
-            response = requests.post(
-                self.model_manager.ollama_url,
-                json=payload,
-                timeout=30  # Fixed: Add proper timeout to prevent hanging
-            )
-            
-            if response.status_code == 200:
-                result = response.json()
-                generated_text = result.get('response', '').strip()
-                
-                logger.info(f"✅ Raw Ollama response: '{generated_text}'")
-                logger.info(f"📊 Ollama response length: {len(generated_text)} chars vs original: {len(original_text)} chars")
-                
-                return generated_text if generated_text else original_text
-            else:
-                logger.error(f"Ollama API error: {response.status_code} - {response.text}")
-                return original_text
-                
-        except Exception as e:
-            logger.error(f"Ollama generation failed: {e}")
-            return original_text
-    
-    def generate_with_hf_model(self, prompt: str, original_text: str) -> str:
-        """Generate rewritten text using Hugging Face model."""
-        if not self.model_manager.generator:
-            logger.warning("HuggingFace model not available for generation")
-            return original_text
-            
-        try:
-            # Check if tokenizer is available for eos_token_id
-            pad_token_id = None
-            if self.model_manager.tokenizer and hasattr(self.model_manager.tokenizer, 'eos_token_id'):
-                pad_token_id = self.model_manager.tokenizer.eos_token_id
-            
-            # Generate text using the pipeline
-            response = self.model_manager.generator(
-                prompt,
-                max_length=len(prompt.split()) + 100,
-                num_return_sequences=1,
-                temperature=0.7,
-                do_sample=True,
-                pad_token_id=pad_token_id
-            )
-            
-            # Handle the response - it should be a list of dictionaries
-            if not response or not isinstance(response, list) or len(response) == 0:
-                logger.warning("Empty or invalid response from HuggingFace model")
-                return original_text
-                
-            generated_text = response[0].get('generated_text', '')
-            
-            # Ensure we have a string
-            if not isinstance(generated_text, str):
-                logger.warning("Generated text is not a string")
-                return original_text
-            
-            if "Improved text:" in generated_text:
-                rewritten = generated_text.split("Improved text:")[-1].strip()
-            else:
-                rewritten = generated_text.replace(prompt, "").strip()
-            
-            return rewritten if rewritten else original_text
-            
-        except Exception as e:
-            logger.error(f"Hugging Face model generation failed: {e}")
-            return original_text
-    
     def generate_text(self, prompt: str, original_text: str) -> str:
         """
-        Generate text using the available model.
+        Generate text using the new model system.
         
         Args:
             prompt: The prompt to use for generation
@@ -120,10 +29,12 @@ class TextGenerator:
         Returns:
             Generated text or original text if generation fails
         """
-        if self.model_manager.use_ollama:
-            return self.generate_with_ollama(prompt, original_text)
-        else:
-            return self.generate_with_hf_model(prompt, original_text)
+        try:
+            result = self.model_manager.generate_text(prompt)
+            return result if result else original_text
+        except Exception as e:
+            logger.error(f"Text generation failed: {e}")
+            return original_text
     
     def is_available(self) -> bool:
         """Check if text generation is available."""
@@ -134,4 +45,13 @@ class TextGenerator:
         return {
             **self.model_manager.get_model_info(),
             'generation_available': self.is_available()
-        } 
+        }
+    
+    # Legacy methods for backward compatibility in case they're used elsewhere
+    def generate_with_ollama(self, prompt: str, original_text: str) -> str:
+        """Legacy method - now delegates to new system."""
+        return self.generate_text(prompt, original_text)
+    
+    def generate_with_hf_model(self, prompt: str, original_text: str) -> str:
+        """Legacy method - now delegates to new system."""
+        return self.generate_text(prompt, original_text) 

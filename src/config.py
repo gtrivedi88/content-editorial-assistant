@@ -24,12 +24,6 @@ class Config:
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
     ALLOWED_EXTENSIONS = {'adoc', 'md', 'dita', 'docx', 'pdf', 'txt'}
     
-    # AI Model Configuration
-    AI_MODEL_TYPE = os.environ.get('AI_MODEL_TYPE', 'ollama')
-    AI_MODEL_NAME = os.environ.get('AI_MODEL_NAME') or 'microsoft/DialoGPT-medium'
-    AI_MODEL_MAX_LENGTH = int(os.environ.get('AI_MODEL_MAX_LENGTH', 512))
-    AI_TEMPERATURE = float(os.environ.get('AI_TEMPERATURE', 0.7))
-    
     # Style Guide Rules Configuration
     ENABLE_GRAMMAR_CHECK = True
     ENABLE_READABILITY_CHECK = True
@@ -47,44 +41,13 @@ class Config:
     # Logging Configuration
     LOG_LEVEL = os.environ.get('LOG_LEVEL') or 'INFO'
     
-    # OpenAI Configuration (if using GPT)
-    OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
-    
-    # Ollama Configuration
-    OLLAMA_BASE_URL = os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434')
-    OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'llama3:8b')
-    OLLAMA_TIMEOUT = int(os.getenv('OLLAMA_TIMEOUT', '60'))
-    
-    # Hugging Face settings (fallback)
-    HF_MODEL_NAME = os.environ.get('HF_MODEL_NAME', 'microsoft/DialoGPT-medium')
-    HF_CACHE_DIR = os.environ.get('HF_CACHE_DIR', './models')
-    
-    # SpaCy model settings
+    # SpaCy model settings (for linguistic analysis, not AI generation)
     SPACY_MODEL = os.environ.get('SPACY_MODEL', 'en_core_web_sm')
     
     @staticmethod
     def init_app(app):
         """Initialize application with this configuration."""
         pass
-
-    @classmethod
-    def get_ai_config(cls) -> Dict[str, Any]:
-        """Get AI model configuration based on current settings."""
-        config = {
-            'model_type': cls.AI_MODEL_TYPE,
-            'use_ollama': cls.AI_MODEL_TYPE == 'ollama',
-            'ollama_model': cls.OLLAMA_MODEL,
-            'ollama_url': f"{cls.OLLAMA_BASE_URL}/api/generate",
-            'ollama_timeout': cls.OLLAMA_TIMEOUT,
-            'hf_model_name': cls.HF_MODEL_NAME,
-            'hf_cache_dir': cls.HF_CACHE_DIR
-        }
-        return config
-    
-    @classmethod
-    def is_ollama_enabled(cls) -> bool:
-        """Check if Ollama is configured as the AI model."""
-        return cls.AI_MODEL_TYPE.lower() == 'ollama'
     
     @classmethod
     def get_upload_config(cls) -> Dict[str, Any]:
@@ -106,8 +69,6 @@ class Config:
 class DevelopmentConfig(Config):
     """Development configuration."""
     DEBUG = True
-    AI_MODEL_TYPE = 'ollama'  # Default to Ollama for development
-    OLLAMA_MODEL = 'llama3:8b'  # Use recommended model for development
 
 class ProductionConfig(Config):
     """Production configuration."""

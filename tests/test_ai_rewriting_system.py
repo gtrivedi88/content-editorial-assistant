@@ -14,7 +14,7 @@ import yaml
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from rewriter.core import AIRewriter
-from rewriter.models import ModelManager
+from models import ModelManager
 from rewriter.prompts import PromptGenerator
 from rewriter.generators import TextGenerator
 from rewriter.processors import TextProcessor

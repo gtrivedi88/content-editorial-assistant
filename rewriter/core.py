@@ -7,7 +7,7 @@ import logging
 import time
 from typing import Dict, List, Any, Optional, Callable
 
-from .models import ModelManager
+from models import ModelManager
 from .generators import TextGenerator  
 from .processors import TextProcessor
 from .evaluators import RewriteEvaluator
@@ -24,8 +24,8 @@ class AIRewriter:
         """Initialize the AI rewriter with assembly line capability."""
         self.progress_callback = progress_callback
         
-        # Initialize components
-        self.model_manager = ModelManager(use_ollama, ollama_model)
+        # Initialize components with new model system
+        self.model_manager = ModelManager()
         self.text_generator = TextGenerator(self.model_manager)
         self.text_processor = TextProcessor()
         self.evaluator = RewriteEvaluator()
@@ -114,7 +114,8 @@ class AIRewriter:
             # Add pass metadata
             result['pass_number'] = 1
             result['can_refine'] = True
-            result['model_used'] = f"{self.model_manager.ollama_model if self.model_manager.use_ollama else 'hf_transformers'}"
+            model_info = self.model_manager.get_model_info()
+            result['model_used'] = f"{model_info.get('provider', 'unknown')} - {model_info.get('model', 'unknown')}"
             
             logger.info(f"✅ Assembly Line Pass 1 complete: {result.get('errors_fixed', 0)}/{result.get('original_errors', 0)} errors fixed across {result.get('sentences_processed', 0)} sentences")
             
@@ -145,7 +146,8 @@ class AIRewriter:
             # Add refinement pass metadata
             result['pass_number'] = 2
             result['can_refine'] = False  # No third pass
-            result['model_used'] = f"{self.model_manager.ollama_model if self.model_manager.use_ollama else 'hf_transformers'}"
+            model_info = self.model_manager.get_model_info()
+            result['model_used'] = f"{model_info.get('provider', 'unknown')} - {model_info.get('model', 'unknown')}"
             
             logger.info(f"✅ Assembly Line Refinement complete: {result.get('errors_fixed', 0)} additional fixes applied across {result.get('sentences_processed', 0)} sentences")
             
@@ -164,14 +166,11 @@ class AIRewriter:
     
     def get_system_info(self) -> Dict[str, Any]:
         """Get comprehensive system information."""
+        model_info = self.model_manager.get_model_info()
         return {
             'ai_available': self.text_generator.is_available(),
             'assembly_line_enabled': True, # Always true with this new approach
-            'model_info': {
-                'use_ollama': self.model_manager.use_ollama,
-                'ollama_model': self.model_manager.ollama_model,
-                'ollama_available': self.model_manager.is_ollama_available()
-            },
+            'model_info': model_info,
             'capabilities': {
                 'assembly_line_rewriting': True,
                 'legacy_rewriting': False, # No legacy rewriting

@@ -22,7 +22,7 @@ import weakref
 from tests.test_utils import TestConfig
 from rewriter.core import AIRewriter
 from style_analyzer.base_analyzer import StyleAnalyzer
-from rewriter.models import ModelManager
+from models import ModelManager
 from app_modules.app_factory import create_app
 
 
