@@ -2,7 +2,7 @@
 
 Centralized AI model management for the Style Guide Application.
 
-## 🚀 Quick Start
+## Quick Start
 
 ```python
 from models import ModelManager
@@ -19,7 +19,7 @@ else:
     print("Model not available")
 ```
 
-## 📁 Directory Structure
+## Directory Structure
 
 ```
 models/
@@ -35,15 +35,17 @@ models/
 └── README.md              # This file
 ```
 
-## ⚙️ Configuration
+## Configuration
 
 ### Current Setup (Ollama - Default)
 Your current configuration uses **Ollama** with **llama3:8b** locally.
 
 ### Switching Providers
 
-#### Option 1: Edit Configuration File
-Edit `models/config.py`:
+You can switch providers using either of these approaches (choose one, not both):
+
+#### Option 1: Edit Configuration File (Persistent Changes)
+Edit `models/config.py` to permanently change the provider:
 
 ```python
 # For Ollama (local)
@@ -61,7 +63,9 @@ API_PROVIDER = 'huggingface'
 API_MODEL = 'meta-llama/Llama-2-70b-chat-hf'
 ```
 
-#### Option 2: Programmatic Switching
+#### Option 2: Programmatic Switching (Runtime Changes)
+Switch providers during runtime without editing configuration files:
+
 ```python
 from models import ModelManager
 
@@ -80,7 +84,9 @@ manager.switch_provider('ollama', {
 })
 ```
 
-## 🔧 Setup Instructions
+**Note**: Option 1 makes permanent changes that persist across application restarts. Option 2 makes temporary changes that only last for the current session.
+
+## Setup Instructions
 
 ### Ollama (Local - Recommended for Development)
 
@@ -145,7 +151,7 @@ manager.switch_provider('ollama', {
    API_MODEL = 'meta-llama/Llama-2-70b-chat-hf'
    ```
 
-## 🧪 Testing Your Setup
+## Testing Your Setup
 
 Run the comprehensive test suite:
 
@@ -154,12 +160,12 @@ python -m models.test_models
 ```
 
 This will test:
-- ✅ Configuration validation
-- ✅ Model connectivity  
-- ✅ Health checks
-- ✅ Text generation
+- Configuration validation
+- Model connectivity  
+- Health checks
+- Text generation
 
-## 🔌 API Reference
+## API Reference
 
 ### ModelManager (Primary Interface)
 
@@ -198,7 +204,7 @@ if is_model_available():
     print(f"Using: {status['model']}")
 ```
 
-## 🛠️ Adding Custom Providers
+## Adding Custom Providers
 
 1. **Create Provider Class**
    ```python
@@ -231,11 +237,11 @@ if is_model_available():
    ACTIVE_PROVIDER = 'custom'
    ```
 
-## 🔍 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
-**❌ "Ollama is not responding"**
+**"Ollama is not responding"**
 ```bash
 # Check if Ollama is running
 ps aux | grep ollama
@@ -247,7 +253,7 @@ ollama serve
 ollama list
 ```
 
-**❌ "Model not found in Ollama"**
+**"Model not found in Ollama"**
 ```bash
 # Pull the required model
 ollama pull llama3:8b
@@ -256,7 +262,7 @@ ollama pull llama3:8b
 ollama list
 ```
 
-**❌ "API key missing"**
+**"API key missing"**
 ```bash
 # Set API key environment variable
 export API_KEY='your-api-key'
@@ -265,7 +271,7 @@ export API_KEY='your-api-key'
 echo $API_KEY
 ```
 
-**❌ "Provider not available"**
+**"Provider not available"**
 ```python
 # Check configuration
 from models import ModelConfig
@@ -288,7 +294,7 @@ from models import ModelManager
 manager = ModelManager()
 ```
 
-## 🌟 Features
+## Features
 
 - **Provider Abstraction**: Switch between Ollama, Groq, HuggingFace, OpenAI seamlessly
 - **Only One Active**: Efficient "one provider at a time" resource management
@@ -298,7 +304,7 @@ manager = ModelManager()
 - **Testing Utilities**: Built-in test suite for validation
 - **Extensible**: Easy to add new providers
 
-## 📋 Environment Variables
+## Environment Variables
 
 ```bash
 # Provider selection
@@ -323,14 +329,14 @@ MODEL_TOP_P=0.7
 MODEL_TOP_K=20
 ```
 
-## 📈 Performance Tips
+## Performance Tips
 
 1. **Local Development**: Use Ollama with smaller models (7B-8B parameters)
 2. **Production**: Use API providers for better performance and reliability
 3. **Batch Processing**: Reuse ModelManager instance for multiple generations
 4. **Resource Management**: The system automatically cleans up unused providers
 
-## 🤝 Integration
+## Integration
 
 ### Using in Rewriter Module
 
