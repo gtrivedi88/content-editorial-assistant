@@ -4,24 +4,6 @@ Orchestrates the rewriting process by applying fixes in prioritized levels.
 """
 import logging
 from typing import List, Dict, Any, Optional, Callable
-
-# Add NLTK import with fallback
-try:
-    import nltk
-    # Download required data if not present - use punkt_tab for newer NLTK versions
-    try:
-        nltk.data.find('tokenizers/punkt_tab')
-    except LookupError:
-        try:
-            nltk.download('punkt_tab', quiet=True)
-        except:
-            # Fallback to older punkt if punkt_tab fails
-            nltk.download('punkt', quiet=True)
-    NLTK_AVAILABLE = True
-except ImportError:
-    NLTK_AVAILABLE = False
-    logging.warning("NLTK not available. Using fallback sentence splitting.")
-
 from .prompts import PromptGenerator
 from .generators import TextGenerator
 from .processors import TextProcessor
@@ -39,12 +21,6 @@ class AssemblyLineRewriter:
         self.progress_callback = progress_callback
         self.prompt_generator = PromptGenerator()
         self.evaluator = RewriteEvaluator()
-        
-        # Error types that benefit from context
-        self.CONTEXT_REQUIRING_ERRORS = {
-            'pronouns', 'ambiguity', 'missing_actor', 'unclear_reference',
-            'pronoun_ambiguity', 'ambiguous_pronouns'
-        }
 
     def _sort_errors_by_priority(self, errors: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
@@ -104,7 +80,7 @@ class AssemblyLineRewriter:
             Dictionary with rewrite results
         """
         try:
-            # Split content into sentences for processing (now using robust splitting)
+            # Split content into sentences for processing
             sentences = self._split_into_sentences(content)
             rewritten_sentences = []
             total_errors_fixed = 0
@@ -117,14 +93,8 @@ class AssemblyLineRewriter:
                 # Find errors for this sentence
                 sentence_errors = self._get_errors_for_sentence(sentence, errors)
                 
-                # Determine if this sentence needs context
-                needs_context = self._sentence_needs_context(sentence_errors)
-                
-                # Rewrite the sentence with or without context
-                if needs_context:
-                    result = self.rewrite_sentence_with_context(sentences, i, sentence_errors, pass_number=1)
-                else:
-                    result = self.rewrite_sentence(sentence, sentence_errors, pass_number=1)
+                # Rewrite the sentence using the existing method
+                result = self.rewrite_sentence(sentence, sentence_errors, pass_number=1)
                 
                 rewritten_sentences.append(result['rewritten_text'])
                 total_errors_fixed += result.get('errors_fixed', 0)
@@ -157,126 +127,23 @@ class AssemblyLineRewriter:
             }
 
     def _split_into_sentences(self, content: str) -> List[str]:
-        """
-        Split content into sentences using robust sentence detection.
-        Falls back to regex if NLTK is unavailable.
-        """
-        if not content or not content.strip():
-            return []
+        """Split content into sentences using robust spaCy sentence segmentation."""
+        try:
+            import spacy
+            # Try to load the existing spaCy model used elsewhere in the system
+            nlp = spacy.load("en_core_web_sm")
+            doc = nlp(content.strip())
             
-        content = content.strip()
-        
-        if NLTK_AVAILABLE:
-            try:
-                # Use NLTK for robust sentence tokenization
-                sentences = nltk.sent_tokenize(content)
-                # Filter out empty sentences and strip whitespace
-                return [s.strip() for s in sentences if s.strip()]
-            except Exception as e:
-                logger.warning(f"NLTK sentence tokenization failed: {e}. Using fallback.")
-        
-        # Fallback to improved regex (better than original but still not perfect)
-        import re
-        # Improved regex that handles common abbreviations better
-        sentences = re.split(r'(?<![A-Z][a-z])\.\s+(?=[A-Z])|(?<=[.!?])\s+(?=[A-Z])', content)
-        return [s.strip() for s in sentences if s.strip()]
-    
-    def _sentence_needs_context(self, errors: List[Dict[str, Any]]) -> bool:
-        """
-        Determine if a sentence needs context based on error types.
-        
-        Args:
-            errors: List of errors for this sentence
+            # Extract sentences using spaCy's robust sentence boundary detection
+            sentences = [sent.text.strip() for sent in doc.sents if sent.text.strip()]
+            return sentences
             
-        Returns:
-            True if context is needed, False otherwise
-        """
-        return any(error.get('type', '').lower() in self.CONTEXT_REQUIRING_ERRORS 
-                  for error in errors)
-    
-    def rewrite_sentence_with_context(self, sentences: List[str], current_index: int, 
-                                    errors: List[Dict[str, Any]], pass_number: int = 1) -> Dict[str, Any]:
-        """
-        Rewrite a sentence with minimal context for pronoun/ambiguity resolution.
-        
-        Args:
-            sentences: List of all sentences
-            current_index: Index of current sentence to rewrite
-            errors: List of errors for the current sentence
-            pass_number: The pass number (1 for initial fix, 2 for refinement)
-            
-        Returns:
-            Dictionary containing the rewritten sentence and analysis
-        """
-        if current_index >= len(sentences):
-            return self._empty_result()
-            
-        current_sentence = sentences[current_index]
-        
-        if not current_sentence or not current_sentence.strip():
-            return self._empty_result()
-
-        if pass_number == 1:
-            return self._perform_context_aware_first_pass(sentences, current_index, errors)
-        else:
-            # For refinement, fall back to regular sentence processing
-            return self._perform_refinement_pass(current_sentence)
-
-    def _perform_context_aware_first_pass(self, sentences: List[str], current_index: int, 
-                                        errors: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """
-        Handle context-aware error correction for pronoun/ambiguity issues.
-        """
-        current_sentence = sentences[current_index]
-        
-        if not errors:
-            logger.info("No errors found for sentence, skipping rewrite.")
-            return {
-                'rewritten_text': current_sentence,
-                'improvements': [],
-                'confidence': 1.0,
-                'errors_fixed': 0
-            }
-
-        # Sort errors by priority
-        sorted_errors = self._sort_errors_by_priority(errors)
-        
-        # Build context: previous sentence if available
-        context_sentences = []
-        if current_index > 0:
-            context_sentences.append(sentences[current_index - 1])
-        context_sentences.append(current_sentence)
-        
-        # Create context-aware prompt
-        prompt = self.prompt_generator.create_context_aware_assembly_line_prompt(
-            target_sentence=current_sentence,
-            context_sentences=context_sentences,
-            errors=sorted_errors,
-            pass_number=1
-        )
-        
-        logger.debug(f"Generated context-aware prompt for sentence: {current_sentence}")
-        
-        # Generate AI response
-        ai_response = self.text_generator.generate_text(prompt, current_sentence)
-
-        if not ai_response or not ai_response.strip():
-            logger.warning("AI model returned an empty response.")
-            return self._error_result(current_sentence, "AI model returned an empty response.")
-
-        # Clean the response
-        cleaned_response = self.text_processor.clean_generated_text(ai_response, current_sentence)
-
-        # Evaluate the result
-        evaluation = self.evaluator.evaluate_rewrite_quality(current_sentence, cleaned_response, errors)
-
-        return {
-            'rewritten_text': cleaned_response,
-            'improvements': evaluation.get('improvements', []),
-            'confidence': evaluation.get('confidence', 0.75),
-            'errors_fixed': len(sorted_errors),
-            'used_context': True
-        }
+        except (ImportError, OSError) as e:
+            # Fallback to regex if spaCy is not available
+            import re
+            logger.warning(f"spaCy not available, using regex fallback: {e}")
+            sentences = re.split(r'(?<=[.!?])\s+', content.strip())
+            return [s.strip() for s in sentences if s.strip()]
     
     def _get_errors_for_sentence(self, sentence: str, all_errors: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Filter errors that apply to this specific sentence."""
@@ -346,8 +213,7 @@ class AssemblyLineRewriter:
             'rewritten_text': cleaned_response,  # Use the cleaned response directly
             'improvements': evaluation.get('improvements', []),
             'confidence': evaluation.get('confidence', 0.75),
-            'errors_fixed': len(sorted_errors),  # Count of errors we attempted to fix
-            'used_context': False
+            'errors_fixed': len(sorted_errors)  # Count of errors we attempted to fix
         }
 
     def _perform_refinement_pass(self, sentence: str) -> Dict[str, Any]:
@@ -370,13 +236,12 @@ class AssemblyLineRewriter:
             'rewritten_text': cleaned_response,
             'improvements': ["Holistic refinement for clarity and flow."],
             'confidence': 0.9,
-            'errors_fixed': 0,  # No specific errors are targeted in this pass
-            'used_context': False
+            'errors_fixed': 0  # No specific errors are targeted in this pass
         }
 
     def _empty_result(self) -> Dict[str, Any]:
         """Returns a standard result for empty input."""
-        return {'rewritten_text': '', 'improvements': [], 'confidence': 0.0, 'errors_fixed': 0, 'used_context': False}
+        return {'rewritten_text': '', 'improvements': [], 'confidence': 0.0, 'errors_fixed': 0}
 
     def _error_result(self, original_text: str, error_message: str) -> Dict[str, Any]:
         """Returns a standard result when an error occurs."""
@@ -385,6 +250,5 @@ class AssemblyLineRewriter:
             'improvements': [],
             'confidence': 0.0,
             'errors_fixed': 0,
-            'error': error_message,
-            'used_context': False
+            'error': error_message
         }

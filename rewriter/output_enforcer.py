@@ -144,7 +144,7 @@ CORRECTED TEXT:"""
         """Validate and return the response or fallback to original."""
         if not text or len(text.strip()) < 2:
             return original_text
-        
+            
         # If unchanged, return original
         if text.lower().strip() == original_text.lower().strip():
             return original_text

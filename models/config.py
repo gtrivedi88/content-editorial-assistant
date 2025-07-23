@@ -39,7 +39,7 @@ class ModelConfig:
     # MAIN SWITCH: Change this to switch between providers
     # Options: 'ollama', 'api'
     # =============================================================================
-    ACTIVE_PROVIDER = os.getenv('MODEL_PROVIDER', 'ollama')
+    ACTIVE_PROVIDER = os.getenv('MODEL_PROVIDER', 'api')
     
     # =============================================================================
     # OLLAMA CONFIGURATION (Local Models)

@@ -42,7 +42,7 @@ class ErrorConsolidator:
         for error in errors:
             # IMPORTANT: The rule MUST provide a 'span' tuple.
             # If not, the error cannot be consolidated.
-            if 'span' in error and isinstance(error['span'], tuple):
+            if 'span' in error and isinstance(error['span'], (tuple, list)) and len(error['span']) == 2:
                 span_key = (error.get('sentence_index', -1), error['span'][0], error['span'][1])
                 errors_by_span[span_key].append(error)
             else:
@@ -116,7 +116,7 @@ class ErrorConsolidator:
         unconsolidatable_count = 0
 
         for error in errors:
-            if 'span' in error and isinstance(error['span'], tuple):
+            if 'span' in error and isinstance(error['span'], (tuple, list)) and len(error['span']) == 2:
                 span_key = (error.get('sentence_index', -1), error['span'][0], error['span'][1])
                 errors_by_span[span_key].append(error)
             else:
