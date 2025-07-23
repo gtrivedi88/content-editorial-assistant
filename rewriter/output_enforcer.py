@@ -203,18 +203,32 @@ JSON RESPONSE:"""
         
         # Comprehensive checks for AI chatter patterns
         chatty_indicators = [
+            # MOST COMMON AI chatter patterns
+            'here is the rewritten text', 'here\'s the rewritten text',
+            'here is the corrected text', 'here\'s the corrected text',
+            'here\'s a breakdown', 'here is a breakdown',
+            'i\'ve applied the corrections', 'i have applied the corrections',
+            'applying all corrections', 'breakdown of the corrections',
+            'based on the errors to fix', 'based on the errors listed',
+            'rewritten text:', '**rewritten text:**',
+            'corrected text:', '**corrected text:**',
+            
             # Commentary about changes
             'i fixed', 'i changed', 'i replaced', 'i applied', 'i won\'t make',
             'changes made:', 'change made:', 'corrected text remains',
             'the corrected text', 'correct usage of', 'phrasal verb',
+            'original:', 'rewritten:', 'correction:', 'corrections:',
             
             # Meta-commentary  
             'as per your', 'per your instruction', 'since there are',
             'there are no words', 'starting with', 'in the given text',
+            'no occurrence of', 'no error detected', 'no change needed',
+            'meets all the specified', 'maintains the original meaning',
             
             # AI politeness/offers
             'let me know', 'is there anything', 'can help you',
             'here are the', 'would you like', 'feel free to',
+            'a precise task', 'precise task!', 'excellent!',
             
             # Explanations in parentheses or bullets
             'correct usage', 'phrasal verb', '* "', '- "',
@@ -229,9 +243,17 @@ JSON RESPONSE:"""
         # Check for bullet points or numbered explanations
         if re.search(r'[*•\-]\s*["\']', text_lower):
             return True
+        
+        # Check for numbered lists with explanations (1., 2., etc.)
+        if re.search(r'\d+\.\s+(?:corrected|original|rewritten|changed|fixed)', text_lower):
+            return True
             
         # Check for parenthetical explanations about changes
         if re.search(r'\([^)]*(?:replaced|changed|fixed|correct)[^)]*\)', text_lower):
+            return True
+        
+        # Check for markdown formatting in response
+        if '**' in text or '__' in text:
             return True
             
         return False
@@ -248,8 +270,15 @@ JSON RESPONSE:"""
             Extracted clean content or original text if extraction fails
         """
         try:
-            # Strategy 1: Look for patterns like "The corrected text would be: [CONTENT]"
+            # Strategy 1: Look for content after common AI prefixes
             patterns = [
+                # Handle the user's specific format
+                r'\*\*Rewritten Text:\*\*\s*`([^`]+)`',  # **Rewritten Text:** `content`
+                r'Rewritten Text:\s*`([^`]+)`',          # Rewritten Text: `content`
+                r'\*\*Corrected Text:\*\*\s*`([^`]+)`',  # **Corrected Text:** `content`
+                r'Corrected Text:\s*`([^`]+)`',          # Corrected Text: `content`
+                
+                # Standard patterns
                 r'(?:the\s+)?corrected\s+text\s+(?:would\s+be|is):\s*(.+?)(?:\n|$|\.(?:\s|$))',
                 r'here\s+is\s+the\s+corrected\s+(?:text|sentence):\s*(.+?)(?:\n|$)',
                 r'(?:corrected|fixed|revised):\s*(.+?)(?:\n|$)',
@@ -271,7 +300,10 @@ JSON RESPONSE:"""
             # Strategy 2: Split by explanation markers and take the first meaningful sentence
             explanation_markers = [
                 'I replaced', 'I changed', 'I fixed', 'I removed', 'I added',
-                'In this correction', 'The change', 'This fixes', 'Note:'
+                'In this correction', 'The change', 'This fixes', 'Note:',
+                'Here\'s a breakdown', 'breakdown of the corrections',
+                'I\'ve applied the corrections', 'applying all corrections',
+                'Based on the errors'
             ]
             
             for marker in explanation_markers:
@@ -281,19 +313,38 @@ JSON RESPONSE:"""
                         candidate = parts[0].strip()
                         # Clean up any prefixes
                         candidate = self._remove_obvious_prefixes(candidate)
+                        # Remove markdown and backticks
+                        candidate = re.sub(r'\*\*.*?\*\*', '', candidate).strip()
+                        candidate = re.sub(r'`([^`]+)`', r'\1', candidate).strip()
+                        
                         if candidate and candidate.lower() != original_text.lower():
                             logger.info(f"Extracted before explanation marker '{marker}': '{candidate[:50]}...'")
                             return candidate
             
-            # Strategy 3: Take the longest sentence that's different from original
+            # Strategy 3: Extract content from backticks anywhere in response
+            backtick_matches = re.findall(r'`([^`]+)`', chatty_response)
+            for match in backtick_matches:
+                candidate = match.strip()
+                if (candidate and 
+                    len(candidate) > 5 and 
+                    candidate.lower() != original_text.lower() and
+                    not any(marker.lower() in candidate.lower() for marker in ['error', 'original', 'rewritten'])):
+                    logger.info(f"Extracted from backticks: '{candidate[:50]}...'")
+                    return candidate
+            
+            # Strategy 4: Take the longest sentence that's different from original
             sentences = re.split(r'[.!?]+', chatty_response)
             for sentence in sentences:
                 cleaned = sentence.strip()
                 cleaned = self._remove_obvious_prefixes(cleaned)
+                # Remove markdown
+                cleaned = re.sub(r'\*\*.*?\*\*', '', cleaned).strip()
+                cleaned = re.sub(r'`([^`]+)`', r'\1', cleaned).strip()
+                
                 if (cleaned and 
                     len(cleaned) > 5 and 
                     cleaned.lower() != original_text.lower() and
-                    not any(marker.lower() in cleaned.lower() for marker in ['I replaced', 'I changed', 'I fixed'])):
+                    not any(marker.lower() in cleaned.lower() for marker in ['I replaced', 'I changed', 'I fixed', 'correction', 'error'])):
                     logger.info(f"Extracted longest different sentence: '{cleaned[:50]}...'")
                     return cleaned
             
