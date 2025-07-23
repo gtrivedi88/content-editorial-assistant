@@ -39,7 +39,7 @@ class ModelConfig:
     # MAIN SWITCH: Change this to switch between providers
     # Options: 'ollama', 'api'
     # =============================================================================
-    ACTIVE_PROVIDER = os.getenv('MODEL_PROVIDER', 'ollama')
+    ACTIVE_PROVIDER = os.getenv('MODEL_PROVIDER', 'api')
     
     # =============================================================================
     # OLLAMA CONFIGURATION (Local Models)
@@ -53,13 +53,13 @@ class ModelConfig:
     # =============================================================================
     API_PROVIDER = os.getenv('API_PROVIDER', 'groq')  # groq, huggingface, openai, etc.
     API_MODEL = os.getenv('API_MODEL', 'llama3-70b-8192')  # Change to any API model
-    API_KEY = os.getenv('API_KEY', '')  # Set your API key in environment
+    API_KEY = os.getenv('API_KEY')  # Set your API key in environment
     
     # Provider-specific base URLs
     API_BASE_URLS = {
         'groq': 'https://api.groq.com/openai/v1',
-        'huggingface': 'https://api-inference.huggingface.co/models',
-        'openai': 'https://api.openai.com/v1',
+        # 'huggingface': 'https://api-inference.huggingface.co/models',
+        # 'openai': 'https://api.openai.com/v1',
         # Add more providers here as needed
     }
     

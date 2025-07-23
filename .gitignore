@@ -12,4 +12,4 @@ logs/
 data/
 cache/
 temp/
-
+.env

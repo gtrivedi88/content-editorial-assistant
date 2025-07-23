@@ -33,9 +33,10 @@ class PromptGenerator:
         # System-level instruction to set the context for the LLM
         system_prompt = (
             "You are an expert technical editor following a style guide with extreme precision. "
-            "Your task is to rewrite the given text to fix a specific list of detected errors. "
-            "Apply all corrections in the order they are listed. "
-            "Preserve the original meaning and make no other stylistic changes."
+            "Your task is to rewrite the given text to fix the specific errors listed below. "
+            "For each error, follow the exact fix instruction provided. "
+            "Apply the fixes in the order they are listed, making only the specified changes. "
+            "Preserve the original meaning and sentence structure. Make no other edits."
         )
 
         # Dynamically build the list of errors for the prompt
@@ -82,12 +83,22 @@ class PromptGenerator:
         for i, error in enumerate(errors):
             # Providing the error message gives the LLM context on what to fix.
             # Including the flagged text helps it locate the error precisely.
+            # Including suggestions gives the LLM specific guidance on how to fix it.
             error_message = error.get('message', 'Unknown error')
             flagged_text = error.get('flagged_text', '')
+            suggestions = error.get('suggestions', [])
             
-            formatted_errors.append(
-                f"{i + 1}. **Error:** {error_message}\n   **Text:** `{flagged_text}`"
-            )
+            error_entry = f"{i + 1}. **Error:** {error_message}\n   **Text:** `{flagged_text}`"
+            
+            # Add suggestions if available
+            if suggestions:
+                if isinstance(suggestions, list) and suggestions:
+                    # Use the first suggestion as the primary guidance
+                    error_entry += f"\n   **Fix:** {suggestions[0]}"
+                elif isinstance(suggestions, str):
+                    error_entry += f"\n   **Fix:** {suggestions}"
+            
+            formatted_errors.append(error_entry)
         
         return "\n".join(formatted_errors)
 

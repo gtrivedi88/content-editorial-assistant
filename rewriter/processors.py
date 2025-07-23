@@ -19,7 +19,7 @@ class TextProcessor:
         self.output_enforcer = create_output_enforcer()
     
     def clean_generated_text(self, generated_text: str, original_text: str, 
-                            use_structured: bool = False) -> str:
+                            use_structured: bool = True) -> str:
         """
         Clean AI response using intelligent output enforcer.
         Prevents chatter at source instead of filtering afterward.
