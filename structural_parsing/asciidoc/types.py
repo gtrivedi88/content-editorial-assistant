@@ -72,6 +72,7 @@ class AsciiDocBlock:
         return self.content
 
     def should_skip_analysis(self) -> bool:
+        """Determines if a block should be skipped during style analysis."""
         return self.block_type in [
             AsciiDocBlockType.LISTING, AsciiDocBlockType.LITERAL,
             AsciiDocBlockType.COMMENT, AsciiDocBlockType.PASS,
@@ -79,10 +80,14 @@ class AsciiDocBlock:
         ]
 
     def get_context_info(self) -> Dict[str, Any]:
+        """Get contextual information for rule processing."""
         return {
-            'block_type': self.block_type.value, 'level': self.level,
+            'block_type': self.block_type.value,
+            'level': self.level,
             'admonition_type': self.admonition_type.value if self.admonition_type else None,
-            'style': self.style, 'title': self.title, 'list_marker': self.list_marker,
+            'style': self.style,
+            'title': self.title,
+            'list_marker': self.list_marker,
             'source_location': self.source_location
         }
 

@@ -6,6 +6,8 @@ into a list of blocks suitable for the UI.
 import logging
 from typing import List, Dict, Any
 from .analysis_modes import AnalysisModeExecutor
+# We need to import the types to reference them
+from structural_parsing.asciidoc.types import AsciiDocBlock, AsciiDocBlockType
 
 logger = logging.getLogger(__name__)
 
@@ -40,9 +42,15 @@ class BlockProcessor:
         # Run SpaCy and other rule-based analysis on the block's content
         if not block.should_skip_analysis():
             content = block.get_text_content()
-            context = block.get_context_info()
-            errors = self.mode_executor._analyze_generic_content(content, self.analysis_mode, context)
-            block._analysis_errors = errors
+            # CRITICAL FIX: Ensure content is a string before analysis. This fixes the
+            # error "'list' object has no attribute 'strip'" because container blocks
+            # like lists might not have direct string content.
+            if not isinstance(content, str):
+                logger.warning(f"Block content for type {block.block_type} is not a string, skipping analysis.")
+            else:
+                context = block.get_context_info()
+                errors = self.mode_executor._analyze_generic_content(content, self.analysis_mode, context)
+                block._analysis_errors = errors
 
         # Continue the analysis down the tree for all children
         for child in block.children:
@@ -51,14 +59,26 @@ class BlockProcessor:
     def _flatten_recursively(self, block: Any):
         """
         Recursively traverses the analyzed tree to build the final flat list for the UI.
+        This is the corrected "smart flattening" logic.
         """
         block_type = getattr(block, 'block_type', None)
         if not block_type:
             return
 
-        # For container types, we don't add the container itself to the UI list,
-        # but we MUST process their children. This was the bug you found.
-        if block_type.value in ['document', 'preamble', 'table_row', 'table_cell']:
+        # CRITICAL FIX: For document type, extract the title as a separate heading block first
+        if block_type.value == 'document':
+            # If document has a title, create a document title heading block
+            if hasattr(block, 'title') and block.title:
+                title_block = self._create_document_title_from_document(block)
+                self.flat_blocks.append(title_block)
+            
+            # Then process all children
+            for child in block.children:
+                self._flatten_recursively(child)
+            return
+
+        # For preamble and other container types, process children only
+        if block_type.value in ['preamble', 'table_row', 'table_cell']:
             for child in block.children:
                 self._flatten_recursively(child)
             return
@@ -72,16 +92,25 @@ class BlockProcessor:
                 self._flatten_recursively(child)
             return
 
+        # CRITICAL FIX: For headings that have children (converted from sections),
+        # we need to process their children as well
+        if block_type.value == 'heading' and block.children:
+            self.flat_blocks.append(block)
+            for child in block.children:
+                self._flatten_recursively(child)
+            return
+
         # For all other displayable block types (paragraphs, lists, tables, etc.),
         # we add them directly to the flat list. The UI will render their children
         # (like list items) from the block's .children property.
-        if block_type.value not in ['list_item']: # list_item is rendered by its parent
+        # We explicitly exclude child-only types that are rendered by their parents.
+        if block_type.value not in ['list_item', 'table_row', 'table_cell']:
              self.flat_blocks.append(block)
 
     def _create_heading_from_section(self, section_block: Any) -> Any:
         """Creates a 'heading' block from a 'section' block for UI compatibility."""
         from structural_parsing.asciidoc.types import AsciiDocBlock, AsciiDocBlockType
-
+        
         heading_block = AsciiDocBlock(
             block_type=AsciiDocBlockType.HEADING,
             content=section_block.title or "",
@@ -99,11 +128,23 @@ class BlockProcessor:
         heading_block._analysis_errors = getattr(section_block, '_analysis_errors', [])
         return heading_block
 
-    @staticmethod
-    def convert_children_to_dict(children: List[Any]) -> List[Dict[str, Any]]:
-        """
-        (Compatibility Method) This is no longer used by the core logic but is kept
-        in case other parts of the system call it.
-        """
-        # This method is now effectively replaced by the to_dict() method on the block itself.
-        return [child.to_dict() for child in children]
+    def _create_document_title_from_document(self, document_block: Any) -> Any:
+        """Creates a 'heading' block from a 'document' title for UI compatibility."""
+        from structural_parsing.asciidoc.types import AsciiDocBlock, AsciiDocBlockType
+
+        title_block = AsciiDocBlock(
+            block_type=AsciiDocBlockType.HEADING,
+            content=document_block.title or "",
+            raw_content=f"= {document_block.title}" if document_block.title else "",
+            start_line=getattr(document_block, 'start_line', 0),
+            end_line=getattr(document_block, 'end_line', 0),
+            start_pos=getattr(document_block, 'start_pos', 0),
+            end_pos=len(document_block.title or ""),
+            level=0,  # Document title is level 0
+            title=document_block.title,
+            source_location=getattr(document_block, 'source_location', ''),
+            attributes=getattr(document_block, 'attributes', None)
+        )
+        # Copy any analysis errors from the document
+        title_block._analysis_errors = getattr(document_block, '_analysis_errors', [])
+        return title_block

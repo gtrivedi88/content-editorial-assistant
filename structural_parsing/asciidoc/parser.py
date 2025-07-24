@@ -77,7 +77,9 @@ class AsciiDocParser:
                 block_type=AsciiDocBlockType.DOCUMENT,
                 content=node.get('title', ''),
                 raw_content=node.get('source', ''),
-                start_line=0
+                start_line=0,
+                title=node.get('title', ''),  # CRITICAL FIX: Set the document title properly
+                attributes=self._create_attributes(node.get('attributes', {}))
             )
         return block
 
@@ -96,8 +98,19 @@ class AsciiDocParser:
         if context == 'list_item': return node.get('text', '')
         if context == 'section': return node.get('title', '')
         if context in ['listing', 'literal']: return node.get('source', '')
+        
+        # For lists, extract content from list items
+        if context in ['ulist', 'olist'] and node.get('children'):
+            list_items = []
+            for child in node.get('children', []):
+                if child.get('context') == 'list_item':
+                    item_text = child.get('text', '') or child.get('content', '')
+                    if item_text:
+                        list_items.append(item_text.strip())
+            return '\n'.join(list_items) if list_items else ''
+        
         # For compound blocks like admonitions, the content is the combined source of its children
-        if node.get('children') and context not in ['ulist', 'olist', 'table']:
+        if node.get('children') and context not in ['table']:
             return "\n".join(child.get('source', '') for child in node.get('children', []))
         return node.get('content', '') or ''
 
