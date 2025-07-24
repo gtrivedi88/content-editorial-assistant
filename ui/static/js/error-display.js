@@ -5,109 +5,56 @@
 
 
 // Create enhanced inline error display with modern design
-function createInlineError(error) {
+function getErrorTypeStyle(ruleType) {
+    const errorType = (ruleType || 'style').toLowerCase();
+
     const errorTypes = {
-        // Style and Grammar
-        'style': { 
-            color: 'var(--app-danger-color)', 
-            bg: 'rgba(201, 25, 11, 0.05)', 
-            icon: 'fas fa-exclamation-circle',
-            modifier: 'danger'
-        },
-        'grammar': { 
-            color: 'var(--app-warning-color)', 
-            bg: 'rgba(240, 171, 0, 0.05)', 
-            icon: 'fas fa-spell-check',
-            modifier: 'warning'
-        },
-        'abbreviations': { 
-            color: 'var(--app-warning-color)', 
-            bg: 'rgba(240, 171, 0, 0.05)', 
-            icon: 'fas fa-font',
-            modifier: 'warning'
-        },
-        'articles': { 
-            color: 'var(--app-warning-color)', 
-            bg: 'rgba(240, 171, 0, 0.05)', 
-            icon: 'fas fa-language',
-            modifier: 'warning'
-        },
-        'capitalization': { 
-            color: 'var(--app-success-color)', 
-            bg: 'rgba(62, 134, 53, 0.05)', 
-            icon: 'fas fa-font',
-            modifier: 'success'
-        },
-        'second_person': { 
-            color: 'var(--app-danger-color)', 
-            bg: 'rgba(201, 25, 11, 0.05)', 
-            icon: 'fas fa-user',
-            modifier: 'danger'
-        },
-        'ambiguity': { 
-            color: 'var(--app-danger-color)', 
-            bg: 'rgba(201, 25, 11, 0.05)', 
-            icon: 'fas fa-question-circle',
-            modifier: 'danger'
-        },
-        // Structure and Format
-        'structure': { 
-            color: 'var(--app-primary-color)', 
-            bg: 'rgba(0, 102, 204, 0.05)', 
-            icon: 'fas fa-sitemap',
-            modifier: 'info'
-        },
-        'punctuation': { 
-            color: '#6b21a8', 
-            bg: 'rgba(107, 33, 168, 0.05)', 
-            icon: 'fas fa-quote-right',
-            modifier: 'info'
-        },
-        'terminology': { 
-            color: '#c2410c', 
-            bg: 'rgba(194, 65, 12, 0.05)', 
-            icon: 'fas fa-book',
-            modifier: 'warning'
-        },
-        'passive_voice': { 
-            color: 'var(--app-warning-color)', 
-            bg: 'rgba(240, 171, 0, 0.05)', 
-            icon: 'fas fa-exchange-alt',
-            modifier: 'warning'
-        },
-        'readability': { 
-            color: '#0e7490', 
-            bg: 'rgba(14, 116, 144, 0.05)', 
-            icon: 'fas fa-eye',
-            modifier: 'info'
-        },
-        'admonitions': { 
-            color: 'var(--app-primary-color)', 
-            bg: 'rgba(0, 102, 204, 0.05)', 
-            icon: 'fas fa-info-circle',
-            modifier: 'info'
-        },
-        'headings': { 
-            color: '#7c2d12', 
-            bg: 'rgba(124, 45, 18, 0.05)', 
-            icon: 'fas fa-heading',
-            modifier: 'warning'
-        },
-        'lists': { 
-            color: 'var(--app-success-color)', 
-            bg: 'rgba(62, 134, 53, 0.05)', 
-            icon: 'fas fa-list',
-            modifier: 'success'
-        },
-        'procedures': { 
-            color: '#0e7490', 
-            bg: 'rgba(14, 116, 144, 0.05)', 
-            icon: 'fas fa-tasks',
-            modifier: 'info'
-        }
+        'style': { color: 'var(--app-danger-color)', icon: 'fas fa-exclamation-circle' },
+        'grammar': { color: 'var(--app-warning-color)', icon: 'fas fa-spell-check' },
+        'abbreviations': { color: 'var(--app-warning-color)', icon: 'fas fa-font' },
+        'articles': { color: 'var(--app-warning-color)', icon: 'fas fa-language' },
+        'capitalization': { color: 'var(--app-success-color)', icon: 'fas fa-font' },
+        'second_person': { color: 'var(--app-danger-color)', icon: 'fas fa-user' },
+        'ambiguity': { color: 'var(--app-danger-color)', icon: 'fas fa-question-circle' },
+        'structure': { color: 'var(--app-primary-color)', icon: 'fas fa-sitemap' },
+        'punctuation': { color: '#6b21a8', icon: 'fas fa-quote-right' },
+        'terminology': { color: '#c2410c', icon: 'fas fa-book' },
+        'passive_voice': { color: 'var(--app-warning-color)', icon: 'fas fa-exchange-alt' },
+        'readability': { color: '#0e7490', icon: 'fas fa-eye' },
+        'admonitions': { color: 'var(--app-primary-color)', icon: 'fas fa-info-circle' },
+        'headings': { color: '#7c2d12', icon: 'fas fa-heading' },
+        'lists': { color: 'var(--app-success-color)', icon: 'fas fa-list' },
+        'procedures': { color: '#0e7490', icon: 'fas fa-tasks' }
     };
     
+    // Return the specific style or the default 'style' style
+    return errorTypes[errorType] || errorTypes['style'];
+}
+
+
+// Create enhanced inline error display with modern design
+function createInlineError(error) {
     const errorType = (error.type || error.error_type || 'style').toLowerCase();
+    
+    const errorTypes = {
+        'style': { color: 'var(--app-danger-color)', bg: 'rgba(201, 25, 11, 0.05)', icon: 'fas fa-exclamation-circle', modifier: 'danger' },
+        'grammar': { color: 'var(--app-warning-color)', bg: 'rgba(240, 171, 0, 0.05)', icon: 'fas fa-spell-check', modifier: 'warning' },
+        'abbreviations': { color: 'var(--app-warning-color)', bg: 'rgba(240, 171, 0, 0.05)', icon: 'fas fa-font', modifier: 'warning' },
+        'articles': { color: 'var(--app-warning-color)', bg: 'rgba(240, 171, 0, 0.05)', icon: 'fas fa-language', modifier: 'warning' },
+        'capitalization': { color: 'var(--app-success-color)', bg: 'rgba(62, 134, 53, 0.05)', icon: 'fas fa-font', modifier: 'success' },
+        'second_person': { color: 'var(--app-danger-color)', bg: 'rgba(201, 25, 11, 0.05)', icon: 'fas fa-user', modifier: 'danger' },
+        'ambiguity': { color: 'var(--app-danger-color)', bg: 'rgba(201, 25, 11, 0.05)', icon: 'fas fa-question-circle', modifier: 'danger' },
+        'structure': { color: 'var(--app-primary-color)', bg: 'rgba(0, 102, 204, 0.05)', icon: 'fas fa-sitemap', modifier: 'info' },
+        'punctuation': { color: '#6b21a8', bg: 'rgba(107, 33, 168, 0.05)', icon: 'fas fa-quote-right', modifier: 'info' },
+        'terminology': { color: '#c2410c', bg: 'rgba(194, 65, 12, 0.05)', icon: 'fas fa-book', modifier: 'warning' },
+        'passive_voice': { color: 'var(--app-warning-color)', bg: 'rgba(240, 171, 0, 0.05)', icon: 'fas fa-exchange-alt', modifier: 'warning' },
+        'readability': { color: '#0e7490', bg: 'rgba(14, 116, 144, 0.05)', icon: 'fas fa-eye', modifier: 'info' },
+        'admonitions': { color: 'var(--app-primary-color)', bg: 'rgba(0, 102, 204, 0.05)', icon: 'fas fa-info-circle', modifier: 'info' },
+        'headings': { color: '#7c2d12', bg: 'rgba(124, 45, 18, 0.05)', icon: 'fas fa-heading', modifier: 'warning' },
+        'lists': { color: 'var(--app-success-color)', bg: 'rgba(62, 134, 53, 0.05)', icon: 'fas fa-list', modifier: 'success' },
+        'procedures': { color: '#0e7490', bg: 'rgba(14, 116, 144, 0.05)', icon: 'fas fa-tasks', modifier: 'info' }
+    };
+    
     const typeStyle = errorTypes[errorType] || errorTypes['style'];
     
     return `
@@ -162,6 +109,7 @@ function createInlineError(error) {
 
 // Create enhanced error card for error summaries
 function createErrorCard(error, index) {
+    // This now correctly calls the new helper function
     const typeStyle = getErrorTypeStyle(error.type);
     const suggestions = Array.isArray(error.suggestions) ? error.suggestions : [];
     

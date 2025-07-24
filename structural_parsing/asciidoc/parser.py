@@ -1,266 +1,111 @@
 """
-AsciiDoc structural parser using asciidoctor library via persistent Ruby server.
-This parser leverages asciidoctor's Ruby server for high-performance structural analysis.
+Simplified AsciiDoc structural parser using native Asciidoctor AST.
+This version is a drop-in replacement, ensuring full compatibility with the existing system.
 """
-
-import json
 import logging
-import tempfile
-from pathlib import Path
-from typing import List, Optional, Dict, Any, Union
-from dataclasses import dataclass
+from typing import Dict, Any, Optional
+from .ruby_client import get_client
+from .types import (
+    AsciiDocBlock, AsciiDocDocument, ParseResult, AsciiDocBlockType,
+    AdmonitionType, AsciiDocAttributes
+)
 
 logger = logging.getLogger(__name__)
 
-from .types import (
-    AsciiDocDocument, 
-    AsciiDocBlock, 
-    AsciiDocBlockType,
-    AdmonitionType,
-    AsciiDocAttributes,
-    ParseResult
-)
-from .ruby_client import get_client, SimpleRubyClient
-from .elements import element_coordinator
-
-
-@dataclass
-class AsciiDocParseError(Exception):
-    """Exception raised when AsciiDoc parsing fails."""
-    message: str
-    original_error: Optional[Exception] = None
-
-
 class AsciiDocParser:
-    """
-    High-performance AsciiDoc parser using persistent Ruby server.
-    
-    This parser uses a persistent Ruby server to avoid subprocess overhead
-    and provides fast, reliable parsing of AsciiDoc documents.
-    """
-    
     def __init__(self):
-        self.asciidoctor_available = self._check_asciidoctor_availability()
-        
-    def _check_asciidoctor_availability(self) -> bool:
-        """Check if asciidoctor is available on the system."""
-        try:
-            client = get_client()
-            return client.ping()
-        except:
-            return False
-    
+        self.ruby_client = get_client()
+        self.asciidoctor_available = self.ruby_client.ping()
+
     def parse(self, content: str, filename: str = "") -> ParseResult:
-        """
-        Parse AsciiDoc content into structural blocks using persistent Ruby server.
-        
-        Args:
-            content: Raw AsciiDoc content
-            filename: Optional filename for error reporting
-            
-        Returns:
-            ParseResult with properly structured document
-        """
         if not self.asciidoctor_available:
-            empty_document = AsciiDocDocument(source_file=filename)
-            return ParseResult(
-                document=empty_document,
-                success=False,
-                errors=["Asciidoctor is not available. Please install with: gem install asciidoctor"]
-            )
-        
+            return ParseResult(success=False, errors=["Asciidoctor Ruby gem is not available."])
+
+        # Correctly calls the 'run' method in the updated client
+        result = self.ruby_client.run(content, filename)
+
+        if not result.get('success'):
+            return ParseResult(success=False, errors=[result.get('error', 'Unknown Ruby error')])
+
+        json_ast = result.get('data', {})
+        if not json_ast:
+            return ParseResult(success=False, errors=["Parser returned empty document."])
+
         try:
-            # Use simple Ruby client for parsing
-            client = get_client()
-            result = client.parse_document(content)
-            
-            if not result.get('success', False):
-                error_msg = result.get('error', 'Unknown error')
-                raise Exception(error_msg)
-            
-            document_data = result.get('data', {})
-            
-            # Process document with element-specific parsing first
-            enhanced_data = element_coordinator.process_document_blocks(document_data)
-            
-            # Convert the enhanced result to our document structure
-            document = self._convert_server_result_to_document(enhanced_data, filename)
-            
-            return ParseResult(
-                document=document,
-                success=True
-            )
-            
+            document_node = self._build_block_from_ast(json_ast, filename=filename)
+            if isinstance(document_node, AsciiDocDocument):
+                return ParseResult(document=document_node, success=True)
+            return ParseResult(success=False, errors=["AST root was not a document."])
         except Exception as e:
-            empty_document = AsciiDocDocument(source_file=filename)
-            return ParseResult(
-                document=empty_document,
-                success=False,
-                errors=[f"Failed to parse AsciiDoc: {str(e)}"]
-            )
-    
-    def _convert_server_result_to_document(self, data: Dict[str, Any], filename: str) -> AsciiDocDocument:
-        """
-        Convert Ruby server result to AsciiDocDocument.
-        
-        Args:
-            data: Dictionary from Ruby server
-            filename: Source filename
-            
-        Returns:
-            AsciiDocDocument with proper structure
-        """
-        blocks = []
-        
-        for block_data in data.get('blocks', []):
-            block = self._convert_block_data(block_data, filename)
-            if block:
-                blocks.append(block)
-        
-        return AsciiDocDocument(
-            blocks=blocks,
-            attributes=data.get('attributes', {}),
-            title=data.get('title'),
-            source_file=filename
-        )
-    
-    def _convert_block_data(self, block_data: Dict[str, Any], filename: str, parent: Optional[AsciiDocBlock] = None) -> Optional[AsciiDocBlock]:
-        """
-        Convert block data from Ruby server to AsciiDocBlock.
-        
-        Args:
-            block_data: Block data from Ruby server
-            filename: Source filename
-            parent: Parent block if any
-            
-        Returns:
-            AsciiDocBlock or None if conversion fails or block should be skipped
-        """
-        # Enhanced filtering for non-content blocks
-        if self._should_skip_block_data(block_data):
-            return None
-        
-        # Get block context and map to enum type dynamically
-        context = block_data.get('context', '')
-        
-        # Try to map context to existing enum values dynamically
-        block_type = None
-        for enum_member in AsciiDocBlockType:
-            # Check exact match first
-            if enum_member.value == context:
-                block_type = enum_member
-                break
-            # Check if context matches enum name patterns
-            if context.upper().replace('_', '_') == enum_member.name:
-                block_type = enum_member
-                break
-        
-        # For unmapped contexts, try some common mappings
-        if not block_type:
-            mapping = {
-                'ulist': AsciiDocBlockType.UNORDERED_LIST,
-                'olist': AsciiDocBlockType.ORDERED_LIST,
-                'dlist': AsciiDocBlockType.DESCRIPTION_LIST,
-                'table_row': AsciiDocBlockType.TABLE_ROW,
-                'table_cell': AsciiDocBlockType.TABLE_CELL,
-            }
-            block_type = mapping.get(context)
-        
-        # If still no mapping found, log it but don't skip the block
-        if not block_type:
-            # Create a fallback - treat unknown blocks as paragraphs for now
-            # This ensures we don't lose content
-            logger.warning(f"Unknown AsciiDoc block context '{context}' - treating as paragraph")
-            block_type = AsciiDocBlockType.PARAGRAPH
-        
-        # Extract source location
-        source_loc = block_data.get('source_location', {})
-        start_line = source_loc.get('lineno', 0) if source_loc else 0
-        
-        # Create attributes
-        attributes = AsciiDocAttributes()
-        if block_data.get('id'):
-            attributes.id = block_data['id']
-        if block_data.get('style'):
-            attributes.named_attributes['style'] = block_data['style']
-        
-        # Add block-specific attributes
-        block_attributes = block_data.get('attributes', {})
-        for key, value in block_attributes.items():
-            if isinstance(value, (str, int, float, bool)):
-                attributes.named_attributes[key] = str(value)
-        
-        # Handle admonitions
-        admonition_type = None
-        if block_type == AsciiDocBlockType.ADMONITION:
-            admonition_name = block_data.get('admonition_name', '').upper()
-            admonition_map = {
-                'NOTE': AdmonitionType.NOTE,
-                'TIP': AdmonitionType.TIP,
-                'IMPORTANT': AdmonitionType.IMPORTANT,
-                'WARNING': AdmonitionType.WARNING,
-                'CAUTION': AdmonitionType.CAUTION,
-            }
-            admonition_type = admonition_map.get(admonition_name, AdmonitionType.NOTE)
-        
-        # Extract content
-        content = block_data.get('content', '')
-        raw_content = '\n'.join(block_data.get('lines', [content])) if block_data.get('lines') else content
-        
-        # Create the block
+            logger.exception("Failed to build block structure from AsciiDoc AST.")
+            return ParseResult(success=False, errors=[f"Failed to process AST: {e}"])
+
+    def _build_block_from_ast(self, node: Dict[str, Any], parent: Optional[AsciiDocBlock] = None, filename: str = "") -> AsciiDocBlock:
+        context = node.get('context', 'unknown')
+        block_type = self._map_context_to_block_type(context)
+        raw_content = node.get('source', '') or ''
+        start_line = node.get('lineno', 0)
+        content = self._get_content_from_node(node)
+
         block = AsciiDocBlock(
             block_type=block_type,
             content=content,
             raw_content=raw_content,
+            title=node.get('title'),
+            level=node.get('level', 0),
             start_line=start_line,
-            end_line=start_line + len(block_data.get('lines', [1])) - 1,
+            end_line=start_line + raw_content.count('\n'),
             start_pos=0,
             end_pos=len(raw_content),
-            level=block_data.get('level', 0),
-            attributes=attributes,
-            parent=parent,
-            children=[],
-            title=block_data.get('title'),
-            style=block_data.get('style'),
-            admonition_type=admonition_type,
-            list_marker=None,
-            source_location=filename
+            style=node.get('style'),
+            list_marker=node.get('marker'),
+            source_location=filename,
+            attributes=self._create_attributes(node.get('attributes', {})),
+            parent=parent
         )
-        
-        # Process children
-        for child_data in block_data.get('children', []):
-            child_block = self._convert_block_data(child_data, filename, block)
-            if child_block:
-                block.children.append(child_block)
-        
+
+        if block_type == AsciiDocBlockType.ADMONITION:
+            style = node.get('style', 'NOTE').upper()
+            block.admonition_type = AdmonitionType[style] if style in AdmonitionType.__members__ else AdmonitionType.NOTE
+
+        block.children = [self._build_block_from_ast(child, parent=block, filename=filename) for child in node.get('children', [])]
+
+        if context == 'document':
+            return AsciiDocDocument(
+                blocks=block.children,
+                source_file=filename,
+                block_type=AsciiDocBlockType.DOCUMENT,
+                content=node.get('title', ''),
+                raw_content=node.get('source', ''),
+                start_line=0
+            )
         return block
-    
-    def _should_skip_block_data(self, block_data: Dict[str, Any]) -> bool:
-        """Check if block data should be skipped during parsing."""
-        context = block_data.get('context', '')
-        content = block_data.get('content', '')
-        
-        # Skip attribute entries
-        if context == 'attribute_entry':
-            return True
-        
-        # Never skip structural containers even if they have empty content
-        # Their content is typically in children blocks
-        structural_containers = {'preamble', 'section', 'document', 'sidebar', 'example'}
-        if context in structural_containers:
-            return False
-        
-        # Skip blocks with no meaningful content
-        if not content or not content.strip():
-            return True
-        
-        # Skip whitespace-only content
-        stripped_content = content.strip()
-        if len(stripped_content) <= 2 and all(c in ' \t\n\r' for c in stripped_content):
-            return True
-        
-        # Skip blocks that are just punctuation
-        if all(not c.isalnum() for c in stripped_content.replace(' ', '')):
-            return True
-        
-        return False 
+
+    def _create_attributes(self, attrs: Dict[str, Any]) -> AsciiDocAttributes:
+        """Creates the AsciiDocAttributes object for compatibility."""
+        attributes = AsciiDocAttributes()
+        attributes.id = attrs.get('id')
+        for key, value in attrs.items():
+            if isinstance(value, (str, int, float, bool)):
+                attributes.named_attributes[key] = str(value)
+        return attributes
+
+    def _get_content_from_node(self, node: Dict[str, Any]) -> str:
+        """Determines the correct content field from the AST node for analysis."""
+        context = node.get('context')
+        if context == 'list_item': return node.get('text', '')
+        if context == 'section': return node.get('title', '')
+        if context in ['listing', 'literal']: return node.get('source', '')
+        # For compound blocks like admonitions, the content is the combined source of its children
+        if node.get('children') and context not in ['ulist', 'olist', 'table']:
+            return "\n".join(child.get('source', '') for child in node.get('children', []))
+        return node.get('content', '') or ''
+
+
+    def _map_context_to_block_type(self, context: str) -> AsciiDocBlockType:
+        """Maps the Asciidoctor context string to our enum."""
+        if context == 'section': return AsciiDocBlockType.HEADING
+        try:
+            return AsciiDocBlockType(context)
+        except ValueError:
+            return AsciiDocBlockType.UNKNOWN
