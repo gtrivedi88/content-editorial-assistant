@@ -5,22 +5,14 @@
 
 // Create a structural block display using a PatternFly Card
 function createStructuralBlock(block, displayIndex) {
-    // Try the new modular system first
-    if (typeof window.AsciiDocElementRegistry !== 'undefined') {
-        const registry = window.AsciiDocElementRegistry;
-        const module = registry.getModuleForBlock(block);
-        if (module) {
-            try {
-                return registry.createBlockHtml(block, displayIndex);
-            } catch (error) {
-                console.warn('[createStructuralBlock] Modular system failed, falling back to legacy:', error);
-            }
-        }
+    // Use the simplified block creation function if available
+    if (typeof createStructuralBlockSimplified === 'function') {
+        return createStructuralBlockSimplified(block, displayIndex);
     }
     
-    // Legacy fallback for compatibility and unhandled types
+    // Legacy fallback (should not be needed with elements-minimal.js loaded)
+    console.warn('[createStructuralBlock] Using legacy fallback - elements-minimal.js may not be loaded');
     if (block.block_type === 'section') return createSectionBlock(block, displayIndex);
-    // Note: 'table' and 'list' blocks are now handled by the modular system
     if (['list_item', 'list_title', 'table_row', 'table_cell'].includes(block.block_type)) return '';
 
     const blockTypeIcons = {

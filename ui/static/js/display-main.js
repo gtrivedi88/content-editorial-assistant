@@ -80,14 +80,10 @@ function displayAnalysisResults(analysis, content, structuralBlocks = null) {
 function displayStructuralBlocks(blocks) {
     if (!blocks || blocks.length === 0) return displayEmptyStructure();
 
-    // Add attribute block placeholders using the dedicated module
-    const blocksWithPlaceholders = insertAttributePlaceholders(currentContent, blocks);
-
+    // Work directly with blocks - no need for complex attribute placeholders
     let displayIndex = 0;
-    const blocksHtml = blocksWithPlaceholders.map(block => {
-        const html = block.isAttributePlaceholder ? 
-            createAttributeBlock(block, displayIndex) : 
-            createStructuralBlock(block, displayIndex);
+    const blocksHtml = blocks.map(block => {
+        const html = createStructuralBlock(block, displayIndex);
         if (html) { // Check for non-empty HTML
             displayIndex++;
         }
