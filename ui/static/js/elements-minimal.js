@@ -1,5 +1,5 @@
 /**
- * Minimal AsciiDoc Elements - Production Version
+ * AsciiDoc Elements
  * Contains only essential list and table functionality
  */
 
@@ -332,7 +332,7 @@ function generatePatternFlyTable(rows, hasHeader = false) {
 /**
  * Simplified block creation - replaces the complex modular system
  */
-function createStructuralBlockSimplified(block, displayIndex) {
+function createStructuralBlock(block, displayIndex) {
     // Handle lists and tables with specialized rendering
     if (block.block_type === 'olist' || block.block_type === 'ulist') {
         return createListBlockElement(block, displayIndex);
@@ -342,9 +342,9 @@ function createStructuralBlockSimplified(block, displayIndex) {
         return createTableBlockElement(block, displayIndex);
     }
     
-    // Handle sections
+    // Handle sections  
     if (block.block_type === 'section') {
-        return createSectionBlock(block, displayIndex);
+        return createSectionBlockElement(block, displayIndex);
     }
     
     // Skip sub-elements that shouldn't be displayed separately
@@ -404,4 +404,52 @@ function createStructuralBlockSimplified(block, displayIndex) {
             </div>` : ''}
         </div>
     `;
-} 
+}
+
+/**
+ * Create a section block (which contains other cards)
+ */
+function createSectionBlockElement(block, displayIndex) {
+    let totalIssues = block.errors ? block.errors.length : 0;
+    
+    // Count issues in all children recursively
+    const countChildIssues = (children) => {
+        if (!children) return;
+        children.forEach(child => {
+            if (child.errors) totalIssues += child.errors.length;
+            if (child.children) countChildIssues(child.children);
+        });
+    };
+    countChildIssues(block.children);
+
+    // Generate HTML for child blocks
+    let childDisplayIndex = 0;
+    const childrenHtml = block.children ? block.children.map(child => {
+        const html = createStructuralBlock(child, childDisplayIndex);
+        if (html) childDisplayIndex++;
+        return html;
+    }).filter(html => html).join('') : '';
+
+    const status = totalIssues > 0 ? 'red' : 'green';
+    const statusText = totalIssues > 0 ? `${totalIssues} Issue(s)` : 'Clean';
+
+    return `
+        <div class="pf-v5-c-card pf-m-bordered pf-m-expandable">
+            <div class="pf-v5-c-card__header">
+                <div class="pf-v5-c-card__header-main">
+                    <i class="fas fa-layer-group pf-v5-u-mr-sm"></i>
+                    <span class="pf-v5-u-font-weight-bold">SECTION ${displayIndex + 1}:</span>
+                    <span class="pf-v5-u-ml-sm">${getBlockTypeDisplayName(block.block_type, { level: block.level })}</span>
+                </div>
+                <div class="pf-v5-c-card__actions">
+                    <span class="pf-v5-c-label pf-m-outline pf-m-${status}">${statusText}</span>
+                </div>
+            </div>
+            <div class="pf-v5-c-card__body">
+                <div class="pf-v5-l-stack pf-m-gutter">
+                    ${childrenHtml}
+                </div>
+            </div>
+        </div>
+    `;
+}
