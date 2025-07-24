@@ -27,11 +27,19 @@ class WWordsRule(BaseWordUsageRule):
         for token in doc:
             if token.lemma_.lower() == "while" and token.dep_ == "mark":
                 sent = token.sent
+                # Get the sentence index by finding the sentence in the doc.sents
+                sentence_index = 0
+                for i, s in enumerate(doc.sents):
+                    if s == sent:
+                        sentence_index = i
+                        break
+                
                 # Heuristic: if the clause is not clearly about time, flag for review.
                 is_time_related = any(t.pos_ == "VERB" and "ing" in t.morph for t in token.head.children)
                 if not is_time_related:
                     errors.append(self._create_error(
                         sentence=sent.text,
+                        sentence_index=sentence_index,
                         message="Use 'while' only to refer to time. For contrast, use 'although' or 'whereas'.",
                         suggestions=["Replace 'while' with 'although' when indicating contrast."],
                         severity='medium',

@@ -27,7 +27,18 @@ class ConjunctionsRule(BaseLanguageRule):
             for token in sent:
                 if token.dep_ == 'mark' and token.lemma_.lower() in ['while', 'since']:
                     main_verb = token.head
-                    is_time_related = any(ent.label_ == 'TIME' for ent in main_verb.subtree.ents)
+                    # Fix: Check for TIME entities in the subtree by iterating through tokens
+                    # and checking if any token is part of a TIME entity in the doc
+                    is_time_related = False
+                    for subtree_token in main_verb.subtree:
+                        for ent in doc.ents:
+                            if (ent.label_ == 'TIME' and 
+                                subtree_token.idx >= ent.start_char and 
+                                subtree_token.idx < ent.end_char):
+                                is_time_related = True
+                                break
+                        if is_time_related:
+                            break
                     
                     if not is_time_related:
                         suggestion = ""
