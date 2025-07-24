@@ -16,7 +16,7 @@ class NumeralsVsWordsRule(BaseNumbersRule):
     especially for numbers under 10.
     """
     def _get_rule_type(self) -> str:
-        return 'numbers_numerals_vs_words'
+        return 'numerals_vs_words'
 
     def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         """

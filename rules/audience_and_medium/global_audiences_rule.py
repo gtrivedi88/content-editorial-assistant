@@ -16,7 +16,7 @@ class GlobalAudiencesRule(BaseAudienceRule):
     such as negative constructions and overly long sentences.
     """
     def _get_rule_type(self) -> str:
-        return 'audience_global'
+        return 'global_audiences'
 
     def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         errors = []

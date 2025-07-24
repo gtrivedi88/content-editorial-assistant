@@ -17,7 +17,7 @@ class UnitsOfMeasurementRule(BaseNumbersRule):
     a space between the number and the unit abbreviation.
     """
     def _get_rule_type(self) -> str:
-        return 'numbers_units_of_measurement'
+        return 'units_of_measurement'
 
     def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         """

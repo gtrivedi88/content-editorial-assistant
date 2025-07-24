@@ -17,7 +17,7 @@ class ListsRule(BaseStructureRule):
     """
     def _get_rule_type(self) -> str:
         """Returns the unique identifier for this rule."""
-        return 'structure_format_lists'
+        return 'lists'
 
     def _get_grammatical_form(self, doc: Doc) -> str:
         """

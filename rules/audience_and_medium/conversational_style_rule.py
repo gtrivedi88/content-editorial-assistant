@@ -18,7 +18,7 @@ class ConversationalStyleRule(BaseAudienceRule):
     complex words.
     """
     def _get_rule_type(self) -> str:
-        return 'audience_conversational'
+        return 'conversational_style'
 
     def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         errors = []

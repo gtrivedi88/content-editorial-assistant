@@ -18,7 +18,7 @@ class LLMConsumabilityRule(BaseAudienceRule):
     like accordions.
     """
     def _get_rule_type(self) -> str:
-        return 'audience_llm_consumability'
+        return 'llm_consumability'
 
     def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         errors = []

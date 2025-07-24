@@ -17,7 +17,7 @@ class ToneRule(BaseAudienceRule):
     idioms, sports metaphors, or overly casual expressions.
     """
     def _get_rule_type(self) -> str:
-        return 'audience_tone'
+        return 'tone'
 
     def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         errors = []

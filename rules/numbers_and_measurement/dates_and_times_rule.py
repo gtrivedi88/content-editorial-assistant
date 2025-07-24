@@ -16,7 +16,7 @@ class DatesAndTimesRule(BaseNumbersRule):
     Checks for correct and internationally understandable date and time formats.
     """
     def _get_rule_type(self) -> str:
-        return 'numbers_dates_times'
+        return 'dates_and_times'
 
     def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         """
