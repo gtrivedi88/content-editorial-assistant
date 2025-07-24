@@ -76,14 +76,25 @@ class BlockProcessor:
         if not block_type:
             return
 
-        # CRITICAL FIX: For document type, extract the title as a separate heading block first
+        # CRITICAL FIX: For document type, check if first child is a section with same title
         if block_type.value == 'document':
-            # If document has a title, create a document title heading block
+            # If document has a title, check if first child is a heading with same title
             if hasattr(block, 'title') and block.title:
-                title_block = self._create_document_title_from_document(block)
-                self.flat_blocks.append(title_block)
+                # Check if first child is a heading with the same title (common AsciiDoc pattern)
+                first_child = block.children[0] if block.children else None
+                if (first_child and 
+                    hasattr(first_child, 'block_type') and 
+                    first_child.block_type.value == 'heading' and
+                    hasattr(first_child, 'title') and 
+                    first_child.title == block.title):
+                    # Skip creating document title, let the heading be processed as is
+                    pass
+                else:
+                    # Create document title heading block only if no duplicate heading
+                    title_block = self._create_document_title_from_document(block)
+                    self.flat_blocks.append(title_block)
             
-            # Then process all children
+            # Process all children
             for child in block.children:
                 self._flatten_recursively(child)
             return
@@ -103,8 +114,8 @@ class BlockProcessor:
                 self._flatten_recursively(child)
             return
 
-        # CRITICAL FIX: For headings that have children (converted from sections),
-        # we need to process their children as well
+        # For heading blocks that have children (like from AsciiDoc document structure),
+        # add the heading and process its children
         if block_type.value == 'heading' and block.children:
             self.flat_blocks.append(block)
             for child in block.children:
