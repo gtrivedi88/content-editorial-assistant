@@ -49,6 +49,17 @@ class BlockProcessor:
                 logger.warning(f"Block content for type {block.block_type} is not a string, skipping analysis.")
             else:
                 context = block.get_context_info()
+                
+                # ENTERPRISE-GRADE FIX: Analyze document titles with heading context
+                # since they will be converted to heading blocks for the UI
+                if (context and context.get('block_type') == 'document' and 
+                    hasattr(block, 'title') and block.title and content.strip()):
+                    # Override context for document titles to use heading analysis
+                    heading_context = context.copy()
+                    heading_context['block_type'] = 'heading'
+                    heading_context['level'] = 0  # Document title is level 0
+                    context = heading_context
+                
                 errors = self.mode_executor._analyze_generic_content(content, self.analysis_mode, context)
                 block._analysis_errors = errors
 
@@ -145,6 +156,8 @@ class BlockProcessor:
             source_location=getattr(document_block, 'source_location', ''),
             attributes=getattr(document_block, 'attributes', None)
         )
-        # Copy any analysis errors from the document
+        
+        # Copy analysis errors from the document (since we analyzed it with heading context)
         title_block._analysis_errors = getattr(document_block, '_analysis_errors', [])
+        
         return title_block

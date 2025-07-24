@@ -18,7 +18,7 @@ class HeadingsRule(BaseStructureRule):
     """
     def _get_rule_type(self) -> str:
         """Returns the unique identifier for this rule."""
-        return 'structure_format_headings'
+        return 'headings'
 
     def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         """
@@ -47,9 +47,23 @@ class HeadingsRule(BaseStructureRule):
             # Rule 2: Use sentence-style capitalization.
             words = sentence.split()
             if len(words) > 1:
-                # A simple heuristic for headline case is checking if more than one non-proper noun is capitalized.
-                capitalized_words = [word for word in words[1:] if word.istitle() and nlp(word)[0].pos_ != 'PROPN']
-                if len(capitalized_words) > 1:
+                # Check for any non-proper nouns that are capitalized after the first word
+                capitalized_words = []
+                for word in words[1:]:
+                    if word.istitle():
+                        # Use spaCy to check if this word is a proper noun
+                        word_doc = nlp(word)
+                        if word_doc and len(word_doc) > 0:
+                            # Check if it's a proper noun or named entity
+                            is_proper_noun = word_doc[0].pos_ == 'PROPN' or any(ent.text == word for ent in word_doc.ents)
+                            if not is_proper_noun:
+                                capitalized_words.append(word)
+                        else:
+                            # If we can't analyze with spaCy, be conservative and flag it
+                            capitalized_words.append(word)
+                
+                # Flag if ANY non-proper noun is capitalized after the first word
+                if len(capitalized_words) >= 1:
                     errors.append(self._create_error(
                         sentence=sentence, sentence_index=i,
                         message="Headings should use sentence-style capitalization, not headline-style.",

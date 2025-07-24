@@ -32,23 +32,11 @@ class AnalysisModeExecutor:
     
     def analyze_spacy_with_modular_rules(self, text: str, sentences: List[str], 
                                        block_context: Optional[dict] = None) -> List[ErrorDict]:
-        """Analyze using SpaCy enhanced with modular rules (highest accuracy)."""
+        """Analyze using ONLY modular rules with SpaCy (highest accuracy)."""
         errors = []
         
         try:
-            # SpaCy-enhanced readability analysis
-            readability_errors = self.readability_analyzer.analyze_readability_spacy_enhanced(
-                text, self.nlp
-            )
-            errors.extend(readability_errors)
-            
-            # SpaCy-enhanced sentence analysis
-            sentence_errors = self.sentence_analyzer.analyze_sentence_length_spacy(
-                sentences, self.nlp
-            )
-            errors.extend(sentence_errors)
-            
-            # Integrate modular rules analysis with context-aware rule selection
+            # Use ONLY modular rules analysis with context-aware rule selection
             if self.rules_registry:
                 try:
                     # Use context-aware rule analysis to prevent false positives
@@ -64,7 +52,7 @@ class AnalysisModeExecutor:
                     logger.error(f"Context-aware modular rules analysis failed: {e}")
             
         except Exception as e:
-            logger.error(f"SpaCy with modular rules analysis failed: {e}")
+            logger.error(f"Modular rules analysis failed: {e}")
             # Fall back to next best mode
             return self.analyze_modular_rules_with_fallbacks(text, sentences, block_context)
         
@@ -72,19 +60,11 @@ class AnalysisModeExecutor:
     
     def analyze_modular_rules_with_fallbacks(self, text: str, sentences: List[str], 
                                            block_context: Optional[dict] = None) -> List[ErrorDict]:
-        """Analyze using modular rules with conservative fallbacks."""
+        """Analyze using ONLY modular rules with conservative fallbacks."""
         errors = []
         
         try:
-            # Conservative readability analysis
-            readability_errors = self.readability_analyzer.analyze_readability_conservative(text)
-            errors.extend(readability_errors)
-            
-            # Conservative sentence analysis
-            sentence_errors = self.sentence_analyzer.analyze_sentence_length_conservative(sentences)
-            errors.extend(sentence_errors)
-            
-            # Integrate modular rules analysis with context-aware rule selection
+            # Use ONLY modular rules analysis with context-aware rule selection
             if self.rules_registry:
                 try:
                     # Use context-aware rule analysis to prevent false positives
@@ -100,7 +80,7 @@ class AnalysisModeExecutor:
                     logger.error(f"Context-aware modular rules analysis failed: {e}")
             
         except Exception as e:
-            logger.error(f"Modular rules with fallbacks analysis failed: {e}")
+            logger.error(f"Modular rules analysis failed: {e}")
             # Fall back to next best mode
             return self.analyze_spacy_legacy_only(text, sentences, block_context)
         
@@ -108,24 +88,26 @@ class AnalysisModeExecutor:
     
     def analyze_spacy_legacy_only(self, text: str, sentences: List[str], 
                                  block_context: Optional[dict] = None) -> List[ErrorDict]:
-        """Analyze using only SpaCy (legacy mode)."""
+        """Analyze using only modular rules (fallback when SpaCy is available but rules are primary)."""
         errors = []
         
         try:
-            # SpaCy-only readability analysis
-            readability_errors = self.readability_analyzer.analyze_readability_spacy_enhanced(
-                text, self.nlp
-            )
-            errors.extend(readability_errors)
-            
-            # SpaCy-only sentence analysis
-            sentence_errors = self.sentence_analyzer.analyze_sentence_length_spacy(
-                sentences, self.nlp
-            )
-            errors.extend(sentence_errors)
+            # Use ONLY modular rules analysis
+            if self.rules_registry:
+                try:
+                    rules_errors = self.rules_registry.analyze_with_context_aware_rules(
+                        text, sentences, self.nlp, block_context
+                    )
+                    # Convert rules errors to our error format
+                    for error in rules_errors:
+                        converted_error = self.error_converter.convert_rules_error(error)
+                        errors.append(converted_error)
+                    logger.info(f"Modular rules analysis found {len(rules_errors)} issues")
+                except Exception as e:
+                    logger.error(f"Modular rules analysis failed: {e}")
             
         except Exception as e:
-            logger.error(f"SpaCy legacy analysis failed: {e}")
+            logger.error(f"Analysis failed: {e}")
             # Fall back to minimal safe mode
             return self.analyze_minimal_safe_mode(text, sentences, block_context)
         
@@ -137,13 +119,19 @@ class AnalysisModeExecutor:
         errors = []
         
         try:
-            # Minimal safe readability analysis
-            readability_errors = self.readability_analyzer.analyze_readability_minimal_safe(text)
-            errors.extend(readability_errors)
-            
-            # Minimal safe sentence analysis
-            sentence_errors = self.sentence_analyzer.analyze_sentence_length_minimal_safe(sentences)
-            errors.extend(sentence_errors)
+            # Use ONLY modular rules analysis in minimal safe mode
+            if self.rules_registry:
+                try:
+                    rules_errors = self.rules_registry.analyze_with_context_aware_rules(
+                        text, sentences, self.nlp, block_context
+                    )
+                    # Convert rules errors to our error format  
+                    for error in rules_errors:
+                        converted_error = self.error_converter.convert_rules_error(error)
+                        errors.append(converted_error)
+                    logger.info(f"Minimal safe modular rules analysis found {len(rules_errors)} issues")
+                except Exception as e:
+                    logger.error(f"Minimal safe modular rules analysis failed: {e}")
             
         except Exception as e:
             logger.error(f"Minimal safe analysis failed: {e}")
@@ -234,8 +222,8 @@ class AnalysisModeExecutor:
             elif block_type == AsciiDocBlockType.TABLE_CELL:
                 errors.extend(self._analyze_table_cell_content(block, content, analysis_mode, block_context))
             
-            # Apply general content analysis for other blocks
-            elif block_type in [AsciiDocBlockType.PARAGRAPH, AsciiDocBlockType.HEADING, AsciiDocBlockType.QUOTE, AsciiDocBlockType.LIST_ITEM]:
+            # Apply general content analysis for other blocks (excluding headings which are analyzed in block_processors.py)
+            elif block_type in [AsciiDocBlockType.PARAGRAPH, AsciiDocBlockType.QUOTE, AsciiDocBlockType.LIST_ITEM]:
                 errors.extend(self._analyze_generic_content(content, analysis_mode, block_context))
                 
         except Exception as e:

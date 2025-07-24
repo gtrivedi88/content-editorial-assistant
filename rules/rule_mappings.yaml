@@ -22,6 +22,83 @@ block_type_rules:
     - semicolons
     - highlighting
 
+  # Section blocks - treat like headings since they contain section titles
+  section:
+    - headings
+    - capitalization
+    - pronouns
+    - sentence_length
+    - second_person
+
+  # Preamble blocks - treat like paragraphs
+  preamble:
+    - abbreviations
+    - articles
+    - capitalization
+    - contractions
+    - inclusive_language
+    - pronouns
+    - spelling
+    - terminology
+    - verbs
+    - sentence_length
+    - second_person
+    - ambiguity
+
+  # Example blocks - treat like paragraphs  
+  example:
+    - abbreviations
+    - articles
+    - capitalization
+    - contractions
+    - inclusive_language
+    - pronouns
+    - spelling
+    - terminology
+    - verbs
+    - sentence_length
+    - second_person
+    - ambiguity
+
+  # Verse blocks - minimal rules for poetry/verse content
+  verse:
+    - capitalization
+    - spelling
+    - pronouns
+
+  # Open blocks - treat like paragraphs since they can contain any content
+  open:
+    - abbreviations
+    - articles
+    - capitalization
+    - contractions
+    - inclusive_language
+    - pronouns
+    - spelling
+    - terminology
+    - verbs
+    - sentence_length
+    - second_person
+    - ambiguity
+
+  # Description list blocks - treat like list items
+  description_list:
+    - lists
+    - capitalization
+    - punctuation_and_symbols
+
+  # Image blocks - minimal rules for alt text/captions
+  image:
+    - capitalization
+    - spelling
+    - pronouns
+
+  # Comment blocks - skip analysis
+  comment: []
+
+  # Unknown blocks - skip analysis to be safe
+  unknown: []
+
   # Paragraph blocks - apply general language and grammar rules but exclude structure-specific rules
   paragraph:
     # Language and grammar rules
