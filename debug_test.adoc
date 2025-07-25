@@ -1,9 +1,0 @@
-:_mod-docs-content-type: CONCEPT
-
-[id="integrations-in-rhdh_{context}"]
-= Integrations in {product}
-
-{product} integrates seamlessly with {ocp-brand-name} and other tools.
-
-== Integration with {ocp-brand-name}
-{product} is fully integrated with {ocp-brand-name}.

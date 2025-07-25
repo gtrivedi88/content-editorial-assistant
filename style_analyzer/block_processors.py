@@ -39,6 +39,14 @@ class BlockProcessor:
         if not block:
             return
 
+        # CRITICAL FIX: Skip analysis if block has already been analyzed 
+        # (prevents duplicate processing of list items)
+        if hasattr(block, '_already_analyzed') and block._already_analyzed:
+            # Still need to recurse through children in case they need analysis
+            for child in block.children:
+                self._analyze_recursively(child)
+            return
+
         # Run SpaCy and other rule-based analysis on the block's content
         if not block.should_skip_analysis():
             content = block.get_text_content()
@@ -60,7 +68,7 @@ class BlockProcessor:
                     heading_context['level'] = 0  # Document title is level 0
                     context = heading_context
                 
-                errors = self.mode_executor._analyze_generic_content(content, self.analysis_mode, context)
+                errors = self.mode_executor.analyze_block_content(block, content, self.analysis_mode, context)
                 block._analysis_errors = errors
 
         # Continue the analysis down the tree for all children

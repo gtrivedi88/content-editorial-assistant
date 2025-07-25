@@ -195,13 +195,12 @@ class StyleAnalyzer:
             }
     
     def _determine_analysis_mode(self) -> AnalysisMode:
-        """Determine the safest analysis mode based on available capabilities."""
+        """Determine the analysis mode - simplified to eliminate complexity."""
+        # Use the most capable mode available, with a simple fallback
         if SPACY_AVAILABLE and RULES_AVAILABLE and self.nlp:
             return AnalysisMode.SPACY_WITH_MODULAR_RULES
         elif RULES_AVAILABLE:
             return AnalysisMode.MODULAR_RULES_WITH_FALLBACKS
-        elif SPACY_AVAILABLE and self.nlp:
-            return AnalysisMode.SPACY_LEGACY_ONLY
         else:
             return AnalysisMode.MINIMAL_SAFE_MODE
     

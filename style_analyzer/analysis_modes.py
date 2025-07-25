@@ -53,8 +53,8 @@ class AnalysisModeExecutor:
             
         except Exception as e:
             logger.error(f"Modular rules analysis failed: {e}")
-            # Fall back to next best mode
-            return self.analyze_modular_rules_with_fallbacks(text, sentences, block_context)
+            # Ultimate fallback - try minimal safe mode
+            return self.analyze_minimal_safe_mode(text, sentences, block_context)
         
         return errors
     
@@ -81,37 +81,17 @@ class AnalysisModeExecutor:
             
         except Exception as e:
             logger.error(f"Modular rules analysis failed: {e}")
-            # Fall back to next best mode
-            return self.analyze_spacy_legacy_only(text, sentences, block_context)
+            # Ultimate fallback - try minimal safe mode
+            return self.analyze_minimal_safe_mode(text, sentences, block_context)
         
         return errors
     
     def analyze_spacy_legacy_only(self, text: str, sentences: List[str], 
                                  block_context: Optional[dict] = None) -> List[ErrorDict]:
-        """Analyze using only modular rules (fallback when SpaCy is available but rules are primary)."""
-        errors = []
-        
-        try:
-            # Use ONLY modular rules analysis
-            if self.rules_registry:
-                try:
-                    rules_errors = self.rules_registry.analyze_with_context_aware_rules(
-                        text, sentences, self.nlp, block_context
-                    )
-                    # Convert rules errors to our error format
-                    for error in rules_errors:
-                        converted_error = self.error_converter.convert_rules_error(error)
-                        errors.append(converted_error)
-                    logger.info(f"Modular rules analysis found {len(rules_errors)} issues")
-                except Exception as e:
-                    logger.error(f"Modular rules analysis failed: {e}")
-            
-        except Exception as e:
-            logger.error(f"Analysis failed: {e}")
-            # Fall back to minimal safe mode
-            return self.analyze_minimal_safe_mode(text, sentences, block_context)
-        
-        return errors
+        """DEPRECATED: Legacy analysis mode removed for simplification."""
+        # This mode has been eliminated to reduce complexity
+        # Fall back to modular rules analysis
+        return self.analyze_modular_rules_with_fallbacks(text, sentences, block_context)
     
     def analyze_minimal_safe_mode(self, text: str, sentences: List[str], 
                                  block_context: Optional[dict] = None) -> List[ErrorDict]:
@@ -286,29 +266,65 @@ class AnalysisModeExecutor:
             # Get the children (list items) from the block
             children = getattr(block, 'children', [])
             
-            for i, child in enumerate(children):
+            # SURGICAL FIX: Remove duplicates while preserving structure for analysis
+            # Asciidoctor gem provides both blocks and items - deduplicate by content
+            unique_children = []
+            seen_content = set()
+            for child in children:
+                child_content = self._extract_clean_child_content(child)
+                if child_content and child_content not in seen_content:
+                    unique_children.append(child)
+                    seen_content.add(child_content)
+            
+            all_list_items = []
+            
+            for i, child in enumerate(unique_children):
                 # Create context for the individual list item
-                child_context = child.get_context_info()
+                child_context = child.get_context_info() if hasattr(child, 'get_context_info') else {}
                 
                 # Add step number to context for procedures rule
                 if child_context:
                     child_context['step_number'] = i + 1
                     child_context['is_ordered_list_item'] = True
                 
-                child_content = child.content
+                child_content = self._extract_clean_child_content(child)
                 
-                # Analyze this individual list item
-                child_errors = self._analyze_generic_content(child_content, analysis_mode, child_context)
+                if child_content:
+                    all_list_items.append(child_content)
+                    
+                    # Analyze this individual list item
+                    child_errors = self._analyze_generic_content(child_content, analysis_mode, child_context)
+                    
+                    # Store errors on the child and mark as analyzed to prevent duplicate processing
+                    if not hasattr(child, '_analysis_errors'):
+                        child._analysis_errors = []
+                    child._analysis_errors.extend(child_errors)
+                    
+                    # CRITICAL FIX: Mark child as already analyzed to prevent duplicate processing
+                    # in the recursive _analyze_recursively method
+                    child._already_analyzed = True
+            
+            # ESSENTIAL: Analyze the whole list for structure issues (parallelism, etc.)
+            # This ensures list structure errors appear in the "List Structure Issues" section
+            if len(all_list_items) >= 2:
+                # Create context for whole-list analysis
+                whole_list_context = block_context.copy() if block_context else {}
+                whole_list_context['block_type'] = 'ordered_list'
+                whole_list_context['is_whole_list_analysis'] = True
+                whole_list_context['parallelism_analysis_only'] = True  # Focus on list structure rules
                 
-                # Store errors on the child instead of returning them to parent
-                if not hasattr(child, '_analysis_errors'):
-                    child._analysis_errors = []
-                child._analysis_errors.extend(child_errors)
+                # Combine all list items for parallelism analysis
+                combined_content = '\n'.join(all_list_items)
+                
+                # Run list structure analysis
+                list_structure_errors = self._analyze_generic_content(combined_content, analysis_mode, whole_list_context)
+                
+                # CRITICAL: Add list structure errors to parent block for "List Structure Issues" section
+                errors.extend(list_structure_errors)
         
         except Exception as e:
             logger.error(f"Error analyzing ordered list content: {e}")
             
-        # Return empty errors for parent block since errors are stored on children
         return errors
     
     def _analyze_unordered_list_content(self, block, content: str, analysis_mode: AnalysisMode, 
@@ -320,39 +336,30 @@ class AnalysisModeExecutor:
             # Get the children (list items) from the block
             children = getattr(block, 'children', [])
             
-            # Extract clean content from all children for whole-list analysis
+            # SURGICAL FIX: Remove duplicates while preserving structure for analysis
+            # Asciidoctor gem provides both blocks and items - deduplicate by content
+            unique_children = []
+            seen_content = set()
+            for child in children:
+                child_content = self._extract_clean_child_content(child)
+                if child_content and child_content not in seen_content:
+                    unique_children.append(child)
+                    seen_content.add(child_content)
+            
+            # Extract clean content from all unique children for whole-list analysis
             all_list_items = []
             
-            for i, child in enumerate(children):
+            for i, child in enumerate(unique_children):
                 # Create context for the individual list item
-                child_context = child.get_context_info()
+                child_context = child.get_context_info() if hasattr(child, 'get_context_info') else {}
                 
                 # Add context for unordered list items
                 if child_context:
                     child_context['item_number'] = i + 1
                     child_context['is_unordered_list_item'] = True
                 
-                # Extract clean content from the child, handling Ruby AST objects
-                child_content = None
-                
-                # Method 1: Try to get clean content directly
-                if hasattr(child, 'content') and isinstance(child.content, str):
-                    content_str = child.content.strip()
-                    if len(content_str) < 500 and not content_str.startswith('[#'):  # Not Ruby AST
-                        child_content = content_str
-                
-                # Method 2: Try get_text_content if available
-                if not child_content and hasattr(child, 'get_text_content'):
-                    try:
-                        text_content = child.get_text_content().strip()
-                        if text_content and len(text_content) < 500:
-                            child_content = text_content
-                    except:
-                        pass
-                
-                # Method 3: Try text attribute
-                if not child_content and hasattr(child, 'text') and child.text:
-                    child_content = str(child.text).strip()
+                # Extract clean content from the child
+                child_content = self._extract_clean_child_content(child)
                 
                 # Only analyze if we have clean content
                 if child_content:
@@ -362,31 +369,62 @@ class AnalysisModeExecutor:
                     # Analyze this individual list item
                     child_errors = self._analyze_generic_content(child_content, analysis_mode, child_context)
                     
-                    # Store errors on the child instead of returning them to parent
+                    # Store errors on the child and mark as analyzed to prevent duplicate processing
                     if not hasattr(child, '_analysis_errors'):
                         child._analysis_errors = []
                     child._analysis_errors.extend(child_errors)
+                    
+                    # CRITICAL FIX: Mark child as already analyzed to prevent duplicate processing
+                    # in the recursive _analyze_recursively method
+                    child._already_analyzed = True
             
-            # Also analyze the whole list for parallelism if we have multiple items
+            # ESSENTIAL: Analyze the whole list for structure issues (parallelism, etc.)
+            # This ensures list structure errors appear in the "List Structure Issues" section
             if len(all_list_items) >= 2:
                 # Create a combined context for the whole list
                 whole_list_context = block_context.copy() if block_context else {}
                 whole_list_context['block_type'] = 'unordered_list'
                 whole_list_context['is_whole_list_analysis'] = True
+                whole_list_context['parallelism_analysis_only'] = True  # Focus on list structure rules
                 
                 # Combine all list items into a single text for analysis
                 combined_content = '\n'.join(all_list_items)
                 
-                # Analyze the combined list content (this will trigger the lists_rule)
+                # Analyze the combined list content (this will trigger the lists_rule for parallelism)
                 whole_list_errors = self._analyze_generic_content(combined_content, analysis_mode, whole_list_context)
                 
-                # Add any whole-list errors to the main errors
+                # CRITICAL: Add list structure errors to parent block for "List Structure Issues" section
                 errors.extend(whole_list_errors)
         
         except Exception as e:
             logger.error(f"Error analyzing unordered list content: {e}")
             
         return errors
+
+    def _extract_clean_child_content(self, child) -> Optional[str]:
+        """Extract clean content from a child block, handling various content types."""
+        child_content = None
+        
+        # Method 1: Try to get clean content directly
+        if hasattr(child, 'content') and isinstance(child.content, str):
+            content_str = child.content.strip()
+            if len(content_str) < 500 and not content_str.startswith('[#'):  # Not Ruby AST
+                child_content = content_str
+        
+        # Method 2: Try get_text_content if available
+        if not child_content and hasattr(child, 'get_text_content'):
+            try:
+                text_content = child.get_text_content().strip()
+                if text_content and len(text_content) < 500:
+                    child_content = text_content
+            except:
+                pass
+        
+        # Method 3: Try text attribute
+        if not child_content and hasattr(child, 'text') and child.text:
+            child_content = str(child.text).strip()
+        
+        return child_content
     
     def _analyze_sidebar_content(self, block, content: str, analysis_mode: AnalysisMode, 
                                 block_context: Optional[dict] = None) -> List[ErrorDict]:
@@ -606,10 +644,11 @@ class AnalysisModeExecutor:
                 errors = self.analyze_spacy_with_modular_rules(content, sentences, block_context)
             elif analysis_mode == AnalysisMode.MODULAR_RULES_WITH_FALLBACKS:
                 errors = self.analyze_modular_rules_with_fallbacks(content, sentences, block_context)
-            elif analysis_mode == AnalysisMode.SPACY_LEGACY_ONLY:
-                errors = self.analyze_spacy_legacy_only(content, sentences, block_context)
             elif analysis_mode == AnalysisMode.MINIMAL_SAFE_MODE:
                 errors = self.analyze_minimal_safe_mode(content, sentences, block_context)
+            else:
+                # Default fallback to modular rules
+                errors = self.analyze_modular_rules_with_fallbacks(content, sentences, block_context)
                 
         except Exception as e:
             logger.error(f"Error in generic content analysis: {e}")

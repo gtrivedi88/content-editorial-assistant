@@ -26,8 +26,9 @@ def node_to_hash(node)
     node_hash['children'].concat(node.blocks.map { |child| node_to_hash(child) })
   end
 
-  # Process list items as children
-  if node.respond_to?(:items) && node.items
+  # Process list items as children ONLY if there are no blocks (to avoid duplication)
+  # For lists, items and blocks often refer to the same children
+  if node.respond_to?(:items) && node.items && (!node.respond_to?(:blocks) || node.blocks.empty?)
     node_hash['children'].concat(node.items.map { |item| node_to_hash(item) })
   end
 

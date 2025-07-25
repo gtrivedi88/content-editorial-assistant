@@ -66,6 +66,7 @@ class ListsRule(BaseStructureRule):
             return []
         
         pattern_form = self._get_grammatical_form(first_item_doc)
+        non_parallel_items = []
         
         for i, sentence in enumerate(sentences[1:]):
             doc = nlp(sentence)
@@ -75,14 +76,33 @@ class ListsRule(BaseStructureRule):
             current_item_form = self._get_grammatical_form(doc)
             
             if current_item_form != pattern_form:
-                errors.append(self._create_error(
-                    sentence=sentence,
-                    sentence_index=i + 1,
-                    message="List items are not grammatically parallel.",
-                    suggestions=[f"The first list item is a '{pattern_form}', but this item is a '{current_item_form}'. Rewrite all items to have a consistent grammatical structure."],
-                    severity='high',
-                    span=(0, len(sentence)),
-                    flagged_text=sentence
-                ))
+                non_parallel_items.append({
+                    'index': i + 1,
+                    'text': sentence,
+                    'form': current_item_form
+                })
+        
+        # Create a single consolidated error if there are non-parallel items
+        if non_parallel_items:
+            # Determine which items to highlight - use the first non-parallel item
+            first_non_parallel = non_parallel_items[0]
+            
+            # Create a comprehensive suggestion that covers all non-parallel items
+            if len(non_parallel_items) == 1:
+                suggestion = f"The first list item is a '{pattern_form}', but this item is a '{first_non_parallel['form']}'. Rewrite all items to have a consistent grammatical structure."
+            else:
+                forms_found = set(item['form'] for item in non_parallel_items)
+                forms_list = "', '".join(forms_found)
+                suggestion = f"The first list item is a '{pattern_form}', but other items use different forms: '{forms_list}'. Rewrite all items to have a consistent grammatical structure."
+            
+            errors.append(self._create_error(
+                sentence=first_non_parallel['text'],
+                sentence_index=first_non_parallel['index'],
+                message="List items are not grammatically parallel.",
+                suggestions=[suggestion],
+                severity='high',
+                span=(0, len(first_non_parallel['text'])),
+                flagged_text=first_non_parallel['text']
+            ))
         
         return errors

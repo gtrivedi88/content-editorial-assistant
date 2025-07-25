@@ -10,10 +10,9 @@ import logging
 logger = logging.getLogger(__name__)
 
 class AnalysisMode(Enum):
-    """Analysis modes for different capability combinations."""
+    """Analysis modes for style analysis."""
     SPACY_WITH_MODULAR_RULES = "spacy_with_modular_rules"
     MODULAR_RULES_WITH_FALLBACKS = "modular_rules_with_fallbacks"
-    SPACY_LEGACY_ONLY = "spacy_legacy_only"
     MINIMAL_SAFE_MODE = "minimal_safe_mode"
     ERROR = "error"
     NONE = "none"

@@ -31,6 +31,12 @@ function createListBlockElement(block, displayIndex) {
         `).join('');
     };
 
+    // Separate list structure errors from item errors for better display
+    const listStructureErrors = block.errors ? block.errors.filter(error => 
+        error.type === 'lists' || error.error_type === 'lists' || 
+        error.type === 'structure' || error.error_type === 'structure'
+    ) : [];
+
     return `
         <div class="pf-v5-c-card pf-m-compact pf-m-bordered-top" id="block-${displayIndex}">
             <div class="pf-v5-c-card__header">
@@ -50,12 +56,12 @@ function createListBlockElement(block, displayIndex) {
                     </${isOrdered ? 'ol' : 'ul'}>
                 </div>
             </div>
-            ${block.errors && block.errors.length > 0 ? `
+            ${listStructureErrors.length > 0 ? `
             <div class="pf-v5-c-card__footer">
                 <div class="pf-v5-c-content">
                     <h3 class="pf-v5-c-title pf-m-md">List Structure Issues:</h3>
                     <div class="pf-v5-l-stack pf-m-gutter">
-                        ${block.errors.map(error => createInlineError(error)).join('')}
+                        ${listStructureErrors.map(error => createInlineError(error)).join('')}
                     </div>
                 </div>
             </div>` : ''}
