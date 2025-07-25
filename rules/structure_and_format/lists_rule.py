@@ -42,6 +42,24 @@ class ListsRule(BaseStructureRule):
         errors = []
         if not nlp or len(sentences) < 2:
             return []
+
+        # ENTERPRISE CONTEXT INTELLIGENCE: Check if this is parallelism analysis only
+        if context and context.get('parallelism_analysis_only'):
+            # Only check parallelism, skip other list-related rules
+            return self._analyze_parallelism_only(sentences, nlp)
+        
+        # ENTERPRISE CONTEXT INTELLIGENCE: Check if lists rules should apply
+        content_classification = self._get_content_classification(text, context, nlp)
+        should_apply = self._should_apply_rule(self._get_rule_category(), content_classification)
+        
+        if not should_apply:
+            return errors
+        
+        return self._analyze_parallelism_only(sentences, nlp)
+    
+    def _analyze_parallelism_only(self, sentences: List[str], nlp) -> List[Dict[str, Any]]:
+        """Analyze only grammatical parallelism to prevent rule duplication."""
+        errors = []
         
         first_item_doc = nlp(sentences[0])
         if not first_item_doc:

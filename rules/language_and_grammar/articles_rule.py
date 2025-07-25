@@ -20,14 +20,19 @@ class ArticlesRule(BaseLanguageRule):
         return 'articles'
 
     def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
-        """
-        Analyzes sentences for incorrect or missing articles.
-        """
         errors = []
         if not nlp:
             return errors
 
+        # ENTERPRISE CONTEXT INTELLIGENCE: Check if article rules should apply
+        content_classification = self._get_content_classification(text, context, nlp)
+        should_apply = self._should_apply_rule(self._get_rule_category(), content_classification)
+        
+        if not should_apply:
+            return errors  # Skip for list items, labels, technical terms
+
         doc = nlp(text)
+
         for i, sent in enumerate(doc.sents):
             for token in sent:
                 # Rule 1: 'a' vs 'an'
@@ -43,8 +48,8 @@ class ArticlesRule(BaseLanguageRule):
                             flagged_text=f"{token.text} {next_token.text}"
                         ))
                 
-                # Rule 2: Missing Articles
-                if self._is_missing_article_candidate(token, doc):
+                # Rule 2: Missing Articles (only for complete content)
+                if content_classification == 'complete_content' and self._is_missing_article_candidate(token, doc):
                     errors.append(self._create_error(
                         sentence=sent.text, sentence_index=i,
                         message=f"Potentially missing article before the noun '{token.text}'.",

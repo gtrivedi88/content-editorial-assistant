@@ -25,6 +25,13 @@ class LLMConsumabilityRule(BaseAudienceRule):
         if not nlp:
             return errors
 
+        # ENTERPRISE CONTEXT INTELLIGENCE: Check if completeness rules should apply
+        content_classification = self._get_content_classification(text, context, nlp)
+        should_apply = self._should_apply_rule(self._get_rule_category(), content_classification)
+        
+        if not should_apply:
+            return errors  # Skip for labels, navigation items, technical terms
+
         doc = nlp(text)
 
         for i, sent in enumerate(doc.sents):

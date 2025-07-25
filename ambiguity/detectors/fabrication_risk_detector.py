@@ -98,6 +98,16 @@ class FabricationRiskDetector(AmbiguityDetector):
         if not context.sentence.strip():
             return detections
         
+        # ENTERPRISE CONTEXT INTELLIGENCE: Skip fabrication checks for labels and navigation
+        document_context = context.document_context or {}
+        block_type = document_context.get('block_type', '').lower()
+        
+        # Technical labels and navigation items are not fabrication risks
+        if 'list_item' in block_type or block_type in ['heading', 'section', 'table_cell']:
+            # Check if this is a technical term
+            if self._is_technical_label(context.sentence):
+                return detections
+        
         try:
             # Parse sentence with SpaCy
             doc = nlp(context.sentence)
@@ -465,3 +475,25 @@ class FabricationRiskDetector(AmbiguityDetector):
             resolution_strategies=strategies,
             ai_instructions=ai_instructions
         ) 
+
+    def _is_technical_label(self, text: str) -> bool:
+        """Check if text is a technical label that shouldn't be flagged for fabrication."""
+        text_lower = text.lower().strip()
+        
+        # Single technical terms
+        if len(text.split()) <= 3:
+            technical_terms = [
+                'deployment', 'code scanning', 'image building', 'vulnerability detection',
+                'integration', 'monitoring', 'authentication', 'configuration',
+                'backup', 'scaling', 'logging', 'api', 'cli', 'sdk'
+            ]
+            if text_lower in technical_terms:
+                return True
+                
+            # Technical compound patterns
+            words = text_lower.split()
+            if len(words) == 2:
+                if any(word in ['code', 'image', 'security', 'data', 'system'] for word in words):
+                    return True
+                    
+        return False 

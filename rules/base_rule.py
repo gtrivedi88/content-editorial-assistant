@@ -49,6 +49,344 @@ class BaseRule(ABC):
         """
         pass
     
+    # === ENTERPRISE CONTEXT INTELLIGENCE ===
+    
+    def _get_content_classification(self, text: str, context: Optional[dict] = None, nlp=None) -> str:
+        """
+        Enterprise-grade content classification using pure SpaCy morphological analysis.
+        Uses linguistic anchors instead of hardcoded patterns.
+        
+        Returns:
+            - 'technical_identifier': Technical terms/identifiers (morphologically detected)
+            - 'navigation_label': Concise navigation elements (syntactically detected)  
+            - 'procedural_instruction': Action-oriented steps (verb-pattern detected)
+            - 'data_reference': Reference values (entity/compound detected)
+            - 'topic_heading': Topic titles (syntactic structure detected)
+            - 'descriptive_content': Full explanatory content (complete syntax detected)
+        """
+        if not context:
+            return 'descriptive_content'
+            
+        # Use SpaCy for morphological analysis if available
+        if nlp:
+            return self._classify_with_morphological_analysis(text, context, nlp)
+        else:
+            return self._classify_with_structural_context(text, context)
+    
+    def _classify_with_morphological_analysis(self, text: str, context: dict, nlp) -> str:
+        """Classification using pure SpaCy morphological and syntactic analysis."""
+        try:
+            doc = nlp(text.strip())
+            if not doc:
+                return 'descriptive_content'
+            
+            # LINGUISTIC ANCHOR 1: Analyze syntactic completeness
+            has_complete_syntax = self._has_complete_syntactic_structure(doc)
+            
+            # LINGUISTIC ANCHOR 2: Detect technical/compound terms through morphology
+            is_technical_identifier = self._is_morphological_technical_term(doc)
+            
+            # LINGUISTIC ANCHOR 3: Detect procedural patterns through dependency analysis
+            is_procedural = self._has_procedural_syntax_pattern(doc)
+            
+            # LINGUISTIC ANCHOR 4: Analyze named entities and references
+            is_reference_entity = self._is_reference_entity_pattern(doc)
+            
+            # LINGUISTIC ANCHOR 5: Detect topic/heading patterns through POS structure
+            is_topic_pattern = self._has_topic_heading_syntax(doc)
+            
+            # Classification logic based on linguistic features
+            block_type = context.get('block_type', '').lower()
+            
+            # Use morphological evidence for classification
+            if is_technical_identifier and 'list_item' in block_type:
+                return 'technical_identifier'
+            elif is_procedural and block_type == 'list_item_ordered':
+                return 'procedural_instruction'
+            elif is_reference_entity:
+                return 'data_reference'
+            elif is_topic_pattern and block_type in ['heading', 'section']:
+                return 'topic_heading'
+            elif not has_complete_syntax and 'list_item' in block_type:
+                return 'navigation_label'
+            else:
+                return 'descriptive_content'
+                
+        except Exception:
+            return self._classify_with_structural_context(text, context)
+    
+    def _has_complete_syntactic_structure(self, doc) -> bool:
+        """Use SpaCy dependency parsing to detect complete syntactic structures."""
+        if not doc:
+            return False
+            
+        # LINGUISTIC ANCHOR: Complete sentences have ROOT verbs with subjects/objects
+        root_verbs = [token for token in doc if token.dep_ == 'ROOT' and token.pos_ == 'VERB']
+        
+        if not root_verbs:
+            return False
+            
+        for root in root_verbs:
+            # Check for subject-verb-object patterns
+            has_subject = any(child.dep_ in ['nsubj', 'nsubjpass'] for child in root.children)
+            has_object = any(child.dep_ in ['dobj', 'iobj', 'pobj'] for child in root.children)
+            
+            if has_subject or has_object:
+                return True
+                
+        return False
+    
+    def _is_morphological_technical_term(self, doc) -> bool:
+        """Use SpaCy morphological analysis to detect technical terminology."""
+        if not doc:
+            return False
+            
+        # LINGUISTIC ANCHOR 1: Named entities often indicate technical terms
+        technical_entities = [ent for ent in doc.ents 
+                            if ent.label_ in ['ORG', 'PRODUCT', 'FACILITY', 'LANGUAGE']]
+        if technical_entities:
+            return True
+            
+        # LINGUISTIC ANCHOR 2: Compound noun patterns (technical_term + technical_term)
+        compounds = self._detect_compound_technical_patterns(doc)
+        if compounds:
+            return True
+            
+        # LINGUISTIC ANCHOR 3: Technical morphological patterns
+        for token in doc:
+            # Check for technical suffixes/morphology
+            if self._has_technical_morphology(token):
+                return True
+                
+        return False
+    
+    def _detect_compound_technical_patterns(self, doc) -> bool:
+        """Use SpaCy dependency parsing to detect compound technical terms."""
+        # LINGUISTIC ANCHOR: compound + noun patterns for technical terms
+        for token in doc:
+            if token.dep_ == 'compound':
+                head = token.head
+                # Both compound and head should be nouns for technical patterns
+                if token.pos_ in ['NOUN', 'PROPN'] and head.pos_ in ['NOUN', 'PROPN']:
+                    # Check if either has technical characteristics
+                    if (self._has_technical_morphology(token) or 
+                        self._has_technical_morphology(head)):
+                        return True
+        return False
+    
+    def _has_technical_morphology(self, token) -> bool:
+        """Analyze token morphology for technical characteristics."""
+        if not token:
+            return False
+            
+        # LINGUISTIC ANCHOR 1: Technical suffixes through morphology
+        technical_suffixes = ['ing', 'tion', 'sion', 'ment', 'ance', 'ence']
+        if any(token.text.lower().endswith(suffix) for suffix in technical_suffixes):
+            return True
+            
+        # LINGUISTIC ANCHOR 2: Capitalized technical patterns (not sentence start)
+        if (token.is_title and token.i > 0 and 
+            not token.is_sent_start and token.pos_ in ['NOUN', 'PROPN']):
+            return True
+            
+        # LINGUISTIC ANCHOR 3: All-caps technical abbreviations
+        if token.is_upper and len(token.text) >= 2 and token.pos_ in ['NOUN', 'PROPN']:
+            return True
+            
+        return False
+    
+    def _has_procedural_syntax_pattern(self, doc) -> bool:
+        """Use dependency parsing to detect procedural/instructional patterns."""
+        if not doc:
+            return False
+            
+        # LINGUISTIC ANCHOR: Imperative verbs at sentence start indicate procedures
+        first_token = doc[0] if doc else None
+        if first_token and first_token.pos_ == 'VERB':
+            # Check if it's imperative mood through morphology
+            if first_token.dep_ == 'ROOT':
+                # Imperative verbs often have no explicit subject
+                has_explicit_subject = any(child.dep_ in ['nsubj'] for child in first_token.children)
+                if not has_explicit_subject:
+                    return True
+                    
+        return False
+    
+    def _is_reference_entity_pattern(self, doc) -> bool:
+        """Use NER and morphology to detect reference entities."""
+        if not doc:
+            return False
+            
+        # LINGUISTIC ANCHOR 1: Single named entities
+        if len(doc.ents) == 1 and len(doc) <= 3:
+            return True
+            
+        # LINGUISTIC ANCHOR 2: Single proper nouns
+        proper_nouns = [token for token in doc if token.pos_ == 'PROPN']
+        if len(proper_nouns) >= 1 and len(doc) <= 3:
+            return True
+            
+        return False
+    
+    def _has_topic_heading_syntax(self, doc) -> bool:
+        """Use syntactic analysis to detect topic/heading patterns."""
+        if not doc:
+            return False
+            
+        # LINGUISTIC ANCHOR 1: Noun phrase patterns without verbs
+        has_verbs = any(token.pos_ == 'VERB' for token in doc)
+        has_nouns = any(token.pos_ in ['NOUN', 'PROPN'] for token in doc)
+        
+        if has_nouns and not has_verbs:
+            return True
+            
+        # LINGUISTIC ANCHOR 2: Prepositional phrase patterns (common in headings)
+        has_prep_phrase = any(token.pos_ == 'ADP' for token in doc)
+        if has_prep_phrase and not has_verbs and len(doc) <= 6:
+            return True
+            
+        return False
+    
+    def _classify_with_structural_context(self, text: str, context: dict) -> str:
+        """Fallback classification when SpaCy is not available."""
+        block_type = context.get('block_type', '').lower()
+        word_count = len(text.split())
+        
+        # Simple structural heuristics
+        if 'list_item' in block_type and word_count <= 3:
+            return 'navigation_label'
+        elif block_type in ['heading', 'section']:
+            return 'topic_heading'
+        elif block_type in ['table_cell'] and word_count <= 2:
+            return 'data_reference'
+        else:
+            return 'descriptive_content'
+    
+    def _should_apply_rule(self, rule_category: str, content_classification: str) -> bool:
+        """
+        Linguistic anchor-based rule application matrix.
+        
+        Args:
+            rule_category: Type of rule (completeness, grammar, technical, etc.)
+            content_classification: Result from morphological classification
+        """
+        # Rule application matrix based on linguistic content analysis
+        rule_matrix = {
+            'technical_identifier': {
+                'completeness': False,    # Technical identifiers are complete by nature
+                'length': False,          # No arbitrary length requirements
+                'articles': False,        # Technical terms don't follow article rules
+                'fabrication': False,     # Technical identifiers aren't fabrication risks
+                'grammar': True,          # Still check basic grammar
+                'technical': True,        # Emphasize technical accuracy
+                'spelling': True          # Emphasize spelling
+            },
+            'navigation_label': {
+                'completeness': False,    # Navigation labels are intentionally concise
+                'length': False, 
+                'articles': False,        # Labels don't need articles
+                'fabrication': False,     # Navigation isn't fabrication risk
+                'grammar': True,
+                'technical': True,
+                'spelling': True
+            },
+            'topic_heading': {
+                'completeness': False,    # Headings are naturally incomplete sentences
+                'length': False,
+                'articles': False,        # Headings often omit articles 
+                'fabrication': False,     # Headings aren't fabrication risks
+                'grammar': True,
+                'technical': True,
+                'spelling': True
+            },
+            'data_reference': {
+                'completeness': False,    # Data values are references, not sentences
+                'length': False,
+                'articles': False,
+                'fabrication': False,     # Data references aren't fabrication risks
+                'grammar': False,         # Data follows different grammar rules
+                'technical': True,
+                'spelling': True
+            },
+            'procedural_instruction': {
+                'completeness': True,     # Instructions should be complete
+                'length': False,          # But not artificially lengthy
+                'articles': False,        # Instructions often omit articles ("Click Save")
+                'fabrication': False,     # Instructions aren't fabrication risks
+                'grammar': True,
+                'technical': True,
+                'spelling': True
+            },
+            'descriptive_content': {
+                'completeness': True,     # Full content should be complete
+                'length': True,
+                'articles': True,
+                'fabrication': True,      # Full content can have fabrication risks
+                'grammar': True,
+                'technical': True,
+                'spelling': True
+            }
+        }
+        
+        return rule_matrix.get(content_classification, {}).get(rule_category, True)
+    
+    def _is_technical_term(self, text: str) -> bool:
+        """Check if text is a technical term that should be treated specially."""
+        text_lower = text.lower().strip()
+        
+        # Common technical patterns
+        technical_patterns = [
+            # Development/DevOps terms
+            'deployment', 'code scanning', 'image building', 'vulnerability detection',
+            'integration', 'configuration', 'authentication', 'authorization',
+            # Cloud/Infrastructure
+            'monitoring', 'logging', 'scaling', 'load balancing', 'backup',
+            # Software patterns
+            'api', 'sdk', 'cli', 'ui', 'ux', 'ci/cd', 'git', 'docker',
+        ]
+        
+        # Check direct matches
+        if text_lower in technical_patterns:
+            return True
+            
+        # Check patterns: "word word" technical terms
+        words = text_lower.split()
+        if len(words) == 2:
+            # Technical compound terms
+            if any(word in ['code', 'image', 'data', 'security', 'network', 'system'] for word in words):
+                return True
+                
+        return False
+    
+    def _get_rule_category(self) -> str:
+        """Map rule types to categories for the application matrix."""
+        rule_type = self._get_rule_type()
+        
+        category_mapping = {
+            # Completeness rules
+            'llm_consumability': 'completeness',
+            'sentence_length': 'length',
+            
+            # Grammar rules  
+            'articles': 'articles',
+            'pronouns': 'grammar',
+            'verbs': 'grammar',
+            'conjunctions': 'grammar',
+            
+            # Technical accuracy
+            'terminology': 'technical',
+            'capitalization': 'technical',
+            'spelling': 'spelling',
+            
+            # Content integrity
+            'fabrication_risk': 'fabrication',
+            'ambiguity': 'fabrication',
+            
+            # Default to grammar for unmapped rules
+        }
+        
+        return category_mapping.get(rule_type, 'grammar')
+    
     # === Core SpaCy Analysis Methods ===
     
     def _analyze_sentence_structure(self, sentence: str, nlp=None) -> Optional[object]:
