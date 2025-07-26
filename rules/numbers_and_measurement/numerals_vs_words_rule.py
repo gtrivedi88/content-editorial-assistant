@@ -35,9 +35,16 @@ class NumeralsVsWordsRule(BaseNumbersRule):
         for token in doc:
             if token.lemma_.lower() in words_under_10:
                 found_words = True
-            if token.like_num and 0 < int(token.text) < 10:
-                 if token.head.lemma_.lower() not in ["version", "release", "chapter", "figure", "table", "page"]:
-                     found_numerals = True
+            if token.like_num:
+                try:
+                    # Try to convert to float first to handle decimals, then to int
+                    num_value = float(token.text)
+                    if num_value.is_integer() and 0 < int(num_value) < 10:
+                        if token.head.lemma_.lower() not in ["version", "release", "chapter", "figure", "table", "page"]:
+                            found_numerals = True
+                except (ValueError, TypeError):
+                    # Skip tokens that can't be converted to numbers (like "First", "Second", etc.)
+                    continue
         
         # If both styles are found, flag an inconsistency on the first occurrence of a spelled-out number.
         if found_words and found_numerals:
