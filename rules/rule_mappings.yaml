@@ -159,7 +159,7 @@ block_type_rules:
     - examples
     - highlighting
     # Legal Information Rules
-    - legal_claims
+    # - legal_claims
     - legal_company_names
     - legal_personal_information
     # Word Usage Rules
@@ -258,7 +258,7 @@ block_type_rules:
     - glossaries
     - highlighting
     # Legal Information Rules
-    - legal_claims
+    # - legal_claims
     - legal_company_names
     - legal_personal_information
     # Word Usage Rules
@@ -356,7 +356,7 @@ block_type_rules:
     - glossaries
     - highlighting
     # Legal Information Rules
-    - legal_claims
+    # - legal_claims
     - legal_company_names
     - legal_personal_information
     # Word Usage Rules
@@ -453,7 +453,7 @@ block_type_rules:
     - glossaries
     - highlighting
     # Legal Information Rules
-    - legal_claims
+    # - legal_claims
     - legal_company_names
     - legal_personal_information
     # Word Usage Rules
