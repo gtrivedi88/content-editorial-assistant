@@ -8,7 +8,8 @@ from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional, Set, Tuple, Union
 import re
 from collections import defaultdict
-
+import yaml
+import os
 
 class BaseRule(ABC):
     """
@@ -16,10 +17,73 @@ class BaseRule(ABC):
     Provides comprehensive linguistic utilities without hardcoded patterns.
     """
     
+    # Class-level cache for exceptions to avoid reading the file for every rule instance.
+    _exceptions = None
+
     def __init__(self) -> None:
+        """Initializes the rule and loads the exception configuration."""
         self.rule_type = self._get_rule_type()
         self.severity_levels = ['low', 'medium', 'high']
+        # Load exceptions once and cache them at the class level.
+        if BaseRule._exceptions is None:
+            self._load_exceptions()
     
+    @classmethod
+    def _load_exceptions(cls):
+        """
+        Loads the exceptions.yaml file and caches it.
+        This method is called only once to optimize performance.
+        """
+        # The path is constructed relative to this file's location.
+        # It goes up one level (to the 'rules' dir) and then into a 'config' dir.
+        # Assumed structure: project_root/rules/base_rule.py and project_root/config/exceptions.yaml
+        path = os.path.join(os.path.dirname(__file__), '..', 'config', 'exceptions.yaml')
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                cls._exceptions = yaml.safe_load(f)
+                if not isinstance(cls._exceptions, dict):
+                    print(f"Warning: exceptions.yaml at {path} is not a valid dictionary. Disabling exceptions.")
+                    cls._exceptions = {}
+        except FileNotFoundError:
+            print(f"Warning: exceptions.yaml not found at {path}. No exceptions will be applied.")
+            cls._exceptions = {}
+        except Exception as e:
+            print(f"Error loading or parsing exceptions.yaml: {e}")
+            cls._exceptions = {}
+
+    def _is_excepted(self, text_span: str) -> bool:
+        """
+        Checks if a given text span is in the global or rule-specific exception list.
+        This is the core method for preventing false positives.
+        The check is case-insensitive.
+
+        Args:
+            text_span: The word or phrase to check (e.g., "user interface").
+
+        Returns:
+            True if the text_span is an exception, False otherwise.
+        """
+        if not self._exceptions or not text_span:
+            return False
+
+        text_span_lower = text_span.lower().strip()
+
+        # 1. Check global exceptions
+        global_exceptions = self._exceptions.get('global_exceptions', [])
+        if isinstance(global_exceptions, list):
+            if text_span_lower in [str(exc).lower() for exc in global_exceptions]:
+                return True
+
+        # 2. Check rule-specific exceptions
+        rule_specifics = self._exceptions.get('rule_specific_exceptions', {})
+        if isinstance(rule_specifics, dict):
+            rule_exceptions = rule_specifics.get(self.rule_type, [])
+            if isinstance(rule_exceptions, list):
+                if text_span_lower in [str(exc).lower() for exc in rule_exceptions]:
+                    return True
+
+        return False
+
     @abstractmethod
     def _get_rule_type(self) -> str:
         """Return the rule type identifier (e.g., 'passive_voice', 'sentence_length')."""
@@ -37,15 +101,7 @@ class BaseRule(ABC):
             context: Optional context information about the block being analyzed
             
         Returns:
-            List of error dictionaries with structure:
-            {
-                'type': str,
-                'message': str,
-                'suggestions': List[str],
-                'sentence': str,
-                'sentence_index': int,
-                'severity': str
-            }
+            List of error dictionaries.
         """
         pass
     
@@ -911,4 +967,39 @@ class BaseRule(ABC):
             except Exception as e:
                 error[str(key)] = f"<serialization_error: {str(e)}>"
         
-        return error 
+        return error
+        
+    def _make_serializable(self, data: Any) -> Any:
+        """Recursively convert data structure to be JSON serializable."""
+        if data is None: return None
+        if hasattr(data, 'text') and hasattr(data, 'lemma_'): return self._token_to_dict(data)
+        if (hasattr(data, '__iter__') and hasattr(data, 'get') and not isinstance(data, (str, dict, list, tuple))):
+            try: return dict(data)
+            except Exception: return str(data)
+        if isinstance(data, dict):
+            result = {}
+            for key, value in data.items():
+                try:
+                    serialized_value = self._make_serializable(value)
+                    result[str(key)] = serialized_value
+                except Exception: result[str(key)] = str(value)
+            return result
+        if isinstance(data, list): return [self._make_serializable(item) for item in data]
+        if isinstance(data, tuple): return [self._make_serializable(item) for item in data]
+        if isinstance(data, set): return [self._make_serializable(item) for item in data]
+        if isinstance(data, (str, int, float, bool)): return data
+        try: return str(data)
+        except Exception: return None
+
+    def _token_to_dict(self, token) -> Optional[Dict[str, Any]]:
+        if token is None: return None
+        try:
+            token_dict = {'text': token.text, 'lemma': token.lemma_, 'pos': token.pos_, 'tag': token.tag_, 'dep': token.dep_, 'idx': token.idx, 'i': token.i}
+            if hasattr(token, 'morph') and token.morph:
+                try: token_dict['morphology'] = dict(token.morph)
+                except Exception: token_dict['morphology'] = str(token.morph)
+            else: token_dict['morphology'] = {}
+            return token_dict
+        except Exception:
+            return {'text': str(token), 'lemma': getattr(token, 'lemma_', ''), 'pos': getattr(token, 'pos_', ''), 'tag': getattr(token, 'tag_', ''), 'dep': getattr(token, 'dep_', ''), 'idx': getattr(token, 'idx', 0), 'i': getattr(token, 'i', 0), 'morphology': {}}
+

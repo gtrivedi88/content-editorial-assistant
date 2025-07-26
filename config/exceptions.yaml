@@ -1,0 +1,63 @@
+# config/exceptions.yaml
+# ----------------------
+# This file provides a centralized allowlist to prevent the style analyzer
+# from flagging correct, context-specific terms as errors. This is the
+# primary mechanism for reducing false positives.
+
+# Global exceptions apply to all rules.
+# This is the ideal place for company-specific terminology, product names,
+# and approved technical jargon that might otherwise be flagged.
+global_exceptions:
+  - "end-of-life"
+  - "out-of-the-box"
+  - "General Availability"
+  - "DevOps"
+  - "GitOps"
+  - "MySQL"
+  - "PostgreSQL"
+  - "{ocp-brand-name}" # Handles AsciiDoc attributes
+  - "{product}"         # Handles AsciiDoc attributes
+
+# Rule-specific exceptions provide more granular control over individual rules.
+rule_specific_exceptions:
+  
+  # Exceptions for the 'second_person' rule.
+  # These are compound nouns that are standard technical terms and must be allowed.
+  # The rule will now ignore these phrases when checking for third-person substitutes.
+  second_person:
+    - "user interface"
+    - "user experience"
+    - "user credentials"
+    - "user account"
+    - "user group"
+    - "user profile"
+    - "user session"
+    - "end user"
+    - "service mesh"
+    - "serverless functions"
+    - "distributed tracing"
+
+  # Exceptions for a potential 'anthropomorphism' rule.
+  # This lists verbs that are acceptable for inanimate objects (like software)
+  # in a technical writing context.
+  anthropomorphism:
+    - "provide"
+    - "allow"
+    - "enable"
+    - "ensure"
+    - "support"
+    - "check"
+    - "read"
+    - "write"
+    - "detect"
+    - "display"
+    - "offer"
+    - "manage"
+    - "send"
+    - "receive"
+
+  # Add exceptions for other rules here as you develop them.
+  # For example:
+  # capitalization:
+  #   - "GitLab"
+  #   - "Docker"
