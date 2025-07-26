@@ -108,9 +108,12 @@ class StyleAnalyzer:
             analysis_mode = self._determine_analysis_mode()
             
             # Use structural analyzer for comprehensive analysis
-            errors = self.structural_analyzer.analyze_with_structure(
+            result = self.structural_analyzer.analyze_with_blocks(
                 text, format_hint, analysis_mode
             )
+            
+            # Extract errors from the analysis result
+            errors = result.get('analysis', {}).get('errors', [])
             
             # Calculate statistics and metrics
             sentences = self._split_sentences(text)

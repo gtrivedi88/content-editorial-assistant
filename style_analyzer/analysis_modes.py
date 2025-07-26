@@ -173,10 +173,9 @@ class AnalysisModeExecutor:
             if block_type in [AsciiDocBlockType.LISTING, AsciiDocBlockType.LITERAL, AsciiDocBlockType.PASS]:
                 return errors
             
-            # Apply special rules for admonitions AND general content analysis
+            # Apply special rules for admonitions (no need for additional generic analysis)
             if block_type == AsciiDocBlockType.ADMONITION:
                 errors.extend(self._analyze_admonition_content(block, content, block_context))
-                errors.extend(self._analyze_generic_content(content, analysis_mode, block_context))
             
             # Apply special rules for ordered lists - analyze each list item individually
             elif block_type == AsciiDocBlockType.ORDERED_LIST:
@@ -233,22 +232,28 @@ class AnalysisModeExecutor:
         return errors
     
     def _analyze_admonition_content(self, block, content: str, block_context: Optional[dict] = None) -> List[ErrorDict]:
-        """Special analysis for AsciiDoc admonition blocks."""
+        """Special analysis for AsciiDoc admonition blocks with enhanced context."""
         errors = []
         
         try:
             admonition_type = getattr(block, 'admonition_type', None)
             if admonition_type:
-                # Apply admonition-specific rules using the rules registry
+                # Enhance the context with the required 'kind' field that the notes rule expects
+                enhanced_context = (block_context or {}).copy()
+                enhanced_context['kind'] = admonition_type.value if hasattr(admonition_type, 'value') else str(admonition_type)
+                
+                # Apply ALL rules mapped to admonition blocks using the rules registry with enhanced context
                 if self.rules_registry:
                     try:
-                        # Look for admonitions rule
-                        admonition_rule = getattr(self.rules_registry, 'get_rule', lambda x: None)('admonitions')
-                        if admonition_rule:
-                            rule_errors = admonition_rule.analyze(content, [content], self.nlp, block_context)
-                            for error in rule_errors:
-                                converted_error = self.error_converter.convert_rules_error(error)
-                                errors.append(converted_error)
+                        # Use context-aware rule analysis to apply all mapped rules for admonition blocks
+                        sentences = self.sentence_analyzer.split_sentences_safe(content) if self.sentence_analyzer else [content]
+                        rules_errors = self.rules_registry.analyze_with_context_aware_rules(
+                            content, sentences, self.nlp, enhanced_context
+                        )
+                        # Convert rules errors to our error format
+                        for error in rules_errors:
+                            converted_error = self.error_converter.convert_rules_error(error)
+                            errors.append(converted_error)
                     except Exception as e:
                         logger.warning(f"Admonition rule analysis failed: {e}")
                         

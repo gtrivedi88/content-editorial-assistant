@@ -40,6 +40,7 @@ class FormatDetector:
     def detect_format(self, content: str) -> Literal['asciidoc', 'markdown', 'plaintext']:
         """
         Detect document format using a weighted scoring system.
+        Enhanced to handle content inside delimited blocks properly.
         """
         if not content or not content.strip():
             return 'plaintext'
@@ -47,11 +48,33 @@ class FormatDetector:
         lines = content.split('\n')
         asciidoc_score = 0
         markdown_score = 0
+        
+        # Track if we're inside delimited blocks to avoid scoring their content
+        inside_asciidoc_block = False
+        asciidoc_block_delimiter = None
 
         scan_lines = min(50, len(lines))
         for line in lines[:scan_lines]:
             stripped_line = line.strip()
             if not stripped_line:
+                continue
+
+            # Check for AsciiDoc delimited block start/end
+            if re.match(r'^(={4,}|`{4,}|-{4,}|\*{4,}|\+{4,}|\.{4,})\s*$', stripped_line):
+                if inside_asciidoc_block and stripped_line == asciidoc_block_delimiter:
+                    # End of block
+                    inside_asciidoc_block = False
+                    asciidoc_block_delimiter = None
+                elif not inside_asciidoc_block:
+                    # Start of block
+                    inside_asciidoc_block = True
+                    asciidoc_block_delimiter = stripped_line
+                # Always score delimiter lines as AsciiDoc
+                asciidoc_score += 2
+                continue
+
+            # Skip scoring content inside AsciiDoc delimited blocks
+            if inside_asciidoc_block:
                 continue
 
             # Check for AsciiDoc patterns and add their weight to the score
@@ -70,9 +93,13 @@ class FormatDetector:
         if asciidoc_score == 0 and markdown_score == 0:
             return 'plaintext'
 
-        # The final decision is based on the weighted score.
-        # This is much more reliable than a simple count.
+        # Enhanced decision logic: In case of ties, prefer AsciiDoc since it has more distinctive syntax
+        # This handles edge cases where content could be interpreted as either format
         if asciidoc_score > markdown_score:
             return 'asciidoc'
-        else:
+        elif markdown_score > asciidoc_score:
             return 'markdown'
+        else:
+            # Tie situation - prefer AsciiDoc since its syntax is more distinctive
+            # and false AsciiDoc detection is less likely than false Markdown detection
+            return 'asciidoc'

@@ -66,7 +66,17 @@ class MarkdownDocument(MarkdownBlock):
     source_file: Optional[str] = None
     blocks: List[MarkdownBlock] = field(default_factory=list)
 
-    def __post_init__(self):
+    def __init__(self, source_file: Optional[str] = None, blocks: Optional[List[MarkdownBlock]] = None):
+        # Initialize parent MarkdownBlock with appropriate values for a document
+        super().__init__(
+            block_type=MarkdownBlockType.DOCUMENT,
+            content="",  # Document content is in its blocks
+            raw_content="",  # Will be set by parser if needed
+            start_line=1,
+            level=0
+        )
+        self.source_file = source_file
+        self.blocks = blocks or []
         self.children = self.blocks
 
 @dataclass

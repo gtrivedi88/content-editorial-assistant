@@ -1,18 +1,12 @@
 """
-Word Usage Rule for words starting with 'K'.
+Word Usage Rule for 'key'
 """
 from typing import List, Dict, Any
 from .base_word_usage_rule import BaseWordUsageRule
-import re
-
-try:
-    from spacy.tokens import Doc
-except ImportError:
-    Doc = None
 
 class KWordsRule(BaseWordUsageRule):
     """
-    Checks for the incorrect usage of specific words starting with 'K'.
+    Checks for potentially incorrect usage of the word 'key'.
     """
     def _get_rule_type(self) -> str:
         return 'word_usage_k'
@@ -21,28 +15,21 @@ class KWordsRule(BaseWordUsageRule):
         errors = []
         if not nlp:
             return errors
-        doc = nlp(text)
 
-        word_map = {
-            "kebab menu": {"suggestion": "Avoid food-related UI terms. Use the element's tooltip name or 'overflow menu'.", "severity": "medium"},
-            "key": {"suggestion": "Do not use 'key' as a verb. Use 'type' or 'press'.", "severity": "medium"},
-            "key ring": {"suggestion": "Use 'keyring' (one word).", "severity": "low"},
-            "keystore": {"suggestion": "Write as 'keystore' (one word).", "severity": "low"},
-            "keyword": {"suggestion": "Write as 'keyword' (one word).", "severity": "low"},
-            "kick off": {"suggestion": "Avoid jargon. Use 'start'.", "severity": "medium"},
-            "kill": {"suggestion": "Avoid this term unless documenting a UNIX system. Use 'end' or 'stop'.", "severity": "medium"},
-        }
-
-        for i, sent in enumerate(doc.sents):
-            for word, details in word_map.items():
-                for match in re.finditer(r'\b' + re.escape(word) + r'\b', sent.text, re.IGNORECASE):
+        for i, sent_text in enumerate(sentences):
+            doc = nlp(sent_text)
+            for token in doc:
+                # PRIORITY 1 FIX: Use Part-of-Speech (POS) tagging to be context-aware.
+                # The rule now only flags 'key' if spaCy identifies it as a VERB.
+                # This correctly distinguishes "key in your password" (verb) from
+                # "key feature" (adjective/noun), eliminating the false positive.
+                if token.lemma_.lower() == 'key' and token.pos_ == 'VERB':
                     errors.append(self._create_error(
-                        sentence=sent.text,
+                        sentence=sent_text,
                         sentence_index=i,
-                        message=f"Review usage of the term '{match.group()}'.",
-                        suggestions=[details['suggestion']],
-                        severity=details['severity'],
-                        span=(sent.start_char + match.start(), sent.start_char + match.end()),
-                        flagged_text=match.group(0)
+                        message="Review usage of the term 'key'.",
+                        suggestions=["Do not use 'key' as a verb. Use 'type' or 'press'."],
+                        severity='medium',
+                        flagged_text=token.text
                     ))
         return errors
