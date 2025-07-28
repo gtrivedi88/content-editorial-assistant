@@ -39,7 +39,7 @@ class ContractionsRule(BaseLanguageRule):
                 'pos_patterns': ['AUX', 'VERB'],
                 'tag_patterns': ['MD', 'VBP', 'VBZ', 'VBD', 'VBN'],  # Modal and verb tags
                 'lemma_indicators': ['be', 'have', 'will', 'would', 'shall', 'should', 'can', 'could', 'must', 'might', 'may'],
-                'description': 'auxiliary verb'
+                'description': 'auxiliary verb contraction'
             },
             'possessive_particles': {
                 'tag_patterns': ['POS'],
@@ -277,11 +277,57 @@ class ContractionsRule(BaseLanguageRule):
                     'pattern': pattern_name
                 }
         
-        # Enhanced fallback analysis
+        # Enhanced fallback analysis with specific contraction identification
         lemma = morph_features.get('lemma', '').lower()
         pos = morph_features.get('pos', '')
+        token_text = token.text.lower()  # Get token text directly from token
         
-        if lemma in ['not']:
+        # More specific contraction detection
+        if "'s" in token_text or "'s" in token_text:
+            # Determine if 's is "is" or possessive
+            if lemma == 'be' or pos in ['AUX', 'VERB']:
+                return {
+                    'type': "auxiliary verb contraction ('s = is)",
+                    'suggestion': f"use 'is' instead of the contraction",
+                    'pattern': 'specific_is_contraction'
+                }
+            else:
+                return {
+                    'type': "possessive or auxiliary contraction ('s)",
+                    'suggestion': f"use the full form instead of the contraction",
+                    'pattern': 'specific_s_contraction'
+                }
+        elif "'re" in token_text or "'re" in token_text:
+            return {
+                'type': "auxiliary verb contraction ('re = are)",
+                'suggestion': "use 'are' instead of the contraction",
+                'pattern': 'specific_are_contraction'
+            }
+        elif "'ve" in token_text or "'ve" in token_text:
+            return {
+                'type': "auxiliary verb contraction ('ve = have)",
+                'suggestion': "use 'have' instead of the contraction",
+                'pattern': 'specific_have_contraction'
+            }
+        elif "'ll" in token_text or "'ll" in token_text:
+            return {
+                'type': "auxiliary verb contraction ('ll = will)",
+                'suggestion': "use 'will' instead of the contraction",
+                'pattern': 'specific_will_contraction'
+            }
+        elif "'d" in token_text or "'d" in token_text:
+            return {
+                'type': "auxiliary verb contraction ('d = would/had)",
+                'suggestion': "use 'would' or 'had' instead of the contraction",
+                'pattern': 'specific_d_contraction'
+            }
+        elif "'t" in token_text or "'t" in token_text:
+            return {
+                'type': "negative contraction ('t = not)",
+                'suggestion': "use 'not' instead of the negative contraction",
+                'pattern': 'specific_not_contraction'
+            }
+        elif lemma in ['not']:
             return {
                 'type': 'negative contraction',
                 'suggestion': "use 'not' instead of the negative contraction",
@@ -289,7 +335,7 @@ class ContractionsRule(BaseLanguageRule):
             }
         elif lemma in ['be', 'have', 'will', 'would', 'can', 'could', 'should', 'shall', 'must', 'might', 'may']:
             return {
-                'type': 'auxiliary contraction',
+                'type': f'auxiliary verb contraction ({lemma})',
                 'suggestion': f"use '{lemma}' instead of the contraction",
                 'pattern': 'fallback_auxiliary'
             }
@@ -326,6 +372,14 @@ class ContractionsRule(BaseLanguageRule):
             return f"use '{lemma}' instead of the copula contraction" if lemma else "use the full copula verb form"
         elif pattern_desc == 'perfect auxiliary':
             return f"use '{lemma}' instead of the perfect auxiliary contraction" if lemma else "use the full auxiliary verb form"
+        elif pattern_desc == 'auxiliary verb contraction':
+            # Be specific about what type of auxiliary verb
+            if lemma == 'be':
+                return f"use 'is' instead of the contraction"
+            elif lemma in ['have', 'will', 'would', 'can', 'could', 'should', 'shall', 'must', 'might', 'may']:
+                return f"use '{lemma}' instead of the contraction"
+            else:
+                return f"use '{lemma}' instead of the auxiliary verb contraction"
         
         # Enhanced morphological pattern-based suggestions
         if lemma and lemma != token.text.lower():

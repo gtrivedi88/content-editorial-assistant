@@ -142,18 +142,25 @@ class VerbsRule(BaseLanguageRule):
             'closed', 'open', 'available', 'busy', 'free', 'connected', 'offline'
         }
         
+        # Check 4: System/functionality description context
+        # Use linguistic features to detect functionality descriptions
         if main_verb.lemma_ in state_oriented_verbs:
             # These are commonly used as predicate adjectives
             # Only consider them passive if there's strong evidence
             return self._has_strong_passive_evidence(main_verb, doc)
         
-        # Check 4: Root verbs with clear passive structure
+        # LINGUISTIC ANCHOR: Check if this describes system functionality
+        if self._is_system_functionality_description(main_verb, doc):
+            # Don't flag as problematic passive voice in this context
+            return False
+        
+        # Check 5: Root verbs with clear passive structure
         if main_verb.dep_ == 'ROOT':
             # Root past participles are more likely to be passive
             # But still check for predicate adjective patterns
             return not self._is_predicate_adjective_pattern(main_verb, doc)
         
-        # Check 5: Complex sentence analysis
+        # Check 6: Complex sentence analysis
         # In complex sentences, check the overall structure
         return self._analyze_complex_sentence_structure(main_verb, doc)
 
@@ -264,6 +271,50 @@ class VerbsRule(BaseLanguageRule):
             if child.dep_ == 'auxpass':
                 return True
                 
+        return False
+
+    def _is_system_functionality_description(self, main_verb: Token, doc: Doc) -> bool:
+        """
+        Check if passive voice is used to describe system functionality or characteristics.
+        Uses pure linguistic features rather than hardcoded word lists.
+        """
+        
+        # Find the subject of the passive construction
+        subject_token = None
+        for token in doc:
+            if token.dep_ == 'nsubjpass' and token.head == main_verb:
+                subject_token = token
+                break
+        
+        # LINGUISTIC ANCHOR 1: Infinitive Purpose Construction
+        # Pattern: "X is designed TO do Y" - very strong signal for functionality description
+        has_infinitive_purpose = any(child.dep_ == 'xcomp' and child.pos_ == 'VERB' 
+                                   for child in main_verb.children)
+        if has_infinitive_purpose:
+            return True
+        
+        # LINGUISTIC ANCHOR 2: Pronoun Subject + Past Participle
+        # Pattern: "It is configured/designed/built" - common in technical documentation
+        if (subject_token and 
+            subject_token.pos_ == 'PRON' and 
+            subject_token.lemma_.lower() in {'it', 'this', 'that'} and
+            main_verb.tag_ == 'VBN'):  # Past participle
+            return True
+        
+        # LINGUISTIC ANCHOR 3: Complex Noun Phrase Subject + Technical Verb
+        # Pattern: "The [complex system] is configured" where subject has multiple modifiers
+        if (subject_token and 
+            subject_token.pos_ == 'NOUN' and
+            len([child for child in subject_token.children if child.dep_ in ['amod', 'compound']]) >= 1):
+            # Subject has modifiers (adjectives/compounds) - often technical
+            return True
+        
+        # LINGUISTIC ANCHOR 4: Modal Construction Context
+        # If sentence contains modal verbs, it's often describing capabilities
+        has_modal_context = any(token.pos_ == 'AUX' and token.tag_ == 'MD' for token in doc)
+        if has_modal_context:
+            return True
+        
         return False
 
     def _generate_active_voice_suggestions(self, doc: Doc, passive_token: Token, sentence: str) -> List[str]:

@@ -169,30 +169,33 @@ class PronounAmbiguityDetector(AmbiguityDetector):
     def _has_clear_dominant_antecedent(self, pronoun_token, doc, context: AmbiguityContext, nlp, referents: List[Dict[str, Any]]) -> bool:
         """Check if there's a clear dominant antecedent that makes the pronoun unambiguous."""
         
-        # Analyze grammatical roles first
+        # If there's only one potential referent, it's very likely clear
+        if len(referents) == 1:
+            return True
+        
+        # Analyze grammatical roles
         subjects = [r for r in referents if r.get('is_subject', False)]
         objects = [r for r in referents if r.get('is_object', False)]
         
-        # If there's exactly one subject and strong discourse continuation, it's likely clear
-        if len(subjects) == 1 and self._has_strong_discourse_continuation(doc):
+        # If there's exactly one subject referent, it's likely the clear antecedent
+        if len(subjects) == 1 and len(referents) <= 3:
             return True
         
         # If we have 3+ referents with multiple subjects, it's likely ambiguous
         if len(referents) >= 3 and len(subjects) > 1:
             return False
         
-        # For 2 referents, be more selective about what counts as "clear"
+        # For 2 referents, use more nuanced logic
         if len(referents) == 2:
-            # If we have exactly 1 subject and 1 object, check discourse signals
+            # If one is clearly the subject and the other is an object, subject wins
             if len(subjects) == 1 and len(objects) == 1:
-                # Only consider it clear if there's a strong discourse signal
-                return self._has_strong_discourse_continuation(doc)
+                return True
             
-            # If both are subjects or both are objects, it's ambiguous
+            # If both are subjects or both are objects, check discourse signals
             if len(subjects) == 2 or len(objects) == 2:
-                return False
+                return self._has_strong_discourse_continuation(doc)
         
-        # Check for strong discourse continuation markers
+        # Check for strong discourse continuation markers as fallback
         if self._has_strong_discourse_continuation(doc):
             return True
         

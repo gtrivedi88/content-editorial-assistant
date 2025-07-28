@@ -12,9 +12,11 @@ except ImportError:
 
 class PronounsRule(BaseLanguageRule):
     """
-    Checks for a comprehensive set of pronoun-related style issues, including:
-    1. Use of gender-specific pronouns.
-    2. Ambiguous pronoun references (e.g., unclear 'it' or 'this').
+    Checks for specific pronoun style issues:
+    1. Use of gender-specific pronouns in technical writing.
+    
+    Note: Ambiguous pronoun detection is handled by the more sophisticated
+    PronounAmbiguityDetector in the ambiguity module to avoid duplication.
     """
     def _get_rule_type(self) -> str:
         """Returns the unique identifier for this rule."""
@@ -22,7 +24,10 @@ class PronounsRule(BaseLanguageRule):
 
     def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         """
-        Analyzes sentences for gender-specific and ambiguous pronouns.
+        Analyzes sentences for gender-specific pronouns only.
+        
+        Note: Ambiguous pronoun detection is delegated to PronounAmbiguityDetector
+        for more sophisticated linguistic analysis without duplication.
         """
         errors = []
         if not nlp:
@@ -31,12 +36,19 @@ class PronounsRule(BaseLanguageRule):
         doc = nlp(text)
         sents = list(doc.sents)
         
+        # LINGUISTIC ANCHOR: Gender-specific pronouns to avoid in technical writing
         gendered_pronouns = {'he', 'him', 'his', 'she', 'her'}
 
         for i, sent in enumerate(sents):
-            # --- Rule 1: Gender-Specific Pronouns ---
             for token in sent:
-                if token.lemma_.lower() in gendered_pronouns:
+                # Use morphological analysis to detect gendered pronouns
+                if (token.lemma_.lower() in gendered_pronouns and 
+                    token.pos_ in ['PRON', 'DET'] and
+                    # Additional linguistic check for gender markers
+                    (not hasattr(token, 'morph') or 
+                     'Gender=Masc' in str(token.morph) or 
+                     'Gender=Fem' in str(token.morph))):
+                    
                     errors.append(self._create_error(
                         sentence=sent.text,
                         sentence_index=i,
@@ -46,32 +58,4 @@ class PronounsRule(BaseLanguageRule):
                         span=(token.idx, token.idx + len(token.text)),
                         flagged_text=token.text
                     ))
-
-            # --- Rule 2: Ambiguous Pronouns ('it', 'this', 'that') ---
-            # Check for ambiguous pronouns at sentence start
-            ambiguous_pronouns = ['it', 'this', 'that']
-            
-            for j, token in enumerate(sent):
-                # Check if it's an ambiguous pronoun at the start of a sentence
-                if (j == 0 and 
-                    token.lemma_.lower() in ambiguous_pronouns and 
-                    token.pos_ in ['PRON', 'DET']):
-                    
-                    # Look for potential ambiguity in previous context
-                    if i > 0:
-                        prev_sent = sents[i-1]
-                        noun_count = sum(1 for prev_token in prev_sent if prev_token.pos_ == 'NOUN')
-                        
-                        # Flag if there are multiple potential referents
-                        if noun_count > 1:
-                            errors.append(self._create_error(
-                                sentence=sent.text,
-                                sentence_index=i,
-                                message=f"Ambiguous pronoun: '{token.text}' may have an unclear antecedent.",
-                                suggestions=[f"Replace '{token.text}' with the specific noun to improve clarity."],
-                                severity='medium',
-                                span=(token.idx, token.idx + len(token.text)),
-                                flagged_text=token.text
-                            ))
-                            break  # Only flag one pronoun per sentence
         return errors
