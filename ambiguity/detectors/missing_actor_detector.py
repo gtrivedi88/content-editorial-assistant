@@ -82,23 +82,28 @@ class MissingActorDetector(AmbiguityDetector):
         return detections
     
     def _find_passive_constructions(self, doc) -> List[Dict[str, Any]]:
-        """Find passive voice constructions in the sentence."""
+        """
+        Find TRUE passive voice constructions in the sentence.
+        Uses sophisticated validation to eliminate false positives from predicate 
+        adjective constructions that spaCy mislabels as passive voice.
+        """
         constructions = []
         
         for token in doc:
-            # Method 1: SpaCy dependency parsing for passive
+            # Method 1: SpaCy dependency parsing for passive (with validation)
             if token.dep_ == 'auxpass' or token.dep_ == 'nsubjpass':
-                # Found passive construction
-                construction = self._extract_passive_construction(token, doc)
-                if construction:
-                    constructions.append(construction)
+                # Validate that this is actually passive voice, not predicate adjective
+                if self._is_true_passive_voice(token, doc):
+                    construction = self._extract_passive_construction(token, doc)
+                    if construction:
+                        constructions.append(construction)
             
-            # Method 2: Pattern matching for "to be + past participle"
+            # Method 2: Pattern matching for "to be + past participle" (with validation)
             elif (token.lemma_ in self.passive_indicators and 
                   token.pos_ in ['AUX', 'VERB']):
                 # Check if followed by past participle
                 past_participle = self._find_past_participle(token, doc)
-                if past_participle:
+                if past_participle and self._is_true_passive_pattern(token, past_participle, doc):
                     construction = {
                         'auxiliary': token,
                         'past_participle': past_participle,
@@ -108,6 +113,157 @@ class MissingActorDetector(AmbiguityDetector):
                     constructions.append(construction)
         
         return constructions
+
+    def _is_true_passive_voice(self, passive_token, doc) -> bool:
+        """
+        Validates whether a token marked as passive is actually passive voice
+        or just a predicate adjective construction that spaCy mislabeled.
+        """
+        # Find the main verb (past participle)
+        if passive_token.dep_ == 'nsubjpass':
+            main_verb = passive_token.head
+        elif passive_token.dep_ == 'auxpass':
+            main_verb = passive_token.head
+        else:
+            return False
+        
+        # Must be a past participle (VBN) to be passive
+        if main_verb.tag_ != 'VBN':
+            return False
+        
+        # Check 1: Presence of explicit agent (by-phrase)
+        # If there's a "by" phrase, it's definitely passive voice
+        if self._has_by_phrase_for_token(main_verb, doc):
+            return True
+        
+        # Check 2: Exclude adverbial clauses (common source of false positives)
+        # Constructions like "After you are done" are typically adverbial
+        if main_verb.dep_ == 'advcl':
+            # This is an adverbial clause, likely predicate adjective
+            return False
+        
+        # Check 3: Check for semantic indicators of state vs. action
+        # Some past participles are more commonly used as adjectives
+        state_oriented_verbs = {
+            'done', 'finished', 'ready', 'prepared', 'set', 'fixed', 'broken', 
+            'closed', 'open', 'available', 'busy', 'free', 'connected', 'offline'
+        }
+        
+        if main_verb.lemma_ in state_oriented_verbs:
+            # These are commonly used as predicate adjectives
+            # Only consider them passive if there's strong evidence
+            return self._has_strong_passive_evidence(main_verb, doc)
+        
+        # Check 4: Root verbs with clear passive structure
+        if main_verb.dep_ == 'ROOT':
+            # Root past participles are more likely to be passive
+            # But still check for predicate adjective patterns
+            return not self._is_predicate_adjective_pattern(main_verb, doc)
+        
+        # Check 5: Complex sentence analysis
+        # In complex sentences, check the overall structure
+        return self._analyze_complex_sentence_structure(main_verb, doc)
+
+    def _is_true_passive_pattern(self, aux_token, past_participle, doc) -> bool:
+        """Validate that a be + past participle pattern is truly passive voice."""
+        # Apply the same validation logic as for spaCy-detected patterns
+        if past_participle.dep_ == 'advcl':
+            return False
+        
+        state_oriented_verbs = {
+            'done', 'finished', 'ready', 'prepared', 'set', 'fixed', 'broken', 
+            'closed', 'open', 'available', 'busy', 'free', 'connected', 'offline'
+        }
+        
+        if past_participle.lemma_ in state_oriented_verbs:
+            return self._has_strong_passive_evidence(past_participle, doc)
+        
+        return not self._is_predicate_adjective_pattern(past_participle, doc)
+
+    def _has_by_phrase_for_token(self, main_verb, doc) -> bool:
+        """Check if there's an explicit agent introduced by 'by'."""
+        for token in doc:
+            if (token.lemma_ == 'by' and 
+                token.head == main_verb and 
+                any(child.dep_ == 'pobj' for child in token.children)):
+                return True
+        return False
+
+    def _has_strong_passive_evidence(self, main_verb, doc) -> bool:
+        """
+        For state-oriented verbs, require stronger evidence of passive voice.
+        """
+        # Evidence 1: Explicit agent
+        if self._has_by_phrase_for_token(main_verb, doc):
+            return True
+        
+        # Evidence 2: Modal auxiliary suggesting action rather than state
+        for child in main_verb.children:
+            if child.dep_ == 'auxpass' and child.lemma_ in ['was', 'were', 'been']:
+                # Past tense auxiliary suggests an action that happened
+                return True
+        
+        # Evidence 3: Temporal indicators suggesting an action occurred
+        temporal_indicators = ['yesterday', 'recently', 'just', 'already', 'earlier']
+        sentence_words = [token.lemma_.lower() for token in doc]
+        if any(indicator in sentence_words for indicator in temporal_indicators):
+            return True
+        
+        return False
+
+    def _is_predicate_adjective_pattern(self, main_verb, doc) -> bool:
+        """
+        Check if this follows a predicate adjective pattern rather than passive voice.
+        """
+        # Pattern 1: "be" + past participle without agent = often predicate adjective
+        aux_verbs = [child for child in main_verb.children if child.dep_ == 'auxpass']
+        if aux_verbs:
+            aux = aux_verbs[0]
+            if aux.lemma_ == 'be' and not self._has_by_phrase_for_token(main_verb, doc):
+                # Could be predicate adjective, check semantic context
+                return self._suggests_state_rather_than_action(main_verb, doc)
+        
+        return False
+
+    def _suggests_state_rather_than_action(self, main_verb, doc) -> bool:
+        """
+        Analyze semantic context to determine if this describes a state vs. an action.
+        """
+        # Context words that suggest state description
+        state_context_words = [
+            'when', 'after', 'once', 'if', 'while', 'until', 
+            'ready', 'available', 'complete', 'finished'
+        ]
+        
+        sentence_words = [token.lemma_.lower() for token in doc]
+        
+        # If we're in a temporal/conditional clause, it's often describing a state
+        if any(word in sentence_words for word in state_context_words[:6]):  # temporal words
+            return True
+        
+        # If the sentence describes a current state rather than a completed action
+        if any(word in sentence_words for word in state_context_words[6:]):  # state words
+            return True
+        
+        return False
+
+    def _analyze_complex_sentence_structure(self, main_verb, doc) -> bool:
+        """
+        Analyze complex sentence structures to determine true passive voice.
+        """
+        # For non-root verbs that aren't in adverbial clauses
+        # Check if they're in complement clauses or other structures
+        
+        if main_verb.dep_ in ['ccomp', 'xcomp']:
+            # Complement clauses - analyze based on governing verb
+            return True  # More likely to be genuine passive in complement clauses
+        
+        if main_verb.dep_ in ['conj']:
+            # Coordinated verbs - check consistency with other conjuncts
+            return True  # Assume passive for coordination unless proven otherwise
+        
+        # Default: if we reach here and haven't ruled it out, be conservative
+        return True
     
     def _extract_passive_construction(self, token, doc) -> Optional[Dict[str, Any]]:
         """Extract details of a passive construction."""
