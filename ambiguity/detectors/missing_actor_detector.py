@@ -26,8 +26,8 @@ class MissingActorDetector(AmbiguityDetector):
     who or what performs the action, creating ambiguity for the reader.
     """
     
-    def __init__(self, config: AmbiguityConfig):
-        super().__init__(config)
+    def __init__(self, config: AmbiguityConfig, parent_rule=None):
+        super().__init__(config, parent_rule)
         self.confidence_threshold = 0.7
         self.passive_indicators = {'be', 'is', 'are', 'was', 'were', 'being', 'been'}
         

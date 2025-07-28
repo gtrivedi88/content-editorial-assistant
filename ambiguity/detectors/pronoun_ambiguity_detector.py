@@ -31,8 +31,8 @@ class PronounAmbiguityDetector(AmbiguityDetector):
     both sentence-initial unclear antecedents and general pronoun ambiguity.
     """
     
-    def __init__(self, config: AmbiguityConfig):
-        super().__init__(config)
+    def __init__(self, config: AmbiguityConfig, parent_rule=None):
+        super().__init__(config, parent_rule)
         
         # Pronouns that commonly create ambiguity
         self.ambiguous_pronouns = {

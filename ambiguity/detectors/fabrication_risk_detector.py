@@ -29,8 +29,8 @@ class FabricationRiskDetector(AmbiguityDetector):
     to add information that wasn't in the original text.
     """
     
-    def __init__(self, config: AmbiguityConfig):
-        super().__init__(config)
+    def __init__(self, config: AmbiguityConfig, parent_rule=None):
+        super().__init__(config, parent_rule)
         
         # Vague action verbs that often get over-specified
         self.vague_action_verbs = {
