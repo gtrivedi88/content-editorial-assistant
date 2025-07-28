@@ -1,5 +1,5 @@
 """
-Capitalization Rule (Corrected for False Positives)
+Capitalization Rule
 Based on IBM Style Guide topic: "Capitalization"
 """
 from typing import List, Dict, Any
@@ -12,8 +12,8 @@ except ImportError:
 
 class CapitalizationRule(BaseLanguageRule):
     """
-    Checks for incorrect capitalization, specifically focusing on the
-    over-capitalization of common nouns within a sentence.
+    Checks for missing capitalization in text.
+    Comprehensive rule processing using the SpaCy engine for linguistic accuracy.
     """
     def _get_rule_type(self) -> str:
         return 'capitalization'
@@ -23,34 +23,29 @@ class CapitalizationRule(BaseLanguageRule):
         if not nlp:
             return errors
 
+        # Skip analysis for content that was originally inline formatted (code, emphasis, etc.)
+        if context and context.get('contains_inline_formatting'):
+            return errors
+
         # ENTERPRISE CONTEXT INTELLIGENCE: Get content classification
         content_classification = self._get_content_classification(text, context, nlp)
         
         doc = nlp(text)
 
+        # LINGUISTIC ANCHOR: Use spaCy sentence segmentation for precise analysis
         for i, sent in enumerate(doc.sents):
             for token in sent:
-                # Rule 1: Unnecessary capitalization
-                if token.is_title and not self._should_be_capitalized_morphological(token, doc, content_classification):
-                    errors.append(self._create_error(
-                        sentence=sent.text, sentence_index=i,
-                        message=f"Unnecessary capitalization of the common noun '{token.text}'.",
-                        suggestions=["Common nouns should be lowercase unless they are part of a proper name or at the beginning of a sentence."],
-                        severity='medium',
-                        span=(token.idx, token.idx + len(token.text)),
-                        flagged_text=token.text
-                    ))
-
-                # Rule 2: Missing capitalization for proper nouns
-                if token.is_lower and self._should_be_capitalized_proper_morphological(token, doc):
-                    errors.append(self._create_error(
-                        sentence=sent.text, sentence_index=i,
-                        message=f"'{token.text}' should be capitalized as it appears to be a proper noun.",
-                        suggestions=[f"Capitalize '{token.text}' to '{token.text.capitalize()}'."],
-                        severity='medium',
-                        span=(token.idx, token.idx + len(token.text)),
-                        flagged_text=token.text
-                    ))
+                # Rule 1: Check for proper nouns that should be capitalized
+                if self._should_be_capitalized_morphological(token, doc, content_classification):
+                    if token.text.islower():
+                        errors.append(self._create_error(
+                            sentence=sent.text, sentence_index=i,
+                            message=f"'{token.text}' should be capitalized as it appears to be a proper noun.",
+                            suggestions=[f"Capitalize '{token.text}' to '{token.text.capitalize()}'."],
+                            severity='medium',
+                            span=(token.idx, token.idx + len(token.text)),
+                            flagged_text=token.text
+                        ))
 
         return errors
 
@@ -69,33 +64,8 @@ class CapitalizationRule(BaseLanguageRule):
         if token.ent_type_ in ['PERSON', 'ORG', 'GPE', 'PRODUCT', 'LANGUAGE']:
             return True
             
-        # LINGUISTIC ANCHOR 4: Technical compound detection in appropriate contexts
-        if content_classification in ['technical_identifier', 'topic_heading', 'navigation_label']:
-            # Use dependency parsing to detect compounds
-            if token.dep_ == 'compound' or any(child.dep_ == 'compound' for child in token.children):
-                # Check if this is part of a technical compound through morphology
-                if self._has_technical_morphology(token):
-                    return True
-                    
-        # LINGUISTIC ANCHOR 5: Morphological patterns for months/days
+        # LINGUISTIC ANCHOR 4: Morphological patterns for months/days
         if token.morph and 'proper' in str(token.morph).lower():
             return True
         
-        return False
-    
-    def _should_be_capitalized_proper_morphological(self, token, doc) -> bool:
-        """Use SpaCy morphological features to detect proper nouns that should be capitalized."""
-        
-        # LINGUISTIC ANCHOR 1: SpaCy named entity detection
-        if token.ent_type_ in ['PERSON', 'ORG', 'GPE', 'PRODUCT', 'LANGUAGE']:
-            return True
-            
-        # LINGUISTIC ANCHOR 2: SpaCy POS tagging indicates proper noun
-        if token.pos_ == 'PROPN':
-            return True
-            
-        # LINGUISTIC ANCHOR 3: Morphological proper noun indicators
-        if token.morph and any(feature in str(token.morph) for feature in ['Proper', 'NNP']):
-            return True
-            
         return False

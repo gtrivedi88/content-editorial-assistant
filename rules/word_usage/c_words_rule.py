@@ -22,6 +22,7 @@ class CWordsRule(BaseWordUsageRule):
         errors = []
         if not nlp:
             return errors
+            
         doc = nlp(text)
 
         # LINGUISTIC ANCHOR APPROACH: Automatically detect phrasal verb issues
@@ -85,4 +86,5 @@ class CWordsRule(BaseWordUsageRule):
                         span=(sent.start_char + match.start(), sent.start_char + match.end()),
                         flagged_text=match.group(0)
                     ))
+                    
         return errors

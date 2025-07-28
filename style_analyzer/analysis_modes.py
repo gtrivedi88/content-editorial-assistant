@@ -449,13 +449,22 @@ class AnalysisModeExecutor:
         """Extract clean content from a child block, handling various content types."""
         child_content = None
         
-        # Method 1: Try to get clean content directly
-        if hasattr(child, 'content') and isinstance(child.content, str):
+        # Method 1: Try get_text_content first (ensures HTML stripping)
+        if hasattr(child, 'get_text_content'):
+            try:
+                text_content = child.get_text_content().strip()
+                if text_content:
+                    child_content = text_content
+            except Exception:
+                pass
+        
+        # Method 2: Fallback to direct content only if get_text_content failed
+        if not child_content and hasattr(child, 'content') and isinstance(child.content, str):
             content_str = child.content.strip()
             if len(content_str) < 500 and not content_str.startswith('[#'):  # Not Ruby AST
                 child_content = content_str
         
-        # Method 2: Try get_text_content if available
+        # Method 3: Try get_text_content if available (this was the old Method 2)
         if not child_content and hasattr(child, 'get_text_content'):
             try:
                 text_content = child.get_text_content().strip()
@@ -464,7 +473,7 @@ class AnalysisModeExecutor:
             except:
                 pass
         
-        # Method 3: Try text attribute
+        # Method 4: Try text attribute
         if not child_content and hasattr(child, 'text') and child.text:
             child_content = str(child.text).strip()
         
@@ -525,14 +534,23 @@ class AnalysisModeExecutor:
                     if hasattr(child, 'text') and child.text:
                         item_text = str(child.text).strip()
                     
-                    # Method 2: Check for clean content
-                    elif hasattr(child, 'content') and isinstance(child.content, str):
+                    # Method 2: Try get_text_content first (ensures HTML stripping)
+                    elif hasattr(child, 'get_text_content'):
+                        try:
+                            text_content = child.get_text_content().strip()
+                            if text_content:
+                                item_text = text_content
+                        except Exception:
+                            pass
+                    
+                    # Method 3: Fallback to direct content if get_text_content failed
+                    if not item_text and hasattr(child, 'content') and isinstance(child.content, str):
                         content = child.content.strip()
                         if len(content) < 500 and not content.startswith('[#'):  # Not Ruby AST
                             item_text = content
                     
-                    # Method 3: Try get_text_content if available
-                    elif hasattr(child, 'get_text_content'):
+                    # Method 4: Try get_text_content if available (fallback)
+                    elif not item_text and hasattr(child, 'get_text_content'):
                         try:
                             text_content = child.get_text_content().strip()
                             if text_content and len(text_content) < 500:
@@ -614,9 +632,16 @@ class AnalysisModeExecutor:
                 
                 # Get child content
                 child_content = None
-                if hasattr(child, 'content') and isinstance(child.content, str):
+                # Try get_text_content first (ensures HTML stripping)  
+                if hasattr(child, 'get_text_content'):
+                    try:
+                        child_content = child.get_text_content().strip()
+                    except Exception:
+                        pass
+                # Fallback to direct content if get_text_content failed
+                if not child_content and hasattr(child, 'content') and isinstance(child.content, str):
                     child_content = child.content.strip()
-                elif hasattr(child, 'get_text_content'):
+                elif not child_content and hasattr(child, 'get_text_content'):
                     try:
                         child_content = child.get_text_content().strip()
                     except:

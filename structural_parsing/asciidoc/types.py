@@ -3,9 +3,10 @@ AsciiDoc Structural Parsing Types
 Core data structures for AsciiDoc document parsing and analysis.
 This version is fully compatible with the existing application structure.
 """
+import re
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Union
 
 # Re-introducing AsciiDocAttributes to maintain compatibility
 @dataclass
@@ -69,7 +70,52 @@ class AsciiDocBlock:
     _analysis_errors: List[Dict[str, Any]] = field(default_factory=list, repr=False)
 
     def get_text_content(self) -> str:
-        return self.content
+        """
+        Get clean text content for rule analysis by stripping inline HTML formatting.
+        This prevents false positives in rules when analyzing formatted text.
+        """
+        content = self.content
+        if not content:
+            return ""
+        
+        # Strip HTML inline formatting that comes from AsciiDoc conversion
+        # Remove <code>...</code> tags
+        content = re.sub(r'<code>(.*?)</code>', r'\1', content)
+        
+        # Remove <em>...</em> tags (italic)
+        content = re.sub(r'<em>(.*?)</em>', r'\1', content)
+        
+        # Remove <strong>...</strong> tags (bold)
+        content = re.sub(r'<strong>(.*?)</strong>', r'\1', content)
+        
+        # Remove other inline formatting tags
+        content = re.sub(r'<mark>(.*?)</mark>', r'\1', content)
+        content = re.sub(r'<kbd>(.*?)</kbd>', r'\1', content)
+        content = re.sub(r'<var>(.*?)</var>', r'\1', content)
+        content = re.sub(r'<samp>(.*?)</samp>', r'\1', content)
+        
+        return content.strip()
+    
+    def has_inline_formatting(self) -> bool:
+        """
+        Check if this block contains inline formatting that was stripped.
+        This helps rules understand the original formatting context.
+        """
+        if not self.content:
+            return False
+            
+        # Check for common inline formatting patterns
+        formatting_patterns = [
+            r'<code>.*?</code>',
+            r'<em>.*?</em>', 
+            r'<strong>.*?</strong>',
+            r'<mark>.*?</mark>',
+            r'<kbd>.*?</kbd>',
+            r'<var>.*?</var>',
+            r'<samp>.*?</samp>'
+        ]
+        
+        return any(re.search(pattern, self.content) for pattern in formatting_patterns)
 
     def should_skip_analysis(self) -> bool:
         """Determines if a block should be skipped during style analysis."""
@@ -88,7 +134,8 @@ class AsciiDocBlock:
             'style': self.style,
             'title': self.title,
             'list_marker': self.list_marker,
-            'source_location': self.source_location
+            'source_location': self.source_location,
+            'contains_inline_formatting': self.has_inline_formatting()
         }
 
     # CRITICAL FIX: Added the missing to_dict() method
