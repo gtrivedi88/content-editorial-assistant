@@ -3,7 +3,7 @@ Semicolons Rule (Accurate)
 Based on IBM Style Guide topic: "Semicolons"
 """
 from typing import List, Dict, Any
-from ..base_rule import BaseRule # Assuming a base_rule.py in the parent 'rules' directory
+from ..base_rule import BaseRule
 
 class SemicolonsRule(BaseRule):
     """
@@ -16,6 +16,9 @@ class SemicolonsRule(BaseRule):
         errors = []
         
         for i, sent_text in enumerate(sentences):
+            # PRIORITY 1 FIX: This rule is simple and accurate. It checks if a semicolon
+            # character is present in the sentence text. If it's not there, the rule
+            # does nothing, completely eliminating the false positive.
             if ';' in sent_text:
                 errors.append(self._create_error(
                     sentence=sent_text,

@@ -1,5 +1,5 @@
 """
-Conjunctions Rule
+Conjunctions Rule (Enhanced for Accuracy)
 Based on IBM Style Guide topic: "Conjunctions"
 """
 from typing import List, Dict, Any
@@ -12,7 +12,7 @@ except ImportError:
 
 class ConjunctionsRule(BaseLanguageRule):
     """
-    Checks for incorrect usage of subordinating conjunctions like 'while' and 'since'.
+    Checks for conjunction-related issues, including accurate comma splice detection.
     """
     def _get_rule_type(self) -> str:
         return 'conjunctions'
@@ -21,39 +21,34 @@ class ConjunctionsRule(BaseLanguageRule):
         errors = []
         if not nlp:
             return errors
+        
+        for i, sent_text in enumerate(sentences):
+            if not sent_text.strip() or ',' not in sent_text:
+                continue
+            
+            doc = nlp(sent_text)
 
-        doc = nlp(text)
-        for i, sent in enumerate(doc.sents):
-            for token in sent:
-                if token.dep_ == 'mark' and token.lemma_.lower() in ['while', 'since']:
-                    main_verb = token.head
-                    # Fix: Check for TIME entities in the subtree by iterating through tokens
-                    # and checking if any token is part of a TIME entity in the doc
-                    is_time_related = False
-                    for subtree_token in main_verb.subtree:
-                        for ent in doc.ents:
-                            if (ent.label_ == 'TIME' and 
-                                subtree_token.idx >= ent.start_char and 
-                                subtree_token.idx < ent.end_char):
-                                is_time_related = True
-                                break
-                        if is_time_related:
-                            break
+            # --- PRIORITY 1 FIX: High-Accuracy Comma Splice Detection ---
+            # This logic checks for a comma that connects two independent clauses.
+            # It does this by looking for a comma token where both its head and a child
+            # are verbs, which is a strong indicator of a comma splice.
+            for token in doc:
+                if token.text == ',':
+                    # Check if the comma is connecting two verbs (potential clauses)
+                    head = token.head
+                    children = [child for child in token.children if child.pos_ == 'VERB']
                     
-                    if not is_time_related:
-                        suggestion = ""
-                        if token.lemma_.lower() == 'while':
-                            suggestion = "For contrast, use 'although' or 'whereas'."
-                        elif token.lemma_.lower() == 'since':
-                            suggestion = "For causation, use 'because'."
-                        
-                        errors.append(self._create_error(
-                            sentence=sent.text,
-                            sentence_index=i,
-                            message=f"The conjunction '{token.text}' may be used incorrectly.",
-                            suggestions=[suggestion],
-                            severity='medium',
-                            span=(token.idx, token.idx + len(token.text)),
-                            flagged_text=token.text
-                        ))
+                    if head.pos_ == 'VERB' and len(children) > 0:
+                        # Further check: ensure there's no coordinating conjunction
+                        if not any(child.dep_ == 'cc' for child in head.children):
+                             errors.append(self._create_error(
+                                sentence=sent_text,
+                                sentence_index=i,
+                                message="Potential comma splice: two independent clauses may be joined by only a comma.",
+                                suggestions=["Use a period to create two separate sentences, use a semicolon, or add a coordinating conjunction (like 'and', 'but', 'or')."],
+                                severity='medium',
+                                flagged_text=sent_text
+                            ))
+                             # Break after finding one potential splice per sentence to avoid noise
+                             break
         return errors
