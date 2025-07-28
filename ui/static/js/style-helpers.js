@@ -3,11 +3,16 @@
  * Contains utility functions, color schemes, and insight generators
  */
 
-// HTML escape utility
+// HTML escape utility - properly escape only dangerous characters
 function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    if (typeof text !== 'string') return text;
+    
+    return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');  // Use &#39; instead of browser's smart quote conversion
 }
 
 // Safe HTML renderer for table cells - allows common formatting tags

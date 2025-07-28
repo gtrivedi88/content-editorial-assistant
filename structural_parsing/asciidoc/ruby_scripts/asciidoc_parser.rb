@@ -7,9 +7,12 @@ require 'json'
 def node_to_hash(node)
   return nil unless node
 
+  # Get raw text content instead of HTML-converted content
+  raw_content = get_raw_text_content(node)
+
   node_hash = {
     'context' => node.context.to_s,
-    'content' => node.respond_to?(:content) ? node.content : nil,
+    'content' => raw_content,  # Use our raw text extraction
     'text' => node.respond_to?(:text) ? node.text : nil,
     'source' => node.respond_to?(:source) ? node.source : '',
     'level' => node.respond_to?(:level) ? node.level : 0,
@@ -45,9 +48,55 @@ def node_to_hash(node)
   node_hash
 end
 
+# Extract raw text content without HTML conversion
+def get_raw_text_content(node)
+  case node.context
+  when :document
+    # For documents, return the title if available
+    node.respond_to?(:title) ? node.title : ''
+  when :section
+    # For sections, return the title
+    node.respond_to?(:title) ? node.title : ''
+  when :paragraph
+    # For paragraphs, extract the raw text from lines
+    if node.respond_to?(:lines) && node.lines
+      node.lines.join(' ')
+    elsif node.respond_to?(:source)
+      node.source
+    else
+      ''
+    end
+  when :list_item
+    # For list items, get the text without HTML conversion
+    node.respond_to?(:text) ? node.text : ''
+  when :listing, :literal
+    # For code blocks, use source as-is
+    node.respond_to?(:source) ? node.source : ''
+  when :table_cell
+    # For table cells, use text or source
+    if node.respond_to?(:text) && node.text
+      node.text
+    elsif node.respond_to?(:source)
+      node.source
+    else
+      ''
+    end
+  else
+    # For other block types, try various fields but avoid HTML conversion
+    if node.respond_to?(:source) && node.source
+      node.source
+    elsif node.respond_to?(:text) && node.text
+      node.text
+    else
+      ''
+    end
+  end
+end
+
 def parse_asciidoc(content, filename = "")
   begin
-    doc = Asciidoctor.load(content, safe: :safe, sourcemap: true)
+    # Parse with safe mode to avoid security issues, but don't convert to HTML
+    doc = Asciidoctor.load(content, safe: :safe, sourcemap: true, parse: true)
     ast_hash = node_to_hash(doc)
     { 'success' => true, 'data' => ast_hash }
   rescue => e

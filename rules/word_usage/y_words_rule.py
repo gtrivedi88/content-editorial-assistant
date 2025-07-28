@@ -23,16 +23,10 @@ class YWordsRule(BaseWordUsageRule):
             return errors
         doc = nlp(text)
 
-        # This rule provides contextual advice, so it's a good candidate for a low-severity check.
-        for i, sent in enumerate(doc.sents):
-            for match in re.finditer(r'\b(your)\b', sent.text, re.IGNORECASE):
-                errors.append(self._create_error(
-                    sentence=sent.text,
-                    sentence_index=i,
-                    message="Review usage of the possessive pronoun 'your'.",
-                    suggestions=["Use 'your' in reference to assets only after the user has customized them."],
-                    severity='low',
-                    span=(sent.start_char + match.start(), sent.start_char + match.end()),
-                    flagged_text=match.group(0)
-                ))
+        # Currently no specific Y-word usage rules are implemented.
+        # The previous "your" rule was removed as it incorrectly flagged
+        # general possessive pronouns, which are acceptable according to 
+        # the IBM Style Guide. Possessives on abbreviations and trademarks
+        # are handled by the possessives_rule.py instead.
+        
         return errors
