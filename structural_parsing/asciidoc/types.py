@@ -152,6 +152,7 @@ class AsciiDocBlock:
             "style": self.style,
             "admonition_type": self.admonition_type.value if self.admonition_type else None,
             "list_marker": self.list_marker,
+            "should_skip_analysis": self.should_skip_analysis(),
             "errors": self._analysis_errors,
             "children": [child.to_dict() for child in self.children]
         }

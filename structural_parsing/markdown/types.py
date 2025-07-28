@@ -105,6 +105,7 @@ class MarkdownBlock:
             "block_type": self.block_type.value,
             "content": self.content,
             "level": self.level,
+            "should_skip_analysis": self.should_skip_analysis(),
             "errors": self._analysis_errors,
             "children": [child.to_dict() for child in self.children]
         }
