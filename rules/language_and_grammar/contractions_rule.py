@@ -3,6 +3,7 @@ Contractions Rule
 Based on IBM Style Guide topic: "Contractions"
 Enhanced with universal spaCy morphological analysis for scalable detection.
 """
+import re
 from typing import List, Dict, Any, Optional
 from .base_language_rule import BaseLanguageRule
 
@@ -111,6 +112,10 @@ class ContractionsRule(BaseLanguageRule):
         
         doc = nlp(text)
         
+        # ENHANCED APPROACH: Use both spaCy morphological analysis AND regex patterns
+        # This ensures comprehensive coverage of all contractions
+        
+        # METHOD 1: spaCy morphological analysis (existing approach)
         for sent in doc.sents:
             for token in sent:
                 # UNIVERSAL LINGUISTIC ANCHOR: Check if token has contraction characteristics
@@ -126,6 +131,9 @@ class ContractionsRule(BaseLanguageRule):
                         span=(token.idx, token.idx + len(token.text)),
                         flagged_text=token.text
                     ))
+        
+        # METHOD 2: Comprehensive regex-based detection for any missed contractions
+        self._analyze_contractions_by_regex(text, doc, errors)
         
         return errors
     
@@ -407,3 +415,158 @@ class ContractionsRule(BaseLanguageRule):
                 return "use the full pronoun form instead of the contraction"
         
         return "expand the contraction for a more formal tone"
+    
+    def _analyze_contractions_by_regex(self, text: str, doc: 'Doc', errors: List[Dict[str, Any]]):
+        """
+        Enhanced regex-based contraction detection to catch any apostrophe-containing words
+        that might be missed by morphological analysis. Uses pattern r"\\b\\w+'\\w+\\b" as requested.
+        """
+        # COMPREHENSIVE REGEX PATTERN: Any word containing an apostrophe
+        contraction_pattern = r"\b\w+'\w+\b"
+        
+        # Track already found contractions to avoid duplicates
+        found_spans = set()
+        for error in errors:
+            if 'span' in error and isinstance(error['span'], tuple):
+                found_spans.add(error['span'])
+        
+        # Find all apostrophe-containing words in the text
+        for match in re.finditer(contraction_pattern, text):
+            match_start = match.start()
+            match_end = match.end()
+            match_span = (match_start, match_end)
+            
+            # Skip if already found by morphological analysis
+            if match_span in found_spans:
+                continue
+            
+            contraction_text = match.group()
+            
+            # Find which sentence this belongs to and get spaCy analysis
+            sentence_info = self._find_sentence_for_span(match_start, match_end, doc)
+            if not sentence_info:
+                continue
+            
+            sent, sent_index = sentence_info
+            
+            # Get spaCy token analysis for this contraction if available
+            token_analysis = self._find_token_for_span(match_start, match_end, sent)
+            
+            # Generate intelligent suggestions based on pattern analysis
+            suggestion_info = self._analyze_regex_contraction(contraction_text, token_analysis)
+            
+            errors.append(self._create_error(
+                sentence=sent.text,
+                sentence_index=sent_index,
+                message=f"Contraction found: '{contraction_text}' ({suggestion_info['type']}).",
+                suggestions=[f"Expand contractions for a more formal tone: {suggestion_info['suggestion']}."],
+                severity='low',
+                span=match_span,
+                flagged_text=contraction_text
+            ))
+            
+            # Add to found spans to prevent further duplicates
+            found_spans.add(match_span)
+    
+    def _find_sentence_for_span(self, start: int, end: int, doc: 'Doc'):
+        """Find which sentence contains the given character span."""
+        for i, sent in enumerate(doc.sents):
+            if sent.start_char <= start < sent.end_char:
+                return sent, i
+        return None
+    
+    def _find_token_for_span(self, start: int, end: int, sent):
+        """Find the spaCy token that corresponds to the given span."""
+        for token in sent:
+            if token.idx <= start < token.idx + len(token.text):
+                return token
+        return None
+    
+    def _analyze_regex_contraction(self, contraction_text: str, token=None):
+        """
+        Analyze a regex-matched contraction and provide intelligent suggestions.
+        Combines pattern matching with spaCy token analysis when available.
+        """
+        contraction_lower = contraction_text.lower()
+        
+        # PATTERN-BASED ANALYSIS: Common contraction patterns
+        if "'s" in contraction_lower:
+            if token and hasattr(token, 'pos_') and token.pos_ == 'VERB':
+                return {
+                    'type': "auxiliary verb contraction ('s = is)",
+                    'suggestion': "use 'is' instead of the contraction"
+                }
+            elif token and hasattr(token, 'tag_') and token.tag_ == 'POS':
+                return {
+                    'type': "possessive contraction",
+                    'suggestion': "consider rephrasing to avoid possessive contractions"
+                }
+            else:
+                return {
+                    'type': "contraction with 's",
+                    'suggestion': "expand to 'is' or rephrase if possessive"
+                }
+        
+        elif "'re" in contraction_lower:
+            return {
+                'type': "auxiliary verb contraction ('re = are)",
+                'suggestion': "use 'are' instead of the contraction"
+            }
+        
+        elif "'ve" in contraction_lower:
+            return {
+                'type': "auxiliary verb contraction ('ve = have)",
+                'suggestion': "use 'have' instead of the contraction"
+            }
+        
+        elif "'ll" in contraction_lower:
+            return {
+                'type': "auxiliary verb contraction ('ll = will)",
+                'suggestion': "use 'will' instead of the contraction"
+            }
+        
+        elif "'d" in contraction_lower:
+            return {
+                'type': "auxiliary verb contraction ('d = would/had)",
+                'suggestion': "use 'would' or 'had' instead of the contraction"
+            }
+        
+        elif "'t" in contraction_lower:
+            if "n't" in contraction_lower:
+                return {
+                    'type': "negative contraction (n't = not)",
+                    'suggestion': "use 'not' instead of the negative contraction"
+                }
+            else:
+                return {
+                    'type': "contraction with 't",
+                    'suggestion': "expand the contraction"
+                }
+        
+        elif "'m" in contraction_lower:
+            return {
+                'type': "auxiliary verb contraction ('m = am)",
+                'suggestion': "use 'am' instead of the contraction"
+            }
+        
+        # ADVANCED PATTERN ANALYSIS: Use spaCy token information if available
+        elif token:
+            if hasattr(token, 'lemma_') and token.lemma_:
+                lemma = token.lemma_.lower()
+                if lemma in ['be', 'have', 'will', 'would', 'can', 'could', 'should']:
+                    return {
+                        'type': f"auxiliary verb contraction ({lemma})",
+                        'suggestion': f"use '{lemma}' instead of the contraction"
+                    }
+            
+            if hasattr(token, 'pos_') and token.pos_ in ['PRON']:
+                return {
+                    'type': "pronominal contraction",
+                    'suggestion': "use the full pronoun form"
+                }
+        
+        # FALLBACK: Generic contraction handling
+        return {
+            'type': "contraction",
+            'suggestion': "expand the contraction for a more formal tone"
+        }

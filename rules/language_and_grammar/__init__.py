@@ -16,6 +16,7 @@ from .contractions_rule import ContractionsRule
 from .inclusive_language_rule import InclusiveLanguageRule
 from .plurals_rule import PluralsRule
 from .possessives_rule import PossessivesRule
+from .prefixes_rule import PrefixesRule
 from .prepositions_rule import PrepositionsRule
 from .pronouns_rule import PronounsRule
 from .spelling_rule import SpellingRule
@@ -34,6 +35,7 @@ __all__ = [
     'InclusiveLanguageRule',
     'PluralsRule',
     'PossessivesRule',
+    'PrefixesRule',
     'PrepositionsRule',
     'PronounsRule',
     'SpellingRule',

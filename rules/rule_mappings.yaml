@@ -1,40 +1,255 @@
-# Rule-to-BlockType Mapping Configuration
-# This file defines which rules should be applied to which block types and which rules should be excluded
+# Rule-to-BlockType Mapping Configuration 
+# This file defines comprehensive, context-aware rule application for optimal style analysis
 
-# Define block type to rule mapping for context-aware analysis
-block_type_rules:
-  # Heading blocks - only apply heading-specific rules
-  heading:
-    - headings
+# ===================================================================
+# RULE PRIORITY CONFIGURATION
+# Define rule execution priorities and severity thresholds
+# ===================================================================
+rule_priorities:
+  # Critical rules that should always run first
+  critical:
+    - spelling
+    - capitalization
+    - punctuation_and_symbols
+    
+  # High priority language rules
+  high:
+    - abbreviations
+    - contractions
+    - prefixes
+    - inclusive_language
     - pronouns
-    - slashes
-    - hyphens
+    - verbs
+    - sentence_length
+    
+  # Medium priority content rules  
+  medium:
+    - word_usage_a
+    - word_usage_b
+    - word_usage_c
+    - word_usage_d
+    - word_usage_e
+    - word_usage_f
+    - word_usage_g
+    - word_usage_h
+    - word_usage_i
+    - word_usage_j
+    - word_usage_k
+    - word_usage_l
+    - word_usage_m
+    - word_usage_n
+    - word_usage_o
+    - word_usage_p
+    - word_usage_q
+    - word_usage_r
+    - word_usage_s
+    - word_usage_t
+    - word_usage_u
+    - word_usage_v
+    - word_usage_w
+    - word_usage_x
+    - word_usage_y
+    - word_usage_z
+    - word_usage_special
+    - terminology
+    - anthropomorphism
+    - articles
+    - possessives
+    - plurals
+    - prepositions
+    
+  # Lower priority specialized rules
+  low:
+    - adverbs_only
+    - conjunctions
+    - conversational_style
+    - global_audiences
+    - llm_consumability
+    - tone
+    - technical_commands
+    - technical_files_directories
+    - technical_keyboard_keys
+    - technical_mouse_buttons
+    - technical_programming_elements
+    - technical_ui_elements
+    - technical_web_addresses
+
+# ===================================================================
+# CONTEXT-AWARE BLOCK TYPE RULES
+# Sophisticated rule application based on content type and context
+# ===================================================================
+block_type_rules:
+  
+  # ===============================================================
+  # STRUCTURAL CONTENT BLOCKS
+  # ===============================================================
+  
+  # Heading blocks - Focus on clarity, consistency, and style
+  heading:
+    # Core structural rules
+    - headings
+    - capitalization
+    - punctuation_and_symbols
+    - highlighting
+    
+    # Language precision rules
+    - abbreviations
+    - prefixes
+    - pronouns
+    - spelling
+    - terminology
+    - inclusive_language
+    
+    # Punctuation consistency
     - colons
     - commas
     - dashes
     - ellipses
     - exclamation_points
+    - hyphens
+    - parentheses
+    - periods
+    - quotation_marks
+    - semicolons
+    - slashes
+    
+    # Content quality rules
+    - second_person
+    - anthropomorphism
+
+  # Section blocks - Similar to headings but allow more content rules
+  section:
+    - headings
+    - capitalization
+    - punctuation_and_symbols
+    - abbreviations
+    - prefixes
+    - pronouns
+    - spelling
+    - terminology
+    - sentence_length
+    - second_person
+    - inclusive_language
+
+  # ===============================================================
+  # PRIMARY CONTENT BLOCKS
+  # ===============================================================
+  
+  # Paragraph blocks - Comprehensive analysis for main content
+  paragraph:
+    # LANGUAGE AND GRAMMAR RULES (Priority: Critical/High)
+    - abbreviations
+    - prefixes
+    - contractions
+    - spelling
+    - capitalization
+    - inclusive_language
+    - pronouns
+    - verbs
+    - terminology
+    - sentence_length
+    - second_person
+    - ambiguity
+    
+    # MORPHOLOGICAL ANALYSIS RULES
+    - adverbs_only
+    - anthropomorphism
+    - articles
+    - conjunctions
+    - plurals
+    - possessives
+    - prepositions
+    
+    # PUNCTUATION RULES (Comprehensive)
+    - colons
+    - commas
+    - dashes
+    - ellipses
+    - exclamation_points
+    - hyphens
     - parentheses
     - periods
     - punctuation_and_symbols
     - quotation_marks
     - semicolons
+    - slashes
+    
+    # AUDIENCE AND MEDIUM RULES
+    - conversational_style
+    - global_audiences
+    - llm_consumability
+    - tone
+    
+    # NUMBERS AND MEASUREMENT RULES
+    - numbers_currency
+    - dates_and_times
+    - numbers_general
+    - numerals_vs_words
+    - units_of_measurement
+    
+    # REFERENCES RULES
+    - references_citations
+    - references_geographic_locations
+    - references_names_titles
+    - references_product_names
+    - references_product_versions
+    
+    # TECHNICAL ELEMENTS RULES
+    - technical_commands
+    - technical_files_directories
+    - technical_keyboard_keys
+    - technical_mouse_buttons
+    - technical_programming_elements
+    - technical_ui_elements
+    - technical_web_addresses
+    
+    # STRUCTURE AND FORMAT RULES
     - highlighting
+    
+    # LEGAL INFORMATION RULES
+    - legal_company_names
+    - legal_personal_information
+    
+    # WORD USAGE RULES (Comprehensive A-Z)
+    - word_usage_a
+    - word_usage_b
+    - word_usage_c
+    - word_usage_d
+    - word_usage_e
+    - word_usage_f
+    - word_usage_g
+    - word_usage_h
+    - word_usage_i
+    - word_usage_j
+    - word_usage_k
+    - word_usage_l
+    - word_usage_m
+    - word_usage_n
+    - word_usage_o
+    - word_usage_p
+    - word_usage_q
+    - word_usage_r
+    - word_usage_s
+    - word_usage_t
+    - word_usage_u
+    - word_usage_v
+    - word_usage_w
+    - word_usage_x
+    - word_usage_y
+    - word_usage_z
+    - word_usage_special
 
-  # Section blocks - treat like headings since they contain section titles
-  section:
-    - headings
-    - capitalization
-    - pronouns
-    - sentence_length
-    - second_person
-
-  # Preamble blocks - treat like paragraphs
+  # ===============================================================
+  # SPECIALIZED CONTENT BLOCKS
+  # ===============================================================
+  
+  # Preamble blocks - Introduction content with full analysis
   preamble:
     - abbreviations
+    - prefixes
+    - contractions
     - articles
     - capitalization
-    - contractions
     - inclusive_language
     - pronouns
     - spelling
@@ -43,13 +258,16 @@ block_type_rules:
     - sentence_length
     - second_person
     - ambiguity
+    - tone
+    - global_audiences
 
-  # Example blocks - treat like paragraphs  
+  # Example blocks - Code examples and demonstrations
   example:
     - abbreviations
+    - prefixes
+    - contractions
     - articles
     - capitalization
-    - contractions
     - inclusive_language
     - pronouns
     - spelling
@@ -58,19 +276,24 @@ block_type_rules:
     - sentence_length
     - second_person
     - ambiguity
+    - technical_commands
+    - technical_files_directories
+    - technical_programming_elements
 
-  # Verse blocks - minimal rules for poetry/verse content
+  # Verse blocks - Poetry/verse content (minimal rules)
   verse:
     - capitalization
     - spelling
     - pronouns
+    - punctuation_and_symbols
 
-  # Open blocks - treat like paragraphs since they can contain any content
+  # Open blocks - Generic content containers
   open:
     - abbreviations
+    - prefixes
+    - contractions
     - articles
     - capitalization
-    - contractions
     - inclusive_language
     - pronouns
     - spelling
@@ -80,187 +303,62 @@ block_type_rules:
     - second_person
     - ambiguity
 
-  # Description list blocks - treat like list items
-  description_list:
-    - lists
-    - capitalization
-    - punctuation_and_symbols
-
-  # Image blocks - minimal rules for alt text/captions
-  image:
-    - capitalization
-    - spelling
-    - pronouns
-
-  # Comment blocks - skip analysis
-  comment: []
-
-  # Unknown blocks - skip analysis to be safe
-  unknown: []
-
-  # Paragraph blocks - apply general language and grammar rules but exclude structure-specific rules
-  paragraph:
-    # Language and grammar rules
-    - abbreviations
-    - adverbs_only
-    - anthropomorphism
-    - articles
-    - capitalization
-    - conjunctions
-    - contractions
-    - inclusive_language
-    - plurals
-    - possessives
-    - prepositions
-    - pronouns
-    - spelling
-    - terminology
-    - verbs
-    # Punctuation rules
-    - colons
-    - commas
-    - dashes
-    - ellipses
-    - exclamation_points
-    - hyphens
-    - parentheses
-    - periods
-    - punctuation_and_symbols
-    - quotation_marks
-    - semicolons
-    - slashes
-    # Audience and Medium Rules
-    - conversational_style
-    - global_audiences
-    - llm_consumability
-    - tone
-    # Numbers and Measurement Rules
-    - numbers_currency
-    - dates_and_times
-    - numbers_general
-    - numerals_vs_words
-    - units_of_measurement
-    # References Rules
-    - references_citations
-    - references_geographic_locations
-    - references_names_titles
-    - references_product_names
-    - references_product_versions
-    # Technical Elements Rules
-    - technical_commands
-    - technical_files_directories
-    - technical_keyboard_keys
-    - technical_mouse_buttons
-    - technical_programming_elements
-    - technical_ui_elements
-    - technical_web_addresses
-    # Structure and Format Rules
-    - examples
-    - highlighting
-    # Legal Information Rules
-    # - legal_claims
-    - legal_company_names
-    - legal_personal_information
-    # Word Usage Rules
-    - word_usage_a
-    - word_usage_b
-    - word_usage_c
-    - word_usage_d
-    - word_usage_e
-    - word_usage_f
-    - word_usage_g
-    - word_usage_h
-    - word_usage_i
-    - word_usage_j
-    - word_usage_k
-    - word_usage_l
-    - word_usage_m
-    - word_usage_n
-    - word_usage_o
-    - word_usage_p
-    - word_usage_q
-    - word_usage_r
-    - word_usage_s
-    - word_usage_t
-    - word_usage_u
-    - word_usage_v
-    - word_usage_w
-    - word_usage_x
-    - word_usage_y
-    - word_usage_z
-    - word_usage_special
-    # General rules
-    - sentence_length
-    - second_person
-    - ambiguity
-
-  # List items - apply list-specific rules plus general content rules
+  # ===============================================================
+  # LIST AND STRUCTURED CONTENT
+  # ===============================================================
+  
+  # List items - Parallel structure and content analysis
   list_item:
+    # Structure-specific rules
     - lists
     - procedures
     - capitalization
     - punctuation_and_symbols
-    # Language and grammar rules
+    
+    # Core language rules
     - abbreviations
+    - prefixes
+    - contractions
+    - spelling
+    - terminology
+    - pronouns
+    - inclusive_language
+    - second_person
+    
+    # Enhanced morphological analysis
     - adverbs_only
     - anthropomorphism
     - articles
     - conjunctions
-    - contractions
-    - inclusive_language
     - plurals
     - possessives
     - prepositions
-    - pronouns
-    - spelling
-    - terminology
     - verbs
-    # Punctuation rules
+    
+    # Punctuation for lists
     - colons
     - commas
     - dashes
     - ellipses
-    - exclamation_points
     - hyphens
     - parentheses
     - periods
     - quotation_marks
     - semicolons
     - slashes
-    # Audience and Medium Rules
-    - conversational_style
+    
+    # Content quality
     - global_audiences
-    - llm_consumability
     - tone
-    # Numbers and Measurement Rules
-    - numbers_currency
-    - dates_and_times
-    - numbers_general
-    - numerals_vs_words
-    - units_of_measurement
-    # References Rules
-    - references_citations
-    - references_geographic_locations
-    - references_names_titles
-    - references_product_names
-    - references_product_versions
-    # Technical Elements Rules
+    - ambiguity
+    
+    # Technical content support
     - technical_commands
     - technical_files_directories
-    - technical_keyboard_keys
-    - technical_mouse_buttons
     - technical_programming_elements
     - technical_ui_elements
-    - technical_web_addresses
-    # Structure and Format Rules
-    - examples
-    - glossaries
-    - highlighting
-    # Legal Information Rules
-    # - legal_claims
-    - legal_company_names
-    - legal_personal_information
-    # Word Usage Rules
+    
+    # Word usage rules
     - word_usage_a
     - word_usage_b
     - word_usage_c
@@ -288,174 +386,43 @@ block_type_rules:
     - word_usage_y
     - word_usage_z
     - word_usage_special
-    # General rules
-    - sentence_length
-    - second_person
-    - ambiguity
 
+  # Ordered list items - Additional procedure focus
   list_item_ordered:
     - lists
     - procedures
     - capitalization
     - punctuation_and_symbols
-    # Language and grammar rules
     - abbreviations
-    - adverbs_only
-    - anthropomorphism
-    - articles
-    - conjunctions
+    - prefixes
     - contractions
-    - inclusive_language
-    - plurals
-    - possessives
-    - prepositions
-    - pronouns
     - spelling
     - terminology
+    - pronouns
+    - inclusive_language
     - verbs
-    # Punctuation rules
-    - colons
-    - commas
-    - dashes
-    - ellipses
-    - exclamation_points
-    - hyphens
-    - parentheses
-    - periods
-    - quotation_marks
-    - semicolons
-    - slashes
-    # Audience and Medium Rules
-    - conversational_style
-    - global_audiences
-    - llm_consumability
-    - tone
-    # Numbers and Measurement Rules
-    - numbers_currency
-    - dates_and_times
-    - numbers_general
-    - numerals_vs_words
-    - units_of_measurement
-    # References Rules
-    - references_citations
-    - references_geographic_locations
-    - references_names_titles
-    - references_product_names
-    - references_product_versions
-    # Technical Elements Rules
+    - sentence_length
     - technical_commands
     - technical_files_directories
-    - technical_keyboard_keys
-    - technical_mouse_buttons
     - technical_programming_elements
-    - technical_ui_elements
-    - technical_web_addresses
-    # Structure and Format Rules
-    - examples
-    - glossaries
-    - highlighting
-    # Legal Information Rules
-    # - legal_claims
-    - legal_company_names
-    - legal_personal_information
-    # Word Usage Rules
-    - word_usage_a
-    - word_usage_b
-    - word_usage_c
-    - word_usage_d
-    - word_usage_e
-    - word_usage_f
-    - word_usage_g
-    - word_usage_h
-    - word_usage_i
-    - word_usage_j
-    - word_usage_k
-    - word_usage_l
-    - word_usage_m
-    - word_usage_n
-    - word_usage_o
-    - word_usage_p
-    - word_usage_q
-    - word_usage_r
-    - word_usage_s
-    - word_usage_t
-    - word_usage_u
-    - word_usage_v
-    - word_usage_w
-    - word_usage_x
-    - word_usage_y
-    - word_usage_z
-    - word_usage_special
-    # General rules
-    - sentence_length
-    - second_person
-    - ambiguity
+    - numbers_general
+    - numerals_vs_words
 
+  # Unordered list items - Focus on parallel structure
   list_item_unordered:
     - lists
     - capitalization
     - punctuation_and_symbols
-    # Language and grammar rules
     - abbreviations
-    - adverbs_only
-    - anthropomorphism
-    - articles
-    - conjunctions
+    - prefixes
     - contractions
-    - inclusive_language
-    - plurals
-    - possessives
-    - prepositions
-    - pronouns
     - spelling
     - terminology
+    - pronouns
+    - inclusive_language
     - verbs
-    # Punctuation rules
-    - colons
-    - commas
-    - dashes
-    - ellipses
-    - exclamation_points
-    - hyphens
-    - parentheses
-    - periods
-    - quotation_marks
-    - semicolons
-    - slashes
-    # Audience and Medium Rules
-    - conversational_style
-    - global_audiences
-    - llm_consumability
-    - tone
-    # Numbers and Measurement Rules
-    - numbers_currency
-    - dates_and_times
-    - numbers_general
-    - numerals_vs_words
-    - units_of_measurement
-    # References Rules
-    - references_citations
-    - references_geographic_locations
-    - references_names_titles
-    - references_product_names
-    - references_product_versions
-    # Technical Elements Rules
-    - technical_commands
-    - technical_files_directories
-    - technical_keyboard_keys
-    - technical_mouse_buttons
-    - technical_programming_elements
-    - technical_ui_elements
-    - technical_web_addresses
-    # Structure and Format Rules
-    - examples
-    - glossaries
-    - highlighting
-    # Legal Information Rules
-    # - legal_claims
-    - legal_company_names
-    - legal_personal_information
-    # Word Usage Rules
+    - anthropomorphism
+    - articles
     - word_usage_a
     - word_usage_b
     - word_usage_c
@@ -483,16 +450,14 @@ block_type_rules:
     - word_usage_y
     - word_usage_z
     - word_usage_special
-    # General rules
-    - sentence_length
-    - second_person
-    - ambiguity
 
+  # List titles and containers
   list_title:
     - lists
     - capitalization
+    - headings
+    - pronouns
 
-  # List container blocks - apply lists rule for parallelism analysis
   unordered_list:
     - lists
 
@@ -500,12 +465,28 @@ block_type_rules:
     - lists
     - procedures
 
-  # Special blocks - apply specific rules
-  admonition:
-    - notes # Renamed from admonitions
+  # Description lists
+  description_list:
+    - lists
     - capitalization
-    # Language and grammar rules
+    - punctuation_and_symbols
+    - terminology
     - abbreviations
+    - prefixes
+
+  # ===============================================================
+  # SPECIAL CONTENT BLOCKS
+  # ===============================================================
+  
+  # Admonitions - Warnings, notes, tips
+  admonition:
+    - notes
+    - capitalization
+    - punctuation_and_symbols
+    
+    # Core language rules
+    - abbreviations
+    - prefixes
     - contractions
     - inclusive_language
     - plurals
@@ -518,7 +499,8 @@ block_type_rules:
     - conjunctions
     - anthropomorphism
     - articles
-    # Punctuation rules
+    
+    # Punctuation for clarity
     - colons
     - commas
     - dashes
@@ -531,50 +513,57 @@ block_type_rules:
     - quotation_marks
     - semicolons
     - slashes
-    # Audience and Medium Rules
+    
+    # Audience awareness
     - global_audiences
     - tone
-    # General rules
     - sentence_length
     - second_person
     - ambiguity
 
+  # Quotes and citations
   quote:
     - punctuation_and_symbols
     - quotation_marks
     - capitalization
+    - spelling
+    - references_citations
 
+  # Sidebar content
   sidebar:
     - capitalization
     - lists
     - sentence_length
     - ambiguity
     - contractions
+    - prefixes
     - ellipses
     - tone
+    - abbreviations
+    - spelling
 
-  # Code blocks - skip all analysis
-  listing: []
-  literal: []
-  code_block: []
-  inline_code: []
-  pass: []
+  # Blockquotes
+  blockquote:
+    - capitalization
+    - punctuation_and_symbols
+    - quotation_marks
+    - sentence_length
+    - ambiguity
+    - spelling
+    - references_citations
 
-  # Other blocks that should be skipped
-  attribute_entry: []
-  html_block: []
-  html_inline: []
-  horizontal_rule: []
-  softbreak: []
-  hardbreak: []
-
-  # Table blocks - apply structure analysis
+  # ===============================================================
+  # TABLE CONTENT
+  # ===============================================================
+  
+  # Table blocks - Structured data presentation
   table:
     - capitalization
     - punctuation_and_symbols
     - terminology
     - inclusive_language
     - contractions
+    - prefixes
     - spelling
     - verbs
     - abbreviations
@@ -586,60 +575,246 @@ block_type_rules:
     - ambiguity
     - ellipses
     - tone
+    - numbers_general
+    - units_of_measurement
 
-  # Table rows - structural analysis
+  # Table structural elements
   table_row:
     - capitalization
     - punctuation_and_symbols
+    - terminology
 
-  # Table cells - basic content analysis
   table_cell:
     - capitalization
     - punctuation_and_symbols
     - terminology
     - inclusive_language
     - contractions
+    - prefixes
     - spelling
     - units_of_measurement
     - numbers_general
+    - abbreviations
+    - references_product_names
+    - references_product_versions
 
-  # Blockquotes - similar to paragraphs but more limited
-  blockquote:
+  # ===============================================================
+  # MEDIA AND METADATA BLOCKS
+  # ===============================================================
+  
+  # Image blocks - Alt text and captions
+  image:
     - capitalization
+    - spelling
+    - pronouns
+    - inclusive_language
+    - terminology
+    - abbreviations
     - punctuation_and_symbols
-    - quotation_marks
-    - sentence_length
-    - ambiguity
 
-# Define rules that should never be applied to certain block types
+  # ===============================================================
+  # CODE AND TECHNICAL BLOCKS (Minimal Analysis)
+  # ===============================================================
+  
+  # Code blocks - Skip most analysis to avoid false positives
+  listing: []
+  literal: []
+  code_block: []
+  inline_code: []
+  pass: []
+
+  # ===============================================================
+  # STRUCTURAL AND METADATA BLOCKS (Skip Analysis)
+  # ===============================================================
+  
+  # Document structure elements
+  attribute_entry: []
+  html_block: []
+  html_inline: []
+  horizontal_rule: []
+  softbreak: []
+  hardbreak: []
+  comment: []
+  unknown: []
+
+# ===================================================================
+# SOPHISTICATED RULE EXCLUSIONS
+# Context-aware exclusions to prevent inappropriate rule application
+# ===================================================================
 rule_exclusions:
-  # Headings should never have list or procedure rules
+  
+  # Heading-specific exclusions
   heading:
     - lists
     - procedures
-
-  # Paragraphs should never have heading or list-specific rules
+    - notes
+    - sentence_length  # Headings can be fragments
+    - conversational_style  # Headings should be formal
+    
+  # Paragraph content exclusions
   paragraph:
     - headings
     - lists
     - procedures
-    - notes # Renamed from admonitions
+    - notes
 
-  # List items should never have heading-specific rules
+  # List item exclusions
   list_item:
     - headings
-    - notes # Renamed from admonitions
+    - notes
+    - sentence_length  # List items can be fragments
 
   list_item_ordered:
     - headings
-    - notes # Renamed from admonitions
+    - notes
 
   list_item_unordered:
     - headings
-    - notes # Renamed from admonitions
+    - notes
 
-  # Admonitions should never have heading or list rules
+  # Admonition exclusions
   admonition:
     - headings
     - lists
     - procedures
+
+  # Code block exclusions (comprehensive)
+  listing:
+    - ALL  # Skip all rules for code blocks
+
+  literal:
+    - ALL
+
+  code_block:
+    - ALL
+
+  inline_code:
+    - ALL
+
+  # Table cell exclusions (avoid over-analysis)
+  table_cell:
+    - sentence_length
+    - second_person
+    - conversational_style
+    - ambiguity
+
+  # Quote exclusions (preserve original style)
+  quote:
+    - contractions  # May be preserving original style
+    - conversational_style
+    - tone
+
+  # Verse exclusions (creative content)
+  verse:
+    - sentence_length
+    - second_person
+    - contractions
+    - conversational_style
+    - ambiguity
+    - most_punctuation_rules
+
+# ===================================================================
+# ADVANCED RULE CONFIGURATIONS
+# Performance and quality optimizations
+# ===================================================================
+
+# Rule performance settings
+performance_settings:
+  # Rules that should run in parallel
+  parallel_execution:
+    - word_usage_a
+    - word_usage_b
+    - word_usage_c
+    - word_usage_d
+    - word_usage_e
+    - word_usage_f
+    - word_usage_g
+    - word_usage_h
+    - word_usage_i
+    - word_usage_j
+    - word_usage_k
+    - word_usage_l
+    - word_usage_m
+    - word_usage_n
+    - word_usage_o
+    - word_usage_p
+    - word_usage_q
+    - word_usage_r
+    - word_usage_s
+    - word_usage_t
+    - word_usage_u
+    - word_usage_v
+    - word_usage_w
+    - word_usage_x
+    - word_usage_y
+    - word_usage_z
+    - word_usage_special
+  
+  # Rules that must run sequentially (dependencies)
+  sequential_execution:
+    - spelling  # Run first to clean up obvious errors
+    - capitalization  # After spelling
+    - punctuation_and_symbols  # After basic corrections
+    - abbreviations  # After punctuation
+    - prefixes  # After abbreviations
+
+# Content-type specific optimizations
+content_optimizations:
+  # Technical documentation
+  technical_content:
+    emphasis_rules:
+      - technical_commands
+      - technical_files_directories
+      - technical_programming_elements
+      - technical_ui_elements
+      - technical_web_addresses
+      - abbreviations
+      - prefixes
+    
+  # User-facing documentation  
+  user_documentation:
+    emphasis_rules:
+      - conversational_style
+      - global_audiences
+      - inclusive_language
+      - second_person
+      - tone
+      - word_usage_b  # Enhanced backup/back up analysis
+      
+  # Academic/formal content
+  formal_content:
+    emphasis_rules:
+      - references_citations
+      - terminology
+      - sentence_length
+      - contractions  # Enhanced pattern detection
+      - abbreviations
+      - prefixes
+
+# ===================================================================
+# QUALITY ASSURANCE CONFIGURATIONS
+# Ensure comprehensive coverage and accuracy
+# ===================================================================
+
+# Rule validation settings
+validation:
+  # Ensure all enhanced rules are properly mapped
+  required_enhanced_rules:
+    - prefixes  # New rule
+    - abbreviations  # Enhanced with etc. support
+    - word_usage_b  # Enhanced backup analysis
+    - contractions  # Enhanced regex patterns
+  
+  # Block types that must have comprehensive rule coverage
+  comprehensive_coverage_blocks:
+    - paragraph
+    - list_item
+    - admonition
+    - heading
+  
+  # Minimum rule count per content block type
+  minimum_rules:
+    paragraph: 50
+    list_item: 30
+    heading: 15
+    admonition: 20
