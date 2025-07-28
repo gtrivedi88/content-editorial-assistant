@@ -83,7 +83,7 @@ function displayStructuralBlocks(blocks) {
     // Work directly with blocks - no need for complex attribute placeholders
     let displayIndex = 0;
     const blocksHtml = blocks.map(block => {
-        const html = createStructuralBlock(block, displayIndex);
+        const html = createStructuralBlock(block, displayIndex, blocks);
         if (html) { // Check for non-empty HTML
             displayIndex++;
         }

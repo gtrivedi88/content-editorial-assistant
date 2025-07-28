@@ -99,6 +99,9 @@ class AsciiDocParser:
         if context == 'section': return node.get('title', '')
         if context in ['listing', 'literal']: return node.get('source', '')
         
+        # For table cells, use the 'text' field since 'content' is a list
+        if context == 'table_cell': return node.get('text', '') or node.get('source', '')
+        
         # For lists, extract content from list items
         if context in ['ulist', 'olist'] and node.get('children'):
             list_items = []

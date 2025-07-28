@@ -107,8 +107,9 @@ class BlockProcessor:
                 self._flatten_recursively(child)
             return
 
-        # For preamble and other container types, process children only
-        if block_type.value in ['preamble', 'table_row', 'table_cell']:
+        # For preamble and table_row container types, process children only
+        # But include table_cell blocks since they have content that needs analysis
+        if block_type.value in ['preamble', 'table_row']:
             for child in block.children:
                 self._flatten_recursively(child)
             return
@@ -130,11 +131,27 @@ class BlockProcessor:
                 self._flatten_recursively(child)
             return
 
-        # For all other displayable block types (paragraphs, lists, tables, etc.),
+        # For table blocks, add them and also process their children (rows and cells)
+        if block_type.value == 'table':
+            self.flat_blocks.append(block)
+            # Process table rows and cells
+            for child in block.children:
+                self._flatten_recursively(child)
+            return
+
+        # For table cells, add them to the flat list since they contain analyzable content
+        if block_type.value == 'table_cell':
+            self.flat_blocks.append(block)
+            # Also process any children they might have
+            for child in block.children:
+                self._flatten_recursively(child)
+            return
+
+        # For all other displayable block types (paragraphs, lists, etc.),
         # we add them directly to the flat list. The UI will render their children
         # (like list items) from the block's .children property.
         # We explicitly exclude child-only types that are rendered by their parents.
-        if block_type.value not in ['list_item', 'table_row', 'table_cell']:
+        if block_type.value not in ['list_item', 'table_row', 'table_cell', 'table']:
              self.flat_blocks.append(block)
 
     def _create_heading_from_section(self, section_block: Any) -> Any:

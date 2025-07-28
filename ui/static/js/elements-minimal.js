@@ -72,15 +72,32 @@ function createListBlockElement(block, displayIndex) {
 /**
  * Create a table block display with proper HTML table structure
  */
-function createTableBlockElement(block, displayIndex) {
+function createTableBlockElement(block, displayIndex, allBlocks = []) {
     const blockTitle = getBlockTypeDisplayName(block.block_type, {
         level: block.level,
         admonition_type: block.admonition_type
     });
     
-    const issueCount = block.errors ? block.errors.length : 0;
-    const status = issueCount > 0 ? 'red' : 'green';
-    const statusText = issueCount > 0 ? `${issueCount} Issue(s)` : 'Clean';
+    // Find all table cell blocks that belong to this table
+    // They will be the next blocks in sequence until we hit a non-table_cell block
+    const tableCells = [];
+    for (let i = displayIndex + 1; i < allBlocks.length; i++) {
+        if (allBlocks[i].block_type === 'table_cell') {
+            tableCells.push(allBlocks[i]);
+        } else {
+            break; // Stop when we hit a non-table_cell block
+        }
+    }
+
+    
+    // Calculate total issues including table cell errors
+    let totalIssues = block.errors ? block.errors.length : 0;
+    tableCells.forEach(cell => {
+        if (cell.errors) totalIssues += cell.errors.length;
+    });
+    
+    const status = totalIssues > 0 ? 'red' : 'green';
+    const statusText = totalIssues > 0 ? `${totalIssues} Issue(s)` : 'Clean';
     
     // Extract table content and parse it into rows and cells
     const tableHtml = parseTableContent(block);
@@ -106,7 +123,7 @@ function createTableBlockElement(block, displayIndex) {
                                 BLOCK ${displayIndex + 1}: ${blockTitle}
                             </h3>
                             <p class="pf-v5-u-font-size-sm pf-v5-u-color-200 pf-v5-u-mb-0">
-                                ${block.title ? block.title : 'Data Table'} • ${issueCount} ${issueCount === 1 ? 'issue' : 'issues'} found
+                                ${block.title ? block.title : 'Data Table'} • ${totalIssues} ${totalIssues === 1 ? 'issue' : 'issues'} found
                             </p>
                         </div>
                     </div>
@@ -114,7 +131,7 @@ function createTableBlockElement(block, displayIndex) {
                 <div class="pf-v5-c-card__actions">
                     <span class="pf-v5-c-label pf-m-outline pf-m-${status}">
                         <span class="pf-v5-c-label__content">
-                            <i class="fas fa-${issueCount > 0 ? 'exclamation-triangle' : 'check-circle'} pf-v5-c-label__icon"></i>
+                            <i class="fas fa-${totalIssues > 0 ? 'exclamation-triangle' : 'check-circle'} pf-v5-c-label__icon"></i>
                             ${statusText}
                         </span>
                     </span>
@@ -135,24 +152,56 @@ function createTableBlockElement(block, displayIndex) {
                     </div>
                 ` : ''}
                 
-                <div class="pf-v5-c-card pf-m-plain pf-m-bordered" style="overflow: hidden;">
-                    ${tableHtml}
+                <div class="pf-v5-c-card pf-m-plain" style="
+                    background: var(--pf-v5-global--BackgroundColor--100);
+                    border: 1px solid var(--pf-v5-global--BorderColor--100);
+                    border-radius: var(--pf-v5-global--BorderRadius--sm);
+                    overflow: hidden;
+                    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+                ">
+                    <div style="overflow-x: auto;">
+                        ${tableHtml}
+                    </div>
                 </div>
                 
-                ${block.errors && block.errors.length > 0 ? `
+                ${totalIssues > 0 ? `
                 <div class="pf-v5-u-mt-lg">
                     <div class="pf-v5-c-card pf-m-plain">
                         <div class="pf-v5-c-card__header">
                             <div class="pf-v5-c-card__header-main">
                                 <h4 class="pf-v5-c-title pf-m-md">
                                     <i class="fas fa-exclamation-triangle pf-v5-u-mr-sm" style="color: var(--app-danger-color);"></i>
-                                    ${(block.errors || []).length} Issue${(block.errors || []).length > 1 ? 's' : ''} Found
+                                    ${totalIssues} Issue${totalIssues > 1 ? 's' : ''} Found
                                 </h4>
                             </div>
                         </div>
                         <div class="pf-v5-c-card__body">
                             <div class="pf-v5-l-stack pf-m-gutter">
                                 ${(block.errors || []).map(error => createInlineError(error)).join('')}
+                                ${tableCells.filter(cell => cell.errors && cell.errors.length > 0).map(cell => `
+                                    <div class="pf-v5-c-alert pf-m-inline pf-m-info pf-v5-u-mb-sm">
+                                        <div class="pf-v5-c-alert__icon">
+                                            <i class="fas fa-table" aria-hidden="true"></i>
+                                        </div>
+                                        <div class="pf-v5-c-alert__title">
+                                            <span class="pf-v5-u-font-size-sm">In table cell: "${escapeHtml(cell.content)}"</span>
+                                        </div>
+                                        <div class="pf-v5-c-alert__description">
+                                            ${(cell.errors || []).map(error => `
+                                                <div class="pf-v5-c-helper-text pf-m-error pf-v5-u-mb-sm">
+                                                    <div class="pf-v5-c-helper-text__item pf-m-error">
+                                                        <span class="pf-v5-c-helper-text__item-icon">
+                                                            <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+                                                        </span>
+                                                        <span class="pf-v5-c-helper-text__item-text">
+                                                            <strong>${error.rule_id || 'Style'}:</strong> ${error.message || error.text || 'Style issue detected'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                `).join('')}
                             </div>
                         </div>
                     </div>
@@ -304,14 +353,26 @@ function generatePatternFlyTable(rows, hasHeader = false) {
         </div>`;
     }
     
-    let html = '<table class="pf-v5-c-table pf-m-compact pf-m-grid-md" role="grid">';
+    let html = `<table class="pf-v5-c-table pf-m-compact pf-m-grid-md pf-m-striped" role="grid" style="
+        border: 1px solid var(--pf-v5-global--BorderColor--100);
+        border-radius: var(--pf-v5-global--BorderRadius--sm);
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    ">`;
     
     // Generate header if specified
     if (hasHeader && rows.length > 0) {
         html += '<thead>';
         html += '<tr role="row">';
         for (const cell of rows[0]) {
-            html += `<th class="pf-v5-c-table__th" role="columnheader" scope="col">${escapeHtml(cell)}</th>`;
+            html += `<th class="pf-v5-c-table__th" role="columnheader" scope="col" style="
+                background: linear-gradient(135deg, var(--pf-v5-global--palette--blue-100) 0%, var(--pf-v5-global--palette--blue-200) 100%);
+                font-weight: var(--pf-v5-global--FontWeight--bold);
+                color: var(--pf-v5-global--palette--blue-700);
+                border-bottom: 2px solid var(--pf-v5-global--palette--blue-300);
+                padding: var(--pf-v5-global--spacer--md);
+                text-align: left;
+            ">${escapeHtml(cell)}</th>`;
         }
         html += '</tr>';
         html += '</thead>';
@@ -323,9 +384,20 @@ function generatePatternFlyTable(rows, hasHeader = false) {
     html += '<tbody role="rowgroup">';
     for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
-        html += `<tr role="row">`;
+        const isEvenRow = i % 2 === 0;
+        html += `<tr role="row" style="
+            background-color: ${isEvenRow ? 'var(--pf-v5-global--BackgroundColor--100)' : 'var(--pf-v5-global--BackgroundColor--200)'};
+            transition: background-color 0.2s ease;
+        " onmouseover="this.style.backgroundColor='var(--pf-v5-global--palette--blue-50)'" 
+           onmouseout="this.style.backgroundColor='${isEvenRow ? 'var(--pf-v5-global--BackgroundColor--100)' : 'var(--pf-v5-global--BackgroundColor--200)'}'"
+        >`;
         for (const cell of row) {
-            html += `<td class="pf-v5-c-table__td" role="gridcell">${escapeHtml(cell)}</td>`;
+            html += `<td class="pf-v5-c-table__td" role="gridcell" style="
+                padding: var(--pf-v5-global--spacer--md);
+                border-bottom: 1px solid var(--pf-v5-global--BorderColor--100);
+                vertical-align: top;
+                line-height: 1.5;
+            ">${escapeHtml(cell)}</td>`;
         }
         html += '</tr>';
     }
@@ -338,14 +410,14 @@ function generatePatternFlyTable(rows, hasHeader = false) {
 /**
  * Simplified block creation - replaces the complex modular system
  */
-function createStructuralBlock(block, displayIndex) {
+function createStructuralBlock(block, displayIndex, allBlocks = []) {
     // Handle lists and tables with specialized rendering
     if (block.block_type === 'olist' || block.block_type === 'ulist') {
         return createListBlockElement(block, displayIndex);
     }
     
     if (block.block_type === 'table') {
-        return createTableBlockElement(block, displayIndex);
+        return createTableBlockElement(block, displayIndex, allBlocks);
     }
     
     // Handle sections  
