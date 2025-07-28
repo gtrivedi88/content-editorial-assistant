@@ -50,22 +50,43 @@ class CapitalizationRule(BaseLanguageRule):
         return errors
 
     def _should_be_capitalized_morphological(self, token, doc, content_classification: str) -> bool:
-        """Pure morphological logic using SpaCy linguistic anchors."""
+        """
+        Ultra-conservative morphological logic using SpaCy linguistic anchors.
+        Only flags high-confidence proper nouns to avoid false positives.
+        """
         
-        # LINGUISTIC ANCHOR 1: Sentence position analysis
-        if token.is_sent_start or (token.i > 0 and doc[token.i - 1].is_punct):
-            return True
+        # EXCEPTION CHECK: Never flag words in the exception list
+        if self._is_excepted(token.text):
+            return False
         
-        # LINGUISTIC ANCHOR 2: SpaCy POS-based proper noun detection
-        if token.pos_ == 'PROPN':
-            return True
-            
-        # LINGUISTIC ANCHOR 3: Named entity recognition
-        if token.ent_type_ in ['PERSON', 'ORG', 'GPE', 'PRODUCT', 'LANGUAGE']:
-            return True
-            
-        # LINGUISTIC ANCHOR 4: Morphological patterns for months/days
-        if token.morph and 'proper' in str(token.morph).lower():
+        # LINGUISTIC ANCHOR 1: High-confidence Named Entity Recognition ONLY
+        # This is the primary and most reliable signal for proper nouns
+        if token.ent_type_ in ['PERSON', 'ORG', 'GPE', 'PRODUCT']:
+            # Additional confidence check: ensure it's not a misclassified common word
+            # and has proper noun characteristics
+            if (len(token.text) > 1 and  # Skip single characters
+                not token.text.lower() in ['user', 'data', 'file', 'system', 'admin', 'guest', 'client', 'server'] and
+                # Entity should have some proper noun indicators
+                (token.text[0].isupper() or  # Already properly capitalized
+                 token.ent_iob_ in ['B', 'I'])):  # Strong entity boundary signal
+                return True
+        
+        # LINGUISTIC ANCHOR 2: Very conservative sentence start logic
+        # Only for clear proper nouns at sentence start that are definitely names
+        if token.is_sent_start and len(token.text) > 1:
+            # Must be explicitly tagged as a named entity with strong confidence
+            if (token.ent_type_ in ['PERSON', 'ORG', 'GPE'] and 
+                token.text[0].islower() and
+                not self._is_excepted(token.text)):
+                return True
+                
+        # LINGUISTIC ANCHOR 3: Proper noun sequences (like "New York")
+        # Only trigger for clear multi-word proper nouns  
+        if (token.i > 0 and 
+            doc[token.i - 1].ent_type_ in ['PERSON', 'ORG', 'GPE'] and  # Previous token is a named entity
+            token.ent_type_ == doc[token.i - 1].ent_type_ and  # Same entity type
+            token.text[0].islower() and
+            not self._is_excepted(token.text)):
             return True
         
         return False
