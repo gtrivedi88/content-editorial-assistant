@@ -308,6 +308,9 @@ class AnalysisModeExecutor:
                     # CRITICAL FIX: Mark child as already analyzed to prevent duplicate processing
                     # in the recursive _analyze_recursively method
                     child._already_analyzed = True
+                    
+                    # NEW FIX: Recursively analyze nested lists within this list item
+                    self._analyze_nested_lists_in_item(child, analysis_mode)
             
             # ESSENTIAL: Analyze the whole list for structure issues (parallelism, etc.)
             # This ensures list structure errors appear in the "List Structure Issues" section
@@ -382,6 +385,9 @@ class AnalysisModeExecutor:
                     # CRITICAL FIX: Mark child as already analyzed to prevent duplicate processing
                     # in the recursive _analyze_recursively method
                     child._already_analyzed = True
+                    
+                    # NEW FIX: Recursively analyze nested lists within this list item
+                    self._analyze_nested_lists_in_item(child, analysis_mode)
             
             # ESSENTIAL: Analyze the whole list for structure issues (parallelism, etc.)
             # This ensures list structure errors appear in the "List Structure Issues" section
@@ -406,6 +412,39 @@ class AnalysisModeExecutor:
             
         return errors
 
+    def _analyze_nested_lists_in_item(self, list_item, analysis_mode: AnalysisMode):
+        """Recursively analyze nested lists within a list item."""
+        try:
+            # Check if this list item has children that are lists
+            children = getattr(list_item, 'children', [])
+            for child in children:
+                if hasattr(child, 'block_type'):
+                    block_type = getattr(child.block_type, 'value', str(child.block_type))
+                    
+                    # If child is a nested list, analyze it
+                    if block_type in ['olist', 'ulist', 'ordered_list', 'unordered_list']:
+                        # Get context for the nested list
+                        child_context = child.get_context_info() if hasattr(child, 'get_context_info') else {}
+                        child_content = child.get_text_content() if hasattr(child, 'get_text_content') else ''
+                        
+                        # Analyze the nested list using the appropriate method
+                        if block_type in ['olist', 'ordered_list']:
+                            nested_errors = self._analyze_ordered_list_content(child, child_content, analysis_mode, child_context)
+                        else:
+                            nested_errors = self._analyze_unordered_list_content(child, child_content, analysis_mode, child_context)
+                        
+                        # Store errors on the nested list
+                        if not hasattr(child, '_analysis_errors'):
+                            child._analysis_errors = []
+                        child._analysis_errors.extend(nested_errors)
+                        child._already_analyzed = True
+                    
+                    # Recursively check children of this child for even deeper nesting
+                    self._analyze_nested_lists_in_item(child, analysis_mode)
+                        
+        except Exception as e:
+            logger.error(f"Error analyzing nested lists in item: {e}")
+    
     def _extract_clean_child_content(self, child) -> Optional[str]:
         """Extract clean content from a child block, handling various content types."""
         child_content = None
