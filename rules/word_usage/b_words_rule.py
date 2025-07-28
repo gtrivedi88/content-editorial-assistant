@@ -27,8 +27,11 @@ class BWordsRule(BaseWordUsageRule):
         for token in doc:
             if token.lemma_ == "backup" and token.pos_ == "VERB":
                 sent = token.sent
+                # Find sentence index in document
+                sentence_idx = list(doc.sents).index(sent)
                 errors.append(self._create_error(
                     sentence=sent.text,
+                    sentence_index=sentence_idx,
                     message="Incorrect verb form: 'backup' should be 'back up'.",
                     suggestions=["Use 'back up' (two words) for the verb form."],
                     severity='medium',
@@ -38,8 +41,11 @@ class BWordsRule(BaseWordUsageRule):
             if token.lemma_ == "back" and token.i + 1 < len(doc) and doc[token.i + 1].lemma_ == "up" and token.dep_ in ("compound", "amod"):
                 sent = token.sent
                 next_token = doc[token.i + 1]
+                # Find sentence index in document
+                sentence_idx = list(doc.sents).index(sent)
                 errors.append(self._create_error(
                     sentence=sent.text,
+                    sentence_index=sentence_idx,
                     message="Incorrect noun/adjective form: 'back up' should be 'backup'.",
                     suggestions=["Use 'backup' (one word) for the noun or adjective form."],
                     severity='medium',
