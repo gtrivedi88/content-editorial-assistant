@@ -14,7 +14,7 @@ processing_passes:
   
   medium:
     name: "Grammar Pass"
-    categories: ["word_usage", "anthropomorphism", "capitalization", "contractions", "plurals", "spelling", "terminology"]
+    categories: ["word_usage", "anthropomorphism", "capitalization", "contractions", "prefixes", "plurals", "spelling", "terminology", "abbreviations"]
   
   low:
     name: "Style Pass"
@@ -37,13 +37,13 @@ instruction_templates:
   headings: "Fix heading capitalization and structure. Make no other changes."
   
   # ===== LANGUAGE & GRAMMAR (MEDIUM) =====
-  abbreviations: "Fix abbreviation formatting and usage according to style guide. Make no other changes."
+  abbreviations: "Fix abbreviation formatting and usage according to style guide. Replace Latin abbreviations like 'etc.' with English equivalents like 'and so on'. Ensure abbreviations are defined on first use. Make no other changes."
   adverbs_only: "Remove unnecessary adverbs or replace with stronger verbs. Make no other changes."
   anthropomorphism: "Remove anthropomorphism. Change 'system wants' → 'system requires', 'system thinks' → 'system determines', 'system feels' → 'system indicates'. Output ONLY the corrected text."
   articles: "Fix article usage (a, an, the) according to grammar rules. Make no other changes."
   capitalization: "Fix capitalization issues according to style guide. Make no other changes."
   conjunctions: "Fix conjunction usage and placement. Make no other changes."
-  contractions: "Expand contractions in formal writing. Make no other changes."
+  contractions: "Expand all contractions in formal writing. Common fixes: 'you'll' → 'you will', 'it's' → 'it is', 'can't' → 'cannot', 'don't' → 'do not'. Use comprehensive detection to catch any apostrophe-containing contractions. Make no other changes."
   plurals: "Fix parenthetical plurals. Change 'file(s)' to 'files'. Make no other changes."
   possessives: "Fix possessive forms and apostrophe usage. Make no other changes."
   prepositions: "Fix preposition usage and placement. Make no other changes."
@@ -51,9 +51,12 @@ instruction_templates:
   spelling: "Fix spelling errors according to preferred dictionary. Make no other changes."
   terminology: "Replace non-preferred terms with approved terminology. Make no other changes."
   
+  # ===== ENHANCED MORPHOLOGICAL RULES =====
+  prefixes: "Remove hyphens from closed prefixes. Common fixes: 're-start' → 'restart', 'pre-set' → 'preset', 'non-standard' → 'nonstandard', 'multi-user' → 'multiuser'. Only change prefixes that should be closed according to style guidelines. Output ONLY the corrected text."
+  
   # ===== WORD USAGE (A-Z) - All alphabet rules =====
   word_usage_a: "Replace problematic words as specified. Common fixes: 'allow' → 'enable', 'appears' → 'is displayed'. Output ONLY the corrected text."
-  word_usage_b: "Replace problematic words as specified. Common fixes: 'below' → 'following', 'basically' → remove. Output ONLY the corrected text."
+  word_usage_b: "Replace problematic words as specified. Enhanced backup/back up analysis: Use 'backup' (one word) for nouns/adjectives and 'back up' (two words) for verbs. Examples: 'I need to backup the files' → 'I need to back up the files', 'Create a back up copy' → 'Create a backup copy'. Other fixes: 'below' → 'following', 'basically' → remove. Output ONLY the corrected text."
   word_usage_c: "Replace problematic words as specified. Common fixes: 'click' → 'select', 'currently' → remove. Output ONLY the corrected text."
   word_usage_d: "Replace problematic words as specified. Common fixes: 'desired' → 'required', 'displays' → 'shows'. Output ONLY the corrected text."
   word_usage_e: "Replace problematic words as specified. Common fixes: 'easy' → 'straightforward', 'enter' → 'type'. Output ONLY the corrected text."
@@ -143,6 +146,7 @@ instruction_templates:
   references_*: "Fix reference formatting according to style guide. Make no other changes."
   structure_*: "Fix structural formatting according to style guide. Make no other changes."
   legal_*: "Fix legal compliance issues. Make no other changes."
+  prefix_*: "Fix prefix hyphenation according to style guide. Remove hyphens from closed prefixes. Make no other changes."
 
 # Quality preservation rules (applied to ALL fixes)
 quality_preservation:
@@ -152,6 +156,31 @@ quality_preservation:
   - "Do not add exclamation points in technical writing"
   - "Keep changes minimal and surgical"
   - "Maintain the original intent and meaning"
+
+# Enhanced processing for new rule types
+enhanced_rules:
+  prefixes:
+    priority: "medium"
+    description: "Morphological prefix analysis using spaCy"
+    examples:
+      - "re-start → restart"
+      - "pre-configure → preconfigure" 
+      - "non-essential → nonessential"
+      
+  enhanced_contractions:
+    priority: "medium"
+    description: "Comprehensive contraction detection using regex patterns"
+    examples:
+      - "you'll → you will"
+      - "it's → it is"
+      - "can't → cannot"
+      
+  enhanced_word_usage_b:
+    priority: "medium"
+    description: "Advanced backup vs back up morphological analysis"
+    examples:
+      - "backup the system (verb) → back up the system"
+      - "create a back up (noun) → create a backup"
 
 # Fallback instruction for unknown error types
 fallback_instruction: "Fix {error_type} issues according to the style guide. Make minimal changes to preserve meaning and context. Do not lose important information."
