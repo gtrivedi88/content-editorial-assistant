@@ -9,26 +9,55 @@
 function createListBlockElement(block, displayIndex) {
     const isOrdered = block.block_type === 'olist';
     let totalIssues = block.errors ? block.errors.length : 0;
-    if (block.children) {
-        block.children.forEach(item => {
+    
+    // Recursively count issues in all nested children
+    const countNestedIssues = (children) => {
+        if (!children) return;
+        children.forEach(item => {
             if (item.errors) totalIssues += item.errors.length;
+            if (item.children) countNestedIssues(item.children);
         });
+    };
+    
+    if (block.children) {
+        countNestedIssues(block.children);
     }
+    
     const status = totalIssues > 0 ? 'red' : 'green';
     const statusText = totalIssues > 0 ? `${totalIssues} Issue(s)` : 'Clean';
 
     const generateListItems = (items) => {
         if (!items || items.length === 0) return '';
-        return items.map(item => `
-            <li>
-                ${escapeHtml(item.content)}
-                ${item.errors && item.errors.length > 0 ? `
-                    <div class="pf-v5-l-stack pf-m-gutter pf-v5-u-ml-lg pf-v5-u-mt-sm">
-                        ${item.errors.map(error => createInlineError(error)).join('')}
-                    </div>
-                ` : ''}
-            </li>
-        `).join('');
+        return items.map(item => {
+            let content = escapeHtml(item.content);
+            
+            // Handle nested lists if this item has children
+            let nestedContent = '';
+            if (item.children && item.children.length > 0) {
+                item.children.forEach(child => {
+                    if (child.block_type === 'olist' || child.block_type === 'ulist') {
+                        const isChildOrdered = child.block_type === 'olist';
+                        nestedContent += `
+                            <${isChildOrdered ? 'ol' : 'ul'}>
+                                ${generateListItems(child.children)}
+                            </${isChildOrdered ? 'ol' : 'ul'}>
+                        `;
+                    }
+                });
+            }
+            
+            return `
+                <li>
+                    ${content}
+                    ${nestedContent}
+                    ${item.errors && item.errors.length > 0 ? `
+                        <div class="pf-v5-l-stack pf-m-gutter pf-v5-u-ml-lg pf-v5-u-mt-sm">
+                            ${item.errors.map(error => createInlineError(error)).join('')}
+                        </div>
+                    ` : ''}
+                </li>
+            `;
+        }).join('');
     };
 
     // Separate list structure errors from item errors for better display
