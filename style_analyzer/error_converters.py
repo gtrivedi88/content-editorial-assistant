@@ -15,7 +15,7 @@ class ErrorConverter:
     """Utility class for converting between different error formats."""
     
     @staticmethod
-    def convert_rules_error(rules_error: Dict[str, Any]) -> ErrorDict:
+    def convert_rules_error(rules_error: Dict[str, Any], block_context: Dict[str, Any] = None) -> ErrorDict:
         """Convert rules system error to our standardized error format."""
         try:
             # Extract information from rules error
@@ -44,6 +44,10 @@ class ErrorConverter:
                 error_dict['sentence_index'] = sentence_index
             if subtype:
                 error_dict['subtype'] = subtype
+            
+            # CRITICAL FIX: Add structural context to error
+            if block_context:
+                error_dict['structural_context'] = block_context
             
             # Preserve any additional fields from the original error (including consolidation metadata)
             for key, value in rules_error.items():

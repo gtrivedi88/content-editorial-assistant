@@ -45,7 +45,7 @@ class AnalysisModeExecutor:
                     )
                     # Convert rules errors to our error format
                     for error in rules_errors:
-                        converted_error = self.error_converter.convert_rules_error(error)
+                        converted_error = self.error_converter.convert_rules_error(error, block_context)
                         errors.append(converted_error)
                     logger.info(f"Context-aware modular rules analysis found {len(rules_errors)} issues")
                 except Exception as e:
@@ -73,7 +73,7 @@ class AnalysisModeExecutor:
                     )
                     # Convert rules errors to our error format
                     for error in rules_errors:
-                        converted_error = self.error_converter.convert_rules_error(error)
+                        converted_error = self.error_converter.convert_rules_error(error, block_context)
                         errors.append(converted_error)
                     logger.info(f"Context-aware modular rules analysis found {len(rules_errors)} issues")
                 except Exception as e:
@@ -107,7 +107,7 @@ class AnalysisModeExecutor:
                     )
                     # Convert rules errors to our error format  
                     for error in rules_errors:
-                        converted_error = self.error_converter.convert_rules_error(error)
+                        converted_error = self.error_converter.convert_rules_error(error, block_context)
                         errors.append(converted_error)
                     logger.info(f"Minimal safe modular rules analysis found {len(rules_errors)} issues")
                 except Exception as e:
@@ -201,8 +201,8 @@ class AnalysisModeExecutor:
             elif block_type == AsciiDocBlockType.TABLE_CELL:
                 errors.extend(self._analyze_table_cell_content(block, content, analysis_mode, block_context))
             
-            # Apply general content analysis for other blocks (excluding headings which are analyzed in block_processors.py)
-            elif block_type in [AsciiDocBlockType.PARAGRAPH, AsciiDocBlockType.QUOTE, AsciiDocBlockType.LIST_ITEM]:
+            # Apply general content analysis for other blocks (including headings)
+            elif block_type in [AsciiDocBlockType.PARAGRAPH, AsciiDocBlockType.HEADING, AsciiDocBlockType.QUOTE, AsciiDocBlockType.LIST_ITEM]:
                 errors.extend(self._analyze_generic_content(content, analysis_mode, block_context))
                 
         except Exception as e:
@@ -252,7 +252,7 @@ class AnalysisModeExecutor:
                         )
                         # Convert rules errors to our error format
                         for error in rules_errors:
-                            converted_error = self.error_converter.convert_rules_error(error)
+                            converted_error = self.error_converter.convert_rules_error(error, enhanced_context)
                             errors.append(converted_error)
                     except Exception as e:
                         logger.warning(f"Admonition rule analysis failed: {e}")
