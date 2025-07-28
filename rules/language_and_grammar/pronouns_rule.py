@@ -47,20 +47,31 @@ class PronounsRule(BaseLanguageRule):
                         flagged_text=token.text
                     ))
 
-            # --- Rule 2: Ambiguous Pronouns ('it', 'this') ---
-            if sent.text.lower().startswith(("it is", "it's", "this")):
-                if i > 0:
-                    prev_sent = sents[i-1]
-                    noun_count = sum(1 for token in prev_sent if token.pos_ == 'NOUN')
-                    if noun_count > 1:
-                        pronoun_token = sent[0]
-                        errors.append(self._create_error(
-                            sentence=sent.text,
-                            sentence_index=i,
-                            message=f"Ambiguous pronoun: '{pronoun_token.text}' may have an unclear antecedent.",
-                            suggestions=[f"Replace '{pronoun_token.text}' with the specific noun to improve clarity."],
-                            severity='low',
-                            span=(pronoun_token.idx, pronoun_token.idx + len(pronoun_token.text)),
-                            flagged_text=pronoun_token.text
-                        ))
+            # --- Rule 2: Ambiguous Pronouns ('it', 'this', 'that') ---
+            # Check for ambiguous pronouns at sentence start
+            ambiguous_pronouns = ['it', 'this', 'that']
+            
+            for j, token in enumerate(sent):
+                # Check if it's an ambiguous pronoun at the start of a sentence
+                if (j == 0 and 
+                    token.lemma_.lower() in ambiguous_pronouns and 
+                    token.pos_ in ['PRON', 'DET']):
+                    
+                    # Look for potential ambiguity in previous context
+                    if i > 0:
+                        prev_sent = sents[i-1]
+                        noun_count = sum(1 for prev_token in prev_sent if prev_token.pos_ == 'NOUN')
+                        
+                        # Flag if there are multiple potential referents
+                        if noun_count > 1:
+                            errors.append(self._create_error(
+                                sentence=sent.text,
+                                sentence_index=i,
+                                message=f"Ambiguous pronoun: '{token.text}' may have an unclear antecedent.",
+                                suggestions=[f"Replace '{token.text}' with the specific noun to improve clarity."],
+                                severity='medium',
+                                span=(token.idx, token.idx + len(token.text)),
+                                flagged_text=token.text
+                            ))
+                            break  # Only flag one pronoun per sentence
         return errors

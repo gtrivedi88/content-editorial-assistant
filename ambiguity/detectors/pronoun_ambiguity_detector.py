@@ -418,18 +418,31 @@ class PronounAmbiguityDetector(AmbiguityDetector):
         # Technical systems/entities that could be subjects of discourse
         likely_object_entities = [
             'system', 'platform', 'framework', 'service', 'tool', 'interface',
-            'application', 'program', 'software', 'module', 'component'
+            'application', 'program', 'software', 'module', 'component', 'database',
+            'server', 'network', 'device', 'machine', 'engine', 'processor'
         ]
         
-        # Less likely: concrete items, data, files
+        # Less likely: concrete items, data, files (using whole word matching)
         unlikely_object_entities = [
-            'data', 'information', 'file', 'document', 'record', 'entry',
+            'information', 'file', 'document', 'record', 'entry',
             'value', 'parameter', 'setting', 'option', 'field'
         ]
         
-        if any(entity in text for entity in likely_object_entities):
-            return True
-        if any(entity in text for entity in unlikely_object_entities):
+        # Use whole word matching to avoid false positives like "data" in "database"
+        import re
+        
+        # Check for likely entities (whole word or as part of compound words)
+        for entity in likely_object_entities:
+            if entity == text or entity in text:
+                return True
+        
+        # Check for unlikely entities (whole word only to avoid substring issues)
+        for entity in unlikely_object_entities:
+            if re.search(r'\b' + re.escape(entity) + r'\b', text):
+                return False
+        
+        # Special case: "data" as whole word is unlikely, but compounds like "database" are likely
+        if re.search(r'\bdata\b', text) and text not in ['database', 'metadata', 'dataset']:
             return False
         
         return True  # Default to including if unsure
