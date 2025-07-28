@@ -130,11 +130,10 @@ class StatisticsCalculator:
                     getattr(textstat, 'flesch_reading_ease', lambda x: 0), text
                 )
                 
-                # Safe grade level calculation
-                grade_level_result = safe_textstat_call(
-                    getattr(textstat, 'text_standard', lambda x, default=0.0: 0), text, default=0.0
+                # Use flesch_kincaid_grade for numeric grade level instead of text_standard
+                metrics['grade_level'] = safe_textstat_call(
+                    getattr(textstat, 'flesch_kincaid_grade', lambda x: 0), text
                 )
-                metrics['grade_level'] = safe_float_conversion(grade_level_result, 0.0)
                 
             # Safe error density calculation
             valid_sentences = [s for s in sentences if s.strip()]
@@ -354,8 +353,10 @@ class StatisticsCalculator:
         }
         
         try:
-            grade_level = safe_textstat_call(getattr(textstat, 'text_standard', lambda x, default=0.0: 0), text, default=0.0)
-            grade_level = safe_float_conversion(grade_level, 0.0)
+            # Use flesch_kincaid_grade for numeric grade level instead of text_standard
+            grade_level = safe_textstat_call(
+                getattr(textstat, 'flesch_kincaid_grade', lambda x: 0), text
+            )
             
             analysis['estimated_grade_level'] = grade_level
             

@@ -119,12 +119,12 @@ class StyleAnalyzer:
             sentences = self._split_sentences(text)
             paragraphs = self.statistics_calculator.split_paragraphs_safe(text)
             
-            statistics = self.statistics_calculator.calculate_safe_statistics(
+            statistics = self.statistics_calculator.calculate_comprehensive_statistics(
                 text, sentences, paragraphs
             )
             
-            technical_metrics = self.statistics_calculator.calculate_safe_technical_metrics(
-                text, sentences, len(errors)
+            technical_metrics = self.statistics_calculator.calculate_comprehensive_technical_metrics(
+                text, sentences, errors
             )
             
             # Generate suggestions

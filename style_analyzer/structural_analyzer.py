@@ -28,6 +28,8 @@ class StructuralAnalyzer:
         self.parser_factory = StructuralParserFactory()
         self.rules_registry = rules_registry
         self.nlp = nlp
+        self.statistics_calculator = statistics_calculator
+        self.suggestion_generator = suggestion_generator
         
         self.mode_executor = AnalysisModeExecutor(
             readability_analyzer,
@@ -74,13 +76,42 @@ class StructuralAnalyzer:
                     block._analysis_errors = errors
                     all_errors.extend(errors)
 
+        # **Step 4: Calculate statistics and technical metrics from the original text**
+        # This is what was missing - we need to calculate actual statistics!
+        sentences = self._split_sentences(text)
+        paragraphs = self.statistics_calculator.split_paragraphs_safe(text)
+        
+        # Use comprehensive calculation methods to get all the detailed metrics
+        statistics = self.statistics_calculator.calculate_comprehensive_statistics(
+            text, sentences, paragraphs
+        )
+        
+        technical_metrics = self.statistics_calculator.calculate_comprehensive_technical_metrics(
+            text, sentences, all_errors
+        )
+        
+        # Generate suggestions
+        suggestions = self.suggestion_generator.generate_suggestions(
+            all_errors, statistics, technical_metrics
+        )
+        
+        # Calculate overall score
+        overall_score = self._calculate_overall_score(
+            all_errors, technical_metrics, statistics
+        )
+
         structural_blocks_dict = [block.to_dict() for block in flat_blocks]
 
         return {
             'analysis': create_analysis_result(
                 errors=all_errors,
-                suggestions=[], statistics={}, technical_metrics={}, overall_score=50,
-                analysis_mode=analysis_mode.value, spacy_available=bool(self.nlp), modular_rules_available=bool(self.rules_registry)
+                suggestions=suggestions,
+                statistics=statistics,
+                technical_metrics=technical_metrics,
+                overall_score=overall_score,
+                analysis_mode=analysis_mode.value, 
+                spacy_available=bool(self.nlp), 
+                modular_rules_available=bool(self.rules_registry)
             ),
             'structural_blocks': structural_blocks_dict,
             'has_structure': True
@@ -112,3 +143,50 @@ class StructuralAnalyzer:
             context['is_list_introduction'] = is_list_intro
             
             current_block.context_info = context
+
+    def _split_sentences(self, text: str) -> List[str]:
+        """Split text into sentences safely."""
+        try:
+            if self.nlp:
+                # Use the sentence analyzer from the mode executor
+                from .sentence_analyzer import SentenceAnalyzer
+                sentence_analyzer = SentenceAnalyzer()
+                return sentence_analyzer.split_sentences_safe(text, self.nlp)
+            else:
+                # Ultimate fallback
+                import re
+                sentences = re.split(r'[.!?]+', text)
+                return [s.strip() for s in sentences if s.strip()]
+        except Exception as e:
+            logger.error(f"Error splitting sentences: {e}")
+            # Ultimate fallback
+            import re
+            sentences = re.split(r'[.!?]+', text)
+            return [s.strip() for s in sentences if s.strip()]
+
+    def _calculate_overall_score(self, errors: List[Dict[str, Any]], technical_metrics: Dict[str, Any], 
+                               statistics: Dict[str, Any]) -> float:
+        """Calculate overall style score safely."""
+        try:
+            # Base score
+            base_score = 85.0
+            
+            # Deduct points for errors
+            error_penalty = min(len(errors) * 5, 30)  # Max 30 points penalty
+            
+            # Adjust for readability
+            readability_score = technical_metrics.get('readability_score', 60.0)
+            if readability_score < 60:
+                readability_penalty = (60 - readability_score) * 0.3
+            else:
+                readability_penalty = 0
+            
+            # Final score
+            final_score = base_score - error_penalty - readability_penalty
+            
+            # Ensure score is between 0 and 100
+            return max(0, min(100, final_score))
+            
+        except Exception as e:
+            logger.error(f"Error calculating overall score: {e}")
+            return 50.0  # Safe default
