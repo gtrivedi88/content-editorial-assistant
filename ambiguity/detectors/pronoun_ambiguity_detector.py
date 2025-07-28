@@ -492,6 +492,10 @@ class PronounAmbiguityDetector(AmbiguityDetector):
         referent_texts = [r['text'] for r in referents]
         ambiguity_type = ambiguity_info['ambiguity_type']
         
+        # CRITICAL: Calculate span for consolidation
+        span_start = pronoun_token.idx
+        span_end = span_start + len(pronoun_text)
+        
         # Create evidence
         evidence = AmbiguityEvidence(
             tokens=[pronoun_text],
@@ -524,30 +528,48 @@ class PronounAmbiguityDetector(AmbiguityDetector):
         
         if ambiguity_type == AmbiguityType.UNCLEAR_ANTECEDENT:
             ai_instructions = [
-                f"The pronoun '{pronoun_text}' has an unclear antecedent. Multiple nouns in the previous sentence could be the referent: {referent_list}",
-                f"Replace '{pronoun_text}' with the specific noun it refers to",
-                "Choose the most logical antecedent based on the context and meaning",
-                f"For example: Instead of '{pronoun_text} is...', write 'The [specific noun] is...'"
+                f"Replace the pronoun '{pronoun_text}' with a specific noun to clarify the reference.",
+                f"The pronoun could refer to: {referent_list}",
+                "Choose the most appropriate referent based on context and rewrite the sentence."
             ]
         else:
             ai_instructions = [
-                f"Replace the ambiguous pronoun '{pronoun_text}' with the specific noun it refers to",
-                f"Possible referents: {referent_list}",
-                "Choose the most logical referent based on context"
+                f"Clarify the pronoun '{pronoun_text}' by replacing it with a specific noun.",
+                f"Potential referents include: {referent_list}",
+                "Rewrite to eliminate ambiguity about what the pronoun refers to."
             ]
         
-        # Add examples
-        examples = []
-        if len(referent_texts) >= 2:
-            examples.append(f"Instead of '{pronoun_text} performs...', write 'The {referent_texts[0]} performs...' or 'The {referent_texts[1]} performs...'")
+        # Determine severity based on confidence and referent count
+        if ambiguity_info['confidence'] >= 0.8 or len(referents) >= 3:
+            severity = AmbiguitySeverity.HIGH
+        elif ambiguity_info['confidence'] >= 0.6 or len(referents) == 2:
+            severity = AmbiguitySeverity.MEDIUM
+        else:
+            severity = AmbiguitySeverity.LOW
         
         return AmbiguityDetection(
             ambiguity_type=ambiguity_type,
-            category=AmbiguityCategory.REFERENTIAL,
-            severity=AmbiguitySeverity.MEDIUM,
+            category=AmbiguityCategory.SEMANTIC,
+            severity=severity,
             context=context,
             evidence=evidence,
             resolution_strategies=strategies,
             ai_instructions=ai_instructions,
-            examples=examples
+            examples=self._generate_examples(pronoun_text, referent_texts),
+            span=(span_start, span_end),  # CRITICAL: Include span for consolidation
+            flagged_text=pronoun_text     # CRITICAL: Include flagged text
         ) 
+
+    def _generate_examples(self, pronoun_text: str, referent_texts: List[str]) -> List[str]:
+        """Generate helpful examples for fixing pronoun ambiguity."""
+        examples = []
+        
+        if len(referent_texts) >= 2:
+            # Generate specific examples based on the pronoun and referents
+            if pronoun_text.lower() in ['it', 'this', 'that']:
+                examples.append(f"Instead of '{pronoun_text} performs...', write 'The {referent_texts[0]} performs...' or 'The {referent_texts[1]} performs...'")
+                examples.append(f"Replace '{pronoun_text} is' with 'The {referent_texts[0]} is' for clarity")
+            elif pronoun_text.lower() in ['they', 'them', 'these', 'those']:
+                examples.append(f"Instead of '{pronoun_text} are...', specify 'The {referent_texts[0]} and {referent_texts[1]} are...'")
+        
+        return examples 

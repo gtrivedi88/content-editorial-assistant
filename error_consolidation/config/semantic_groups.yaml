@@ -1,0 +1,187 @@
+# Semantic Grouping Configuration
+# Defines which error types should be grouped together for consolidation
+# This replaces hardcoded semantic groups for full scalability
+
+# Primary semantic groups that commonly overlap and confuse users
+semantic_groups:
+  
+  # Core language clarity issues (highest consolidation priority)
+  language_clarity:
+    types:
+      - verbs
+      - ambiguity
+      - word_usage
+      - word_usage_t
+      - word_usage_c
+      - word_usage_a
+      - pronouns
+      - missing_actor
+      - inclusive_language
+    consolidation_priority: 10
+    proximity_threshold: 25  # characters
+    always_consolidate_pairs:
+      - [verbs, ambiguity]          # Always group passive voice + pronoun issues
+      - [ambiguity, word_usage_t]   # Always group pronoun + word usage
+      - [word_usage, word_usage_t]  # Always group related word usage
+    message_template: "Multiple style issues detected: sentence structure and clarity can be improved."
+  
+  # Punctuation and formatting style
+  punctuation_style:
+    types:
+      - punctuation
+      - commas
+      - periods
+      - semicolons
+      - colons
+      - quotation_marks
+      - parentheses
+      - dashes
+      - hyphens
+      - ellipses
+      - exclamation_points
+    consolidation_priority: 8
+    proximity_threshold: 15
+    message_template: "Multiple punctuation style issues detected."
+  
+  # Document structure and organization
+  structure_formatting:
+    types:
+      - structure
+      - headings
+      - lists
+      - paragraphs
+      - highlighting
+      - procedures
+      - glossaries
+      - notes
+      - messages
+      - admonitions
+    consolidation_priority: 9
+    proximity_threshold: 50  # Larger threshold for structure issues
+    message_template: "Document structure and formatting issues detected."
+  
+  # Word choice and terminology consistency
+  word_terminology:
+    types:
+      - word_usage
+      - word_usage_t
+      - word_usage_c
+      - word_usage_a
+      - word_usage_b
+      - word_usage_d
+      - word_usage_e
+      - word_usage_f
+      - word_usage_g
+      - word_usage_h
+      - word_usage_i
+      - word_usage_j
+      - word_usage_k
+      - word_usage_l
+      - word_usage_m
+      - word_usage_n
+      - word_usage_o
+      - word_usage_p
+      - word_usage_q
+      - word_usage_r
+      - word_usage_s
+      - word_usage_u
+      - word_usage_v
+      - word_usage_w
+      - word_usage_x
+      - word_usage_y
+      - word_usage_z
+      - word_usage_special
+      - terminology
+    consolidation_priority: 6
+    proximity_threshold: 30
+    message_template: "Word choice and terminology issues detected."
+  
+  # Technical elements and accuracy
+  technical_elements:
+    types:
+      - technical_commands
+      - technical_ui_elements
+      - technical_files_directories
+      - technical_keyboard_keys
+      - technical_mouse_buttons
+      - technical_programming_elements
+      - technical_web_addresses
+    consolidation_priority: 9
+    proximity_threshold: 20
+    message_template: "Technical accuracy and consistency issues detected."
+  
+  # Legal and compliance information
+  legal_compliance:
+    types:
+      - legal_claims
+      - legal_company_names
+      - legal_personal_information
+    consolidation_priority: 10
+    proximity_threshold: 35
+    message_template: "Legal compliance and information accuracy issues detected."
+  
+  # References and citations
+  references_citations:
+    types:
+      - references_citations
+      - references_geographic_locations
+      - references_names_titles
+      - references_product_names
+      - references_product_versions
+    consolidation_priority: 7
+    proximity_threshold: 25
+    message_template: "Reference and citation consistency issues detected."
+  
+  # Numbers and measurements
+  numbers_formatting:
+    types:
+      - numbers_currency
+      - dates_and_times
+      - numbers_general
+      - numerals_vs_words
+      - units_of_measurement
+    consolidation_priority: 5
+    proximity_threshold: 15
+    message_template: "Number formatting and measurement consistency issues detected."
+
+# Special consolidation rules that override normal grouping
+special_rules:
+  
+  # Any ambiguity error with any verb error should always be consolidated
+  ambiguity_with_verbs:
+    condition: "one_type_contains('ambiguity') and one_type_contains('verbs')"
+    action: always_consolidate
+    message_template: "Sentence clarity issues: passive voice and unclear references detected."
+  
+  # Multiple word usage errors in same sentence should be consolidated
+  multiple_word_usage:
+    condition: "count_types_matching('word_usage') >= 2"
+    action: consolidate_if_close
+    proximity_threshold: 40
+    message_template: "Multiple word usage issues detected in this sentence."
+  
+  # Overlapping spans should always be consolidated regardless of type
+  overlapping_spans:
+    condition: "spans_overlap()"
+    action: always_consolidate
+    message_template: "Multiple overlapping style issues detected."
+
+# Global consolidation parameters
+global_parameters:
+  # Maximum distance between errors to consider for consolidation
+  max_consolidation_distance: 50
+  
+  # Minimum number of errors required to trigger consolidation
+  min_errors_for_consolidation: 2
+  
+  # Maximum number of errors to consolidate into a single error
+  max_errors_per_consolidation: 5
+  
+  # Whether to consolidate errors across sentence boundaries
+  consolidate_across_sentences: false
+  
+  # Default proximity threshold when not specified in semantic group
+  default_proximity_threshold: 20
+  
+  # Whether to use span overlap detection for all error types
+  enable_span_overlap_detection: true 

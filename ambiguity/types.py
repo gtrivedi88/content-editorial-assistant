@@ -4,7 +4,7 @@ Defines the core data structures and types for ambiguity detection in technical 
 """
 
 from enum import Enum
-from typing import Dict, List, Any, Optional, NamedTuple, Set
+from typing import Dict, List, Any, Optional, NamedTuple, Set, Tuple
 from dataclasses import dataclass
 
 
@@ -115,9 +115,13 @@ class AmbiguityDetection:
     ai_instructions: List[str]
     examples: Optional[List[str]] = None
     
+    # CRITICAL: Add span information for error consolidation
+    span: Optional[Tuple[int, int]] = None
+    flagged_text: Optional[str] = None
+    
     def to_error_dict(self) -> Dict[str, Any]:
         """Convert to error dictionary compatible with existing rules system."""
-        return {
+        error_dict = {
             'type': 'ambiguity',
             'subtype': self.ambiguity_type.value,
             'category': self.category.value,
@@ -135,6 +139,14 @@ class AmbiguityDetection:
             },
             'resolution_strategies': [s.value for s in self.resolution_strategies]
         }
+        
+        # CRITICAL: Add span information for consolidation
+        if self.span:
+            error_dict['span'] = self.span
+        if self.flagged_text:
+            error_dict['flagged_text'] = self.flagged_text
+        
+        return error_dict
     
     def _generate_message(self) -> str:
         """Generate human-readable message for the ambiguity."""

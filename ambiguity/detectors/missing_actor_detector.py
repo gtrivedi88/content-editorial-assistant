@@ -281,6 +281,20 @@ class MissingActorDetector(AmbiguityDetector):
             tokens = [token.text for token in construction.get('tokens', [])]
             linguistic_pattern = f"passive_voice_{construction.get('type', 'unknown')}"
             
+            # CRITICAL: Calculate span for consolidation
+            span_start = None
+            span_end = None
+            flagged_text = ""
+            
+            construction_tokens = construction.get('tokens', [])
+            if construction_tokens:
+                # Use the main verb or first token for span calculation
+                main_token = construction.get('main_verb') or construction_tokens[0]
+                if hasattr(main_token, 'idx'):
+                    span_start = main_token.idx
+                    span_end = span_start + len(main_token.text)
+                    flagged_text = main_token.text
+            
             # Calculate confidence
             confidence = self._calculate_confidence(construction, doc, context)
             
@@ -289,11 +303,11 @@ class MissingActorDetector(AmbiguityDetector):
                 tokens=tokens,
                 linguistic_pattern=linguistic_pattern,
                 confidence=confidence,
-                                 spacy_features={
-                     'construction_type': construction.get('type'),
-                     'main_verb': getattr(construction.get('main_verb'), 'lemma_', None),
-                     'auxiliary': getattr(construction.get('auxiliary'), 'lemma_', None)
-                 }
+                spacy_features={
+                    'construction_type': construction.get('type'),
+                    'main_verb': getattr(construction.get('main_verb'), 'lemma_', None),
+                    'auxiliary': getattr(construction.get('auxiliary'), 'lemma_', None)
+                }
             )
             
             # Determine resolution strategies
@@ -305,7 +319,7 @@ class MissingActorDetector(AmbiguityDetector):
             # Generate AI instructions
             ai_instructions = self._generate_ai_instructions(construction, doc, context)
             
-            # Create detection
+            # Create detection with span information
             detection = AmbiguityDetection(
                 ambiguity_type=AmbiguityType.MISSING_ACTOR,
                 category=self.config.get_category(AmbiguityType.MISSING_ACTOR),
@@ -314,7 +328,9 @@ class MissingActorDetector(AmbiguityDetector):
                 evidence=evidence,
                 resolution_strategies=resolution_strategies,
                 ai_instructions=ai_instructions,
-                examples=self._generate_examples(construction, doc)
+                examples=self._generate_examples(construction, doc),
+                span=(span_start, span_end) if span_start is not None else None,  # CRITICAL: Include span
+                flagged_text=flagged_text if flagged_text else None               # CRITICAL: Include flagged text
             )
             
             return detection
