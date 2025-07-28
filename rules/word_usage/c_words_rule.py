@@ -13,6 +13,7 @@ except ImportError:
 class CWordsRule(BaseWordUsageRule):
     """
     Checks for the incorrect usage of specific words starting with 'C'.
+    Uses linguistic anchors for automatic detection without hard-coded phrases.
     """
     def _get_rule_type(self) -> str:
         return 'word_usage_c'
@@ -23,8 +24,37 @@ class CWordsRule(BaseWordUsageRule):
             return errors
         doc = nlp(text)
 
-        # General word map
-        word_map = {
+        # LINGUISTIC ANCHOR APPROACH: Automatically detect phrasal verb issues
+        phrasal_verb_violations = self._detect_phrasal_verbs_with_unnecessary_prepositions(doc)
+        
+        # Convert sentences to list for indexing
+        sentences_list = list(doc.sents)
+        
+        # Process phrasal verb violations found by linguistic analysis
+        for violation in phrasal_verb_violations:
+            # Find which sentence this violation belongs to
+            sentence_index = 0
+            sentence_text = ""
+            for i, sent in enumerate(sentences_list):
+                if sent.start_char <= violation['start_char'] < sent.end_char:
+                    sentence_index = i
+                    sentence_text = sent.text
+                    break
+            
+            # Only process violations that start with 'C' (since this is c_words_rule)
+            if violation['verb_token'].text.lower().startswith('c'):
+                errors.append(self._create_error(
+                    sentence=sentence_text,
+                    sentence_index=sentence_index,
+                    message=f"Review usage of the phrase '{violation['phrase']}'.",
+                    suggestions=[violation['suggestion']],
+                    severity='high',
+                    span=(violation['start_char'], violation['end_char']),
+                    flagged_text=violation['phrase']
+                ))
+
+        # Single word map for exact matching (keep existing functionality)
+        single_word_map = {
             "cancelation": {"suggestion": "Use 'cancellation'.", "severity": "low"},
             "can not": {"suggestion": "Use 'cannot'.", "severity": "high"},
             "canned": {"suggestion": "Avoid jargon. Use 'predefined' or 'preconfigured'.", "severity": "medium"},
@@ -34,7 +64,6 @@ class CWordsRule(BaseWordUsageRule):
             "choose": {"suggestion": "For UI elements, use a more specific verb like 'select' or 'click'.", "severity": "medium"},
             "class path": {"suggestion": "Use 'classpath' only as a variable, otherwise 'class path'.", "severity": "low"},
             "clean up": {"suggestion": "Use 'clean up' (verb) and 'cleanup' (noun).", "severity": "low"},
-            "click on": {"suggestion": "Omit 'on'. Write 'click the button', not 'click on the button'.", "severity": "high"},
             "client-server": {"suggestion": "Use 'client/server'.", "severity": "low"},
             "combo box": {"suggestion": "Do not use. In instructions, use the name of the field.", "severity": "medium"},
             "comprise": {"suggestion": "The whole comprises the parts. The parts compose the whole. Avoid 'is comprised of'.", "severity": "medium"},
@@ -43,8 +72,9 @@ class CWordsRule(BaseWordUsageRule):
             "crash": {"suggestion": "Use a more specific term like 'fail' or 'stop unexpectedly'.", "severity": "medium"},
         }
 
-        for i, sent in enumerate(doc.sents):
-            for word, details in word_map.items():
+        # Handle single words with regex (existing logic)
+        for i, sent in enumerate(sentences_list):
+            for word, details in single_word_map.items():
                 for match in re.finditer(r'\b' + re.escape(word) + r'\b', sent.text, re.IGNORECASE):
                     errors.append(self._create_error(
                         sentence=sent.text,
