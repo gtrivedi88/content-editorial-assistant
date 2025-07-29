@@ -35,6 +35,10 @@ class ProductNamesRule(BaseReferencesRule):
                 if ent.label_ == 'PRODUCT':
                     product_name = ent.text
                     
+                    # CONTEXT FILTER: Skip UI elements and common false positives
+                    if self._is_ui_element_or_false_positive(ent, doc):
+                        continue
+                    
                     # Rule: First reference must be preceded by "IBM".
                     if product_name not in known_products:
                         known_products[product_name] = True
@@ -51,3 +55,31 @@ class ProductNamesRule(BaseReferencesRule):
                                 flagged_text=ent.text
                             ))
         return errors
+    
+    def _is_ui_element_or_false_positive(self, entity, doc):
+        """
+        LINGUISTIC ANCHOR: Uses SpaCy dependency parsing to detect UI elements.
+        Checks if PRODUCT entity has syntactic relationships indicating UI context.
+        """
+        # LINGUISTIC ANCHOR 1: Dependency analysis for UI context
+        # Check if entity is modified by or modifies UI-related terms
+        for token in entity:
+            # Check syntactic children (compounds, modifiers)
+            for child in token.children:
+                if child.lemma_.lower() in ['button', 'menu', 'dialog', 'window', 'field', 'tab']:
+                    return True
+            
+            # Check syntactic head (what this token modifies)
+            if token.head.lemma_.lower() in ['button', 'menu', 'dialog', 'window', 'field', 'tab']:
+                return True
+        
+        # LINGUISTIC ANCHOR 2: Verbal context analysis  
+        # Check if entity is object of UI action verbs
+        sent = entity.sent
+        for token in sent:
+            if (token.pos_ == 'VERB' and 
+                token.lemma_.lower() in ['click', 'press', 'tap', 'select'] and
+                any(child == entity[0] for child in token.children if child.dep_ in ['dobj', 'pobj'])):
+                return True
+        
+        return False

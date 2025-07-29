@@ -650,10 +650,12 @@ class AnalysisModeExecutor:
                 # Analyze child content if available
                 if child_content:
                     child_errors = self._analyze_generic_content(child_content, analysis_mode, child_context)
-                    # Store errors on the child instead of returning them to parent
+                    # Store errors on the child for detailed tracking
                     if not hasattr(child, '_analysis_errors'):
                         child._analysis_errors = []
                     child._analysis_errors.extend(child_errors)
+                    # CRITICAL FIX: Also add to parent's error list so they appear in final results
+                    errors.extend(child_errors)
                         
         except Exception as e:
             logger.error(f"Error analyzing table content: {e}")

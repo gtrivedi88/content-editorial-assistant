@@ -48,8 +48,8 @@ class ArticlesRule(BaseLanguageRule):
                             flagged_text=f"{token.text} {next_token.text}"
                         ))
                 
-                # Rule 2: Missing Articles (only for complete content)
-                if content_classification == 'complete_content' and self._is_missing_article_candidate(token, doc):
+                # Rule 2: Missing Articles (only for descriptive content)
+                if content_classification == 'descriptive_content' and self._is_missing_article_candidate(token, doc):
                     errors.append(self._create_error(
                         sentence=sent.text, sentence_index=i,
                         message=f"Potentially missing article before the noun '{token.text}'.",

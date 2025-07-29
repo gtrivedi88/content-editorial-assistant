@@ -154,7 +154,35 @@ class BaseRule(ABC):
             # Classification logic based on linguistic features
             block_type = context.get('block_type', '').lower()
             
-            # Use morphological evidence for classification
+            # ENHANCED TABLE CELL CLASSIFICATION
+            if block_type == 'table_cell':
+                # Check if this is a table header (typically row 0 or concise labels)
+                table_row_index = context.get('table_row_index', context.get('row_index', 999))
+                cell_index = context.get('cell_index', 0)
+                
+                # Table headers are typically navigation labels (no articles needed)
+                if (table_row_index == 0 or 
+                    is_topic_pattern or 
+                    (not has_complete_syntax and len(doc) <= 3)):  # Short phrases
+                    return 'navigation_label'
+                
+                # Procedural instructions (imperative verbs like "Click", "Configure")
+                elif is_procedural:
+                    return 'procedural_instruction'
+                
+                # Data references (identifiers, names, technical terms)
+                elif is_reference_entity or is_technical_identifier:
+                    return 'data_reference'
+                
+                # Only complete sentences should be treated as descriptive content
+                elif has_complete_syntax and len(doc) > 4:
+                    return 'descriptive_content'
+                
+                # Default table cell content to navigation label (concise phrases)
+                else:
+                    return 'navigation_label'
+            
+            # Use morphological evidence for classification (existing logic)
             if is_technical_identifier and 'list_item' in block_type:
                 return 'technical_identifier'
             elif is_procedural and block_type == 'list_item_ordered':

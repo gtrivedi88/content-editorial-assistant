@@ -597,6 +597,8 @@ block_type_rules:
     - abbreviations
     - references_product_names
     - references_product_versions
+    - articles
+    - technical_mouse_buttons
 
   # ===============================================================
   # MEDIA AND METADATA BLOCKS

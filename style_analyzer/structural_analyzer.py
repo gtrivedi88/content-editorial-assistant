@@ -72,6 +72,15 @@ class StructuralAnalyzer:
             if not block.should_skip_analysis():
                 content = block.get_text_content()
                 if isinstance(content, str) and content.strip():
+                    # CRITICAL FIX: Ensure table cell context includes proper position information
+                    if hasattr(block, 'block_type') and str(block.block_type).endswith('TABLE_CELL'):
+                        # Add table cell specific context information
+                        if hasattr(block, 'attributes') and hasattr(block.attributes, 'named_attributes'):
+                            cell_attrs = block.attributes.named_attributes
+                            context['table_row_index'] = cell_attrs.get('row_index', 999)  # Default to high number for non-headers
+                            context['cell_index'] = cell_attrs.get('cell_index', 0)
+                            context['is_table_cell'] = True
+                    
                     errors = self.mode_executor.analyze_block_content(block, content, analysis_mode, context)
                     block._analysis_errors = errors
                     all_errors.extend(errors)
