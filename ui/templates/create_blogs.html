@@ -1,0 +1,948 @@
+{% extends "base.html" %}
+
+{% block title %}Create Blogs - Content Editorial Platform{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Blog Creation Form - Apple-inspired Design */
+    .blog-creation-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    .blog-hero {
+        text-align: center;
+        margin-bottom: 3rem;
+        padding: 3rem 0;
+        background: linear-gradient(135deg, rgba(0, 122, 255, 0.03) 0%, rgba(88, 86, 214, 0.05) 100%);
+        border-radius: 24px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .blog-hero::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: 
+            radial-gradient(circle at 20% 80%, rgba(0, 122, 255, 0.08) 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, rgba(88, 86, 214, 0.06) 0%, transparent 50%);
+        pointer-events: none;
+    }
+
+    .blog-hero-content {
+        position: relative;
+        z-index: 1;
+    }
+
+    .blog-form-section {
+        background: white;
+        border-radius: 20px;
+        padding: 2.5rem;
+        margin-bottom: 2rem;
+        box-shadow: var(--app-shadow-sm);
+        border: 1px solid var(--app-neutral-200);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .blog-form-section:hover {
+        box-shadow: var(--app-shadow-md);
+        transform: translateY(-2px);
+    }
+
+    .section-header {
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid var(--app-neutral-100);
+    }
+
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--app-neutral-900);
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+    }
+
+    .section-title i {
+        font-size: 1.25rem;
+        margin-right: 0.75rem;
+        color: var(--app-primary-color);
+    }
+
+    .section-description {
+        color: var(--app-neutral-600);
+        font-size: 1rem;
+        line-height: 1.5;
+    }
+
+    /* Enhanced Form Controls */
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        display: block;
+        font-weight: 600;
+        color: var(--app-neutral-800);
+        margin-bottom: 0.5rem;
+        font-size: 0.95rem;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.875rem 1rem;
+        border: 2px solid var(--app-neutral-200);
+        border-radius: 12px;
+        font-size: 1rem;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        background: var(--app-neutral-50);
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--app-primary-color);
+        background: white;
+        box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+    }
+
+    .form-control-lg {
+        padding: 1rem 1.25rem;
+        font-size: 1.125rem;
+    }
+
+    /* Radio Button Groups */
+    .radio-group {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-top: 0.75rem;
+    }
+
+    .radio-option {
+        position: relative;
+        background: var(--app-neutral-50);
+        border: 2px solid var(--app-neutral-200);
+        border-radius: 12px;
+        padding: 1rem;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .radio-option:hover {
+        border-color: var(--app-primary-color);
+        background: rgba(0, 122, 255, 0.02);
+        transform: translateY(-1px);
+    }
+
+    .radio-option input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .radio-option input[type="radio"]:checked + .radio-content {
+        color: var(--app-primary-color);
+    }
+
+    .radio-option input[type="radio"]:checked ~ .radio-indicator {
+        background: var(--app-primary-color);
+        border-color: var(--app-primary-color);
+    }
+
+    .radio-option input[type="radio"]:checked ~ .radio-indicator::after {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    .radio-option.checked {
+        border-color: var(--app-primary-color);
+        background: rgba(0, 122, 255, 0.05);
+    }
+
+    .radio-content {
+        display: flex;
+        align-items: center;
+        font-weight: 500;
+        transition: color 0.2s ease;
+    }
+
+    .radio-indicator {
+        width: 20px;
+        height: 20px;
+        border: 2px solid var(--app-neutral-300);
+        border-radius: 50%;
+        margin-right: 0.75rem;
+        position: relative;
+        background: white;
+        transition: all 0.2s ease;
+    }
+
+    .radio-indicator::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0);
+        width: 8px;
+        height: 8px;
+        background: white;
+        border-radius: 50%;
+        opacity: 0;
+        transition: all 0.2s ease;
+    }
+
+    /* Checkbox Groups */
+    .checkbox-group {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+        margin-top: 0.75rem;
+    }
+
+    .checkbox-option {
+        background: var(--app-neutral-50);
+        border: 2px solid var(--app-neutral-200);
+        border-radius: 12px;
+        padding: 1rem;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        align-items: center;
+    }
+
+    .checkbox-option:hover {
+        border-color: var(--app-primary-color);
+        background: rgba(0, 122, 255, 0.02);
+        transform: translateY(-1px);
+    }
+
+    .checkbox-option.checked {
+        border-color: var(--app-primary-color);
+        background: rgba(0, 122, 255, 0.05);
+    }
+
+    .checkbox-indicator {
+        width: 20px;
+        height: 20px;
+        border: 2px solid var(--app-neutral-300);
+        border-radius: 6px;
+        margin-right: 0.75rem;
+        position: relative;
+        background: white;
+        transition: all 0.2s ease;
+    }
+
+    .checkbox-option.checked .checkbox-indicator {
+        background: var(--app-primary-color);
+        border-color: var(--app-primary-color);
+    }
+
+    .checkbox-indicator::after {
+        content: '';
+        position: absolute;
+        top: 2px;
+        left: 6px;
+        width: 6px;
+        height: 10px;
+        border: solid white;
+        border-width: 0 2px 2px 0;
+        transform: rotate(45deg);
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+
+    .checkbox-option.checked .checkbox-indicator::after {
+        opacity: 1;
+    }
+
+    /* URL Input Section */
+    .url-inputs {
+        margin-top: 0.5rem;
+    }
+
+    .url-input-group {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .url-input {
+        flex: 1;
+    }
+
+    .btn-add-url {
+        background: var(--app-neutral-100);
+        border: 2px solid var(--app-neutral-300);
+        border-radius: 10px;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-add-url:hover {
+        background: var(--app-primary-color);
+        border-color: var(--app-primary-color);
+        color: white;
+    }
+
+    .btn-remove-url {
+        background: var(--app-danger-color);
+        border-color: var(--app-danger-color);
+        color: white;
+    }
+
+    .btn-remove-url:hover {
+        background: #d32f2f;
+        border-color: #d32f2f;
+        transform: scale(1.05);
+    }
+
+    /* Text Area */
+    .form-textarea {
+        width: 100%;
+        min-height: 120px;
+        padding: 1rem;
+        border: 2px solid var(--app-neutral-200);
+        border-radius: 12px;
+        font-size: 1rem;
+        font-family: inherit;
+        resize: vertical;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        background: var(--app-neutral-50);
+    }
+
+    .form-textarea:focus {
+        outline: none;
+        border-color: var(--app-primary-color);
+        background: white;
+        box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+    }
+
+    /* Range Slider */
+    .slider-container {
+        margin-top: 1rem;
+    }
+
+    .slider-label {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+        font-size: 0.875rem;
+        color: var(--app-neutral-600);
+    }
+
+    .slider {
+        width: 100%;
+        height: 8px;
+        border-radius: 4px;
+        background: var(--app-neutral-200);
+        outline: none;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+
+    .slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--app-primary-color);
+        cursor: pointer;
+        box-shadow: var(--app-shadow-sm);
+    }
+
+    .slider::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--app-primary-color);
+        cursor: pointer;
+        border: none;
+        box-shadow: var(--app-shadow-sm);
+    }
+
+    /* Action Buttons */
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 3rem;
+        padding-top: 2rem;
+        border-top: 1px solid var(--app-neutral-200);
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, var(--app-primary-color), var(--app-secondary-color));
+        border: none;
+        border-radius: 12px;
+        color: white;
+        font-weight: 600;
+        padding: 1rem 2rem;
+        font-size: 1.125rem;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: var(--app-shadow-sm);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--app-shadow-lg);
+    }
+
+    .btn-secondary {
+        background: var(--app-neutral-100);
+        border: 2px solid var(--app-neutral-300);
+        border-radius: 12px;
+        color: var(--app-neutral-700);
+        font-weight: 500;
+        padding: 1rem 2rem;
+        font-size: 1.125rem;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .btn-secondary:hover {
+        background: var(--app-neutral-200);
+        transform: translateY(-1px);
+        box-shadow: var(--app-shadow-sm);
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .blog-creation-container {
+            padding: 1rem;
+        }
+
+        .blog-form-section {
+            padding: 1.5rem;
+        }
+
+        .radio-group,
+        .checkbox-group {
+            grid-template-columns: 1fr;
+        }
+
+        .form-actions {
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .btn-primary,
+        .btn-secondary {
+            width: 100%;
+            max-width: 300px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="blog-creation-container">
+    <!-- Hero Section -->
+    <div class="blog-hero">
+        <div class="blog-hero-content">
+            <h1 class="app-title-lg" style="margin-bottom: 1rem;">
+                <i class="fas fa-magic" style="margin-right: 0.75rem; color: var(--app-primary-color);"></i>
+                Create Brilliant Blogs
+            </h1>
+            <p class="app-text-body" style="font-size: 1.25rem; max-width: 600px; margin: 0 auto; color: var(--app-neutral-600);">
+                Transform your ideas into compelling blog content with AI-powered assistance. 
+                Simply provide your sources and preferences, and let our intelligent system craft 
+                engaging, on-brand content that resonates with your audience.
+            </p>
+        </div>
+    </div>
+
+    <form id="blog-creation-form" class="blog-form">
+        <!-- Content Sources Section -->
+        <div class="blog-form-section">
+            <div class="section-header">
+                <div class="section-title">
+                    <i class="fas fa-globe"></i>
+                    Content Sources
+                </div>
+                <p class="section-description">
+                    Provide URLs, documents, or direct input to inform your blog content. 
+                    Multiple sources help create richer, more comprehensive articles.
+                </p>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">URLs (GitHub, docs, PDFs, knowledge bases)</label>
+                <div class="url-inputs" id="url-inputs">
+                    <div class="url-input-group">
+                        <input type="url" class="form-control url-input" placeholder="https://example.com/resource" name="urls[]">
+                        <button type="button" class="btn-add-url" onclick="addUrlInput()">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Direct Text Input / Copy-Paste</label>
+                <textarea class="form-textarea" placeholder="Paste your content, research notes, or key points here..." name="content_input" rows="6"></textarea>
+            </div>
+        </div>
+
+        <!-- Target Audience Section -->
+        <div class="blog-form-section">
+            <div class="section-header">
+                <div class="section-title">
+                    <i class="fas fa-users"></i>
+                    Target Audience
+                </div>
+                <p class="section-description">
+                    Select your primary audience to tailor language, complexity, and examples appropriately.
+                </p>
+            </div>
+
+            <div class="radio-group">
+                <label class="radio-option">
+                    <input type="radio" name="target_audience" value="developers">
+                    <div class="radio-content">
+                        <div class="radio-indicator"></div>
+                        <div>
+                            <div style="font-weight: 600;">Developers</div>
+                            <div style="font-size: 0.875rem; color: var(--app-neutral-600);">Technical depth, code examples</div>
+                        </div>
+                    </div>
+                </label>
+
+                <label class="radio-option">
+                    <input type="radio" name="target_audience" value="cios">
+                    <div class="radio-content">
+                        <div class="radio-indicator"></div>
+                        <div>
+                            <div style="font-weight: 600;">CIOs</div>
+                            <div style="font-size: 0.875rem; color: var(--app-neutral-600);">Strategic, business-focused</div>
+                        </div>
+                    </div>
+                </label>
+
+                <label class="radio-option">
+                    <input type="radio" name="target_audience" value="customers">
+                    <div class="radio-content">
+                        <div class="radio-indicator"></div>
+                        <div>
+                            <div style="font-weight: 600;">Customers</div>
+                            <div style="font-size: 0.875rem; color: var(--app-neutral-600);">Clear, benefit-driven</div>
+                        </div>
+                    </div>
+                </label>
+
+                <label class="radio-option">
+                    <input type="radio" name="target_audience" value="business_analysts">
+                    <div class="radio-content">
+                        <div class="radio-indicator"></div>
+                        <div>
+                            <div style="font-weight: 600;">Business Analysts</div>
+                            <div style="font-size: 0.875rem; color: var(--app-neutral-600);">Data-driven, analytical</div>
+                        </div>
+                    </div>
+                </label>
+            </div>
+        </div>
+
+        <!-- Tone & Style Section -->
+        <div class="blog-form-section">
+            <div class="section-header">
+                <div class="section-title">
+                    <i class="fas fa-palette"></i>
+                    Tone & Style
+                </div>
+                <p class="section-description">
+                    Choose your writing style. You can select multiple options to create a blended approach.
+                </p>
+            </div>
+
+            <div class="checkbox-group">
+                <label class="checkbox-option">
+                    <input type="checkbox" name="tone_styles" value="professional" style="display: none;">
+                    <div class="checkbox-indicator"></div>
+                    <div>
+                        <div style="font-weight: 600;">Professional</div>
+                        <div style="font-size: 0.875rem; color: var(--app-neutral-600);">Formal, authoritative</div>
+                    </div>
+                </label>
+
+                <label class="checkbox-option">
+                    <input type="checkbox" name="tone_styles" value="conversational" style="display: none;">
+                    <div class="checkbox-indicator"></div>
+                    <div>
+                        <div style="font-weight: 600;">Conversational</div>
+                        <div style="font-size: 0.875rem; color: var(--app-neutral-600);">Friendly, approachable</div>
+                    </div>
+                </label>
+
+                <label class="checkbox-option">
+                    <input type="checkbox" name="tone_styles" value="storytelling" style="display: none;">
+                    <div class="checkbox-indicator"></div>
+                    <div>
+                        <div style="font-weight: 600;">Storytelling</div>
+                        <div style="font-size: 0.875rem; color: var(--app-neutral-600);">Narrative, engaging</div>
+                    </div>
+                </label>
+
+                <label class="checkbox-option">
+                    <input type="checkbox" name="tone_styles" value="analytical" style="display: none;">
+                    <div class="checkbox-indicator"></div>
+                    <div>
+                        <div style="font-weight: 600;">Analytical</div>
+                        <div style="font-size: 0.875rem; color: var(--app-neutral-600);">Data-driven, logical</div>
+                    </div>
+                </label>
+
+                <label class="checkbox-option">
+                    <input type="checkbox" name="tone_styles" value="persuasive" style="display: none;">
+                    <div class="checkbox-indicator"></div>
+                    <div>
+                        <div style="font-weight: 600;">Persuasive</div>
+                        <div style="font-size: 0.875rem; color: var(--app-neutral-600);">Compelling, convincing</div>
+                    </div>
+                </label>
+            </div>
+        </div>
+
+        <!-- Flavor Options Section -->
+        <div class="blog-form-section">
+            <div class="section-header">
+                <div class="section-title">
+                    <i class="fas fa-sliders-h"></i>
+                    Flavor Options
+                </div>
+                <p class="section-description">
+                    Fine-tune your content style with these adjustable parameters.
+                </p>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Humor & Metaphors</label>
+                <div class="radio-group">
+                    <label class="radio-option">
+                        <input type="radio" name="humor_level" value="off">
+                        <div class="radio-content">
+                            <div class="radio-indicator"></div>
+                            <span>Off</span>
+                        </div>
+                    </label>
+                    <label class="radio-option">
+                        <input type="radio" name="humor_level" value="subtle">
+                        <div class="radio-content">
+                            <div class="radio-indicator"></div>
+                            <span>Subtle</span>
+                        </div>
+                    </label>
+                    <label class="radio-option">
+                        <input type="radio" name="humor_level" value="bold">
+                        <div class="radio-content">
+                            <div class="radio-indicator"></div>
+                            <span>Bold</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Formality</label>
+                <div class="radio-group">
+                    <label class="radio-option">
+                        <input type="radio" name="formality" value="strict">
+                        <div class="radio-content">
+                            <div class="radio-indicator"></div>
+                            <span>Strict</span>
+                        </div>
+                    </label>
+                    <label class="radio-option">
+                        <input type="radio" name="formality" value="balanced">
+                        <div class="radio-content">
+                            <div class="radio-indicator"></div>
+                            <span>Balanced</span>
+                        </div>
+                    </label>
+                    <label class="radio-option">
+                        <input type="radio" name="formality" value="relaxed">
+                        <div class="radio-content">
+                            <div class="radio-indicator"></div>
+                            <span>Relaxed</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Complexity</label>
+                <div class="radio-group">
+                    <label class="radio-option">
+                        <input type="radio" name="complexity" value="executive_summary">
+                        <div class="radio-content">
+                            <div class="radio-indicator"></div>
+                            <span>Executive Summary</span>
+                        </div>
+                    </label>
+                    <label class="radio-option">
+                        <input type="radio" name="complexity" value="deep_dive">
+                        <div class="radio-content">
+                            <div class="radio-indicator"></div>
+                            <span>Deep Dive</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Style Guide Section -->
+        <div class="blog-form-section">
+            <div class="section-header">
+                <div class="section-title">
+                    <i class="fas fa-book"></i>
+                    Style Guide
+                </div>
+                <p class="section-description">
+                    Select the style guide framework for your content.
+                </p>
+            </div>
+
+            <div class="radio-group">
+                <label class="radio-option">
+                    <input type="radio" name="style_guide" value="ibm_style" checked>
+                    <div class="radio-content">
+                        <div class="radio-indicator"></div>
+                        <div>
+                            <div style="font-weight: 600;">IBM Style</div>
+                            <div style="font-size: 0.875rem; color: var(--app-neutral-600);">Baseline style guide</div>
+                        </div>
+                    </div>
+                </label>
+
+                <label class="radio-option">
+                    <input type="radio" name="style_guide" value="ibm_plus_redhat">
+                    <div class="radio-content">
+                        <div class="radio-indicator"></div>
+                        <div>
+                            <div style="font-weight: 600;">IBM + Red Hat Supplementary</div>
+                            <div style="font-size: 0.875rem; color: var(--app-neutral-600);">Enhanced style rules</div>
+                        </div>
+                    </div>
+                </label>
+            </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="form-actions">
+            <button type="button" class="btn-secondary" onclick="saveDraft()">
+                <i class="fas fa-save"></i>
+                Save as Draft
+            </button>
+            <button type="submit" class="btn-primary">
+                <i class="fas fa-magic"></i>
+                Generate Blog
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+// Enhanced form interactions
+document.addEventListener('DOMContentLoaded', function() {
+    initializeFormInteractions();
+});
+
+function initializeFormInteractions() {
+    // Radio button interactions
+    document.querySelectorAll('input[type="radio"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            // Remove checked class from siblings
+            const name = this.name;
+            document.querySelectorAll(`input[name="${name}"]`).forEach(r => {
+                r.closest('.radio-option').classList.remove('checked');
+            });
+            
+            // Add checked class to selected
+            this.closest('.radio-option').classList.add('checked');
+        });
+    });
+
+    // Checkbox interactions
+    document.querySelectorAll('.checkbox-option').forEach(option => {
+        option.addEventListener('click', function(e) {
+            e.preventDefault();
+            const checkbox = this.querySelector('input[type="checkbox"]');
+            checkbox.checked = !checkbox.checked;
+            this.classList.toggle('checked', checkbox.checked);
+        });
+    });
+
+    // Form submission
+    document.getElementById('blog-creation-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Validate form
+        if (!validateForm()) {
+            return;
+        }
+        
+        // Show loading state
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+        submitBtn.disabled = true;
+
+        // Collect form data
+        const formData = collectFormData();
+        
+        // Simulate processing (replace with actual API call)
+        setTimeout(() => {
+            console.log('Blog creation data:', formData);
+            showNotification('Blog generation started! Your content is being created...', 'success');
+            
+            // Reset button
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }, 2000);
+    });
+
+    // Initialize with default selections
+    document.querySelector('input[name="style_guide"][value="ibm_style"]').closest('.radio-option').classList.add('checked');
+}
+
+function addUrlInput() {
+    const urlInputs = document.getElementById('url-inputs');
+    const newInputGroup = document.createElement('div');
+    newInputGroup.className = 'url-input-group';
+    newInputGroup.innerHTML = `
+        <input type="url" class="form-control url-input" placeholder="https://example.com/resource" name="urls[]">
+        <button type="button" class="btn-add-url btn-remove-url" onclick="removeUrlInput(this)">
+            <i class="fas fa-minus"></i>
+        </button>
+    `;
+    urlInputs.appendChild(newInputGroup);
+}
+
+function removeUrlInput(button) {
+    button.closest('.url-input-group').remove();
+}
+
+function showNotification(message, type = 'success') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.style.cssText = `
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        background: ${type === 'success' ? 'var(--app-success-color)' : 'var(--app-danger-color)'};
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        box-shadow: var(--app-shadow-lg);
+        z-index: 9999;
+        max-width: 400px;
+        transform: translateX(100%);
+        transition: transform 0.3s ease;
+    `;
+    notification.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Animate in
+    setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+    }, 100);
+    
+    // Remove after 4 seconds
+    setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            document.body.removeChild(notification);
+        }, 300);
+    }, 4000);
+}
+
+function saveDraft() {
+    const formData = collectFormData();
+    
+    // Save to localStorage for now (could be enhanced to save to server)
+    const draftKey = 'blog_draft_' + Date.now();
+    localStorage.setItem(draftKey, JSON.stringify(formData));
+    
+    // Show confirmation
+    showNotification('Draft saved successfully! You can continue working on it later.', 'success');
+    
+    console.log('Draft saved:', formData);
+}
+
+function validateForm() {
+    // Check if user has provided some content (URLs or text input)
+    const urls = Array.from(document.querySelectorAll('.url-input')).map(input => input.value).filter(url => url.trim());
+    const contentInput = document.querySelector('textarea[name="content_input"]').value.trim();
+    
+    if (urls.length === 0 && !contentInput) {
+        showNotification('Please provide at least one URL or some text content to generate a blog from.', 'error');
+        document.querySelector('textarea[name="content_input"]').focus();
+        return false;
+    }
+    
+    // Check if target audience is selected
+    const targetAudience = document.querySelector('input[name="target_audience"]:checked');
+    if (!targetAudience) {
+        showNotification('Please select a target audience for your blog.', 'error');
+        document.querySelector('input[name="target_audience"]').focus();
+        return false;
+    }
+    
+    // Check if at least one tone style is selected
+    const toneStyles = document.querySelectorAll('input[name="tone_styles"]:checked');
+    if (toneStyles.length === 0) {
+        showNotification('Please select at least one tone & style option for your blog.', 'error');
+        document.querySelector('.checkbox-option').scrollIntoView({ behavior: 'smooth' });
+        return false;
+    }
+    
+    return true;
+}
+
+function collectFormData() {
+    const form = document.getElementById('blog-creation-form');
+    const formData = new FormData(form);
+    
+    // Collect URLs
+    const urls = Array.from(document.querySelectorAll('.url-input')).map(input => input.value).filter(url => url.trim());
+    
+    // Collect selected tone styles from checked checkboxes
+    const toneStyles = Array.from(document.querySelectorAll('input[name="tone_styles"]:checked')).map(input => input.value);
+    
+    return {
+        urls: urls,
+        content_input: formData.get('content_input'),
+        target_audience: formData.get('target_audience'),
+        tone_styles: toneStyles,
+        humor_level: formData.get('humor_level'),
+        formality: formData.get('formality'),
+        complexity: formData.get('complexity'),
+        style_guide: formData.get('style_guide')
+    };
+}
+</script>
+{% endblock %} 

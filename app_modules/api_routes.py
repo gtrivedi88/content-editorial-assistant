@@ -261,6 +261,19 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter):
             logger.error(f"Refinement error: {str(e)}")
             return jsonify({'error': f'Refinement failed: {str(e)}'}), 500
     
+    @app.route('/create-blogs')
+    def create_blogs():
+        """Blog creation page with form-driven UI."""
+        try:
+            return render_template('create_blogs.html')
+        except Exception as e:
+            logger.error(f"Error rendering create blogs page: {e}")
+            try:
+                return render_template('error.html', error_message="Failed to load blog creation page"), 500
+            except Exception as e2:
+                logger.error(f"Error rendering error page: {e2}")
+                return f"<h1>Application Error</h1><p>Failed to load blog creation page: {e}</p><p>Template error: {e2}</p>", 500
+    
     @app.route('/health')
     def health_check():
         """Health check endpoint."""
