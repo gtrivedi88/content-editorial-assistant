@@ -1,9 +1,35 @@
 """
-Verbs Rule (Consolidated and Enhanced for Accuracy)
+Verbs Rule (Refactored to use Shared Passive Voice Analyzer)
 Based on IBM Style Guide topics: "Verbs: Tense", "Verbs: Voice"
+
+This refactored version uses the centralized PassiveVoiceAnalyzer to eliminate
+code duplication while maintaining sophisticated context-aware suggestions.
 """
 from typing import List, Dict, Any
-from .base_language_rule import BaseLanguageRule
+
+try:
+    from .base_language_rule import BaseLanguageRule
+except ImportError:
+    # Fallback for direct execution
+    try:
+        from base_language_rule import BaseLanguageRule
+    except ImportError:
+        # Define a minimal BaseLanguageRule for testing
+        class BaseLanguageRule:
+            def __init__(self):
+                pass
+            def _create_error(self, **kwargs):
+                return kwargs
+
+try:
+    from .passive_voice_analyzer import PassiveVoiceAnalyzer, ContextType
+except ImportError:
+    # Fallback for direct execution
+    try:
+        from passive_voice_analyzer import PassiveVoiceAnalyzer, ContextType
+    except ImportError:
+        PassiveVoiceAnalyzer = None
+        ContextType = None
 
 try:
     from spacy.tokens import Doc, Token
@@ -13,15 +39,23 @@ except ImportError:
 
 class VerbsRule(BaseLanguageRule):
     """
-    Checks for verb-related style issues with high-accuracy linguistic checks
-    to prevent false positives.
+    Checks for verb-related style issues using centralized passive voice analysis.
+    Provides context-aware suggestions for descriptive vs instructional text.
     """
+    
+    def __init__(self):
+        super().__init__()
+        if PassiveVoiceAnalyzer:
+            self.passive_analyzer = PassiveVoiceAnalyzer()
+        else:
+            self.passive_analyzer = None
+    
     def _get_rule_type(self) -> str:
         return 'verbs'
 
     def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         errors = []
-        if not nlp:
+        if not nlp or not self.passive_analyzer:
             return errors
 
         for i, sent_text in enumerate(sentences):
@@ -30,19 +64,12 @@ class VerbsRule(BaseLanguageRule):
             
             doc = nlp(sent_text)
             
-            # --- PRIORITY 1 FIX: High-Accuracy Passive Voice Check ---
-            # This logic now iterates through each token to find a passive subject ('nsubjpass')
-            # or a passive auxiliary verb ('auxpass'). This is a highly reliable
-            # linguistic signal for passive voice and will not trigger on active sentences.
-            passive_token = self._find_passive_token(doc)
-            if passive_token:
-                flagged_text = passive_token.head.text
-                # Calculate span for consolidation
-                span_start = passive_token.head.idx
-                span_end = span_start + len(flagged_text)
-                
-                # Generate intelligent, context-specific suggestions
-                suggestions = self._generate_active_voice_suggestions(doc, passive_token, sent_text)
+            # --- PASSIVE VOICE ANALYSIS (using shared analyzer) ---
+            passive_constructions = self.passive_analyzer.find_passive_constructions(doc)
+            
+            for construction in passive_constructions:
+                # Generate context-aware suggestions
+                suggestions = self._generate_context_aware_suggestions(construction, doc, sent_text)
                 
                 errors.append(self._create_error(
                     sentence=sent_text,
@@ -50,18 +77,17 @@ class VerbsRule(BaseLanguageRule):
                     message="Sentence may be in the passive voice.",
                     suggestions=suggestions,
                     severity='medium',
-                    span=(span_start, span_end),
-                    flagged_text=flagged_text
+                    span=(construction.span_start, construction.span_end),
+                    flagged_text=construction.flagged_text
                 ))
 
-            # --- Future Tense Check ('will') ---
+            # --- FUTURE TENSE CHECK ('will') ---
             for token in doc:
                 if token.lemma_.lower() == "will" and token.tag_ == "MD":
                     head_verb = token.head
                     if head_verb.pos_ == "VERB":
                         suggestion = f"Use the present tense '{head_verb.lemma_}s' or the imperative mood '{head_verb.lemma_.capitalize()}'."
                         flagged_text = f"{token.text} {head_verb.text}"
-                        # Calculate span for the will + verb construction
                         span_start = token.idx
                         span_end = head_verb.idx + len(head_verb.text)
                         errors.append(self._create_error(
@@ -74,8 +100,7 @@ class VerbsRule(BaseLanguageRule):
                             flagged_text=flagged_text
                         ))
 
-            # --- Past Tense Check ---
-            # Only flag past tense if it's NOT part of a passive construction
+            # --- PAST TENSE CHECK ---
             root_verb = self._find_root_token(doc)
             if (root_verb and root_verb.pos_ == 'VERB' and 'Tense=Past' in str(root_verb.morph) 
                 and not self._is_passive_construction(root_verb, doc)):
@@ -94,163 +119,129 @@ class VerbsRule(BaseLanguageRule):
         
         return errors
 
-    def _find_passive_token(self, doc: Doc) -> Token | None:
-        """
-        Finds the first token that indicates a TRUE passive construction.
-        This method eliminates false positives from predicate adjective constructions
-        like "you are done" (meaning "finished") by using multiple linguistic checks.
-        """
-        for token in doc:
-            if token.dep_ in ('nsubjpass', 'auxpass'):
-                # Found a potential passive indicator, now validate it's actually passive
-                if self._is_true_passive_voice(token, doc):
-                    return token
-        return None
+    def _generate_context_aware_suggestions(self, construction, doc: Doc, sentence: str) -> List[str]:
+        """Generate intelligent suggestions based on context classification."""
+        suggestions = []
+        
+        try:
+            # Use the analyzer's context classification
+            context_type = construction.context_type
+            base_verb = construction.main_verb.lemma_
+            passive_subject = construction.passive_subject
+            
+            # Find agent in by-phrase
+            agent = self._find_agent_in_by_phrase(doc, construction.main_verb)
+            
+            # Check for negative context
+            is_negative = self._has_negative_context(doc, construction.main_verb)
+            
+            if is_negative:
+                # Handle negative constructions
+                antonym = self._get_positive_alternative(base_verb, doc)
+                if antonym:
+                    if context_type == ContextType.DESCRIPTIVE:
+                        suggestions.append(f"Rewrite positively: 'The system {antonym}s {passive_subject.text.lower()}' (use descriptive active voice)")
+                    else:
+                        suggestions.append(f"Rewrite positively: 'You must {antonym} {passive_subject.text.lower()}' (use positive action)")
+                else:
+                    suggestions.append(f"Rewrite as requirement: 'You must ensure {passive_subject.text.lower()} is {self._get_past_participle(base_verb)}' (specify the requirement)")
+            
+            elif context_type == ContextType.DESCRIPTIVE:
+                # Generate descriptive suggestions
+                self._add_descriptive_suggestions(suggestions, base_verb, passive_subject, agent, doc)
+            
+            elif context_type == ContextType.INSTRUCTIONAL:
+                # Generate instructional suggestions
+                self._add_instructional_suggestions(suggestions, base_verb, passive_subject, agent)
+            
+            else:
+                # Uncertain context - provide both options
+                suggestions.append(f"For descriptions: 'The system {self._conjugate_verb(base_verb, 'system')} {passive_subject.text.lower()}'")
+                suggestions.append(f"For instructions: '{base_verb.capitalize()} the {passive_subject.text.lower()}'")
+            
+            # Add agent-based suggestion if available
+            if agent and len(suggestions) < 2:
+                verb_form = self._conjugate_verb(base_verb, agent)
+                suggestions.append(f"Make the agent active: '{agent.capitalize()} {verb_form} {passive_subject.text.lower()}'")
+            
+            # Fallback
+            if not suggestions:
+                suggestions.append("Rewrite in active voice by identifying who or what performs the action")
+                
+        except Exception as e:
+            suggestions = ["Rewrite in active voice by identifying who or what performs the action"]
+        
+        return suggestions[:3]
 
-    def _is_true_passive_voice(self, passive_token: Token, doc: Doc) -> bool:
-        """
-        Validates whether a token marked as passive is actually passive voice
-        or just a predicate adjective construction that spaCy mislabeled.
-        """
-        # Find the main verb (past participle)
-        if passive_token.dep_ == 'nsubjpass':
-            main_verb = passive_token.head
-        elif passive_token.dep_ == 'auxpass':
-            main_verb = passive_token.head
+    def _add_descriptive_suggestions(self, suggestions: List[str], base_verb: str, 
+                                   passive_subject: Token, agent: str, doc: Doc) -> None:
+        """Add suggestions appropriate for descriptive context."""
+        
+        # Get appropriate actors for descriptive active voice
+        descriptive_actors = self._get_descriptive_actors(base_verb, passive_subject, doc)
+        
+        for actor in descriptive_actors:
+            verb_form = self._conjugate_verb(base_verb, actor)
+            if passive_subject and passive_subject.text.lower() in ['it', 'this', 'that']:
+                suggestions.append(f"Use descriptive active voice: '{actor.capitalize()} {verb_form} {passive_subject.text.lower()}'")
+            else:
+                suggestions.append(f"Use descriptive active voice: '{actor.capitalize()} {verb_form} the {passive_subject.text.lower()}'")
+            
+            if len(suggestions) >= 2:
+                break
+        
+        # Fallback descriptive suggestion
+        if not suggestions:
+            if base_verb in ['document', 'describe', 'specify', 'define']:
+                suggestions.append(f"Use descriptive active voice: 'The documentation {self._conjugate_verb(base_verb, 'documentation')} {passive_subject.text.lower()}'")
+            else:
+                suggestions.append(f"Use descriptive active voice: 'The system {self._conjugate_verb(base_verb, 'system')} {passive_subject.text.lower()}'")
+
+    def _add_instructional_suggestions(self, suggestions: List[str], base_verb: str, 
+                                     passive_subject: Token, agent: str) -> None:
+        """Add suggestions appropriate for instructional context."""
+        
+        # Use imperative mood for instructions
+        if passive_subject and passive_subject.text.lower() in ['it', 'this', 'that']:
+            suggestions.append(f"Use imperative: '{base_verb.capitalize()} {passive_subject.text.lower()}' (make the user the actor)")
         else:
-            return False
+            suggestions.append(f"Use imperative: '{base_verb.capitalize()} the {passive_subject.text.lower()}' (make the user the actor)")
         
-        # Must be a past participle (VBN) to be passive
-        if main_verb.tag_ != 'VBN':
-            return False
+        # Suggest specific actors for technical instructions
+        if base_verb in ['configure', 'install', 'setup', 'deploy', 'enable', 'disable']:
+            suggestions.append(f"Specify the actor: 'The administrator {self._conjugate_verb(base_verb, 'administrator')} the {passive_subject.text.lower()}'")
+        elif base_verb in ['test', 'verify', 'check', 'validate']:
+            suggestions.append(f"Specify the actor: 'You {base_verb} the {passive_subject.text.lower()}'")
+
+    def _get_descriptive_actors(self, base_verb: str, passive_subject: Token, doc: Doc) -> List[str]:
+        """Get appropriate actors for descriptive active voice."""
         
-        # Check 1: Presence of explicit agent (by-phrase)
-        # If there's a "by" phrase, it's definitely passive voice
-        if self._has_by_phrase(main_verb, doc):
-            return True
-        
-        # Check 2: Exclude adverbial clauses (common source of false positives)
-        # Constructions like "After you are done" are typically adverbial
-        if main_verb.dep_ == 'advcl':
-            # This is an adverbial clause, likely predicate adjective
-            return False
-        
-        # Check 3: Check for semantic indicators of state vs. action
-        # Some past participles are more commonly used as adjectives
-        state_oriented_verbs = {
-            'done', 'finished', 'ready', 'prepared', 'set', 'fixed', 'broken', 
-            'closed', 'open', 'available', 'busy', 'free', 'connected', 'offline'
+        # Use the analyzer's verb categorization
+        verb_actors = {
+            'document': ['the documentation', 'the manual', 'the guide'],
+            'describe': ['the documentation', 'the specification', 'the manual'],
+            'specify': ['the configuration', 'the settings', 'the parameters'],
+            'define': ['the system', 'the configuration', 'the specification'],
+            'configure': ['the system', 'the application', 'the software'],
+            'provide': ['the system', 'the platform', 'the service'],
+            'support': ['the system', 'the platform', 'the framework'],
+            'manage': ['the system', 'the application', 'the service']
         }
         
-        # Check 4: System/functionality description context
-        # Use linguistic features to detect functionality descriptions
-        if main_verb.lemma_ in state_oriented_verbs:
-            # These are commonly used as predicate adjectives
-            # Only consider them passive if there's strong evidence
-            return self._has_strong_passive_evidence(main_verb, doc)
+        actors = verb_actors.get(base_verb, ['the system', 'the application'])
         
-        # LINGUISTIC ANCHOR: Check if this describes system functionality
-        if self._is_system_functionality_description(main_verb, doc):
-            # Don't flag as problematic passive voice in this context
-            return False
+        # Context-based refinement using spaCy analysis
+        context_words = [token.lemma_.lower() for token in doc]
         
-        # Check 5: Root verbs with clear passive structure
-        if main_verb.dep_ == 'ROOT':
-            # Root past participles are more likely to be passive
-            # But still check for predicate adjective patterns
-            return not self._is_predicate_adjective_pattern(main_verb, doc)
+        if any(word in context_words for word in ['database', 'data', 'record']):
+            if base_verb in ['store', 'save', 'retrieve']:
+                actors = ['the database', 'the data store'] + actors
         
-        # Check 6: Complex sentence analysis
-        # In complex sentences, check the overall structure
-        return self._analyze_complex_sentence_structure(main_verb, doc)
+        return actors[:2]
 
-    def _has_by_phrase(self, main_verb: Token, doc: Doc) -> bool:
-        """Check if there's an explicit agent introduced by 'by'."""
-        for token in doc:
-            if (token.lemma_ == 'by' and 
-                token.head == main_verb and 
-                any(child.dep_ == 'pobj' for child in token.children)):
-                return True
-        return False
-
-    def _has_strong_passive_evidence(self, main_verb: Token, doc: Doc) -> bool:
-        """
-        For state-oriented verbs, require stronger evidence of passive voice.
-        """
-        # Evidence 1: Explicit agent
-        if self._has_by_phrase(main_verb, doc):
-            return True
-        
-        # Evidence 2: Modal auxiliary suggesting action rather than state
-        for child in main_verb.children:
-            if child.dep_ == 'auxpass' and child.lemma_ in ['was', 'were', 'been']:
-                # Past tense auxiliary suggests an action that happened
-                return True
-        
-        # Evidence 3: Temporal indicators suggesting an action occurred
-        temporal_indicators = ['yesterday', 'recently', 'just', 'already', 'earlier']
-        sentence_words = [token.lemma_.lower() for token in doc]
-        if any(indicator in sentence_words for indicator in temporal_indicators):
-            return True
-        
-        return False
-
-    def _is_predicate_adjective_pattern(self, main_verb: Token, doc: Doc) -> bool:
-        """
-        Check if this follows a predicate adjective pattern rather than passive voice.
-        """
-        # Pattern 1: "be" + past participle without agent = often predicate adjective
-        aux_verbs = [child for child in main_verb.children if child.dep_ == 'auxpass']
-        if aux_verbs:
-            aux = aux_verbs[0]
-            if aux.lemma_ == 'be' and not self._has_by_phrase(main_verb, doc):
-                # Could be predicate adjective, check semantic context
-                return self._suggests_state_rather_than_action(main_verb, doc)
-        
-        return False
-
-    def _suggests_state_rather_than_action(self, main_verb: Token, doc: Doc) -> bool:
-        """
-        Analyze semantic context to determine if this describes a state vs. an action.
-        """
-        # Context words that suggest state description
-        state_context_words = [
-            'when', 'after', 'once', 'if', 'while', 'until', 
-            'ready', 'available', 'complete', 'finished'
-        ]
-        
-        sentence_words = [token.lemma_.lower() for token in doc]
-        
-        # If we're in a temporal/conditional clause, it's often describing a state
-        if any(word in sentence_words for word in state_context_words[:6]):  # temporal words
-            return True
-        
-        # If the sentence describes a current state rather than a completed action
-        if any(word in sentence_words for word in state_context_words[6:]):  # state words
-            return True
-        
-        return False
-
-    def _analyze_complex_sentence_structure(self, main_verb: Token, doc: Doc) -> bool:
-        """
-        Analyze complex sentence structures to determine true passive voice.
-        """
-        # For non-root verbs that aren't in adverbial clauses
-        # Check if they're in complement clauses or other structures
-        
-        if main_verb.dep_ in ['ccomp', 'xcomp']:
-            # Complement clauses - analyze based on governing verb
-            return True  # More likely to be genuine passive in complement clauses
-        
-        if main_verb.dep_ in ['conj']:
-            # Coordinated verbs - check consistency with other conjuncts
-            return True  # Assume passive for coordination unless proven otherwise
-        
-        # Default: if we reach here and haven't ruled it out, be conservative
-        return True
-
-    def _find_root_token(self, doc: Doc) -> Token | None:
-        """Finds the root token of the sentence."""
+    # Utility methods (simplified from original)
+    def _find_root_token(self, doc: Doc) -> Token:
+        """Find the root token of the sentence."""
         for token in doc:
             if token.dep_ == "ROOT":
                 return token
@@ -261,132 +252,14 @@ class VerbsRule(BaseLanguageRule):
         if not verb_token:
             return False
         
-        # Check if this verb is the head of a passive subject (nsubjpass)
-        for token in doc:
-            if token.dep_ == 'nsubjpass' and token.head == verb_token:
-                return True
-        
-        # Check if this verb has an auxiliary passive marker (auxpass)
-        for child in verb_token.children:
-            if child.dep_ == 'auxpass':
-                return True
-                
-        return False
-
-    def _is_system_functionality_description(self, main_verb: Token, doc: Doc) -> bool:
-        """
-        Check if passive voice is used to describe system functionality or characteristics.
-        Uses pure linguistic features rather than hardcoded word lists.
-        """
-        
-        # Find the subject of the passive construction
-        subject_token = None
-        for token in doc:
-            if token.dep_ == 'nsubjpass' and token.head == main_verb:
-                subject_token = token
-                break
-        
-        # LINGUISTIC ANCHOR 1: Infinitive Purpose Construction
-        # Pattern: "X is designed TO do Y" - very strong signal for functionality description
-        has_infinitive_purpose = any(child.dep_ == 'xcomp' and child.pos_ == 'VERB' 
-                                   for child in main_verb.children)
-        if has_infinitive_purpose:
-            return True
-        
-        # LINGUISTIC ANCHOR 2: Pronoun Subject + Past Participle
-        # Pattern: "It is configured/designed/built" - common in technical documentation
-        if (subject_token and 
-            subject_token.pos_ == 'PRON' and 
-            subject_token.lemma_.lower() in {'it', 'this', 'that'} and
-            main_verb.tag_ == 'VBN'):  # Past participle
-            return True
-        
-        # LINGUISTIC ANCHOR 3: Complex Noun Phrase Subject + Technical Verb
-        # Pattern: "The [complex system] is configured" where subject has multiple modifiers
-        if (subject_token and 
-            subject_token.pos_ == 'NOUN' and
-            len([child for child in subject_token.children if child.dep_ in ['amod', 'compound']]) >= 1):
-            # Subject has modifiers (adjectives/compounds) - often technical
-            return True
-        
-        # LINGUISTIC ANCHOR 4: Modal Construction Context
-        # If sentence contains modal verbs, it's often describing capabilities
-        has_modal_context = any(token.pos_ == 'AUX' and token.tag_ == 'MD' for token in doc)
-        if has_modal_context:
-            return True
-        
-        return False
-
-    def _generate_active_voice_suggestions(self, doc: Doc, passive_token: Token, sentence: str) -> List[str]:
-        """Generate intelligent, context-specific suggestions for converting passive to active voice."""
-        suggestions = []
-        
-        try:
-            # Find the main verb (head of the passive token)
-            main_verb = passive_token.head if passive_token.dep_ in ('nsubjpass', 'auxpass') else passive_token
-            
-            # Find the passive subject (what's being acted upon)
-            passive_subject = None
-            for token in doc:
-                if token.dep_ == 'nsubjpass' and token.head == main_verb:
-                    passive_subject = token
-                    break
-            
-            # Find the agent (who/what performs the action) - look for "by" phrases
-            agent = self._find_agent_in_by_phrase(doc, main_verb)
-            
-            # Check for negative constructions
-            is_negative = self._has_negative_context(doc, main_verb)
-            
-            # Generate suggestions based on sentence structure
-            if passive_subject and main_verb:
-                base_verb = main_verb.lemma_
-                
-                # Strategy 1: Analyze sentence structure for context-aware suggestions
-                if is_negative:
-                    # For negative constructions, suggest positive alternatives by analyzing context
-                    antonym = self._get_positive_alternative(base_verb, doc)
-                    if antonym:
-                        suggestions.append(f"Rewrite positively: 'You must {antonym} {passive_subject.text.lower()}' (use positive action)")
-                    else:
-                        suggestions.append(f"Rewrite as requirement: 'You must ensure {passive_subject.text.lower()} is {self._get_past_participle(base_verb)}' (specify the requirement)")
-                else:
-                    # For positive constructions, use imperative
-                    if passive_subject.text.lower() in ['it', 'this', 'that']:
-                        suggestions.append(f"Use imperative: '{base_verb.capitalize()} {passive_subject.text.lower()}' (make the user the actor)")
-                    else:
-                        suggestions.append(f"Use imperative: '{base_verb.capitalize()} the {passive_subject.text.lower()}' (make the user the actor)")
-                
-                # Strategy 2: If there's an explicit agent, use it
-                if agent:
-                    suggestions.append(f"Make the agent active: '{agent.capitalize()} {self._conjugate_verb(base_verb, agent)} {passive_subject.text.lower()}'")
-                
-                # Strategy 3: Use specific actors for technical contexts
-                if self._is_technical_context(doc):
-                    if base_verb in ['configure', 'install', 'setup', 'deploy']:
-                        suggestions.append(f"Specify the actor: 'The administrator {self._conjugate_verb(base_verb, 'administrator')} {passive_subject.text.lower()}'")
-                    else:
-                        suggestions.append(f"Specify the system: 'The system {self._conjugate_verb(base_verb, 'system')} {passive_subject.text.lower()}'")
-                
-                # Strategy 4: Generic improvement (only if we don't have better suggestions)
-                if len(suggestions) < 2:
-                    suggestions.append(f"Identify who or what performs '{base_verb}' and make them the subject")
-            
-            # Fallback suggestion
-            if not suggestions:
-                suggestions.append("Identify who or what performs the action and make them the sentence subject")
-                
-        except Exception as e:
-            # Fallback to generic suggestion if analysis fails
-            suggestions = ["Rewrite in active voice by identifying who or what performs the action"]
-        
-        return suggestions[:3]  # Limit to 3 most relevant suggestions
+        # Use analyzer for consistency
+        constructions = self.passive_analyzer.find_passive_constructions(doc)
+        return any(c.main_verb == verb_token for c in constructions)
 
     def _find_agent_in_by_phrase(self, doc: Doc, main_verb: Token) -> str:
-        """Find the agent in a 'by' phrase (e.g., 'by the user')."""
+        """Find the agent in a 'by' phrase."""
         for token in doc:
             if token.lemma_ == 'by' and token.head == main_verb:
-                # Look for the object of the 'by' preposition
                 for child in token.children:
                     if child.dep_ == 'pobj':
                         return child.text
@@ -394,93 +267,60 @@ class VerbsRule(BaseLanguageRule):
 
     def _has_negative_context(self, doc: Doc, main_verb: Token) -> bool:
         """Check if the passive construction is in a negative context."""
-        # Look for negative words near the main verb
         for token in doc:
             if token.dep_ == 'neg' or token.lemma_ in ['not', 'never', 'cannot']:
-                # Check if the negative is related to our main verb
                 if token.head == main_verb or token.head.head == main_verb:
                     return True
         
-        # Also check for "can not" or "cannot" patterns
         sentence_text = doc.text.lower()
         negative_patterns = ['can not be', 'cannot be', 'should not be', 'must not be']
         return any(pattern in sentence_text for pattern in negative_patterns)
 
     def _get_positive_alternative(self, verb_lemma: str, doc: Doc) -> str:
-        """Get a positive alternative for a negated verb based on context analysis."""
-        # Analyze surrounding context to determine semantic intent
+        """Get a positive alternative for a negated verb."""
         verb_alternatives = {
-            'overlook': 'address',
-            'ignore': 'consider', 
-            'miss': 'include',
-            'skip': 'complete',
-            'avoid': 'ensure',
-            'neglect': 'maintain',
-            'forget': 'remember'
+            'overlook': 'address', 'ignore': 'consider', 'miss': 'include',
+            'skip': 'complete', 'avoid': 'ensure', 'neglect': 'maintain'
         }
-        
-        # Check if we have a semantic alternative
-        if verb_lemma in verb_alternatives:
-            return verb_alternatives[verb_lemma]
-        
-        # For other verbs, analyze context to suggest appropriate action
-        context_words = [token.lemma_.lower() for token in doc]
-        
-        # If it's about configuration/setup, suggest "ensure"
-        if any(word in context_words for word in ['configure', 'setup', 'install', 'deploy']):
-            return 'ensure'
-        
-        # If it's about dependencies/requirements, suggest "address"  
-        if any(word in context_words for word in ['dependency', 'requirement', 'critical', 'important']):
-            return 'address'
-        
-        # Default fallback
-        return None
+        return verb_alternatives.get(verb_lemma)
 
     def _get_past_participle(self, verb_lemma: str) -> str:
-        """Get the past participle form of a verb for requirement statements."""
-        # Common irregular past participles
+        """Get the past participle form of a verb."""
         irregular_participles = {
-            'overlook': 'overlooked',
-            'configure': 'configured', 
-            'setup': 'set up',
-            'install': 'installed',
-            'deploy': 'deployed',
-            'ignore': 'ignored',
-            'address': 'addressed',
-            'consider': 'considered',
-            'include': 'included',
-            'complete': 'completed',
-            'ensure': 'ensured',
-            'maintain': 'maintained'
+            'configure': 'configured', 'install': 'installed', 'deploy': 'deployed',
+            'address': 'addressed', 'consider': 'considered', 'include': 'included'
         }
         
         if verb_lemma in irregular_participles:
             return irregular_participles[verb_lemma]
         
-        # Regular past participle formation
+        # Regular formation
         if verb_lemma.endswith('e'):
             return verb_lemma + 'd'
-        elif verb_lemma.endswith(('t', 'd')):
-            return verb_lemma + 'ed'
         else:
             return verb_lemma + 'ed'
 
-    def _is_technical_context(self, doc: Doc) -> bool:
-        """Check if the sentence appears to be in a technical context."""
-        technical_words = {'server', 'database', 'system', 'application', 'service', 'configuration', 'software'}
-        return any(token.lemma_.lower() in technical_words for token in doc)
-
     def _conjugate_verb(self, verb_lemma: str, subject: str) -> str:
-        """Simple verb conjugation for common cases."""
-        if subject.lower() in ['system', 'server', 'application', 'service']:
-            # Third person singular
+        """Enhanced verb conjugation for both singular and descriptive subjects."""
+        
+        if subject.startswith('the '):
+            subject_noun = subject[4:]
+        else:
+            subject_noun = subject.lower()
+        
+        third_person_singular = {
+            'system', 'server', 'application', 'service', 'documentation', 'manual', 
+            'configuration', 'database', 'interface', 'platform', 'framework'
+        }
+        
+        if subject_noun in third_person_singular:
             if verb_lemma.endswith('e'):
                 return verb_lemma + 's'
             elif verb_lemma.endswith(('s', 'sh', 'ch', 'x', 'z')):
                 return verb_lemma + 'es'
+            elif verb_lemma.endswith('y') and len(verb_lemma) > 1 and verb_lemma[-2] not in 'aeiou':
+                return verb_lemma[:-1] + 'ies'
             else:
                 return verb_lemma + 's'
         else:
-            # Default to base form for other subjects
             return verb_lemma
