@@ -549,12 +549,24 @@ class SentenceLengthRule(BaseRule):
         )
         
         analysis['transition_strength'] = transition_adequacy['strength']
-        analysis['needs_improvement'] = transition_adequacy['strength'] < 0.4
+        
+        # FIXED: Raised threshold from 0.4 to 0.15 and added better logic
+        # Only flag transitions as needing improvement if:
+        # 1. The transition strength is very low (< 0.15)
+        # 2. AND there's a clear semantic disconnect
+        # 3. AND the sentences would actually benefit from a transition
+        needs_transition = (
+            transition_adequacy['strength'] < 0.15 and 
+            semantic_relationship['strength'] < 0.3 and
+            self._would_benefit_from_transition(prev_sent, curr_sent, semantic_relationship)
+        )
+        
+        analysis['needs_improvement'] = needs_transition
         
         if analysis['needs_improvement']:
-            # Generate transition suggestions based on semantic relationship
-            analysis['suggested_transitions'] = self._generate_transition_suggestions(
-                semantic_relationship, existing_transition
+            # Generate meaningful transition suggestions based on context
+            analysis['suggested_transitions'] = self._generate_contextual_transition_suggestions(
+                prev_sent, curr_sent, semantic_relationship, existing_transition
             )
         
         return analysis
@@ -1170,16 +1182,132 @@ class SentenceLengthRule(BaseRule):
             "Structure information hierarchically for better flow"
         ]
 
+    def _would_benefit_from_transition(self, prev_sent, curr_sent, semantic_relationship) -> bool:
+        """Determine if sentences would actually benefit from an explicit transition."""
+        
+        # Don't suggest transitions for very short sentences
+        if len(prev_sent.text.split()) < 5 or len(curr_sent.text.split()) < 5:
+            return False
+        
+        # Don't suggest transitions if sentences are already well-connected
+        if semantic_relationship['strength'] > 0.5:
+            return False
+        
+        # Don't suggest transitions for procedural steps that are naturally sequential
+        if self._are_procedural_steps(prev_sent, curr_sent):
+            return False
+        
+        # Don't suggest transitions for technical specifications
+        if self._are_technical_specifications(prev_sent, curr_sent):
+            return False
+        
+        # Only suggest if there's a clear logical gap that would benefit from a bridge
+        return self._has_logical_gap_needing_bridge(prev_sent, curr_sent, semantic_relationship)
+    
+    def _are_procedural_steps(self, prev_sent, curr_sent) -> bool:
+        """Check if sentences are procedural steps that don't need explicit transitions."""
+        
+        # Look for procedural indicators
+        procedural_patterns = ['must', 'should', 'install', 'configure', 'connect', 'click', 'FTP', 'generated']
+        
+        prev_text = prev_sent.text.lower()
+        curr_text = curr_sent.text.lower()
+        
+        # If both sentences contain procedural language, they're likely steps
+        prev_procedural = any(pattern in prev_text for pattern in procedural_patterns)
+        curr_procedural = any(pattern in curr_text for pattern in procedural_patterns)
+        
+        return prev_procedural and curr_procedural
+    
+    def _are_technical_specifications(self, prev_sent, curr_sent) -> bool:
+        """Check if sentences are technical specifications that don't need transitions."""
+        
+        # Look for specification indicators  
+        spec_patterns = ['configuration', 'prerequisites', 'requirements', 'available', 'expects', 'disk', 'memory', 'space']
+        
+        prev_text = prev_sent.text.lower()
+        curr_text = curr_sent.text.lower()
+        
+        # If both sentences contain specification language, they're likely specs
+        prev_spec = any(pattern in prev_text for pattern in spec_patterns)
+        curr_spec = any(pattern in curr_text for pattern in spec_patterns)
+        
+        return prev_spec and curr_spec
+    
+    def _has_logical_gap_needing_bridge(self, prev_sent, curr_sent, semantic_relationship) -> bool:
+        """Check if there's a logical gap that would benefit from a transition."""
+        
+        # Only suggest transitions if:
+        # 1. There's a topic shift
+        # 2. There's a logical relationship that isn't clear
+        # 3. The sentences are complex enough to warrant explicit connection
+        
+        # Check for topic shift
+        shared_entities = self._find_shared_entities(prev_sent, curr_sent)
+        has_topic_shift = shared_entities['count'] == 0
+        
+        # Check for complex logical relationship
+        has_complex_logic = semantic_relationship['type'] in ['causal', 'conditional', 'contrastive']
+        
+        # Check if sentences are complex enough
+        prev_complex = len(prev_sent.text.split()) > 12
+        curr_complex = len(curr_sent.text.split()) > 12
+        
+        return has_topic_shift and has_complex_logic and (prev_complex or curr_complex)
+    
+    def _generate_contextual_transition_suggestions(self, prev_sent, curr_sent, semantic_relationship, existing_transition) -> List[str]:
+        """Generate contextual, helpful transition suggestions."""
+        
+        rel_type = semantic_relationship['type']
+        suggestions = []
+        
+        # Generate suggestions based on actual semantic relationship and context
+        if rel_type == 'causal':
+            suggestions.extend([
+                "As a result of this,",
+                "Consequently,", 
+                "This means that"
+            ])
+        elif rel_type == 'sequential':
+            suggestions.extend([
+                "After completing this step,",
+                "Once this is done,",
+                "Following this process,"
+            ])
+        elif rel_type == 'topical_continuation':
+            suggestions.extend([
+                "Additionally,",
+                "In relation to this,",
+                "Building on this,"
+            ])
+        else:
+            # For unclear relationships, suggest clarifying the connection instead of generic transitions
+            suggestions.extend([
+                "Consider adding a sentence to clarify the relationship between these ideas",
+                "These sentences might benefit from being combined or restructured for clarity",
+                "Consider whether these ideas belong in the same paragraph"
+            ])
+        
+        return suggestions[:2]  # Return max 2 contextual suggestions
+    
     def _generate_flow_suggestions(self, flow_issue: Dict[str, Any]) -> List[str]:
         """Generate flow improvement suggestions."""
         issue_type = flow_issue.get('type')
         
         if issue_type == 'inter_sentence_transition':
-            return flow_issue.get('suggested_transitions', [])
+            suggestions = flow_issue.get('suggested_transitions', [])
+            # Filter out generic unhelpful suggestions
+            filtered_suggestions = [s for s in suggestions if not self._is_generic_unhelpful_suggestion(s)]
+            return filtered_suggestions if filtered_suggestions else ["Consider clarifying the relationship between these sentences"]
         elif issue_type == 'intra_sentence_coordination':
             return flow_issue.get('suggestions', [])
         else:
             return ["Consider improving sentence flow and transitions"]
+    
+    def _is_generic_unhelpful_suggestion(self, suggestion: str) -> bool:
+        """Check if a suggestion is too generic to be helpful."""
+        generic_patterns = ['Next,', 'Then,', 'Furthermore,']
+        return suggestion.strip() in generic_patterns
     
     def _analyze_syntactic_complexity(self, doc):
         """Wrapper for existing complexity analysis method."""
