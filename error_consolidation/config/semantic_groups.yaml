@@ -14,7 +14,7 @@ semantic_groups:
       - word_usage_t
       - word_usage_c
       - word_usage_a
-      - pronouns
+      # pronouns removed to preserve specific gendered pronoun feedback
       - missing_actor
       - inclusive_language
     consolidation_priority: 10

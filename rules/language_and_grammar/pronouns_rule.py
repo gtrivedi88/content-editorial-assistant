@@ -24,7 +24,7 @@ class PronounsRule(BaseLanguageRule):
 
     def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         """
-        Analyzes sentences for gender-specific pronouns only.
+        Analyzes sentences for gender-specific pronouns using robust morphological analysis.
         
         Note: Ambiguous pronoun detection is delegated to PronounAmbiguityDetector
         for more sophisticated linguistic analysis without duplication.
@@ -37,25 +37,57 @@ class PronounsRule(BaseLanguageRule):
         sents = list(doc.sents)
         
         # LINGUISTIC ANCHOR: Gender-specific pronouns to avoid in technical writing
-        gendered_pronouns = {'he', 'him', 'his', 'she', 'her'}
+        gendered_pronouns = {'he', 'him', 'his', 'she', 'her', 'hers'}
 
         for i, sent in enumerate(sents):
             for token in sent:
-                # Use morphological analysis to detect gendered pronouns
-                if (token.lemma_.lower() in gendered_pronouns and 
-                    token.pos_ in ['PRON', 'DET'] and
-                    # Additional linguistic check for gender markers
-                    (not hasattr(token, 'morph') or 
-                     'Gender=Masc' in str(token.morph) or 
-                     'Gender=Fem' in str(token.morph))):
+                # Use robust morphological analysis for gendered pronoun detection
+                lemma_lower = token.lemma_.lower()
+                
+                # Primary check: lemma in gendered pronouns list
+                if lemma_lower in gendered_pronouns:
+                    # Secondary linguistic anchors for validation
+                    is_pronoun = token.pos_ in ['PRON', 'DET']
                     
-                    errors.append(self._create_error(
-                        sentence=sent.text,
-                        sentence_index=i,
-                        message=f"Gender-specific pronoun '{token.text}' used.",
-                        suggestions=["Use gender-neutral language. Consider rewriting with 'they' or addressing the user directly with 'you'."],
-                        severity='medium',
-                        span=(token.idx, token.idx + len(token.text)),
-                        flagged_text=token.text
-                    ))
+                    # Enhanced morphological validation using SpaCy features
+                    is_gendered = (
+                        # Check morphological gender markers
+                        'Gender=Masc' in str(token.morph) or 
+                        'Gender=Fem' in str(token.morph) or
+                        # Fallback check for common gendered forms
+                        lemma_lower in {'he', 'him', 'his', 'she', 'her', 'hers'}
+                    )
+                    
+                    # Final validation: must be a pronoun or determiner AND gendered
+                    if is_pronoun and is_gendered:
+                        
+                        # Context-aware suggestions for better guidance
+                        suggestions = [
+                            "Use gender-neutral language. Consider rewriting with 'they/them' or addressing the user directly with 'you'.",
+                            "Alternatively, restructure the sentence to avoid pronouns entirely."
+                        ]
+                        
+                        # Enhanced context detection for generic usage
+                        sentence_lower = sent.text.lower()
+                        if any(generic_term in sentence_lower for generic_term in [
+                            'user', 'developer', 'administrator', 'person', 'individual', 
+                            'someone', 'anyone', 'everyone', 'customer', 'client'
+                        ]):
+                            # Generic context - high priority for inclusivity
+                            severity = 'high'
+                            message = f"Gender-specific pronoun '{token.text}' used in generic context. This excludes non-binary individuals and reduces inclusivity."
+                        else:
+                            # Specific context - medium priority
+                            severity = 'medium' 
+                            message = f"Gender-specific pronoun '{token.text}' detected. Consider using inclusive language."
+                        
+                        errors.append(self._create_error(
+                            sentence=sent.text,
+                            sentence_index=i,
+                            message=message,
+                            suggestions=suggestions,
+                            severity=severity,
+                            span=(token.idx, token.idx + len(token.text)),
+                            flagged_text=token.text
+                        ))
         return errors
