@@ -49,27 +49,44 @@ class CommasRule(BasePunctuationRule):
         for token in sent:
             # Linguistic Anchor: Find a coordinating conjunction ('cc')
             if token.lemma_ in conjunctions and token.dep_ == 'cc':
-                # Find the items in the list connected by the conjunction
-                head = token.head
-                conjuncts = [child for child in head.children if child.dep_ == 'conj']
+                # Find all items in the list by traversing the dependency tree
+                list_items = set()  # Use set to avoid duplicates
                 
-                # Check if it's a list of 3 or more items
-                if len(conjuncts) >= 1:
+                # Start with the head of the conjunction
+                head = token.head
+                list_items.add(head)
+                
+                # Add conjuncts of the head (items after the conjunction)
+                for child in head.children:
+                    if child.dep_ == 'conj':
+                        list_items.add(child)
+                
+                # Traverse up to find the root of the list and its conjuncts
+                current = head
+                while current.dep_ == 'conj' and current.head != current:
+                    current = current.head
+                    list_items.add(current)
+                
+                # Add any conjuncts of the root item
+                for child in current.children:
+                    if child.dep_ == 'conj':
+                        list_items.add(child)
+                
+                # Check if we have 3 or more items and there's at least one comma in the sentence
+                if len(list_items) >= 3 and ',' in sent.text:
                     # Check if the token before the conjunction is NOT a comma
                     if token.i > sent.start and sent.doc[token.i - 1].text != ',':
-                         # Confirm it's a list by checking for other conjuncts or commas
-                         if len(conjuncts) > 1 or (len(conjuncts) == 1 and ',' in [t.text for t in head.lefts]):
-                            flagged_token = sent.doc[token.i - 1]
-                            errors.append(self._create_error(
-                                sentence=sent.text,
-                                sentence_index=sentence_index,
-                                message="Missing serial (Oxford) comma before conjunction in a list.",
-                                suggestions=[f"Add a comma before '{token.text}'."],
-                                severity='high',
-                                # Span points to where the comma should be inserted
-                                span=(flagged_token.idx + len(flagged_token.text), flagged_token.idx + len(flagged_token.text)),
-                                flagged_text=token.text
-                            ))
+                        flagged_token = sent.doc[token.i - 1]
+                        errors.append(self._create_error(
+                            sentence=sent.text,
+                            sentence_index=sentence_index,
+                            message="Missing serial (Oxford) comma before conjunction in a list.",
+                            suggestions=[f"Add a comma before '{token.text}'."],
+                            severity='high',
+                            # Span points to where the comma should be inserted
+                            span=(flagged_token.idx + len(flagged_token.text), flagged_token.idx + len(flagged_token.text)),
+                            flagged_text=token.text
+                        ))
         return errors
 
     def _check_comma_splice(self, sent: Doc, sentence_index: int) -> List[Dict[str, Any]]:
