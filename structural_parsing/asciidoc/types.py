@@ -39,7 +39,6 @@ class AsciiDocBlockType(Enum):
     ATTRIBUTE_ENTRY = "attribute_entry"
     COMMENT = "comment"
     IMAGE = "image"
-    # Added new types to correctly identify and skip non-content blocks
     MACRO = "macro"
     INCLUDE = "include"
     UNKNOWN = "unknown"
@@ -74,28 +73,29 @@ class AsciiDocBlock:
 
     def get_text_content(self) -> str:
         """
-        Get clean text content for rule analysis by stripping inline HTML formatting.
-        This prevents false positives in rules when analyzing formatted text.
+        Get clean text content for rule analysis by stripping inline HTML formatting
+        and AsciiDoc attributes. This prevents false positives in rules.
         """
         content = self.content
         if not content:
             return ""
         
         # Strip HTML inline formatting that comes from AsciiDoc conversion
-        # Remove <code>...</code> tags
         content = re.sub(r'<code>(.*?)</code>', r'\1', content)
-        
-        # Remove <em>...</em> tags (italic)
         content = re.sub(r'<em>(.*?)</em>', r'\1', content)
-        
-        # Remove <strong>...</strong> tags (bold)
         content = re.sub(r'<strong>(.*?)</strong>', r'\1', content)
-        
-        # Remove other inline formatting tags
         content = re.sub(r'<mark>(.*?)</mark>', r'\1', content)
         content = re.sub(r'<kbd>(.*?)</kbd>', r'\1', content)
         content = re.sub(r'<var>(.*?)</var>', r'\1', content)
         content = re.sub(r'<samp>(.*?)</samp>', r'\1', content)
+
+        # PRODUCTION-GRADE FIX: Replace AsciiDoc attributes {like-this} with a unique placeholder.
+        # This prevents spaCy from analyzing the attribute names and avoids secondary errors in rules
+        # by giving them a token to identify where an attribute was.
+        content = re.sub(r'\{[^{}]+\}', ' attributeplaceholder ', content)
+        
+        # Clean up any extra spaces that might result from the replacement
+        content = re.sub(r'\s{2,}', ' ', content)
         
         return content.strip()
     
@@ -122,7 +122,6 @@ class AsciiDocBlock:
 
     def should_skip_analysis(self) -> bool:
         """Determines if a block should be skipped during style analysis."""
-        # Added MACRO and INCLUDE to the list of skippable block types
         return self.block_type in [
             AsciiDocBlockType.LISTING, AsciiDocBlockType.LITERAL,
             AsciiDocBlockType.COMMENT, AsciiDocBlockType.PASS,
@@ -144,7 +143,6 @@ class AsciiDocBlock:
             'contains_inline_formatting': self.has_inline_formatting()
         }
 
-    # CRITICAL FIX: Added the missing to_dict() method
     def to_dict(self) -> Dict[str, Any]:
         """Converts the block to a dictionary for JSON serialization to the UI."""
         return {

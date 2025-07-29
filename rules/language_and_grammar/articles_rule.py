@@ -69,6 +69,11 @@ class ArticlesRule(BaseLanguageRule):
         return word_lower[0] in 'aeiou'
 
     def _is_incorrect_article_usage(self, article_token, next_token) -> bool:
+        # PRODUCTION-GRADE FIX: If the next token is an attribute placeholder, we cannot determine
+        # correctness, so we skip the check to avoid false positives.
+        if 'attributeplaceholder' in next_token.text:
+            return False
+
         starts_with_vowel = self._starts_with_vowel_sound(next_token.text)
         if article_token.lower_ == 'a' and starts_with_vowel:
             return True
@@ -82,9 +87,18 @@ class ArticlesRule(BaseLanguageRule):
         return plural_form is None
 
     def _is_missing_article_candidate(self, token, doc) -> bool:
+        # PRODUCTION-GRADE FIX: Do not flag missing articles for the placeholder itself.
+        if 'attributeplaceholder' in token.text:
+            return False
+
         if token.dep_ == 'compound' or (token.i > 0 and doc[token.i - 1].lower_ == 'to'):
             return False
         if token.pos_ == 'NOUN' and token.tag_ == 'NN':
+            # PRODUCTION-GRADE FIX: If the previous token was a placeholder, an article might
+            # have been correct for the original attribute. Don't flag the noun.
+            if token.i > 0 and 'attributeplaceholder' in doc[token.i - 1].text:
+                return False
+
             if any(child.dep_ in ('det', 'poss') for child in token.children):
                 return False
             if self._is_uncountable(token):
