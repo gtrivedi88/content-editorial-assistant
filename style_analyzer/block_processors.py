@@ -4,6 +4,7 @@ Handles the analysis and intelligent flattening of the document AST
 into a list of blocks suitable for the UI.
 """
 import logging
+import re
 from typing import List, Dict, Any
 from .analysis_modes import AnalysisModeExecutor
 # We need to import the types to reference them
@@ -39,7 +40,7 @@ class BlockProcessor:
         if not block:
             return
 
-        # CRITICAL FIX: Skip analysis if block has already been analyzed 
+        # CRITICAL FIX: Skip analysis if block has already been analyzed
         # (prevents duplicate processing of list items)
         if hasattr(block, '_already_analyzed') and block._already_analyzed:
             # Still need to recurse through children in case they need analysis
@@ -60,7 +61,7 @@ class BlockProcessor:
                 
                 # ENTERPRISE-GRADE FIX: Analyze document titles with heading context
                 # since they will be converted to heading blocks for the UI
-                if (context and context.get('block_type') == 'document' and 
+                if (context and context.get('block_type') == 'document' and
                     hasattr(block, 'title') and block.title and content.strip()):
                     # Override context for document titles to use heading analysis
                     heading_context = context.copy()
@@ -83,32 +84,50 @@ class BlockProcessor:
         block_type = getattr(block, 'block_type', None)
         if not block_type:
             return
+            
+        # FINAL FIX: Filter out paragraphs that are Asciidoctor warnings.
+        # This is more robust than the previous regex and checks if the paragraph
+        # content simply starts with the warning text.
+        if block_type == AsciiDocBlockType.PARAGRAPH:
+            content = getattr(block, 'content', '').strip()
+            if content.startswith('Unresolved directive in'):
+                return  # Skip this block entirely.
 
-        # CRITICAL FIX: For document type, check if first child is a section with same title
+        # FIX 3: Explicitly skip empty UNKNOWN blocks from being added to the UI list.
+        if block_type == AsciiDocBlockType.UNKNOWN and not (hasattr(block, 'content') and block.content and block.content.strip()):
+            return
+
+        # FIX 1: Prevent duplicate document title heading by finding the first *heading* block.
         if block_type.value == 'document':
-            # If document has a title, check if first child is a heading with same title
             if hasattr(block, 'title') and block.title:
-                # Check if first child is a heading with the same title (common AsciiDoc pattern)
-                first_child = block.children[0] if block.children else None
-                if (first_child and 
-                    hasattr(first_child, 'block_type') and 
-                    first_child.block_type.value == 'heading' and
-                    hasattr(first_child, 'title') and 
-                    first_child.title == block.title):
-                    # Skip creating document title, let the heading be processed as is
+                # Find the first child that is a heading block.
+                first_heading_child = None
+                for child in block.children:
+                    if hasattr(child, 'block_type') and child.block_type.value == 'heading':
+                        first_heading_child = child
+                        break
+
+                if (first_heading_child and
+                    hasattr(first_heading_child, 'title') and
+                    first_heading_child.title == block.title):
+                    # The first heading child matches the doc title, so we don't need a synthetic one.
                     pass
                 else:
-                    # Create document title heading block only if no duplicate heading
+                    # Create a synthetic heading for the document title.
                     title_block = self._create_document_title_from_document(block)
                     self.flat_blocks.append(title_block)
-            
-            # Process all children
+
+            # Process all children of the document.
             for child in block.children:
                 self._flatten_recursively(child)
             return
 
+        # FIX 2: Prevent adding skippable blocks (like toc::, include::) to the UI list.
+        # If a block should be skipped, don't process it or its children further for flattening.
+        if block.should_skip_analysis():
+            return
+
         # For preamble and table_row container types, process children only
-        # But include table_cell blocks since they have content that needs analysis
         if block_type.value in ['preamble', 'table_row']:
             for child in block.children:
                 self._flatten_recursively(child)

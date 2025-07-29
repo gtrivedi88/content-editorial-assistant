@@ -39,6 +39,9 @@ class AsciiDocBlockType(Enum):
     ATTRIBUTE_ENTRY = "attribute_entry"
     COMMENT = "comment"
     IMAGE = "image"
+    # Added new types to correctly identify and skip non-content blocks
+    MACRO = "macro"
+    INCLUDE = "include"
     UNKNOWN = "unknown"
 
 class AdmonitionType(Enum):
@@ -119,10 +122,13 @@ class AsciiDocBlock:
 
     def should_skip_analysis(self) -> bool:
         """Determines if a block should be skipped during style analysis."""
+        # Added MACRO and INCLUDE to the list of skippable block types
         return self.block_type in [
             AsciiDocBlockType.LISTING, AsciiDocBlockType.LITERAL,
             AsciiDocBlockType.COMMENT, AsciiDocBlockType.PASS,
             AsciiDocBlockType.ATTRIBUTE_ENTRY,
+            AsciiDocBlockType.MACRO,
+            AsciiDocBlockType.INCLUDE,
         ]
 
     def get_context_info(self) -> Dict[str, Any]:
