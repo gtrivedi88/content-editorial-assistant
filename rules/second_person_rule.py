@@ -86,6 +86,11 @@ class SecondPersonRule(BaseLanguageRule):
         """
         errors = []
         
+        # LINGUISTIC ANCHOR: Check if 'you' is already present in the sentence. If so, any third-person
+        # substitute is likely defining the role of 'you' and should not be flagged.
+        if any(token.lemma_.lower() == 'you' for token in doc):
+            return errors # The sentence correctly uses second person.
+
         for token in doc:
             # Check if the token is a potential substitute (e.g., "user", "administrator")
             if token.lemma_.lower() in self.third_person_substitutes:

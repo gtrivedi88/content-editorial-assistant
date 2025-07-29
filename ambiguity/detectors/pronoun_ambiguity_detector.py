@@ -91,6 +91,11 @@ class PronounAmbiguityDetector(AmbiguityDetector):
             # Find pronouns in the sentence
             for token in doc:
                 if self._is_ambiguous_pronoun(token):
+                    # LINGUISTIC ANCHOR: Before running full ambiguity analysis, check for a clear
+                    # antecedent in a coordinated verb phrase, which is a very strong signal.
+                    if self._has_clear_coordinated_antecedent(token):
+                        continue # This pronoun is clear, skip to the next one.
+
                     # Check if this pronoun has clear referents
                     ambiguity_info = self._analyze_pronoun_ambiguity(token, doc, context, nlp)
                     
@@ -103,7 +108,41 @@ class PronounAmbiguityDetector(AmbiguityDetector):
             pass
         
         return detections
-    
+
+    def _has_clear_coordinated_antecedent(self, pronoun_token) -> bool:
+        """
+        Checks for a clear antecedent in a coordinated verb phrase (e.g., "...action1 noun1 and action2 it").
+        This is a powerful linguistic anchor to prevent false positives.
+        """
+        # This pattern is common in technical writing: "deploy {logging} and use it"
+        # Here, "it" is the pronoun_token. We need to see if it's the object of a verb
+        # that is coordinated with another verb, and if that other verb has a clear object.
+
+        # 1. The pronoun must be a direct object (dobj).
+        if pronoun_token.dep_ != 'dobj':
+            return False
+
+        # 2. Its head must be a verb.
+        verb2 = pronoun_token.head
+        if verb2.pos_ != 'VERB':
+            return False
+
+        # 3. That verb must be part of a coordination (conj).
+        if verb2.dep_ != 'conj':
+            return False
+        
+        # 4. The head of that verb (the verb it's coordinated with) must also be a verb.
+        verb1 = verb2.head
+        if verb1.pos_ != 'VERB':
+            return False
+            
+        # 5. The first verb must have a direct object that is our placeholder.
+        for child in verb1.children:
+            if child.dep_ == 'dobj' and 'attributeplaceholder' in child.text:
+                return True # Found a clear antecedent.
+
+        return False
+
     def _is_ambiguous_pronoun(self, token) -> bool:
         """Check if a token is an ambiguous pronoun."""
         return (
@@ -588,4 +627,4 @@ class PronounAmbiguityDetector(AmbiguityDetector):
             elif pronoun_text.lower() in ['they', 'them', 'these', 'those']:
                 examples.append(f"Instead of '{pronoun_text} are...', specify 'The {referent_texts[0]} and {referent_texts[1]} are...'")
         
-        return examples 
+        return examples
