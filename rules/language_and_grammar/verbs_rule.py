@@ -181,7 +181,10 @@ class VerbsRule(BaseLanguageRule):
         descriptive_actors = self._get_descriptive_actors(base_verb, passive_subject, doc)
         
         for actor in descriptive_actors:
-            verb_form = self._conjugate_verb(base_verb, actor)
+            # Check for same-root awkwardness and use alternative verb if needed
+            final_verb = self._get_stylistically_appropriate_verb(base_verb, actor)
+            verb_form = self._conjugate_verb(final_verb, actor)
+            
             if passive_subject and passive_subject.text.lower() in ['it', 'this', 'that']:
                 suggestions.append(f"Use descriptive active voice: '{actor.capitalize()} {verb_form} {passive_subject.text.lower()}'")
             else:
@@ -193,9 +196,54 @@ class VerbsRule(BaseLanguageRule):
         # Fallback descriptive suggestion
         if not suggestions:
             if base_verb in ['document', 'describe', 'specify', 'define']:
-                suggestions.append(f"Use descriptive active voice: 'The documentation {self._conjugate_verb(base_verb, 'documentation')} {passive_subject.text.lower()}'")
+                # Avoid same-root awkwardness in fallback too
+                fallback_verb = self._get_stylistically_appropriate_verb(base_verb, 'the documentation')
+                suggestions.append(f"Use descriptive active voice: 'The documentation {self._conjugate_verb(fallback_verb, 'documentation')} {passive_subject.text.lower()}'")
             else:
                 suggestions.append(f"Use descriptive active voice: 'The system {self._conjugate_verb(base_verb, 'system')} {passive_subject.text.lower()}'")
+
+    def _get_stylistically_appropriate_verb(self, base_verb: str, actor: str) -> str:
+        """
+        Return a stylistically appropriate verb, avoiding same-root awkwardness.
+        
+        E.g., avoid "documentation documents" -> use "documentation describes"
+        """
+        # Extract the root noun from the actor
+        actor_root = actor.replace('the ', '').replace('a ', '').replace('an ', '')
+        
+        # Check if actor root and verb lemma are too similar (same-root awkwardness)
+        if self._is_same_root_awkward(actor_root, base_verb):
+            # Use alternative verbs for common cases (avoid multi-word verbs for now)
+            verb_alternatives = {
+                'document': 'describe',
+                'describe': 'detail', 
+                'specify': 'define',
+                'define': 'outline',
+                'configure': 'establish',
+                'manage': 'handle',
+                'process': 'handle',
+                'support': 'enable'
+            }
+            
+            alternative = verb_alternatives.get(base_verb)
+            if alternative:
+                return alternative
+        
+        return base_verb
+    
+    def _is_same_root_awkward(self, actor_root: str, verb: str) -> bool:
+        """Check if using actor + verb creates awkward same-root construction."""
+        # Handle obvious cases
+        same_root_pairs = {
+            ('documentation', 'document'),
+            ('configuration', 'configure'), 
+            ('specification', 'specify'),
+            ('management', 'manage'),
+            ('processing', 'process'),
+            ('support', 'support')
+        }
+        
+        return (actor_root, verb) in same_root_pairs or actor_root.startswith(verb) or verb.startswith(actor_root)
 
     def _add_instructional_suggestions(self, suggestions: List[str], base_verb: str, 
                                      passive_subject: Token, agent: str) -> None:
