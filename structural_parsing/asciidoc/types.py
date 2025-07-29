@@ -73,8 +73,8 @@ class AsciiDocBlock:
 
     def get_text_content(self) -> str:
         """
-        Get clean text content for rule analysis by stripping inline HTML formatting
-        and AsciiDoc attributes. This prevents false positives in rules.
+        Get clean text content for rule analysis by stripping inline HTML formatting,
+        AsciiDoc attributes, and link syntax. This prevents false positives.
         """
         content = self.content
         if not content:
@@ -89,12 +89,13 @@ class AsciiDocBlock:
         content = re.sub(r'<var>(.*?)</var>', r'\1', content)
         content = re.sub(r'<samp>(.*?)</samp>', r'\1', content)
 
-        # PRODUCTION-GRADE FIX: Replace AsciiDoc attributes {like-this} with a unique placeholder.
-        # This prevents spaCy from analyzing the attribute names and avoids secondary errors in rules
-        # by giving them a token to identify where an attribute was.
+        # Replace AsciiDoc attributes {like-this} with a placeholder
         content = re.sub(r'\{[^{}]+\}', ' attributeplaceholder ', content)
         
-        # Clean up any extra spaces that might result from the replacement
+        # Replace AsciiDoc link:...[] syntax with a placeholder for the analysis engine
+        content = re.sub(r'link:https?://[^\s\[\]]+\[.*?\]', ' asciidoclinkplaceholder ', content)
+        
+        # Clean up any extra spaces that might result from the replacements
         content = re.sub(r'\s{2,}', ' ', content)
         
         return content.strip()
@@ -145,9 +146,16 @@ class AsciiDocBlock:
 
     def to_dict(self) -> Dict[str, Any]:
         """Converts the block to a dictionary for JSON serialization to the UI."""
+        
+        # Create a UI-friendly version of the content.
+        display_content = self.content
+        if display_content:
+            # Replace AsciiDoc link syntax with a clean [Link] for the UI.
+            display_content = re.sub(r'link:https?://[^\s\[\]]+\[.*?\]', '[Link]', display_content)
+
         return {
             "block_type": self.block_type.value,
-            "content": self.content,
+            "content": display_content, # Use the processed content for display
             "raw_content": self.raw_content,
             "start_line": self.start_line,
             "end_line": self.end_line,

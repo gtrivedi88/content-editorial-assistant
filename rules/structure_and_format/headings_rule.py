@@ -34,7 +34,7 @@ class HeadingsRule(BaseStructureRule):
             doc = nlp(sentence)
             
             # Rule 1: Headings should not end with a period.
-            if sentence.strip().endswith('.'):
+            if sentence.strip().endswith('.') and not self._is_excepted(sentence.strip()):
                 errors.append(self._create_error(
                     sentence=sentence, sentence_index=i,
                     message="Headings should not end with a period.",
@@ -45,36 +45,42 @@ class HeadingsRule(BaseStructureRule):
                 ))
 
             # Rule 2: Use sentence-style capitalization.
-            words = sentence.split()
-            if len(words) > 1:
-                # Check for any non-proper nouns that are capitalized after the first word
-                capitalized_words = []
-                for word in words[1:]:
-                    if word.istitle():
-                        # Use spaCy to check if this word is a proper noun
-                        word_doc = nlp(word)
-                        if word_doc and len(word_doc) > 0:
-                            # Check if it's a proper noun or named entity
-                            is_proper_noun = word_doc[0].pos_ == 'PROPN' or any(ent.text == word for ent in word_doc.ents)
-                            if not is_proper_noun:
+            # First, check if the entire heading is in the exceptions list
+            if not self._is_excepted(sentence.strip()):
+                words = sentence.split()
+                if len(words) > 1:
+                    # Check for any non-proper nouns that are capitalized after the first word
+                    capitalized_words = []
+                    for word in words[1:]:
+                        if word.istitle():
+                            # Check if this individual word is excepted
+                            if self._is_excepted(word):
+                                continue  # Skip this word since it's excepted
+                            
+                            # Use spaCy to check if this word is a proper noun
+                            word_doc = nlp(word)
+                            if word_doc and len(word_doc) > 0:
+                                # Check if it's a proper noun or named entity
+                                is_proper_noun = word_doc[0].pos_ == 'PROPN' or any(ent.text == word for ent in word_doc.ents)
+                                if not is_proper_noun:
+                                    capitalized_words.append(word)
+                            else:
+                                # If we can't analyze with spaCy, be conservative and flag it
                                 capitalized_words.append(word)
-                        else:
-                            # If we can't analyze with spaCy, be conservative and flag it
-                            capitalized_words.append(word)
-                
-                # Flag if ANY non-proper noun is capitalized after the first word
-                if len(capitalized_words) >= 1:
-                    errors.append(self._create_error(
-                        sentence=sentence, sentence_index=i,
-                        message="Headings should use sentence-style capitalization, not headline-style.",
-                        suggestions=["Capitalize only the first word and any proper nouns in the heading."],
-                        severity='low',
-                        span=(0, len(sentence)),
-                        flagged_text=sentence
-                    ))
+                    
+                    # Flag if ANY non-proper noun is capitalized after the first word
+                    if len(capitalized_words) >= 1:
+                        errors.append(self._create_error(
+                            sentence=sentence, sentence_index=i,
+                            message="Headings should use sentence-style capitalization, not headline-style.",
+                            suggestions=["Capitalize only the first word and any proper nouns in the heading."],
+                            severity='low',
+                            span=(0, len(sentence)),
+                            flagged_text=sentence
+                        ))
 
             # Rule 3: Avoid question-style headings.
-            if sentence.strip().endswith('?'):
+            if sentence.strip().endswith('?') and not self._is_excepted(sentence.strip()):
                 errors.append(self._create_error(
                     sentence=sentence, sentence_index=i,
                     message="Avoid using questions in headings for technical documentation.",
@@ -87,7 +93,9 @@ class HeadingsRule(BaseStructureRule):
             # Rule 4: Avoid weak lead-in words like gerunds (MODULAR-AWARE).
             if doc and len(doc) > 0:
                 first_token = doc[0]
-                if first_token.tag_ == 'VBG' and topic_type != 'Procedure':
+                if (first_token.tag_ == 'VBG' and topic_type != 'Procedure' and 
+                    not self._is_excepted(sentence.strip()) and 
+                    not self._is_excepted(first_token.text)):
                     errors.append(self._create_error(
                         sentence=sentence, sentence_index=i,
                         message=f"Headings for '{topic_type}' topics should not start with a gerund (e.g., 'Understanding...').",

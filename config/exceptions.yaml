@@ -52,6 +52,17 @@ rule_specific_exceptions:
     - "send"
     - "receive"
 
+  # Exceptions for the 'headings' rule.
+  headings:
+    - "Overview"
+    - "Features"
+    - "Benefits"
+    - "Requirements"
+    - "Limitations"
+    - "Considerations"
+    - "Logging"
+    - "logging"
+
   # Exceptions for the 'claims' rule to reduce noise from the ambiguity checker.
   claims:
     - "easy management"
