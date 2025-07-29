@@ -5,7 +5,20 @@
 # Primary semantic groups that commonly overlap and confuse users
 semantic_groups:
   
-  # Core language clarity issues (highest consolidation priority)
+  # High-priority specific issues that should preserve their original messages
+  high_priority_specific:
+    types:
+      - inclusive_language
+      - claims
+      - personal_information
+      - accessibility_citations
+      - security
+    consolidation_priority: 10
+    proximity_threshold: 15  # Small threshold - only consolidate if very close
+    preserve_specific_messages: true  # Flag to indicate message preservation
+    message_template: "Critical issue detected that requires attention."
+  
+  # Core language clarity issues (high consolidation priority)
   language_clarity:
     types:
       - verbs
@@ -14,10 +27,9 @@ semantic_groups:
       - word_usage_t
       - word_usage_c
       - word_usage_a
-      # pronouns removed to preserve specific gendered pronoun feedback
+      # inclusive_language removed - moved to high_priority_specific
       - missing_actor
-      - inclusive_language
-    consolidation_priority: 10
+    consolidation_priority: 8  # Reduced from 10 since inclusive_language moved out
     proximity_threshold: 25  # characters
     always_consolidate_pairs:
       - [verbs, ambiguity]          # Always group passive voice + pronoun issues

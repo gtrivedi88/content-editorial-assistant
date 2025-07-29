@@ -491,7 +491,7 @@ function createStructuralBlock(block, displayIndex, allBlocks = []) {
                     `<div class="pf-v5-c-empty-state pf-m-sm">
                         <div class="pf-v5-c-empty-state__content">
                              <i class="fas fa-ban pf-v5-c-empty-state__icon"></i>
-                             <h3 class="pf-v5-c-title pf-m-md">Analysis Skipped</h3>
+                             <h3 class="pf-v5-c-title pf-m-md">Code blocks are intentionally not analyzed for style issues.</h3>
                              <div class="pf-v5-c-empty-state__body">Code blocks and attributes are not analyzed for style issues.</div>
                         </div>
                     </div>` :

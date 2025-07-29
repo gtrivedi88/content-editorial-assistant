@@ -316,6 +316,7 @@ class ErrorConsolidator:
         """
         Determine if two errors should be grouped based on semantic relationship.
         Uses configuration-driven semantic groups for full scalability.
+        Enhanced to respect preserve_specific_messages flag.
         """
         type1 = error1.get('type', '')
         type2 = error2.get('type', '')
@@ -329,6 +330,20 @@ class ErrorConsolidator:
             group_types = set(group_config.get('types', []))
             
             if type1 in group_types and type2 in group_types:
+                # Check if this group preserves specific messages
+                preserve_specific = group_config.get('preserve_specific_messages', False)
+                
+                # If this group preserves specific messages, be more restrictive about consolidation
+                if preserve_specific:
+                    # Only consolidate if both errors are of the same type or very close
+                    if type1 != type2:
+                        # Different types in a preserve_specific group - only consolidate if spans are overlapping
+                        span1 = error1.get('span', (0, 0))
+                        span2 = error2.get('span', (0, 0))
+                        overlap = not (span1[1] <= span2[0] or span2[1] <= span1[0])
+                        if not overlap:
+                            return False
+                
                 # Get proximity threshold for this group
                 proximity_threshold = group_config.get('proximity_threshold', self.default_proximity_threshold)
                 
@@ -478,8 +493,13 @@ class ErrorConsolidator:
     def _create_consolidated_message(self, group: List[Dict[str, Any]], rule_types: set) -> str:
         """
         Create a comprehensive message for semantically related errors.
-        Uses configuration-driven message templates for scalability.
+        Enhanced to preserve specific messages from high-priority errors.
         """
+        # First, check if any error in the group has a high-priority, specific message that should be preserved
+        high_priority_error = self._find_high_priority_specific_error(group)
+        if high_priority_error:
+            return high_priority_error['message']
+        
         # Check if we have a configured message template for this combination
         message_template = self._find_message_template(rule_types)
         if message_template:
@@ -498,6 +518,83 @@ class ErrorConsolidator:
         # Fallback to generic message
         primary_message = max(group, key=lambda e: self.severity_map.get(e.get('severity', 'low'), 1))['message']
         return f"Multiple style issues detected: {primary_message.lower()}"
+    
+    def _find_high_priority_specific_error(self, group: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+        """
+        Find an error in the group that has a high-priority, specific message that should be preserved.
+        Returns the error if found, None otherwise.
+        """
+        # Define rules that should have their specific messages preserved
+        high_priority_specific_rules = {
+            'inclusive_language': 50,  # Very high priority for inclusive language
+            'claims': 100,             # Legal claims are highest priority
+            'personal_information': 95, # Privacy concerns
+            'accessibility_citations': 85,  # Accessibility issues
+            'commands': 70,            # Technical accuracy
+            'security': 80             # Security-related issues
+        }
+        
+        # Find errors with high-priority specific rules
+        high_priority_errors = []
+        for error in group:
+            error_type = error.get('type', '')
+            if error_type in high_priority_specific_rules:
+                priority_score = high_priority_specific_rules[error_type]
+                # Check if the message is specific (not generic)
+                message = error.get('message', '')
+                if self._is_specific_message(message, error_type):
+                    high_priority_errors.append((priority_score, error))
+        
+        if high_priority_errors:
+            # Return the error with the highest priority score
+            high_priority_errors.sort(key=lambda x: x[0], reverse=True)
+            return high_priority_errors[0][1]
+        
+        return None
+    
+    def _is_specific_message(self, message: str, error_type: str) -> bool:
+        """
+        Determine if a message is specific enough to preserve during consolidation.
+        """
+        # Messages that are clearly specific and actionable
+        specific_indicators = [
+            'consider replacing',
+            'non-inclusive term',
+            'avoid making absolute claims',
+            'accessibility concern',
+            'legal requirement',
+            'security risk',
+            'privacy concern'
+        ]
+        
+        # Generic messages that should be replaced with templates
+        generic_indicators = [
+            'multiple style issues',
+            'various concerns',
+            'several problems',
+            'general guidance'
+        ]
+        
+        message_lower = message.lower()
+        
+        # If it contains generic indicators, it's not specific
+        if any(generic in message_lower for generic in generic_indicators):
+            return False
+        
+        # If it contains specific indicators, it's specific
+        if any(specific in message_lower for specific in specific_indicators):
+            return True
+        
+        # For inclusive language, any message with specific terms is important
+        if error_type == 'inclusive_language':
+            return len(message) > 20 and ('term' in message_lower or 'language' in message_lower)
+        
+        # For legal/claims, most messages are specific
+        if error_type in ['claims', 'personal_information']:
+            return len(message) > 15
+        
+        # Default: if message is reasonably long and detailed, consider it specific
+        return len(message) > 30 and not any(generic in message_lower for generic in ['detected', 'multiple', 'various'])
     
     def _find_message_template(self, rule_types: set) -> Optional[str]:
         """Find a specific message template for the given rule type combination."""
