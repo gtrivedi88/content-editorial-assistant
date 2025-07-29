@@ -1,27 +1,24 @@
 {% extends "base.html" %}
 
-{% block title %}Content Editorial Assistant - Intelligent Writing Analysis{% endblock %}
+{% block title %}Content Editorial Plaform - Intelligent Writing Analysis{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/index-page.css') }}" />
 {% endblock %}
 
 {% block content %}
-<!-- Hero Section -->
+<!-- Enhanced Hero Section -->
 <section class="hero-section">
     <div class="pf-v5-l-grid pf-m-gutter hero-container">
-        <!-- Left Column: Main Content -->
         <div class="pf-v5-l-grid__item pf-m-8-col-on-lg pf-m-12-col">
             <div class="hero-content">
-                <!-- Hero Title & Icon -->
                 <div class="hero-title-wrapper pf-v5-u-mb-xl">
-                    <h1 class="hero-title pf-v5-u-mb-md">
-                        Transform Your Writing with AI
+                    <h1 class="app-title-lg pf-v5-u-mb-md">
+                        Write with confidence. And without comma splices.
                     </h1>
                     <div class="hero-subtitle-wrapper">
-                        <p class="hero-subtitle pf-v5-u-mb-lg">
-                            Upload your documents and get instant, professional feedback on writing style, grammar, and clarity. 
-                            Our advanced AI analysis helps you write with confidence and authority.
+                        <p class="app-text-body pf-v5-u-mb-lg" style="font-size: 1.25rem; max-width: 42rem;">
+                            Our AI has memorized the IBM Style Guide so you don't have to. It catches everything from passive voice to that misplaced 'only' you hoped no one would notice. Stop guessing, start perfecting.
                         </p>
                     </div>
                 </div>
@@ -30,13 +27,12 @@
     </div>
 </section>
 
-<!-- Modern Unified Editor Section -->
+<!-- Enhanced Modern Editor Section -->
 <section class="modern-editor-section">
     <div class="editor-container">
-        <!-- Modern Content Editor -->
         <div class="content-editor-wrapper">
             <div class="editor-card">
-                <!-- Editor Header -->
+                <!-- Enhanced Editor Header -->
                 <div class="editor-header">
                     <div class="editor-title-section">
                         <h2 class="editor-title">
@@ -49,34 +45,34 @@
                     </div>
                 </div>
 
-                <!-- Editor Body -->
+                <!-- Enhanced Editor Body -->
                 <div class="editor-body">
-                    <!-- Input Methods Tabs -->
+                    <!-- Refined Input Method Tabs -->
                     <div class="input-method-tabs">
                         <button class="input-tab active" data-method="text">
                             <i class="fas fa-keyboard"></i>
                             <span>Write or Paste</span>
                         </button>
-                        <button class="input-tab" data-method="upload">
+                        <button class="input-tab" data-method="file">
                             <i class="fas fa-cloud-upload-alt"></i>
                             <span>Upload File</span>
                         </button>
                     </div>
 
-                    <!-- Text Input Area -->
+                    <!-- Enhanced Text Input Area -->
                     <div class="input-area text-input-area active" id="text-input-area">
                         <div class="editor-interface">
                             <div class="editor-toolbar">
                                 <div class="toolbar-left">
-                                    <span class="word-count" id="word-count">0 words</span>
-                                    <span class="char-count" id="char-count">0 characters</span>
+                                    <span class="word-count app-text-sm" id="word-count">0 words</span>
+                                    <span class="char-count app-text-sm" id="char-count">0 characters</span>
                                 </div>
                                 <div class="toolbar-right">
-                                    <button class="toolbar-btn" onclick="loadSampleText()" title="Load sample text">
+                                    <button class="toolbar-btn app-btn-secondary" onclick="loadSampleText()" title="Load sample text">
                                         <i class="fas fa-lightbulb"></i>
                                         <span>Try Sample</span>
                                     </button>
-                                    <button class="toolbar-btn" onclick="clearEditor()" title="Clear content">
+                                    <button class="toolbar-btn app-btn-secondary" onclick="clearEditor()" title="Clear content">
                                         <i class="fas fa-eraser"></i>
                                         <span>Clear</span>
                                     </button>
@@ -100,16 +96,16 @@ Our AI will analyze your writing for style, grammar, readability, and structure.
                         </div>
                     </div>
 
-                    <!-- File Upload Area -->
-                    <div class="input-area file-upload-area" id="upload-input-area">
+                    <!-- Enhanced File Upload Area -->
+                    <div class="input-area file-input-area" id="upload-input-area">
                         <input type="file" id="file-input" class="hidden-input" accept=".pdf,.docx,.md,.adoc,.dita,.txt">
-                        <div class="upload-interface" id="upload-area">
+                        <div class="upload-interface upload-zone" id="upload-area">
                             <div class="upload-content">
                                 <div class="upload-icon-wrapper">
                                     <i class="fas fa-cloud-upload-alt upload-icon"></i>
                                 </div>
-                                <h3 class="upload-title">Drop your document here</h3>
-                                <p class="upload-description">
+                                <h3 class="upload-title app-title-sm">Drop your document here</h3>
+                                <p class="upload-description app-text-body">
                                     or <button class="upload-link" onclick="document.getElementById('file-input').click()">browse files</button>
                                 </p>
                                 <div class="supported-formats">
@@ -120,18 +116,18 @@ Our AI will analyze your writing for style, grammar, readability, and structure.
                                         <span class="format-item">AsciiDoc</span>
                                         <span class="format-item">DITA</span>
                                     </div>
-                                    <p class="size-limit">Maximum file size: 16MB</p>
+                                    <p class="size-limit app-text-xs">Maximum file size: 16MB</p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Action Buttons -->
+                    <!-- Enhanced Action Buttons -->
                     <div class="editor-actions">
                         <div class="analysis-controls">
-                            <!-- Content Type Selection (Left) -->
+                            <!-- Content Type Selection -->
                             <div class="content-type-selection">
-                                <label for="content-type-select" class="content-type-label">Content Type:</label>
+                                <label for="content-type-select" class="content-type-label app-text-sm">Content Type:</label>
                                 <div class="dropdown-wrapper">
                                     <select id="content-type-select" class="content-type-dropdown">
                                         <option value="concept">Concept</option>
@@ -142,8 +138,8 @@ Our AI will analyze your writing for style, grammar, readability, and structure.
                                 </div>
                             </div>
                             
-                            <!-- Analyze Button (Right) -->
-                            <button class="primary-action" onclick="analyzeEditorContent()" disabled id="analyze-btn">
+                            <!-- Enhanced Analyze Button -->
+                            <button class="primary-action app-btn-primary" onclick="analyzeEditorContent()" disabled id="analyze-btn">
                                 <i class="fas fa-magic"></i>
                                 <span>Analyze Content</span>
                                 <div class="button-shine"></div>
@@ -152,7 +148,7 @@ Our AI will analyze your writing for style, grammar, readability, and structure.
                         
                         <div class="action-help">
                             <i class="fas fa-info-circle"></i>
-                            <span>Analysis takes 2-5 seconds</span>
+                            <span class="app-text-xs">Analysis takes 2-5 seconds</span>
                         </div>
                     </div>
                 </div>
@@ -161,7 +157,7 @@ Our AI will analyze your writing for style, grammar, readability, and structure.
     </div>
 </section>
 
-<!-- Results Section -->
+<!-- Enhanced Results Section -->
 <section class="pf-v5-u-py-lg">
     <div class="pf-v5-l-grid pf-m-gutter">
         <div class="pf-v5-l-grid__item pf-m-12-col">
@@ -180,4 +176,97 @@ Our AI will analyze your writing for style, grammar, readability, and structure.
 
 {% block extra_js %}
 <!-- Index page JavaScript is loaded via index-page.js -->
+<script>
+// Enhanced mobile navigation toggle
+document.addEventListener('DOMContentLoaded', function() {
+    const sidebarToggle = document.getElementById('page-sidebar-toggle');
+    const sidebar = document.getElementById('page-sidebar');
+    
+    if (sidebarToggle && sidebar) {
+        sidebarToggle.addEventListener('click', function() {
+            sidebar.classList.toggle('pf-m-expanded');
+            const isExpanded = sidebar.classList.contains('pf-m-expanded');
+            sidebarToggle.setAttribute('aria-expanded', isExpanded);
+        });
+    }
+
+    // Enhanced input method tabs
+    const inputTabs = document.querySelectorAll('.input-tab');
+    const inputAreas = document.querySelectorAll('.input-area');
+    
+    inputTabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            const method = this.getAttribute('data-method');
+            
+            // Update active tab
+            inputTabs.forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Update active input area
+            inputAreas.forEach(area => {
+                area.classList.remove('active');
+                if (area.classList.contains(`${method}-input-area`)) {
+                    area.classList.add('active');
+                }
+            });
+        });
+    });
+
+    // Enhanced word and character counting
+    const textInput = document.getElementById('text-input');
+    const wordCount = document.getElementById('word-count');
+    const charCount = document.getElementById('char-count');
+    const analyzeBtn = document.getElementById('analyze-btn');
+    
+    if (textInput && wordCount && charCount && analyzeBtn) {
+        textInput.addEventListener('input', function() {
+            const text = this.value.trim();
+            const words = text ? text.split(/\s+/).length : 0;
+            const chars = this.value.length;
+            
+            wordCount.textContent = `${words} word${words !== 1 ? 's' : ''}`;
+            charCount.textContent = `${chars} character${chars !== 1 ? 's' : ''}`;
+            
+            // Enable/disable analyze button
+            analyzeBtn.disabled = text.length < 10;
+        });
+    }
+
+    // Enhanced drag and drop
+    const uploadArea = document.getElementById('upload-area');
+    const fileInput = document.getElementById('file-input');
+    
+    if (uploadArea && fileInput) {
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, () => {
+                uploadArea.classList.add('drag-over');
+            }, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, () => {
+                uploadArea.classList.remove('drag-over');
+            }, false);
+        });
+        
+        uploadArea.addEventListener('drop', function(e) {
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                // Trigger file processing here
+                console.log('File dropped:', files[0].name);
+            }
+        });
+    }
+});
+</script>
 {% endblock %}
