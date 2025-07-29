@@ -72,8 +72,17 @@ class CommasRule(BasePunctuationRule):
                     if child.dep_ == 'conj':
                         list_items.add(child)
                 
-                # Check if we have 3 or more items and there's at least one comma in the sentence
-                if len(list_items) >= 3 and ',' in sent.text:
+                # LINGUISTIC ANCHOR 1: Dependency-based detection (primary method)
+                dependency_based_detection = len(list_items) >= 3 and ',' in sent.text
+                
+                # LINGUISTIC ANCHOR 2: Text-based pattern detection (backup method)
+                # Handle cases where SpaCy dependency parsing misses list items
+                text_based_detection = False
+                if not dependency_based_detection and ',' in sent.text:
+                    text_based_detection = self._detect_serial_comma_by_pattern(token, sent)
+                
+                # Proceed if either method detects a potential serial comma issue
+                if dependency_based_detection or text_based_detection:
                     # Check if the token before the conjunction is NOT a comma
                     if token.i > sent.start and sent.doc[token.i - 1].text != ',':
                         flagged_token = sent.doc[token.i - 1]
@@ -88,6 +97,51 @@ class CommasRule(BasePunctuationRule):
                             flagged_text=token.text
                         ))
         return errors
+
+    def _detect_serial_comma_by_pattern(self, conjunction_token, sent: Doc) -> bool:
+        """
+        LINGUISTIC ANCHOR: Text-based pattern detection for serial comma cases
+        where SpaCy dependency parsing fails to identify all list items.
+        
+        Looks for patterns like: "item1, item2, item3 and item4"
+        where SpaCy might miss that item1 is part of the list.
+        """
+        # Get the text before the conjunction
+        text_before = sent.text[:conjunction_token.idx - sent.start_char]
+        
+        # Count commas before the conjunction
+        comma_count = text_before.count(',')
+        
+        # PATTERN 1: If there are 2+ commas before the conjunction, 
+        # this suggests a list of 3+ items even if SpaCy misses some
+        if comma_count >= 2:
+            return True
+        
+        # PATTERN 2: Look for specific patterns that suggest compound list items
+        # like "main console, the side panel and the log viewer"
+        import re
+        
+        # Pattern: article + noun + comma + article + noun + (no comma) + conjunction
+        # This catches cases like "the console, the panel and the viewer"
+        pattern = r'\b(?:the|a|an)\s+\w+,\s+(?:the|a|an)\s+\w+\s+(?:and|or)\b'
+        if re.search(pattern, sent.text, re.IGNORECASE):
+            return True
+        
+        # PATTERN 3: Look for adjective + noun patterns that suggest list items
+        # like "main console, side panel and log viewer" 
+        words_before_conjunction = text_before.strip().split()
+        if len(words_before_conjunction) >= 4:  # At least "word1, word2 word3"
+            # Check if we have at least one comma and multiple potential noun phrases
+            if comma_count >= 1:
+                # Split by commas to get potential list items
+                potential_items = [item.strip() for item in text_before.split(',')]
+                if len(potential_items) >= 2:
+                    # If each potential item has 1-3 words, likely a list
+                    item_word_counts = [len(item.split()) for item in potential_items]
+                    if all(1 <= count <= 3 for count in item_word_counts):
+                        return True
+        
+        return False
 
     def _check_comma_splice(self, sent: Doc, sentence_index: int) -> List[Dict[str, Any]]:
         """

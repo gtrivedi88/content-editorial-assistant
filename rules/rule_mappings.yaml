@@ -340,6 +340,7 @@ block_type_rules:
     - commas
     - dashes
     - ellipses
+    - exclamation_points
     - hyphens
     - parentheses
     - periods
@@ -460,10 +461,34 @@ block_type_rules:
 
   unordered_list:
     - lists
+    # LINGUISTIC ANCHOR: Punctuation rules for list content
+    - colons
+    - commas
+    - dashes
+    - ellipses
+    - exclamation_points
+    - hyphens
+    - parentheses
+    - periods
+    - quotation_marks
+    - semicolons
+    - slashes
 
   ordered_list:
     - lists
     - procedures
+    # LINGUISTIC ANCHOR: Punctuation rules for list content
+    - colons
+    - commas
+    - dashes
+    - ellipses
+    - exclamation_points
+    - hyphens
+    - parentheses
+    - periods
+    - quotation_marks
+    - semicolons
+    - slashes
 
   # Description lists
   description_list:

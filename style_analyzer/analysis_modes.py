@@ -305,6 +305,9 @@ class AnalysisModeExecutor:
                         child._analysis_errors = []
                     child._analysis_errors.extend(child_errors)
                     
+                    # CRITICAL FIX: Add child errors to the main errors list so they're returned
+                    errors.extend(child_errors)
+                    
                     # CRITICAL FIX: Mark child as already analyzed to prevent duplicate processing
                     # in the recursive _analyze_recursively method
                     child._already_analyzed = True
@@ -381,6 +384,9 @@ class AnalysisModeExecutor:
                     if not hasattr(child, '_analysis_errors'):
                         child._analysis_errors = []
                     child._analysis_errors.extend(child_errors)
+                    
+                    # CRITICAL FIX: Add child errors to the main errors list so they're returned
+                    errors.extend(child_errors)
                     
                     # CRITICAL FIX: Mark child as already analyzed to prevent duplicate processing
                     # in the recursive _analyze_recursively method

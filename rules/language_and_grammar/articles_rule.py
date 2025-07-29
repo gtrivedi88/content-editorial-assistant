@@ -115,9 +115,105 @@ class ArticlesRule(BaseLanguageRule):
         return False
 
     def _is_uncountable(self, token: Token) -> bool:
-        lemma = token.lemma_
-        plural_form = pyinflect.getInflection(lemma, 'NNS')
+        """
+        LINGUISTIC ANCHOR: Enhanced mass noun detection for technical contexts.
+        Combines pyinflect analysis with comprehensive technical mass noun lists.
+        """
+        lemma = token.lemma_.lower()
+        
+        # LINGUISTIC ANCHOR 1: Comprehensive technical mass nouns
+        # These are commonly used as uncountable in technical writing
+        technical_mass_nouns = {
+            # Network/System terms
+            'traffic', 'bandwidth', 'throughput', 'latency', 'connectivity',
+            'performance', 'availability', 'reliability', 'scalability', 
+            'compatibility', 'interoperability', 'security', 'encryption',
+            
+            # Data/Information terms  
+            'data', 'information', 'metadata', 'content', 'storage',
+            'consistency', 'integrity', 'accuracy', 'redundancy', 'backup',
+            'synchronization', 'replication', 'validation', 'verification',
+            
+            # Process/Quality terms
+            'maintenance', 'monitoring', 'logging', 'debugging', 'testing',
+            'optimization', 'configuration', 'deployment', 'installation',
+            'documentation', 'compliance', 'governance', 'oversight',
+            
+            # Resource terms
+            'memory', 'storage', 'bandwidth', 'capacity', 'utilization', 'usage',
+            'consumption', 'allocation', 'provisioning', 'scaling',
+            
+            # Abstract technical concepts
+            'functionality', 'usability', 'efficiency', 'productivity',
+            'transparency', 'flexibility', 'extensibility', 'modularity',
+            'abstraction', 'encapsulation', 'inheritance', 'polymorphism',
+            
+            # Common mass nouns
+            'software', 'hardware', 'middleware', 'firmware', 'malware',
+            'feedback', 'research', 'analysis', 'synthesis', 'knowledge',
+            'expertise', 'experience', 'training', 'education', 'learning'
+        }
+        
+        # LINGUISTIC ANCHOR 2: Check technical mass noun list first
+        if lemma in technical_mass_nouns:
+            return True
+        
+        # LINGUISTIC ANCHOR 3: Context-aware mass noun detection
+        # Check if the noun is used in typical mass noun contexts
+        if self._is_mass_noun_context(token):
+            return True
+        
+        # LINGUISTIC ANCHOR 4: Fallback to pyinflect for other cases
+        plural_form = pyinflect.getInflection(token.lemma_, 'NNS')
         return plural_form is None
+
+    def _is_mass_noun_context(self, token: Token) -> bool:
+        """
+        LINGUISTIC ANCHOR: Context-aware mass noun detection.
+        Identifies when a noun is used in typical mass noun contexts.
+        """
+        # PATTERN 1: Verbs that typically take mass noun objects
+        mass_noun_verbs = {
+            'ensure', 'ensures', 'provide', 'provides', 'require', 'requires',
+            'maintain', 'maintains', 'achieve', 'achieves', 'improve', 'improves',
+            'manage', 'manages', 'handle', 'handles', 'process', 'processes',
+            'direct', 'directs', 'control', 'controls', 'monitor', 'monitors',
+            'optimize', 'optimizes', 'enhance', 'enhances', 'maximize', 'maximizes'
+        }
+        
+        # Check if this noun is the direct object of a mass-noun-taking verb
+        if (token.dep_ == 'dobj' and 
+            token.head.pos_ == 'VERB' and 
+            token.head.lemma_.lower() in mass_noun_verbs):
+            return True
+        
+        # PATTERN 2: Prepositions that commonly precede mass nouns
+        mass_noun_prepositions = {
+            'for', 'with', 'of', 'in', 'on', 'through', 'via', 'by'
+        }
+        
+        # Check if this noun follows a preposition that commonly takes mass nouns
+        if (token.dep_ == 'pobj' and 
+            token.head.pos_ == 'ADP' and 
+            token.head.lemma_.lower() in mass_noun_prepositions):
+            return True
+        
+        # PATTERN 3: Common mass noun phrase patterns
+        # Check for patterns like "data X", "network X", "system X"
+        if token.i > 0:
+            prev_token = token.doc[token.i - 1]
+            mass_noun_modifiers = {
+                'data', 'network', 'system', 'application', 'service',
+                'database', 'server', 'client', 'user', 'admin',
+                'security', 'performance', 'quality', 'real-time'
+            }
+            
+            if (prev_token.pos_ in ('NOUN', 'ADJ') and 
+                prev_token.lemma_.lower() in mass_noun_modifiers and
+                token.dep_ in ('compound', 'dobj', 'pobj')):
+                return True
+        
+        return False
 
     def _is_missing_article_candidate(self, token: Token, doc: Doc) -> bool:
         # LINGUISTIC ANCHOR 1: Basic POS and morphology checks.

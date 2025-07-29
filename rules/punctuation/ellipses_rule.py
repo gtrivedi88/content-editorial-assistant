@@ -30,13 +30,26 @@ class EllipsesRule(BasePunctuationRule):
         
         doc = nlp(text)
         # The IBM Style Guide is direct: "Avoid using ellipses in text in most cases."
-        # A simple and robust check for the character sequence is sufficient.
+        # Check for both three consecutive dots and Unicode ellipsis character
         for i, sent in enumerate(doc.sents):
+            # LINGUISTIC ANCHOR 1: Three consecutive dots pattern
             for match in re.finditer(r'\.\.\.', sent.text):
                 errors.append(self._create_error(
                     sentence=sent.text,
                     sentence_index=i,
                     message="Avoid using ellipses (...) in technical writing.",
+                    suggestions=["If text is omitted from a quote, this may be acceptable. Otherwise, if used for a pause, rewrite for a more formal and direct tone."],
+                    severity='low',
+                    span=(sent.start_char + match.start(), sent.start_char + match.end()),
+                    flagged_text=match.group(0)
+                ))
+            
+            # LINGUISTIC ANCHOR 2: Unicode ellipsis character (U+2026)
+            for match in re.finditer(r'…', sent.text):
+                errors.append(self._create_error(
+                    sentence=sent.text,
+                    sentence_index=i,
+                    message="Avoid using ellipses (…) in technical writing.",
                     suggestions=["If text is omitted from a quote, this may be acceptable. Otherwise, if used for a pause, rewrite for a more formal and direct tone."],
                     severity='low',
                     span=(sent.start_char + match.start(), sent.start_char + match.end()),
