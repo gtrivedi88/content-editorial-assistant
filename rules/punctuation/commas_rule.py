@@ -92,31 +92,166 @@ class CommasRule(BasePunctuationRule):
     def _check_comma_splice(self, sent: Doc, sentence_index: int) -> List[Dict[str, Any]]:
         """
         Checks for comma splices, where two independent clauses are joined only by a comma.
+        Uses robust dependency parsing to accurately identify clause boundaries.
         """
         errors = []
         for token in sent:
-            # Linguistic Anchor: A comma splice is often a comma used as punctuation ('punct')
-            # between two verbs that are heads of their own clauses.
+            # LINGUISTIC ANCHOR 1: Find comma that punctuates clausal structure
             if token.text == ',' and token.dep_ == 'punct':
                 head_verb = token.head
-                # Check if the verb has a clausal conjunct that appears after the comma
-                clausal_conjuncts = [child for child in head_verb.children if child.dep_ == 'conj' and child.pos_ == 'VERB']
                 
-                for conjunct in clausal_conjuncts:
-                    if conjunct.i > token.i:
-                        # An independent clause must have its own subject.
-                        has_subject = any(child.dep_ in ('nsubj', 'nsubjpass') for child in conjunct.children)
-                        if has_subject:
-                            errors.append(self._create_error(
-                                sentence=sent.text,
-                                sentence_index=sentence_index,
-                                message="Potential comma splice: two independent clauses joined by only a comma.",
-                                suggestions=[f"Replace the comma after '{head_verb.text}' with a semicolon, or add a coordinating conjunction like 'and' or 'but'."],
-                                severity='medium',
-                                span=(token.idx, token.idx + len(token.text)),
-                                flagged_text=token.text
-                            ))
+                # LINGUISTIC ANCHOR 2: Check for comma splices using robust pattern detection
+                splice_detected = self._detect_comma_splice_patterns(token, head_verb, sent)
+                
+                if splice_detected:
+                    conjunct_verb = splice_detected['second_clause_verb']
+                    
+                    # LINGUISTIC ANCHOR 3: Find the actual word before the comma for accurate error messaging
+                    word_before_comma = self._find_word_before_comma(token, sent)
+                    first_clause_end = self._find_first_clause_end(token, sent)
+                    second_clause_start = self._find_second_clause_start(token, conjunct_verb, sent)
+                    
+                    errors.append(self._create_error(
+                        sentence=sent.text,
+                        sentence_index=sentence_index,
+                        message=f"Potential comma splice: two independent clauses joined by only a comma.",
+                        suggestions=[
+                            f"Replace the comma after '{word_before_comma}' with a semicolon.",
+                            f"Add a coordinating conjunction after the comma: '{first_clause_end}, and {second_clause_start}'.",
+                            f"Split into two sentences: '{first_clause_end}. {second_clause_start.capitalize()}...'"
+                        ],
+                        severity='medium',
+                        span=(token.idx, token.idx + len(token.text)),
+                        flagged_text=token.text
+                    ))
         return errors
+
+    def _detect_comma_splice_patterns(self, comma_token, head_verb, sent: Doc) -> dict:
+        """
+        LINGUISTIC ANCHOR: Detect comma splices using multiple dependency patterns.
+        Handles both simple (ccomp) and complex (conj) comma splice structures.
+        """
+        
+        # PATTERN 1: Clausal conjuncts (complex cases like original user example)
+        # "...completed, this process is critical and it should not be skipped"
+        clausal_conjuncts = [child for child in head_verb.children if child.dep_ == 'conj' and child.pos_ == 'VERB']
+        
+        for conjunct in clausal_conjuncts:
+            if conjunct.i > comma_token.i:
+                # Verify the conjunct has its own subject (independent clause)
+                has_subject = any(child.dep_ in ('nsubj', 'nsubjpass') for child in conjunct.children)
+                if has_subject:
+                    return {'second_clause_verb': conjunct, 'pattern': 'conj'}
+        
+        # PATTERN 2: Clausal complements (simple cases)
+        # "The server is running, it processes requests"
+        clausal_complements = [child for child in head_verb.children if child.dep_ == 'ccomp' and child.pos_ == 'VERB']
+        
+        for ccomp in clausal_complements:
+            if ccomp.i < comma_token.i:  # ccomp comes before comma
+                # Check if the main verb (head_verb) has its own subject after the comma
+                main_verb_subjects = [child for child in head_verb.children if child.dep_ in ('nsubj', 'nsubjpass')]
+                if main_verb_subjects and any(subj.i > comma_token.i for subj in main_verb_subjects):
+                    # Also verify the ccomp has its own subject (making it independent)
+                    ccomp_has_subject = any(child.dep_ in ('nsubj', 'nsubjpass') for child in ccomp.children)
+                    if ccomp_has_subject:
+                        return {'second_clause_verb': head_verb, 'pattern': 'ccomp'}
+        
+        # PATTERN 3: Direct independent clauses after comma
+        # Look for any verb after the comma that has its own subject
+        for i in range(comma_token.i + 1, sent.end):
+            token = sent.doc[i]
+            if token.pos_ == 'VERB' and token.dep_ in ('ROOT', 'ccomp', 'advcl'):
+                has_subject = any(child.dep_ in ('nsubj', 'nsubjpass') for child in token.children)
+                if has_subject:
+                    # Make sure this isn't a legitimate dependent clause
+                    if not self._is_legitimate_dependent_clause(token, comma_token):
+                        return {'second_clause_verb': token, 'pattern': 'independent'}
+        
+        return None
+
+    def _is_legitimate_dependent_clause(self, verb_token, comma_token) -> bool:
+        """
+        LINGUISTIC ANCHOR: Check if a clause after a comma is a legitimate dependent clause.
+        Examples of legitimate cases: "When X happens, Y occurs", "After deployment, the system starts"
+        """
+        # Check for subordinating conjunctions that indicate dependent clauses
+        subordinating_conjunctions = {'when', 'while', 'although', 'because', 'since', 'if', 'unless', 'before', 'after', 'as'}
+        
+        # PATTERN 1: Look backwards from the comma for subordinating conjunctions
+        for i in range(comma_token.i - 1, max(comma_token.i - 10, 0), -1):
+            token = comma_token.doc[i]
+            if token.lemma_.lower() in subordinating_conjunctions:
+                return True
+        
+        # PATTERN 2: Check if sentence starts with subordinating conjunction
+        # Handles: "When the system starts, it loads..." or "After deployment, the system requires..."
+        sent_start = comma_token.doc[comma_token.sent.start:comma_token.i]
+        for token in sent_start:
+            if token.lemma_.lower() in subordinating_conjunctions:
+                return True
+        
+        # PATTERN 3: Check for adverbial clause markers in dependency structure
+        # Look for 'mark' dependency (subordinating conjunction markers)
+        for token in comma_token.doc[comma_token.sent.start:comma_token.i]:
+            if token.dep_ == 'mark' and token.lemma_.lower() in subordinating_conjunctions:
+                return True
+        
+        # PATTERN 4: Check if the clause before comma is marked as advcl (adverbial clause)
+        for token in comma_token.doc[comma_token.sent.start:comma_token.i]:
+            if token.dep_ == 'advcl':
+                return True
+        
+        return False
+
+    def _find_word_before_comma(self, comma_token, sent: Doc) -> str:
+        """
+        LINGUISTIC ANCHOR: Find the actual word immediately before the comma.
+        This provides accurate context for error messages.
+        """
+        if comma_token.i > sent.start:
+            return sent.doc[comma_token.i - 1].text
+        return "unknown"
+
+    def _find_first_clause_end(self, comma_token, sent: Doc) -> str:
+        """
+        LINGUISTIC ANCHOR: Extract the first clause text ending at the comma.
+        Walks backwards from comma to find clause boundary.
+        """
+        # Find the start of the sentence or a previous punctuation
+        start_idx = sent.start
+        for i in range(comma_token.i - 1, sent.start - 1, -1):
+            if sent.doc[i].text in '.!?;':
+                start_idx = i + 1
+                break
+        
+        # Extract text from start to comma
+        clause_tokens = [sent.doc[i].text for i in range(start_idx, comma_token.i)]
+        return ' '.join(clause_tokens).strip()
+
+    def _find_second_clause_start(self, comma_token, conjunct_verb, sent: Doc) -> str:
+        """
+        LINGUISTIC ANCHOR: Extract the beginning of the second clause after the comma.
+        Uses the conjunct verb to identify the start of the independent clause.
+        """
+        # Start from the token immediately after the comma
+        start_idx = comma_token.i + 1
+        
+        # Find the subject of the second clause
+        subject = None
+        for child in conjunct_verb.children:
+            if child.dep_ in ('nsubj', 'nsubjpass'):
+                subject = child
+                break
+        
+        # If we found a subject, start from there, otherwise start after comma
+        if subject and subject.i >= start_idx:
+            start_idx = subject.i
+        
+        # Extract a reasonable portion of the second clause (up to 5-6 words)
+        end_idx = min(start_idx + 6, sent.end)
+        clause_tokens = [sent.doc[i].text for i in range(start_idx, end_idx)]
+        return ' '.join(clause_tokens).strip()
 
     def _check_introductory_clause(self, sent: Doc, sentence_index: int) -> List[Dict[str, Any]]:
         """

@@ -56,9 +56,54 @@ class ArticlesRule(BaseLanguageRule):
         return errors
 
     def _starts_with_vowel_sound(self, word: str) -> bool:
+        """
+        LINGUISTIC ANCHOR: Morphological analysis for article selection.
+        Determines vowel vs. consonant sound based on phonetics, not spelling.
+        """
         word_lower = word.lower()
-        if word_lower.startswith(('user', 'unit', 'one', 'uniform')): return False
-        if word_lower.startswith(('hour', 'honest', 'honor')): return True
+        
+        # LINGUISTIC ANCHOR 1: Words starting with vowel letters but consonant sounds
+        consonant_sound_words = {
+            # U sounds (pronounced /j/ - "yoo" sound)
+            'user', 'users', 'usage', 'used', 'useful', 'useless', 'usually',
+            'unit', 'units', 'united', 'university', 'unique', 'uniform',
+            'unicode', 'unix', 'ubuntu', 'url', 'utility', 'utilize',
+            
+            # O sounds (pronounced /w/ - "one" sound)  
+            'one', 'once', 'ones',
+            
+            # EU sounds (pronounced /j/ - "yoo" sound)
+            'european', 'euro', 'eucalyptus', 'euphemism', 'eureka'
+        }
+        
+        # LINGUISTIC ANCHOR 2: Words starting with consonant letters but vowel sounds
+        vowel_sound_words = {
+            # Silent H words
+            'hour', 'hours', 'honest', 'honestly', 'honor', 'honored', 'honorable',
+            'heir', 'heiress', 'herb', 'herbs', 'homage', 'humble',
+            
+            # Acronyms/abbreviations pronounced as letters starting with vowels
+            'fbi', 'html', 'http', 'led', 'lcd', 'sql', 'xml', 'api', 'url'
+        }
+        
+        # Check exact word matches first (most accurate)
+        if word_lower in consonant_sound_words:
+            return False
+        if word_lower in vowel_sound_words:
+            return True
+            
+        # LINGUISTIC ANCHOR 3: Pattern-based phonetic rules
+        # Handle common prefixes that affect pronunciation
+        if word_lower.startswith('uni') and len(word_lower) > 3:
+            # Most "uni-" words are pronounced /j/ (university, uniform, etc.)
+            return False
+        
+        if word_lower.startswith('eu') and len(word_lower) > 2:
+            # Most "eu-" words are pronounced /j/ (European, euphemism, etc.)  
+            return False
+        
+        # LINGUISTIC ANCHOR 4: Default vowel letter check
+        # Fall back to simple vowel letter detection for other cases
         return word_lower[0] in 'aeiou'
 
     def _is_incorrect_article_usage(self, article_token: Token, next_token: Token) -> bool:
