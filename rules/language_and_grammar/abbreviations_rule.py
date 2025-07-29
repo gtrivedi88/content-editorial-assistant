@@ -3,7 +3,7 @@ Abbreviations Rule (Enhanced)
 Based on IBM Style Guide topic: "Abbreviations"
 """
 import re
-from typing import List, Dict, Any, Set
+from typing import List, Dict, Any, Set, Optional
 from .base_language_rule import BaseLanguageRule
 
 try:
@@ -19,9 +19,33 @@ class AbbreviationsRule(BaseLanguageRule):
     - Ensuring abbreviations are defined on first use.
     - Preventing the use of abbreviations as verbs.
     """
+    def __init__(self):
+        """Initialize the abbreviations rule with document-level state management."""
+        super().__init__()
+        # Document-level state to track defined abbreviations across blocks
+        self.defined_abbreviations: Set[str] = set()
+        self.current_document_hash: Optional[str] = None
+
     def _get_rule_type(self) -> str:
         """Returns the unique identifier for this rule."""
         return 'abbreviations'
+
+    def _reset_document_state_if_needed(self, text: str) -> None:
+        """
+        Reset abbreviation state for new documents based on content hash.
+        This ensures state persists across blocks within the same document
+        but resets for different documents.
+        """
+        import hashlib
+        
+        # Create a simple hash of the first 200 characters to detect new documents
+        # This is more reliable than trying to detect document boundaries
+        document_signature = hashlib.md5(text[:200].encode()).hexdigest()
+        
+        if self.current_document_hash != document_signature:
+            # New document - reset state
+            self.defined_abbreviations.clear()
+            self.current_document_hash = document_signature
 
     def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         """
@@ -33,8 +57,10 @@ class AbbreviationsRule(BaseLanguageRule):
         if not nlp:
             return errors
 
+        # Reset state for new documents, preserve state within same document
+        self._reset_document_state_if_needed(text)
+        
         doc = nlp(text)
-        defined_abbreviations: Set[str] = set()
         
         # --- LINGUISTIC ANCHOR 1: Latin Abbreviations Detection ---
         # Use morphological patterns to detect Latin abbreviations
@@ -56,9 +82,16 @@ class AbbreviationsRule(BaseLanguageRule):
         for token in doc:
             # MORPHOLOGICAL PATTERN: Detect uppercase abbreviations
             if self._is_abbreviation_candidate(token):
+                # First, check if this token is a definition (e.g., inside parentheses after full text)
+                if self._is_definition_pattern(token, doc):
+                    # This is a definition - mark it as defined
+                    self.defined_abbreviations.add(token.text)
+                    continue
+                
                 # Check for undefined first use
-                if token.text not in defined_abbreviations:
-                    if not self._is_contextually_defined(token, doc):
+                if token.text not in self.defined_abbreviations:
+                    # LINGUISTIC ANCHOR: Context-aware abbreviation checking
+                    if not self._is_contextually_defined(token, doc) and not self._is_admonition_context(token, context):
                         sent = token.sent
                         sent_index = list(doc.sents).index(sent)
                         errors.append(self._create_error(
@@ -70,7 +103,7 @@ class AbbreviationsRule(BaseLanguageRule):
                             span=(token.idx, token.idx + len(token.text)),
                             flagged_text=token.text
                         ))
-                    defined_abbreviations.add(token.text)
+                    self.defined_abbreviations.add(token.text)
                 
                 # LINGUISTIC ANCHOR: Check for verb usage patterns
                 if self._is_used_as_verb(token, doc):
@@ -242,11 +275,83 @@ class AbbreviationsRule(BaseLanguageRule):
         return False
 
     def _is_abbreviation_in_parens(self, token: 'Token', doc: 'Doc') -> bool:
-        """Check if abbreviation appears in parentheses after definition."""
-        # Look backwards for opening parenthesis
-        for i in range(max(0, token.i - 10), token.i):
+        """
+        Check if abbreviation appears in parentheses after its definition.
+        Pattern: "Full Name (ABBR)" where ABBR should not be flagged.
+        """
+        # Check if we're immediately after a closing parenthesis
+        if token.i == 0 or doc[token.i - 1].text != ')':
+            return False
+        
+        # Find the matching opening parenthesis
+        paren_depth = 1
+        open_paren_idx = None
+        
+        for i in range(token.i - 2, -1, -1):  # Start from before the closing paren
+            if doc[i].text == ')':
+                paren_depth += 1
+            elif doc[i].text == '(':
+                paren_depth -= 1
+                if paren_depth == 0:
+                    open_paren_idx = i
+                    break
+        
+        if open_paren_idx is None:
+            return False
+        
+        # Check if the text inside parentheses matches our abbreviation
+        inside_parens = doc[open_paren_idx + 1:token.i - 1]
+        inside_text = ''.join([t.text_with_ws for t in inside_parens]).strip()
+        
+        return inside_text == token.text
+
+    def _is_definition_pattern(self, token: 'Token', doc: 'Doc') -> bool:
+        """
+        Check if this abbreviation is being defined (inside parentheses after full form).
+        Pattern: "Full Name (ABBR)" - detect when we encounter ABBR inside parens.
+        """
+        # Check if we're inside parentheses
+        if token.i == 0:
+            return False
+        
+        # Look backwards to find if we're inside parentheses
+        in_parens = False
+        open_paren_idx = None
+        
+        for i in range(token.i - 1, -1, -1):
+            if doc[i].text == ')':
+                # Found closing paren before us - we're not in parens
+                return False
+            elif doc[i].text == '(':
+                # Found opening paren - we might be in a definition
+                in_parens = True
+                open_paren_idx = i
+                break
+        
+        if not in_parens:
+            return False
+        
+        # Look forward to find the closing parenthesis
+        close_paren_idx = None
+        for i in range(token.i + 1, len(doc)):
             if doc[i].text == '(':
-                return True
+                # Nested parens - not a simple definition pattern
+                return False
+            elif doc[i].text == ')':
+                close_paren_idx = i
+                break
+        
+        if close_paren_idx is None:
+            return False
+        
+        # Check if there's substantial text before the opening parenthesis
+        # This should be the full form of the abbreviation
+        if open_paren_idx > 0:
+            text_before = doc[:open_paren_idx]
+            # Should have at least 2 words to be a real definition
+            word_count = len([t for t in text_before if t.is_alpha])
+            return word_count >= 2
+        
         return False
 
     def _has_explicit_definition(self, token: 'Token', doc: 'Doc') -> bool:
@@ -262,6 +367,29 @@ class AbbreviationsRule(BaseLanguageRule):
         for child in token.children:
             if child.dep_ in ['dobj', 'iobj', 'nsubj']:  # Direct object, indirect object, subject
                 return True
+        return False
+
+    def _is_admonition_context(self, token: 'Token', context: Optional[Dict[str, Any]]) -> bool:
+        """
+        LINGUISTIC ANCHOR: Context-aware admonition detection using structural information.
+        Checks if we're in a context where admonition keywords are legitimate.
+        """
+        if not context:
+            return False
+        
+        # Check if we're in an admonition block
+        if context.get('block_type') == 'admonition':
+            return True
+        
+        # Check if the next block is an admonition (introducing context)
+        if context.get('next_block_type') == 'admonition':
+            return True
+        
+        # Check if this is an admonition-related keyword
+        admonition_keywords = {'NOTE', 'TIP', 'IMPORTANT', 'WARNING', 'CAUTION'}
+        if token.text in admonition_keywords:
+            return True
+        
         return False
 
     def _get_semantic_action(self, abbreviation: str) -> str:

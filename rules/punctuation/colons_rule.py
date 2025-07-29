@@ -37,7 +37,7 @@ class ColonsRule(BasePunctuationRule):
             for i, sent in enumerate(doc.sents):
                 for token in sent:
                     if token.text == ':':
-                        if self._is_legitimate_context(token, sent):
+                        if self._is_legitimate_context(token, sent) or self._is_legitimate_context_aware(token, sent, context):
                             continue
                         if not self._is_preceded_by_complete_clause(token, sent):
                             errors.append(self._create_error(
@@ -110,3 +110,21 @@ class ColonsRule(BasePunctuationRule):
             verb_before_colon = sent[token_sent_idx - 1].pos_ == "VERB"
 
         return has_subject and has_root_verb and not verb_before_colon
+
+    def _is_legitimate_context_aware(self, colon_token: Token, sent: Span, context: Optional[Dict[str, Any]]) -> bool:
+        """
+        LINGUISTIC ANCHOR: Context-aware colon legitimacy checking using structural information.
+        Uses inter-block context to determine if colons are introducing content like admonitions.
+        """
+        if not context:
+            return False
+        
+        # If this block introduces an admonition, colons are legitimate
+        if context.get('next_block_type') == 'admonition':
+            return True
+        
+        # If we're in a list introduction context, colons are legitimate
+        if context.get('is_list_introduction', False):
+            return True
+        
+        return False

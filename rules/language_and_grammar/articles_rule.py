@@ -2,7 +2,7 @@
 Articles Rule (with True Linguistic Analysis)
 Based on IBM Style Guide topic: "Articles"
 """
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import pyinflect
 from .base_language_rule import BaseLanguageRule
 
@@ -44,7 +44,7 @@ class ArticlesRule(BaseLanguageRule):
                             flagged_text=f"{token.text} {next_token.text}"
                         ))
                 
-                if content_classification == 'descriptive_content' and self._is_missing_article_candidate(token, doc):
+                if content_classification == 'descriptive_content' and self._is_missing_article_candidate(token, doc) and not self._is_admonition_context(token, context):
                     errors.append(self._create_error(
                         sentence=sent.text, sentence_index=i,
                         message=f"Potentially missing article before the noun '{token.text}'.",
@@ -332,5 +332,28 @@ class ArticlesRule(BaseLanguageRule):
                 child.pos_ == 'NOUN' and
                 child.lemma_.lower() in technical_terms):
                 return True
+        
+        return False
+
+    def _is_admonition_context(self, token: Token, context: Optional[Dict[str, Any]]) -> bool:
+        """
+        LINGUISTIC ANCHOR: Context-aware admonition detection using structural information.
+        Checks if we're in a context where admonition keywords are legitimate.
+        """
+        if not context:
+            return False
+        
+        # Check if we're in an admonition block
+        if context.get('block_type') == 'admonition':
+            return True
+        
+        # Check if the next block is an admonition (introducing context)
+        if context.get('next_block_type') == 'admonition':
+            return True
+        
+        # Check if this is an admonition-related keyword
+        admonition_keywords = {'note', 'tip', 'important', 'warning', 'caution'}
+        if token.lemma_.lower() in admonition_keywords:
+            return True
         
         return False
