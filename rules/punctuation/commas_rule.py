@@ -208,19 +208,43 @@ class CommasRule(BasePunctuationRule):
 
         # If the main clause doesn't start the sentence, we have an introductory element.
         if main_clause_start_token.i > sent.start:
-            token_before_main_clause = sent.doc[main_clause_start_token.i - 1]
-            
             # The introductory element must be longer than a few words to require a comma.
             intro_element_length = main_clause_start_token.i - sent.start
             
-            if intro_element_length > 2 and token_before_main_clause.text != ',':
-                errors.append(self._create_error(
-                    sentence=sent.text,
-                    sentence_index=sentence_index,
-                    message="Missing comma after an introductory clause or phrase.",
-                    suggestions=[f"Add a comma after '{token_before_main_clause.text}'."],
-                    severity='medium',
-                    span=(token_before_main_clause.idx + len(token_before_main_clause.text), token_before_main_clause.idx + len(token_before_main_clause.text)),
-                    flagged_text=token_before_main_clause.text
-                ))
+            if intro_element_length > 2:
+                # FIXED: Check if there's already a comma anywhere in the introductory clause
+                # instead of just checking the token immediately before the main clause
+                has_comma_in_intro = any(
+                    token.text == ',' 
+                    for token in sent if sent.start <= token.i < main_clause_start_token.i
+                )
+                
+                if not has_comma_in_intro:
+                    # Find the last meaningful token in the introductory clause for suggestion
+                    last_intro_token = None
+                    # Find the last token in the introductory clause
+                    for token in sent:
+                        if sent.start <= token.i < main_clause_start_token.i:
+                            last_intro_token = token
+                    
+                    if last_intro_token is None:
+                        return errors  # Safety check
+                        
+                    # Try to find a better suggestion point by avoiding function words
+                    for token in reversed(list(sent)):
+                        if (sent.start <= token.i < main_clause_start_token.i and 
+                            token.pos_ not in ('DET', 'ADP') and 
+                            token.text not in ('the', 'a', 'an')):
+                            last_intro_token = token
+                            break
+                    
+                    errors.append(self._create_error(
+                        sentence=sent.text,
+                        sentence_index=sentence_index,
+                        message="Missing comma after an introductory clause or phrase.",
+                        suggestions=[f"Add a comma after '{last_intro_token.text}'."],
+                        severity='medium',
+                        span=(last_intro_token.idx + len(last_intro_token.text), last_intro_token.idx + len(last_intro_token.text)),
+                        flagged_text=last_intro_token.text
+                    ))
         return errors
