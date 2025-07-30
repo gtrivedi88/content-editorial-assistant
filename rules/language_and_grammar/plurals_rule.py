@@ -106,6 +106,11 @@ class PluralsRule(BaseLanguageRule):
                     # LINGUISTIC ANCHOR: Skip words that are actually functioning as verbs
                     if self._is_functioning_as_verb(token, sent.doc):
                         continue
+                    
+                    # LINGUISTIC ANCHOR: Skip if this is actually the head noun of a compound phrase
+                    # (e.g., "images" in "BYO Knowledge images")
+                    if self._is_compound_head_noun(token, sent.doc):
+                        continue
                         
                     # LINGUISTIC ANCHOR: Skip legitimate technical compound plurals
                     if not self._is_legitimate_technical_compound(token, sent.doc):
@@ -185,6 +190,59 @@ class PluralsRule(BaseLanguageRule):
         # If tagged as dobj but has verb-like children, likely a parsing error
         if token.dep_ == 'dobj' and any(child.dep_ in ('prep', 'advmod') for child in token.children):
             return True
+        
+        return False
+
+    def _is_compound_head_noun(self, token, doc) -> bool:
+        """
+        LINGUISTIC ANCHOR: Detect when a plural noun is actually the head noun
+        of a compound phrase, not a modifier.
+        
+        Examples:
+        - "BYO Knowledge images" - "images" is the head noun
+        - "container registry images" - "images" is the head noun
+        - "systems administrator" - "systems" is the modifier (should be flagged)
+        """
+        # Check if this token is the rightmost noun in a compound noun phrase
+        # and has other nouns/adjectives depending on it as compounds
+        has_compound_children = any(
+            child.dep_ == 'compound' and child.i < token.i 
+            for child in token.children
+        )
+        
+        # Check if this token is the head (not dependent on another noun to its right)
+        head_token = token.head
+        is_sentence_head = (
+            head_token.pos_ != 'NOUN' or  # Head is not a noun
+            head_token.i < token.i or     # Head comes before this token
+            head_token.dep_ == 'ROOT'     # This token's head is the root
+        )
+        
+        # If it has compound modifiers and is the rightmost noun, it's likely the head
+        if has_compound_children and is_sentence_head:
+            return True
+        
+        # Additional check: Look for patterns like "adjective + adjective + plural_noun"
+        # where the plural noun is clearly the head
+        preceding_modifiers = []
+        for i in range(max(0, token.i - 3), token.i):
+            prev_token = doc[i]
+            if (prev_token.pos_ in ('ADJ', 'NOUN', 'PROPN') and 
+                (prev_token.dep_ == 'compound' or prev_token.head == token)):
+                preceding_modifiers.append(prev_token)
+        
+        # If we have 2+ preceding modifiers, this is likely the head noun
+        if len(preceding_modifiers) >= 2:
+            return True
+        
+        # Check for specific patterns with brand names or acronyms
+        # (e.g., "BYO Knowledge images", "AWS S3 buckets")
+        if preceding_modifiers:
+            first_modifier = preceding_modifiers[0]
+            # Look for patterns with uppercase acronyms or brand names
+            if (first_modifier.text.isupper() or 
+                any(char.isupper() for char in first_modifier.text)):
+                return True
         
         return False
 

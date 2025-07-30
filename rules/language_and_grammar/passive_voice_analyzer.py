@@ -92,13 +92,22 @@ class PassiveVoiceAnalyzer:
             'system', 'platform', 'api', 'service', 'application', 'software', 
             'tool', 'framework', 'component', 'module', 'database', 'server', 
             'network', 'interface', 'feature', 'functionality', 'capability',
-            'product', 'solution', 'package', 'library', 'plugin', 'extension'
+            'product', 'solution', 'package', 'library', 'plugin', 'extension',
+            # Configuration and data entities  
+            'parameter', 'variable', 'property', 'attribute', 'setting', 'option',
+            'configuration', 'config', 'field', 'value', 'flag', 'switch',
+            'policy', 'rule', 'constraint', 'limit', 'threshold', 'timeout'
         }
         
         self.characteristic_verbs = {
             'configure', 'design', 'build', 'implement', 'create', 'develop',
             'provide', 'support', 'enable', 'offer', 'document', 'describe',
-            'guarantee', 'optimize', 'secure', 'protect', 'validate'
+            'guarantee', 'optimize', 'secure', 'protect', 'validate',
+            # Technical configuration and implementation verbs
+            'hardcode', 'encode', 'embed', 'preset', 'predefine', 'initialize',
+            'install', 'deploy', 'setup', 'establish', 'register', 'bind',
+            'allocate', 'assign', 'specify', 'define', 'declare', 'map',
+            'route', 'redirect', 'forward', 'expose', 'publish', 'mount'
         }
         
         self.imperative_indicators = {

@@ -103,10 +103,10 @@ class AsciiDocBlock:
         content = re.sub(r'<samp>(.*?)</samp>', r'\1', content)
 
         # Replace AsciiDoc attributes {like-this} with a placeholder
-        content = re.sub(r'\{[^{}]+\}', ' ATTR ', content)
+        content = re.sub(r'\{[^{}]+\}', ' placeholder ', content)
         
         # Replace AsciiDoc link:...[] syntax with a placeholder for the analysis engine
-        content = re.sub(r'link:https?://[^\s\[\]]+\[.*?\]', ' LINK ', content)
+        content = re.sub(r'link:https?://[^\s\[\]]+\[.*?\]', ' linkref ', content)
         
         # Clean up any extra spaces that might result from the replacements
         content = re.sub(r'\s{2,}', ' ', content)

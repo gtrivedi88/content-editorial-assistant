@@ -68,6 +68,16 @@ class VerbsRule(BaseLanguageRule):
             passive_constructions = self.passive_analyzer.find_passive_constructions(doc)
             
             for construction in passive_constructions:
+                # Enhanced context classification
+                context_type = self.passive_analyzer.classify_context(construction, doc)
+                construction.context_type = context_type
+                
+                # Only flag passive voice in inappropriate contexts
+                # Skip legitimate descriptive uses in technical documentation
+                if context_type == ContextType.DESCRIPTIVE:
+                    # Skip descriptive passive voice (e.g., "parameter was configured")
+                    continue
+                
                 # Generate context-aware suggestions
                 suggestions = self._generate_context_aware_suggestions(construction, doc, sent_text)
                 
@@ -100,10 +110,15 @@ class VerbsRule(BaseLanguageRule):
                             flagged_text=flagged_text
                         ))
 
-            # --- PAST TENSE CHECK ---
+            # --- PAST TENSE CHECK (with temporal context awareness) ---
             root_verb = self._find_root_token(doc)
             if (root_verb and root_verb.pos_ == 'VERB' and 'Tense=Past' in str(root_verb.morph) 
                 and not self._is_passive_construction(root_verb, doc)):
+                
+                # ENHANCED: Skip past tense flagging when temporal context justifies it
+                if self._has_legitimate_temporal_context(doc, sent_text):
+                    continue
+                
                 flagged_text = root_verb.text
                 span_start = root_verb.idx
                 span_end = span_start + len(flagged_text)
@@ -372,3 +387,110 @@ class VerbsRule(BaseLanguageRule):
                 return verb_lemma + 's'
         else:
             return verb_lemma
+
+    def _has_legitimate_temporal_context(self, doc, sentence: str) -> bool:
+        """
+        Detect when past tense is legitimately appropriate due to temporal context.
+        
+        Past tense is appropriate for:
+        - Historical descriptions ("Before this update...")
+        - Bug reports and issue descriptions  
+        - Release notes and change descriptions
+        - Temporal comparisons ("Previously...")
+        """
+        sentence_lower = sentence.lower()
+        
+        # Temporal indicators that justify past tense
+        temporal_indicators = {
+            # Version/update context
+            'before this update', 'before the update', 'prior to this update',
+            'before this release', 'before the release', 'in previous versions',
+            'in earlier versions', 'previously', 'formerly', 'originally',
+            
+            # Issue/bug context  
+            'this issue occurred', 'this condition occurred', 'this problem occurred',
+            'the issue was', 'the problem was', 'the bug was', 'the error was',
+            'users experienced', 'this caused', 'this resulted in',
+            
+            # Historical context
+            'in the past', 'historically', 'before the fix', 'before the change',
+            'until now', 'until this version', 'up until', 'prior to',
+            
+            # Specific temporal phrases
+            'this condition occurred', 'the service could not', 'users could not',
+            'the system was unable', 'it was not possible', 'this failed to'
+        }
+        
+        # Check for explicit temporal indicators
+        for indicator in temporal_indicators:
+            if indicator in sentence_lower:
+                return True
+        
+        # Pattern detection using spaCy for more sophisticated analysis
+        temporal_patterns = self._detect_temporal_patterns(doc)
+        if temporal_patterns:
+            return True
+        
+        # Context clues from document structure (if available)
+        context_clues = self._detect_release_notes_context(sentence_lower)
+        if context_clues:
+            return True
+        
+        return False
+    
+    def _detect_temporal_patterns(self, doc) -> bool:
+        """Use spaCy to detect temporal patterns that justify past tense."""
+        
+        # Look for temporal prepositions at sentence start
+        if len(doc) > 0:
+            first_token = doc[0]
+            temporal_prepositions = {'before', 'after', 'during', 'until', 'since', 'when'}
+            if first_token.lemma_.lower() in temporal_prepositions:
+                return True
+        
+        # Look for temporal nouns/phrases
+        temporal_nouns = {'update', 'release', 'version', 'fix', 'change', 'modification'}
+        for token in doc:
+            if (token.lemma_.lower() in temporal_nouns and 
+                any(child.text.lower() in {'this', 'the', 'previous', 'earlier'} 
+                    for child in token.children)):
+                return True
+        
+        # Look for modal past constructions indicating capability/possibility
+        for token in doc:
+            if (token.lemma_.lower() in {'could', 'would', 'might'} and 
+                token.tag_ == 'MD'):
+                # Check if this is describing a past limitation/capability
+                head_verb = token.head
+                if head_verb and head_verb.lemma_.lower() in {'reload', 'access', 'load', 'connect', 'process'}:
+                    # Check for negative context
+                    if any(child.lemma_.lower() == 'not' for child in token.children):
+                        return True
+        
+        return False
+    
+    def _detect_release_notes_context(self, sentence_lower: str) -> bool:
+        """Detect if this appears to be release notes or changelog context."""
+        
+        release_notes_indicators = {
+            'fixed', 'resolved', 'addressed', 'corrected', 'improved',
+            'enhanced', 'updated', 'modified', 'changed', 'added', 'removed',
+            'introduced', 'deprecated', 'replaced', 'migrated'
+        }
+        
+        issue_description_patterns = {
+            'failed to', 'unable to', 'could not', 'did not', 'would not',
+            'was not', 'were not', 'caused', 'resulted in', 'led to'
+        }
+        
+        # Check for release notes language
+        for indicator in release_notes_indicators:
+            if indicator in sentence_lower:
+                return True
+        
+        # Check for issue description patterns
+        for pattern in issue_description_patterns:
+            if pattern in sentence_lower:
+                return True
+        
+        return False
