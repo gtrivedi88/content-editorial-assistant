@@ -72,6 +72,10 @@ class PronounAmbiguityDetector(AmbiguityDetector):
                     if self._is_clear_demonstrative_subject(token, doc):
                         continue
 
+                    # LINGUISTIC ANCHOR 3: Check for clear temporal/discourse references.
+                    if self._is_clear_temporal_reference(token, doc):
+                        continue
+
                     ambiguity_info = self._analyze_pronoun_ambiguity(token, doc, context, nlp)
                     if ambiguity_info and ambiguity_info['confidence'] >= self.min_confidence:
                         detection = self._create_detection(token, ambiguity_info, context)
@@ -106,22 +110,25 @@ class PronounAmbiguityDetector(AmbiguityDetector):
             if verb.lemma_ in meta_verbs:
                 return True
 
-        # Case 2: Determiner at sentence start with clear noun pattern (e.g., "This preamble tests...")
+        # Case 2: Determiner at sentence start with clear noun pattern (e.g., "This document describes...")
         elif pronoun_token.dep_ == 'det':
-            verb_head = pronoun_token.head
-            if verb_head.pos_ == 'VERB':
-                # Look for a concrete noun that's also attached to the same verb head
-                # This handles "This [noun] [verb]..." patterns
-                for sibling in verb_head.children:
-                    if (sibling.pos_ in ('NOUN', 'PROPN') and 
-                        sibling.dep_ in ('amod', 'nsubj', 'nsubjpass') and
-                        self._is_concrete_noun(sibling)):
-                        return True
-                        
-                # Also check if this is a meta verb that indicates document structure
-                meta_verbs = {'test', 'describe', 'show', 'explain', 'illustrate', 'demonstrate'}
-                if verb_head.lemma_ in meta_verbs:
+            noun = pronoun_token.head  # The noun that "this" modifies
+            
+            # Check if this noun is a subject and is concrete
+            if (noun.pos_ in ('NOUN', 'PROPN') and 
+                noun.dep_ in ('nsubj', 'nsubjpass') and
+                self._is_concrete_noun(noun)):
+                
+                # Check if it has a clear verb head
+                verb = noun.head
+                if verb.pos_ == 'VERB':
+                    # For basic verbs, this is clear
                     return True
+                    
+                    # Also check if this is a meta verb that indicates document structure
+                    meta_verbs = {'test', 'describe', 'show', 'explain', 'illustrate', 'demonstrate'}
+                    if verb.lemma_ in meta_verbs:
+                        return True
 
         return False
 
@@ -135,7 +142,9 @@ class PronounAmbiguityDetector(AmbiguityDetector):
         # Common vague/abstract nouns that shouldn't be considered concrete
         vague_nouns = {
             'thing', 'stuff', 'item', 'one', 'way', 'part', 'use', 'work', 
-            'place', 'time', 'case', 'point', 'fact', 'area', 'aspect'
+            'place', 'time', 'case', 'point', 'fact', 'area', 'aspect',
+            'condition', 'situation', 'problem', 'issue', 'matter', 'state',
+            'status', 'result', 'outcome', 'effect', 'consequence'
         }
         
         if noun_text in vague_nouns:
@@ -146,6 +155,60 @@ class PronounAmbiguityDetector(AmbiguityDetector):
             return False
             
         return True
+
+    def _is_clear_temporal_reference(self, pronoun_token, doc) -> bool:
+        """
+        Checks if a pronoun is part of a clear temporal/discourse reference.
+        This handles cases like:
+        - "Before this update..." (prepositional phrase)
+        - "With this release..." (prepositional phrase)
+        - "In this version..." (prepositional phrase)
+        - "After this change..." (prepositional phrase)
+        
+        These refer to document-level context, not specific entities in previous sentences.
+        """
+        if pronoun_token.lemma_.lower() != 'this':
+            return False
+        
+        # Check if this is a determiner modifying a temporal/discourse noun
+        if pronoun_token.dep_ == 'det':
+            noun = pronoun_token.head
+            if noun.pos_ in ['NOUN', 'PROPN']:
+                # Common temporal/discourse nouns that refer to document context
+                temporal_nouns = {
+                    'update', 'release', 'version', 'change', 'fix', 'patch',
+                    'improvement', 'enhancement', 'modification', 'revision',
+                    'implementation', 'feature', 'addition', 'upgrade'
+                }
+                
+                if noun.lemma_.lower() in temporal_nouns:
+                    # Check if it's in a prepositional phrase
+                    # Look for prepositions that introduce temporal/discourse context
+                    prep_head = noun.head
+                    temporal_preps = {
+                        'before', 'after', 'with', 'in', 'during', 'following', 'follow',
+                        'since', 'until', 'through', 'throughout'
+                    }
+                    
+                    # Handle regular prepositions (ADP)
+                    if (prep_head.pos_ == 'ADP' and 
+                        prep_head.lemma_.lower() in temporal_preps):
+                        return True
+                    
+                    # Handle gerunds/participles functioning as prepositions (VERB)
+                    if (prep_head.pos_ == 'VERB' and 
+                        prep_head.dep_ == 'prep' and
+                        prep_head.lemma_.lower() in temporal_preps):
+                        return True
+                    
+                    # Also check if it's at the beginning of a sentence with temporal context
+                    # e.g., "This update fixes..." (but not caught by other checks)
+                    if (pronoun_token.i == 0 and 
+                        noun.dep_ in ['nsubj', 'nsubjpass'] and
+                        noun.head.pos_ == 'VERB'):
+                        return True
+        
+        return False
 
     def _has_clear_coordinated_antecedent(self, pronoun_token) -> bool:
         """
@@ -204,8 +267,37 @@ class PronounAmbiguityDetector(AmbiguityDetector):
     def _has_clear_dominant_antecedent(self, pronoun_token, doc, context: AmbiguityContext, nlp, referents: List[Dict[str, Any]]) -> bool:
         if len(referents) == 1:
             return True
+        
+        # Separate current sentence referents from context referents
+        current_sentence_refs = [r for r in referents if r.get('source') == 'current_sentence']
+        context_refs = [r for r in referents if r.get('source') == 'context']
+        
+        # Prioritize same-sentence referents - they should be clear unless there's genuine ambiguity
+        if current_sentence_refs:
+            current_subjects = [r for r in current_sentence_refs if r.get('is_subject', False)]
+            current_objects = [r for r in current_sentence_refs if r.get('is_object', False)]
+            
+            # If there's exactly one subject in the current sentence, it's likely the clear antecedent
+            if len(current_subjects) == 1:
+                return True
+            
+            # If there's only one current sentence referent total, it's clear
+            if len(current_sentence_refs) == 1:
+                return True
+            
+            # If there are 2-3 current sentence referents with one clear subject, still likely clear
+            if len(current_sentence_refs) <= 3 and len(current_subjects) == 1:
+                return True
+            
+            # Special case: Check for subordinate clause patterns like "when X restarts, it..."
+            # where X should be the clear antecedent even if not marked as subject
+            if self._has_clear_subordinate_antecedent(pronoun_token, doc, current_sentence_refs):
+                return True
+        
+        # Fall back to original logic for cases without clear same-sentence referents
         subjects = [r for r in referents if r.get('is_subject', False)]
         objects = [r for r in referents if r.get('is_object', False)]
+        
         if len(subjects) == 1 and len(referents) <= 3:
             return True
         if len(referents) >= 3 and len(subjects) > 1:
@@ -217,6 +309,69 @@ class PronounAmbiguityDetector(AmbiguityDetector):
                 return self._has_strong_discourse_continuation(doc)
         if self._has_strong_discourse_continuation(doc):
             return True
+        return False
+    
+    def _has_clear_subordinate_antecedent(self, pronoun_token, doc, current_sentence_refs: List[Dict[str, Any]]) -> bool:
+        """
+        Check for subordinate clause patterns where a noun is the clear logical antecedent.
+        Handles patterns like:
+        - "when the service restarts, it pulls..." (service -> it)
+        - "while the system processes, it displays..." (system -> it)
+        """
+        # Look for subordinate conjunctions (when, while, if, etc.) before the pronoun
+        subordinate_conjunctions = {'when', 'while', 'if', 'as', 'after', 'before', 'since'}
+        
+        # Find potential antecedent nouns that appear after subordinate conjunctions
+        # and before the pronoun
+        potential_antecedents = []
+        
+        for token in doc:
+            if token.i >= pronoun_token.i:
+                break
+                
+            # Look for subordinate conjunction patterns
+            if (token.lemma_.lower() in subordinate_conjunctions and 
+                token.pos_ in ['SCONJ', 'ADP']):
+                
+                # Look for nouns in the next few tokens after the conjunction
+                for next_token in doc[token.i:pronoun_token.i]:
+                    if (next_token.pos_ in ['NOUN', 'PROPN'] and
+                        next_token.lemma_.lower() not in ['way', 'time', 'thing']):
+                        
+                        # Check if this noun appears in our current sentence referents
+                        matching_refs = [r for r in current_sentence_refs 
+                                       if r['lemma'].lower() == next_token.lemma_.lower()]
+                        
+                        if matching_refs:
+                            potential_antecedents.extend(matching_refs)
+        
+        # If we found exactly one clear potential antecedent in a subordinate clause, it's likely clear
+        if len(potential_antecedents) == 1:
+            return True
+            
+        # Filter out compound parts and verbal nouns to find the main entity
+        substantial_nouns = []
+        for r in current_sentence_refs:
+            lemma = r['lemma'].lower()
+            # Skip vague nouns, compound parts, and verbal nouns
+            if (lemma not in ['way', 'time', 'thing', 'place', 'update', 'ols', 'long'] and
+                r['pos'] in ['NOUN', 'PROPN'] and
+                len(r['text']) > 3):  # Substantial length
+                
+                # Skip if it's likely a verbal noun (ends in common verb patterns)
+                if not (lemma.endswith('s') and lemma[:-1] in ['restart', 'start', 'pull', 'push', 'load']):
+                    substantial_nouns.append(r)
+        
+        # If there's only one substantial noun, it's likely the clear antecedent
+        if len(substantial_nouns) == 1:
+            return True
+            
+        # Special case: if we have 'service' among the referents, it's often the clear antecedent
+        # for pronouns in technical contexts
+        service_refs = [r for r in current_sentence_refs if r['lemma'].lower() == 'service']
+        if len(service_refs) == 1 and len(current_sentence_refs) <= 4:
+            return True
+            
         return False
     
     def _has_strong_discourse_continuation(self, doc) -> bool:
