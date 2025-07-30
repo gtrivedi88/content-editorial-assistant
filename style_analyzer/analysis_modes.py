@@ -303,8 +303,10 @@ class AnalysisModeExecutor:
                 if child_content:
                     all_list_items.append(child_content)
                     
-                    # Analyze this individual list item
-                    child_errors = self._analyze_generic_content(child_content, analysis_mode, child_context)
+                    # Analyze this individual list item (exclude list rules to prevent parallel structure false positives)
+                    child_context_copy = child_context.copy() if child_context else {}
+                    child_context_copy['exclude_list_rules'] = True  # Prevent ListsRule from being applied to individual items
+                    child_errors = self._analyze_generic_content(child_content, analysis_mode, child_context_copy)
                     
                     # Store errors on the child and mark as analyzed to prevent duplicate processing
                     if not hasattr(child, '_analysis_errors'):
@@ -323,6 +325,7 @@ class AnalysisModeExecutor:
             
             # ESSENTIAL: Analyze the whole list for structure issues (parallelism, etc.)
             # This ensures list structure errors appear in the "List Structure Issues" section
+            logger.debug(f"Ordered list analysis: Found {len(all_list_items)} items: {all_list_items}")
             if len(all_list_items) >= 2:
                 # Create context for whole-list analysis
                 whole_list_context = block_context.copy() if block_context else {}
@@ -330,11 +333,9 @@ class AnalysisModeExecutor:
                 whole_list_context['is_whole_list_analysis'] = True
                 whole_list_context['parallelism_analysis_only'] = True  # Focus on list structure rules
                 
-                # Combine all list items for parallelism analysis
-                combined_content = '\n'.join(all_list_items)
-                
-                # Run list structure analysis
-                list_structure_errors = self._analyze_generic_content(combined_content, analysis_mode, whole_list_context)
+                # CRITICAL FIX: For parallel analysis, pass list items directly rather than combined text
+                # This prevents sentence splitting from breaking single bullet points into multiple "sentences"
+                list_structure_errors = self._analyze_list_parallel_structure(all_list_items, analysis_mode, whole_list_context)
                 
                 # CRITICAL: Add list structure errors to parent block for "List Structure Issues" section
                 errors.extend(list_structure_errors)
@@ -383,8 +384,10 @@ class AnalysisModeExecutor:
                     # Store for whole-list analysis
                     all_list_items.append(child_content)
                     
-                    # Analyze this individual list item
-                    child_errors = self._analyze_generic_content(child_content, analysis_mode, child_context)
+                    # Analyze this individual list item (exclude list rules to prevent parallel structure false positives)
+                    child_context_copy = child_context.copy() if child_context else {}
+                    child_context_copy['exclude_list_rules'] = True  # Prevent ListsRule from being applied to individual items
+                    child_errors = self._analyze_generic_content(child_content, analysis_mode, child_context_copy)
                     
                     # Store errors on the child and mark as analyzed to prevent duplicate processing
                     if not hasattr(child, '_analysis_errors'):
@@ -403,6 +406,7 @@ class AnalysisModeExecutor:
             
             # ESSENTIAL: Analyze the whole list for structure issues (parallelism, etc.)
             # This ensures list structure errors appear in the "List Structure Issues" section
+            logger.debug(f"Unordered list analysis: Found {len(all_list_items)} items: {all_list_items}")
             if len(all_list_items) >= 2:
                 # Create a combined context for the whole list
                 whole_list_context = block_context.copy() if block_context else {}
@@ -410,11 +414,9 @@ class AnalysisModeExecutor:
                 whole_list_context['is_whole_list_analysis'] = True
                 whole_list_context['parallelism_analysis_only'] = True  # Focus on list structure rules
                 
-                # Combine all list items into a single text for analysis
-                combined_content = '\n'.join(all_list_items)
-                
-                # Analyze the combined list content (this will trigger the lists_rule for parallelism)
-                whole_list_errors = self._analyze_generic_content(combined_content, analysis_mode, whole_list_context)
+                # CRITICAL FIX: For parallel analysis, pass list items directly rather than combined text
+                # This prevents sentence splitting from breaking single bullet points into multiple "sentences"
+                whole_list_errors = self._analyze_list_parallel_structure(all_list_items, analysis_mode, whole_list_context)
                 
                 # CRITICAL: Add list structure errors to parent block for "List Structure Issues" section
                 errors.extend(whole_list_errors)
@@ -456,6 +458,50 @@ class AnalysisModeExecutor:
                         
         except Exception as e:
             logger.error(f"Error analyzing nested lists in item: {e}")
+
+    def _analyze_list_parallel_structure(self, list_items: List[str], analysis_mode: AnalysisMode, 
+                                       block_context: Optional[dict] = None) -> List[ErrorDict]:
+        """
+        Analyze list items for parallel structure without splitting individual items into sentences.
+        This prevents single bullet points from being incorrectly flagged for parallel structure issues.
+        """
+        errors = []
+        
+        try:
+            # Only proceed if we have 2 or more items (redundant check but good for safety)
+            if len(list_items) < 2:
+                return []
+            
+            # Use the rules registry to get the ListsRule directly
+            from rules import RulesRegistry
+            rules_registry = RulesRegistry.get_instance()
+            
+            if analysis_mode == AnalysisMode.SPACY_WITH_MODULAR_RULES:
+                # Use ListsRule directly with the list items as "sentences"
+                lists_rule = rules_registry.get_rule('lists')
+                if lists_rule and self.nlp:
+                    # Pass list items directly to the rule without sentence splitting
+                    combined_text = '\n'.join(list_items)
+                    rule_errors = lists_rule.analyze(combined_text, list_items, self.nlp, block_context)
+                    errors.extend(rule_errors)
+            
+            elif analysis_mode == AnalysisMode.MODULAR_RULES_WITH_FALLBACKS:
+                # Same approach but with fallback handling
+                lists_rule = rules_registry.get_rule('lists')
+                if lists_rule:
+                    combined_text = '\n'.join(list_items)
+                    try:
+                        rule_errors = lists_rule.analyze(combined_text, list_items, self.nlp, block_context)
+                        errors.extend(rule_errors)
+                    except Exception as e:
+                        logger.warning(f"Lists rule failed, skipping: {e}")
+            
+            # For minimal safe mode, skip parallel analysis to avoid issues
+            
+        except Exception as e:
+            logger.error(f"Error in list parallel structure analysis: {e}")
+            
+        return errors
     
     def _extract_clean_child_content(self, child) -> Optional[str]:
         """Extract clean content from a child block, handling various content types."""

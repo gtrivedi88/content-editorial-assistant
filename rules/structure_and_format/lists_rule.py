@@ -43,6 +43,10 @@ class ListsRule(BaseStructureRule):
         if not nlp or len(sentences) < 2:
             return []
 
+        # CRITICAL FIX: Skip lists analysis for individual list items to prevent false positives
+        if context and context.get('exclude_list_rules'):
+            return []
+
         # ENTERPRISE CONTEXT INTELLIGENCE: Check if this is parallelism analysis only
         if context and context.get('parallelism_analysis_only'):
             # Only check parallelism, skip other list-related rules
