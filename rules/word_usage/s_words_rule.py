@@ -1,9 +1,9 @@
 """
 Word Usage Rule for words starting with 'S'.
+Enhanced with spaCy PhraseMatcher for efficient pattern detection combined with advanced POS analysis.
 """
 from typing import List, Dict, Any
 from .base_word_usage_rule import BaseWordUsageRule
-import re
 
 try:
     from spacy.tokens import Doc
@@ -13,44 +13,15 @@ except ImportError:
 class SWordsRule(BaseWordUsageRule):
     """
     Checks for the incorrect usage of specific words starting with 'S'.
+    Enhanced with spaCy PhraseMatcher for efficient detection combined with advanced POS analysis.
     """
     def _get_rule_type(self) -> str:
         return 'word_usage_s'
-
-    def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
-        errors = []
-        if not nlp:
-            return errors
-        doc = nlp(text)
-        sents = list(doc.sents)
-
-        # This rule was previously updated with advanced logic for 'setup', 'shutdown', etc.
-        # That logic is preserved here.
-        for i, sent in enumerate(sents):
-            for token in sent:
-                if token.lemma_.lower() == "setup" and token.pos_ == "VERB":
-                    errors.append(self._create_error(
-                        sentence=sent.text,
-                        sentence_index=i, # FIX: Added the missing sentence_index
-                        message="Incorrect verb form: 'setup' should be 'set up'.",
-                        suggestions=["Use 'set up' (two words) for the verb form."],
-                        severity='high',
-                        span=(token.idx, token.idx + len(token.text)),
-                        flagged_text=token.text
-                    ))
-                if token.lemma_.lower() == "shutdown" and token.pos_ == "VERB":
-                    errors.append(self._create_error(
-                        sentence=sent.text,
-                        sentence_index=i, # FIX: Added the missing sentence_index
-                        message="Incorrect verb form: 'shutdown' should be 'shut down'.",
-                        suggestions=["Use 'shut down' (two words) for the verb form."],
-                        severity='medium',
-                        span=(token.idx, token.idx + len(token.text)),
-                        flagged_text=token.text
-                    ))
-
-        # General word map
-        word_map = {
+    
+    def _setup_patterns(self, nlp):
+        """Initialize spaCy PhraseMatcher with S-word patterns."""
+        # Define word details for 'S' words (advanced POS analysis handled separately)
+        word_details = {
             "sanity check": {"suggestion": "Avoid this term. Use 'validation', 'check', or 'review'.", "severity": "high"},
             "screen shot": {"suggestion": "Use 'screenshot' (one word).", "severity": "low"},
             "second name": {"suggestion": "Use the globally recognized term 'surname'.", "severity": "medium"},
@@ -65,17 +36,46 @@ class SWordsRule(BaseWordUsageRule):
             "suite": {"suggestion": "Avoid for groups of unrelated products. Use 'family' or 'set'.", "severity": "medium"},
             "sunset": {"suggestion": "Avoid jargon. Use 'discontinue' or 'withdraw from service'.", "severity": "medium"},
         }
+        
+        # Use base class method to setup patterns
+        self._setup_word_patterns(nlp, word_details)
 
+    def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
+        errors = []
+        if not nlp:
+            return errors
+        doc = nlp(text)
+        
+        # Ensure patterns are initialized
+        self._ensure_patterns_ready(nlp)
+
+        # PRESERVE EXISTING ADVANCED FUNCTIONALITY: POS analysis for verb forms
+        # This sophisticated linguistic analysis distinguishes verbs from nouns/adjectives
         for i, sent in enumerate(doc.sents):
-            for word, details in word_map.items():
-                for match in re.finditer(r'\b' + re.escape(word) + r'\b', sent.text, re.IGNORECASE):
+            for token in sent:
+                if token.lemma_.lower() == "setup" and token.pos_ == "VERB":
                     errors.append(self._create_error(
                         sentence=sent.text,
                         sentence_index=i,
-                        message=f"Review usage of the term '{match.group()}'.",
-                        suggestions=[details['suggestion']],
-                        severity=details['severity'],
-                        span=(sent.start_char + match.start(), sent.start_char + match.end()),
-                        flagged_text=match.group(0)
+                        message="Incorrect verb form: 'setup' should be 'set up'.",
+                        suggestions=["Use 'set up' (two words) for the verb form."],
+                        severity='high',
+                        span=(token.idx, token.idx + len(token.text)),
+                        flagged_text=token.text
                     ))
+                if token.lemma_.lower() == "shutdown" and token.pos_ == "VERB":
+                    errors.append(self._create_error(
+                        sentence=sent.text,
+                        sentence_index=i,
+                        message="Incorrect verb form: 'shutdown' should be 'shut down'.",
+                        suggestions=["Use 'shut down' (two words) for the verb form."],
+                        severity='medium',
+                        span=(token.idx, token.idx + len(token.text)),
+                        flagged_text=token.text
+                    ))
+
+        # NEW ENHANCED APPROACH: Use base class PhraseMatcher for simple word patterns
+        word_usage_errors = self._find_word_usage_errors(doc, "Review usage of the term")
+        errors.extend(word_usage_errors)
+        
         return errors

@@ -1,9 +1,9 @@
 """
 Word Usage Rule for words starting with 'G'.
+Enhanced with spaCy PhraseMatcher for efficient pattern detection.
 """
 from typing import List, Dict, Any
 from .base_word_usage_rule import BaseWordUsageRule
-import re
 
 try:
     from spacy.tokens import Doc
@@ -13,17 +13,15 @@ except ImportError:
 class GWordsRule(BaseWordUsageRule):
     """
     Checks for the incorrect usage of specific words starting with 'G'.
+    Enhanced with spaCy PhraseMatcher for efficient detection.
     """
     def _get_rule_type(self) -> str:
         return 'word_usage_g'
-
-    def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
-        errors = []
-        if not nlp:
-            return errors
-        doc = nlp(text)
-
-        word_map = {
+    
+    def _setup_patterns(self, nlp):
+        """Initialize spaCy PhraseMatcher with G-word patterns."""
+        # Define word details for 'G' words
+        word_details = {
             "gage": {"suggestion": "Use 'gauge'.", "severity": "low"},
             "GenAI": {"suggestion": "Use 'gen AI' (lowercase g, uppercase AI).", "severity": "medium"},
             "geo": {"suggestion": "Do not use as an abbreviation for 'geographical area' in customer-facing content.", "severity": "medium"},
@@ -36,17 +34,21 @@ class GWordsRule(BaseWordUsageRule):
             "GUI": {"suggestion": "Avoid generic use. Refer to the specific part of the interface (e.g., 'the User Management window').", "severity": "low"},
             "gzip": {"suggestion": "Due to legal implications, use 'compress' instead of 'gzip' as a verb.", "severity": "high"},
         }
+        
+        # Use base class method to setup patterns
+        self._setup_word_patterns(nlp, word_details)
 
-        for i, sent in enumerate(doc.sents):
-            for word, details in word_map.items():
-                for match in re.finditer(r'\b' + re.escape(word) + r'\b', sent.text, re.IGNORECASE):
-                    errors.append(self._create_error(
-                        sentence=sent.text,
-                        sentence_index=i,
-                        message=f"Review usage of the term '{match.group()}'.",
-                        suggestions=[details['suggestion']],
-                        severity=details['severity'],
-                        span=(sent.start_char + match.start(), sent.start_char + match.end()),
-                        flagged_text=match.group(0)
-                    ))
+    def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
+        errors = []
+        if not nlp:
+            return errors
+        doc = nlp(text)
+        
+        # Ensure patterns are initialized
+        self._ensure_patterns_ready(nlp)
+
+        # NEW ENHANCED APPROACH: Use base class PhraseMatcher functionality
+        word_usage_errors = self._find_word_usage_errors(doc, "Review usage of the term")
+        errors.extend(word_usage_errors)
+        
         return errors
