@@ -1,33 +1,29 @@
 """
 Word Usage Rule for words starting with 'B'.
+Enhanced with spaCy PhraseMatcher for efficient pattern detection.
 """
 from typing import List, Dict, Any
 from .base_word_usage_rule import BaseWordUsageRule
-import re
 
 try:
     from spacy.tokens import Doc
+    from spacy.matcher import PhraseMatcher
 except ImportError:
     Doc = None
+    PhraseMatcher = None
 
 class BWordsRule(BaseWordUsageRule):
     """
     Checks for the incorrect usage of specific words starting with 'B'.
+    Enhanced with spaCy PhraseMatcher for efficient detection.
     """
     def _get_rule_type(self) -> str:
         return 'word_usage_b'
-
-    def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
-        errors = []
-        if not nlp:
-            return errors
-        doc = nlp(text)
-
-        # Enhanced morphological analysis for backup vs back up
-        self._analyze_backup_forms(doc, errors)
-
-        # General word map
-        word_map = {
+    
+    def _setup_patterns(self, nlp):
+        """Initialize spaCy PhraseMatcher with B-word patterns."""
+        # Define word details for 'B' words
+        word_details = {
             "back-end": {"suggestion": "Write as 'back end' (noun) or use a more specific term like 'server'.", "severity": "low"},
             "backward compatible": {"suggestion": "Use 'compatible with earlier versions'.", "severity": "medium"},
             "bar code": {"suggestion": "Write as 'barcode'.", "severity": "low"},
@@ -40,19 +36,27 @@ class BWordsRule(BaseWordUsageRule):
             "breadcrumb": {"suggestion": "Do not use 'BCT' as an abbreviation for 'breadcrumb trail'.", "severity": "low"},
             "built in": {"suggestion": "Hyphenate when used as an adjective before a noun: 'built-in'.", "severity": "low"},
         }
+        
+        # Use base class method to setup patterns
+        self._setup_word_patterns(nlp, word_details)
 
-        for i, sent in enumerate(doc.sents):
-            for word, details in word_map.items():
-                for match in re.finditer(r'\b' + re.escape(word) + r'\b', sent.text, re.IGNORECASE):
-                    errors.append(self._create_error(
-                        sentence=sent.text,
-                        sentence_index=i,
-                        message=f"Review usage of the term '{match.group()}'.",
-                        suggestions=[details['suggestion']],
-                        severity=details['severity'],
-                        span=(sent.start_char + match.start(), sent.start_char + match.end()),
-                        flagged_text=match.group(0)
-                    ))
+    def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
+        errors = []
+        if not nlp:
+            return errors
+        doc = nlp(text)
+        
+        # Ensure patterns are initialized
+        self._ensure_patterns_ready(nlp)
+
+        # PRESERVE EXISTING FUNCTIONALITY: Enhanced morphological analysis for backup vs back up
+        # This sophisticated linguistic analysis is kept unchanged for maximum accuracy
+        self._analyze_backup_forms(doc, errors)
+
+        # NEW ENHANCED APPROACH: Use base class PhraseMatcher functionality
+        word_usage_errors = self._find_word_usage_errors(doc, "Review usage of the term")
+        errors.extend(word_usage_errors)
+        
         return errors
     
     def _analyze_backup_forms(self, doc, errors):

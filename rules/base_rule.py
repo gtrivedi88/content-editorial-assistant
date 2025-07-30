@@ -11,6 +11,12 @@ from collections import defaultdict
 import yaml
 import os
 
+try:
+    from spacy.matcher import Matcher, PhraseMatcher
+except ImportError:
+    Matcher = None
+    PhraseMatcher = None
+
 class BaseRule(ABC):
     """
     Abstract base class for all writing rules using pure SpaCy morphological analysis.
@@ -24,6 +30,12 @@ class BaseRule(ABC):
         """Initializes the rule and loads the exception configuration."""
         self.rule_type = self._get_rule_type()
         self.severity_levels = ['low', 'medium', 'high']
+        
+        # spaCy Matcher support for enhanced pattern matching
+        self._matcher = None
+        self._phrase_matcher = None
+        self._patterns_initialized = False
+        
         # Load exceptions once and cache them at the class level.
         if BaseRule._exceptions is None:
             self._load_exceptions()
@@ -104,6 +116,102 @@ class BaseRule(ABC):
             List of error dictionaries.
         """
         pass
+    
+    # === spaCy MATCHER SUPPORT ===
+    
+    def _setup_patterns(self, nlp):
+        """
+        Override in subclasses to define spaCy Matcher patterns.
+        This method should initialize self._matcher and/or self._phrase_matcher.
+        
+        Args:
+            nlp: The spaCy nlp object for pattern compilation
+        """
+        pass
+    
+    def _ensure_patterns_ready(self, nlp):
+        """
+        Lazy initialization of spaCy patterns.
+        Ensures patterns are compiled only once per rule instance.
+        
+        Args:
+            nlp: The spaCy nlp object
+        """
+        if not self._patterns_initialized and nlp and (Matcher is not None and PhraseMatcher is not None):
+            self._setup_patterns(nlp)
+            self._patterns_initialized = True
+    
+    def _find_matcher_errors(self, doc, word_map=None, error_type_prefix="word_usage"):
+        """
+        Common method to process spaCy Matcher results and convert to error format.
+        
+        Args:
+            doc: spaCy Doc object
+            word_map: Optional mapping of words to error details (for word usage rules)
+            error_type_prefix: Prefix for error categorization
+            
+        Returns:
+            List of error dictionaries
+        """
+        errors = []
+        
+        # Process Matcher results
+        if self._matcher:
+            matches = self._matcher(doc)
+            for match_id, start, end in matches:
+                span = doc[start:end]
+                errors.extend(self._process_match_span(span, word_map, error_type_prefix))
+        
+        # Process PhraseMatcher results  
+        if self._phrase_matcher:
+            matches = self._phrase_matcher(doc)
+            for match_id, start, end in matches:
+                span = doc[start:end]
+                errors.extend(self._process_match_span(span, word_map, error_type_prefix))
+                
+        return errors
+    
+    def _process_match_span(self, span, word_map=None, error_type_prefix="word_usage"):
+        """
+        Convert a spaCy span match to error format.
+        
+        Args:
+            span: spaCy Span object representing the match
+            word_map: Optional mapping of words to error details
+            error_type_prefix: Prefix for error categorization
+            
+        Returns:
+            List containing error dictionary
+        """
+        matched_text = span.text.lower()
+        sent = span.sent
+        
+        # Get sentence index
+        sentence_index = 0
+        for i, s in enumerate(span.doc.sents):
+            if s == sent:
+                sentence_index = i
+                break
+        
+        # Default error details
+        error_details = {
+            "suggestion": f"Consider an alternative for '{span.text}'.",
+            "severity": "medium"
+        }
+        
+        # Use word_map if provided (for word usage rules)
+        if word_map and matched_text in word_map:
+            error_details = word_map[matched_text]
+        
+        return [self._create_error(
+            sentence=sent.text,
+            sentence_index=sentence_index,
+            message=f"Consider an alternative for the word '{span.text}'.",
+            suggestions=[error_details['suggestion']],
+            severity=error_details['severity'],
+            span=(span.start_char, span.end_char),
+            flagged_text=span.text
+        )]
     
     # === ENTERPRISE CONTEXT INTELLIGENCE ===
     

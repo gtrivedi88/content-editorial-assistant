@@ -4,7 +4,7 @@
 
 Transform your technical documentation with comprehensive style analysis, readability scoring, and AI-powered iterative rewriting. Designed for technical writers targeting 9th-11th grade readability standards.
 
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
 [![Cross-Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-green.svg)](https://github.com/yourusername/peer-review-platform)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -13,27 +13,42 @@ Transform your technical documentation with comprehensive style analysis, readab
 ## 🚀 Quick Setup (3 Steps Only!)
 
 ### 📋 Prerequisites
-- **Python 3.8+** ([Download here](https://www.python.org/downloads/))
+- **Python 3.12** ([Download here](https://www.python.org/downloads/)) - **Required Version**
 
 ### 🔧 Step 1: Create Virtual Environment
 
 **Windows:**
 ```batch
 # Navigate to project folder
-cd C:\path\to\Peer-Review-Platform
+cd C:\path\to\style-guide-ai
 
-# Create and activate virtual environment
+# Create and activate virtual environment (ensure Python 3.12 is installed)
 python -m venv venv
 venv\Scripts\activate
 ```
 
-**Linux/macOS:**
+**Linux (Fedora/RHEL-based):**
 ```bash
+# Update system and install Python 3.12
+sudo dnf clean all
+sudo dnf update
+sudo dnf install python3.12
+
 # Navigate to project folder
-cd ~/path/to/Peer-Review-Platform
+cd ~/path/to/style-guide-ai
 
 # Create and activate virtual environment
-python3 -m venv venv
+python3.12 -m venv venv
+source venv/bin/activate
+```
+
+**macOS:**
+```bash
+# Navigate to project folder
+cd ~/path/to/style-guide-ai
+
+# Create and activate virtual environment (ensure Python 3.12 is installed)
+python3.12 -m venv venv
 source venv/bin/activate
 ```
 
@@ -41,8 +56,23 @@ source venv/bin/activate
 
 ### 📦 Step 2: Install Requirements
 ```bash
+# Upgrade pip first
+pip install --upgrade pip
+
+# IMPORTANT: Before running this command, ensure to remove the line 
+# "secure-filename>=1.0.0 ; platform_system != "Windows"" 
+# from the requirements.txt file
+
 # Install all Python packages
 pip install -r requirements.txt
+
+# Install PyMuPDF separately
+pip install PyMuPDF
+```
+
+**⚠️ Important Note:** Before installing requirements, you must edit `requirements.txt` and remove this line:
+```
+secure-filename>=1.0.0 ; platform_system != "Windows"
 ```
 
 ### ⚙️ Step 3: Complete Setup
@@ -73,14 +103,14 @@ python app.py
 
 **Windows:**
 ```batch
-cd C:\path\to\Peer-Review-Platform
+cd C:\path\to\style-guide-ai
 venv\Scripts\activate
 python app.py
 ```
 
 **Linux/macOS:**
 ```bash
-cd ~/path/to/Peer-Review-Platform
+cd ~/path/to/style-guide-ai
 source venv/bin/activate
 python app.py
 ```
@@ -133,7 +163,6 @@ For the best AI rewriting experience, install **Ollama** with our recommended mo
 ### Linux
 ```bash
 curl -fsSL https://ollama.com/install.sh | sh
-ollama serve
 ollama pull llama3:8b
 ```
 
@@ -247,6 +276,16 @@ asciidoctor --version
 
 ## 🔧 Troubleshooting
 
+### Python Version Issues
+```bash
+# Verify you have Python 3.12 installed
+python3.12 --version
+
+# If not available, install Python 3.12 first:
+# Linux (Fedora/RHEL): sudo dnf install python3.12
+# Windows/macOS: Download from https://www.python.org/downloads/
+```
+
 ### Virtual Environment Issues
 ```bash
 # If you see import errors, make sure venv is activated
@@ -320,15 +359,15 @@ curl http://localhost:11434/api/tags
 ## 🏗️ Architecture
 
 ```
-Peer-Review-Platform/
+style-guide-ai/
 ├── app.py                 # Main Flask application
 ├── setup.py              # Complete setup script
 ├── requirements.txt      # All dependencies
-├── config.py                      # Main application configuration
-│   ├── style_analyzer.py # SpaCy-based analysis
-│   ├── ai_rewriter.py    # Iterative AI rewriting
-│   ├── document_processor.py # Multi-format support
-│   └── config.py         # Configuration management
+├── config.py             # Main application configuration
+├── style_analyzer/       # Analysis modules
+├── rewriter/             # AI rewriting components
+├── rules/                # Style rules and checks
+├── models/               # AI model management
 ├── ui/                   # User interface files
 │   ├── templates/        # HTML templates  
 │   └── static/          # CSS, JS, images

@@ -9,8 +9,10 @@ import re
 # Import spaCy Token type for proper type annotations
 try:
     from spacy.tokens import Token
+    from spacy.matcher import PhraseMatcher
 except ImportError:
     Token = None
+    PhraseMatcher = None
 
 # A generic base rule to be inherited from a central location
 # in a real application. The # type: ignore comments prevent the
@@ -28,8 +30,78 @@ except ImportError:
 class BaseWordUsageRule(BaseRule):
     """
     Abstract base class for all word usage rules.
+    Enhanced with spaCy PhraseMatcher for efficient pattern detection.
     It defines the common interface for analyzing text for specific word violations.
     """
+
+    def __init__(self):
+        """Initialize with PhraseMatcher support."""
+        super().__init__()
+        self.word_details = {}  # To be populated by subclasses
+        
+    def _setup_word_patterns(self, nlp, word_details_dict):
+        """
+        Setup PhraseMatcher patterns for efficient word detection.
+        
+        Args:
+            nlp: spaCy nlp object
+            word_details_dict: Dictionary mapping words to their details
+        """
+        if PhraseMatcher is None:
+            return
+            
+        # Store word details for later use
+        self.word_details = word_details_dict
+        
+        # Initialize PhraseMatcher for case-insensitive word detection
+        if not hasattr(self, '_phrase_matcher') or self._phrase_matcher is None:
+            self._phrase_matcher = PhraseMatcher(nlp.vocab, attr="LOWER")
+            
+            # Create patterns for PhraseMatcher
+            patterns = [nlp(word) for word in word_details_dict.keys()]
+            self._phrase_matcher.add("WORD_USAGE", patterns)
+
+    def _find_word_usage_errors(self, doc, message_prefix="Review usage of the term"):
+        """
+        Find word usage errors using PhraseMatcher.
+        
+        Args:
+            doc: spaCy Doc object
+            message_prefix: Prefix for error messages
+            
+        Returns:
+            List of error dictionaries
+        """
+        errors = []
+        
+        if hasattr(self, '_phrase_matcher') and self._phrase_matcher:
+            matches = self._phrase_matcher(doc)
+            for match_id, start, end in matches:
+                span = doc[start:end]
+                matched_text = span.text.lower()
+                sent = span.sent
+                
+                # Get sentence index
+                sentence_index = 0
+                for i, s in enumerate(doc.sents):
+                    if s == sent:
+                        sentence_index = i
+                        break
+                
+                # Get error details from word_details
+                if matched_text in self.word_details:
+                    details = self.word_details[matched_text]
+                    errors.append(self._create_error(
+                        sentence=sent.text,
+                        sentence_index=sentence_index,
+                        message=f"{message_prefix} '{span.text}'.",
+                        suggestions=[details['suggestion']],
+                        severity=details['severity'],
+                        span=(span.start_char, span.end_char),
+                        flagged_text=span.text
+                    ))
+        
+        return errors
 
     def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         """
