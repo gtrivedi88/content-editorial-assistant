@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Build and Push Script for Peer Lens AI to Quay.io
+# Build and Push Script for Style Guide AI to Quay.io
 # Usage: ./build-and-push.sh
-# Target: quay.io/rhdeveldocs/peer-lens
+# Target: quay.io/rhdeveldocs/style-guide-ai
 
 set -e
 
@@ -15,11 +15,11 @@ NC='\033[0m' # No Color
 
 # Configuration
 QUAY_USERNAME="rhdeveldocs"
-IMAGE_NAME="peer-lens"
+IMAGE_NAME="style-guide-ai"
 TAG="latest"
 FULL_IMAGE="quay.io/${QUAY_USERNAME}/${IMAGE_NAME}:${TAG}"
 
-echo -e "${BLUE}🚀 Building Peer Lens AI Docker Image${NC}"
+echo -e "${BLUE}🚀 Building Style Guide AI Docker Image${NC}"
 echo -e "${YELLOW}Registry: quay.io${NC}"
 echo -e "${YELLOW}Username: ${QUAY_USERNAME}${NC}"
 echo -e "${YELLOW}Image: ${IMAGE_NAME}${NC}"
@@ -41,20 +41,25 @@ if [ ! -f "Dockerfile" ]; then
 fi
 
 echo -e "${BLUE}🚀 Docker Layer Caching Optimization Active:${NC}"
-echo -e '   ✅ Ollama installation (~200MB) - cached'
-echo -e '   ✅ Llama 8B model (~4.7GB) - cached'
 echo -e '   ✅ Python dependencies - cached (unless requirements.txt changed)'
-echo -e '   ✅ NLP models - cached'
+echo -e '   ✅ NLP models (spaCy, NLTK) - cached'
+echo -e '   ✅ Ruby gems (Asciidoctor) - cached'
+echo -e '   ✅ System dependencies - cached'
 echo
 echo -e "${YELLOW}⚠️  Only rebuilds if you changed:${NC}"
 echo -e "   - App code (fast rebuild)"
 echo -e "   - requirements.txt (rebuilds dependencies)"
-echo -e "   - Ollama version updates"
+echo -e "   - System dependencies"
+echo
+echo -e "${BLUE}💡 Lightweight image without embedded AI models${NC}"
+echo -e "   - Users can connect external Ollama instances"
+echo -e "   - Supports API providers (OpenAI, etc.)"
+echo -e "   - Much smaller image size"
 echo
 
-# Build the full image (with pre-downloaded model) - OPTIMIZED FOR REGULAR USERS
-echo -e "${BLUE}🔨 Building full image (with pre-downloaded Llama 8B)...${NC}"
-echo -e "${YELLOW}   Note: First build = 10-15 min | Subsequent builds = 1-2 min${NC}"
+# Build the lightweight image
+echo -e "${BLUE}🔨 Building lightweight image...${NC}"
+echo -e "${YELLOW}   Note: First build = 5-8 min | Subsequent builds = 1-2 min${NC}"
 docker build -f Dockerfile -t ${FULL_IMAGE} ..
 
 # Show image size
@@ -64,7 +69,7 @@ docker images | grep ${QUAY_USERNAME}/${IMAGE_NAME}
 # Ask for confirmation before pushing
 echo
 echo -e "${YELLOW}⚠️  Ready to push to Quay.io registry?${NC}"
-echo -e "${YELLOW}This will upload the images to: ${FULL_IMAGE}${NC}"
+echo -e "${YELLOW}This will upload the image to: ${FULL_IMAGE}${NC}"
 read -p "Continue? (y/N): " REPLY
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     echo -e "${RED}❌ Push cancelled.${NC}"
@@ -76,20 +81,25 @@ echo -e "${BLUE}🔐 Logging in to Quay.io...${NC}"
 echo -e "${YELLOW}Please enter your Quay.io credentials:${NC}"
 docker login quay.io
 
-# Push the full image
-echo -e "${BLUE}📤 Pushing full image optimized for regular users...${NC}"
+# Push the lightweight image
+echo -e "${BLUE}📤 Pushing lightweight image...${NC}"
 echo -e "${YELLOW}   Note: Only changed layers get uploaded (layer caching)${NC}"
 docker push ${FULL_IMAGE}
 
-echo -e "${GREEN}✅ Successfully pushed images to Quay.io!${NC}"
+echo -e "${GREEN}✅ Successfully pushed image to Quay.io!${NC}"
 echo
 echo -e "${BLUE}🎉 Your image is now available at:${NC}"
-echo -e "${YELLOW}Full image (optimized for regular users): ${FULL_IMAGE}${NC}"
+echo -e "${YELLOW}Lightweight image: ${FULL_IMAGE}${NC}"
 echo
 echo -e "${BLUE}📖 Users can now run your app with:${NC}"
-echo -e "${GREEN}docker run -p 5000:5000 -p 11434:11434 ${FULL_IMAGE}${NC}"
+echo -e "${GREEN}docker run -p 5000:5000 ${FULL_IMAGE}${NC}"
+echo -e "${YELLOW}   Or use different port if 5000 is occupied: docker run -p 8080:5000 ${FULL_IMAGE}${NC}"
 echo
 echo -e "${BLUE}🌐 App will be available at: http://localhost:5000${NC}"
-echo -e "${BLUE}🤖 Ollama API at: http://localhost:11434${NC}"
+echo -e "${YELLOW}   (or http://localhost:8080 if using alternate port)${NC}"
+echo
+echo -e "${BLUE}💡 To use AI features:${NC}"
+echo -e "   - Set up external Ollama: docker run -d -p 11434:11434 ollama/ollama"
+echo -e "   - Configure API providers in the app settings"
 echo
 echo -e "${BLUE}💡 Next time you build, it will be much faster thanks to layer caching!${NC}" 

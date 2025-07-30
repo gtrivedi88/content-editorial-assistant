@@ -1,6 +1,6 @@
-# Peer Lens AI Writing Assistant - Full Version
-# Complete AI-powered writing assistant with Ollama, Llama 8B, and all NLP dependencies
-# Optimized for regular users with fast startup and maximum reliability
+# Style Guide AI - Lightweight Version
+# AI-powered writing assistant without embedded Ollama (users can connect external Ollama instances)
+# Optimized for fast deployment and reduced image size
 
 FROM python:3.12
 
@@ -8,10 +8,6 @@ FROM python:3.12
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     DEBIAN_FRONTEND=noninteractive \
-    OLLAMA_HOST=0.0.0.0 \
-    OLLAMA_PORT=11434 \
-    OLLAMA_KEEP_ALIVE=24h \
-    OLLAMA_MAX_LOADED_MODELS=1 \
     FLASK_ENV=production
 
 # Install system dependencies in a single layer for efficiency
@@ -33,9 +29,6 @@ RUN apt-get update && apt-get install -y \
     ruby-full \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
-
-# Install Ollama (cached unless Ollama updates)
-RUN curl -fsSL https://ollama.ai/install.sh | sh
 
 # Install Ruby gems (cached unless gem versions change)
 RUN gem install asciidoctor --no-document && \
@@ -63,64 +56,39 @@ nltk.download('wordnet', quiet=True); \
 nltk.download('averaged_perceptron_tagger', quiet=True); \
 print('✅ NLTK data downloaded successfully')"
 
-# Download Llama 8B model (THIS WILL BE CACHED! 🎉)
-# Only re-downloads if Ollama version changes
-RUN echo "🤖 Downloading Llama 8B model (cached after first build)..." && \
-    ollama serve & \
-    OLLAMA_PID=$! && \
-    sleep 20 && \
-    echo "📥 Pulling Llama 8B model..." && \
-    ollama pull llama3:8b && \
-    echo "✅ Llama 8B model cached successfully!" && \
-    ollama list && \
-    sleep 5 && \
-    kill $OLLAMA_PID
-
 # Create necessary directories with proper permissions
 RUN mkdir -p uploads instance templates static logs && \
     chmod 755 uploads instance logs
 
-# Copy application code LAST (changes here won't invalidate model cache)
+# Copy application code LAST (changes here won't invalidate dependency cache)
 COPY . .
 
 # Create optimized startup script
 RUN echo '#!/bin/bash\n\
 set -e\n\
-echo "🚀 Starting Peer Lens AI Writing Assistant..."\n\
-echo "📦 Starting Ollama service..."\n\
-ollama serve &\n\
-OLLAMA_PID=$!\n\
-echo "⏳ Waiting for Ollama to start..."\n\
-sleep 10\n\
-echo "🤖 Verifying Llama 8B model availability..."\n\
-if ollama list | grep -q "llama3:8b"; then\n\
-    echo "✅ Llama 8B model is ready! (loaded from cache)"\n\
-else\n\
-    echo "⚠️  Model loading, will be available shortly..."\n\
-fi\n\
+echo "🚀 Starting Style Guide AI Writing Assistant..."\n\
 echo "🌐 Starting Flask application..."\n\
 echo "✨ App will be available at: http://localhost:5000"\n\
-echo "🤖 Ollama API available at: http://localhost:11434"\n\
 echo "🔒 Privacy-first: All processing happens locally"\n\
+echo "💡 To use AI features, connect to your external Ollama instance or API provider"\n\
 exec python app.py\n\
 ' > /app/start.sh && \
 chmod +x /app/start.sh
 
-# Expose ports
-EXPOSE 5000 11434
+# Expose Flask port
+EXPOSE 5000
 
-# Health check optimized for regular users
-HEALTHCHECK --interval=30s --timeout=20s --start-period=120s --retries=3 \
+# Health check optimized for lightweight deployment
+HEALTHCHECK --interval=30s --timeout=20s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:5000/health || exit 1
 
 # Add comprehensive labels
-LABEL maintainer="Peer Lens AI Team" \
-      version="1.0.0" \
-      description="Complete AI-powered writing assistant with Ollama and Llama 8B" \
-      target="regular-users" \
+LABEL maintainer="Style Guide AI Team" \
+      version="2.0.0" \
+      description="Lightweight AI-powered writing assistant (connect external Ollama/APIs)" \
+      target="lightweight-deployment" \
       python.version="3.12" \
-      ai.model="llama3:8b" \
-      features="ai-rewriting,nlp-analysis,document-processing" \
+      features="nlp-analysis,document-processing,external-ai-support" \
       cache.optimized="true"
 
 # Set proper permissions and run as app user for security

@@ -1,21 +1,21 @@
 # Docker Deployment
 
-Complete AI-powered writing assistant deployment using Docker.
+Lightweight AI-powered writing assistant deployment using Docker.
 
 ## Overview
 
-This Docker deployment provides a complete AI-powered writing assistant with:
-- **Local AI Processing**: Ollama with Llama 8B model pre-installed
-- **Advanced NLP Analysis**: Style analysis and text rewriting
+This Docker deployment provides a lightweight AI-powered writing assistant with:
+- **Advanced NLP Analysis**: Style analysis and text processing
 - **Document Processing**: Support for PDF, DOCX, TXT, and Markdown
-- **Privacy-First**: All processing happens locally on your machine
-- **No Setup Required**: Everything included in one container
+- **External AI Integration**: Connect to your own Ollama instance or API providers
+- **Privacy-First**: Core processing happens locally on your machine
+- **Fast Deployment**: Lightweight image without embedded AI models
 
 ## System Requirements
 
 - **Docker Desktop** installed ([Download here](https://www.docker.com/products/docker-desktop/))
-- **8GB+ RAM** recommended for optimal performance
-- **10GB+ disk space** for AI models and application data
+- **4GB+ RAM** recommended for optimal performance
+- **2GB+ disk space** for application and dependencies
 - **Internet connection** for initial download
 
 ## Quick Start
@@ -23,14 +23,43 @@ This Docker deployment provides a complete AI-powered writing assistant with:
 ### One-Command Deployment
 
 ```bash 
-docker run -p 5000:5000 -p 11435:11434 -e FLASK_RUN_HOST=0.0.0.0 -e HOST=0.0.0.0 quay.io/rhdeveldocs/peer-lens:latest
+docker run -p 5000:5000 quay.io/rhdeveldocs/style-guide-ai:latest
 ```
 
 **Access your application at:** http://localhost:5000
 
-**Initial startup takes 2-3 minutes** as the AI models load automatically.
+**Startup time: ~30 seconds** for the core application.
 
-> **Note**: This command uses port 11435 for the Ollama API to avoid conflicts with existing Ollama installations that typically use port 11434.
+#### 🚨 **Port Conflict Resolution**
+
+If port 5000 is already in use, you'll see an error like:
+```
+Error: bind: address already in use
+```
+
+**Solution**: Use a different external port:
+
+```bash
+# Use port 8080 instead of 5000
+docker run -p 8080:5000 quay.io/rhdeveldocs/style-guide-ai:latest
+
+# Access at: http://localhost:8080
+```
+
+**Common alternative ports:**
+- `8080:5000` → http://localhost:8080
+- `3000:5000` → http://localhost:3000  
+- `8000:5000` → http://localhost:8000
+- `9000:5000` → http://localhost:9000
+
+**Check what's using port 5000:**
+```bash
+# On Linux/Mac
+lsof -i :5000
+
+# On Windows
+netstat -ano | findstr :5000
+```
 
 ### Production Deployment (Recommended)
 
@@ -38,42 +67,77 @@ For regular use with data persistence:
 
 ```bash
 docker run -d \
-  --name peer-lens-ai \
+  --name style-guide-ai \
   -p 5000:5000 \
-  -p 11435:11434 \
-  -e FLASK_RUN_HOST=0.0.0.0 \
-  -e HOST=0.0.0.0 \
-  -v peer-lens-uploads:/app/uploads \
-  -v peer-lens-ollama:/root/.ollama \
+  -v style-guide-uploads:/app/uploads \
+  -v style-guide-instance:/app/instance \
   --restart unless-stopped \
-  quay.io/rhdeveldocs/peer-lens:latest
+  quay.io/rhdeveldocs/style-guide-ai:latest
 ```
 
-**Enable AI Features (Optional):**
+**For port conflicts, change the external port:**
 ```bash
-# Download the AI model for enhanced rewriting (one-time setup)
-docker exec -it peer-lens-ai ollama pull llama3:8b
+docker run -d \
+  --name style-guide-ai \
+  -p 8080:5000 \
+  -v style-guide-uploads:/app/uploads \
+  -v style-guide-instance:/app/instance \
+  --restart unless-stopped \
+  quay.io/rhdeveldocs/style-guide-ai:latest
+```
+Then access at: http://localhost:8080
 
-# Verify model installation
-docker exec -it peer-lens-ai ollama list
+## AI Features Setup
+
+To use AI-powered features, you have several options:
+
+### Option 1: External Ollama (Recommended for Local AI)
+
+Run Ollama in a separate container:
+
+```bash
+# Start Ollama service
+docker run -d --name ollama -p 11434:11434 ollama/ollama
+
+# Pull your preferred model
+docker exec ollama ollama pull llama3:8b
 ```
 
-> **💡 Tip**: The application works immediately for style analysis and basic improvements. AI rewriting features become available after downloading the model.
+Then configure the Style Guide AI app to connect to `http://localhost:11434`.
+
+### Option 2: API Providers
+
+Configure API providers (OpenAI, etc.) in the application settings.
+
+### Option 3: Docker Compose (Complete Setup)
+
+Use the provided docker-compose.yml for a complete setup with both services:
+
+```bash
+cd docker
+docker-compose up -d
+```
+
+**For port conflicts with docker-compose**, edit `docker-compose.yml`:
+```yaml
+ports:
+  - "8080:5000"    # Change from 5000:5000 to 8080:5000
+```
 
 ### Container Management
 
 ```bash
 # Stop the application
-docker stop peer-lens-ai
+docker stop style-guide-ai
 
 # Start the application
-docker start peer-lens-ai
+docker start style-guide-ai
 
 # View logs
-docker logs peer-lens-ai
+docker logs style-guide-ai
 
 # Remove completely
-docker rm peer-lens-ai
+docker rm style-guide-ai
 ```
 
 ## Features
@@ -85,54 +149,85 @@ docker rm peer-lens-ai
 - **Structural Analysis**: Context-aware rule application
 - **Rule-based Improvements**: Basic text enhancements using predefined rules
 
-### 🤖 **AI-Powered Features (Requires Model Download)**
-- **Intelligent Rewriting**: Advanced text improvement using Llama 8B
+### 🤖 **AI-Powered Features (Requires External Setup)**
+- **Intelligent Rewriting**: Advanced text improvement using external AI models
 - **Two-pass Iterative Process**: AI reviews and refines its own output
 - **Context-aware Suggestions**: Understands document structure and purpose
 - **Confidence Scoring**: Quantifies improvement quality
 
-> **📋 Note**: The application works immediately for style analysis and basic improvements. AI rewriting features require downloading the Llama model (see instructions below).
+> **📋 Note**: The application works immediately for style analysis and basic improvements. AI rewriting features require connecting to external AI services (see setup options above).
 
-### AI Model Setup (Optional but Recommended)
+### External AI Configuration
 
-The container includes Ollama but **you need to download the AI model** for full functionality:
+The lightweight container **connects to external AI services** for enhanced functionality. Choose your preferred option:
 
-#### **Step 1: Download the Model**
+#### **Option A: Local Ollama Setup**
 ```bash
-# Find your running container
-docker ps
+# Start external Ollama service
+docker run -d --name ollama -p 11434:11434 ollama/ollama
 
-# Download the model (one-time setup)
-docker exec -it <container_name> ollama pull llama3:8b
+# Download your preferred model
+docker exec ollama ollama pull llama3:8b
+
+# Verify model installation
+docker exec ollama ollama list
 ```
 
-#### **Step 2: Verify Model Installation**
-```bash
-# Check if model is available
-docker exec -it <container_name> ollama list
-```
+#### **Option B: API Provider Setup**
+Configure API providers (OpenAI, Anthropic, etc.) in the application settings.
 
-You should see `llama3:8b` in the list.
+#### **No Container Restart Required**
+Once external AI is configured:
+- ✅ **Automatic Detection**: The application automatically detects available AI services
+- ✅ **Hot Configuration**: Changes take effect immediately without restarts
+- ✅ **Multiple Providers**: Support for various AI providers simultaneously
+- ✅ **Fallback Support**: Graceful degradation when AI services are unavailable
 
-#### **Step 3: Restart Container (if needed)**
-```bash
-docker restart <container_name>
-```
+The application will automatically switch from rule-based to AI-powered rewriting when external AI is available.
 
-#### **No Additional Configuration Required**
-Once the model is downloaded:
-- ✅ **Automatic Detection**: The application automatically detects the model
-- ✅ **Immediate Availability**: AI features become available instantly
-- ✅ **No Settings**: No configuration files or environment variables to change
-- ✅ **Persistent**: Model persists across container restarts (with volume mounts)
-
-The application will automatically switch from rule-based to AI-powered rewriting.
-
-#### **What Works Without the Model**
+#### **What Works Without External AI**
 - ✅ **Style Analysis**: Full grammar and readability analysis
 - ✅ **Document Processing**: All file format support
 - ✅ **Rule-based Improvements**: Basic text enhancements
 - ✅ **Error Detection**: Comprehensive issue identification
+
+## 🔧 Troubleshooting
+
+### Common Issues and Solutions
+
+#### **Port Already in Use**
+```bash
+Error: bind: address already in use
+```
+**Solution**: Use a different external port
+```bash
+docker run -p 8080:5000 quay.io/rhdeveldocs/style-guide-ai:latest
+```
+
+#### **Container Won't Start**
+```bash
+# Check container logs
+docker logs style-guide-ai
+
+# Check if container is running
+docker ps -a
+```
+
+#### **Can't Access Application**
+1. **Check if container is running**: `docker ps`
+2. **Verify port mapping**: Look for `0.0.0.0:5000->5000/tcp` in `docker ps` output
+3. **Try different browser**: Sometimes localhost caching can cause issues
+4. **Check firewall**: Ensure localhost traffic is allowed
+
+#### **AI Features Not Working**
+1. **Verify external Ollama is running**: `curl http://localhost:11434/api/tags`
+2. **Check application logs**: `docker logs style-guide-ai`
+3. **Configure API provider**: In application settings if using external APIs
+
+#### **Performance Issues**
+- **Increase memory**: Add `--memory=4g` to docker run command
+- **Use SSD storage**: For better I/O performance with volumes
+- **Close unnecessary applications**: Free up system resources
 
 #### **What Requires the Model**
 - 🤖 **AI Rewriting**: Advanced text improvement

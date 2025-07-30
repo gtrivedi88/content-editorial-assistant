@@ -1,45 +1,36 @@
-# Peer Lens AI - Docker Compose Configuration
+# Style Guide AI - Docker Compose Configuration
 # 
 # 🚀 OPTIMIZATION: This setup uses Docker layer caching!
-# - Ollama installation (~200MB) - cached
-# - Llama 8B model (~4.7GB) - cached  
 # - Python dependencies - cached (unless requirements.txt changes)
 # - NLP models - cached
+# - Ruby gems - cached
 #
 # Only rebuilds when you change:
 # - App code (fast rebuild)
 # - requirements.txt (rebuilds dependencies)
-# - Ollama version updates
+# - System dependencies
 
 version: '3.8'
 
 services:
-  peer-lens-ai:
+  style-guide-ai:
     build:
       context: ..
       dockerfile: docker/Dockerfile
-    image: quay.io/rhdeveldocs/peer-lens:latest
-    container_name: peer-lens-ai
+    image: quay.io/rhdeveldocs/style-guide-ai:latest
+    container_name: style-guide-ai
     ports:
-      - "5000:5000"    # Flask app
-      - "11434:11434"  # Ollama API
+      - "5000:5000"    # Flask app (change to "8080:5000" if port 5000 is in use)
     environment:
       - FLASK_ENV=production
-      - OLLAMA_HOST=0.0.0.0
-      - OLLAMA_PORT=11434
       - SECRET_KEY=your-secret-key-here
     volumes:
       - ./uploads:/app/uploads
       - ./instance:/app/instance
-      - ollama_data:/root/.ollama
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s
-
-volumes:
-  ollama_data:
-    driver: local 
+      start_period: 60s 
