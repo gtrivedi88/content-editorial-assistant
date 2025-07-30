@@ -2,18 +2,83 @@
 require 'asciidoctor'
 require 'json'
 
-# Recursively converts an Asciidoctor AST node to a detailed hash,
-# preserving all information needed by the Python application.
+# Extracts raw text from a node, cleans it of inline comments, and returns it.
+def get_cleaned_text(node, field = :source)
+  raw_text = ""
+  # Prioritize the 'text' field for certain contexts as it's often cleaner.
+  if [:list_item, :table_cell].include?(node.context) && node.respond_to?(:text)
+    raw_text = node.text || ""
+  # For paragraphs and verses, the 'lines' array is the most reliable source.
+  elsif [:paragraph, :verse].include?(node.context) && node.respond_to?(:lines)
+    raw_text = node.lines.join(' ')
+  # Fallback to the 'source' attribute for most other blocks.
+  elsif node.respond_to?(:source)
+    raw_text = node.source || ""
+  # Final fallback to 'text' if source is unavailable.
+  elsif node.respond_to?(:text)
+    raw_text = node.text || ""
+  end
+
+  # **PRODUCTION-GRADE FIX**: Globally strip AsciiDoc inline comments (e.g., // comment)
+  # from the final content to prevent them from ever being analyzed or displayed.
+  # This regex handles comments at the end of a line, with or without preceding space.
+  raw_text.gsub(/\s*\/\/.*/, '').strip
+end
+
+
+# Special handler for definition lists to structure them correctly.
+def dlist_to_hash(dlist_node)
+  dlist_hash = {
+    'context' => 'dlist',
+    'content' => '', # The dlist container has no direct content.
+    'lineno' => dlist_node.lineno,
+    'attributes' => dlist_node.attributes,
+    'children' => []
+  }
+
+  # A dlist's items are an array of [term(s), description] pairs.
+  dlist_node.items.each do |term_nodes, desc_node|
+    # A description can have multiple terms; we join them.
+    term_text = term_nodes.map { |t| get_cleaned_text(t, :text) }.join(', ')
+
+    # The description can be a simple text block or a complex block with children.
+    desc_text = desc_node.text if desc_node.respond_to?(:text)
+    desc_source = desc_node.source if desc_node.respond_to?(:source)
+
+    # Create a synthetic block for this term/description item.
+    item_hash = {
+      'context' => 'description_list_item',
+      'term' => term_text,
+      'description' => get_cleaned_text(desc_node, :text),
+      'description_source' => desc_source,
+      'lineno' => term_nodes.first.lineno,
+      'attributes' => desc_node.attributes,
+      'children' => []
+    }
+
+    # If the description has its own blocks (e.g., a paragraph or nested list), process them.
+    if desc_node.respond_to?(:blocks) && desc_node.blocks
+        item_hash['children'] = desc_node.blocks.map { |child| node_to_hash(child) }.compact
+    end
+
+    dlist_hash['children'] << item_hash
+  end
+
+  dlist_hash
+end
+
+
+# Recursively converts an Asciidoctor AST node to a detailed hash.
 def node_to_hash(node)
   return nil unless node
 
-  # Get raw text content instead of HTML-converted content
-  raw_content = get_raw_text_content(node)
+  # Delegate definition lists to the specialized handler.
+  return dlist_to_hash(node) if node.context == :dlist
 
   node_hash = {
     'context' => node.context.to_s,
-    'content' => raw_content,  # Use our raw text extraction
-    'text' => node.respond_to?(:text) ? node.text : nil,
+    'content' => get_cleaned_text(node),
+    'text' => get_cleaned_text(node, :text),
     'source' => node.respond_to?(:source) ? node.source : '',
     'level' => node.respond_to?(:level) ? node.level : 0,
     'title' => node.respond_to?(:title) ? node.title : nil,
@@ -24,21 +89,19 @@ def node_to_hash(node)
     'children' => []
   }
 
-  # Recursively process all child blocks
+  # Recursively process all child blocks.
   if node.respond_to?(:blocks) && node.blocks
-    node_hash['children'].concat(node.blocks.map { |child| node_to_hash(child) })
+    node_hash['children'].concat(node.blocks.map { |child| node_to_hash(child) }.compact)
   end
 
-  # Process list items as children ONLY if there are no blocks (to avoid duplication)
-  # For lists, items and blocks often refer to the same children
-  if node.respond_to?(:items) && node.items && (!node.respond_to?(:blocks) || node.blocks.empty?)
-    node_hash['children'].concat(node.items.map { |item| node_to_hash(item) })
+  # Process list items as children if they aren't already in blocks.
+  if node.respond_to?(:items) && node.items && node.blocks.empty?
+    node_hash['children'].concat(node.items.map { |item| node_to_hash(item) }.compact)
   end
 
-  # Process table rows and cells as children
+  # Process table rows and cells as children.
   if node.context == :table
     (node.rows.head + node.rows.body + node.rows.foot).each do |row|
-        # Create a synthetic hash for the row, as it's not a standard block
         row_hash = { 'context' => 'table_row', 'children' => [], 'lineno' => row.first&.lineno || node.lineno, 'attributes' => {} }
         row.each { |cell| row_hash['children'] << node_to_hash(cell) }
         node_hash['children'] << row_hash
@@ -48,54 +111,10 @@ def node_to_hash(node)
   node_hash
 end
 
-# Extract raw text content without HTML conversion
-def get_raw_text_content(node)
-  case node.context
-  when :document
-    # For documents, return the title if available
-    node.respond_to?(:title) ? node.title : ''
-  when :section
-    # For sections, return the title
-    node.respond_to?(:title) ? node.title : ''
-  when :paragraph
-    # For paragraphs, extract the raw text from lines
-    if node.respond_to?(:lines) && node.lines
-      node.lines.join(' ')
-    elsif node.respond_to?(:source)
-      node.source
-    else
-      ''
-    end
-  when :list_item
-    # For list items, get the text without HTML conversion
-    node.respond_to?(:text) ? node.text : ''
-  when :listing, :literal
-    # For code blocks, use source as-is
-    node.respond_to?(:source) ? node.source : ''
-  when :table_cell
-    # For table cells, use text or source
-    if node.respond_to?(:text) && node.text
-      node.text
-    elsif node.respond_to?(:source)
-      node.source
-    else
-      ''
-    end
-  else
-    # For other block types, try various fields but avoid HTML conversion
-    if node.respond_to?(:source) && node.source
-      node.source
-    elsif node.respond_to?(:text) && node.text
-      node.text
-    else
-      ''
-    end
-  end
-end
 
+# Main parsing function
 def parse_asciidoc(content, filename = "")
   begin
-    # Parse with safe mode to avoid security issues, but don't convert to HTML
     doc = Asciidoctor.load(content, safe: :safe, sourcemap: true, parse: true)
     ast_hash = node_to_hash(doc)
     { 'success' => true, 'data' => ast_hash }
@@ -103,6 +122,7 @@ def parse_asciidoc(content, filename = "")
     { 'success' => false, 'error' => "Asciidoctor parsing failed: #{e.message}" }
   end
 end
+
 
 # Main execution logic
 if __FILE__ == $0

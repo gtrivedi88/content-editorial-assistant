@@ -22,7 +22,10 @@ class AsciiDocBlockType(Enum):
     PARAGRAPH = "paragraph"
     ORDERED_LIST = "olist"
     UNORDERED_LIST = "ulist"
-    DESCRIPTION_LIST = "dlist"
+    # **FIX**: Changed from DESCRIPTION_LIST to DLIST to match Asciidoctor context
+    DLIST = "dlist"
+    # **NEW**: Added to represent a term/description pair in a dlist.
+    DESCRIPTION_LIST_ITEM = "description_list_item"
     LIST_ITEM = "list_item"
     SIDEBAR = "sidebar"
     EXAMPLE = "example"
@@ -71,12 +74,22 @@ class AsciiDocBlock:
     attributes: AsciiDocAttributes = field(default_factory=AsciiDocAttributes)
     _analysis_errors: List[Dict[str, Any]] = field(default_factory=list, repr=False)
 
+    # **NEW**: Fields to hold definition list term and description
+    term: Optional[str] = None
+    description: Optional[str] = None
+
     def get_text_content(self) -> str:
         """
         Get clean text content for rule analysis by stripping inline HTML formatting,
         AsciiDoc attributes, and link syntax. This prevents false positives.
         """
-        content = self.content
+        # **FIX**: For description list items, the content to analyze is the description.
+        # The term is analyzed separately.
+        if self.block_type == AsciiDocBlockType.DESCRIPTION_LIST_ITEM:
+             content = self.description or ""
+        else:
+             content = self.content
+
         if not content:
             return ""
         
@@ -166,7 +179,10 @@ class AsciiDocBlock:
             "list_marker": self.list_marker,
             "should_skip_analysis": self.should_skip_analysis(),
             "errors": self._analysis_errors,
-            "children": [child.to_dict() for child in self.children]
+            "children": [child.to_dict() for child in self.children],
+            # **NEW**: Add term and description to the serialized object for the UI
+            "term": self.term,
+            "description": self.description,
         }
 
 @dataclass

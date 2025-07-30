@@ -43,10 +43,12 @@ class AnalysisModeExecutor:
                     rules_errors = self.rules_registry.analyze_with_context_aware_rules(
                         text, sentences, self.nlp, block_context
                     )
+                    
                     # Convert rules errors to our error format
                     for error in rules_errors:
                         converted_error = self.error_converter.convert_rules_error(error, block_context)
                         errors.append(converted_error)
+                    
                     logger.info(f"Context-aware modular rules analysis found {len(rules_errors)} issues")
                 except Exception as e:
                     logger.error(f"Context-aware modular rules analysis failed: {e}")
@@ -200,6 +202,10 @@ class AnalysisModeExecutor:
             # Apply focused analysis for table cells (content-specific)
             elif block_type == AsciiDocBlockType.TABLE_CELL:
                 errors.extend(self._analyze_table_cell_content(block, content, analysis_mode, block_context))
+            
+            # Apply special analysis for definition lists to analyze each term-description pair
+            elif block_type == AsciiDocBlockType.DLIST:
+                errors.extend(self._analyze_dlist_content(block, content, analysis_mode, block_context))
             
             # Apply general content analysis for other blocks (including headings)
             elif block_type in [AsciiDocBlockType.PARAGRAPH, AsciiDocBlockType.HEADING, AsciiDocBlockType.QUOTE, AsciiDocBlockType.LIST_ITEM]:
@@ -706,6 +712,96 @@ class AnalysisModeExecutor:
                 
         except Exception as e:
             logger.error(f"Error analyzing table cell content: {e}")
+            
+        return errors
+    
+    def _analyze_dlist_content(self, block, content: str, analysis_mode: AnalysisMode, 
+                              block_context: Optional[dict] = None) -> List[ErrorDict]:
+        """Analyze definition list content by analyzing each term-description pair individually."""
+        errors = []
+        
+        try:
+            # Get the children (description_list_item blocks) from the definition list
+            children = getattr(block, 'children', [])
+            
+            for i, child in enumerate(children):
+                try:
+                    # Extract term and description from description_list_item
+                    term = getattr(child, 'term', '') or ''
+                    description = getattr(child, 'description', '') or ''
+                    
+                    # Create context for this definition item
+                    item_context = child.get_context_info() if hasattr(child, 'get_context_info') else {}
+                    item_context['item_number'] = i + 1
+                    item_context['is_definition_list_item'] = True
+                    
+                    # Analyze the term if it exists
+                    if term and term.strip():
+                        term_context = item_context.copy()
+                        term_context['is_definition_term'] = True
+                        term_errors = self._analyze_generic_content(term.strip(), analysis_mode, term_context)
+                        
+                        # Store errors on the child
+                        if not hasattr(child, '_analysis_errors'):
+                            child._analysis_errors = []
+                        child._analysis_errors.extend(term_errors)
+                        errors.extend(term_errors)
+                    
+                    # Analyze the description if it exists
+                    if description and description.strip():
+                        desc_context = item_context.copy()
+                        desc_context['is_definition_description'] = True
+                        desc_errors = self._analyze_generic_content(description.strip(), analysis_mode, desc_context)
+                        
+                        # Store errors on the child
+                        if not hasattr(child, '_analysis_errors'):
+                            child._analysis_errors = []
+                        child._analysis_errors.extend(desc_errors)
+                        errors.extend(desc_errors)
+                    
+                    # Mark child as analyzed to prevent duplicate processing
+                    child._already_analyzed = True
+                    
+                except Exception as e:
+                    logger.error(f"Error analyzing definition list item {i}: {e}")
+            
+            # Analyze the whole definition list for structural issues (parallelism, etc.)
+            if len(children) >= 2:
+                # Create context for whole-list analysis
+                whole_list_context = block_context.copy() if block_context else {}
+                whole_list_context['block_type'] = 'definition_list'
+                whole_list_context['is_whole_list_analysis'] = True
+                whole_list_context['parallelism_analysis_only'] = True
+                
+                # Combine all terms and descriptions for structural analysis
+                all_terms = []
+                all_descriptions = []
+                for child in children:
+                    term = getattr(child, 'term', '') or ''
+                    description = getattr(child, 'description', '') or ''
+                    if term:
+                        all_terms.append(term.strip())
+                    if description:
+                        all_descriptions.append(description.strip())
+                
+                # Analyze terms for parallelism
+                if len(all_terms) >= 2:
+                    terms_content = '\n'.join(all_terms)
+                    terms_context = whole_list_context.copy()
+                    terms_context['is_definition_terms_analysis'] = True
+                    structure_errors = self._analyze_generic_content(terms_content, analysis_mode, terms_context)
+                    errors.extend(structure_errors)
+                
+                # Analyze descriptions for parallelism
+                if len(all_descriptions) >= 2:
+                    descriptions_content = '\n'.join(all_descriptions)
+                    desc_context = whole_list_context.copy()
+                    desc_context['is_definition_descriptions_analysis'] = True
+                    structure_errors = self._analyze_generic_content(descriptions_content, analysis_mode, desc_context)
+                    errors.extend(structure_errors)
+        
+        except Exception as e:
+            logger.error(f"Error analyzing definition list content: {e}")
             
         return errors
     

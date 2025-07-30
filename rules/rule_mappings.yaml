@@ -490,7 +490,7 @@ block_type_rules:
     - semicolons
     - slashes
 
-  # Description lists
+  # Description lists (legacy mapping)
   description_list:
     - lists
     - capitalization
@@ -498,6 +498,87 @@ block_type_rules:
     - terminology
     - abbreviations
     - prefixes
+
+  # Definition lists (AsciiDoc dlist blocks) - Comprehensive analysis for terms and descriptions
+  dlist:
+    # Structure-specific rules
+    - lists
+    - capitalization
+    - punctuation_and_symbols
+    
+    # Core language rules
+    - abbreviations
+    - prefixes
+    - contractions
+    - spelling
+    - terminology
+    - pronouns
+    - inclusive_language
+    - second_person
+    
+    # Enhanced morphological analysis
+    - adverbs_only
+    - anthropomorphism
+    - articles
+    - conjunctions
+    - plurals
+    - possessives
+    - prepositions
+    - verbs
+    
+    # Punctuation for definition lists
+    - colons
+    - commas
+    - dashes
+    - ellipses
+    - exclamation_points
+    - hyphens
+    - parentheses
+    - periods
+    - quotation_marks
+    - semicolons
+    - slashes
+    
+    # Content quality
+    - conversational_style
+    - global_audiences
+    - tone
+    - ambiguity
+    
+    # Technical content support
+    - technical_commands
+    - technical_files_directories
+    - technical_programming_elements
+    - technical_ui_elements
+    
+    # Word usage rules (comprehensive A-Z)
+    - word_usage_a
+    - word_usage_b
+    - word_usage_c
+    - word_usage_d
+    - word_usage_e
+    - word_usage_f
+    - word_usage_g
+    - word_usage_h
+    - word_usage_i
+    - word_usage_j
+    - word_usage_k
+    - word_usage_l
+    - word_usage_m
+    - word_usage_n
+    - word_usage_o
+    - word_usage_p
+    - word_usage_q
+    - word_usage_r
+    - word_usage_s
+    - word_usage_t
+    - word_usage_u
+    - word_usage_v
+    - word_usage_w
+    - word_usage_x
+    - word_usage_y
+    - word_usage_z
+    - word_usage_special
 
   # ===============================================================
   # SPECIAL CONTENT BLOCKS
@@ -698,6 +779,12 @@ rule_exclusions:
   list_item_unordered:
     - headings
     - notes
+
+  # Definition list exclusions
+  dlist:
+    - headings
+    - notes
+    - sentence_length  # Definition terms/descriptions can be fragments
 
   # Admonition exclusions
   admonition:

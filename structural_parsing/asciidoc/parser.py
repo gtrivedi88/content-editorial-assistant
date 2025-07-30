@@ -64,6 +64,15 @@ class AsciiDocParser:
             parent=parent
         )
 
+        # **NEW**: Handle the new description_list_item context
+        if block_type == AsciiDocBlockType.DESCRIPTION_LIST_ITEM:
+            block.term = node.get('term')
+            block.description = node.get('description')
+            # The 'content' of the item block itself is the combination for context,
+            # but analysis will happen on term/description separately.
+            block.content = f"{block.term}:: {block.description}"
+
+
         if block_type == AsciiDocBlockType.ADMONITION:
             style = node.get('style', 'NOTE').upper()
             block.admonition_type = AdmonitionType[style] if style in AdmonitionType.__members__ else AdmonitionType.NOTE
@@ -78,7 +87,7 @@ class AsciiDocParser:
                 content=node.get('title', ''),
                 raw_content=node.get('source', ''),
                 start_line=0,
-                title=node.get('title', ''),  # CRITICAL FIX: Set the document title properly
+                title=node.get('title', ''),
                 attributes=self._create_attributes(node.get('attributes', {}))
             )
         return block
@@ -99,10 +108,17 @@ class AsciiDocParser:
         if context == 'section': return node.get('title', '')
         if context in ['listing', 'literal']: return node.get('source', '')
         
-        # For table cells, use the 'text' field since 'content' is a list
         if context == 'table_cell': return node.get('text', '') or node.get('source', '')
+
+        # **FIX**: For dlist containers, the content is built from its children by the UI.
+        # It has no direct content itself.
+        if context == 'dlist': return ''
         
-        # For lists, extract content from list items
+        # **NEW**: For description list items, the primary content is the description.
+        # The term is handled separately.
+        if context == 'description_list_item':
+            return node.get('description', '')
+
         if context in ['ulist', 'olist'] and node.get('children'):
             list_items = []
             for child in node.get('children', []):
@@ -112,7 +128,6 @@ class AsciiDocParser:
                         list_items.append(item_text.strip())
             return '\n'.join(list_items) if list_items else ''
         
-        # For compound blocks like admonitions, the content is the combined source of its children
         if node.get('children') and context not in ['table']:
             return "\n".join(child.get('source', '') for child in node.get('children', []))
         return node.get('content', '') or ''
@@ -122,6 +137,8 @@ class AsciiDocParser:
         """Maps the Asciidoctor context string to our enum."""
         if context == 'section': return AsciiDocBlockType.HEADING
         try:
+            # **FIX**: Ensure 'dlist' from Ruby maps to the DLIST enum member.
             return AsciiDocBlockType(context)
         except ValueError:
+            # Fallback for contexts not explicitly in our enum
             return AsciiDocBlockType.UNKNOWN

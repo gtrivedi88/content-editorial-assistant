@@ -71,7 +71,10 @@ class StructuralAnalyzer:
             
             if not block.should_skip_analysis():
                 content = block.get_text_content()
-                if isinstance(content, str) and content.strip():
+                
+                # DLIST blocks have special handling - bypass content check
+                is_dlist = hasattr(block, 'block_type') and str(block.block_type).endswith('DLIST')
+                if is_dlist or (isinstance(content, str) and content.strip()):
                     # CRITICAL FIX: Ensure table cell context includes proper position information
                     if hasattr(block, 'block_type') and str(block.block_type).endswith('TABLE_CELL'):
                         # Add table cell specific context information

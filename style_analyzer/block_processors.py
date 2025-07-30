@@ -170,7 +170,7 @@ class BlockProcessor:
         # we add them directly to the flat list. The UI will render their children
         # (like list items) from the block's .children property.
         # We explicitly exclude child-only types that are rendered by their parents.
-        if block_type.value not in ['list_item', 'table_row', 'table_cell', 'table']:
+        if block_type.value not in ['list_item', 'description_list_item', 'table_row', 'table_cell', 'table']:
              self.flat_blocks.append(block)
 
     def _create_heading_from_section(self, section_block: Any) -> Any:

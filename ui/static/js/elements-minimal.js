@@ -10,7 +10,6 @@ function createListBlockElement(block, displayIndex) {
     const isOrdered = block.block_type === 'olist';
     let totalIssues = block.errors ? block.errors.length : 0;
     
-    // Recursively count issues in all nested children
     const countNestedIssues = (children) => {
         if (!children) return;
         children.forEach(item => {
@@ -31,7 +30,6 @@ function createListBlockElement(block, displayIndex) {
         return items.map(item => {
             let content = escapeHtml(item.content);
             
-            // Handle nested lists if this item has children
             let nestedContent = '';
             if (item.children && item.children.length > 0) {
                 item.children.forEach(child => {
@@ -42,6 +40,10 @@ function createListBlockElement(block, displayIndex) {
                                 ${generateListItems(child.children)}
                             </${isChildOrdered ? 'ol' : 'ul'}>
                         `;
+                    }
+                    // **NEW**: Render nested description lists
+                    else if (child.block_type === 'dlist') {
+                        nestedContent += createDescriptionListBlockElement(child, -1); // -1 index to signify nested
                     }
                 });
             }
@@ -60,7 +62,6 @@ function createListBlockElement(block, displayIndex) {
         }).join('');
     };
 
-    // Separate list structure errors from item errors for better display
     const listStructureErrors = block.errors ? block.errors.filter(error => 
         error.type === 'lists' || error.error_type === 'lists' || 
         error.type === 'structure' || error.error_type === 'structure'
@@ -99,6 +100,108 @@ function createListBlockElement(block, displayIndex) {
 }
 
 /**
+ * **NEW**: Create a description list block display.
+ * This function renders a definition list (<dl>) with terms (<dt>) and descriptions (<dd>).
+ */
+function createDescriptionListBlockElement(block, displayIndex) {
+    let totalIssues = block.errors ? block.errors.length : 0;
+
+    // Recursively count issues in all children (term/description items)
+    const countNestedIssues = (children) => {
+        if (!children) return;
+        children.forEach(item => {
+            if (item.errors) totalIssues += item.errors.length;
+            // Description items can have nested lists themselves
+            if (item.children) countNestedIssues(item.children);
+        });
+    };
+    
+    if (block.children) {
+        countNestedIssues(block.children);
+    }
+    
+    const status = totalIssues > 0 ? 'red' : 'green';
+    const statusText = totalIssues > 0 ? `${totalIssues} Issue(s)` : 'Clean';
+
+    // This function generates the <dt> and <dd> pairs.
+    const generateListItems = (items) => {
+        if (!items || items.length === 0) return '';
+        return items.map(item => {
+            // The item itself is a 'description_list_item' block
+            const term = escapeHtml(item.term || '');
+            const description = escapeHtml(item.description || '');
+
+            // Separate errors for the term and the description
+            const termErrors = (item.errors || []).filter(e => e.structural_context && e.structural_context.is_dlist_term);
+            const descErrors = (item.errors || []).filter(e => e.structural_context && e.structural_context.is_dlist_description);
+
+            return `
+                <dt>
+                    ${term}
+                    ${termErrors.length > 0 ? `
+                        <div class="pf-v5-l-stack pf-m-gutter pf-v5-u-mt-sm">
+                            ${termErrors.map(error => createInlineError(error)).join('')}
+                        </div>
+                    ` : ''}
+                </dt>
+                <dd>
+                    ${description}
+                    ${descErrors.length > 0 ? `
+                        <div class="pf-v5-l-stack pf-m-gutter pf-v5-u-mt-sm">
+                            ${descErrors.map(error => createInlineError(error)).join('')}
+                        </div>
+                    ` : ''}
+                </dd>
+            `;
+        }).join('');
+    };
+    
+    // Errors that apply to the list structure as a whole (e.g., parallelism)
+    const listStructureErrors = block.errors || [];
+
+    // If displayIndex is -1, it's a nested list, so render without the main card wrapper.
+    if (displayIndex === -1) {
+        return `
+            <dl class="pf-v5-c-description-list">
+                ${generateListItems(block.children)}
+            </dl>
+        `;
+    }
+
+    return `
+        <div class="pf-v5-c-card pf-m-compact pf-m-bordered-top" id="block-${displayIndex}">
+            <div class="pf-v5-c-card__header">
+                <div class="pf-v5-c-card__header-main">
+                     <i class="fas fa-book pf-v5-u-mr-sm"></i>
+                     <span class="pf-v5-u-font-weight-bold">BLOCK ${displayIndex + 1}:</span>
+                     <span class="pf-v5-u-ml-sm">${getBlockTypeDisplayName(block.block_type, {})}</span>
+                </div>
+                <div class="pf-v5-c-card__actions">
+                    <span class="pf-v5-c-label pf-m-outline pf-m-${status}">${statusText}</span>
+                </div>
+            </div>
+            <div class="pf-v5-c-card__body">
+                <div class="pf-v5-c-content">
+                    <dl class="pf-v5-c-description-list">
+                        ${generateListItems(block.children)}
+                    </dl>
+                </div>
+            </div>
+            ${listStructureErrors.length > 0 ? `
+            <div class="pf-v5-c-card__footer">
+                <div class="pf-v5-c-content">
+                    <h3 class="pf-v5-c-title pf-m-md">List Structure Issues:</h3>
+                    <div class="pf-v5-l-stack pf-m-gutter">
+                        ${listStructureErrors.map(error => createInlineError(error)).join('')}
+                    </div>
+                </div>
+            </div>` : ''}
+        </div>
+    `;
+}
+
+
+/**
  * Create a table block display with proper HTML table structure
  */
 function createTableBlockElement(block, displayIndex, allBlocks = []) {
@@ -107,19 +210,15 @@ function createTableBlockElement(block, displayIndex, allBlocks = []) {
         admonition_type: block.admonition_type
     });
     
-    // Find all table cell blocks that belong to this table
-    // They will be the next blocks in sequence until we hit a non-table_cell block
     const tableCells = [];
     for (let i = displayIndex + 1; i < allBlocks.length; i++) {
         if (allBlocks[i].block_type === 'table_cell') {
             tableCells.push(allBlocks[i]);
         } else {
-            break; // Stop when we hit a non-table_cell block
+            break; 
         }
     }
 
-    
-    // Calculate total issues including table cell errors
     let totalIssues = block.errors ? block.errors.length : 0;
     tableCells.forEach(cell => {
         if (cell.errors) totalIssues += cell.errors.length;
@@ -128,7 +227,6 @@ function createTableBlockElement(block, displayIndex, allBlocks = []) {
     const status = totalIssues > 0 ? 'red' : 'green';
     const statusText = totalIssues > 0 ? `${totalIssues} Issue(s)` : 'Clean';
     
-    // Extract table content and parse it into rows and cells
     const tableHtml = parseTableContent(block);
     
     return `
@@ -245,22 +343,18 @@ function createTableBlockElement(block, displayIndex, allBlocks = []) {
  * Parse table content - simplified version that covers the main cases
  */
 function parseTableContent(block) {
-    // If the block has raw content that looks like AsciiDoc table format
     if (block.raw_content && block.raw_content.includes('|===')) {
         return parseAsciiDocTable(block.raw_content);
     }
     
-    // If the block has children (table rows and cells from parser)
     if (block.children && block.children.length > 0) {
         return parseStructuredTable(block.children);
     }
     
-    // Fallback: try to parse content as simple table
     if (block.content) {
         return parseSimpleTable(block.content);
     }
     
-    // Final fallback
     return `
         <div class="pf-v5-c-empty-state pf-m-lg">
             <div class="pf-v5-c-empty-state__content">
@@ -353,7 +447,6 @@ function parseSimpleTable(content) {
         </div>`;
     }
     
-    // Show as formatted text if not clearly a table
     return `
         <div class="pf-v5-c-code-block">
             <div class="pf-v5-c-code-block__header">
@@ -389,7 +482,6 @@ function generatePatternFlyTable(rows, hasHeader = false) {
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     ">`;
     
-    // Generate header if specified
     if (hasHeader && rows.length > 0) {
         html += '<thead>';
         html += '<tr role="row">';
@@ -409,7 +501,6 @@ function generatePatternFlyTable(rows, hasHeader = false) {
         rows = rows.slice(1);
     }
     
-    // Generate body rows
     html += '<tbody role="rowgroup">';
     for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
@@ -440,22 +531,24 @@ function generatePatternFlyTable(rows, hasHeader = false) {
  * Simplified block creation - replaces the complex modular system
  */
 function createStructuralBlock(block, displayIndex, allBlocks = []) {
-    // Handle lists and tables with specialized rendering
+    // **FIX**: Route different list types to their specific rendering functions.
     if (block.block_type === 'olist' || block.block_type === 'ulist') {
         return createListBlockElement(block, displayIndex);
+    }
+    if (block.block_type === 'dlist') {
+        return createDescriptionListBlockElement(block, displayIndex);
     }
     
     if (block.block_type === 'table') {
         return createTableBlockElement(block, displayIndex, allBlocks);
     }
     
-    // Handle sections  
     if (block.block_type === 'section') {
         return createSectionBlockElement(block, displayIndex);
     }
     
-    // Skip sub-elements that shouldn't be displayed separately
-    if (['list_item', 'list_title', 'table_row', 'table_cell'].includes(block.block_type)) {
+    // Skip sub-elements that are rendered by their parents.
+    if (['list_item', 'description_list_item', 'table_row', 'table_cell'].includes(block.block_type)) {
         return '';
     }
     
@@ -519,7 +612,6 @@ function createStructuralBlock(block, displayIndex, allBlocks = []) {
 function createSectionBlockElement(block, displayIndex) {
     let totalIssues = block.errors ? block.errors.length : 0;
     
-    // Count issues in all children recursively
     const countChildIssues = (children) => {
         if (!children) return;
         children.forEach(child => {
@@ -529,7 +621,6 @@ function createSectionBlockElement(block, displayIndex) {
     };
     countChildIssues(block.children);
 
-    // Generate HTML for child blocks
     let childDisplayIndex = 0;
     const childrenHtml = block.children ? block.children.map(child => {
         const html = createStructuralBlock(child, childDisplayIndex);
