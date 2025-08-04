@@ -12,6 +12,7 @@ from .base_config import (
 )
 from .confidence_weights_config import ConfidenceWeightsConfig
 from .validation_thresholds_config import ValidationThresholdsConfig
+from .linguistic_anchors_config import LinguisticAnchorsConfig
 
 __all__ = [
     'BaseConfig',
@@ -20,5 +21,6 @@ __all__ = [
     'ConfigurationValidationError',
     'ConfigurationLoadError',
     'ConfidenceWeightsConfig',
-    'ValidationThresholdsConfig'
+    'ValidationThresholdsConfig',
+    'LinguisticAnchorsConfig'
 ]

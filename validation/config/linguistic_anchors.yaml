@@ -1,0 +1,302 @@
+# Linguistic Anchors Configuration
+# Defines patterns and contextual clues that boost or reduce confidence in error detection
+
+# Confidence-boosting anchors
+# These patterns increase confidence when detected near potential errors
+confidence_boosting_anchors:
+  # Generic linguistic patterns that indicate clear, standard language use
+  generic_patterns:
+    # Common determiners and articles that indicate standard grammar structure
+    determiners:
+      patterns: ["\\bthe\\b", "\\ba\\b", "\\ban\\b", "\\bthis\\b", "\\bthat\\b", "\\bthese\\b", "\\bthose\\b"]
+      confidence_boost: 0.10
+      context_window: 3  # words before/after the error
+      description: "Clear determiner usage indicates standard grammar structure"
+    
+    # Modal verbs that suggest deliberate grammatical choices
+    modal_verbs:
+      patterns: ["\\bcan\\b", "\\bcould\\b", "\\bmay\\b", "\\bmight\\b", "\\bmust\\b", "\\bshall\\b", "\\bshould\\b", "\\bwill\\b", "\\bwould\\b"]
+      confidence_boost: 0.08
+      context_window: 2
+      description: "Modal verbs indicate intentional grammatical construction"
+    
+    # Clear sentence boundaries and punctuation
+    sentence_structure:
+      patterns: ["\\.$", "\\!$", "\\?$", "^[A-Z]", "\\b[A-Z][a-z]+\\b"]
+      confidence_boost: 0.05
+      context_window: 1
+      description: "Clear sentence structure suggests intentional writing"
+    
+    # Standard conjunctions indicating logical flow
+    conjunctions:
+      patterns: ["\\band\\b", "\\bbut\\b", "\\bor\\b", "\\byet\\b", "\\bso\\b", "\\bhowever\\b", "\\btherefore\\b", "\\bmoreover\\b"]
+      confidence_boost: 0.06
+      context_window: 2
+      description: "Conjunctions indicate logical sentence construction"
+
+  # Technical and domain-specific patterns
+  technical_patterns:
+    # Programming and technical terms
+    programming_terms:
+      patterns: ["\\bAPI\\b", "\\bHTTP\\b", "\\bJSON\\b", "\\bXML\\b", "\\bSQL\\b", "\\bHTML\\b", "\\bCSS\\b", "\\bJavaScript\\b", "\\bPython\\b"]
+      confidence_boost: 0.12
+      context_window: 5
+      description: "Technical terms suggest domain expertise and intentional usage"
+    
+    # Documentation patterns
+    documentation_markers:
+      patterns: ["\\bNote:\\b", "\\bWarning:\\b", "\\bExample:\\b", "\\bSee also\\b", "\\bRefer to\\b", "\\bFor more information\\b"]
+      confidence_boost: 0.15
+      context_window: 10
+      description: "Documentation markers indicate structured, intentional writing"
+    
+    # Technical verbiage and formal language
+    formal_language:
+      patterns: ["\\bimplement\\b", "\\bconfigure\\b", "\\binitialize\\b", "\\bexecute\\b", "\\bvalidate\\b", "\\boptimize\\b"]
+      confidence_boost: 0.10
+      context_window: 3
+      description: "Formal technical language suggests careful composition"
+    
+    # Version numbers and technical identifiers
+    technical_identifiers:
+      patterns: ["\\bv\\d+\\.\\d+", "\\b\\d+\\.\\d+\\.\\d+\\b", "\\b[A-Z]{2,}_[A-Z_]+\\b", "\\b[a-z]+_[a-z_]+\\b"]
+      confidence_boost: 0.08
+      context_window: 2
+      description: "Technical identifiers indicate precise, technical context"
+
+  # Contextual language patterns
+  contextual_patterns:
+    # Temporal indicators showing planned narrative flow
+    temporal_indicators:
+      patterns: ["\\bfirst\\b", "\\bthen\\b", "\\bnext\\b", "\\bfinally\\b", "\\bmeanwhile\\b", "\\bsubsequently\\b", "\\bpreviously\\b"]
+      confidence_boost: 0.07
+      context_window: 4
+      description: "Temporal indicators suggest structured narrative flow"
+    
+    # Causal language indicating logical relationships
+    causal_language:
+      patterns: ["\\bbecause\\b", "\\bsince\\b", "\\btherefore\\b", "\\bconsequently\\b", "\\bas a result\\b", "\\bdue to\\b"]
+      confidence_boost: 0.09
+      context_window: 5
+      description: "Causal language indicates logical argumentation"
+    
+    # Explanatory phrases that suggest intentional clarification
+    explanatory_phrases:
+      patterns: ["\\bin other words\\b", "\\bthat is\\b", "\\bfor example\\b", "\\bspecifically\\b", "\\bin particular\\b"]
+      confidence_boost: 0.11
+      context_window: 8
+      description: "Explanatory phrases indicate deliberate clarification"
+
+# Confidence-reducing anchors
+# These patterns decrease confidence when detected near potential errors
+confidence_reducing_anchors:
+  # Proper nouns and names (often exceptions to grammar rules)
+  proper_nouns:
+    # Person names that may have unconventional grammar
+    person_names:
+      patterns: ["\\b[A-Z][a-z]+ [A-Z][a-z]+\\b", "\\b[A-Z]\\. [A-Z][a-z]+\\b", "\\bDr\\. [A-Z][a-z]+\\b", "\\bMr\\. [A-Z][a-z]+\\b", "\\bMs\\. [A-Z][a-z]+\\b"]
+      confidence_reduction: 0.15
+      context_window: 2
+      description: "Person names may follow non-standard grammar patterns"
+    
+    # Company and brand names
+    brand_names:
+      patterns: ["\\b[A-Z][a-z]*[A-Z][a-zA-Z]*\\b", "\\b[A-Z]{2,}\\b", "\\bi[A-Z][a-z]+\\b", "\\be[A-Z][a-z]+\\b"]
+      confidence_reduction: 0.12
+      context_window: 3
+      description: "Brand names often violate standard grammar and spelling rules"
+    
+    # Geographic locations
+    geographic_names:
+      patterns: ["\\b[A-Z][a-z]+ [A-Z][a-z]+ (City|State|County|Province)\\b", "\\b[A-Z][a-z]+, [A-Z]{2}\\b"]
+      confidence_reduction: 0.10
+      context_window: 4
+      description: "Geographic names may have unique grammatical patterns"
+
+  # Quoted and code content (different grammar rules)
+  quoted_content:
+    # Direct quotations that may contain non-standard grammar
+    direct_quotes:
+      patterns: ["\"[^\"]*\"", "'[^']*'", "\"[^\"]*\"", "'[^']*'"]
+      confidence_reduction: 0.20
+      context_window: 0  # Only within the quotes
+      description: "Quoted speech may contain colloquial or non-standard grammar"
+    
+    # Code blocks and technical syntax
+    code_blocks:
+      patterns: ["```[\\s\\S]*?```", "`[^`]+`", "\\{[^}]*\\}", "\\[[^\\]]*\\]", "\\([^)]*\\)"]
+      confidence_reduction: 0.25
+      context_window: 0
+      description: "Code blocks follow programming syntax, not natural language grammar"
+    
+    # File paths and URLs
+    technical_syntax:
+      patterns: ["\\b[a-zA-Z]:[\\\\\\w\\-\\.]+", "https?://[\\w\\-\\.]+", "\\w+\\.\\w{2,4}\\b", "/[\\w\\-/]+"]
+      confidence_reduction: 0.18
+      context_window: 1
+      description: "Technical syntax follows different rules than natural language"
+
+  # Informal and colloquial language
+  informal_language:
+    # Contractions and informal speech patterns
+    contractions:
+      patterns: ["\\b\\w+'\\w+\\b", "\\bgonna\\b", "\\bwanna\\b", "\\bgotta\\b", "\\bkinda\\b", "\\bsorta\\b"]
+      confidence_reduction: 0.08
+      context_window: 2
+      description: "Informal contractions may intentionally violate formal grammar"
+    
+    # Internet slang and abbreviations
+    internet_slang:
+      patterns: ["\\bLOL\\b", "\\bOMG\\b", "\\bBTW\\b", "\\bFYI\\b", "\\bIMO\\b", "\\bTBH\\b", "\\bAFAIK\\b"]
+      confidence_reduction: 0.15
+      context_window: 3
+      description: "Internet slang intentionally uses non-standard language"
+    
+    # Exclamations and emphatic expressions
+    exclamations:
+      patterns: ["\\b\\w+!+\\b", "\\bwow\\b", "\\bohh?\\b", "\\bahh\\b", "\\bumm\\b", "\\berr\\b"]
+      confidence_reduction: 0.10
+      context_window: 2
+      description: "Exclamations and filled pauses are often informal"
+
+  # Domain-specific jargon
+  specialized_jargon:
+    # Medical and scientific terminology
+    medical_terms:
+      patterns: ["\\b\\w+itis\\b", "\\b\\w+ology\\b", "\\b\\w+ectomy\\b", "\\bmg\\b", "\\bml\\b", "\\bμg\\b"]
+      confidence_reduction: 0.12
+      context_window: 4
+      description: "Medical terminology may use Latin/Greek patterns"
+    
+    # Legal terminology
+    legal_terms:
+      patterns: ["\\bvs\\.\\b", "\\bet al\\.\\b", "\\bper se\\b", "\\binter alia\\b", "\\bsupra\\b", "\\binfra\\b"]
+      confidence_reduction: 0.14
+      context_window: 5
+      description: "Legal Latin terms follow different grammatical patterns"
+    
+    # Academic and research terminology
+    academic_terms:
+      patterns: ["\\bop\\. cit\\.\\b", "\\bibid\\.\\b", "\\be\\.g\\.\\b", "\\bi\\.e\\.\\b", "\\bcf\\.\\b", "\\bviz\\.\\b"]
+      confidence_reduction: 0.13
+      context_window: 3
+      description: "Academic abbreviations may not follow standard punctuation rules"
+
+# Anchor combination rules
+# How to combine multiple anchor effects
+anchor_combination_rules:
+  # Maximum total boost/reduction to prevent extreme swings
+  max_total_boost: 0.30
+  max_total_reduction: 0.35
+  
+  # Combination method for multiple anchors
+  combination_method: "diminishing_returns"  # Options: additive, diminishing_returns, weighted_average
+  
+  # Diminishing returns configuration
+  diminishing_returns:
+    # Each additional anchor has reduced effect
+    effectiveness_decay: 0.8
+    # Minimum effectiveness for additional anchors
+    min_effectiveness: 0.2
+  
+  # Distance-based weighting
+  distance_weighting:
+    enabled: true
+    # Closer anchors have stronger effect
+    max_distance: 10  # words
+    distance_decay_factor: 0.9  # multiply effect by this for each word of distance
+    min_distance_effect: 0.3   # minimum effect regardless of distance
+
+# Pattern matching configuration
+pattern_matching:
+  # Case sensitivity for pattern matching
+  case_sensitive: false
+  
+  # Whether to use word boundaries for all patterns
+  enforce_word_boundaries: true
+  
+  # Maximum context window size (performance limit)
+  max_context_window: 15
+  
+  # Pattern cache settings
+  pattern_cache:
+    enabled: true
+    max_patterns: 500
+    ttl: 3600  # seconds
+  
+  # Regular expression flags
+  regex_flags: "IGNORECASE | MULTILINE"
+
+# Rule-specific anchor weights
+# Different rule types may benefit from different anchor patterns
+rule_specific_weights:
+  # Grammar rules benefit more from structural anchors
+  grammar:
+    generic_patterns_weight: 1.3
+    technical_patterns_weight: 0.8
+    contextual_patterns_weight: 1.0
+    
+  # Pronoun rules benefit from contextual anchors
+  pronouns:
+    generic_patterns_weight: 1.0
+    technical_patterns_weight: 0.9
+    contextual_patterns_weight: 1.4
+    
+  # Terminology rules benefit from technical anchors
+  terminology:
+    generic_patterns_weight: 0.8
+    technical_patterns_weight: 1.5
+    contextual_patterns_weight: 0.9
+    
+  # Style rules are sensitive to informal language
+  style:
+    informal_language_weight: 1.2
+    quoted_content_weight: 0.8
+    specialized_jargon_weight: 1.1
+
+# Content-type anchor adjustments
+content_type_adjustments:
+  # Technical content expects more technical anchors
+  technical:
+    technical_patterns_multiplier: 1.3
+    informal_language_multiplier: 1.5  # Penalize informal language more
+    
+  # Narrative content is more tolerant of informal patterns
+  narrative:
+    informal_language_multiplier: 0.7  # Less penalty for informal language
+    quoted_content_multiplier: 0.6     # Less penalty for dialogue
+    
+  # Marketing content balances formal and creative language
+  marketing:
+    contextual_patterns_multiplier: 1.2
+    brand_names_multiplier: 0.5        # Expected in marketing content
+
+# Performance and optimization settings
+performance_settings:
+  # Parallel pattern matching
+  parallel_matching:
+    enabled: true
+    max_workers: 4
+    
+  # Pattern pre-compilation
+  precompile_patterns: true
+  
+  # Anchor effect caching
+  anchor_caching:
+    enabled: true
+    cache_size: 2000
+    ttl: 1800  # 30 minutes
+    
+  # Context extraction optimization
+  context_extraction:
+    # Use efficient text splitting
+    efficient_tokenization: true
+    # Cache tokenized contexts
+    cache_tokenization: true
+    
+  # Early termination conditions
+  early_termination:
+    # Stop processing if max boost/reduction reached
+    stop_at_max_effect: true
+    # Skip expensive patterns if simple ones already provide strong signal
+    skip_expensive_patterns: true
