@@ -1,3 +1,3 @@
 """
-Tests for confidence calculation components.
+Test package for confidence module.
 """

@@ -1,11 +1,17 @@
 """
-Confidence calculation module.
-Provides multi-layered confidence scoring for error validation.
+Confidence module for validation system.
+Provides components for multi-layered confidence scoring and validation.
 """
 
-# Main confidence calculator will be imported here when implemented
-# from .confidence_calculator import ConfidenceCalculator
+# Import core confidence components
+from .linguistic_anchors import LinguisticAnchors, AnchorMatch, AnchorAnalysis
+# from .confidence_calculator import ConfidenceCalculator  # Future step
+# from .validation_pipeline import ValidationPipeline  # Future step
 
 __all__ = [
-    # 'ConfidenceCalculator',  # Will be uncommented when implemented
+    'LinguisticAnchors',
+    'AnchorMatch',
+    'AnchorAnalysis',
+    # 'ConfidenceCalculator', 
+    # 'ValidationPipeline'
 ]
