@@ -38,6 +38,8 @@ class ConjunctionsRule(BaseLanguageRule):
                     message="Comma splice detected: two independent clauses are joined by only a comma.",
                     suggestions=["Use a period to create two separate sentences, use a semicolon, or add a coordinating conjunction (like 'and', 'but', 'or')."],
                     severity='medium',
+                    text=text,  # Enhanced: Pass full text for better confidence analysis
+                    context=context,  # Enhanced: Pass context for domain-specific validation
                     flagged_text=sent_text
                 ))
         return errors

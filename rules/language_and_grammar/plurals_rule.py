@@ -89,6 +89,8 @@ class PluralsRule(BaseLanguageRule):
                     message="Avoid using '(s)' to indicate a plural.",
                     suggestions=["Rewrite the sentence to use either the singular or plural form, or use a phrase like 'one or more'."],
                     severity='medium',
+                    text=text,  # Enhanced: Pass full text for better confidence analysis
+                    context=context,  # Enhanced: Pass context for domain-specific validation
                     span=(span.start_char, span.end_char),
                     flagged_text=span.text
                 ))
@@ -120,6 +122,8 @@ class PluralsRule(BaseLanguageRule):
                             message=f"Potential misuse of a plural noun '{token.text}' as an adjective.",
                             suggestions=[f"Consider using the singular form '{token.lemma_}' when a noun modifies another noun."],
                             severity='low',
+                            text=text,  # Enhanced: Pass full text for better confidence analysis
+                            context=context,  # Enhanced: Pass context for domain-specific validation
                             span=(token.idx, token.idx + len(token.text)),
                             flagged_text=token.text
                         ))

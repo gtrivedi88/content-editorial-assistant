@@ -43,6 +43,8 @@ class CapitalizationRule(BaseLanguageRule):
                             message=f"'{token.text}' should be capitalized as it appears to be a proper noun.",
                             suggestions=[f"Capitalize '{token.text}' to '{token.text.capitalize()}'."],
                             severity='medium',
+                            text=text,  # Enhanced: Pass full text for better confidence analysis
+                            context=context,  # Enhanced: Pass context for domain-specific validation
                             span=(token.idx, token.idx + len(token.text)),
                             flagged_text=token.text
                         ))

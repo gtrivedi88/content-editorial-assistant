@@ -40,6 +40,8 @@ class ArticlesRule(BaseLanguageRule):
                             message=f"Incorrect article usage: Use '{'an' if self._starts_with_vowel_sound(next_token.text) else 'a'}' before '{next_token.text}'.",
                             suggestions=[f"Change '{token.text} {next_token.text}' to '{'an' if self._starts_with_vowel_sound(next_token.text) else 'a'} {next_token.text}'."],
                             severity='medium',
+                            text=text,  # Enhanced: Pass full text for better confidence analysis
+                            context=context,  # Enhanced: Pass context for domain-specific validation
                             span=(token.idx, next_token.idx + len(next_token.text)),
                             flagged_text=f"{token.text} {next_token.text}"
                         ))
@@ -50,6 +52,8 @@ class ArticlesRule(BaseLanguageRule):
                         message=f"Potentially missing article before the noun '{token.text}'.",
                         suggestions=["Singular countable nouns often require an article (a/an/the). Please review."],
                         severity='low',
+                        text=text,  # Enhanced: Pass full text for better confidence analysis
+                        context=context,  # Enhanced: Pass context for domain-specific validation
                         span=(token.idx, token.idx + len(token.text)),
                         flagged_text=token.text
                     ))

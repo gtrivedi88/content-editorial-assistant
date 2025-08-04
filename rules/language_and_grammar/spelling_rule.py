@@ -46,6 +46,8 @@ class SpellingRule(BaseLanguageRule):
                         message=f"Non-US spelling used for '{match.group()}'.",
                         suggestions=[f"IBM Style prefers US spelling. Use '{us_spelling}' instead."],
                         severity='medium',
+                        text=text,  # Enhanced: Pass full text for better confidence analysis
+                        context=context,  # Enhanced: Pass context for domain-specific validation
                         span=(sent.start_char + match.start(), sent.start_char + match.end()),
                         flagged_text=match.group(0)
                     ))

@@ -128,12 +128,14 @@ class ContractionsRule(BaseLanguageRule):
                         message=f"Contraction found: '{token.text}' ({contraction_info['type']}).",
                         suggestions=[f"Expand contractions for a more formal tone: {contraction_info['suggestion']}."],
                         severity='low',
+                        text=text,  # Enhanced: Pass full text for better confidence analysis
+                        context=context,  # Enhanced: Pass context for domain-specific validation
                         span=(token.idx, token.idx + len(token.text)),
                         flagged_text=token.text
                     ))
         
         # METHOD 2: Comprehensive regex-based detection for any missed contractions
-        self._analyze_contractions_by_regex(text, doc, errors)
+        self._analyze_contractions_by_regex(text, doc, errors, context)
         
         return errors
     
@@ -416,7 +418,7 @@ class ContractionsRule(BaseLanguageRule):
         
         return "expand the contraction for a more formal tone"
     
-    def _analyze_contractions_by_regex(self, text: str, doc: 'Doc', errors: List[Dict[str, Any]]):
+    def _analyze_contractions_by_regex(self, text: str, doc: 'Doc', errors: List[Dict[str, Any]], context: Dict[str, Any] = None):
         """
         Enhanced regex-based contraction detection to catch any apostrophe-containing words
         that might be missed by morphological analysis. Uses pattern r"\\b\\w+'\\w+\\b" as requested.
@@ -461,6 +463,8 @@ class ContractionsRule(BaseLanguageRule):
                 message=f"Contraction found: '{contraction_text}' ({suggestion_info['type']}).",
                 suggestions=[f"Expand contractions for a more formal tone: {suggestion_info['suggestion']}."],
                 severity='low',
+                text=text,  # Enhanced: Pass full text for better confidence analysis
+                context=context,  # Enhanced: Pass context for domain-specific validation
                 span=match_span,
                 flagged_text=contraction_text
             ))

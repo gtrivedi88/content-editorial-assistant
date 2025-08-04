@@ -74,6 +74,8 @@ class AbbreviationsRule(BaseLanguageRule):
                         message=f"Avoid using the Latin abbreviation '{token.text}'.",
                         suggestions=[f"Use its English equivalent, such as '{replacement}'."],
                         severity='medium',
+                        text=text,  # Enhanced: Pass full text for better confidence analysis
+                        context=context,  # Enhanced: Pass context for domain-specific validation
                         span=(token.idx, token.idx + len(token.text)),
                         flagged_text=token.text
                     ))
@@ -100,6 +102,8 @@ class AbbreviationsRule(BaseLanguageRule):
                             message=f"Abbreviation '{token.text}' may not be defined on first use.",
                             suggestions=[f"If '{token.text}' is not a commonly known abbreviation, spell it out on its first use, followed by the abbreviation in parentheses. For example: 'Application Programming Interface (API)'."],
                             severity='medium',
+                            text=text,  # Enhanced: Pass full text for better confidence analysis
+                            context=context,  # Enhanced: Pass context for domain-specific validation
                             span=(token.idx, token.idx + len(token.text)),
                             flagged_text=token.text
                         ))
@@ -116,6 +120,8 @@ class AbbreviationsRule(BaseLanguageRule):
                         message=f"Avoid using abbreviations like '{token.text}' as verbs.",
                         suggestions=[suggestion],
                         severity='medium',
+                        text=text,  # Enhanced: Pass full text for better confidence analysis
+                        context=context,  # Enhanced: Pass context for domain-specific validation
                         span=(token.idx, token.idx + len(token.text)),
                         flagged_text=token.text
                     ))

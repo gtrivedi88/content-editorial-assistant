@@ -41,6 +41,8 @@ class PrepositionsRule(BaseLanguageRule):
                     message="Sentence contains a high number of prepositions, which may indicate a complex or unclear structure.",
                     suggestions=["Consider rewriting to simplify the sentence structure. For example, 'The report is a list of the status of all of the event monitors for this process' could become 'The report lists the current status of all event monitors for this process'."],
                     severity='low',
+                    text=text,  # Enhanced: Pass full text for better confidence analysis
+                    context=context,  # Enhanced: Pass context for domain-specific validation
                     span=(sent.start_char, sent.end_char),
                     flagged_text=sent.text
                 ))

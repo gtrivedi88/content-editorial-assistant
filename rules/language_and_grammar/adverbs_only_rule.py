@@ -37,6 +37,8 @@ class AdverbsOnlyRule(BaseLanguageRule):
                         message="The word 'only' can be ambiguous depending on its placement.",
                         suggestions=["To ensure clarity, review the sentence and place 'only' immediately before the word or phrase it is intended to modify."],
                         severity='low',
+                        text=text,  # Enhanced: Pass full text for better confidence analysis
+                        context=context,  # Enhanced: Pass context for domain-specific validation
                         span=(token.idx, token.idx + len(token.text)),
                         flagged_text=token.text
                     ))

@@ -47,6 +47,8 @@ class TerminologyRule(BaseLanguageRule):
                         message=f"Non-preferred term '{match.group()}' used.",
                         suggestions=[f"Use the preferred IBM term: '{replacement}'."],
                         severity='medium',
+                        text=text,  # Enhanced: Pass full text for better confidence analysis
+                        context=context,  # Enhanced: Pass context for domain-specific validation
                         span=(sent.start_char + match.start(), sent.start_char + match.end()),
                         flagged_text=match.group(0)
                     ))

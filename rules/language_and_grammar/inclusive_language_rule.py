@@ -48,6 +48,8 @@ class InclusiveLanguageRule(BaseLanguageRule):
                         message=f"Consider replacing the non-inclusive term '{match.group()}'.",
                         suggestions=[f"Use a more inclusive alternative, such as '{replacement}'."],
                         severity='medium',
+                        text=text,  # Enhanced: Pass full text for better confidence analysis
+                        context=context,  # Enhanced: Pass context for domain-specific validation
                         span=(sent.start_char + match.start(), sent.start_char + match.end()),
                         flagged_text=match.group(0)
                     ))

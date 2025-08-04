@@ -45,6 +45,8 @@ class AnthropomorphismRule(BaseLanguageRule):
                                 message=f"Anthropomorphism: The {subject.text} '{token.text}' like a person.",
                                 suggestions=["Rewrite the sentence to focus on user actions or state facts directly. For example, instead of 'The system thinks...', write 'The system determines...'."],
                                 severity='low',
+                                text=text,  # Enhanced: Pass full text for better confidence analysis
+                                context=context,  # Enhanced: Pass context for domain-specific validation
                                 span=(subject.idx, token.idx + len(token.text)),
                                 flagged_text=f"{subject.text} {token.text}"
                             ))

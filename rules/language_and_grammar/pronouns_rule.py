@@ -87,6 +87,8 @@ class PronounsRule(BaseLanguageRule):
                             message=message,
                             suggestions=suggestions,
                             severity=severity,
+                            text=text,  # Enhanced: Pass full text for better confidence analysis
+                            context=context,  # Enhanced: Pass context for domain-specific validation
                             span=(token.idx, token.idx + len(token.text)),
                             flagged_text=token.text
                         ))

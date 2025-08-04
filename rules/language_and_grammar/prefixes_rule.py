@@ -110,6 +110,8 @@ class PrefixesRule(BaseLanguageRule):
                             message=f"Prefix '{prefix_part}' should typically be closed: '{full_match}' should be written without a hyphen.",
                             suggestions=[f"Write as '{self._generate_closed_form(full_match)}' without the hyphen. {context_analysis['explanation']}"],
                             severity='medium',
+                            text=text,  # Enhanced: Pass full text for better confidence analysis
+                            context=context,  # Enhanced: Pass context for domain-specific validation
                             span=(char_start, char_end),
                             flagged_text=full_match
                         ))

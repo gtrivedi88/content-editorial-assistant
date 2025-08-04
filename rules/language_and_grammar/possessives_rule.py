@@ -41,6 +41,8 @@ class PossessivesRule(BaseLanguageRule):
                                 message=f"Avoid using the possessive ''s' with the abbreviation '{prev_token.text}'.",
                                 suggestions=[f"Rewrite the phrase to use a preposition. For example, instead of '{prev_token.text}'s properties', write 'the properties of {prev_token.text}'."],
                                 severity='medium',
+                                text=text,  # Enhanced: Pass full text for better confidence analysis
+                                context=context,  # Enhanced: Pass context for domain-specific validation
                                 span=(prev_token.idx, token.idx + len(token.text)),
                                 flagged_text=f"{prev_token.text}{token.text}"
                             ))
