@@ -120,7 +120,7 @@ class BaseAudienceRule(BaseRule):
         """
         raise NotImplementedError("Subclasses must implement the analyze method.")
     
-    def _analyze_conversational_appropriateness(self, doc, sentence: str, sentence_index: int) -> List[Dict[str, Any]]:
+    def _analyze_conversational_appropriateness(self, doc, sentence: str, sentence_index: int, text: str = None, context: Dict[str, Any] = None) -> List[Dict[str, Any]]:
         """
         Analyze conversational appropriateness using morphological complexity.
         Returns errors for overly formal language that hinders conversational tone.
@@ -168,6 +168,8 @@ class BaseAudienceRule(BaseRule):
                 message=f"The word '{token.text}' is too formal for conversational style. Use simpler language.",
                 suggestions=[f"Replace '{token.text}' with '{alternative}' for better conversational tone."],
                 severity='low',
+                text=text,  # Enhanced: Pass full text for better confidence analysis
+                context=context,  # Enhanced: Pass context for domain-specific validation
                 linguistic_analysis={
                     'formality_score': formal_token['formality_score'],
                     'morphological_complexity': formal_token['complexity'],
@@ -177,7 +179,7 @@ class BaseAudienceRule(BaseRule):
         
         return errors
     
-    def _analyze_global_accessibility(self, doc, sentence: str, sentence_index: int) -> List[Dict[str, Any]]:
+    def _analyze_global_accessibility(self, doc, sentence: str, sentence_index: int, text: str = None, context: Dict[str, Any] = None) -> List[Dict[str, Any]]:
         """
         Analyze text for global audience accessibility using morphological and syntactic features.
         """
@@ -196,6 +198,8 @@ class BaseAudienceRule(BaseRule):
                 message=f"Sentence is too long ({sentence_complexity['word_count']} words) for global audiences. Aim for 32 words or fewer.",
                 suggestions=["Break this sentence into shorter, simpler sentences."],
                 severity='medium',
+                text=text,  # Enhanced: Pass full text for better confidence analysis
+                context=context,  # Enhanced: Pass context for domain-specific validation
                 linguistic_analysis=sentence_complexity
             ))
         
@@ -209,6 +213,8 @@ class BaseAudienceRule(BaseRule):
                 message="Avoid negative constructions. State conditions positively for global audiences.",
                 suggestions=[f"Rewrite '{neg_construction['text']}' using positive language."],
                 severity='medium',
+                text=text,  # Enhanced: Pass full text for better confidence analysis
+                context=context,  # Enhanced: Pass context for domain-specific validation
                 linguistic_analysis={
                     'negative_construction': neg_construction,
                     'morphological_pattern': neg_construction.get('pattern')
@@ -217,7 +223,7 @@ class BaseAudienceRule(BaseRule):
         
         return errors
     
-    def _analyze_professional_tone(self, doc, sentence: str, sentence_index: int) -> List[Dict[str, Any]]:
+    def _analyze_professional_tone(self, doc, sentence: str, sentence_index: int, text: str = None, context: Dict[str, Any] = None) -> List[Dict[str, Any]]:
         """
         Analyze professional tone using morphological and semantic analysis.
         """
@@ -236,6 +242,8 @@ class BaseAudienceRule(BaseRule):
                 message=f"The language pattern '{pattern['text']}' is too informal for professional communication.",
                 suggestions=["Use more direct and professional language."],
                 severity='medium',
+                text=text,  # Enhanced: Pass full text for better confidence analysis
+                context=context,  # Enhanced: Pass context for domain-specific validation
                 linguistic_analysis={
                     'informal_pattern': pattern,
                     'pattern_type': pattern.get('type'),

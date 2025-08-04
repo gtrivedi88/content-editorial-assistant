@@ -38,6 +38,8 @@ class GlobalAudiencesRule(BaseAudienceRule):
                                 sentence_index=i,
                                 message="Avoid negative constructions. State the condition positively.",
                                 suggestions=[f"Rewrite '{token.text} {child.text}' to a positive equivalent (e.g., 'similar')."],
+                                text=text,  # Enhanced: Pass full text for better confidence analysis
+                                context=context,  # Enhanced: Pass context for domain-specific validation
                                 severity='medium',
                                 span=(token.idx, child.idx + len(child.text)),
                                 flagged_text=f"{token.text} {child.text}"
@@ -51,6 +53,8 @@ class GlobalAudiencesRule(BaseAudienceRule):
                     message="Sentence is too long for a global audience. Aim for 32 words or fewer.",
                     suggestions=["Break the long sentence into shorter, simpler sentences."],
                     severity='low',
+                    text=text,  # Enhanced: Pass full text for better confidence analysis
+                    context=context,  # Enhanced: Pass context for domain-specific validation
                     span=(sent.start_char, sent.end_char),
                     flagged_text=sent.text
                 ))

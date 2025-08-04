@@ -43,6 +43,8 @@ class LLMConsumabilityRule(BaseAudienceRule):
                     message="Very short sentences or topics can be missed by LLMs. Ensure topics are comprehensive.",
                     suggestions=["Consider adding more content or combining this information with another related topic."],
                     severity='low',
+                    text=text,  # Enhanced: Pass full text for better confidence analysis
+                    context=context,  # Enhanced: Pass context for domain-specific validation
                     span=(sent.start_char, sent.end_char),
                     flagged_text=sent.text
                 ))
@@ -58,6 +60,8 @@ class LLMConsumabilityRule(BaseAudienceRule):
                         sentence_index=i,
                         message="Content inside accordions may not be processed correctly by LLMs.",
                         suggestions=["Consider presenting this information in a standard paragraph or a separate section if it is critical."],
+                        text=text,  # Enhanced: Pass full text for better confidence analysis
+                        context=context,  # Enhanced: Pass context for domain-specific validation
                         severity='medium',
                         span=(sent.start_char + match.start(), sent.start_char + match.end()),
                         flagged_text=match.group(0)

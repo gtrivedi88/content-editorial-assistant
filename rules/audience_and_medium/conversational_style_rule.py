@@ -48,6 +48,8 @@ class ConversationalStyleRule(BaseAudienceRule):
                         message=f"The word '{complex_word}' is too formal. Use a simpler alternative for a conversational tone.",
                         suggestions=[f"Replace '{complex_word}' with '{suggestion}'."],
                         severity='low',
+                        text=text,  # Enhanced: Pass full text for better confidence analysis
+                        context=context,  # Enhanced: Pass context for domain-specific validation
                         span=(token.idx, token.idx + len(token.text)),
                         flagged_text=token.text
                     ))
