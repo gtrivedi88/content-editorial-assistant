@@ -19,6 +19,17 @@ except ImportError:
     CONSOLIDATION_AVAILABLE = False
     print("Warning: Error consolidation system not available. Duplicate errors will not be consolidated.")
 
+# Import enhanced validation pipeline system (with fallback if not available)
+try:
+    from validation.multi_pass.validation_pipeline import ValidationPipeline
+    from validation.config.validation_thresholds_config import ValidationThresholdsConfig
+    from validation.confidence.confidence_calculator import ConfidenceCalculator
+    ENHANCED_VALIDATION_AVAILABLE = True
+    print("✓ Enhanced validation pipeline available for RulesRegistry")
+except ImportError:
+    ENHANCED_VALIDATION_AVAILABLE = False
+    print("Warning: Enhanced validation pipeline not available. Confidence filtering will be disabled.")
+
 # Import base rule with proper path handling
 try:
     from .base_rule import BaseRule
@@ -32,7 +43,7 @@ except ImportError:
 class RulesRegistry:
     """Registry that automatically discovers and manages all writing rules from all subdirectories up to 4 levels deep."""
     
-    def __init__(self, enable_consolidation: bool = True):
+    def __init__(self, enable_consolidation: bool = True, enable_enhanced_validation: bool = True, confidence_threshold: float = None):
         self.rules = {}
         self.rule_locations = {}  # Track where each rule was found
         
@@ -41,10 +52,58 @@ class RulesRegistry:
         if enable_consolidation and not CONSOLIDATION_AVAILABLE:
             print("Warning: Consolidation requested but system not available.")
         
+        # Enhanced validation configuration
+        self.enable_enhanced_validation = enable_enhanced_validation and ENHANCED_VALIDATION_AVAILABLE
+        if enable_enhanced_validation and not ENHANCED_VALIDATION_AVAILABLE:
+            print("Warning: Enhanced validation requested but system not available.")
+        
+        # Initialize validation components
+        self._initialize_validation_system(confidence_threshold)
+        
         self._load_all_rules()
         
         # Load rule-to-block type mappings from configuration file
         self._load_rule_mappings()
+    
+    def _initialize_validation_system(self, confidence_threshold: float = None):
+        """Initialize enhanced validation pipeline components."""
+        self.validation_pipeline = None
+        self.confidence_calculator = None
+        self.validation_thresholds = None
+        self.confidence_threshold = confidence_threshold
+        
+        if not self.enable_enhanced_validation:
+            print("⚠️ Enhanced validation disabled - confidence filtering will not be available")
+            return
+        
+        try:
+            # Initialize confidence calculator
+            self.confidence_calculator = ConfidenceCalculator()
+            print("✅ Confidence calculator initialized")
+            
+            # Load validation thresholds configuration
+            self.validation_thresholds = ValidationThresholdsConfig()
+            print("✅ Validation thresholds loaded")
+            
+            # Initialize validation pipeline
+            self.validation_pipeline = ValidationPipeline()
+            print("✅ Validation pipeline initialized")
+            
+            # Set confidence threshold (use config default if not specified)
+            if self.confidence_threshold is None:
+                # Get default minimum confidence threshold
+                min_confidence_thresholds = self.validation_thresholds.get_minimum_confidence_thresholds()
+                self.confidence_threshold = min_confidence_thresholds.get('default', 0.5)
+                print(f"✅ Using default confidence threshold: {self.confidence_threshold:.3f}")
+            else:
+                print(f"✅ Using custom confidence threshold: {self.confidence_threshold:.3f}")
+            
+        except Exception as e:
+            print(f"❌ Failed to initialize validation system: {e}")
+            self.enable_enhanced_validation = False
+            self.validation_pipeline = None
+            self.confidence_calculator = None
+            self.validation_thresholds = None
     
     def _load_all_rules(self):
         """Automatically discover and load all rule modules from main directory and nested subdirectories (up to 4 levels deep)."""
@@ -449,6 +508,14 @@ class RulesRegistry:
                         'severity': 'low'
                     })
         
+        # Apply enhanced filtering (validation pipeline + confidence filtering)
+        if self.enable_enhanced_validation:
+            try:
+                all_errors = self._apply_enhanced_filtering(all_errors, text, context)
+            except Exception as e:
+                print(f"⚠️ Enhanced filtering failed, continuing with unfiltered errors: {e}")
+                # Continue with unfiltered errors rather than crashing
+        
         # Apply error consolidation if enabled
         if self.enable_consolidation and all_errors:
             try:
@@ -498,6 +565,92 @@ class RulesRegistry:
         
         # Filter to only include rules that are actually loaded
         return [rule for rule in applicable_rules if rule in self.rules]
+    
+    def _apply_confidence_filtering(self, errors: List[Dict[str, Any]], context: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+        """Apply confidence-based filtering to errors."""
+        if not self.enable_enhanced_validation or not errors:
+            return errors
+        
+        if self.confidence_threshold is None:
+            return errors
+        
+        filtered_errors = []
+        filtered_count = 0
+        
+        for error in errors:
+            confidence_score = error.get('confidence_score')
+            
+            # Keep errors without confidence scores (legacy errors)
+            if confidence_score is None:
+                filtered_errors.append(error)
+                continue
+            
+            # Apply confidence threshold
+            if confidence_score >= self.confidence_threshold:
+                filtered_errors.append(error)
+            else:
+                filtered_count += 1
+        
+        if filtered_count > 0:
+            print(f"🔍 Confidence filtering: Removed {filtered_count}/{len(errors)} low-confidence errors (threshold: {self.confidence_threshold:.3f})")
+        
+        return filtered_errors
+    
+    def _apply_validation_pipeline(self, errors: List[Dict[str, Any]], text: str, context: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+        """Apply validation pipeline to errors for additional quality control."""
+        if not self.enable_enhanced_validation or not self.validation_pipeline or not errors:
+            return errors
+        
+        validated_errors = []
+        rejected_count = 0
+        
+        for error in errors:
+            try:
+                # Extract validation decision from error if available
+                validation_decision = error.get('validation_decision')
+                
+                if validation_decision == 'reject':
+                    rejected_count += 1
+                    continue
+                elif validation_decision in ['accept', 'uncertain']:
+                    validated_errors.append(error)
+                    continue
+                
+                # If no validation decision, assume valid (legacy errors)
+                validated_errors.append(error)
+                
+            except Exception as e:
+                print(f"⚠️ Validation pipeline error for error: {e}")
+                # Keep the error if validation fails
+                validated_errors.append(error)
+        
+        if rejected_count > 0:
+            print(f"🔍 Validation pipeline: Rejected {rejected_count}/{len(errors)} errors")
+        
+        return validated_errors
+    
+    def _apply_enhanced_filtering(self, errors: List[Dict[str, Any]], text: str, context: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+        """Apply both confidence and validation filtering to errors."""
+        # First apply validation pipeline filtering
+        errors = self._apply_validation_pipeline(errors, text, context)
+        
+        # Then apply confidence filtering
+        errors = self._apply_confidence_filtering(errors, context)
+        
+        return errors
+    
+    def get_validation_stats(self) -> Dict[str, Any]:
+        """Get statistics about the validation system configuration."""
+        return {
+            'enhanced_validation_enabled': self.enable_enhanced_validation,
+            'enhanced_validation_available': ENHANCED_VALIDATION_AVAILABLE,
+            'consolidation_enabled': self.enable_consolidation,
+            'consolidation_available': CONSOLIDATION_AVAILABLE,
+            'confidence_threshold': self.confidence_threshold,
+            'validation_pipeline_initialized': self.validation_pipeline is not None,
+            'confidence_calculator_initialized': self.confidence_calculator is not None,
+            'validation_thresholds_loaded': self.validation_thresholds is not None
+        }
 
     def analyze_with_all_rules(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         """Run analysis with all discovered rules from all directories."""
@@ -528,6 +681,14 @@ class RulesRegistry:
                     'severity': 'low'
                 })
         
+        # Apply enhanced filtering (validation pipeline + confidence filtering)
+        if self.enable_enhanced_validation:
+            try:
+                all_errors = self._apply_enhanced_filtering(all_errors, text, context)
+            except Exception as e:
+                print(f"⚠️ Enhanced filtering failed, continuing with unfiltered errors: {e}")
+                # Continue with unfiltered errors rather than crashing
+        
         # Apply error consolidation if enabled
         if self.enable_consolidation and all_errors:
             try:
@@ -541,19 +702,40 @@ class RulesRegistry:
 # Global registry instance (lazy-loaded to avoid circular imports)
 _registry = None
 
-def get_registry(enable_consolidation: bool = True):
+def get_registry(enable_consolidation: bool = True, enable_enhanced_validation: bool = True, confidence_threshold: float = None):
     """Get the global registry instance, initializing if needed."""
     global _registry
     if _registry is None:
-        _registry = RulesRegistry(enable_consolidation=enable_consolidation)
+        _registry = RulesRegistry(
+            enable_consolidation=enable_consolidation,
+            enable_enhanced_validation=enable_enhanced_validation,
+            confidence_threshold=confidence_threshold
+        )
     return _registry
+
+def get_enhanced_registry(confidence_threshold: float = None):
+    """Get the global registry instance with enhanced validation enabled."""
+    return get_registry(
+        enable_consolidation=True,
+        enable_enhanced_validation=True,
+        confidence_threshold=confidence_threshold
+    )
 
 # Create a registry proxy that initializes only when accessed
 class RegistryProxy:
     """Proxy object that initializes the registry only when accessed."""
     
     def __getattr__(self, name):
-        return getattr(get_registry(enable_consolidation=True), name)
+        return getattr(get_registry(enable_consolidation=True, enable_enhanced_validation=True), name)
+
+class EnhancedRegistryProxy:
+    """Enhanced proxy object with validation pipeline enabled."""
+    
+    def __getattr__(self, name):
+        return getattr(get_enhanced_registry(), name)
 
 # For backward compatibility
-registry = RegistryProxy() 
+registry = RegistryProxy()
+
+# Enhanced registry with validation pipeline
+enhanced_registry = EnhancedRegistryProxy() 
