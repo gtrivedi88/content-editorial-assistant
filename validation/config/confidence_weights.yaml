@@ -1,0 +1,143 @@
+# Confidence Weights Configuration
+# Defines how different confidence layers are weighted when calculating overall confidence scores
+
+# Default weights for confidence calculation layers
+# These should sum to 1.0 for proper normalization
+default_weights:
+  # Morphological confidence (POS tags, dependencies, lemmatization)
+  morphological: 0.35
+  
+  # Contextual confidence (coreference, discourse, semantic coherence)
+  contextual: 0.30
+  
+  # Domain confidence (content type, terminology, audience appropriateness)
+  domain: 0.20
+  
+  # Discourse confidence (sentence flow, markers, register consistency)
+  discourse: 0.15
+
+# Rule-specific weight overrides
+# Some rule types may need different weight distributions
+rule_specific_weights:
+  # Pronoun rules need higher contextual weight due to coreference importance
+  pronouns:
+    morphological: 0.25
+    contextual: 0.45  # Higher for coreference analysis
+    domain: 0.20
+    discourse: 0.10
+  
+  # Grammar rules rely more on morphological analysis
+  grammar:
+    morphological: 0.50  # Higher for POS and dependency accuracy
+    contextual: 0.20
+    domain: 0.15
+    discourse: 0.15
+  
+  # Terminology rules need higher domain weight
+  terminology:
+    morphological: 0.20
+    contextual: 0.25
+    domain: 0.40  # Higher for domain-specific terminology
+    discourse: 0.15
+  
+  # Style rules need balanced weights with emphasis on discourse
+  style:
+    morphological: 0.25
+    contextual: 0.25
+    domain: 0.25
+    discourse: 0.25  # Equal weighting for style consistency
+  
+  # Passive voice detection relies on morphological and contextual analysis
+  passive_voice:
+    morphological: 0.40  # Higher for verb form analysis
+    contextual: 0.35     # Higher for sentence structure
+    domain: 0.15
+    discourse: 0.10
+  
+  # Readability rules emphasize contextual and discourse factors
+  readability:
+    morphological: 0.20
+    contextual: 0.35  # Higher for sentence complexity
+    domain: 0.20
+    discourse: 0.25   # Higher for flow and coherence
+
+# Content type specific weight adjustments
+# Different content types may need different confidence weighting
+content_type_weights:
+  # Technical documentation needs higher domain confidence
+  technical:
+    morphological: 0.30
+    contextual: 0.25
+    domain: 0.30  # Higher for technical accuracy
+    discourse: 0.15
+  
+  # Narrative content needs higher contextual and discourse confidence
+  narrative:
+    morphological: 0.25
+    contextual: 0.35  # Higher for story flow
+    domain: 0.15
+    discourse: 0.25   # Higher for narrative coherence
+  
+  # Procedural content needs balanced weights with domain emphasis
+  procedural:
+    morphological: 0.30
+    contextual: 0.30
+    domain: 0.25  # Higher for procedure accuracy
+    discourse: 0.15
+  
+  # Marketing content emphasizes discourse and contextual factors
+  marketing:
+    morphological: 0.20
+    contextual: 0.30  # Higher for persuasive flow
+    domain: 0.20
+    discourse: 0.30   # Higher for impact and tone
+
+# Fallback weights for unknown rule types or content types
+# Used when no specific weights are defined
+fallback_weights:
+  unknown_rule:
+    morphological: 0.35
+    contextual: 0.30
+    domain: 0.20
+    discourse: 0.15
+  
+  unknown_content:
+    morphological: 0.35
+    contextual: 0.30
+    domain: 0.20
+    discourse: 0.15
+
+# Weight adjustment factors
+# These can be used to fine-tune confidence calculations
+adjustment_factors:
+  # Factor to boost confidence for high-certainty linguistic patterns
+  high_certainty_boost: 1.1
+  
+  # Factor to reduce confidence for ambiguous patterns
+  ambiguity_penalty: 0.9
+  
+  # Minimum confidence threshold before applying adjustments
+  adjustment_threshold: 0.5
+  
+  # Maximum confidence value (cap to prevent over-confidence)
+  max_confidence: 0.95
+  
+  # Minimum confidence value (floor to prevent under-confidence)
+  min_confidence: 0.05
+
+# Confidence calculation settings
+calculation_settings:
+  # Method for combining confidence scores
+  combination_method: "weighted_average"  # Options: weighted_average, geometric_mean, harmonic_mean
+  
+  # Whether to normalize weights to sum to 1.0
+  normalize_weights: true
+  
+  # Precision for confidence score rounding
+  precision: 3
+  
+  # Whether to cache weight calculations
+  enable_caching: true
+  
+  # Cache TTL for weight calculations (seconds)
+  cache_ttl: 300

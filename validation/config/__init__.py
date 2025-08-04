@@ -10,11 +10,13 @@ from .base_config import (
     ConfigurationValidationError,
     ConfigurationLoadError
 )
+from .confidence_weights_config import ConfidenceWeightsConfig
 
 __all__ = [
     'BaseConfig',
     'SchemaValidator', 
     'ConfigurationError',
     'ConfigurationValidationError',
-    'ConfigurationLoadError'
+    'ConfigurationLoadError',
+    'ConfidenceWeightsConfig'
 ]
