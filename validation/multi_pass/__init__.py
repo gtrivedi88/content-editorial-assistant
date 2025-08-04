@@ -13,7 +13,11 @@ from .base_validator import (
 # Import concrete validators
 from .pass_validators import MorphologicalValidator, ContextValidator, DomainValidator, CrossRuleValidator
 
-# from .validation_pipeline import ValidationPipeline  # Future step
+# Import validation pipeline
+from .validation_pipeline import (
+    ValidationPipeline, PipelineConfiguration, PipelineResult, 
+    ConsensusStrategy, TerminationCondition, ValidatorWeight
+)
 
 __all__ = [
     'BasePassValidator',
@@ -29,5 +33,10 @@ __all__ = [
     'ContextValidator',
     'DomainValidator',
     'CrossRuleValidator',
-    # 'ValidationPipeline'
+    'ValidationPipeline',
+    'PipelineConfiguration',
+    'PipelineResult',
+    'ConsensusStrategy',
+    'TerminationCondition',
+    'ValidatorWeight'
 ]

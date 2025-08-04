@@ -16,9 +16,9 @@ from .confidence import (
 from .multi_pass import (
     BasePassValidator, ValidationDecision, ValidationConfidence, ValidationEvidence,
     ValidationResult, ValidationContext, MorphologicalValidator, ContextValidator,
-    DomainValidator, CrossRuleValidator
+    DomainValidator, CrossRuleValidator, ValidationPipeline, PipelineConfiguration,
+    PipelineResult, ConsensusStrategy, TerminationCondition, ValidatorWeight
 )
-# from .multi_pass import ValidationPipeline  # Future step
 
 __all__ = [
     # Configuration
@@ -42,5 +42,10 @@ __all__ = [
     'ContextValidator',
     'DomainValidator',
     'CrossRuleValidator',
-    # 'ValidationPipeline'  # Future step
+    'ValidationPipeline',
+    'PipelineConfiguration',
+    'PipelineResult',
+    'ConsensusStrategy',
+    'TerminationCondition',
+    'ValidatorWeight'
 ]
