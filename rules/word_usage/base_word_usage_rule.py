@@ -23,8 +23,24 @@ except ImportError:
     class BaseRule:  # type: ignore
         def _get_rule_type(self) -> str:
             return 'base'
-        def _create_error(self, **kwargs) -> Dict[str, Any]:
-            return kwargs
+        def _create_error(self, sentence: str, sentence_index: int, message: str, 
+                         suggestions: List[str], severity: str = 'medium', 
+                         text: Optional[str] = None, context: Optional[Dict[str, Any]] = None,
+                         **extra_data) -> Dict[str, Any]:
+            """Fallback _create_error implementation when main BaseRule import fails."""
+            # Create basic error structure for fallback scenarios
+            error = {
+                'type': getattr(self, 'rule_type', 'unknown'),
+                'message': str(message),
+                'suggestions': [str(s) for s in suggestions],
+                'sentence': str(sentence),
+                'sentence_index': int(sentence_index),
+                'severity': severity,
+                'enhanced_validation_available': False  # Mark as fallback
+            }
+            # Add any extra data
+            error.update(extra_data)
+            return error
 
 
 class BaseWordUsageRule(BaseRule):
@@ -61,13 +77,16 @@ class BaseWordUsageRule(BaseRule):
             patterns = [nlp(word) for word in word_details_dict.keys()]
             self._phrase_matcher.add("WORD_USAGE", patterns)
 
-    def _find_word_usage_errors(self, doc, message_prefix="Review usage of the term"):
+    def _find_word_usage_errors(self, doc, message_prefix="Review usage of the term", 
+                               text: str = None, context: Dict[str, Any] = None):
         """
         Find word usage errors using PhraseMatcher.
         
         Args:
             doc: spaCy Doc object
             message_prefix: Prefix for error messages
+            text: Full text context (for enhanced validation)
+            context: Additional context information (for enhanced validation)
             
         Returns:
             List of error dictionaries
@@ -97,6 +116,8 @@ class BaseWordUsageRule(BaseRule):
                         message=f"{message_prefix} '{span.text}'.",
                         suggestions=[details['suggestion']],
                         severity=details['severity'],
+                        text=text,  # Enhanced: Pass full text for better confidence analysis
+                        context=context,  # Enhanced: Pass context for domain-specific validation
                         span=(span.start_char, span.end_char),
                         flagged_text=span.text
                     ))

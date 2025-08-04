@@ -18,8 +18,24 @@ except ImportError:
         class BaseLanguageRule:
             def __init__(self):
                 pass
-            def _create_error(self, **kwargs):
-                return kwargs
+            def _create_error(self, sentence: str, sentence_index: int, message: str, 
+                             suggestions: List[str], severity: str = 'medium', 
+                             text: Optional[str] = None, context: Optional[Dict[str, Any]] = None,
+                             **extra_data) -> Dict[str, Any]:
+                """Fallback _create_error implementation when main BaseRule import fails."""
+                # Create basic error structure for fallback scenarios
+                error = {
+                    'type': getattr(self, 'rule_type', 'unknown'),
+                    'message': str(message),
+                    'suggestions': [str(s) for s in suggestions],
+                    'sentence': str(sentence),
+                    'sentence_index': int(sentence_index),
+                    'severity': severity,
+                    'enhanced_validation_available': False  # Mark as fallback
+                }
+                # Add any extra data
+                error.update(extra_data)
+                return error
 
 try:
     from .passive_voice_analyzer import PassiveVoiceAnalyzer, ContextType
@@ -87,6 +103,8 @@ class VerbsRule(BaseLanguageRule):
                     message="Sentence may be in the passive voice.",
                     suggestions=suggestions,
                     severity='medium',
+                    text=text,  # Enhanced: Pass full text for better confidence analysis
+                    context=context,  # Enhanced: Pass context for domain-specific validation
                     span=(construction.span_start, construction.span_end),
                     flagged_text=construction.flagged_text
                 ))
@@ -106,6 +124,8 @@ class VerbsRule(BaseLanguageRule):
                             message="Avoid future tense in procedural and descriptive text.",
                             suggestions=[suggestion],
                             severity='medium',
+                            text=text,  # Enhanced: Pass full text for better confidence analysis
+                            context=context,  # Enhanced: Pass context for domain-specific validation
                             span=(span_start, span_end),
                             flagged_text=flagged_text
                         ))
@@ -128,6 +148,8 @@ class VerbsRule(BaseLanguageRule):
                     message="Sentence may not be in the preferred present tense.",
                     suggestions=["Use present tense for instructions and system descriptions."],
                     severity='low',
+                    text=text,  # Enhanced: Pass full text for better confidence analysis
+                    context=context,  # Enhanced: Pass context for domain-specific validation
                     span=(span_start, span_end),
                     flagged_text=flagged_text
                 ))

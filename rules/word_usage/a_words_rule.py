@@ -67,12 +67,14 @@ class AWordsRule(BaseWordUsageRule):
                     message="Do not use 'action' as a verb.",
                     suggestions=["Use a more specific verb like 'run' or 'perform'."],
                     severity='medium',
+                    text=text,  # Enhanced: Pass full text for better confidence analysis
+                    context=context,  # Enhanced: Pass context for domain-specific validation
                     span=(token.idx, token.idx + len(token.text)),
                     flagged_text=token.text
                 ))
 
         # NEW ENHANCED APPROACH: Use base class PhraseMatcher functionality
-        word_usage_errors = self._find_word_usage_errors(doc, "Consider an alternative for the word")
+        word_usage_errors = self._find_word_usage_errors(doc, "Consider an alternative for the word", text, context)
         
         # Filter out 'action' since it's handled above with grammar awareness
         for error in word_usage_errors:

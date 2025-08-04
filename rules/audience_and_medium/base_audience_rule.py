@@ -17,8 +17,24 @@ except ImportError:
     class BaseRule:  # type: ignore
         def _get_rule_type(self) -> str:
             return 'base'
-        def _create_error(self, **kwargs) -> Dict[str, Any]:
-            return kwargs
+        def _create_error(self, sentence: str, sentence_index: int, message: str, 
+                         suggestions: List[str], severity: str = 'medium', 
+                         text: Optional[str] = None, context: Optional[Dict[str, Any]] = None,
+                         **extra_data) -> Dict[str, Any]:
+            """Fallback _create_error implementation when main BaseRule import fails."""
+            # Create basic error structure for fallback scenarios
+            error = {
+                'type': getattr(self, 'rule_type', 'unknown'),
+                'message': str(message),
+                'suggestions': [str(s) for s in suggestions],
+                'sentence': str(sentence),
+                'sentence_index': int(sentence_index),
+                'severity': severity,
+                'enhanced_validation_available': False  # Mark as fallback
+            }
+            # Add any extra data
+            error.update(extra_data)
+            return error
         def _analyze_formality_level(self, token) -> float:
             return 0.5
         def _calculate_morphological_complexity(self, token) -> float:

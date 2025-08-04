@@ -4,7 +4,7 @@ A base class that all specific legal information rules will inherit from.
 This ensures a consistent interface for all rules in this category.
 """
 
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 # A generic base rule to be inherited from a central location
 # in a real application. The # type: ignore comments prevent the
@@ -15,8 +15,24 @@ except ImportError:
     class BaseRule:  # type: ignore
         def _get_rule_type(self) -> str:
             return 'base'
-        def _create_error(self, **kwargs) -> Dict[str, Any]:
-            return kwargs
+        def _create_error(self, sentence: str, sentence_index: int, message: str, 
+                         suggestions: List[str], severity: str = 'medium', 
+                         text: Optional[str] = None, context: Optional[Dict[str, Any]] = None,
+                         **extra_data) -> Dict[str, Any]:
+            """Fallback _create_error implementation when main BaseRule import fails."""
+            # Create basic error structure for fallback scenarios
+            error = {
+                'type': getattr(self, 'rule_type', 'unknown'),
+                'message': str(message),
+                'suggestions': [str(s) for s in suggestions],
+                'sentence': str(sentence),
+                'sentence_index': int(sentence_index),
+                'severity': severity,
+                'enhanced_validation_available': False  # Mark as fallback
+            }
+            # Add any extra data
+            error.update(extra_data)
+            return error
 
 
 class BaseLegalRule(BaseRule):

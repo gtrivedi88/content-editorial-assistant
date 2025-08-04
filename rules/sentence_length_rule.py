@@ -3,7 +3,7 @@ Sentence Length Rule - Analyzes sentence complexity and suggests structural impr
 Uses pure SpaCy syntactic and morphological analysis with zero hardcoded patterns.
 """
 
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import os
 import sys
 
@@ -32,8 +32,24 @@ except ImportError:
                         self.rule_type = self._get_rule_type()
                     def _get_rule_type(self):
                         return 'base'
-                    def _create_error(self, **kwargs):
-                        return kwargs
+                    def _create_error(self, sentence: str, sentence_index: int, message: str, 
+                                     suggestions: List[str], severity: str = 'medium', 
+                                     text: Optional[str] = None, context: Optional[Dict[str, Any]] = None,
+                                     **extra_data) -> Dict[str, Any]:
+                        """Fallback _create_error implementation when main BaseRule import fails."""
+                        # Create basic error structure for fallback scenarios
+                        error = {
+                            'type': getattr(self, 'rule_type', 'unknown'),
+                            'message': str(message),
+                            'suggestions': [str(s) for s in suggestions],
+                            'sentence': str(sentence),
+                            'sentence_index': int(sentence_index),
+                            'severity': severity,
+                            'enhanced_validation_available': False  # Mark as fallback
+                        }
+                        # Add any extra data
+                        error.update(extra_data)
+                        return error
 
 class SentenceLengthRule(BaseRule):
     """Rule to analyze sentence complexity using pure SpaCy linguistic analysis."""
@@ -70,6 +86,8 @@ class SentenceLengthRule(BaseRule):
                                 message=f'Flow issue: {flow_issue.get("type", "unknown").replace("_", " ").title()}',
                                 suggestions=flow_suggestions,
                                 severity='medium',
+                                text=text,  # Enhanced: Pass full text for better confidence analysis
+                                context=context,  # Enhanced: Pass context for domain-specific validation
                                 complexity_analysis=flow_issue
                             ))
                 
@@ -87,6 +105,8 @@ class SentenceLengthRule(BaseRule):
                     message=f'Sentence is {len(sentence.split())} words long. Consider breaking it into shorter sentences.',
                     suggestions=suggestions,
                     severity=severity,
+                    text=text,  # Enhanced: Pass full text for better confidence analysis
+                    context=context,  # Enhanced: Pass context for domain-specific validation
                     complexity_analysis=complexity_analysis if nlp else None
                 ))
 
