@@ -9,8 +9,14 @@ from .base_validator import (
     ValidationEvidence, ValidationResult, ValidationContext,
     ValidationPerformanceMetrics, ValidationError, ValidationConfigError
 )
+
+# Import concrete validators
+from .pass_validators import MorphologicalValidator
+# from .pass_validators import ContextValidator  # Future step
+# from .pass_validators import DomainValidator  # Future step
+# from .pass_validators import CrossRuleValidator  # Future step
+
 # from .validation_pipeline import ValidationPipeline  # Future step
-# from .pass_validators import *  # Future steps
 
 __all__ = [
     'BasePassValidator',
@@ -22,8 +28,9 @@ __all__ = [
     'ValidationPerformanceMetrics',
     'ValidationError',
     'ValidationConfigError',
+    'MorphologicalValidator',
+    # 'ContextValidator',
+    # 'DomainValidator',
+    # 'CrossRuleValidator',
     # 'ValidationPipeline'
 ]
-
-# Main validation pipeline will be imported here when implemented
-# from .validation_pipeline import ValidationPipeline
