@@ -11,6 +11,7 @@ from .base_config import (
     ConfigurationLoadError
 )
 from .confidence_weights_config import ConfidenceWeightsConfig
+from .validation_thresholds_config import ValidationThresholdsConfig
 
 __all__ = [
     'BaseConfig',
@@ -18,5 +19,6 @@ __all__ = [
     'ConfigurationError',
     'ConfigurationValidationError',
     'ConfigurationLoadError',
-    'ConfidenceWeightsConfig'
+    'ConfidenceWeightsConfig',
+    'ValidationThresholdsConfig'
 ]
