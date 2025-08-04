@@ -11,6 +11,25 @@ from collections import defaultdict
 import yaml
 import os
 
+# Import confidence and validation system components
+try:
+    from validation.confidence.confidence_calculator import ConfidenceCalculator, ConfidenceBreakdown
+    from validation.multi_pass.validation_pipeline import (
+        ValidationPipeline, PipelineConfiguration, PipelineResult, ConsensusStrategy
+    )
+    from validation.multi_pass.base_validator import ValidationContext
+    ENHANCED_VALIDATION_AVAILABLE = True
+except ImportError:
+    # Fallback for environments where validation system is not available
+    ConfidenceCalculator = None
+    ConfidenceBreakdown = None
+    ValidationPipeline = None
+    PipelineConfiguration = None
+    PipelineResult = None
+    ValidationContext = None
+    ConsensusStrategy = None
+    ENHANCED_VALIDATION_AVAILABLE = False
+
 try:
     from spacy.matcher import Matcher, PhraseMatcher
 except ImportError:
@@ -25,6 +44,11 @@ class BaseRule(ABC):
     
     # Class-level cache for exceptions to avoid reading the file for every rule instance.
     _exceptions = None
+    
+    # Class-level shared validation system components for enhanced error creation
+    _confidence_calculator = None
+    _validation_pipeline = None
+    _validation_pipeline_config = None
 
     def __init__(self) -> None:
         """Initializes the rule and loads the exception configuration."""
@@ -39,6 +63,10 @@ class BaseRule(ABC):
         # Load exceptions once and cache them at the class level.
         if BaseRule._exceptions is None:
             self._load_exceptions()
+        
+        # Initialize validation system components once at class level
+        if ENHANCED_VALIDATION_AVAILABLE and BaseRule._confidence_calculator is None:
+            BaseRule._initialize_validation_system()
     
     @classmethod
     def _load_exceptions(cls):
@@ -62,6 +90,57 @@ class BaseRule(ABC):
         except Exception as e:
             print(f"Error loading or parsing exceptions.yaml: {e}")
             cls._exceptions = {}
+
+    @classmethod
+    def _initialize_validation_system(cls):
+        """
+        Initialize the enhanced validation system components once at class level.
+        This includes confidence calculation and validation pipeline.
+        """
+        if not ENHANCED_VALIDATION_AVAILABLE:
+            return
+        
+        try:
+            # Initialize confidence calculator with default configuration
+            cls._confidence_calculator = ConfidenceCalculator(
+                cache_results=True,
+                enable_layer_caching=True
+            )
+            
+            # Initialize validation pipeline with optimized configuration for rule processing
+            cls._validation_pipeline_config = PipelineConfiguration(
+                # Enable all validators for comprehensive validation
+                enable_morphological=True,
+                enable_contextual=True,
+                enable_domain=True,
+                enable_cross_rule=True,
+                
+                # Optimize for rule-level validation
+                consensus_strategy=ConsensusStrategy.WEIGHTED_AVERAGE if ConsensusStrategy else None,
+                minimum_consensus_confidence=0.6,
+                
+                # Enable early termination for performance
+                enable_early_termination=True,
+                high_confidence_threshold=0.85,
+                timeout_seconds=5.0,  # Faster timeout for rule-level validation
+                
+                # Error handling
+                continue_on_validator_error=True,
+                minimum_validator_count=2,
+                
+                # Performance optimization
+                enable_performance_monitoring=True,
+                enable_audit_trail=False  # Disable detailed audit trail for performance
+            )
+            
+            cls._validation_pipeline = ValidationPipeline(cls._validation_pipeline_config)
+            
+        except Exception as e:
+            print(f"Warning: Failed to initialize enhanced validation system: {e}")
+            # Set to None to indicate failure and fall back to basic error creation
+            cls._confidence_calculator = None
+            cls._validation_pipeline = None
+            cls._validation_pipeline_config = None
 
     def _is_excepted(self, text_span: str) -> bool:
         """
@@ -1082,11 +1161,28 @@ class BaseRule(ABC):
     
     def _create_error(self, sentence: str, sentence_index: int, message: str, 
                      suggestions: List[str], severity: str = 'medium', 
+                     text: Optional[str] = None, context: Optional[Dict[str, Any]] = None,
                      **extra_data) -> Dict[str, Any]:
-        """Create standardized error dictionary with proper serialization."""
+        """
+        Create standardized error dictionary with enhanced validation system integration.
+        
+        Args:
+            sentence: The sentence containing the error
+            sentence_index: Index of the sentence
+            message: Error message
+            suggestions: List of suggestions for fixing the error
+            severity: Error severity level ('low', 'medium', 'high')
+            text: Full text context (for enhanced validation)
+            context: Additional context information
+            **extra_data: Additional error data to include
+            
+        Returns:
+            Enhanced error dictionary with confidence scores and validation results
+        """
         if severity not in self.severity_levels:
             severity = 'medium'
         
+        # Create base error structure (backward compatible)
         error = {
             'type': self.rule_type,
             'message': str(message),
@@ -1096,6 +1192,28 @@ class BaseRule(ABC):
             'severity': severity
         }
         
+        # Enhanced validation integration (if available)
+        if ENHANCED_VALIDATION_AVAILABLE and self._confidence_calculator and self._validation_pipeline:
+            try:
+                enhanced_fields = self._calculate_enhanced_error_fields(
+                    sentence, message, text, context, extra_data
+                )
+                error.update(enhanced_fields)
+            except Exception as e:
+                # Log warning but don't fail - maintain backward compatibility
+                print(f"Warning: Enhanced validation failed for rule {self.rule_type}: {e}")
+                # Add basic enhanced fields as fallback
+                error.update({
+                    'confidence_score': 0.5,  # Default confidence
+                    'confidence_breakdown': None,
+                    'validation_result': None,
+                    'enhanced_validation_available': False,
+                    'validation_error': str(e)
+                })
+        else:
+            # Mark that enhanced validation is not available
+            error['enhanced_validation_available'] = False
+        
         # Add extra data with safe serialization
         for key, value in extra_data.items():
             try:
@@ -1104,6 +1222,100 @@ class BaseRule(ABC):
                 error[str(key)] = f"<serialization_error: {str(e)}>"
         
         return error
+    
+    def _calculate_enhanced_error_fields(self, sentence: str, message: str, 
+                                       text: Optional[str], context: Optional[Dict[str, Any]],
+                                       extra_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Calculate enhanced error fields using confidence calculator and validation pipeline.
+        
+        Args:
+            sentence: The sentence containing the error
+            message: Error message
+            text: Full text context
+            context: Additional context information
+            extra_data: Extra error data
+            
+        Returns:
+            Dictionary with enhanced error fields
+        """
+        enhanced_fields = {
+            'enhanced_validation_available': True,
+            'confidence_score': 0.5,  # Default fallback
+            'confidence_breakdown': None,
+            'validation_result': None
+        }
+        
+        # Use full text if available, otherwise fall back to sentence
+        analysis_text = text or sentence
+        
+        # Extract error position and text from extra data if available
+        error_position = extra_data.get('span', [0, 0])[0] if extra_data.get('span') else 0
+        error_text = extra_data.get('flagged_text', '') or extra_data.get('error_text', '')
+        
+        # Get content metadata
+        content_type = None
+        domain = None
+        if context:
+            content_type = context.get('content_type') or context.get('block_type')
+            domain = context.get('domain')
+        
+        # 1. Calculate confidence score
+        try:
+            confidence_breakdown = self._confidence_calculator.calculate_confidence(
+                text=analysis_text,
+                error_position=error_position,
+                rule_type=self.rule_type,
+                content_type=content_type,
+                base_confidence=0.5
+            )
+            
+            enhanced_fields['confidence_score'] = confidence_breakdown.final_confidence
+            enhanced_fields['confidence_breakdown'] = self._make_serializable(confidence_breakdown)
+            
+        except Exception as e:
+            print(f"Warning: Confidence calculation failed: {e}")
+            enhanced_fields['confidence_calculation_error'] = str(e)
+        
+        # 2. Run validation pipeline
+        try:
+            validation_context = ValidationContext(
+                text=analysis_text,
+                error_position=error_position,
+                error_text=error_text,
+                rule_type=self.rule_type,
+                rule_name=self.__class__.__name__,
+                rule_severity=extra_data.get('severity', 'medium'),
+                content_type=content_type,
+                domain=domain,
+                confidence_breakdown=enhanced_fields.get('confidence_breakdown'),
+                additional_context={
+                    'sentence': sentence,
+                    'message': message,
+                    'suggestions': extra_data.get('suggestions', []),
+                    'original_context': context or {}
+                }
+            )
+            
+            pipeline_result = self._validation_pipeline.validate_error(validation_context)
+            enhanced_fields['validation_result'] = self._make_serializable(pipeline_result)
+            
+            # Extract key validation insights
+            if pipeline_result and hasattr(pipeline_result, 'final_result'):
+                final_result = pipeline_result.final_result
+                enhanced_fields['validation_decision'] = final_result.decision.value if hasattr(final_result.decision, 'value') else str(final_result.decision)
+                enhanced_fields['validation_confidence'] = final_result.confidence_score
+                enhanced_fields['validation_reasoning'] = final_result.reasoning
+                
+                # Update overall confidence if validation provides better estimate
+                if final_result.confidence_score > enhanced_fields['confidence_score']:
+                    enhanced_fields['confidence_score'] = final_result.confidence_score
+            
+        except Exception as e:
+            print(f"Warning: Validation pipeline failed: {e}")
+            enhanced_fields['validation_pipeline_error'] = str(e)
+        
+        return enhanced_fields
         
     def _make_serializable(self, data: Any) -> Any:
         """Recursively convert data structure to be JSON serializable."""
