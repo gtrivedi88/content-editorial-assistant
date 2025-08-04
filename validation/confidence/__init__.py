@@ -6,6 +6,7 @@ Provides components for multi-layered confidence scoring and validation.
 # Import core confidence components
 from .linguistic_anchors import LinguisticAnchors, AnchorMatch, AnchorAnalysis
 from .context_analyzer import ContextAnalyzer, CoreferenceMatch, SentenceStructure, SemanticCoherence, ContextAnalysis
+from .domain_classifier import DomainClassifier, ContentTypeScore, DomainIdentification, FormalityAssessment, DomainAnalysis
 # from .confidence_calculator import ConfidenceCalculator  # Future step
 # from .validation_pipeline import ValidationPipeline  # Future step
 
@@ -18,6 +19,11 @@ __all__ = [
     'SentenceStructure', 
     'SemanticCoherence',
     'ContextAnalysis',
+    'DomainClassifier',
+    'ContentTypeScore',
+    'DomainIdentification',
+    'FormalityAssessment',
+    'DomainAnalysis',
     # 'ConfidenceCalculator', 
     # 'ValidationPipeline'
 ]
