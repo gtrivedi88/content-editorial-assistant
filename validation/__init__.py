@@ -7,11 +7,40 @@ __version__ = "1.0.0"
 __author__ = "Style Guide AI Team"
 
 # Import main components for easy access
-# These will be uncommented as components are implemented in later phases
-# from .confidence import ConfidenceCalculator
-# from .multi_pass import ValidationPipeline
+from .config import (
+    BaseConfig, ConfidenceWeightsConfig, ValidationThresholdsConfig, LinguisticAnchorsConfig
+)
+from .confidence import (
+    ConfidenceCalculator, LinguisticAnchors, ContextAnalyzer, DomainClassifier
+)
+from .multi_pass import (
+    BasePassValidator, ValidationDecision, ValidationConfidence, ValidationEvidence,
+    ValidationResult, ValidationContext, MorphologicalValidator, ContextValidator,
+    DomainValidator, CrossRuleValidator
+)
+# from .multi_pass import ValidationPipeline  # Future step
 
 __all__ = [
-    # 'ConfidenceCalculator',  # Will be uncommented when implemented
-    # 'ValidationPipeline',    # Will be uncommented when implemented
+    # Configuration
+    'BaseConfig',
+    'ConfidenceWeightsConfig',
+    'ValidationThresholdsConfig', 
+    'LinguisticAnchorsConfig',
+    # Confidence System
+    'ConfidenceCalculator',
+    'LinguisticAnchors',
+    'ContextAnalyzer',
+    'DomainClassifier',
+    # Multi-Pass Validation
+    'BasePassValidator',
+    'ValidationDecision',
+    'ValidationConfidence',
+    'ValidationEvidence',
+    'ValidationResult',
+    'ValidationContext',
+    'MorphologicalValidator',
+    'ContextValidator',
+    'DomainValidator',
+    'CrossRuleValidator',
+    # 'ValidationPipeline'  # Future step
 ]

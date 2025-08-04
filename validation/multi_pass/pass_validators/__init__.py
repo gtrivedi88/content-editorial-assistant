@@ -7,11 +7,11 @@ Contains concrete implementations of BasePassValidator for specific validation a
 from .morphological_validator import MorphologicalValidator
 from .context_validator import ContextValidator
 from .domain_validator import DomainValidator
-# from .cross_rule_validator import CrossRuleValidator  # Future step
+from .cross_rule_validator import CrossRuleValidator
 
 __all__ = [
     'MorphologicalValidator',
     'ContextValidator',
     'DomainValidator', 
-    # 'CrossRuleValidator'
+    'CrossRuleValidator'
 ]

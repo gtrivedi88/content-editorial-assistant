@@ -11,8 +11,7 @@ from .base_validator import (
 )
 
 # Import concrete validators
-from .pass_validators import MorphologicalValidator, ContextValidator, DomainValidator
-# from .pass_validators import CrossRuleValidator  # Future step
+from .pass_validators import MorphologicalValidator, ContextValidator, DomainValidator, CrossRuleValidator
 
 # from .validation_pipeline import ValidationPipeline  # Future step
 
@@ -29,6 +28,6 @@ __all__ = [
     'MorphologicalValidator',
     'ContextValidator',
     'DomainValidator',
-    # 'CrossRuleValidator',
+    'CrossRuleValidator',
     # 'ValidationPipeline'
 ]
