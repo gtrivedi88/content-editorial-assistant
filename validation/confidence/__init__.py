@@ -7,7 +7,7 @@ Provides components for multi-layered confidence scoring and validation.
 from .linguistic_anchors import LinguisticAnchors, AnchorMatch, AnchorAnalysis
 from .context_analyzer import ContextAnalyzer, CoreferenceMatch, SentenceStructure, SemanticCoherence, ContextAnalysis
 from .domain_classifier import DomainClassifier, ContentTypeScore, DomainIdentification, FormalityAssessment, DomainAnalysis
-# from .confidence_calculator import ConfidenceCalculator  # Future step
+from .confidence_calculator import ConfidenceCalculator, ConfidenceBreakdown, LayerContribution, ConfidenceWeights, ConfidenceLayer
 # from .validation_pipeline import ValidationPipeline  # Future step
 
 __all__ = [
@@ -24,6 +24,10 @@ __all__ = [
     'DomainIdentification',
     'FormalityAssessment',
     'DomainAnalysis',
-    # 'ConfidenceCalculator', 
+    'ConfidenceCalculator',
+    'ConfidenceBreakdown',
+    'LayerContribution',
+    'ConfidenceWeights',
+    'ConfidenceLayer',
     # 'ValidationPipeline'
 ]
