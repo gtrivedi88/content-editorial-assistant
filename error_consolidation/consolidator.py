@@ -11,6 +11,17 @@ from typing import List, Dict, Any, Optional, Tuple, Set
 from collections import defaultdict
 import yaml
 import os
+import logging
+
+# Enhanced validation imports (with graceful fallbacks)
+try:
+    from validation.confidence.confidence_calculator import ConfidenceCalculator
+    from validation.multi_pass.validation_pipeline import ValidationPipeline
+    ENHANCED_VALIDATION_AVAILABLE = True
+except ImportError:
+    ENHANCED_VALIDATION_AVAILABLE = False
+
+logger = logging.getLogger(__name__)
 
 class ErrorConsolidator:
     """
@@ -18,18 +29,36 @@ class ErrorConsolidator:
     All rules, priorities, and grouping logic are loaded from YAML config files.
     """
     
-    def __init__(self, priority_config: Optional[Dict] = None, config_dir: Optional[str] = None):
+    def __init__(self, priority_config: Optional[Dict] = None, config_dir: Optional[str] = None,
+                 enable_enhanced_validation: bool = True, confidence_threshold: Optional[float] = None):
         """
         Initialize the error consolidator with configurable rules and priorities.
+        Enhanced with confidence-based prioritization and filtering.
         
         Args:
             priority_config: Optional custom priority configuration
             config_dir: Directory containing configuration files (defaults to config/ subdirectory)
+            enable_enhanced_validation: Whether to enable confidence-based features
+            confidence_threshold: Minimum confidence threshold for accepting errors
         """
         # Set configuration directory
         if config_dir is None:
             config_dir = os.path.join(os.path.dirname(__file__), 'config')
         self.config_dir = config_dir
+        
+        # Enhanced validation configuration
+        self.enable_enhanced_validation = enable_enhanced_validation and ENHANCED_VALIDATION_AVAILABLE
+        self.confidence_threshold = confidence_threshold or 0.3  # Default threshold
+        
+        # Initialize enhanced validation components
+        if self.enable_enhanced_validation:
+            try:
+                self.confidence_calculator = ConfidenceCalculator()
+                self.validation_pipeline = ValidationPipeline()
+                logger.info("✅ Enhanced validation enabled for ErrorConsolidator")
+            except Exception as e:
+                logger.warning(f"Failed to initialize enhanced validation: {e}")
+                self.enable_enhanced_validation = False
         
         # Load all configurations
         self._load_configurations()
@@ -38,7 +67,15 @@ class ErrorConsolidator:
         if priority_config:
             self._merge_custom_config(priority_config)
         
+        # Initialize statistics tracking
         self.stats = {}
+        self.confidence_stats = {
+            'total_processed': 0,
+            'filtered_by_confidence': 0,
+            'confidence_adjustments': 0,
+            'average_confidence': 0.0,
+            'confidence_distribution': {'high': 0, 'medium': 0, 'low': 0}
+        }
     
     def _load_configurations(self):
         """Load all configuration files for scalable operation."""
@@ -147,17 +184,31 @@ class ErrorConsolidator:
     def consolidate(self, errors: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
         Consolidates a list of errors based on their text span AND semantic relationships.
+        Enhanced with confidence-based prioritization and filtering.
         
         Enhanced to group:
         1. Errors with identical spans (original behavior)
         2. Errors within the same sentence that are semantically related
         3. Overlapping or adjacent spans within the same sentence
         4. Handles missing span information gracefully
+        5. Filters errors by confidence threshold (NEW)
+        6. Applies confidence-based prioritization (NEW)
         """
         if not errors:
             return []
 
+        # Initialize statistics
         self.stats['total_errors_input'] = len(errors)
+        self.confidence_stats['total_processed'] = len(errors)
+        
+        # Apply confidence threshold filtering if enhanced validation is enabled
+        if self.enable_enhanced_validation:
+            filtered_errors = self._apply_confidence_filtering(errors)
+            logger.info(f"🔍 Confidence filtering: Removed {len(errors) - len(filtered_errors)}/{len(errors)} low-confidence errors (threshold: {self.confidence_threshold:.3f})")
+        else:
+            filtered_errors = errors
+        
+        errors = filtered_errors
         
         # Group errors by sentence first
         errors_by_sentence = defaultdict(list)
@@ -448,11 +499,19 @@ class ErrorConsolidator:
         
         merged_error['suggestions'] = unique_suggestions
         
+        # Check if primary error has high confidence and should preserve its message
+        preserve_primary_message = False
+        if self.enable_enhanced_validation and len(group) > 1:
+            primary_confidence = self._extract_confidence_score(primary_error)
+            # Preserve message if primary error has significantly higher confidence
+            if primary_confidence >= 0.8:  # High confidence threshold
+                preserve_primary_message = True
+        
         # Create a more comprehensive message for semantically grouped errors
-        if len(group) > 1 and len(all_rule_types) > 1:
+        if len(group) > 1 and len(all_rule_types) > 1 and not preserve_primary_message:
             merged_error['message'] = self._create_consolidated_message(group, all_rule_types)
         else:
-            # Keep the primary error's message for single-type groups
+            # Keep the primary error's message for single-type groups or high-confidence primary errors
             merged_error['message'] = primary_error['message']
         
         # Expand span to cover all grouped errors
@@ -461,6 +520,14 @@ class ErrorConsolidator:
             min_start = min(span[0] for span in all_spans)
             max_end = max(span[1] for span in all_spans)
             merged_error['span'] = (min_start, max_end)
+        
+        # Enhanced: Calculate confidence averaging for merged errors
+        if self.enable_enhanced_validation and len(group) > 1:
+            merged_confidence_data = self._calculate_merged_confidence(group, primary_error)
+            
+            # Update merged error with confidence data
+            merged_error.update(merged_confidence_data)
+            self.confidence_stats['confidence_adjustments'] += 1
         
         # Add metadata fields for consolidation info (for debugging/analytics only)
         merged_error['consolidated_from'] = sorted(list(all_rule_types))
@@ -472,7 +539,7 @@ class ErrorConsolidator:
     def _select_primary_error(self, group: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
         Select the primary error from a group using production-ready prioritization.
-        Considers both severity and error type importance.
+        Enhanced with confidence-based prioritization.
         """
         def get_priority_score(error: Dict[str, Any]) -> tuple:
             severity = error.get('severity', 'low')
@@ -480,11 +547,16 @@ class ErrorConsolidator:
             
             severity_score = self.severity_map.get(severity, 1)
             type_score = self.error_type_priority.get(error_type, 0)
-            
-            # Return tuple for sorting: (type_priority, severity, has_suggestions)
-            # Higher values = higher priority
             has_suggestions = len(error.get('suggestions', [])) > 0
-            return (type_score, severity_score, has_suggestions)
+            
+            # Enhanced: Include confidence score in prioritization
+            confidence_score = 0.0
+            if self.enable_enhanced_validation:
+                confidence_score = self._extract_confidence_score(error)
+            
+            # Return tuple for sorting: (confidence, type_priority, severity, has_suggestions)
+            # Higher values = higher priority
+            return (confidence_score, type_score, severity_score, has_suggestions)
         
         # Sort by priority (highest first) and return the top error
         sorted_errors = sorted(group, key=get_priority_score, reverse=True)
@@ -645,11 +717,160 @@ class ErrorConsolidator:
         
         return best_match if best_score > 0.5 else None  # At least 50% overlap
 
+    def _apply_confidence_filtering(self, errors: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Filter errors based on confidence threshold and update statistics.
+        """
+        if not self.enable_enhanced_validation:
+            return errors
+        
+        filtered_errors = []
+        confidence_values = []
+        
+        for error in errors:
+            confidence = self._extract_confidence_score(error)
+            confidence_values.append(confidence)
+            
+            if confidence >= self.confidence_threshold:
+                filtered_errors.append(error)
+            else:
+                self.confidence_stats['filtered_by_confidence'] += 1
+        
+        # Update confidence distribution statistics
+        self._update_confidence_distribution(confidence_values)
+        
+        return filtered_errors
+    
+    def _extract_confidence_score(self, error: Dict[str, Any]) -> float:
+        """Extract confidence score from error, with fallbacks."""
+        # Try various confidence field names
+        confidence = error.get('confidence_score')
+        if confidence is not None:
+            return float(confidence)
+        
+        confidence = error.get('confidence')
+        if confidence is not None:
+            return float(confidence)
+        
+        # Try validation result confidence
+        validation_result = error.get('validation_result', {})
+        if isinstance(validation_result, dict):
+            confidence = validation_result.get('confidence_score')
+            if confidence is not None:
+                return float(confidence)
+        
+        # Fallback: estimate confidence based on severity and rule type
+        return self._estimate_confidence_fallback(error)
+    
+    def _estimate_confidence_fallback(self, error: Dict[str, Any]) -> float:
+        """Estimate confidence when not explicitly provided."""
+        severity = error.get('severity', 'low')
+        error_type = error.get('type', 'unknown')
+        
+        # Base confidence by severity
+        severity_confidence = {
+            'critical': 0.8,
+            'high': 0.7,
+            'medium': 0.6,
+            'low': 0.5,
+            'info': 0.4
+        }
+        
+        base_confidence = severity_confidence.get(severity, 0.5)
+        
+        # Adjust based on rule type reliability
+        reliable_types = ['claims', 'personal_information', 'inclusive_language', 'commands']
+        if error_type in reliable_types:
+            base_confidence += 0.1
+        
+        return min(1.0, base_confidence)
+    
+    def _update_confidence_distribution(self, confidence_values: List[float]):
+        """Update confidence distribution statistics."""
+        if not confidence_values:
+            return
+        
+        total_confidence = sum(confidence_values)
+        self.confidence_stats['average_confidence'] = total_confidence / len(confidence_values)
+        
+        for confidence in confidence_values:
+            if confidence >= 0.7:
+                self.confidence_stats['confidence_distribution']['high'] += 1
+            elif confidence >= 0.5:
+                self.confidence_stats['confidence_distribution']['medium'] += 1
+            else:
+                self.confidence_stats['confidence_distribution']['low'] += 1
+
+    def _calculate_merged_confidence(self, group: List[Dict[str, Any]], primary_error: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Calculate confidence averaging for merged errors.
+        Uses weighted averaging based on error importance and confidence.
+        """
+        confidence_data = {}
+        confidence_scores = []
+        error_weights = []
+        
+        for error in group:
+            confidence = self._extract_confidence_score(error)
+            confidence_scores.append(confidence)
+            
+            # Calculate weight based on error importance
+            severity = error.get('severity', 'low')
+            error_type = error.get('type', 'unknown')
+            
+            severity_weight = self.severity_map.get(severity, 1)
+            type_weight = self.error_type_priority.get(error_type, 1)
+            weight = severity_weight * type_weight
+            error_weights.append(weight)
+        
+        if confidence_scores:
+            # Weighted average confidence
+            total_weight = sum(error_weights)
+            if total_weight > 0:
+                weighted_confidence = sum(c * w for c, w in zip(confidence_scores, error_weights)) / total_weight
+            else:
+                weighted_confidence = sum(confidence_scores) / len(confidence_scores)
+            
+            # Simple average for comparison
+            simple_average = sum(confidence_scores) / len(confidence_scores)
+            
+            # Use the higher of weighted average or primary error confidence (conservative approach)
+            primary_confidence = self._extract_confidence_score(primary_error)
+            final_confidence = max(weighted_confidence, primary_confidence * 0.9)  # Slight penalty for consolidation
+            
+            confidence_data['confidence_score'] = final_confidence
+            confidence_data['confidence_calculation'] = {
+                'method': 'weighted_average_with_primary_boost',
+                'weighted_average': weighted_confidence,
+                'simple_average': simple_average,
+                'primary_confidence': primary_confidence,
+                'final_confidence': final_confidence,
+                'consolidation_penalty': 0.1,
+                'individual_confidences': confidence_scores,
+                'weights': error_weights
+            }
+        
+        return confidence_data
+
+    def get_enhanced_validation_status(self) -> Dict[str, Any]:
+        """Get the status of enhanced validation features."""
+        return {
+            'enhanced_validation_enabled': self.enable_enhanced_validation,
+            'enhanced_validation_available': ENHANCED_VALIDATION_AVAILABLE,
+            'confidence_threshold': self.confidence_threshold,
+            'confidence_stats': self.confidence_stats
+        }
+
     def get_consolidation_stats(self) -> Dict[str, Any]:
         """
         Returns statistics about the last consolidation operation.
+        Enhanced with confidence statistics.
         """
-        return self.stats
+        combined_stats = {**self.stats}
+        if self.enable_enhanced_validation:
+            combined_stats['confidence_stats'] = self.confidence_stats
+            combined_stats['enhanced_validation_status'] = self.get_enhanced_validation_status()
+        return combined_stats
 
     def preview_consolidation(self, errors: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
