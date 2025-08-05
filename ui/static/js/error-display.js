@@ -259,6 +259,11 @@ function createInlineError(error) {
                         </button>
                     ` : ''}
                 </div>
+                
+                <!-- Feedback Section -->
+                <div class="pf-v5-u-mt-sm">
+                    ${createFeedbackButtons(error, 'inline')}
+                </div>
             </div>
         </div>
     `;
@@ -438,6 +443,11 @@ function createErrorCard(error, index) {
                             <span class="pf-v5-c-label__content">Sentence ${error.sentence_index + 1}</span>
                         </span>
                     ` : ''}
+                </div>
+                
+                <!-- Feedback Section -->
+                <div class="pf-v5-u-mt-md pf-v5-u-pt-sm" style="border-top: 1px solid var(--pf-v5-global--BorderColor--300);">
+                    ${createFeedbackButtons(error, 'card')}
                 </div>
             </div>
         </div>
@@ -694,9 +704,439 @@ function sortErrorsByConfidence(errors) {
     });
 }
 
-// Initialize confidence styling when page loads
+// ===========================================================================
+// FEEDBACK COLLECTION SYSTEM
+// ===========================================================================
+
+// Session-based feedback tracking
+const FeedbackTracker = {
+    feedback: {},
+    
+    // Initialize feedback tracking
+    init() {
+        this.loadFromSession();
+    },
+    
+    // Load feedback from sessionStorage
+    loadFromSession() {
+        try {
+            const stored = sessionStorage.getItem('error_feedback');
+            this.feedback = stored ? JSON.parse(stored) : {};
+        } catch (e) {
+            console.warn('Failed to load feedback from session:', e);
+            this.feedback = {};
+        }
+    },
+    
+    // Save feedback to sessionStorage
+    saveToSession() {
+        try {
+            sessionStorage.setItem('error_feedback', JSON.stringify(this.feedback));
+        } catch (e) {
+            console.warn('Failed to save feedback to session:', e);
+        }
+    },
+    
+    // Generate unique error ID for tracking
+    generateErrorId(error) {
+        const components = [
+            error.type || 'unknown',
+            error.message ? error.message.substring(0, 50) : 'nomessage',
+            error.line_number || 'noline',
+            error.text_segment ? error.text_segment.substring(0, 20) : 'notext'
+        ];
+        return btoa(components.join('|')).replace(/[^a-zA-Z0-9]/g, '').substring(0, 16);
+    },
+    
+    // Record feedback for an error
+    recordFeedback(error, feedbackType, reason = null) {
+        const errorId = this.generateErrorId(error);
+        this.feedback[errorId] = {
+            type: feedbackType, // 'helpful', 'not_helpful'
+            reason: reason,
+            timestamp: Date.now(),
+            error_type: error.type,
+            confidence_score: extractConfidenceScore(error)
+        };
+        this.saveToSession();
+        return errorId;
+    },
+    
+    // Get feedback for an error
+    getFeedback(error) {
+        const errorId = this.generateErrorId(error);
+        return this.feedback[errorId] || null;
+    },
+    
+    // Get feedback statistics
+    getStats() {
+        const values = Object.values(this.feedback);
+        return {
+            total: values.length,
+            helpful: values.filter(f => f.type === 'helpful').length,
+            not_helpful: values.filter(f => f.type === 'not_helpful').length,
+            by_type: values.reduce((acc, f) => {
+                acc[f.error_type] = acc[f.error_type] || { helpful: 0, not_helpful: 0 };
+                acc[f.error_type][f.type]++;
+                return acc;
+            }, {})
+        };
+    }
+};
+
+// Create feedback buttons for error
+function createFeedbackButtons(error, context = 'card') {
+    const existingFeedback = FeedbackTracker.getFeedback(error);
+    const errorId = FeedbackTracker.generateErrorId(error);
+    
+    if (existingFeedback) {
+        // Show feedback confirmation
+        return `
+            <div class="feedback-section feedback-given" data-error-id="${errorId}">
+                <div class="pf-v5-c-label pf-m-compact ${existingFeedback.type === 'helpful' ? 'pf-m-green' : 'pf-m-orange'}">
+                    <span class="pf-v5-c-label__content">
+                        <i class="fas ${existingFeedback.type === 'helpful' ? 'fa-thumbs-up' : 'fa-thumbs-down'} pf-v5-u-mr-xs"></i>
+                        ${existingFeedback.type === 'helpful' ? 'Marked as helpful' : 'Marked as not helpful'}
+                    </span>
+                </div>
+                <button type="button" 
+                        class="pf-v5-c-button pf-m-link pf-m-small feedback-change-btn pf-v5-u-ml-xs" 
+                        onclick="changeFeedback('${errorId}')"
+                        title="Change feedback">
+                    <i class="fas fa-edit"></i> Change
+                </button>
+            </div>
+        `;
+    }
+    
+    return `
+        <div class="feedback-section" data-error-id="${errorId}">
+            <div class="feedback-buttons-container">
+                <span class="feedback-prompt pf-v5-u-mr-sm" style="font-size: 0.875rem; color: var(--pf-v5-global--Color--200);">
+                    Was this helpful?
+                </span>
+                <button type="button" 
+                        class="pf-v5-c-button pf-m-link pf-m-small feedback-btn feedback-helpful" 
+                        onclick="submitFeedback('${errorId}', 'helpful', '${safeBase64Encode(JSON.stringify(error))}')"
+                        title="This error detection was helpful">
+                    <i class="fas fa-thumbs-up pf-v5-u-mr-xs"></i>
+                    <span class="feedback-btn-text">Helpful</span>
+                </button>
+                <button type="button" 
+                        class="pf-v5-c-button pf-m-link pf-m-small feedback-btn feedback-not-helpful pf-v5-u-ml-xs" 
+                        onclick="submitFeedback('${errorId}', 'not_helpful', '${safeBase64Encode(JSON.stringify(error))}')"
+                        title="This error detection was not helpful">
+                    <i class="fas fa-thumbs-down pf-v5-u-mr-xs"></i>
+                    <span class="feedback-btn-text">Not helpful</span>
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+// Submit feedback with optional reason selection
+function submitFeedback(errorId, feedbackType, encodedError) {
+    try {
+        const errorJson = safeBase64Decode(encodedError);
+        const error = JSON.parse(errorJson);
+        
+        if (feedbackType === 'not_helpful') {
+            // Show reason selection modal for negative feedback
+            showFeedbackReasonModal(errorId, feedbackType, error);
+        } else {
+            // Direct submission for positive feedback
+            processFeedbackSubmission(errorId, feedbackType, error, null);
+        }
+    } catch (e) {
+        console.error('Failed to process feedback:', e);
+        showFeedbackConfirmation(errorId, feedbackType, 'Error processing feedback. Please try again.');
+    }
+}
+
+// Process the actual feedback submission
+function processFeedbackSubmission(errorId, feedbackType, error, reason) {
+    // Record feedback
+    FeedbackTracker.recordFeedback(error, feedbackType, reason);
+    
+    // Update UI to show feedback confirmation
+    const feedbackSection = document.querySelector(`[data-error-id="${errorId}"]`);
+    if (feedbackSection) {
+        feedbackSection.innerHTML = createFeedbackButtons(error);
+    }
+    
+    // Show confirmation message
+    const confirmationMessage = feedbackType === 'helpful' 
+        ? 'Thank you! Your feedback helps improve error detection.'
+        : 'Thank you for your feedback. This helps us improve error detection accuracy.';
+    
+    showFeedbackConfirmation(errorId, feedbackType, confirmationMessage);
+}
+
+// Change existing feedback
+function changeFeedback(errorId) {
+    const feedbackSection = document.querySelector(`[data-error-id="${errorId}"]`);
+    if (!feedbackSection) return;
+    
+    // Find the error data to reconstruct the feedback buttons
+    const errorCards = document.querySelectorAll('[data-error-id]');
+    let error = null;
+    
+    // Extract error from existing feedback data
+    const existingFeedback = Object.values(FeedbackTracker.feedback).find(f => 
+        FeedbackTracker.generateErrorId({type: f.error_type}) === errorId
+    );
+    
+    if (existingFeedback) {
+        // Remove existing feedback
+        delete FeedbackTracker.feedback[errorId];
+        FeedbackTracker.saveToSession();
+        
+        // Show fresh feedback buttons
+        feedbackSection.innerHTML = `
+            <div class="feedback-buttons-container">
+                <span class="feedback-prompt pf-v5-u-mr-sm" style="font-size: 0.875rem; color: var(--pf-v5-global--Color--200);">
+                    Was this helpful?
+                </span>
+                <button type="button" 
+                        class="pf-v5-c-button pf-m-link pf-m-small feedback-btn feedback-helpful" 
+                        onclick="submitFeedback('${errorId}', 'helpful', '')"
+                        title="This error detection was helpful">
+                    <i class="fas fa-thumbs-up pf-v5-u-mr-xs"></i>
+                    <span class="feedback-btn-text">Helpful</span>
+                </button>
+                <button type="button" 
+                        class="pf-v5-c-button pf-m-link pf-m-small feedback-btn feedback-not-helpful pf-v5-u-ml-xs" 
+                        onclick="submitFeedback('${errorId}', 'not_helpful', '')"
+                        title="This error detection was not helpful">
+                    <i class="fas fa-thumbs-down pf-v5-u-mr-xs"></i>
+                    <span class="feedback-btn-text">Not helpful</span>
+                </button>
+            </div>
+        `;
+    }
+}
+
+// Show feedback reason selection modal for negative feedback
+function showFeedbackReasonModal(errorId, feedbackType, error) {
+    const modalContent = `
+        <div class="feedback-reason-modal">
+            <div class="pf-v5-c-modal-box pf-m-medium">
+                <div class="pf-v5-c-modal-box__header">
+                    <h2 class="pf-v5-c-modal-box__title">
+                        <i class="fas fa-comment-alt pf-v5-u-mr-sm" style="color: var(--app-warning-color);"></i>
+                        Help Us Improve
+                    </h2>
+                    <div class="pf-v5-c-modal-box__description">
+                        Please let us know why this error detection wasn't helpful
+                    </div>
+                </div>
+                <div class="pf-v5-c-modal-box__body">
+                    <div class="error-context pf-v5-u-mb-md">
+                        <div class="pf-v5-c-card pf-m-plain" style="background-color: var(--pf-v5-global--palette--black-150); padding: 1rem;">
+                            <h4 class="pf-v5-c-title pf-m-sm">${formatRuleType(error.type)}</h4>
+                            <p style="margin: 0.5rem 0;">${error.message}</p>
+                            ${error.text_segment ? `
+                                <div class="pf-v5-c-code-block pf-m-plain">
+                                    <div class="pf-v5-c-code-block__content">
+                                        <code class="pf-v5-c-code-block__code">"${error.text_segment}"</code>
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                    
+                    <form id="feedback-reason-form">
+                        <div class="pf-v5-c-form__group">
+                            <fieldset class="pf-v5-c-form__fieldset">
+                                <legend class="pf-v5-c-form__legend">
+                                    <span class="pf-v5-c-form__legend-text">What's the main issue?</span>
+                                </legend>
+                                <div class="pf-v5-c-form__group-control">
+                                    <div class="pf-v5-c-radio">
+                                        <input class="pf-v5-c-radio__input" type="radio" id="reason-incorrect" name="feedback-reason" value="incorrect" />
+                                        <label class="pf-v5-c-radio__label" for="reason-incorrect">
+                                            <i class="fas fa-times-circle pf-v5-u-mr-xs" style="color: var(--app-danger-color);"></i>
+                                            This is not actually an error
+                                        </label>
+                                    </div>
+                                    <div class="pf-v5-c-radio pf-v5-u-mt-sm">
+                                        <input class="pf-v5-c-radio__input" type="radio" id="reason-unclear" name="feedback-reason" value="unclear" />
+                                        <label class="pf-v5-c-radio__label" for="reason-unclear">
+                                            <i class="fas fa-question-circle pf-v5-u-mr-xs" style="color: var(--app-warning-color);"></i>
+                                            The suggestion is unclear or confusing
+                                        </label>
+                                    </div>
+                                    <div class="pf-v5-c-radio pf-v5-u-mt-sm">
+                                        <input class="pf-v5-c-radio__input" type="radio" id="reason-context" name="feedback-reason" value="context" />
+                                        <label class="pf-v5-c-radio__label" for="reason-context">
+                                            <i class="fas fa-context pf-v5-u-mr-xs" style="color: var(--app-primary-color);"></i>
+                                            Missing important context
+                                        </label>
+                                    </div>
+                                    <div class="pf-v5-c-radio pf-v5-u-mt-sm">
+                                        <input class="pf-v5-c-radio__input" type="radio" id="reason-style" name="feedback-reason" value="style" />
+                                        <label class="pf-v5-c-radio__label" for="reason-style">
+                                            <i class="fas fa-palette pf-v5-u-mr-xs" style="color: var(--app-secondary-color);"></i>
+                                            This matches my writing style preference
+                                        </label>
+                                    </div>
+                                    <div class="pf-v5-c-radio pf-v5-u-mt-sm">
+                                        <input class="pf-v5-c-radio__input" type="radio" id="reason-other" name="feedback-reason" value="other" />
+                                        <label class="pf-v5-c-radio__label" for="reason-other">
+                                            <i class="fas fa-ellipsis-h pf-v5-u-mr-xs" style="color: var(--pf-v5-global--Color--200);"></i>
+                                            Other reason
+                                        </label>
+                                    </div>
+                                </div>
+                            </fieldset>
+                        </div>
+                        
+                        <div class="pf-v5-c-form__group pf-v5-u-mt-md">
+                            <label class="pf-v5-c-form__label" for="feedback-comment">
+                                <span class="pf-v5-c-form__label-text">Additional comments (optional)</span>
+                            </label>
+                            <div class="pf-v5-c-form__group-control">
+                                <textarea class="pf-v5-c-form-control" 
+                                          id="feedback-comment" 
+                                          name="feedback-comment"
+                                          placeholder="Help us understand how we can improve this error detection..."
+                                          rows="3"></textarea>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="pf-v5-c-modal-box__footer">
+                    <button class="pf-v5-c-button pf-m-primary" 
+                            onclick="submitFeedbackWithReason('${errorId}', '${feedbackType}', '${safeBase64Encode(JSON.stringify(error))}')">
+                        Submit Feedback
+                    </button>
+                    <button class="pf-v5-c-button pf-m-link" onclick="closeFeedbackReasonModal()">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Show modal
+    const modal = document.createElement('div');
+    modal.className = 'feedback-reason-modal-backdrop';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(2px);
+    `;
+    
+    modal.innerHTML = modalContent;
+    modal.onclick = (e) => {
+        if (e.target === modal) closeFeedbackReasonModal();
+    };
+    
+    document.body.appendChild(modal);
+    window.currentFeedbackModal = modal;
+}
+
+// Submit feedback with reason from modal
+function submitFeedbackWithReason(errorId, feedbackType, encodedError) {
+    try {
+        const form = document.getElementById('feedback-reason-form');
+        const selectedReason = form.querySelector('input[name="feedback-reason"]:checked');
+        const comment = form.querySelector('#feedback-comment').value.trim();
+        
+        if (!selectedReason) {
+            // Highlight the fieldset to show error
+            const fieldset = form.querySelector('fieldset');
+            fieldset.style.border = '2px solid var(--app-danger-color)';
+            setTimeout(() => {
+                fieldset.style.border = '';
+            }, 3000);
+            return;
+        }
+        
+        const errorJson = safeBase64Decode(encodedError);
+        const error = JSON.parse(errorJson);
+        
+        const reason = {
+            category: selectedReason.value,
+            comment: comment || null
+        };
+        
+        // Close modal first
+        closeFeedbackReasonModal();
+        
+        // Process feedback
+        processFeedbackSubmission(errorId, feedbackType, error, reason);
+        
+    } catch (e) {
+        console.error('Failed to submit feedback with reason:', e);
+        showFeedbackConfirmation(errorId, feedbackType, 'Error submitting feedback. Please try again.');
+    }
+}
+
+// Close feedback reason modal
+function closeFeedbackReasonModal() {
+    if (window.currentFeedbackModal) {
+        window.currentFeedbackModal.remove();
+        window.currentFeedbackModal = null;
+    }
+}
+
+// Show feedback confirmation message
+function showFeedbackConfirmation(errorId, feedbackType, message) {
+    // Create toast notification
+    const toast = document.createElement('div');
+    toast.className = 'pf-v5-c-alert pf-m-success feedback-toast';
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 10001;
+        max-width: 400px;
+        animation: slideInRight 0.3s ease-out;
+    `;
+    
+    toast.innerHTML = `
+        <div class="pf-v5-c-alert__icon">
+            <i class="fas fa-check-circle" aria-hidden="true"></i>
+        </div>
+        <div class="pf-v5-c-alert__title">
+            Feedback Received
+        </div>
+        <div class="pf-v5-c-alert__description">
+            ${message}
+        </div>
+        <div class="pf-v5-c-alert__action">
+            <button class="pf-v5-c-button pf-m-plain" onclick="this.closest('.feedback-toast').remove()">
+                <i class="fas fa-times" aria-hidden="true"></i>
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.style.animation = 'slideOutRight 0.3s ease-in';
+            setTimeout(() => toast.remove(), 300);
+        }
+    }, 5000);
+}
+
+// Initialize confidence styling and feedback system when page loads
 document.addEventListener('DOMContentLoaded', function() {
-    // Add confidence-based CSS classes for styling
+    // Initialize feedback tracking
+    FeedbackTracker.init();
+    
+    // Add confidence-based and feedback CSS classes for styling
     const style = document.createElement('style');
     style.textContent = `
         .enhanced-error[data-confidence-level="LOW"] {
@@ -729,6 +1169,125 @@ document.addEventListener('DOMContentLoaded', function() {
             max-width: 300px;
             word-wrap: break-word;
             white-space: normal;
+        }
+        
+        /* Feedback system styling */
+        .feedback-section {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .feedback-buttons-container {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        
+        .feedback-btn {
+            font-size: 0.875rem;
+            padding: 0.25rem 0.5rem;
+            transition: all 0.2s ease;
+        }
+        
+        .feedback-btn:hover {
+            transform: translateY(-1px);
+        }
+        
+        .feedback-helpful:hover {
+            color: var(--app-success-color) !important;
+        }
+        
+        .feedback-not-helpful:hover {
+            color: var(--app-warning-color) !important;
+        }
+        
+        .feedback-given {
+            animation: fadeInScale 0.3s ease-out;
+        }
+        
+        .feedback-change-btn {
+            font-size: 0.75rem;
+            opacity: 0.7;
+        }
+        
+        .feedback-change-btn:hover {
+            opacity: 1;
+        }
+        
+        .feedback-prompt {
+            font-size: 0.875rem;
+            color: var(--pf-v5-global--Color--200);
+            font-weight: 500;
+        }
+        
+        /* Feedback modal styling */
+        .feedback-reason-modal .pf-v5-c-modal-box {
+            max-width: 600px;
+        }
+        
+        .feedback-reason-modal .error-context {
+            border-left: 4px solid var(--app-primary-color);
+        }
+        
+        .feedback-reason-modal .pf-v5-c-radio {
+            margin-bottom: 0.75rem;
+        }
+        
+        .feedback-reason-modal .pf-v5-c-radio__label {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem;
+            border-radius: var(--pf-v5-global--BorderRadius--sm);
+            transition: background-color 0.2s ease;
+        }
+        
+        .feedback-reason-modal .pf-v5-c-radio__label:hover {
+            background-color: var(--pf-v5-global--palette--black-150);
+        }
+        
+        .feedback-reason-modal .pf-v5-c-radio__input:checked + .pf-v5-c-radio__label {
+            background-color: var(--app-primary-color)20;
+            border: 1px solid var(--app-primary-color);
+        }
+        
+        /* Toast notification animations */
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+        
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        .feedback-toast {
+            animation: slideInRight 0.3s ease-out;
         }
     `;
     document.head.appendChild(style);
