@@ -1902,26 +1902,6 @@ Error Example:
 - Test feedback interface accessibility
 - Test feedback interface across different devices
 
-### 5.2 Confidence Controls Implementation
-
-**Step 23: Implement Confidence Threshold Controls**
-
-*Implementation:*
-- Add confidence threshold sliders to UI
-- Create confidence preset buttons
-- Implement real-time error filtering
-- Add confidence explanation modals
-
-*Testing Step 23:*
-- Create `tests/frontend/test_confidence_controls.js`
-- Test confidence threshold slider functionality
-- Test confidence preset button behavior
-- Test real-time error filtering accuracy
-- Test confidence explanation modal display
-- Test controls accessibility and usability
-- Test controls performance with large error sets
-- Test controls across different screen sizes
-
 ---
 
 ## Phase 6: Backend API Integration

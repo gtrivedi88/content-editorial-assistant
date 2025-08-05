@@ -5,9 +5,9 @@
 
 // Confidence level thresholds and styling configuration
 const CONFIDENCE_LEVELS = {
-    HIGH: { threshold: 0.7, class: 'pf-m-success', icon: 'fas fa-check-circle', label: 'High Confidence' },
-    MEDIUM: { threshold: 0.5, class: 'pf-m-warning', icon: 'fas fa-info-circle', label: 'Medium Confidence' },
-    LOW: { threshold: 0.0, class: 'pf-m-danger', icon: 'fas fa-exclamation-triangle', label: 'Low Confidence' }
+    HIGH: { threshold: 0.7, class: 'pf-m-green', icon: 'fas fa-check-circle', label: 'High Confidence' },
+    MEDIUM: { threshold: 0.5, class: 'pf-m-orange', icon: 'fas fa-info-circle', label: 'Medium Confidence' },
+    LOW: { threshold: 0.0, class: 'pf-m-red', icon: 'fas fa-exclamation-triangle', label: 'Low Confidence' }
 };
 
 /**

@@ -39,7 +39,7 @@ function createErrorCard(error, index) {
     
     return `
         <div class="pf-v5-c-card pf-m-compact app-card enhanced-error-card" 
-             style="border-left: 4px solid ${typeStyle.color}; ${cardOpacity}"
+             style="border-left: 4px ${confidenceLevel === 'LOW' ? 'dashed' : 'solid'} ${typeStyle.color}; ${cardOpacity}"
              data-confidence="${confidenceScore}"
              data-confidence-level="${confidenceLevel}">
             <div class="pf-v5-c-card__header">
