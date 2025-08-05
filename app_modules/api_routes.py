@@ -84,13 +84,17 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter):
     
     @app.route('/analyze', methods=['POST'])
     def analyze_content():
-        """Analyze text content for style issues with real-time progress."""
+        """Analyze text content for style issues with confidence data and real-time progress."""
         start_time = time.time()  # Track processing time
         try:
             data = request.get_json()
             content = data.get('content', '')
             format_hint = data.get('format_hint', 'auto')
             session_id = data.get('session_id', '') if data else ''
+            
+            # Enhanced: Support confidence threshold parameter
+            confidence_threshold = data.get('confidence_threshold', None)
+            include_confidence_details = data.get('include_confidence_details', True)
             
             if not content:
                 return jsonify({'error': 'No content provided'}), 400
@@ -101,13 +105,25 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter):
                 session_id = str(uuid.uuid4())
             
             # Start analysis with progress updates
-            logger.info(f"Starting analysis for session {session_id}")
+            logger.info(f"Starting analysis for session {session_id} with confidence_threshold={confidence_threshold}")
             emit_progress(session_id, 'analysis_start', 'Initializing analysis...', 'Setting up analysis pipeline', 10)
+            
+            # Enhanced: Configure analyzer with confidence threshold if provided
+            if confidence_threshold is not None:
+                # Temporarily adjust the confidence threshold for this request
+                original_threshold = style_analyzer.structural_analyzer.confidence_threshold
+                style_analyzer.structural_analyzer.confidence_threshold = confidence_threshold
+                style_analyzer.structural_analyzer.rules_registry.set_confidence_threshold(confidence_threshold)
             
             # Analyze with structural blocks
             analysis_result = style_analyzer.analyze_with_blocks(content, format_hint)
             analysis = analysis_result.get('analysis', {})
             structural_blocks = analysis_result.get('structural_blocks', [])
+            
+            # Enhanced: Restore original threshold if it was modified
+            if confidence_threshold is not None:
+                style_analyzer.structural_analyzer.confidence_threshold = original_threshold
+                style_analyzer.structural_analyzer.rules_registry.set_confidence_threshold(original_threshold)
             
             emit_progress(session_id, 'analysis_complete', 'Analysis complete!', f'Analysis completed successfully', 100)
             
@@ -117,17 +133,49 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter):
             
             logger.info(f"Analysis completed in {processing_time:.2f}s for session {session_id}")
             
-            # Return results
+            # Enhanced: Prepare confidence metadata
+            confidence_metadata = {
+                'confidence_threshold_used': confidence_threshold or analysis.get('confidence_threshold', 0.43),
+                'enhanced_validation_enabled': analysis.get('enhanced_validation_enabled', False),
+                'confidence_filtering_applied': confidence_threshold is not None
+            }
+            
+            # Enhanced: Add validation performance if available
+            if analysis.get('validation_performance'):
+                confidence_metadata['validation_performance'] = analysis.get('validation_performance')
+            
+            # Enhanced: Add enhanced error statistics if available
+            if analysis.get('enhanced_error_stats'):
+                confidence_metadata['enhanced_error_stats'] = analysis.get('enhanced_error_stats')
+            
+            # Return enhanced results with confidence data
             response_data = {
                 'success': True,
                 'analysis': analysis,
                 'processing_time': processing_time,
-                'session_id': session_id
+                'session_id': session_id,
+                'confidence_metadata': confidence_metadata,
+                'api_version': '2.0'  # Indicate enhanced API version
             }
+            
+            # Include detailed confidence information if requested
+            if include_confidence_details:
+                response_data['confidence_details'] = {
+                    'confidence_system_available': True,
+                    'threshold_range': {'min': 0.0, 'max': 1.0, 'default': 0.43},
+                    'confidence_levels': {
+                        'HIGH': {'threshold': 0.7, 'description': 'High confidence errors - very likely to be correct'},
+                        'MEDIUM': {'threshold': 0.5, 'description': 'Medium confidence errors - likely to be correct'},
+                        'LOW': {'threshold': 0.0, 'description': 'Low confidence errors - may need review'}
+                    }
+                }
             
             # Include structural blocks if available
             if structural_blocks:
                 response_data['structural_blocks'] = structural_blocks
+                
+            # Enhanced: Add backward compatibility flag
+            response_data['backward_compatible'] = True
             
             emit_completion(session_id, True, response_data)
             
