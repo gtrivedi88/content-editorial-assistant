@@ -14,10 +14,55 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Initialize tooltips
 function initializeTooltips() {
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
+    // Check if Bootstrap is available (some pages may not have it)
+    if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    } else {
+        // Fallback: Use PatternFly-style tooltips if Bootstrap is not available
+        const tooltipElements = document.querySelectorAll('[data-bs-toggle="tooltip"], [title]');
+        tooltipElements.forEach(function(element) {
+            if (element.hasAttribute('title') && !element.hasAttribute('data-tooltip-initialized')) {
+                element.setAttribute('data-tooltip-initialized', 'true');
+                
+                element.addEventListener('mouseenter', function() {
+                    const tooltipText = this.getAttribute('title') || this.getAttribute('data-bs-title');
+                    if (!tooltipText) return;
+                    
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'pf-v5-c-tooltip';
+                    tooltip.textContent = tooltipText;
+                    tooltip.style.position = 'absolute';
+                    tooltip.style.background = 'rgba(0,0,0,0.8)';
+                    tooltip.style.color = 'white';
+                    tooltip.style.padding = '0.5rem';
+                    tooltip.style.borderRadius = '4px';
+                    tooltip.style.fontSize = '0.875rem';
+                    tooltip.style.zIndex = '9999';
+                    tooltip.style.pointerEvents = 'none';
+                    tooltip.style.maxWidth = '200px';
+                    tooltip.style.wordWrap = 'break-word';
+                    
+                    document.body.appendChild(tooltip);
+                    
+                    const rect = this.getBoundingClientRect();
+                    tooltip.style.left = rect.left + 'px';
+                    tooltip.style.top = (rect.top - tooltip.offsetHeight - 5) + 'px';
+                    
+                    this._tooltip = tooltip;
+                });
+                
+                element.addEventListener('mouseleave', function() {
+                    if (this._tooltip) {
+                        this._tooltip.remove();
+                        this._tooltip = null;
+                    }
+                });
+            }
+        });
+    }
 }
 
 // Initialize file upload handlers
