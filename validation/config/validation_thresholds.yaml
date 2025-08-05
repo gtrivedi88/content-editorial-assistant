@@ -4,6 +4,9 @@
 # Minimum confidence thresholds for error acceptance
 # Errors below these thresholds will be rejected or require additional validation
 minimum_confidence_thresholds:
+  # Default threshold for production use (balances quality vs. completeness)
+  default: 0.43
+  
   # High confidence - errors are accepted with single pass validation
   high_confidence: 0.80
   

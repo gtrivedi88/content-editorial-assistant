@@ -62,14 +62,16 @@ class StyleAnalyzer:
         if SPACY_AVAILABLE:
             self._initialize_spacy()
         
-        # Initialize structural analyzer
+        # Initialize structural analyzer with production-appropriate confidence threshold
         self.structural_analyzer = StructuralAnalyzer(
             self.readability_analyzer,
             self.sentence_analyzer,
             self.statistics_calculator,
             self.suggestion_generator,
             self.rules_registry,
-            self.nlp
+            self.nlp,
+            enable_enhanced_validation=True,
+            confidence_threshold=0.43  # Production threshold to catch real errors
         )
         
         # Initialize analysis mode executor
