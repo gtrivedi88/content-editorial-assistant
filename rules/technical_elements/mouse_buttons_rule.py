@@ -35,6 +35,8 @@ class MouseButtonsRule(BaseTechnicalRule):
                     message="Do not use the preposition 'on' with mouse actions.",
                     suggestions=["Remove 'on' after 'click'. For example, write 'Click Save' instead of 'Click on Save'."],
                     severity='high',
+                    text=text,  # Enhanced: Pass full text for better confidence analysis
+                    context=context,  # Enhanced: Pass context for domain-specific validation
                     span=(sent.start_char + match.start(), sent.start_char + match.end()),
                     flagged_text=match.group(0)
                 ))

@@ -38,6 +38,8 @@ class WebAddressesRule(BaseTechnicalRule):
                     message=f"Web address '{match.group()}' should not end with a forward slash.",
                     suggestions=["Remove the trailing slash from the URL."],
                     severity='low',
+                    text=text,  # Enhanced: Pass full text for better confidence analysis
+                    context=context,  # Enhanced: Pass context for domain-specific validation
                     span=(sent.start_char + match.start(), sent.start_char + match.end()),
                     flagged_text=match.group(0)
                 ))

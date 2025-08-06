@@ -50,6 +50,8 @@ class HighlightingRule(BaseStructureRule):
                     message=f"UI element '{candidate['text']}' should be highlighted in bold.",
                     suggestions=[f"Apply bold formatting to '{candidate['text']}'."],
                     severity='medium',
+                    text=text,  # Enhanced: Pass full text for better confidence analysis
+                    context=context,  # Enhanced: Pass context for domain-specific validation
                     span=candidate['span'],
                     flagged_text=candidate['text']
                 ))

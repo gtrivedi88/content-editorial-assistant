@@ -139,7 +139,7 @@ class BaseReferencesRule(BaseRule):
         """
         raise NotImplementedError("Subclasses must implement the analyze method.")
     
-    def _analyze_entity_capitalization(self, doc, sentence: str, sentence_index: int, entity_types: List[str] = None) -> List[Dict[str, Any]]:
+    def _analyze_entity_capitalization(self, doc, sentence: str, sentence_index: int, entity_types: List[str] = None, text: str = None, context: Dict[str, Any] = None) -> List[Dict[str, Any]]:
         """
         Analyze entity capitalization using advanced morphological analysis.
         """
@@ -163,6 +163,8 @@ class BaseReferencesRule(BaseRule):
                             message=f"{ent.label_} '{ent.text}' has incorrect capitalization.",
                             suggestions=capitalization_analysis['suggestions'],
                             severity='medium',
+                            text=text,  # Enhanced: Pass full text for better confidence analysis
+                            context=context,  # Enhanced: Pass context for domain-specific validation
                             linguistic_analysis={
                                 'entity': self._entity_to_dict(ent),
                                 'capitalization_analysis': capitalization_analysis,
@@ -175,7 +177,7 @@ class BaseReferencesRule(BaseRule):
         
         return errors
     
-    def _analyze_product_version_patterns(self, doc, sentence: str, sentence_index: int) -> List[Dict[str, Any]]:
+    def _analyze_product_version_patterns(self, doc, sentence: str, sentence_index: int, text: str = None, context: Dict[str, Any] = None) -> List[Dict[str, Any]]:
         """
         Analyze product version patterns using morphological analysis.
         """
@@ -196,6 +198,8 @@ class BaseReferencesRule(BaseRule):
                         message=f"Invalid version format: '{pattern['text']}'",
                         suggestions=pattern['suggestions'],
                         severity='medium',
+                        text=text,  # Enhanced: Pass full text for better confidence analysis
+                        context=context,  # Enhanced: Pass context for domain-specific validation
                         linguistic_analysis={
                             'version_pattern': pattern,
                             'morphological_analysis': pattern.get('morphological_features')
@@ -207,7 +211,7 @@ class BaseReferencesRule(BaseRule):
         
         return errors
     
-    def _analyze_product_naming_conventions(self, doc, sentence: str, sentence_index: int, product_context: Dict[str, Any] = None) -> List[Dict[str, Any]]:
+    def _analyze_product_naming_conventions(self, doc, sentence: str, sentence_index: int, product_context: Dict[str, Any] = None, text: str = None, context: Dict[str, Any] = None) -> List[Dict[str, Any]]:
         """
         Analyze product naming conventions using context-aware morphological analysis.
         """
@@ -229,6 +233,8 @@ class BaseReferencesRule(BaseRule):
                             message=violation['message'],
                             suggestions=violation['suggestions'],
                             severity=violation.get('severity', 'medium'),
+                            text=text,  # Enhanced: Pass full text for better confidence analysis
+                            context=context,  # Enhanced: Pass context for domain-specific validation
                             linguistic_analysis={
                                 'product_reference': reference,
                                 'violation_type': violation['type'],
@@ -241,7 +247,7 @@ class BaseReferencesRule(BaseRule):
         
         return errors
     
-    def _analyze_title_name_relationships(self, doc, sentence: str, sentence_index: int) -> List[Dict[str, Any]]:
+    def _analyze_title_name_relationships(self, doc, sentence: str, sentence_index: int, text: str = None, context: Dict[str, Any] = None) -> List[Dict[str, Any]]:
         """
         Analyze professional titles and their relationship to names using dependency parsing.
         """
@@ -264,6 +270,8 @@ class BaseReferencesRule(BaseRule):
                         message=capitalization_analysis['message'],
                         suggestions=capitalization_analysis['suggestions'],
                         severity='medium',
+                        text=text,  # Enhanced: Pass full text for better confidence analysis
+                        context=context,  # Enhanced: Pass context for domain-specific validation
                         linguistic_analysis={
                             'title_name_pair': pair,
                             'capitalization_analysis': capitalization_analysis,
@@ -276,7 +284,7 @@ class BaseReferencesRule(BaseRule):
         
         return errors
     
-    def _analyze_citation_patterns(self, doc, sentence: str, sentence_index: int) -> List[Dict[str, Any]]:
+    def _analyze_citation_patterns(self, doc, sentence: str, sentence_index: int, text: str = None, context: Dict[str, Any] = None) -> List[Dict[str, Any]]:
         """
         Analyze citation and reference patterns using morphological analysis.
         """
@@ -296,6 +304,8 @@ class BaseReferencesRule(BaseRule):
                     message=issue['message'],
                     suggestions=issue['suggestions'],
                     severity=issue.get('severity', 'medium'),
+                    text=text,  # Enhanced: Pass full text for better confidence analysis
+                    context=context,  # Enhanced: Pass context for domain-specific validation
                     linguistic_analysis={
                         'citation_issue': issue,
                         'issue_type': issue['type'],

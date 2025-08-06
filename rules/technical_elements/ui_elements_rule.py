@@ -55,6 +55,8 @@ class UIElementsRule(BaseTechnicalRule):
                             message=f"Incorrect verb '{verb.text}' used for '{ui_element}'.",
                             suggestions=[f"Use one of the approved verbs for '{ui_element}': {', '.join(ui_verb_map[ui_element])}."],
                             severity='medium',
+                            text=text,  # Enhanced: Pass full text for better confidence analysis
+                            context=context,  # Enhanced: Pass context for domain-specific validation
                             span=(verb.idx, verb.idx + len(verb.text)),
                             flagged_text=verb.text
                         ))

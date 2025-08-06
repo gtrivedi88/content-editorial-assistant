@@ -41,6 +41,8 @@ class FilesAndDirectoriesRule(BaseTechnicalRule):
                         message=f"Do not use a file extension like '{match.group()}' as a stand-alone noun.",
                         suggestions=[f"Specify the type of object, e.g., 'Convert the document to a {match.group()} file.'"],
                         severity='medium',
+                        text=text,  # Enhanced: Pass full text for better confidence analysis
+                        context=context,  # Enhanced: Pass context for domain-specific validation
                         span=(sent.start_char + match.start(), sent.start_char + match.end()),
                         flagged_text=match.group(0)
                     ))

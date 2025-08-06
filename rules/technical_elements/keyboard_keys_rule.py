@@ -38,6 +38,8 @@ class KeyboardKeysRule(BaseTechnicalRule):
                     message="Use a plus sign (+) with no spaces to separate key names in a combination.",
                     suggestions=["For example, write 'Ctrl+Alt+Del' instead of 'Ctrl Alt Del'."],
                     severity='medium',
+                    text=text,  # Enhanced: Pass full text for better confidence analysis
+                    context=context,  # Enhanced: Pass context for domain-specific validation
                     span=(sent.start_char + match.start(), sent.start_char + match.end()),
                     flagged_text=match.group(0)
                 ))
@@ -51,6 +53,8 @@ class KeyboardKeysRule(BaseTechnicalRule):
                         message=f"Keyboard key name '{token.text}' should be capitalized.",
                         suggestions=[f"Use initial capitals for key names, e.g., '{token.text.capitalize()}'."],
                         severity='medium',
+                        text=text,  # Enhanced: Pass full text for better confidence analysis
+                        context=context,  # Enhanced: Pass context for domain-specific validation
                         span=(token.idx, token.idx + len(token.text)),
                         flagged_text=token.text
                     ))

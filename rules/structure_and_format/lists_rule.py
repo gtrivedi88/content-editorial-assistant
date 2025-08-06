@@ -105,6 +105,8 @@ class ListsRule(BaseStructureRule):
                 message="List items are not grammatically parallel.",
                 suggestions=[suggestion],
                 severity='high',
+                text=text,  # Enhanced: Pass full text for better confidence analysis
+                context=context,  # Enhanced: Pass context for domain-specific validation
                 span=(0, len(first_non_parallel['text'])),
                 flagged_text=first_non_parallel['text']
             ))

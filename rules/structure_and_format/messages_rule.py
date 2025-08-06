@@ -39,6 +39,8 @@ class MessagesRule(BaseStructureRule):
                         message=f"Avoid using exaggerated adjectives like '{match.group(0)}' in messages.",
                         suggestions=["Focus on the problem and the solution, not the severity. For example, instead of 'A fatal error occurred', state 'The application could not connect to the database'."],
                         severity='medium',
+                        text=text,  # Enhanced: Pass full text for better confidence analysis
+                        context=context,  # Enhanced: Pass context for domain-specific validation
                         span=(match.start(), match.end()),
                         flagged_text=match.group(0)
                     ))

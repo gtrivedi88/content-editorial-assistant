@@ -50,15 +50,15 @@ class SecondPersonRule(BaseLanguageRule):
             if not sent_doc:
                 continue
             
-            first_person_errors = self._analyze_first_person(sent_doc, sentence, i)
+            first_person_errors = self._analyze_first_person(sent_doc, sentence, i, text=text, context=context)
             errors.extend(first_person_errors)
             
-            substitute_errors = self._analyze_third_person_substitutes(sent_doc, sentence, i)
+            substitute_errors = self._analyze_third_person_substitutes(sent_doc, sentence, i, text=text, context=context)
             errors.extend(substitute_errors)
 
         return errors
 
-    def _analyze_first_person(self, doc, sentence: str, sentence_index: int) -> List[Dict[str, Any]]:
+    def _analyze_first_person(self, doc, sentence: str, sentence_index: int, text: str = None, context: Dict[str, Any] = None) -> List[Dict[str, Any]]:
         """Detect first-person pronouns using morphological analysis."""
         errors = []
         first_person_pronouns = self.first_person_patterns['pronoun_indicators']['subject_pronouns'] | \
@@ -76,11 +76,15 @@ class SecondPersonRule(BaseLanguageRule):
                     sentence_index=sentence_index,
                     message=f"Avoid first-person pronoun '{token.text}'; use second person ('you') instead.",
                     suggestions=["Rewrite using 'you' to address the user directly."],
-                    severity='high'
+                    severity='high',
+                    text=text,  # Enhanced: Pass full text for better confidence analysis
+                    context=context,  # Enhanced: Pass context for domain-specific validation
+                    span=(token.idx, token.idx + len(token.text)),
+                    flagged_text=token.text
                 ))
         return errors
 
-    def _analyze_third_person_substitutes(self, doc, sentence: str, sentence_index: int) -> List[Dict[str, Any]]:
+    def _analyze_third_person_substitutes(self, doc, sentence: str, sentence_index: int, text: str = None, context: Dict[str, Any] = None) -> List[Dict[str, Any]]:
         """
         Detect third-person substitutes using morphological analysis, now with exception checking.
         """
@@ -120,7 +124,11 @@ class SecondPersonRule(BaseLanguageRule):
                     sentence_index=sentence_index,
                     message=f"Consider using 'you' instead of '{token.text}' for direct user engagement.",
                     suggestions=[f"Replace '{token.text}' with 'you' or rewrite the sentence to address the user directly."],
-                    severity='medium'
+                    severity='medium',
+                    text=text,  # Enhanced: Pass full text for better confidence analysis
+                    context=context,  # Enhanced: Pass context for domain-specific validation
+                    span=(token.idx, token.idx + len(token.text)),
+                    flagged_text=token.text
                 ))
         
         return errors

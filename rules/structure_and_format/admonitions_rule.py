@@ -44,6 +44,8 @@ class AdmonitionsRule(BaseStructureRule):
                 message=f"Invalid admonition label '[{admonition_kind}]' used.",
                 suggestions=[f"Use one of the approved labels from the IBM Style Guide, such as 'NOTE', 'IMPORTANT', or 'CAUTION'."],
                 severity='medium',
+                text=text,  # Enhanced: Pass full text for better confidence analysis
+                context=context,  # Enhanced: Pass context for domain-specific validation
                 span=(0, len(admonition_kind) + 2),
                 flagged_text=f"[{admonition_kind}]"
             ))
@@ -56,6 +58,8 @@ class AdmonitionsRule(BaseStructureRule):
                 message="The content of the admonition may not be a complete sentence.",
                 suggestions=["Ensure the text within the note forms a complete, standalone sentence for clarity."],
                 severity='low',
+                text=text,  # Enhanced: Pass full text for better confidence analysis
+                context=context,  # Enhanced: Pass context for domain-specific validation
                 span=(0, len(text)),
                 flagged_text=text
             ))

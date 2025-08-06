@@ -38,6 +38,8 @@ class CitationsRule(BaseReferencesRule):
                     message="Avoid using generic link text like 'Click here'. The link text should be meaningful.",
                     suggestions=["Rewrite the link to describe its destination, e.g., 'For more information, see the Installation Guide.'"],
                     severity='high',
+                    text=text,  # Enhanced: Pass full text for better confidence analysis
+                    context=context,  # Enhanced: Pass context for domain-specific validation
                     span=(sent.start_char + match.start(), sent.start_char + match.end()),
                     flagged_text=match.group(0)
                 ))
@@ -55,6 +57,8 @@ class CitationsRule(BaseReferencesRule):
                         message="References to document parts like 'chapter' or 'figure' should be lowercase in cross-references.",
                         suggestions=[f"Use lowercase for the reference type, e.g., 'see {token.text.lower()} 9'."],
                         severity='medium',
+                        text=text,  # Enhanced: Pass full text for better confidence analysis
+                        context=context,  # Enhanced: Pass context for domain-specific validation
                         span=(token.idx, token.idx + len(token.text)),
                         flagged_text=token.text
                     ))

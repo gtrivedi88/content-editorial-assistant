@@ -38,6 +38,8 @@ class ProgrammingElementsRule(BaseTechnicalRule):
                         message=f"Do not use the programming keyword '{token.text}' as a verb.",
                         suggestions=[f"Rewrite the sentence to use the keyword as a noun, e.g., 'To delete an object, issue the DROP statement.'"],
                         severity='high',
+                        text=text,  # Enhanced: Pass full text for better confidence analysis
+                        context=context,  # Enhanced: Pass context for domain-specific validation
                         span=(token.idx, token.idx + len(token.text)),
                         flagged_text=token.text
                     ))

@@ -41,6 +41,8 @@ class ParagraphsRule(BaseStructureRule):
                 message="Paragraphs should not be indented.",
                 suggestions=["Remove the indentation from the beginning of the paragraph."],
                 severity='low',
+                text=text,  # Enhanced: Pass full text for better confidence analysis
+                context=context,  # Enhanced: Pass context for domain-specific validation
                 span=(0, indentation),
                 flagged_text=text[:indentation]
             ))

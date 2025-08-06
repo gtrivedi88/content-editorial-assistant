@@ -51,6 +51,8 @@ class ProductNamesRule(BaseReferencesRule):
                                 message=f"The first mention of a product, '{product_name}', should be preceded by 'IBM'.",
                                 suggestions=[f"Use the full name 'IBM {product_name}' for the first reference."],
                                 severity='high',
+                                text=text,  # Enhanced: Pass full text for better confidence analysis
+                                context=context,  # Enhanced: Pass context for domain-specific validation
                                 span=(ent.start_char, ent.end_char),
                                 flagged_text=ent.text
                             ))

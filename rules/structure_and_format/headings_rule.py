@@ -40,6 +40,8 @@ class HeadingsRule(BaseStructureRule):
                     message="Headings should not end with a period.",
                     suggestions=["Remove the period from the end of the heading."],
                     severity='medium',
+                    text=text,  # Enhanced: Pass full text for better confidence analysis
+                    context=context,  # Enhanced: Pass context for domain-specific validation
                     span=(len(sentence) - 1, len(sentence)),
                     flagged_text='.'
                 ))
@@ -75,6 +77,8 @@ class HeadingsRule(BaseStructureRule):
                             message="Headings should use sentence-style capitalization, not headline-style.",
                             suggestions=["Capitalize only the first word and any proper nouns in the heading."],
                             severity='low',
+                            text=text,  # Enhanced: Pass full text for better confidence analysis
+                            context=context,  # Enhanced: Pass context for domain-specific validation
                             span=(0, len(sentence)),
                             flagged_text=sentence
                         ))
@@ -86,6 +90,8 @@ class HeadingsRule(BaseStructureRule):
                     message="Avoid using questions in headings for technical documentation.",
                     suggestions=["Rewrite the heading as a statement or a noun phrase."],
                     severity='low',
+                    text=text,  # Enhanced: Pass full text for better confidence analysis
+                    context=context,  # Enhanced: Pass context for domain-specific validation
                     span=(len(sentence) - 1, len(sentence)),
                     flagged_text='?'
                 ))
@@ -101,6 +107,8 @@ class HeadingsRule(BaseStructureRule):
                         message=f"Headings for '{topic_type}' topics should not start with a gerund (e.g., 'Understanding...').",
                         suggestions=[f"Consider rewriting the heading to be more direct, for example, using a noun phrase like 'Overview of {first_token.lemma_}'."],
                         severity='low',
+                        text=text,  # Enhanced: Pass full text for better confidence analysis
+                        context=context,  # Enhanced: Pass context for domain-specific validation
                         span=(first_token.idx, first_token.idx + len(first_token.text)),
                         flagged_text=first_token.text
                     ))

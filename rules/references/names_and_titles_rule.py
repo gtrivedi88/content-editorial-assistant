@@ -42,6 +42,8 @@ class NamesAndTitlesRule(BaseReferencesRule):
                             message=f"Professional title '{token.text}' should be capitalized when used with a name.",
                             suggestions=[f"Capitalize the title: '{token.text.title()}'."],
                             severity='medium',
+                            text=text,  # Enhanced: Pass full text for better confidence analysis
+                            context=context,  # Enhanced: Pass context for domain-specific validation
                             span=(token.idx, token.idx + len(token.text)),
                             flagged_text=token.text
                         ))
@@ -53,6 +55,8 @@ class NamesAndTitlesRule(BaseReferencesRule):
                             message=f"Standalone professional title '{token.text}' should be lowercase.",
                             suggestions=[f"Use lowercase for the title: '{token.text.lower()}'."],
                             severity='medium',
+                            text=text,  # Enhanced: Pass full text for better confidence analysis
+                            context=context,  # Enhanced: Pass context for domain-specific validation
                             span=(token.idx, token.idx + len(token.text)),
                             flagged_text=token.text
                         ))

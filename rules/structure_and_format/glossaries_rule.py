@@ -48,6 +48,8 @@ class GlossariesRule(BaseStructureRule):
                         message=f"Glossary term '{term}' should be lowercase unless it is a proper noun.",
                         suggestions=[f"Change '{term}' to '{term.lower()}'."],
                         severity='medium',
+                        text=text,  # Enhanced: Pass full text for better confidence analysis
+                        context=context,  # Enhanced: Pass context for domain-specific validation
                         span=(sentence.find(term), sentence.find(term) + len(term)),
                         flagged_text=term
                     ))
@@ -59,6 +61,8 @@ class GlossariesRule(BaseStructureRule):
                         message="Glossary definitions should start with a capital letter.",
                         suggestions=["Capitalize the first word of the definition."],
                         severity='medium',
+                        text=text,  # Enhanced: Pass full text for better confidence analysis
+                        context=context,  # Enhanced: Pass context for domain-specific validation
                         span=(sentence.find(definition), sentence.find(definition) + len(definition)),
                         flagged_text=definition
                     ))

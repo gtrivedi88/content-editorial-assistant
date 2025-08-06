@@ -39,6 +39,8 @@ class GeographicLocationsRule(BaseReferencesRule):
                             message=f"Geographic location '{ent.text}' may have incorrect capitalization.",
                             suggestions=[f"Ensure all parts of the location name are capitalized correctly (e.g., '{ent.text.title()}')."],
                             severity='medium',
+                            text=text,  # Enhanced: Pass full text for better confidence analysis
+                            context=context,  # Enhanced: Pass context for domain-specific validation
                             span=(ent.start_char, ent.end_char),
                             flagged_text=ent.text
                         ))

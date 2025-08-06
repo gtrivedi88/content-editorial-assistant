@@ -42,6 +42,8 @@ class ProductVersionsRule(BaseReferencesRule):
                     message=f"Avoid using version identifiers like 'V' or 'Version'. Use only the number.",
                     suggestions=[f"Refer to the version as just '{version_number}'."],
                     severity='medium',
+                    text=text,  # Enhanced: Pass full text for better confidence analysis
+                    context=context,  # Enhanced: Pass context for domain-specific validation
                     span=(sent.start_char + match.start(), sent.start_char + match.end()),
                     flagged_text=full_match
                 ))

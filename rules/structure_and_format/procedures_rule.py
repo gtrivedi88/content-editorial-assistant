@@ -46,6 +46,8 @@ class ProceduresRule(BaseStructureRule):
                     message="Steps in a procedure should begin with a strong, imperative verb.",
                     suggestions=["Rewrite the step to start with a command verb (e.g., 'Click', 'Enter', 'Select')."],
                     severity='medium',
+                    text=text,  # Enhanced: Pass full text for better confidence analysis
+                    context=context,  # Enhanced: Pass context for domain-specific validation
                     span=(0, len(sentence)),
                     flagged_text=sentence
                 ))

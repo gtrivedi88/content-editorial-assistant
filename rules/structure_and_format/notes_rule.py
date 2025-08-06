@@ -46,6 +46,8 @@ class NotesRule(BaseStructureRule):
                         message=f"The note label '{first_word_or_phrase}' should be followed by a colon.",
                         suggestions=[f"Add a colon after '{first_word_or_phrase}'."],
                         severity='high',
+                        text=text,  # Enhanced: Pass full text for better confidence analysis
+                        context=context,  # Enhanced: Pass context for domain-specific validation
                         span=(sentence.find(first_word_or_phrase), sentence.find(first_word_or_phrase) + len(first_word_or_phrase)),
                         flagged_text=first_word_or_phrase
                     ))
@@ -60,6 +62,8 @@ class NotesRule(BaseStructureRule):
                             message="The content of the note may not be a complete sentence.",
                             suggestions=["Ensure the text within the note forms a complete, standalone sentence for clarity."],
                             severity='low',
+                            text=text,  # Enhanced: Pass full text for better confidence analysis
+                            context=context,  # Enhanced: Pass context for domain-specific validation
                             span=(sentence.find(note_content), sentence.find(note_content) + len(note_content)),
                             flagged_text=note_content
                         ))
