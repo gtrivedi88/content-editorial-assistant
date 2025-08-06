@@ -322,6 +322,100 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter):
                 logger.error(f"Error rendering error page: {e2}")
                 return f"<h1>Application Error</h1><p>Failed to load blog creation page: {e}</p><p>Template error: {e2}</p>", 500
     
+    @app.route('/api/feedback', methods=['POST'])
+    def submit_feedback():
+        """Submit user feedback on error accuracy."""
+        try:
+            from .feedback_storage import feedback_storage
+            
+            data = request.get_json()
+            if not data:
+                return jsonify({'error': 'No JSON data provided'}), 400
+            
+            # Extract request metadata
+            user_agent = request.headers.get('User-Agent')
+            ip_address = request.remote_addr
+            
+            # Store feedback
+            success, message, feedback_id = feedback_storage.store_feedback(
+                data, user_agent=user_agent, ip_address=ip_address
+            )
+            
+            if success:
+                response_data = {
+                    'success': True,
+                    'message': message,
+                    'feedback_id': feedback_id,
+                    'timestamp': datetime.now().isoformat()
+                }
+                
+                logger.info(f"Feedback submitted successfully: {feedback_id}")
+                return jsonify(response_data), 201
+            else:
+                return jsonify({'error': message}), 400
+                
+        except Exception as e:
+            logger.error(f"Feedback submission error: {str(e)}")
+            return jsonify({'error': f'Feedback submission failed: {str(e)}'}), 500
+    
+    @app.route('/api/feedback/stats', methods=['GET'])
+    def get_feedback_stats():
+        """Get feedback statistics."""
+        try:
+            from .feedback_storage import feedback_storage
+            
+            # Get query parameters
+            session_id = request.args.get('session_id')
+            days_back = request.args.get('days_back', default=7, type=int)
+            
+            # Validate days_back parameter
+            if days_back < 1 or days_back > 365:
+                return jsonify({'error': 'days_back must be between 1 and 365'}), 400
+            
+            # Get statistics
+            stats = feedback_storage.get_feedback_stats(session_id=session_id, days_back=days_back)
+            
+            response_data = {
+                'success': True,
+                'statistics': stats,
+                'timestamp': datetime.now().isoformat()
+            }
+            
+            return jsonify(response_data)
+            
+        except Exception as e:
+            logger.error(f"Feedback stats error: {str(e)}")
+            return jsonify({'error': f'Failed to retrieve feedback stats: {str(e)}'}), 500
+    
+    @app.route('/api/feedback/insights', methods=['GET'])
+    def get_feedback_insights():
+        """Get aggregated feedback insights and analytics."""
+        try:
+            from .feedback_storage import feedback_storage
+            
+            # Get query parameters
+            days_back = request.args.get('days_back', default=30, type=int)
+            
+            # Validate days_back parameter
+            if days_back < 1 or days_back > 365:
+                return jsonify({'error': 'days_back must be between 1 and 365'}), 400
+            
+            # Get insights
+            insights = feedback_storage.aggregate_feedback_insights(days_back=days_back)
+            
+            response_data = {
+                'success': True,
+                'insights': insights,
+                'timestamp': datetime.now().isoformat(),
+                'api_version': '2.0'
+            }
+            
+            return jsonify(response_data)
+            
+        except Exception as e:
+            logger.error(f"Feedback insights error: {str(e)}")
+            return jsonify({'error': f'Failed to retrieve feedback insights: {str(e)}'}), 500
+    
     @app.route('/health')
     def health_check():
         """Health check endpoint."""
@@ -331,7 +425,8 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter):
             'services': {
                 'document_processor': document_processor is not None,
                 'style_analyzer': style_analyzer is not None,
-                'ai_rewriter': ai_rewriter is not None
+                'ai_rewriter': ai_rewriter is not None,
+                'feedback_storage': True  # Feedback storage is always available
             }
         })
     
