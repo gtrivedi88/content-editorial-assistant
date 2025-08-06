@@ -49,9 +49,9 @@ class AbbreviationsRule(BaseLanguageRule):
 
     def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         """
-        Analyzes the full text for abbreviation violations using pure morphological 
-        analysis and linguistic anchors. This rule processes the entire text at once 
-        to track the first use of abbreviations.
+        Analyzes the full text for abbreviation violations using evidence-based scoring.
+        This rule processes the entire text at once to track the first use of abbreviations
+        and calculates nuanced evidence scores for each potential violation.
         """
         errors = []
         if not nlp:
@@ -62,25 +62,32 @@ class AbbreviationsRule(BaseLanguageRule):
         
         doc = nlp(text)
         
-        # --- LINGUISTIC ANCHOR 1: Latin Abbreviations Detection ---
-        # Use morphological patterns to detect Latin abbreviations
+        # --- EVIDENCE-BASED ANALYSIS 1: Latin Abbreviations ---
         for i, sent in enumerate(doc.sents):
             for token in sent:
                 if self._is_latin_abbreviation(token, doc):
-                    replacement = self._get_latin_equivalent(token.text.lower())
-                    errors.append(self._create_error(
-                        sentence=sent.text,
-                        sentence_index=i,
-                        message=f"Avoid using the Latin abbreviation '{token.text}'.",
-                        suggestions=[f"Use its English equivalent, such as '{replacement}'."],
-                        severity='medium',
-                        text=text,  # Enhanced: Pass full text for better confidence analysis
-                        context=context,  # Enhanced: Pass context for domain-specific validation
-                        span=(token.idx, token.idx + len(token.text)),
-                        flagged_text=token.text
-                    ))
+                    # Calculate evidence score for this Latin abbreviation
+                    evidence_score = self._calculate_latin_abbreviation_evidence(
+                        token, sent, text, context
+                    )
+                    
+                    # Only create error if evidence suggests it's worth evaluating
+                    if evidence_score > 0.1:  # Low threshold - let enhanced validation decide
+                        replacement = self._get_latin_equivalent(token.text.lower())
+                        errors.append(self._create_error(
+                            sentence=sent.text,
+                            sentence_index=i,
+                            message=self._get_contextual_message(token, evidence_score, 'latin'),
+                            suggestions=self._generate_smart_suggestions(token, context, 'latin', replacement),
+                            severity='medium',
+                            text=text,
+                            context=context,
+                            evidence_score=evidence_score,  # Your nuanced assessment
+                            span=(token.idx, token.idx + len(token.text)),
+                            flagged_text=token.text
+                        ))
 
-        # --- LINGUISTIC ANCHOR 2 & 3: Abbreviation Definition and Verb Usage ---
+        # --- EVIDENCE-BASED ANALYSIS 2 & 3: Abbreviation Definition and Verb Usage ---
         for token in doc:
             # MORPHOLOGICAL PATTERN: Detect uppercase abbreviations
             if self._is_abbreviation_candidate(token):
@@ -90,41 +97,54 @@ class AbbreviationsRule(BaseLanguageRule):
                     self.defined_abbreviations.add(token.text)
                     continue
                 
-                # Check for undefined first use
+                # Check for undefined first use with evidence scoring
                 if token.text not in self.defined_abbreviations:
-                    # LINGUISTIC ANCHOR: Context-aware abbreviation checking
-                    if not self._is_contextually_defined(token, doc) and not self._is_admonition_context(token, context):
+                    # Calculate evidence score for undefined abbreviation
+                    evidence_score = self._calculate_undefined_abbreviation_evidence(
+                        token, token.sent, text, context
+                    )
+                    
+                    # Only create error if evidence suggests it's worth evaluating
+                    if evidence_score > 0.1:  # Low threshold - let enhanced validation decide
                         sent = token.sent
                         sent_index = list(doc.sents).index(sent)
                         errors.append(self._create_error(
                             sentence=sent.text,
                             sentence_index=sent_index,
-                            message=f"Abbreviation '{token.text}' may not be defined on first use.",
-                            suggestions=[f"If '{token.text}' is not a commonly known abbreviation, spell it out on its first use, followed by the abbreviation in parentheses. For example: 'Application Programming Interface (API)'."],
+                            message=self._get_contextual_message(token, evidence_score, 'undefined'),
+                            suggestions=self._generate_smart_suggestions(token, context, 'undefined'),
                             severity='medium',
-                            text=text,  # Enhanced: Pass full text for better confidence analysis
-                            context=context,  # Enhanced: Pass context for domain-specific validation
+                            text=text,
+                            context=context,
+                            evidence_score=evidence_score,  # Your nuanced assessment
                             span=(token.idx, token.idx + len(token.text)),
                             flagged_text=token.text
                         ))
                     self.defined_abbreviations.add(token.text)
                 
-                # LINGUISTIC ANCHOR: Check for verb usage patterns
+                # Check for verb usage with evidence scoring
                 if self._is_used_as_verb(token, doc):
-                    sent = token.sent
-                    sent_index = list(doc.sents).index(sent)
-                    suggestion = self._generate_verb_alternative(token, doc)
-                    errors.append(self._create_error(
-                        sentence=sent.text,
-                        sentence_index=sent_index,
-                        message=f"Avoid using abbreviations like '{token.text}' as verbs.",
-                        suggestions=[suggestion],
-                        severity='medium',
-                        text=text,  # Enhanced: Pass full text for better confidence analysis
-                        context=context,  # Enhanced: Pass context for domain-specific validation
-                        span=(token.idx, token.idx + len(token.text)),
-                        flagged_text=token.text
-                    ))
+                    # Calculate evidence score for verb usage
+                    evidence_score = self._calculate_verb_usage_evidence(
+                        token, token.sent, text, context
+                    )
+                    
+                    # Only create error if evidence suggests it's worth evaluating
+                    if evidence_score > 0.1:  # Low threshold - let enhanced validation decide
+                        sent = token.sent
+                        sent_index = list(doc.sents).index(sent)
+                        errors.append(self._create_error(
+                            sentence=sent.text,
+                            sentence_index=sent_index,
+                            message=self._get_contextual_message(token, evidence_score, 'verb'),
+                            suggestions=self._generate_smart_suggestions(token, context, 'verb'),
+                            severity='medium',
+                            text=text,
+                            context=context,
+                            evidence_score=evidence_score,  # Your nuanced assessment
+                            span=(token.idx, token.idx + len(token.text)),
+                            flagged_text=token.text
+                        ))
         
         return errors
 
@@ -409,3 +429,529 @@ class AbbreviationsRule(BaseLanguageRule):
             return 'access via'
         else:
             return 'use'
+
+    # === EVIDENCE-BASED CALCULATION METHODS ===
+
+    def _calculate_latin_abbreviation_evidence(self, token: 'Token', sentence, text: str, context: Optional[Dict[str, Any]]) -> float:
+        """
+        Calculate evidence score (0.0-1.0) for Latin abbreviation violations.
+        
+        Higher scores indicate stronger evidence of an actual error.
+        Lower scores indicate acceptable usage or ambiguous cases.
+        
+        Args:
+            token: The potential Latin abbreviation token
+            sentence: Sentence containing the token
+            text: Full document text
+            context: Document context (block_type, content_type, etc.)
+            
+        Returns:
+            float: Evidence score from 0.0 (no evidence) to 1.0 (strong evidence)
+        """
+        evidence_score = 0.0
+        
+        # === STEP 1: BASE EVIDENCE ASSESSMENT ===
+        if self._is_latin_abbreviation(token, token.doc):
+            evidence_score = 0.7  # Start with moderate evidence
+        else:
+            return 0.0  # No evidence, skip this token
+        
+        # === STEP 2: LINGUISTIC CLUES (MICRO-LEVEL) ===
+        evidence_score = self._apply_linguistic_clues_latin(evidence_score, token, sentence)
+        
+        # === STEP 3: STRUCTURAL CLUES (MESO-LEVEL) ===
+        evidence_score = self._apply_structural_clues_latin(evidence_score, token, context)
+        
+        # === STEP 4: SEMANTIC CLUES (MACRO-LEVEL) ===
+        evidence_score = self._apply_semantic_clues_latin(evidence_score, token, text, context)
+        
+        # === STEP 5: FEEDBACK PATTERNS (LEARNING CLUES) ===
+        evidence_score = self._apply_feedback_clues_latin(evidence_score, token, context)
+        
+        return max(0.0, min(1.0, evidence_score))  # Clamp to valid range
+
+    def _calculate_undefined_abbreviation_evidence(self, token: 'Token', sentence, text: str, context: Optional[Dict[str, Any]]) -> float:
+        """
+        Calculate evidence score (0.0-1.0) for undefined abbreviation violations.
+        
+        Args:
+            token: The potential undefined abbreviation token
+            sentence: Sentence containing the token
+            text: Full document text
+            context: Document context
+            
+        Returns:
+            float: Evidence score from 0.0 (no evidence) to 1.0 (strong evidence)
+        """
+        evidence_score = 0.0
+        
+        # === STEP 1: BASE EVIDENCE ASSESSMENT ===
+        if self._is_abbreviation_candidate(token):
+            evidence_score = 0.6  # Start with moderate evidence
+        else:
+            return 0.0  # No evidence, skip this token
+        
+        # === STEP 2: LINGUISTIC CLUES (MICRO-LEVEL) ===
+        evidence_score = self._apply_linguistic_clues_undefined(evidence_score, token, sentence)
+        
+        # === STEP 3: STRUCTURAL CLUES (MESO-LEVEL) ===
+        evidence_score = self._apply_structural_clues_undefined(evidence_score, token, context)
+        
+        # === STEP 4: SEMANTIC CLUES (MACRO-LEVEL) ===
+        evidence_score = self._apply_semantic_clues_undefined(evidence_score, token, text, context)
+        
+        # === STEP 5: FEEDBACK PATTERNS (LEARNING CLUES) ===
+        evidence_score = self._apply_feedback_clues_undefined(evidence_score, token, context)
+        
+        return max(0.0, min(1.0, evidence_score))  # Clamp to valid range
+
+    def _calculate_verb_usage_evidence(self, token: 'Token', sentence, text: str, context: Optional[Dict[str, Any]]) -> float:
+        """
+        Calculate evidence score (0.0-1.0) for abbreviation-as-verb violations.
+        
+        Args:
+            token: The potential verb abbreviation token
+            sentence: Sentence containing the token
+            text: Full document text
+            context: Document context
+            
+        Returns:
+            float: Evidence score from 0.0 (no evidence) to 1.0 (strong evidence)
+        """
+        evidence_score = 0.0
+        
+        # === STEP 1: BASE EVIDENCE ASSESSMENT ===
+        if self._is_used_as_verb(token, token.doc):
+            evidence_score = 0.8  # Start with high evidence for verb usage
+        else:
+            return 0.0  # No evidence, skip this token
+        
+        # === STEP 2: LINGUISTIC CLUES (MICRO-LEVEL) ===
+        evidence_score = self._apply_linguistic_clues_verb(evidence_score, token, sentence)
+        
+        # === STEP 3: STRUCTURAL CLUES (MESO-LEVEL) ===
+        evidence_score = self._apply_structural_clues_verb(evidence_score, token, context)
+        
+        # === STEP 4: SEMANTIC CLUES (MACRO-LEVEL) ===
+        evidence_score = self._apply_semantic_clues_verb(evidence_score, token, text, context)
+        
+        # === STEP 5: FEEDBACK PATTERNS (LEARNING CLUES) ===
+        evidence_score = self._apply_feedback_clues_verb(evidence_score, token, context)
+        
+        return max(0.0, min(1.0, evidence_score))  # Clamp to valid range
+
+    # === LINGUISTIC CLUES (MICRO-LEVEL) ===
+
+    def _apply_linguistic_clues_latin(self, evidence_score: float, token: 'Token', sentence) -> float:
+        """Apply SpaCy-based linguistic analysis clues for Latin abbreviations."""
+        
+        # Check if in parenthetical context (common for Latin abbreviations)
+        if self._is_in_parenthetical_context(token, token.doc):
+            evidence_score += 0.2  # Often indicates legitimate usage
+        
+        # Check surrounding punctuation context
+        prev_token = token.nbor(-1) if token.i > 0 else None
+        next_token = token.nbor(1) if token.i < len(token.doc) - 1 else None
+        
+        if prev_token and prev_token.text == '(':
+            evidence_score -= 0.3  # In parentheses often acceptable
+        
+        if next_token and next_token.text in ['.', ',', ';']:
+            evidence_score += 0.1  # End of sentence/clause usage more formal
+        
+        # Check for formal writing patterns
+        if token.text.lower() in ['i.e.', 'e.g.'] and next_token and next_token.text == ',':
+            evidence_score += 0.2  # Classic formal usage pattern
+        
+        return evidence_score
+
+    def _apply_linguistic_clues_undefined(self, evidence_score: float, token: 'Token', sentence) -> float:
+        """Apply SpaCy-based linguistic analysis clues for undefined abbreviations."""
+        
+        # Named Entity Recognition - if it's a known entity, likely doesn't need definition
+        if token.ent_type_ in ['PERSON', 'ORG', 'GPE', 'PRODUCT']:
+            evidence_score -= 0.8  # Names/entities are not abbreviation errors
+        elif token.ent_type_ in ['MISC', 'EVENT']:
+            evidence_score -= 0.3  # Miscellaneous entities often acceptable
+        
+        # Check if it's a common technical acronym
+        if len(token.text) <= 5 and token.text.isupper():
+            if self._is_common_technical_acronym(token.text):
+                evidence_score -= 0.4  # Common acronyms may not need definition
+        
+        # Check for contextual definition patterns
+        if self._is_contextually_defined(token, token.doc):
+            evidence_score -= 0.9  # Already defined in context
+        
+        # Check if in admonition context
+        if self._is_admonition_context(token, None):
+            evidence_score -= 0.3  # Admonition keywords are acceptable
+        
+        return evidence_score
+
+    def _apply_linguistic_clues_verb(self, evidence_score: float, token: 'Token', sentence) -> float:
+        """Apply SpaCy-based linguistic analysis clues for verb usage."""
+        
+        # Direct verbal POS tagging
+        if token.pos_ == 'VERB':
+            evidence_score += 0.2  # Strong linguistic evidence
+        
+        # Check dependency relations
+        if token.dep_ == 'ROOT':
+            evidence_score += 0.3  # Root verb is very strong evidence
+        elif token.dep_ in ['ccomp', 'xcomp']:
+            evidence_score += 0.2  # Complement verbs
+        
+        # Check for direct objects (strong verb indicator)
+        has_direct_object = any(child.dep_ == 'dobj' for child in token.children)
+        if has_direct_object:
+            evidence_score += 0.3  # Very strong verb evidence
+        
+        # Check for modal auxiliary patterns
+        prev_token = token.nbor(-1) if token.i > 0 else None
+        if prev_token and prev_token.tag_ == 'MD':  # Modal auxiliary
+            evidence_score += 0.2  # "can API", "will SSH" patterns
+        
+        return evidence_score
+
+    # === STRUCTURAL CLUES (MESO-LEVEL) ===
+
+    def _apply_structural_clues_latin(self, evidence_score: float, token: 'Token', context: Optional[Dict[str, Any]]) -> float:
+        """Apply document structure-based clues for Latin abbreviations."""
+        
+        if not context:
+            return evidence_score
+        
+        block_type = context.get('block_type', 'paragraph')
+        
+        # Academic/formal contexts are more accepting of Latin abbreviations
+        if block_type in ['citation', 'bibliography', 'reference']:
+            evidence_score -= 0.4  # Academic contexts accept Latin
+        
+        # Lists often use shorthand
+        elif block_type in ['ordered_list_item', 'unordered_list_item']:
+            evidence_score -= 0.2  # Lists more permissive
+        
+        # Footnotes and asides often use Latin
+        elif block_type in ['footnote', 'aside', 'sidebar']:
+            evidence_score -= 0.3  # Side content more permissive
+        
+        # Main content should avoid Latin abbreviations
+        elif block_type == 'paragraph':
+            evidence_score += 0.1  # Main content should be clearer
+        
+        return evidence_score
+
+    def _apply_structural_clues_undefined(self, evidence_score: float, token: 'Token', context: Optional[Dict[str, Any]]) -> float:
+        """Apply document structure-based clues for undefined abbreviations."""
+        
+        if not context:
+            return evidence_score
+        
+        block_type = context.get('block_type', 'paragraph')
+        
+        # Headings often use abbreviated forms
+        if block_type == 'heading':
+            heading_level = context.get('block_level', 1)
+            if heading_level == 1:  # H1 - Main headings
+                evidence_score -= 0.4  # Product names, main concepts
+            elif heading_level >= 2:  # H2+ - Section headings
+                evidence_score -= 0.2  # Section-specific terms
+        
+        # Code and technical blocks
+        elif block_type in ['code_block', 'literal_block']:
+            evidence_score -= 0.9  # Code blocks have different rules
+        elif block_type == 'inline_code':
+            evidence_score -= 0.6  # Inline code often technical
+        
+        # Table context
+        elif block_type in ['table_cell', 'table_header']:
+            evidence_score -= 0.3  # Tables often use abbreviated terms
+        
+        return evidence_score
+
+    def _apply_structural_clues_verb(self, evidence_score: float, token: 'Token', context: Optional[Dict[str, Any]]) -> float:
+        """Apply document structure-based clues for verb usage."""
+        
+        if not context:
+            return evidence_score
+        
+        block_type = context.get('block_type', 'paragraph')
+        
+        # Code blocks have different grammar rules
+        if block_type in ['code_block', 'literal_block']:
+            evidence_score -= 0.8  # Code has different syntax
+        elif block_type == 'inline_code':
+            evidence_score -= 0.5  # Inline code context
+        
+        # Headings rarely use verbs
+        elif block_type == 'heading':
+            evidence_score += 0.2  # Verbs in headings unusual
+        
+        # Commands and procedures might use imperative forms
+        elif block_type in ['procedure', 'step']:
+            evidence_score -= 0.2  # Procedural writing more imperative
+        
+        return evidence_score
+
+    # === SEMANTIC CLUES (MACRO-LEVEL) ===
+
+    def _apply_semantic_clues_latin(self, evidence_score: float, token: 'Token', text: str, context: Optional[Dict[str, Any]]) -> float:
+        """Apply semantic and content-type clues for Latin abbreviations."""
+        
+        if not context:
+            return evidence_score
+        
+        content_type = context.get('content_type', 'general')
+        
+        # Academic content more accepting of Latin
+        if content_type == 'academic':
+            evidence_score -= 0.3  # Academic writing has different norms
+        
+        # Legal writing traditionally uses Latin
+        elif content_type == 'legal':
+            evidence_score -= 0.2  # Legal writing traditionally formal
+        
+        # Technical documentation should be clear
+        elif content_type == 'technical':
+            evidence_score += 0.2  # Technical docs should be accessible
+        
+        # Marketing should be accessible
+        elif content_type == 'marketing':
+            evidence_score += 0.3  # Marketing should avoid Latin
+        
+        # Check audience level
+        audience = context.get('audience', 'general')
+        if audience in ['expert', 'academic']:
+            evidence_score -= 0.2  # Expert audience may accept Latin
+        elif audience in ['beginner', 'general']:
+            evidence_score += 0.3  # General audience needs clarity
+        
+        return evidence_score
+
+    def _apply_semantic_clues_undefined(self, evidence_score: float, token: 'Token', text: str, context: Optional[Dict[str, Any]]) -> float:
+        """Apply semantic and content-type clues for undefined abbreviations."""
+        
+        if not context:
+            return evidence_score
+        
+        content_type = context.get('content_type', 'general')
+        domain = context.get('domain', 'general')
+        
+        # Technical content assumes domain knowledge
+        if content_type == 'technical':
+            evidence_score -= 0.2  # Technical content more permissive
+            
+            # Check for technical indicators nearby
+            if self._has_technical_context_words(token, distance=10):
+                evidence_score -= 0.2  # API, SDK, JSON, etc. nearby
+        
+        # Domain-specific contexts
+        if domain in ['software', 'engineering', 'devops']:
+            evidence_score -= 0.3  # Technical domains more permissive
+        elif domain in ['finance', 'legal', 'medical']:
+            evidence_score += 0.1  # Professional domains need clarity
+        
+        # Document length context
+        doc_length = len(text.split())
+        if doc_length < 100:  # Short documents
+            evidence_score -= 0.1  # More permissive for brief content
+        elif doc_length > 2000:  # Long documents
+            evidence_score += 0.1  # Consistency more important in long docs
+        
+        # Audience level
+        audience = context.get('audience', 'general')
+        if audience in ['expert', 'developer']:
+            evidence_score -= 0.3  # Expert audience expects technical terms
+        elif audience in ['beginner', 'general']:
+            evidence_score += 0.2  # General audience needs definitions
+        
+        return evidence_score
+
+    def _apply_semantic_clues_verb(self, evidence_score: float, token: 'Token', text: str, context: Optional[Dict[str, Any]]) -> float:
+        """Apply semantic and content-type clues for verb usage."""
+        
+        if not context:
+            return evidence_score
+        
+        content_type = context.get('content_type', 'general')
+        
+        # Technical documentation often uses imperative forms
+        if content_type == 'technical':
+            # Check if this looks like a command or instruction
+            if self._is_imperative_context(token, text):
+                evidence_score -= 0.3  # Imperative usage more acceptable
+        
+        # Procedural content uses more verbs
+        elif content_type == 'procedural':
+            evidence_score -= 0.2  # Step-by-step instructions
+        
+        # Narrative content has different verb patterns
+        elif content_type == 'narrative':
+            evidence_score -= 0.1  # Storytelling context
+        
+        return evidence_score
+
+    # === FEEDBACK PATTERNS (LEARNING CLUES) ===
+
+    def _apply_feedback_clues_latin(self, evidence_score: float, token: 'Token', context: Optional[Dict[str, Any]]) -> float:
+        """Apply clues learned from user feedback patterns for Latin abbreviations."""
+        
+        # Load cached feedback patterns
+        feedback_patterns = self._get_cached_feedback_patterns()
+        
+        # Check if this specific Latin abbreviation is consistently accepted
+        if token.text.lower() in feedback_patterns.get('accepted_latin_terms', set()):
+            evidence_score -= 0.5  # Users consistently accept this
+        
+        # Check if users consistently reject flagging this
+        if token.text.lower() in feedback_patterns.get('rejected_latin_suggestions', set()):
+            evidence_score += 0.3  # Users consistently reject flagging this
+        
+        return evidence_score
+
+    def _apply_feedback_clues_undefined(self, evidence_score: float, token: 'Token', context: Optional[Dict[str, Any]]) -> float:
+        """Apply clues learned from user feedback patterns for undefined abbreviations."""
+        
+        feedback_patterns = self._get_cached_feedback_patterns()
+        
+        # Check if this abbreviation is consistently accepted without definition
+        if token.text in feedback_patterns.get('accepted_undefined_terms', set()):
+            evidence_score -= 0.6  # Users consistently accept without definition
+        
+        # Industry-specific accepted terms
+        if context:
+            industry = context.get('industry', 'general')
+            industry_terms = feedback_patterns.get(f'{industry}_accepted_abbreviations', set())
+            if token.text in industry_terms:
+                evidence_score -= 0.4
+        
+        return evidence_score
+
+    def _apply_feedback_clues_verb(self, evidence_score: float, token: 'Token', context: Optional[Dict[str, Any]]) -> float:
+        """Apply clues learned from user feedback patterns for verb usage."""
+        
+        feedback_patterns = self._get_cached_feedback_patterns()
+        
+        # Check if this verb usage is consistently accepted
+        if token.text.lower() in feedback_patterns.get('accepted_verb_abbreviations', set()):
+            evidence_score -= 0.5  # Users consistently accept this usage
+        
+        return evidence_score
+
+    def _get_cached_feedback_patterns(self):
+        """Load feedback patterns from cache or feedback analysis."""
+        # This would load from feedback analysis system
+        # For now, return patterns based on common technical writing
+        return {
+            'accepted_latin_terms': {'e.g.', 'i.e.', 'etc.', 'vs.'},
+            'rejected_latin_suggestions': set(),
+            'accepted_undefined_terms': {'API', 'SDK', 'HTTP', 'HTTPS', 'URL', 'JSON', 'XML', 'HTML', 'CSS'},
+            'accepted_verb_abbreviations': set(),
+            'software_accepted_abbreviations': {'API', 'SDK', 'IDE', 'CLI', 'GUI', 'REST', 'SOAP'},
+            'finance_accepted_abbreviations': {'ROI', 'KPI', 'SLA'},
+            'devops_accepted_abbreviations': {'CI', 'CD', 'AWS', 'GCP', 'K8S'},
+        }
+
+    # === HELPER METHODS FOR EVIDENCE CALCULATION ===
+
+    def _is_common_technical_acronym(self, text: str) -> bool:
+        """Check if this is a commonly known technical acronym."""
+        common_acronyms = {
+            'API', 'SDK', 'HTTP', 'HTTPS', 'URL', 'JSON', 'XML', 'HTML', 'CSS', 'JS',
+            'SQL', 'TCP', 'UDP', 'SSH', 'FTP', 'REST', 'SOAP', 'CRUD', 'GUI', 'CLI',
+            'IDE', 'OS', 'CPU', 'GPU', 'RAM', 'SSD', 'HDD', 'USB', 'PDF', 'CSV'
+        }
+        return text.upper() in common_acronyms
+
+    def _has_technical_context_words(self, token: 'Token', distance: int = 10) -> bool:
+        """Check if technical context words appear near the token."""
+        technical_words = {
+            'api', 'server', 'client', 'database', 'function', 'method', 'class',
+            'object', 'variable', 'parameter', 'endpoint', 'response', 'request',
+            'configuration', 'deployment', 'development', 'production', 'testing'
+        }
+        
+        start_idx = max(0, token.i - distance)
+        end_idx = min(len(token.doc), token.i + distance)
+        
+        for i in range(start_idx, end_idx):
+            if token.doc[i].text.lower() in technical_words:
+                return True
+        return False
+
+    def _is_imperative_context(self, token: 'Token', text: str) -> bool:
+        """Check if the token appears in an imperative/command context."""
+        # Look for imperative patterns in the sentence
+        sent = token.sent
+        
+        # Check if sentence starts with an imperative verb
+        if sent and len(sent) > 0:
+            first_token = sent[0]
+            if first_token.pos_ == 'VERB' and first_token.tag_ == 'VB':  # Base form verb
+                return True
+        
+        # Check for command-like patterns
+        command_indicators = ['run', 'execute', 'install', 'configure', 'setup', 'use']
+        for word in command_indicators:
+            if word in sent.text.lower():
+                return True
+        
+        return False
+
+    # === HELPER METHODS FOR SMART MESSAGING ===
+
+    def _get_contextual_message(self, token: 'Token', evidence_score: float, violation_type: str) -> str:
+        """Generate context-aware error messages based on evidence score."""
+        
+        if violation_type == 'latin':
+            if evidence_score > 0.8:
+                return f"Avoid using the Latin abbreviation '{token.text}' in this context."
+            elif evidence_score > 0.5:
+                return f"Consider replacing the Latin abbreviation '{token.text}' with its English equivalent."
+            else:
+                return f"The Latin abbreviation '{token.text}' may not be appropriate for your audience."
+        
+        elif violation_type == 'undefined':
+            if evidence_score > 0.8:
+                return f"Abbreviation '{token.text}' appears undefined and may confuse readers."
+            elif evidence_score > 0.5:
+                return f"Consider defining '{token.text}' on first use if it's not widely known."
+            else:
+                return f"Abbreviation '{token.text}' may benefit from definition depending on your audience."
+        
+        elif violation_type == 'verb':
+            if evidence_score > 0.8:
+                return f"Avoid using the abbreviation '{token.text}' as a verb."
+            elif evidence_score > 0.5:
+                return f"Consider rephrasing to avoid using '{token.text}' as a verb."
+            else:
+                return f"The abbreviation '{token.text}' appears to be used as a verb, which may affect readability."
+        
+        return f"Issue detected with abbreviation '{token.text}'."
+
+    def _generate_smart_suggestions(self, token: 'Token', context: Optional[Dict[str, Any]], 
+                                  violation_type: str, replacement: str = None) -> List[str]:
+        """Generate context-aware suggestions based on violation type and context."""
+        
+        suggestions = []
+        
+        if violation_type == 'latin':
+            if replacement:
+                suggestions.append(f"Use its English equivalent: '{replacement}'.")
+            suggestions.append("Consider if your audience is familiar with Latin abbreviations.")
+            if context and context.get('audience') == 'general':
+                suggestions.append("For general audiences, English equivalents are usually clearer.")
+        
+        elif violation_type == 'undefined':
+            suggestions.append(f"Define it on first use: 'Full Term ({token.text})'.")
+            if self._is_common_technical_acronym(token.text):
+                suggestions.append(f"While '{token.text}' is common in technical contexts, defining it helps all readers.")
+            suggestions.append("Consider your audience's familiarity with this abbreviation.")
+        
+        elif violation_type == 'verb':
+            action_verb = self._get_semantic_action(token.text.lower())
+            suggestions.append(f"Use a proper verb: '{action_verb} {token.text}' instead of '{token.text}'.")
+            suggestions.append("Rephrase the sentence to use the abbreviation as a noun.")
+        
+        return suggestions
