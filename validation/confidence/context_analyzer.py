@@ -11,6 +11,37 @@ from typing import Dict, List, Tuple, Optional, Any, Set
 from dataclasses import dataclass
 from pathlib import Path
 from collections import defaultdict, Counter
+from enum import Enum
+from functools import lru_cache
+
+
+class ContentType(Enum):
+    """Content type classifications for confidence normalization."""
+    TECHNICAL = "technical"
+    PROCEDURAL = "procedural" 
+    NARRATIVE = "narrative"
+    LEGAL = "legal"
+    MARKETING = "marketing"
+    GENERAL = "general"
+
+
+@dataclass
+class ContentTypeResult:
+    """Result of content type detection."""
+    content_type: ContentType
+    confidence: float
+    indicators: Dict[str, float]  # What patterns led to this classification
+    explanation: str
+
+
+@dataclass 
+class StatisticalFeatures:
+    """Statistical features extracted from text."""
+    avg_sentence_length: float
+    vocabulary_complexity: float
+    syntax_complexity: float
+    domain_terminology_density: float
+    formality_score: float
 
 
 @dataclass
@@ -125,6 +156,9 @@ class ContextAnalyzer:
         self._discourse_markers = self._load_discourse_markers()
         self._formality_patterns = self._load_formality_patterns()
         
+        # Content type detection patterns
+        self._content_patterns = self._load_content_patterns()
+        
         # Performance tracking
         self._cache_hits = 0
         self._cache_misses = 0
@@ -149,6 +183,45 @@ class ContextAnalyzer:
             'academic_phrases': ['it should be noted', 'it is important to', 'research indicates', 'studies show'],
             'hedging': ['may', 'might', 'could', 'potentially', 'arguably', 'presumably', 'likely'],
             'precision': ['specifically', 'precisely', 'exactly', 'particularly', 'especially']
+        }
+    
+    def _load_content_patterns(self) -> Dict[str, Dict[str, List[str]]]:
+        """Load content type detection patterns."""
+        return {
+            'technical': {
+                'api_terms': ['endpoint', 'api', 'rest', 'json', 'xml', 'http', 'https', 'get', 'post', 'put', 'delete'],
+                'config_terms': ['configuration', 'config', 'settings', 'parameters', 'options', 'install', 'setup'],
+                'error_terms': ['error', 'exception', 'warning', 'debug', 'log', 'trace', 'stack trace'],
+                'tech_verbs': ['configure', 'initialize', 'implement', 'deploy', 'execute', 'compile', 'debug'],
+                'code_terms': ['function', 'method', 'class', 'variable', 'parameter', 'return', 'import', 'module']
+            },
+            'procedural': {
+                'step_indicators': ['step', 'first', 'next', 'then', 'finally', 'before', 'after', 'following'],
+                'imperative_verbs': ['click', 'select', 'choose', 'enter', 'type', 'press', 'navigate', 'open'],
+                'sequence_words': ['initially', 'subsequently', 'meanwhile', 'afterwards', 'during', 'while'],
+                'instruction_phrases': ['to do this', 'follow these steps', 'in order to', 'make sure to'],
+                'numbered_lists': [r'\d+\.', r'\d+\)', r'step \d+', r'stage \d+']
+            },
+            'narrative': {
+                'story_verbs': ['told', 'happened', 'discovered', 'realized', 'remembered', 'experienced'],
+                'time_references': ['once upon', 'yesterday', 'last week', 'in the past', 'previously', 'earlier'],
+                'descriptive_adj': ['beautiful', 'amazing', 'incredible', 'wonderful', 'fantastic', 'excellent'],
+                'emotional_words': ['excited', 'surprised', 'disappointed', 'thrilled', 'worried', 'confident'],
+                'personal_pronouns': ['i', 'we', 'my', 'our', 'me', 'us']
+            },
+            'legal': {
+                'legal_verbs': ['shall', 'must', 'may not', 'is required', 'is prohibited', 'hereby'],
+                'compliance_terms': ['regulation', 'compliance', 'violation', 'penalty', 'liability', 'jurisdiction'],
+                'legal_phrases': ['subject to', 'in accordance with', 'pursuant to', 'notwithstanding'],
+                'formal_terms': ['whereas', 'therefore', 'furthermore', 'heretofore', 'aforementioned']
+            },
+            'marketing': {
+                'cta_words': ['buy now', 'sign up', 'get started', 'learn more', 'contact us', 'try free'],
+                'benefit_words': ['save', 'free', 'discount', 'bonus', 'exclusive', 'limited time'],
+                'emotional_appeal': ['amazing', 'revolutionary', 'breakthrough', 'game-changing', 'incredible'],
+                'superlatives': ['best', 'top', 'leading', 'premier', 'ultimate', 'perfect', 'ideal'],
+                'urgency_words': ['now', 'today', 'immediately', 'urgent', 'limited', 'expires', 'hurry']
+            }
         }
     
     def analyze_context(self, text: str, error_position: int) -> ContextAnalysis:
@@ -216,6 +289,401 @@ class ContextAnalyzer:
         self._analysis_cache[cache_key] = analysis
         
         return analysis
+    
+    def detect_content_type(self, text: str, context: Dict = None) -> ContentTypeResult:
+        """
+        Enhanced content type detection for confidence normalization.
+        
+        Args:
+            text: The text to classify
+            context: Optional additional context information
+            
+        Returns:
+            ContentTypeResult with classification and confidence
+        """
+        # Check cache first
+        cache_key = f"content_type:{hash(text)}"
+        if cache_key in self._analysis_cache:
+            self._cache_hits += 1
+            return self._analysis_cache[cache_key]
+        
+        self._cache_misses += 1
+        
+        # Process text with spaCy
+        doc = self._get_nlp_doc(text)
+        
+        # Extract statistical features
+        statistical_features = self._extract_statistical_features(doc)
+        
+        # Analyze different content type indicators
+        technical_score = self._analyze_technical_indicators(doc)
+        procedural_score = self._analyze_procedural_indicators(doc)
+        narrative_score = self._analyze_narrative_indicators(doc)
+        legal_score = self._analyze_legal_indicators(doc)
+        marketing_score = self._analyze_marketing_indicators(doc)
+        
+        # Combine scores with statistical features (more conservative approach)
+        scores = {
+            ContentType.TECHNICAL: technical_score * (1 + min(0.3, statistical_features.domain_terminology_density)),
+            ContentType.PROCEDURAL: procedural_score * (1 + min(0.2, statistical_features.syntax_complexity * 0.2)),
+            ContentType.NARRATIVE: narrative_score * (1 + min(0.2, (1 - statistical_features.formality_score) * 0.3)),
+            ContentType.LEGAL: legal_score * (1 + min(0.4, statistical_features.formality_score * 0.8)),
+            ContentType.MARKETING: marketing_score * (1 + min(0.2, (1 - statistical_features.formality_score) * 0.3))
+        }
+        
+        # Find best classification
+        best_type = max(scores, key=scores.get)
+        best_score = scores[best_type]
+        
+        # Default to general if no strong indicators
+        if best_score < 0.3:
+            best_type = ContentType.GENERAL
+            best_score = 0.5
+        
+        # Calculate confidence (0-1)
+        confidence = min(1.0, best_score)
+        
+        # Create indicators dict for explanation
+        indicators = {
+            'technical': technical_score,
+            'procedural': procedural_score,
+            'narrative': narrative_score,
+            'legal': legal_score,
+            'marketing': marketing_score,
+            'statistical_features': {
+                'avg_sentence_length': statistical_features.avg_sentence_length,
+                'vocabulary_complexity': statistical_features.vocabulary_complexity,
+                'syntax_complexity': statistical_features.syntax_complexity,
+                'domain_terminology_density': statistical_features.domain_terminology_density,
+                'formality_score': statistical_features.formality_score
+            }
+        }
+        
+        # Generate explanation
+        explanation = self._generate_content_type_explanation(best_type, confidence, indicators)
+        
+        result = ContentTypeResult(
+            content_type=best_type,
+            confidence=confidence,
+            indicators=indicators,
+            explanation=explanation
+        )
+        
+        # Cache result
+        self._analysis_cache[cache_key] = result
+        
+        return result
+    
+    def _extract_statistical_features(self, doc) -> StatisticalFeatures:
+        """Extract statistical features for content classification."""
+        if len(doc) == 0:
+            return StatisticalFeatures(0.0, 0.0, 0.0, 0.0, 0.0)
+        
+        # Average sentence length
+        sentences = list(doc.sents)
+        if sentences:
+            avg_sentence_length = sum(len(sent) for sent in sentences) / len(sentences)
+        else:
+            avg_sentence_length = len(doc)
+        
+        # Vocabulary complexity (unique words / total words)
+        words = [token.text.lower() for token in doc if token.is_alpha]
+        vocabulary_complexity = len(set(words)) / max(len(words), 1) if words else 0.0
+        
+        # Syntax complexity (based on dependency depth)
+        syntax_complexity = self._calculate_avg_dependency_depth(doc)
+        
+        # Domain-specific terminology density
+        domain_terminology_density = self._calculate_domain_terminology_density(doc)
+        
+        # Formality score
+        formality_score = self._calculate_formality_score(doc)
+        
+        return StatisticalFeatures(
+            avg_sentence_length=avg_sentence_length,
+            vocabulary_complexity=vocabulary_complexity,
+            syntax_complexity=syntax_complexity,
+            domain_terminology_density=domain_terminology_density,
+            formality_score=formality_score
+        )
+    
+    def _analyze_technical_indicators(self, doc) -> float:
+        """Detect technical content patterns."""
+        score = 0.0
+        text_lower = doc.text.lower()
+        
+        # Count pattern matches
+        pattern_counts = defaultdict(int)
+        for category, patterns in self._content_patterns['technical'].items():
+            for pattern in patterns:
+                if isinstance(pattern, str):
+                    pattern_counts[category] += text_lower.count(pattern)
+                else:  # regex pattern
+                    pattern_counts[category] += len(re.findall(pattern, text_lower))
+        
+        # Score based on pattern density
+        total_words = len([t for t in doc if t.is_alpha])
+        if total_words > 0:
+            for category, count in pattern_counts.items():
+                density = count / total_words
+                if category == 'api_terms':
+                    score += density * 4.0  # API terms are very strong indicators
+                elif category == 'code_terms':
+                    score += density * 3.5
+                elif category == 'tech_verbs':
+                    score += density * 3.0
+                elif category == 'config_terms':
+                    score += density * 3.0
+                elif category == 'error_terms':
+                    score += density * 2.5
+                else:
+                    score += density * 1.0
+        
+        # Check for code-like patterns
+        if re.search(r'[{}()\[\];]', doc.text):
+            score += 0.3
+        
+        # Check for technical formatting
+        if re.search(r'`[^`]+`', doc.text):  # Backticks
+            score += 0.2
+        
+        return min(1.0, score)
+    
+    def _analyze_procedural_indicators(self, doc) -> float:
+        """Detect procedural/instructional content."""
+        score = 0.0
+        text_lower = doc.text.lower()
+        
+        # Count procedural patterns
+        pattern_counts = defaultdict(int)
+        for category, patterns in self._content_patterns['procedural'].items():
+            for pattern in patterns:
+                if isinstance(pattern, str):
+                    pattern_counts[category] += text_lower.count(pattern)
+                else:  # regex pattern
+                    pattern_counts[category] += len(re.findall(pattern, text_lower))
+        
+        # Score based on pattern density
+        total_words = len([t for t in doc if t.is_alpha])
+        if total_words > 0:
+            for category, count in pattern_counts.items():
+                density = count / total_words
+                if category == 'step_indicators':
+                    score += density * 2.5  # Step indicators are very strong
+                elif category == 'imperative_verbs':
+                    score += density * 2.0
+                elif category == 'numbered_lists':
+                    score += density * 1.8
+                else:
+                    score += density * 1.0
+        
+        # Check for imperative mood (commands)
+        imperative_count = 0
+        for sent in doc.sents:
+            if len(sent) > 0 and sent[0].pos_ == 'VERB' and sent[0].tag_ in ['VB', 'VBP']:
+                imperative_count += 1
+        
+        if len(list(doc.sents)) > 0:
+            imperative_ratio = imperative_count / len(list(doc.sents))
+            score += imperative_ratio * 0.5
+        
+        return min(1.0, score)
+    
+    def _analyze_narrative_indicators(self, doc) -> float:
+        """Detect narrative/storytelling content."""
+        score = 0.0
+        text_lower = doc.text.lower()
+        
+        # Count narrative patterns (with word boundaries for single letters)
+        pattern_counts = defaultdict(int)
+        for category, patterns in self._content_patterns['narrative'].items():
+            for pattern in patterns:
+                if len(pattern) == 1:  # Single letter patterns need word boundaries
+                    import re
+                    pattern_counts[category] += len(re.findall(r'\b' + re.escape(pattern) + r'\b', text_lower))
+                else:
+                    pattern_counts[category] += text_lower.count(pattern)
+        
+        # Score based on pattern density
+        total_words = len([t for t in doc if t.is_alpha])
+        if total_words > 0:
+            for category, count in pattern_counts.items():
+                density = count / total_words
+                if category == 'personal_pronouns':
+                    score += density * 2.5  # Personal pronouns are strong indicators
+                elif category == 'story_verbs':
+                    score += density * 3.0
+                elif category == 'time_references':
+                    score += density * 2.5
+                elif category == 'descriptive_adj':
+                    score += density * 2.0
+                elif category == 'emotional_words':
+                    score += density * 2.5
+                else:
+                    score += density * 1.0
+        
+        # Check for past tense narrative
+        past_tense_count = len([t for t in doc if t.tag_ in ['VBD', 'VBN']])
+        if total_words > 0:
+            past_tense_ratio = past_tense_count / total_words
+            score += past_tense_ratio * 0.3
+        
+        return min(1.0, score)
+    
+    def _analyze_legal_indicators(self, doc) -> float:
+        """Detect legal/formal content."""
+        score = 0.0
+        text_lower = doc.text.lower()
+        
+        # Count legal patterns
+        pattern_counts = defaultdict(int)
+        for category, patterns in self._content_patterns['legal'].items():
+            for pattern in patterns:
+                pattern_counts[category] += text_lower.count(pattern)
+        
+        # Score based on pattern density
+        total_words = len([t for t in doc if t.is_alpha])
+        if total_words > 0:
+            for category, count in pattern_counts.items():
+                density = count / total_words
+                if category == 'legal_verbs':
+                    score += density * 5.0  # Legal verbs are very strong indicators
+                elif category == 'legal_phrases':
+                    score += density * 4.0
+                elif category == 'compliance_terms':
+                    score += density * 3.5
+                elif category == 'formal_terms':
+                    score += density * 2.0
+                else:
+                    score += density * 1.0
+        
+        # Check for formal sentence structure
+        long_sentences = len([s for s in doc.sents if len(s) > 25])
+        if len(list(doc.sents)) > 0:
+            long_sentence_ratio = long_sentences / len(list(doc.sents))
+            score += long_sentence_ratio * 0.2
+        
+        return min(1.0, score)
+    
+    def _analyze_marketing_indicators(self, doc) -> float:
+        """Detect marketing/promotional content."""
+        score = 0.0
+        text_lower = doc.text.lower()
+        
+        # Count marketing patterns
+        pattern_counts = defaultdict(int)
+        for category, patterns in self._content_patterns['marketing'].items():
+            for pattern in patterns:
+                pattern_counts[category] += text_lower.count(pattern)
+        
+        # Score based on pattern density
+        total_words = len([t for t in doc if t.is_alpha])
+        if total_words > 0:
+            for category, count in pattern_counts.items():
+                density = count / total_words
+                if category == 'cta_words':
+                    score += density * 3.0  # Call-to-action words are very strong
+                elif category == 'urgency_words':
+                    score += density * 2.5
+                elif category == 'superlatives':
+                    score += density * 2.0
+                else:
+                    score += density * 1.0
+        
+        # Check for exclamation marks (excitement)
+        exclamation_count = doc.text.count('!')
+        text_words = doc.text.split()
+        if len(text_words) > 0:
+            exclamation_ratio = exclamation_count / len(text_words)
+            score += exclamation_ratio * 0.5
+        
+        return min(1.0, score)
+    
+    def _calculate_avg_dependency_depth(self, doc) -> float:
+        """Calculate average dependency tree depth across sentences."""
+        depths = []
+        for sent in doc.sents:
+            depth = self._calculate_dependency_depth(sent)
+            depths.append(depth)
+        
+        return sum(depths) / max(len(depths), 1)
+    
+    def _calculate_domain_terminology_density(self, doc) -> float:
+        """Calculate density of domain-specific terminology."""
+        total_words = len([t for t in doc if t.is_alpha])
+        if total_words == 0:
+            return 0.0
+        
+        domain_terms = 0
+        text_lower = doc.text.lower()
+        
+        # Count all domain-specific terms
+        for content_type, categories in self._content_patterns.items():
+            for category, patterns in categories.items():
+                for pattern in patterns:
+                    if isinstance(pattern, str):
+                        domain_terms += text_lower.count(pattern)
+        
+        return min(1.0, domain_terms / total_words)
+    
+    def _calculate_formality_score(self, doc) -> float:
+        """Calculate formality score based on language patterns."""
+        score = 0.5  # Base neutral score
+        total_words = len([t for t in doc if t.is_alpha])
+        
+        if total_words == 0:
+            return score
+        
+        # Count formal patterns
+        formal_indicators = 0
+        text_lower = doc.text.lower()
+        
+        for category, patterns in self._formality_patterns.items():
+            for pattern in patterns:
+                formal_indicators += text_lower.count(pattern)
+        
+        # Adjust score based on formal pattern density
+        formality_density = formal_indicators / total_words
+        score += formality_density * 0.5
+        
+        # Check for passive voice (formal)
+        passive_count = len([t for t in doc if 'Pass' in t.tag_])
+        passive_ratio = passive_count / total_words
+        score += passive_ratio * 0.2
+        
+        # Check for complex sentences (formal)
+        complex_sentences = len([s for s in doc.sents if len(s) > 20])
+        if len(list(doc.sents)) > 0:
+            complex_ratio = complex_sentences / len(list(doc.sents))
+            score += complex_ratio * 0.1
+        
+        return min(1.0, max(0.0, score))
+    
+    def _generate_content_type_explanation(self, content_type: ContentType, confidence: float, indicators: Dict) -> str:
+        """Generate human-readable explanation of content type classification."""
+        explanation_parts = [f"Content classified as {content_type.value} with {confidence:.1%} confidence"]
+        
+        # Add top indicators
+        type_scores = {k: v for k, v in indicators.items() if k != 'statistical_features' and v > 0.1}
+        if type_scores:
+            top_indicators = sorted(type_scores.items(), key=lambda x: x[1], reverse=True)[:2]
+            explanation_parts.append(f"Key indicators: {', '.join([f'{k} ({v:.2f})' for k, v in top_indicators])}")
+        
+        # Add statistical insights
+        stats = indicators.get('statistical_features', {})
+        if stats:
+            insights = []
+            if stats.get('formality_score', 0) > 0.7:
+                insights.append("formal language")
+            if stats.get('domain_terminology_density', 0) > 0.1:
+                insights.append("domain-specific terminology")
+            if stats.get('syntax_complexity', 0) > 0.6:
+                insights.append("complex syntax")
+            
+            if insights:
+                explanation_parts.append(f"Features: {', '.join(insights)}")
+        
+        return '. '.join(explanation_parts)
     
     def _get_nlp_doc(self, text: str):
         """Get spaCy doc with caching."""
