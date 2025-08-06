@@ -18,6 +18,7 @@ try:
         ValidationPipeline, PipelineConfiguration, PipelineResult, ConsensusStrategy
     )
     from validation.multi_pass.base_validator import ValidationContext
+    from validation.confidence.rule_reliability import get_rule_reliability_coefficient
     ENHANCED_VALIDATION_AVAILABLE = True
 except ImportError:
     # Fallback for environments where validation system is not available
@@ -28,6 +29,7 @@ except ImportError:
     PipelineResult = None
     ValidationContext = None
     ConsensusStrategy = None
+    get_rule_reliability_coefficient = None
     ENHANCED_VALIDATION_AVAILABLE = False
 
 try:
@@ -179,6 +181,19 @@ class BaseRule(ABC):
     def _get_rule_type(self) -> str:
         """Return the rule type identifier (e.g., 'passive_voice', 'sentence_length')."""
         pass
+    
+    def _get_rule_reliability_coefficient(self) -> float:
+        """
+        Get reliability coefficient for this rule type.
+        
+        Returns:
+            Reliability coefficient in range [0.5, 1.0] indicating typical accuracy
+        """
+        if ENHANCED_VALIDATION_AVAILABLE and get_rule_reliability_coefficient:
+            return get_rule_reliability_coefficient(self.rule_type)
+        else:
+            # Fallback coefficient when validation system not available
+            return 0.75
     
     @abstractmethod
     def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:

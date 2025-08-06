@@ -17,9 +17,11 @@ import logging
 try:
     from validation.confidence.confidence_calculator import ConfidenceCalculator
     from validation.multi_pass.validation_pipeline import ValidationPipeline
+    from validation.confidence.rule_reliability import get_rule_reliability_coefficient
     ENHANCED_VALIDATION_AVAILABLE = True
 except ImportError:
     ENHANCED_VALIDATION_AVAILABLE = False
+    get_rule_reliability_coefficient = None
 
 logger = logging.getLogger(__name__)
 
@@ -763,7 +765,10 @@ class ErrorConsolidator:
         return self._estimate_confidence_fallback(error)
     
     def _estimate_confidence_fallback(self, error: Dict[str, Any]) -> float:
-        """Estimate confidence when not explicitly provided."""
+        """
+        Estimate confidence when not explicitly provided.
+        Uses centralized rule reliability system for consistency.
+        """
         severity = error.get('severity', 'low')
         error_type = error.get('type', 'unknown')
         
@@ -778,12 +783,19 @@ class ErrorConsolidator:
         
         base_confidence = severity_confidence.get(severity, 0.5)
         
-        # Adjust based on rule type reliability
-        reliable_types = ['claims', 'personal_information', 'inclusive_language', 'commands']
-        if error_type in reliable_types:
-            base_confidence += 0.1
+        # Apply rule reliability coefficient (replaces hardcoded logic)
+        if ENHANCED_VALIDATION_AVAILABLE and get_rule_reliability_coefficient:
+            rule_reliability = get_rule_reliability_coefficient(error_type)
+            # Combine severity and rule reliability
+            final_confidence = base_confidence * rule_reliability
+        else:
+            # Fallback: use old hardcoded logic
+            reliable_types = ['claims', 'personal_information', 'inclusive_language', 'commands']
+            if error_type in reliable_types:
+                base_confidence += 0.1
+            final_confidence = base_confidence
         
-        return min(1.0, base_confidence)
+        return min(1.0, final_confidence)
     
     def _update_confidence_distribution(self, confidence_values: List[float]):
         """Update confidence distribution statistics."""
