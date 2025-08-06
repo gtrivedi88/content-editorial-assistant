@@ -47,6 +47,8 @@ class ClaimsRule(BaseLegalRule):
                         message=f"The term '{match.group()}' makes a subjective or unsupported claim that should be avoided.",
                         suggestions=suggestions,
                         severity='high',
+                        text=text,  # Enhanced: Pass full text for better confidence analysis
+                        context=context,  # Enhanced: Pass context for domain-specific validation
                         span=(sent.start_char + match.start(), sent.start_char + match.end()),
                         flagged_text=match.group(0)
                     ))

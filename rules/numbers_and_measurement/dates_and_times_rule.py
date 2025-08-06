@@ -39,6 +39,8 @@ class DatesAndTimesRule(BaseNumbersRule):
                     message="Avoid all-numeric date formats to prevent international confusion.",
                     suggestions=["Use the format '14 July 2020'."],
                     severity='high',
+                    text=text,  # Enhanced: Pass full text for better confidence analysis
+                    context=context,  # Enhanced: Pass context for domain-specific validation
                     span=(sent.start_char + match.start(), sent.start_char + match.end()),
                     flagged_text=match.group(0)
                 ))
@@ -51,6 +53,8 @@ class DatesAndTimesRule(BaseNumbersRule):
                     message="Use 'AM' or 'PM' (uppercase, no periods) for time.",
                     suggestions=["Replace incorrect variations like 'a.m.' or 'pm' with 'AM' or 'PM'."],
                     severity='medium',
+                    text=text,  # Enhanced: Pass full text for better confidence analysis
+                    context=context,  # Enhanced: Pass context for domain-specific validation
                     span=(sent.start_char + match.start(), sent.start_char + match.end()),
                     flagged_text=match.group(0)
                 ))

@@ -37,6 +37,8 @@ class CompanyNamesRule(BaseLegalRule):
                         sentence_index=sentences.index(ent.sent.text) if ent.sent.text in sentences else -1,
                         message=f"Company name '{ent.text}' should be written with its full legal name on first use.",
                         suggestions=[f"Use the full company name, such as '{ent.text} Corporation'."],
-                        severity='low'
+                        severity='low',
+                        text=text,  # Enhanced: Pass full text for better confidence analysis
+                        context=context  # Enhanced: Pass context for domain-specific validation
                     ))
         return errors

@@ -45,6 +45,8 @@ class CurrencyRule(BaseNumbersRule):
                         message="For international audiences, use the three-letter ISO currency code before the amount.",
                         suggestions=["Replace currency symbols like '$' with ISO codes like 'USD '."],
                         severity='medium',
+                        text=text,  # Enhanced: Pass full text for better confidence analysis
+                        context=context,  # Enhanced: Pass context for domain-specific validation
                         span=(sent.start_char + match.start(), sent.start_char + match.end()),
                         flagged_text=flagged_text
                     ))
@@ -57,6 +59,8 @@ class CurrencyRule(BaseNumbersRule):
                         message=f"Do not use letter abbreviations like '{flagged_text}' for currency multipliers.",
                         suggestions=["Spell out the full number (e.g., 'USD 4 million' or 'USD 4,000,000')."],
                         severity='high',
+                        text=text,  # Enhanced: Pass full text for better confidence analysis
+                        context=context,  # Enhanced: Pass context for domain-specific validation
                         span=(sent.start_char + match.start(), sent.start_char + match.end()),
                         flagged_text=flagged_text
                     ))

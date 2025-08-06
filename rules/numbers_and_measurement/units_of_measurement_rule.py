@@ -38,6 +38,8 @@ class UnitsOfMeasurementRule(BaseNumbersRule):
                     message=f"Missing space between number and unit of measurement: '{match.group()}'.",
                     suggestions=["Insert a space between the number and the unit (e.g., '600 MHz')."],
                     severity='medium',
+                    text=text,  # Enhanced: Pass full text for better confidence analysis
+                    context=context,  # Enhanced: Pass context for domain-specific validation
                     span=(sent.start_char + match.start(), sent.start_char + match.end()),
                     flagged_text=match.group(0)
                 ))

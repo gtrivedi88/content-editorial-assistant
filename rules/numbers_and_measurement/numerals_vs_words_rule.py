@@ -57,6 +57,8 @@ class NumeralsVsWordsRule(BaseNumbersRule):
                             message="Inconsistent use of numerals and words for numbers under 10.",
                             suggestions=["Choose one style for numbers under 10 (either numerals or words) and apply it consistently. Numerals are generally preferred."],
                             severity='low',
+                            text=text,  # Enhanced: Pass full text for better confidence analysis
+                            context=context,  # Enhanced: Pass context for domain-specific validation
                             span=(token.idx, token.idx + len(token.text)),
                             flagged_text=token.text
                         ))

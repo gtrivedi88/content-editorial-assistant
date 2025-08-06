@@ -49,6 +49,8 @@ class NumbersRule(BaseNumbersRule):
                     message="Large numbers should use commas as thousands separators.",
                     suggestions=[f"Add commas to the number (e.g., '{suggestion_number}')."],
                     severity='medium',
+                    text=text,  # Enhanced: Pass full text for better confidence analysis
+                    context=context,  # Enhanced: Pass context for domain-specific validation
                     span=(sent.start_char + match.start(), sent.start_char + match.end()),
                     flagged_text=flagged_text
                 ))
@@ -62,6 +64,8 @@ class NumbersRule(BaseNumbersRule):
                     message="Decimal values less than 1 should have a leading zero.",
                     suggestions=[f"Add a '0' before the decimal point (e.g., '0{flagged_text}')."],
                     severity='medium',
+                    text=text,  # Enhanced: Pass full text for better confidence analysis
+                    context=context,  # Enhanced: Pass context for domain-specific validation
                     span=(sent.start_char + match.start(), sent.start_char + match.end()),
                     flagged_text=flagged_text
                 ))

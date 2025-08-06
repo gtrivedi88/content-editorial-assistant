@@ -44,6 +44,8 @@ class PersonalInformationRule(BaseLegalRule):
                         message=f"Avoid using the term '{match.group()}'. Use a more globally understood term.",
                         suggestions=[f"Replace '{match.group()}' with '{good_term}'."],
                         severity='medium',
+                        text=text,  # Enhanced: Pass full text for better confidence analysis
+                        context=context,  # Enhanced: Pass context for domain-specific validation
                         span=(sent.start_char + match.start(), sent.start_char + match.end()),
                         flagged_text=match.group(0)
                     ))
