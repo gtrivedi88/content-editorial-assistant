@@ -106,36 +106,48 @@ class ContractionsRule(BaseLanguageRule):
         return 'contractions'
 
     def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
+        """
+        Analyzes sentences for contractions using evidence-based scoring.
+        Uses sophisticated linguistic analysis to distinguish between contexts where 
+        contractions are appropriate vs. inappropriate based on writing style and formality.
+        """
         errors = []
         if not nlp:
             return errors
         
         doc = nlp(text)
         
-        # ENHANCED APPROACH: Use both spaCy morphological analysis AND regex patterns
-        # This ensures comprehensive coverage of all contractions
-        
-        # METHOD 1: spaCy morphological analysis (existing approach)
+        # ENHANCED APPROACH: Evidence-based contraction analysis
+        # METHOD 1: spaCy morphological analysis with evidence scoring
         for sent in doc.sents:
+            sent_index = list(doc.sents).index(sent)
             for token in sent:
                 # UNIVERSAL LINGUISTIC ANCHOR: Check if token has contraction characteristics
                 if self._is_contraction_by_morphology(token):
                     contraction_info = self._analyze_contraction_morphology(token)
                     
-                    errors.append(self._create_error(
-                        sentence=sent.text,
-                        sentence_index=list(doc.sents).index(sent),
-                        message=f"Contraction found: '{token.text}' ({contraction_info['type']}).",
-                        suggestions=[f"Expand contractions for a more formal tone: {contraction_info['suggestion']}."],
-                        severity='low',
-                        text=text,  # Enhanced: Pass full text for better confidence analysis
-                        context=context,  # Enhanced: Pass context for domain-specific validation
-                        span=(token.idx, token.idx + len(token.text)),
-                        flagged_text=token.text
-                    ))
+                    # Calculate evidence score for this contraction
+                    evidence_score = self._calculate_contraction_evidence(
+                        token, contraction_info, sent, text, context
+                    )
+                    
+                    # Only create error if evidence suggests it's worth flagging
+                    if evidence_score > 0.1:  # Low threshold - let enhanced validation decide
+                        errors.append(self._create_error(
+                            sentence=sent.text,
+                            sentence_index=sent_index,
+                            message=self._get_contextual_message(token, contraction_info, evidence_score),
+                            suggestions=self._generate_smart_suggestions(token, contraction_info, evidence_score, context),
+                            severity='low',
+                            text=text,
+                            context=context,
+                            evidence_score=evidence_score,  # Your nuanced assessment
+                            span=(token.idx, token.idx + len(token.text)),
+                            flagged_text=token.text
+                        ))
         
-        # METHOD 2: Comprehensive regex-based detection for any missed contractions
-        self._analyze_contractions_by_regex(text, doc, errors, context)
+        # METHOD 2: Comprehensive regex-based detection with evidence scoring
+        self._analyze_contractions_by_regex_evidence_based(text, doc, errors, context)
         
         return errors
     
@@ -418,10 +430,10 @@ class ContractionsRule(BaseLanguageRule):
         
         return "expand the contraction for a more formal tone"
     
-    def _analyze_contractions_by_regex(self, text: str, doc: 'Doc', errors: List[Dict[str, Any]], context: Dict[str, Any] = None):
+    def _analyze_contractions_by_regex_evidence_based(self, text: str, doc: 'Doc', errors: List[Dict[str, Any]], context: Dict[str, Any] = None):
         """
-        Enhanced regex-based contraction detection to catch any apostrophe-containing words
-        that might be missed by morphological analysis. Uses pattern r"\\b\\w+'\\w+\\b" as requested.
+        Evidence-based regex contraction detection to catch any apostrophe-containing words
+        that might be missed by morphological analysis with context-aware scoring.
         """
         # COMPREHENSIVE REGEX PATTERN: Any word containing an apostrophe
         contraction_pattern = r"\b\w+'\w+\b"
@@ -457,17 +469,25 @@ class ContractionsRule(BaseLanguageRule):
             # Generate intelligent suggestions based on pattern analysis
             suggestion_info = self._analyze_regex_contraction(contraction_text, token_analysis)
             
-            errors.append(self._create_error(
-                sentence=sent.text,
-                sentence_index=sent_index,
-                message=f"Contraction found: '{contraction_text}' ({suggestion_info['type']}).",
-                suggestions=[f"Expand contractions for a more formal tone: {suggestion_info['suggestion']}."],
-                severity='low',
-                text=text,  # Enhanced: Pass full text for better confidence analysis
-                context=context,  # Enhanced: Pass context for domain-specific validation
-                span=match_span,
-                flagged_text=contraction_text
-            ))
+            # Calculate evidence score for this regex-detected contraction
+            evidence_score = self._calculate_regex_contraction_evidence(
+                contraction_text, token_analysis, sent, text, context, suggestion_info
+            )
+            
+            # Only create error if evidence suggests it's worth flagging
+            if evidence_score > 0.1:  # Low threshold - let enhanced validation decide
+                errors.append(self._create_error(
+                    sentence=sent.text,
+                    sentence_index=sent_index,
+                    message=self._get_contextual_message_regex(contraction_text, suggestion_info, evidence_score),
+                    suggestions=self._generate_smart_suggestions_regex(contraction_text, suggestion_info, evidence_score, context),
+                    severity='low',
+                    text=text,
+                    context=context,
+                    evidence_score=evidence_score,  # Your nuanced assessment
+                    span=match_span,
+                    flagged_text=contraction_text
+                ))
             
             # Add to found spans to prevent further duplicates
             found_spans.add(match_span)
@@ -574,3 +594,677 @@ class ContractionsRule(BaseLanguageRule):
             'type': "contraction",
             'suggestion': "expand the contraction for a more formal tone"
         }
+
+    # === EVIDENCE-BASED CALCULATION METHODS ===
+
+    def _calculate_contraction_evidence(self, token, contraction_info: dict, sentence, text: str, context: dict) -> float:
+        """
+        Calculate evidence score (0.0-1.0) for contraction formality concerns.
+        
+        Higher scores indicate stronger evidence that the contraction should be flagged.
+        Lower scores indicate acceptable usage in the given context.
+        
+        Args:
+            token: The contraction token
+            contraction_info: Dict with contraction type and analysis
+            sentence: Sentence containing the contraction
+            text: Full document text
+            context: Document context (block_type, content_type, etc.)
+            
+        Returns:
+            float: Evidence score from 0.0 (acceptable) to 1.0 (should be flagged)
+        """
+        evidence_score = 0.0
+        
+        # === STEP 1: BASE EVIDENCE ASSESSMENT ===
+        evidence_score = self._get_base_contraction_evidence(token, contraction_info)
+        
+        if evidence_score == 0.0:
+            return 0.0  # No evidence, skip this contraction
+        
+        # === STEP 2: LINGUISTIC CLUES (MICRO-LEVEL) ===
+        evidence_score = self._apply_linguistic_clues_contraction(evidence_score, token, contraction_info, sentence)
+        
+        # === STEP 3: STRUCTURAL CLUES (MESO-LEVEL) ===
+        evidence_score = self._apply_structural_clues_contraction(evidence_score, token, context)
+        
+        # === STEP 4: SEMANTIC CLUES (MACRO-LEVEL) ===
+        evidence_score = self._apply_semantic_clues_contraction(evidence_score, token, contraction_info, text, context)
+        
+        # === STEP 5: FEEDBACK PATTERNS (LEARNING CLUES) ===
+        evidence_score = self._apply_feedback_clues_contraction(evidence_score, token, contraction_info, context)
+        
+        return max(0.0, min(1.0, evidence_score))  # Clamp to valid range
+
+    def _calculate_regex_contraction_evidence(self, contraction_text: str, token_analysis, sentence, text: str, context: dict, suggestion_info: dict) -> float:
+        """
+        Calculate evidence score for regex-detected contractions.
+        
+        Args:
+            contraction_text: The contraction text found by regex
+            token_analysis: SpaCy token analysis if available
+            sentence: Sentence containing the contraction
+            text: Full document text
+            context: Document context
+            suggestion_info: Analysis from _analyze_regex_contraction
+            
+        Returns:
+            float: Evidence score from 0.0 (acceptable) to 1.0 (should be flagged)
+        """
+        evidence_score = 0.0
+        
+        # === STEP 1: BASE EVIDENCE ASSESSMENT ===
+        evidence_score = self._get_base_regex_contraction_evidence(contraction_text, suggestion_info)
+        
+        if evidence_score == 0.0:
+            return 0.0  # No evidence, skip this contraction
+        
+        # === STEP 2: LINGUISTIC CLUES (MICRO-LEVEL) ===
+        evidence_score = self._apply_linguistic_clues_regex_contraction(evidence_score, contraction_text, token_analysis, sentence)
+        
+        # === STEP 3: STRUCTURAL CLUES (MESO-LEVEL) ===
+        evidence_score = self._apply_structural_clues_contraction(evidence_score, None, context)  # Use same structural logic
+        
+        # === STEP 4: SEMANTIC CLUES (MACRO-LEVEL) ===
+        evidence_score = self._apply_semantic_clues_regex_contraction(evidence_score, contraction_text, suggestion_info, text, context)
+        
+        # === STEP 5: FEEDBACK PATTERNS (LEARNING CLUES) ===
+        evidence_score = self._apply_feedback_clues_regex_contraction(evidence_score, contraction_text, suggestion_info, context)
+        
+        return max(0.0, min(1.0, evidence_score))  # Clamp to valid range
+
+    def _get_base_contraction_evidence(self, token, contraction_info: dict) -> float:
+        """Get base evidence score based on contraction type and context."""
+        
+        contraction_type = contraction_info.get('type', '').lower()
+        pattern = contraction_info.get('pattern', '')
+        
+        # === CONTRACTION TYPE BASE EVIDENCE ===
+        # Possessive contractions often more problematic in formal writing
+        if 'possessive' in contraction_type:
+            return 0.8  # High evidence - possessives often inappropriate
+        
+        # Negative contractions (n't) often acceptable in many contexts
+        elif 'negative' in contraction_type or "'t" in contraction_type:
+            return 0.4  # Moderate evidence - context-dependent
+        
+        # Auxiliary verb contractions vary by formality
+        elif 'auxiliary' in contraction_type or pattern.startswith('specific_'):
+            # Common auxiliaries like 're, 've, 'll
+            if "'re" in token.text.lower() or "'ve" in token.text.lower() or "'ll" in token.text.lower():
+                return 0.6  # Moderate-high evidence
+            # Less formal contractions like 's (is), 'm (am)
+            elif "'s" in token.text.lower() or "'m" in token.text.lower():
+                return 0.5  # Moderate evidence
+            # Ambiguous contractions like 'd (would/had)
+            elif "'d" in token.text.lower():
+                return 0.7  # Higher evidence - ambiguous meaning
+            else:
+                return 0.5  # Default moderate evidence
+        
+        # Pronominal contractions (pronoun + auxiliary)
+        elif 'pronominal' in contraction_type:
+            return 0.5  # Moderate evidence - depends on context
+        
+        # Modal and copula contractions
+        elif 'modal' in contraction_type or 'copula' in contraction_type:
+            return 0.6  # Moderate-high evidence
+        
+        # Unknown contraction types
+        else:
+            return 0.5  # Default moderate evidence
+
+    def _get_base_regex_contraction_evidence(self, contraction_text: str, suggestion_info: dict) -> float:
+        """Get base evidence score for regex-detected contractions."""
+        
+        contraction_type = suggestion_info.get('type', '').lower()
+        contraction_lower = contraction_text.lower()
+        
+        # === PATTERN-BASED BASE EVIDENCE ===
+        # Possessive patterns
+        if 'possessive' in contraction_type:
+            return 0.8  # High evidence - possessives often inappropriate
+        
+        # Negative contractions
+        elif "'t" in contraction_lower and 'negative' in contraction_type:
+            return 0.4  # Moderate evidence - context-dependent
+        
+        # Common auxiliary patterns with specific evidence levels
+        elif "'s" in contraction_lower:
+            return 0.5  # Moderate evidence - could be 'is' or possessive
+        elif "'re" in contraction_lower:
+            return 0.6  # Moderate-high evidence
+        elif "'ve" in contraction_lower:
+            return 0.6  # Moderate-high evidence
+        elif "'ll" in contraction_lower:
+            return 0.6  # Moderate-high evidence
+        elif "'d" in contraction_lower:
+            return 0.7  # Higher evidence - ambiguous meaning
+        elif "'m" in contraction_lower:
+            return 0.5  # Moderate evidence
+        
+        # Fallback for unknown patterns
+        else:
+            return 0.5  # Default moderate evidence
+
+    # === LINGUISTIC CLUES FOR CONTRACTIONS ===
+
+    def _apply_linguistic_clues_contraction(self, evidence_score: float, token, contraction_info: dict, sentence) -> float:
+        """Apply linguistic analysis clues for morphological contractions."""
+        
+        # === CONTRACTION MORPHOLOGY ANALYSIS ===
+        pattern = contraction_info.get('pattern', '')
+        
+        # High-certainty morphological patterns
+        if pattern.startswith('specific_'):
+            evidence_score += 0.1  # Specific patterns well-identified
+        elif pattern.startswith('fallback_'):
+            evidence_score -= 0.1  # Fallback patterns less certain
+        
+        # === POSITION AND CONTEXT ANALYSIS ===
+        # Sentence-initial contractions often more acceptable
+        if hasattr(token, 'i') and hasattr(sentence, 'start') and token.i == sentence.start:
+            evidence_score -= 0.2  # Sentence-initial more acceptable
+        
+        # === SURROUNDING WORD ANALYSIS ===
+        # Contractions near informal words
+        if self._has_informal_context_words(token):
+            evidence_score -= 0.2  # Informal context makes contractions more acceptable
+        
+        # Contractions near formal indicators
+        if self._has_formal_context_words(token):
+            evidence_score += 0.2  # Formal context makes contractions less acceptable
+        
+        # === MORPHOLOGICAL FEATURE ANALYSIS ===
+        if hasattr(token, 'morph') and token.morph:
+            morph_str = str(token.morph)
+            
+            # Negative contractions in questions more acceptable
+            if 'Polarity=Neg' in morph_str and self._is_in_question_context(token):
+                evidence_score -= 0.2
+            
+            # Auxiliary contractions with strong subjects
+            if 'VerbForm=Fin' in morph_str and self._has_strong_subject_nearby(token):
+                evidence_score += 0.1  # Clear auxiliary usage
+        
+        # === PHONETIC FLOW ANALYSIS ===
+        # Some contractions improve phonetic flow
+        if self._improves_phonetic_flow(token):
+            evidence_score -= 0.1
+        
+        return evidence_score
+
+    def _apply_linguistic_clues_regex_contraction(self, evidence_score: float, contraction_text: str, token_analysis, sentence) -> float:
+        """Apply linguistic analysis clues for regex-detected contractions."""
+        
+        contraction_lower = contraction_text.lower()
+        
+        # === PATTERN-SPECIFIC LINGUISTIC ANALYSIS ===
+        # Common patterns that are often acceptable
+        if contraction_lower in ["let's", "it's", "that's", "here's", "there's"]:
+            evidence_score -= 0.2  # Common, often acceptable contractions
+        
+        # Formal-sounding contractions that may be less acceptable
+        elif contraction_lower in ["shan't", "mayn't", "ought'nt"]:
+            evidence_score += 0.2  # Archaic/formal contractions often inappropriate
+        
+        # === TOKEN ANALYSIS INTEGRATION ===
+        if token_analysis:
+            # Use spaCy analysis when available
+            if hasattr(token_analysis, 'pos_') and token_analysis.pos_ == 'VERB':
+                evidence_score += 0.1  # Verb contractions in formal writing
+            elif hasattr(token_analysis, 'dep_') and token_analysis.dep_ in ['aux', 'cop']:
+                evidence_score += 0.1  # Auxiliary contractions
+        
+        # === CONTEXT POSITION ANALYSIS ===
+        # Sentence position affects acceptability
+        if sentence and contraction_text in sentence.text[:20]:  # First 20 characters
+            evidence_score -= 0.1  # Beginning of sentence more acceptable
+        
+        return evidence_score
+
+    def _apply_structural_clues_contraction(self, evidence_score: float, token, context: dict) -> float:
+        """Apply document structure-based clues for contraction analysis."""
+        
+        if not context:
+            return evidence_score
+        
+        block_type = context.get('block_type', 'paragraph')
+        
+        # === FORMAL WRITING CONTEXTS ===
+        # Academic and formal contexts expect no contractions
+        if block_type in ['heading', 'title']:
+            evidence_score += 0.3  # Headings should be formal
+        elif block_type == 'paragraph':
+            evidence_score += 0.1  # Body text generally more formal
+        
+        # === TECHNICAL CONTEXTS ===
+        # Technical documentation may use contractions for readability
+        if block_type in ['code_block', 'literal_block']:
+            evidence_score -= 0.3  # Code comments often informal
+        elif block_type == 'inline_code':
+            evidence_score -= 0.2  # Inline technical content more flexible
+        
+        # === LISTS AND PROCEDURES ===
+        # Instructions and lists often use contractions for brevity
+        if block_type in ['ordered_list_item', 'unordered_list_item']:
+            evidence_score -= 0.2  # List items often abbreviated/informal
+        elif block_type in ['table_cell', 'table_header']:
+            evidence_score -= 0.1  # Tables may use contractions for space
+        
+        # === ADMONITIONS ===
+        # Notes and tips often use conversational tone
+        if block_type == 'admonition':
+            admonition_type = context.get('admonition_type', '').upper()
+            if admonition_type in ['NOTE', 'TIP', 'HINT']:
+                evidence_score -= 0.3  # Notes/tips often conversational
+            elif admonition_type in ['WARNING', 'CAUTION']:
+                evidence_score -= 0.1  # Warnings may be conversational
+            elif admonition_type in ['IMPORTANT', 'ATTENTION']:
+                evidence_score += 0.1  # Important notices more formal
+        
+        # === QUOTES AND EXAMPLES ===
+        # Quoted material may preserve original contractions
+        if block_type in ['block_quote', 'citation']:
+            evidence_score -= 0.4  # Quotes preserve original style
+        elif block_type in ['example', 'sample']:
+            evidence_score -= 0.2  # Examples may be conversational
+        
+        return evidence_score
+
+    def _apply_semantic_clues_contraction(self, evidence_score: float, token, contraction_info: dict, text: str, context: dict) -> float:
+        """Apply semantic and content-type clues for contraction analysis."""
+        
+        if not context:
+            return evidence_score
+        
+        content_type = context.get('content_type', 'general')
+        
+        # === CONTENT TYPE ANALYSIS ===
+        # Different content types have different contraction tolerance
+        if content_type == 'technical':
+            evidence_score -= 0.2  # Technical writing often conversational for clarity
+        elif content_type == 'api':
+            evidence_score -= 0.3  # API docs often use conversational tone
+        elif content_type == 'academic':
+            evidence_score += 0.3  # Academic writing expects formal language
+        elif content_type == 'legal':
+            evidence_score += 0.4  # Legal writing demands precision and formality
+        elif content_type == 'marketing':
+            evidence_score -= 0.4  # Marketing uses conversational tone
+        elif content_type == 'narrative':
+            evidence_score -= 0.3  # Storytelling often uses contractions
+        elif content_type == 'procedural':
+            evidence_score -= 0.2  # Instructions often use contractions for clarity
+        
+        # === DOMAIN-SPECIFIC PATTERNS ===
+        domain = context.get('domain', 'general')
+        if domain in ['software', 'engineering', 'devops']:
+            evidence_score -= 0.2  # Technical domains often informal for readability
+        elif domain in ['documentation', 'tutorial']:
+            evidence_score -= 0.2  # Educational content often conversational
+        elif domain in ['academic', 'research', 'scientific']:
+            evidence_score += 0.2  # Academic domains expect formality
+        elif domain in ['legal', 'compliance', 'regulatory']:
+            evidence_score += 0.3  # Legal domains demand precision
+        
+        # === AUDIENCE CONSIDERATIONS ===
+        audience = context.get('audience', 'general')
+        if audience in ['developer', 'technical', 'expert']:
+            evidence_score -= 0.2  # Technical audiences expect practical communication
+        elif audience in ['academic', 'research']:
+            evidence_score += 0.2  # Academic audiences expect formal language
+        elif audience in ['beginner', 'general', 'consumer']:
+            evidence_score -= 0.3  # General audiences benefit from conversational tone
+        elif audience in ['professional', 'business']:
+            evidence_score += 0.1  # Professional contexts more formal
+        
+        # === WRITING STYLE INDICATORS ===
+        # Analyze the overall document tone
+        if self._has_conversational_tone_indicators(text):
+            evidence_score -= 0.2  # Conversational documents accept contractions
+        
+        if self._has_formal_tone_indicators(text):
+            evidence_score += 0.2  # Formal documents avoid contractions
+        
+        # === CONTRACTION TYPE IN CONTEXT ===
+        contraction_type = contraction_info.get('type', '').lower()
+        
+        # Possessive contractions particularly problematic in formal writing
+        if 'possessive' in contraction_type and content_type in ['academic', 'legal']:
+            evidence_score += 0.2  # Possessives especially problematic in formal contexts
+        
+        # Negative contractions often acceptable even in formal contexts
+        if 'negative' in contraction_type and content_type not in ['legal']:
+            evidence_score -= 0.1  # Negative contractions more broadly acceptable
+        
+        return evidence_score
+
+    def _apply_semantic_clues_regex_contraction(self, evidence_score: float, contraction_text: str, suggestion_info: dict, text: str, context: dict) -> float:
+        """Apply semantic clues for regex-detected contractions."""
+        
+        # Reuse most of the semantic logic from the main method
+        evidence_score = self._apply_semantic_clues_contraction(evidence_score, None, suggestion_info, text, context)
+        
+        # === SPECIFIC PATTERN ANALYSIS ===
+        contraction_lower = contraction_text.lower()
+        
+        # Common conversational contractions
+        if contraction_lower in ["let's", "it's", "that's", "what's", "how's"]:
+            if context and context.get('content_type') in ['marketing', 'narrative', 'tutorial']:
+                evidence_score -= 0.2  # Very appropriate in conversational contexts
+        
+        # Formal-sounding contractions
+        elif contraction_lower in ["shan't", "won't", "can't"]:
+            if context and context.get('content_type') in ['academic', 'legal']:
+                evidence_score += 0.1  # Even formal contractions problematic in academic/legal
+        
+        return evidence_score
+
+    def _apply_feedback_clues_contraction(self, evidence_score: float, token, contraction_info: dict, context: dict) -> float:
+        """Apply feedback patterns for contraction analysis."""
+        
+        # Load cached feedback patterns
+        feedback_patterns = self._get_cached_feedback_patterns()
+        
+        # === CONTRACTION-SPECIFIC FEEDBACK ===
+        contraction_text = token.text.lower() if token else ''
+        contraction_type = contraction_info.get('type', '').lower()
+        
+        # Check if this specific contraction is commonly accepted
+        accepted_contractions = feedback_patterns.get('accepted_contractions', set())
+        if contraction_text in accepted_contractions:
+            evidence_score -= 0.3  # Users consistently accept this contraction
+        
+        flagged_contractions = feedback_patterns.get('flagged_contractions', set())
+        if contraction_text in flagged_contractions:
+            evidence_score += 0.3  # Users consistently flag this contraction
+        
+        # === CONTRACTION TYPE FEEDBACK ===
+        type_patterns = feedback_patterns.get('contraction_type_patterns', {})
+        
+        # Check feedback for this type of contraction
+        if 'possessive' in contraction_type:
+            possessive_acceptance = type_patterns.get('possessive_acceptance_rate', 0.3)
+            if possessive_acceptance > 0.7:
+                evidence_score -= 0.2  # High acceptance rate
+            elif possessive_acceptance < 0.3:
+                evidence_score += 0.2  # Low acceptance rate
+        
+        elif 'negative' in contraction_type:
+            negative_acceptance = type_patterns.get('negative_acceptance_rate', 0.6)
+            if negative_acceptance > 0.7:
+                evidence_score -= 0.2
+            elif negative_acceptance < 0.4:
+                evidence_score += 0.1
+        
+        elif 'auxiliary' in contraction_type:
+            auxiliary_acceptance = type_patterns.get('auxiliary_acceptance_rate', 0.5)
+            if auxiliary_acceptance > 0.7:
+                evidence_score -= 0.2
+            elif auxiliary_acceptance < 0.3:
+                evidence_score += 0.2
+        
+        # === CONTEXT-SPECIFIC FEEDBACK ===
+        if context:
+            content_type = context.get('content_type', 'general')
+            context_patterns = feedback_patterns.get(f'{content_type}_contraction_patterns', {})
+            
+            if contraction_text in context_patterns.get('acceptable', set()):
+                evidence_score -= 0.2
+            elif contraction_text in context_patterns.get('problematic', set()):
+                evidence_score += 0.2
+        
+        # === FREQUENCY-BASED FEEDBACK ===
+        contraction_frequency = feedback_patterns.get('contraction_frequencies', {}).get(contraction_text, 0)
+        if contraction_frequency > 50:  # Frequently seen contraction
+            acceptance_rate = feedback_patterns.get('contraction_acceptance_rates', {}).get(contraction_text, 0.5)
+            if acceptance_rate > 0.7:
+                evidence_score -= 0.2  # Frequently accepted
+            elif acceptance_rate < 0.3:
+                evidence_score += 0.2  # Frequently rejected
+        
+        return evidence_score
+
+    def _apply_feedback_clues_regex_contraction(self, evidence_score: float, contraction_text: str, suggestion_info: dict, context: dict) -> float:
+        """Apply feedback patterns for regex-detected contractions."""
+        
+        # Create a mock contraction_info for compatibility
+        mock_contraction_info = {
+            'type': suggestion_info.get('type', ''),
+            'pattern': 'regex_detected'
+        }
+        
+        # Create a mock token for compatibility
+        class MockToken:
+            def __init__(self, text):
+                self.text = text
+        
+        mock_token = MockToken(contraction_text)
+        
+        # Reuse the main feedback logic
+        return self._apply_feedback_clues_contraction(evidence_score, mock_token, mock_contraction_info, context)
+
+    # === HELPER METHODS ===
+
+    def _has_informal_context_words(self, token) -> bool:
+        """Check if contraction is near informal indicators."""
+        if not token or not hasattr(token, 'doc'):
+            return False
+        
+        informal_indicators = {
+            'hey', 'ok', 'okay', 'yeah', 'yep', 'nope', 'wow', 'cool', 'awesome',
+            'basically', 'just', 'really', 'pretty', 'kinda', 'sorta', 'gonna'
+        }
+        
+        # Check surrounding tokens (±5 positions)
+        start_idx = max(0, token.i - 5)
+        end_idx = min(len(token.doc), token.i + 6)
+        
+        for i in range(start_idx, end_idx):
+            if token.doc[i].text.lower() in informal_indicators:
+                return True
+        
+        return False
+
+    def _has_formal_context_words(self, token) -> bool:
+        """Check if contraction is near formal indicators."""
+        if not token or not hasattr(token, 'doc'):
+            return False
+        
+        formal_indicators = {
+            'therefore', 'however', 'furthermore', 'moreover', 'consequently',
+            'nevertheless', 'accordingly', 'subsequently', 'specifically',
+            'particularly', 'respectively', 'aforementioned', 'aforedescribed'
+        }
+        
+        # Check surrounding tokens (±5 positions)
+        start_idx = max(0, token.i - 5)
+        end_idx = min(len(token.doc), token.i + 6)
+        
+        for i in range(start_idx, end_idx):
+            if token.doc[i].text.lower() in formal_indicators:
+                return True
+        
+        return False
+
+    def _is_in_question_context(self, token) -> bool:
+        """Check if contraction is in a question context."""
+        if not token or not hasattr(token, 'sent'):
+            return False
+        
+        sentence_text = token.sent.text
+        return sentence_text.strip().endswith('?') or sentence_text.lower().startswith(('what', 'how', 'when', 'where', 'why', 'who', 'which'))
+
+    def _has_strong_subject_nearby(self, token) -> bool:
+        """Check if contraction has a clear, strong subject nearby."""
+        if not token or not hasattr(token, 'head'):
+            return False
+        
+        # Look for subject dependencies
+        if hasattr(token, 'children'):
+            for child in token.children:
+                if child.dep_ in ['nsubj', 'nsubjpass'] and child.pos_ in ['NOUN', 'PROPN', 'PRON']:
+                    return True
+        
+        # Look at the head's children
+        if hasattr(token.head, 'children'):
+            for child in token.head.children:
+                if child.dep_ in ['nsubj', 'nsubjpass'] and child.pos_ in ['NOUN', 'PROPN']:
+                    return True
+        
+        return False
+
+    def _improves_phonetic_flow(self, token) -> bool:
+        """Check if contraction improves phonetic flow."""
+        if not token:
+            return False
+        
+        # Some contractions that commonly improve flow
+        flow_improving_contractions = {
+            "it's", "that's", "what's", "let's", "here's", "there's"
+        }
+        
+        return token.text.lower() in flow_improving_contractions
+
+    def _has_conversational_tone_indicators(self, text: str) -> bool:
+        """Check if text has indicators of conversational tone."""
+        conversational_indicators = [
+            'let me', 'you can', 'you should', 'you might', 'you may',
+            'we recommend', 'we suggest', 'simply', 'just', 'easy',
+            'quick', 'tip:', 'note:', 'remember', 'keep in mind'
+        ]
+        
+        text_lower = text.lower()
+        return any(indicator in text_lower for indicator in conversational_indicators)
+
+    def _has_formal_tone_indicators(self, text: str) -> bool:
+        """Check if text has indicators of formal tone."""
+        formal_indicators = [
+            'pursuant to', 'in accordance with', 'hereby', 'whereas',
+            'therefore', 'consequently', 'furthermore', 'moreover',
+            'notwithstanding', 'heretofore', 'shall be', 'must be'
+        ]
+        
+        text_lower = text.lower()
+        return any(indicator in text_lower for indicator in formal_indicators)
+
+    def _get_cached_feedback_patterns(self):
+        """Load feedback patterns from cache or feedback analysis."""
+        # This would load from feedback analysis system
+        # For now, return patterns based on common contraction usage
+        return {
+            'accepted_contractions': {
+                # Common contractions users often accept in technical contexts
+                "let's", "it's", "that's", "here's", "there's", "what's",
+                "don't", "won't", "can't", "shouldn't", "wouldn't"
+            },
+            'flagged_contractions': {
+                # Contractions users commonly flag in formal contexts
+                "ain't", "gonna", "wanna", "gotta", "dunno"
+            },
+            'contraction_type_patterns': {
+                'possessive_acceptance_rate': 0.2,  # Low acceptance for possessive contractions
+                'negative_acceptance_rate': 0.6,    # Moderate acceptance for negative contractions
+                'auxiliary_acceptance_rate': 0.4,   # Context-dependent acceptance for auxiliary contractions
+            },
+            'technical_contraction_patterns': {
+                'acceptable': {
+                    "let's", "it's", "that's", "don't", "won't", "can't"
+                },
+                'problematic': {
+                    "ain't", "gonna", "wanna"
+                }
+            },
+            'academic_contraction_patterns': {
+                'acceptable': set(),  # Very few contractions acceptable in academic writing
+                'problematic': {
+                    "it's", "that's", "don't", "won't", "can't", "shouldn't", "wouldn't"
+                }
+            },
+            'marketing_contraction_patterns': {
+                'acceptable': {
+                    "let's", "it's", "that's", "here's", "there's", "what's",
+                    "don't", "won't", "can't", "shouldn't", "wouldn't", "you'll", "we'll"
+                },
+                'problematic': {
+                    "ain't", "gonna", "wanna"
+                }
+            },
+            'contraction_frequencies': {
+                "it's": 100, "that's": 80, "don't": 90, "won't": 70, "can't": 85,
+                "let's": 60, "here's": 40, "there's": 50
+            },
+            'contraction_acceptance_rates': {
+                "it's": 0.6, "that's": 0.5, "don't": 0.7, "won't": 0.6, "can't": 0.7,
+                "let's": 0.8, "here's": 0.6, "there's": 0.6
+            }
+        }
+
+    # === HELPER METHODS FOR SMART MESSAGING ===
+
+    def _get_contextual_message(self, token, contraction_info: dict, evidence_score: float) -> str:
+        """Generate context-aware error messages for contractions."""
+        
+        contraction_type = contraction_info.get('type', 'contraction')
+        
+        if evidence_score > 0.8:
+            return f"Contraction found: '{token.text}' ({contraction_type}). Consider expanding for formal writing."
+        elif evidence_score > 0.5:
+            return f"Contraction usage: '{token.text}' ({contraction_type}). Verify appropriateness for your writing style."
+        else:
+            return f"Contraction noted: '{token.text}' ({contraction_type}). May be acceptable depending on context."
+
+    def _get_contextual_message_regex(self, contraction_text: str, suggestion_info: dict, evidence_score: float) -> str:
+        """Generate context-aware error messages for regex-detected contractions."""
+        
+        contraction_type = suggestion_info.get('type', 'contraction')
+        
+        if evidence_score > 0.8:
+            return f"Contraction found: '{contraction_text}' ({contraction_type}). Consider expanding for formal writing."
+        elif evidence_score > 0.5:
+            return f"Contraction usage: '{contraction_text}' ({contraction_type}). Verify appropriateness for your writing style."
+        else:
+            return f"Contraction noted: '{contraction_text}' ({contraction_type}). May be acceptable depending on context."
+
+    def _generate_smart_suggestions(self, token, contraction_info: dict, evidence_score: float, context: dict) -> List[str]:
+        """Generate context-aware suggestions for contractions."""
+        
+        suggestions = []
+        base_suggestion = contraction_info.get('suggestion', 'expand the contraction')
+        
+        # Base suggestions based on evidence strength
+        if evidence_score > 0.7:
+            suggestions.append(f"Expand for formal tone: {base_suggestion}.")
+        else:
+            suggestions.append(f"Consider expansion: {base_suggestion}.")
+        
+        # Context-specific advice
+        if context:
+            content_type = context.get('content_type', 'general')
+            
+            if content_type in ['academic', 'legal']:
+                suggestions.append("Formal writing typically avoids contractions entirely.")
+            elif content_type in ['marketing', 'narrative']:
+                suggestions.append("Contractions may be acceptable for conversational tone.")
+            elif content_type == 'technical':
+                suggestions.append("Technical documentation may use contractions for readability.")
+        
+        # Evidence-based advice
+        if evidence_score < 0.3:
+            suggestions.append("This contraction may be acceptable in your writing context.")
+        elif evidence_score > 0.8:
+            suggestions.append("Strong recommendation to expand this contraction.")
+        
+        return suggestions
+
+    def _generate_smart_suggestions_regex(self, contraction_text: str, suggestion_info: dict, evidence_score: float, context: dict) -> List[str]:
+        """Generate context-aware suggestions for regex-detected contractions."""
+        
+        # Create mock token for compatibility
+        class MockToken:
+            def __init__(self, text):
+                self.text = text
+        
+        mock_token = MockToken(contraction_text)
+        return self._generate_smart_suggestions(mock_token, suggestion_info, evidence_score, context)
