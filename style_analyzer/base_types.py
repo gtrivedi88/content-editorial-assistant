@@ -58,13 +58,9 @@ CONSERVATIVE_THRESHOLDS = {
     'minimal_safe_readability_threshold': 30,  # Very low threshold
 }
 
-# Confidence scores for different analysis methods
-CONFIDENCE_SCORES = {
-    AnalysisMethod.SPACY_ENHANCED: 0.9,
-    AnalysisMethod.SPACY_LEGACY: 0.9,
-    AnalysisMethod.CONSERVATIVE_FALLBACK: 0.7,
-    AnalysisMethod.MINIMAL_SAFE: 0.8,
-}
+# NOTE: Hardcoded confidence scores removed - now using enhanced ConfidenceCalculator
+# Confidence scores are now calculated dynamically using the normalized confidence system
+# from validation.confidence.confidence_calculator import ConfidenceCalculator
 
 def create_error(
     error_type: str,

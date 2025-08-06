@@ -8,53 +8,34 @@ from typing import List, Dict, Any
 
 logger = logging.getLogger(__name__)
 
+# Import enhanced confidence calculation system
+try:
+    from validation.confidence.confidence_calculator import ConfidenceCalculator
+    ENHANCED_CONFIDENCE_AVAILABLE = True
+except ImportError:
+    ENHANCED_CONFIDENCE_AVAILABLE = False
+
 
 class RewriteEvaluator:
     """Evaluates rewrite quality and extracts improvements."""
     
     def __init__(self):
         """Initialize the rewrite evaluator."""
-        pass
+        if ENHANCED_CONFIDENCE_AVAILABLE:
+            self.confidence_calculator = ConfidenceCalculator()
+        else:
+            self.confidence_calculator = None
     
     def calculate_confidence(self, original: str, rewritten: str, errors: List[Dict[str, Any]], 
                            use_ollama: bool = True, pass_number: int = 1) -> float:
-        """Calculate confidence score for the rewrite."""
+        """Calculate confidence score for the rewrite using enhanced validation system."""
         try:
-            if pass_number == 1:
-                confidence = 0.7
+            # Use enhanced confidence calculation if available
+            if self.confidence_calculator:
+                return self._calculate_enhanced_confidence(original, rewritten, errors, use_ollama, pass_number)
             else:
-                confidence = 0.7  # Start with higher confidence for second pass
-                # Bonus for completing second pass
-                confidence += 0.2
-            
-            # Higher confidence for Ollama (local model)
-            if use_ollama and rewritten != original:
-                confidence += 0.3
-            elif not use_ollama and rewritten != original:
-                confidence += 0.2
-            
-            # Adjust based on number of errors addressed
-            if errors:
-                confidence += min(0.1, len(errors) * 0.02)
-            
-            # Penalize if no changes were made
-            if rewritten == original:
-                confidence -= 0.3
-            
-            # Check length ratio
-            original_length = len(original.split())
-            rewritten_length = len(rewritten.split())
-            
-            if original_length > 0:
-                length_ratio = rewritten_length / original_length
-                if length_ratio > 1.5 or length_ratio < 0.5:
-                    confidence -= 0.2
-            
-            # Additional bonus for second pass
-            if pass_number == 2:
-                confidence += 0.1
-            
-            return max(0.0, min(1.0, confidence))
+                # Fallback to simple heuristic if enhanced system not available
+                return self._calculate_fallback_confidence(original, rewritten, errors, use_ollama, pass_number)
             
         except Exception as e:
             logger.error(f"Error calculating confidence: {e}")
@@ -64,24 +45,113 @@ class RewriteEvaluator:
                                        errors: List[Dict[str, Any]]) -> float:
         """Calculate confidence score for second pass refinement."""
         try:
-            base_confidence = 0.7  # Start with higher confidence for second pass
-            
-            # Bonus for completing second pass
-            base_confidence += 0.2
-            
-            # Check if second pass made meaningful changes
-            if final_rewrite != first_pass:
-                base_confidence += 0.1
-            
-            # Adjust based on number of original errors addressed
-            if errors:
-                base_confidence += min(0.1, len(errors) * 0.02)
-            
-            return max(0.0, min(1.0, base_confidence))
+            # Use the enhanced confidence calculation for second pass
+            return self.calculate_confidence(
+                original=first_pass,
+                rewritten=final_rewrite,
+                errors=errors,
+                use_ollama=True,  # Assume second pass uses reliable model
+                pass_number=2
+            )
             
         except Exception as e:
             logger.error(f"Error calculating second pass confidence: {e}")
             return 0.8  # Default high confidence for second pass
+    
+    def _calculate_enhanced_confidence(self, original: str, rewritten: str, errors: List[Dict[str, Any]], 
+                                     use_ollama: bool, pass_number: int) -> float:
+        """Calculate confidence using the enhanced ConfidenceCalculator system."""
+        # Use normalized confidence calculation for rewrite quality assessment
+        
+        # Determine the primary rule type based on errors addressed
+        rule_type = self._determine_primary_rule_type(errors)
+        
+        # Calculate normalized confidence for the rewritten text
+        rewrite_confidence = self.confidence_calculator.calculate_normalized_confidence(
+            text=rewritten,
+            error_position=len(rewritten) // 2,  # Middle of text for general assessment
+            rule_type=rule_type,
+            content_type=None,  # Auto-detect content type
+            base_confidence=0.5
+        )
+        
+        # Apply rewrite-specific modifiers
+        rewrite_confidence = self._apply_rewrite_modifiers(
+            rewrite_confidence, original, rewritten, errors, use_ollama, pass_number
+        )
+        
+        return max(0.0, min(1.0, rewrite_confidence))
+    
+    def _calculate_fallback_confidence(self, original: str, rewritten: str, errors: List[Dict[str, Any]], 
+                                     use_ollama: bool, pass_number: int) -> float:
+        """Fallback confidence calculation when enhanced system not available."""
+        base_confidence = 0.6  # Conservative base confidence
+        
+        # Model quality modifier
+        if use_ollama and rewritten != original:
+            base_confidence += 0.2
+        elif not use_ollama and rewritten != original:
+            base_confidence += 0.1
+        
+        # Error count modifier
+        if errors:
+            base_confidence += min(0.1, len(errors) * 0.02)
+        
+        # Change penalty
+        if rewritten == original:
+            base_confidence -= 0.2
+        
+        # Pass number bonus
+        if pass_number == 2:
+            base_confidence += 0.1
+            
+        return max(0.0, min(1.0, base_confidence))
+    
+    def _determine_primary_rule_type(self, errors: List[Dict[str, Any]]) -> str:
+        """Determine the primary rule type from addressed errors."""
+        if not errors:
+            return 'grammar'  # Default to grammar for general text improvement
+        
+        # Count rule types in errors
+        rule_counts = {}
+        for error in errors:
+            rule_type = error.get('type', 'grammar')
+            rule_counts[rule_type] = rule_counts.get(rule_type, 0) + 1
+        
+        # Return most common rule type
+        return max(rule_counts, key=rule_counts.get) if rule_counts else 'grammar'
+    
+    def _apply_rewrite_modifiers(self, base_confidence: float, original: str, rewritten: str, 
+                               errors: List[Dict[str, Any]], use_ollama: bool, pass_number: int) -> float:
+        """Apply rewrite-specific confidence modifiers."""
+        confidence = base_confidence
+        
+        # Model quality modifier (Ollama generally more reliable)
+        if use_ollama and rewritten != original:
+            confidence *= 1.2  # 20% boost for Ollama
+        elif not use_ollama and rewritten != original:
+            confidence *= 1.1  # 10% boost for external models
+        
+        # Change quality assessment
+        if rewritten == original:
+            confidence *= 0.7  # Penalize no changes
+        else:
+            # Length ratio quality check
+            original_length = len(original.split())
+            rewritten_length = len(rewritten.split())
+            
+            if original_length > 0:
+                length_ratio = rewritten_length / original_length
+                if 0.8 <= length_ratio <= 1.2:  # Reasonable length change
+                    confidence *= 1.05  # Small boost for reasonable changes
+                elif length_ratio > 1.5 or length_ratio < 0.5:  # Extreme changes
+                    confidence *= 0.9  # Small penalty for extreme changes
+        
+        # Multi-pass bonus
+        if pass_number == 2:
+            confidence *= 1.1  # 10% boost for second pass refinement
+        
+        return confidence
     
     def extract_improvements(self, original: str, rewritten: str, errors: List[Dict[str, Any]]) -> List[str]:
         """Extract and describe the improvements made."""

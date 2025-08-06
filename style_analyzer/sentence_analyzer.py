@@ -16,8 +16,16 @@ except ImportError:
 
 from .base_types import (
     ErrorDict, AnalysisMethod, ErrorSeverity, CONSERVATIVE_THRESHOLDS,
-    CONFIDENCE_SCORES, DEFAULT_RULES, create_error
+    DEFAULT_RULES, create_error
 )
+
+# Fallback confidence scores when enhanced system not available
+FALLBACK_CONFIDENCE_SCORES = {
+    AnalysisMethod.SPACY_ENHANCED: 0.8,
+    AnalysisMethod.SPACY_LEGACY: 0.8,
+    AnalysisMethod.CONSERVATIVE_FALLBACK: 0.6,
+    AnalysisMethod.MINIMAL_SAFE: 0.7,
+}
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +68,7 @@ class SentenceAnalyzer:
                             sentence=sentence,
                             sentence_index=i,
                             severity=ErrorSeverity.MEDIUM if word_count < 35 else ErrorSeverity.HIGH,
-                            confidence=CONFIDENCE_SCORES[AnalysisMethod.SPACY_LEGACY],
+                            confidence=FALLBACK_CONFIDENCE_SCORES[AnalysisMethod.SPACY_LEGACY],
                             analysis_method=AnalysisMethod.SPACY_LEGACY,
                             word_count=word_count
                         )
@@ -97,7 +105,7 @@ class SentenceAnalyzer:
                     sentence=sentence,
                     sentence_index=i,
                     severity=ErrorSeverity.LOW,  # Always low severity in conservative mode
-                    confidence=CONFIDENCE_SCORES[AnalysisMethod.CONSERVATIVE_FALLBACK],
+                    confidence=FALLBACK_CONFIDENCE_SCORES[AnalysisMethod.CONSERVATIVE_FALLBACK],
                     analysis_method=AnalysisMethod.CONSERVATIVE_FALLBACK,
                     word_count=word_count
                 )
@@ -129,7 +137,7 @@ class SentenceAnalyzer:
                     sentence=sentence,
                     sentence_index=i,
                     severity=ErrorSeverity.LOW,
-                    confidence=CONFIDENCE_SCORES[AnalysisMethod.MINIMAL_SAFE],
+                    confidence=FALLBACK_CONFIDENCE_SCORES[AnalysisMethod.MINIMAL_SAFE],
                     analysis_method=AnalysisMethod.MINIMAL_SAFE,
                     word_count=word_count
                 )

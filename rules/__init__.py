@@ -22,7 +22,6 @@ except ImportError:
 # Import enhanced validation pipeline system (with fallback if not available)
 try:
     from validation.multi_pass.validation_pipeline import ValidationPipeline
-    from validation.config.validation_thresholds_config import ValidationThresholdsConfig
     from validation.confidence.confidence_calculator import ConfidenceCalculator
     ENHANCED_VALIDATION_AVAILABLE = True
     print("✓ Enhanced validation pipeline available for RulesRegistry")
@@ -66,11 +65,10 @@ class RulesRegistry:
         self._load_rule_mappings()
     
     def _initialize_validation_system(self, confidence_threshold: float = None):
-        """Initialize enhanced validation pipeline components."""
+        """Initialize enhanced validation pipeline components with universal threshold."""
         self.validation_pipeline = None
         self.confidence_calculator = None
-        self.validation_thresholds = None
-        self.confidence_threshold = confidence_threshold
+        self.confidence_threshold = confidence_threshold or 0.35  # Universal threshold
         
         if not self.enable_enhanced_validation:
             print("⚠️ Enhanced validation disabled - confidence filtering will not be available")
@@ -81,29 +79,18 @@ class RulesRegistry:
             self.confidence_calculator = ConfidenceCalculator()
             print("✅ Confidence calculator initialized")
             
-            # Load validation thresholds configuration
-            self.validation_thresholds = ValidationThresholdsConfig()
-            print("✅ Validation thresholds loaded")
-            
             # Initialize validation pipeline
             self.validation_pipeline = ValidationPipeline()
             print("✅ Validation pipeline initialized")
             
-            # Set confidence threshold (use config default if not specified)
-            if self.confidence_threshold is None:
-                # Get default minimum confidence threshold
-                min_confidence_thresholds = self.validation_thresholds.get_minimum_confidence_thresholds()
-                self.confidence_threshold = min_confidence_thresholds.get('default', 0.5)
-                print(f"✅ Using default confidence threshold: {self.confidence_threshold:.3f}")
-            else:
-                print(f"✅ Using custom confidence threshold: {self.confidence_threshold:.3f}")
+            # Use universal threshold (0.35) - no more complex threshold loading
+            print(f"✅ Using universal confidence threshold: {self.confidence_threshold:.3f}")
             
         except Exception as e:
             print(f"❌ Failed to initialize validation system: {e}")
             self.enable_enhanced_validation = False
             self.validation_pipeline = None
             self.confidence_calculator = None
-            self.validation_thresholds = None
     
     def _load_all_rules(self):
         """Automatically discover and load all rule modules from main directory and nested subdirectories (up to 4 levels deep)."""

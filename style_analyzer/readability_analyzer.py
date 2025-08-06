@@ -16,8 +16,16 @@ except ImportError:
 
 from .base_types import (
     ErrorDict, AnalysisMethod, ErrorSeverity, CONSERVATIVE_THRESHOLDS,
-    CONFIDENCE_SCORES, DEFAULT_RULES, create_error, safe_textstat_call
+    DEFAULT_RULES, create_error, safe_textstat_call
 )
+
+# Fallback confidence scores when enhanced system not available
+FALLBACK_CONFIDENCE_SCORES = {
+    AnalysisMethod.SPACY_ENHANCED: 0.8,
+    AnalysisMethod.SPACY_LEGACY: 0.8,
+    AnalysisMethod.CONSERVATIVE_FALLBACK: 0.6,
+    AnalysisMethod.MINIMAL_SAFE: 0.7,
+}
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +63,7 @@ class ReadabilityAnalyzer:
                             'Break up complex ideas'
                         ],
                         severity=ErrorSeverity.MEDIUM,
-                        confidence=CONFIDENCE_SCORES[AnalysisMethod.SPACY_ENHANCED],
+                        confidence=FALLBACK_CONFIDENCE_SCORES[AnalysisMethod.SPACY_ENHANCED],
                         analysis_method=AnalysisMethod.SPACY_ENHANCED,
                         score=flesch_score
                     )
@@ -94,7 +102,7 @@ class ReadabilityAnalyzer:
                             'Consider using simpler words'
                         ],
                         severity=ErrorSeverity.LOW,  # Lower severity for conservative mode
-                        confidence=CONFIDENCE_SCORES[AnalysisMethod.CONSERVATIVE_FALLBACK],
+                        confidence=FALLBACK_CONFIDENCE_SCORES[AnalysisMethod.CONSERVATIVE_FALLBACK],
                         analysis_method=AnalysisMethod.CONSERVATIVE_FALLBACK,
                         score=flesch_score
                     )
@@ -125,7 +133,7 @@ class ReadabilityAnalyzer:
                         message=f'Text appears quite difficult to read (Flesch score: {flesch_score:.1f}).',
                         suggestions=['Consider reviewing for simpler language'],
                         severity=ErrorSeverity.LOW,
-                        confidence=CONFIDENCE_SCORES[AnalysisMethod.MINIMAL_SAFE],
+                        confidence=FALLBACK_CONFIDENCE_SCORES[AnalysisMethod.MINIMAL_SAFE],
                         analysis_method=AnalysisMethod.MINIMAL_SAFE,
                         score=flesch_score
                     )
