@@ -40,6 +40,8 @@ class EllipsesRule(BasePunctuationRule):
                     message="Avoid using ellipses (...) in technical writing.",
                     suggestions=["If text is omitted from a quote, this may be acceptable. Otherwise, if used for a pause, rewrite for a more formal and direct tone."],
                     severity='low',
+                    text=text,  # Enhanced: Pass full text for better confidence analysis
+                    context=context,  # Enhanced: Pass context for domain-specific validation
                     span=(sent.start_char + match.start(), sent.start_char + match.end()),
                     flagged_text=match.group(0)
                 ))
@@ -52,6 +54,8 @@ class EllipsesRule(BasePunctuationRule):
                     message="Avoid using ellipses (…) in technical writing.",
                     suggestions=["If text is omitted from a quote, this may be acceptable. Otherwise, if used for a pause, rewrite for a more formal and direct tone."],
                     severity='low',
+                    text=text,  # Enhanced: Pass full text for better confidence analysis
+                    context=context,  # Enhanced: Pass context for domain-specific validation
                     span=(sent.start_char + match.start(), sent.start_char + match.end()),
                     flagged_text=match.group(0)
                 ))

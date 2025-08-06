@@ -57,6 +57,8 @@ class HyphensRule(BasePunctuationRule):
                                 message=f"Incorrect hyphenation with prefix '{prefix_token.text}'. IBM Style prefers closed prefixes.",
                                 suggestions=[f"Consider removing the hyphen to form '{prefix_token.text}{word_token.text}'."],
                                 severity='medium',
+                                text=text,  # Enhanced: Pass full text for better confidence analysis
+                                context=context,  # Enhanced: Pass context for domain-specific validation
                                 span=(prefix_token.idx, word_token.idx + len(word_token.text)),
                                 flagged_text=flagged_text
                             ))

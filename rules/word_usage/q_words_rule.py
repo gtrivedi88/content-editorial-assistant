@@ -58,6 +58,8 @@ class QWordsRule(BaseWordUsageRule):
                     message="Do not use 'quote' as a noun.",
                     suggestions=["Use 'quotation'. 'Quote' is a verb."],
                     severity='medium',
+                    text=text,  # Enhanced: Pass full text for better confidence analysis
+                    context=context,  # Enhanced: Pass context for domain-specific validation
                     span=(token.idx, token.idx + len(token.text)),
                     flagged_text=token.text
                 ))

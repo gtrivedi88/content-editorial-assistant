@@ -65,6 +65,8 @@ class WWordsRule(BaseWordUsageRule):
                         message="Use 'while' only to refer to time. For contrast, use 'although' or 'whereas'.",
                         suggestions=["Replace 'while' with 'although' when indicating contrast."],
                         severity='medium',
+                        text=text,  # Enhanced: Pass full text for better confidence analysis
+                        context=context,  # Enhanced: Pass context for domain-specific validation
                         span=(token.idx, token.idx + len(token.text)),
                         flagged_text=token.text
                     ))

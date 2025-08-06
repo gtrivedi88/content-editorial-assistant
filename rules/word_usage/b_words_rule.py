@@ -51,7 +51,7 @@ class BWordsRule(BaseWordUsageRule):
 
         # PRESERVE EXISTING FUNCTIONALITY: Enhanced morphological analysis for backup vs back up
         # This sophisticated linguistic analysis is kept unchanged for maximum accuracy
-        self._analyze_backup_forms(doc, errors)
+        self._analyze_backup_forms(doc, errors, text, context)
 
         # NEW ENHANCED APPROACH: Use base class PhraseMatcher functionality
         word_usage_errors = self._find_word_usage_errors(doc, "Review usage of the term")
@@ -59,7 +59,7 @@ class BWordsRule(BaseWordUsageRule):
         
         return errors
     
-    def _analyze_backup_forms(self, doc, errors):
+    def _analyze_backup_forms(self, doc, errors, text: str = None, context: Dict[str, Any] = None):
         """
         Enhanced morphological analysis for backup vs back up using spaCy linguistic anchors.
         Uses comprehensive POS tagging, dependency parsing, and semantic analysis.
@@ -76,6 +76,8 @@ class BWordsRule(BaseWordUsageRule):
                         message="Incorrect verb form: 'backup' should be 'back up'.",
                         suggestions=["Use 'back up' (two words) for the verb form."],
                         severity='medium',
+                        text=text,  # Enhanced: Pass full text for better confidence analysis
+                        context=context,  # Enhanced: Pass context for domain-specific validation
                         span=(token.idx, token.idx + len(token.text)),
                         flagged_text=token.text
                     ))
@@ -92,6 +94,8 @@ class BWordsRule(BaseWordUsageRule):
                         message="Incorrect noun/adjective form: 'back up' should be 'backup'.",
                         suggestions=["Use 'backup' (one word) for the noun or adjective form."],
                         severity='medium',
+                        text=text,  # Enhanced: Pass full text for better confidence analysis
+                        context=context,  # Enhanced: Pass context for domain-specific validation
                         span=(token.idx, next_token.idx + len(next_token.text)),
                         flagged_text=f"{token.text} {next_token.text}"
                     ))

@@ -38,6 +38,8 @@ class ExclamationPointsRule(BasePunctuationRule):
                     message="Avoid exclamation points in technical writing to maintain a professional tone.",
                     suggestions=["Replace the exclamation point with a period."],
                     severity='medium',
+                    text=text,  # Enhanced: Pass full text for better confidence analysis
+                    context=context,  # Enhanced: Pass context for domain-specific validation
                     span=(sent.start_char + match.start(), sent.start_char + match.end()),
                     flagged_text=match.group(0)
                 ))

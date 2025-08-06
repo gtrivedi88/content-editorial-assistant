@@ -59,6 +59,8 @@ class ParenthesesRule(BasePunctuationRule):
                                 message="Incorrect punctuation: A period should be placed outside the parentheses for a fragment.",
                                 suggestions=["Move the period to after the closing parenthesis."],
                                 severity='low',
+                                text=text,  # Enhanced: Pass full text for better confidence analysis
+                                context=context,  # Enhanced: Pass context for domain-specific validation
                                 span=(flagged_token.idx, flagged_token.idx + len(flagged_token.text)),
                                 flagged_text=flagged_token.text
                             ))

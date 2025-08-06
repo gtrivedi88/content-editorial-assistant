@@ -60,6 +60,8 @@ class SWordsRule(BaseWordUsageRule):
                         message="Incorrect verb form: 'setup' should be 'set up'.",
                         suggestions=["Use 'set up' (two words) for the verb form."],
                         severity='high',
+                        text=text,  # Enhanced: Pass full text for better confidence analysis
+                        context=context,  # Enhanced: Pass context for domain-specific validation
                         span=(token.idx, token.idx + len(token.text)),
                         flagged_text=token.text
                     ))
@@ -70,6 +72,8 @@ class SWordsRule(BaseWordUsageRule):
                         message="Incorrect verb form: 'shutdown' should be 'shut down'.",
                         suggestions=["Use 'shut down' (two words) for the verb form."],
                         severity='medium',
+                        text=text,  # Enhanced: Pass full text for better confidence analysis
+                        context=context,  # Enhanced: Pass context for domain-specific validation
                         span=(token.idx, token.idx + len(token.text)),
                         flagged_text=token.text
                     ))

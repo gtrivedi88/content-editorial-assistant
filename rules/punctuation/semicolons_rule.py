@@ -34,6 +34,8 @@ class SemicolonsRule(BaseRule):
                         sentence_index=i,
                         message="Avoid semicolons in technical writing to improve clarity.",
                         suggestions=["Consider rewriting the sentence as two separate, shorter sentences."],
-                        severity='low'
+                        severity='low',
+                        text=text,  # Enhanced: Pass full text for better confidence analysis
+                        context=context  # Enhanced: Pass context for domain-specific validation
                     ))
         return errors

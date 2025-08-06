@@ -66,6 +66,8 @@ class RWordsRule(BaseWordUsageRule):
                         message="Incorrect adjective form: 'real time' should be 'real-time'.",
                         suggestions=["Use 'real-time' (hyphenated) as an adjective before a noun."],
                         severity='medium',
+                        text=text,  # Enhanced: Pass full text for better confidence analysis
+                        context=context,  # Enhanced: Pass context for domain-specific validation
                         span=(token.idx, next_token.idx + len(next_token.text)),
                         flagged_text=f"{token.text} {next_token.text}"
                     ))

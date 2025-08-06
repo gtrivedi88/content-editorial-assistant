@@ -56,6 +56,8 @@ class SlashesRule(BasePunctuationRule):
                                 message="Avoid using a slash (/) to mean 'and/or' as it can be ambiguous.",
                                 suggestions=["Clarify the meaning by rewriting the sentence to use 'and', 'or', or 'and or'. For example, instead of 'Insert the CD/DVD', write 'Insert the CD or DVD'."],
                                 severity='medium',
+                                text=text,  # Enhanced: Pass full text for better confidence analysis
+                                context=context,  # Enhanced: Pass context for domain-specific validation
                                 span=(prev_token.idx, next_token.idx + len(next_token.text)),
                                 flagged_text=flagged_text
                             ))

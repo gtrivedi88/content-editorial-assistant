@@ -78,6 +78,8 @@ class SpecialCharsRule(BaseWordUsageRule):
                     message=f"Review usage of the term '{span.text}'.",
                     suggestions=["Use 'number sign' to refer to the # character, or 'hash sign' for hashtags."],
                     severity='low',
+                    text=text,  # Enhanced: Pass full text for better confidence analysis
+                    context=context,  # Enhanced: Pass context for domain-specific validation
                     span=(span.start_char, span.end_char),
                     flagged_text=span.text
                 ))

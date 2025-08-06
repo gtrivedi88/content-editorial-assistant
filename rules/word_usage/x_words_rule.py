@@ -68,6 +68,8 @@ class XWordsRule(BaseWordUsageRule):
                         message=f"Review usage of the term '{span.text}'.",
                         suggestions=[details['suggestion']],
                         severity=details['severity'],
+                        text=text,  # Enhanced: Pass full text for better confidence analysis
+                        context=context,  # Enhanced: Pass context for domain-specific validation
                         span=(span.start_char, span.end_char),
                         flagged_text=span.text
                     ))

@@ -75,6 +75,8 @@ class CWordsRule(BaseWordUsageRule):
                     message=f"Review usage of the phrase '{violation['phrase']}'.",
                     suggestions=[violation['suggestion']],
                     severity='high',
+                    text=text,  # Enhanced: Pass full text for better confidence analysis
+                    context=context,  # Enhanced: Pass context for domain-specific validation
                     span=(violation['start_char'], violation['end_char']),
                     flagged_text=violation['phrase']
                 ))

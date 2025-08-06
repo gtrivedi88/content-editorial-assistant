@@ -50,6 +50,8 @@ class PeriodsRule(BasePunctuationRule):
                                 message="Avoid using periods within uppercase abbreviations.",
                                 suggestions=["Remove the periods from the abbreviation (e.g., 'USA' instead of 'U.S.A.')."],
                                 severity='low',
+                                text=text,  # Enhanced: Pass full text for better confidence analysis
+                                context=context,  # Enhanced: Pass context for domain-specific validation
                                 span=(prev_token.idx, next_token.idx + len(next_token.text)),
                                 flagged_text=flagged_text
                             ))

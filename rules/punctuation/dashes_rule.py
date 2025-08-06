@@ -40,6 +40,8 @@ class DashesRule(BasePunctuationRule):
                     message="Avoid em dashes (—) in technical writing.",
                     suggestions=["Rewrite the sentence using commas, parentheses, or a colon instead."],
                     severity='medium',
+                    text=text,  # Enhanced: Pass full text for better confidence analysis
+                    context=context,  # Enhanced: Pass context for domain-specific validation
                     span=(sent.start_char + match.start(), sent.start_char + match.end()),
                     flagged_text=match.group(0)
                 ))

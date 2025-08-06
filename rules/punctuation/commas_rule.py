@@ -34,13 +34,13 @@ class CommasRule(BasePunctuationRule):
         doc = nlp(text)
 
         for i, sent in enumerate(doc.sents):
-            errors.extend(self._check_serial_comma(sent, i))
-            errors.extend(self._check_comma_splice(sent, i))
-            errors.extend(self._check_introductory_clause(sent, i))
+            errors.extend(self._check_serial_comma(sent, i, text, context))
+            errors.extend(self._check_comma_splice(sent, i, text, context))
+            errors.extend(self._check_introductory_clause(sent, i, text, context))
             
         return errors
 
-    def _check_serial_comma(self, sent: Doc, sentence_index: int) -> List[Dict[str, Any]]:
+    def _check_serial_comma(self, sent: Doc, sentence_index: int, text: str = None, context: Dict[str, Any] = None) -> List[Dict[str, Any]]:
         """
         Checks for the required serial (Oxford) comma in lists of three or more.
         **ENHANCED** to distinguish between noun lists and verb phrases.
@@ -78,6 +78,8 @@ class CommasRule(BasePunctuationRule):
                             message="Missing serial (Oxford) comma before conjunction in a list.",
                             suggestions=[f"Add a comma before '{token.text}'."],
                             severity='high',
+                            text=text,  # Enhanced: Pass full text for better confidence analysis
+                            context=context,  # Enhanced: Pass context for domain-specific validation
                             span=(flagged_token.idx + len(flagged_token.text), flagged_token.idx + len(flagged_token.text)),
                             flagged_text=token.text
                         ))
@@ -118,7 +120,7 @@ class CommasRule(BasePunctuationRule):
         return sorted(list(list_items), key=lambda x: x.i)
 
 
-    def _check_comma_splice(self, sent: Doc, sentence_index: int) -> List[Dict[str, Any]]:
+    def _check_comma_splice(self, sent: Doc, sentence_index: int, text: str = None, context: Dict[str, Any] = None) -> List[Dict[str, Any]]:
         """
         Checks for comma splices, where two independent clauses are joined only by a comma.
         """
@@ -161,6 +163,8 @@ class CommasRule(BasePunctuationRule):
                             "Split into two separate sentences."
                         ],
                         severity='medium',
+                        text=text,  # Enhanced: Pass full text for better confidence analysis
+                        context=context,  # Enhanced: Pass context for domain-specific validation
                         span=(token.idx, token.idx + len(token.text)),
                         flagged_text=token.text
                     ))
@@ -182,7 +186,7 @@ class CommasRule(BasePunctuationRule):
         return False
 
 
-    def _check_introductory_clause(self, sent: Doc, sentence_index: int) -> List[Dict[str, Any]]:
+    def _check_introductory_clause(self, sent: Doc, sentence_index: int, text: str = None, context: Dict[str, Any] = None) -> List[Dict[str, Any]]:
         """
         A robust check for a missing comma after an introductory clause.
         """
@@ -244,6 +248,8 @@ class CommasRule(BasePunctuationRule):
                         message="Missing comma after an introductory clause or phrase.",
                         suggestions=[f"Add a comma after '{last_intro_token.text}'."],
                         severity='medium',
+                        text=text,  # Enhanced: Pass full text for better confidence analysis
+                        context=context,  # Enhanced: Pass context for domain-specific validation
                         span=(last_intro_token.idx + len(last_intro_token.text), last_intro_token.idx + len(last_intro_token.text)),
                         flagged_text=last_intro_token.text
                     ))

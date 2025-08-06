@@ -51,6 +51,8 @@ class KWordsRule(BaseWordUsageRule):
                     message="Review usage of the term 'key'.",
                     suggestions=["Do not use 'key' as a verb. Use 'type' or 'press'."],
                     severity='medium',
+                    text=text,  # Enhanced: Pass full text for better confidence analysis
+                    context=context,  # Enhanced: Pass context for domain-specific validation
                     span=(token.idx, token.idx + len(token.text)),
                     flagged_text=token.text
                 ))

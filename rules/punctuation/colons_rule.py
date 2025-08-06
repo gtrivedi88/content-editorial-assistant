@@ -46,6 +46,8 @@ class ColonsRule(BasePunctuationRule):
                                 message="Incorrect colon usage: A colon must be preceded by a complete independent clause.",
                                 suggestions=["Rewrite the text before the colon to form a complete sentence.", "Remove the colon if it is not introducing a list, quote, or explanation."],
                                 severity='high',
+                                text=text,  # Enhanced: Pass full text for better confidence analysis
+                                context=context,  # Enhanced: Pass context for domain-specific validation
                                 span=(token.idx, token.idx + len(token.text)),
                                 flagged_text=token.text
                             ))
@@ -56,7 +58,9 @@ class ColonsRule(BasePunctuationRule):
                 sentence_index=0,
                 message=f"Rule ColonsRule failed with an indexing error: {e}",
                 suggestions=["This may be a bug in the rule. Please report it."],
-                severity='low'
+                severity='low',
+                text=text,  # Enhanced: Pass full text for better confidence analysis
+                context=context  # Enhanced: Pass context for domain-specific validation
             ))
         return errors
 
