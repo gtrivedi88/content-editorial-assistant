@@ -6,7 +6,9 @@ Provides real-time feedback during analysis and rewriting operations.
 
 import logging
 import uuid
-from typing import Optional
+import time
+from typing import Optional, Dict, Any, List
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -109,6 +111,142 @@ def emit_completion(session_id: str, success: bool, data: Optional[dict] = None,
         logger.error(f"Error emitting completion: {e}")
 
 
+def emit_confidence_update(session_id: str, confidence_data: Dict[str, Any]):
+    """Emit confidence-related update to specific session."""
+    try:
+        if not _socketio:
+            logger.warning("SocketIO not initialized, cannot emit confidence update")
+            return
+        
+        if session_id and session_id.strip():
+            if session_id not in active_sessions:
+                active_sessions.add(session_id)
+                logger.debug(f"Auto-added session to active sessions: {session_id}")
+            
+            event_data = {
+                'session_id': session_id,
+                'timestamp': datetime.now().isoformat(),
+                **confidence_data
+            }
+            
+            _socketio.emit('confidence_update', event_data, to=session_id)
+            logger.debug(f"Confidence update emitted to {session_id}: {confidence_data.get('event_type', 'unknown')}")
+        else:
+            event_data = {
+                'session_id': 'broadcast',
+                'timestamp': datetime.now().isoformat(),
+                **confidence_data
+            }
+            
+            _socketio.emit('confidence_update', event_data, broadcast=True)
+            logger.debug(f"Confidence update broadcast: {confidence_data.get('event_type', 'unknown')}")
+    except Exception as e:
+        logger.error(f"Error emitting confidence update: {e}")
+
+
+def emit_validation_progress(session_id: str, validation_stage: str, progress_data: Dict[str, Any]):
+    """Emit validation progress update to specific session."""
+    try:
+        if not _socketio:
+            logger.warning("SocketIO not initialized, cannot emit validation progress")
+            return
+        
+        if session_id and session_id.strip():
+            if session_id not in active_sessions:
+                active_sessions.add(session_id)
+                logger.debug(f"Auto-added session to active sessions: {session_id}")
+            
+            event_data = {
+                'session_id': session_id,
+                'validation_stage': validation_stage,
+                'timestamp': datetime.now().isoformat(),
+                **progress_data
+            }
+            
+            _socketio.emit('validation_progress', event_data, to=session_id)
+            logger.debug(f"Validation progress emitted to {session_id}: {validation_stage}")
+        else:
+            event_data = {
+                'session_id': 'broadcast',
+                'validation_stage': validation_stage,
+                'timestamp': datetime.now().isoformat(),
+                **progress_data
+            }
+            
+            _socketio.emit('validation_progress', event_data, broadcast=True)
+            logger.debug(f"Validation progress broadcast: {validation_stage}")
+    except Exception as e:
+        logger.error(f"Error emitting validation progress: {e}")
+
+
+def emit_feedback_notification(session_id: str, feedback_data: Dict[str, Any]):
+    """Emit feedback-related notification to specific session."""
+    try:
+        if not _socketio:
+            logger.warning("SocketIO not initialized, cannot emit feedback notification")
+            return
+        
+        if session_id and session_id.strip():
+            if session_id not in active_sessions:
+                active_sessions.add(session_id)
+                logger.debug(f"Auto-added session to active sessions: {session_id}")
+            
+            event_data = {
+                'session_id': session_id,
+                'timestamp': datetime.now().isoformat(),
+                **feedback_data
+            }
+            
+            _socketio.emit('feedback_notification', event_data, to=session_id)
+            logger.debug(f"Feedback notification emitted to {session_id}: {feedback_data.get('event_type', 'unknown')}")
+        else:
+            event_data = {
+                'session_id': 'broadcast',
+                'timestamp': datetime.now().isoformat(),
+                **feedback_data
+            }
+            
+            _socketio.emit('feedback_notification', event_data, broadcast=True)
+            logger.debug(f"Feedback notification broadcast: {feedback_data.get('event_type', 'unknown')}")
+    except Exception as e:
+        logger.error(f"Error emitting feedback notification: {e}")
+
+
+def emit_confidence_insights(session_id: str, insights_data: Dict[str, Any]):
+    """Emit confidence insights and analytics to specific session."""
+    try:
+        if not _socketio:
+            logger.warning("SocketIO not initialized, cannot emit confidence insights")
+            return
+        
+        if session_id and session_id.strip():
+            if session_id not in active_sessions:
+                active_sessions.add(session_id)
+                logger.debug(f"Auto-added session to active sessions: {session_id}")
+            
+            event_data = {
+                'session_id': session_id,
+                'timestamp': datetime.now().isoformat(),
+                'event_type': 'confidence_insights',
+                **insights_data
+            }
+            
+            _socketio.emit('confidence_insights', event_data, to=session_id)
+            logger.debug(f"Confidence insights emitted to {session_id}")
+        else:
+            event_data = {
+                'session_id': 'broadcast',
+                'timestamp': datetime.now().isoformat(),
+                'event_type': 'confidence_insights',
+                **insights_data
+            }
+            
+            _socketio.emit('confidence_insights', event_data, broadcast=True)
+            logger.debug(f"Confidence insights broadcast")
+    except Exception as e:
+        logger.error(f"Error emitting confidence insights: {e}")
+
+
 def setup_websocket_handlers(socketio):
     """Setup WebSocket event handlers."""
     
@@ -178,6 +316,148 @@ def setup_websocket_handlers(socketio):
             emit('pong', {'timestamp': str(uuid.uuid4())})
         except Exception as e:
             logger.error(f"Error handling ping: {e}")
+    
+    @socketio.on('request_confidence_update')
+    def handle_confidence_request(data):
+        """Handle request for confidence updates."""
+        try:
+            session_id = data.get('session_id')
+            if not session_id:
+                from flask_socketio import emit
+                emit('error', {'message': 'No session ID provided for confidence request'})
+                return
+            
+            # Emit acknowledgment
+            from flask_socketio import emit
+            emit('confidence_request_received', {
+                'session_id': session_id,
+                'timestamp': datetime.now().isoformat()
+            })
+            
+            logger.info(f"Confidence update requested for session: {session_id}")
+        except Exception as e:
+            logger.error(f"Error handling confidence request: {e}")
+            from flask_socketio import emit
+            emit('error', {'message': 'Failed to process confidence request'})
+    
+    @socketio.on('submit_feedback_realtime')
+    def handle_realtime_feedback(data):
+        """Handle real-time feedback submission."""
+        try:
+            session_id = data.get('session_id')
+            feedback_data = data.get('feedback_data', {})
+            
+            if not session_id:
+                from flask_socketio import emit
+                emit('error', {'message': 'No session ID provided for feedback'})
+                return
+            
+            if not feedback_data:
+                from flask_socketio import emit
+                emit('error', {'message': 'No feedback data provided'})
+                return
+            
+            # Process feedback asynchronously
+            try:
+                from .feedback_storage import feedback_storage
+                success, message, feedback_id = feedback_storage.store_feedback(feedback_data)
+                
+                # Emit feedback processing result
+                from flask_socketio import emit
+                if success:
+                    emit('feedback_processed', {
+                        'success': True,
+                        'feedback_id': feedback_id,
+                        'message': message,
+                        'session_id': session_id,
+                        'timestamp': datetime.now().isoformat()
+                    })
+                    
+                    # Notify about successful feedback
+                    emit_feedback_notification(session_id, {
+                        'event_type': 'feedback_submitted',
+                        'feedback_id': feedback_id,
+                        'feedback_type': feedback_data.get('feedback_type'),
+                        'error_type': feedback_data.get('error_type')
+                    })
+                else:
+                    emit('feedback_error', {
+                        'success': False,
+                        'message': message,
+                        'session_id': session_id,
+                        'timestamp': datetime.now().isoformat()
+                    })
+                
+                logger.info(f"Real-time feedback processed for session {session_id}: {success}")
+                
+            except Exception as feedback_error:
+                logger.error(f"Error processing real-time feedback: {feedback_error}")
+                from flask_socketio import emit
+                emit('feedback_error', {
+                    'success': False,
+                    'message': f'Feedback processing failed: {str(feedback_error)}',
+                    'session_id': session_id,
+                    'timestamp': datetime.now().isoformat()
+                })
+            
+        except Exception as e:
+            logger.error(f"Error handling real-time feedback: {e}")
+            from flask_socketio import emit
+            emit('error', {'message': 'Failed to process feedback'})
+    
+    @socketio.on('request_validation_status')
+    def handle_validation_status_request(data):
+        """Handle request for validation status."""
+        try:
+            session_id = data.get('session_id')
+            if not session_id:
+                from flask_socketio import emit
+                emit('error', {'message': 'No session ID provided for validation status'})
+                return
+            
+            # Emit validation status (this would typically be populated by the validation system)
+            from flask_socketio import emit
+            emit('validation_status', {
+                'session_id': session_id,
+                'status': 'active',
+                'enhanced_validation_enabled': True,
+                'timestamp': datetime.now().isoformat()
+            })
+            
+            logger.info(f"Validation status requested for session: {session_id}")
+        except Exception as e:
+            logger.error(f"Error handling validation status request: {e}")
+            from flask_socketio import emit
+            emit('error', {'message': 'Failed to get validation status'})
+    
+    @socketio.on('subscribe_insights')
+    def handle_insights_subscription(data):
+        """Handle subscription to confidence insights."""
+        try:
+            session_id = data.get('session_id')
+            insights_type = data.get('insights_type', 'all')
+            
+            if not session_id:
+                from flask_socketio import emit
+                emit('error', {'message': 'No session ID provided for insights subscription'})
+                return
+            
+            # Join insights room for this session
+            from flask_socketio import join_room, emit
+            insights_room = f"insights_{session_id}"
+            join_room(insights_room)
+            
+            emit('insights_subscribed', {
+                'session_id': session_id,
+                'insights_type': insights_type,
+                'subscribed_at': datetime.now().isoformat()
+            })
+            
+            logger.info(f"Session {session_id} subscribed to {insights_type} insights")
+        except Exception as e:
+            logger.error(f"Error handling insights subscription: {e}")
+            from flask_socketio import emit
+            emit('error', {'message': 'Failed to subscribe to insights'})
 
 
 def cleanup_session(session_id: str):
@@ -211,4 +491,127 @@ def get_session_count():
 
 def is_session_active(session_id: str) -> bool:
     """Check if a session is active."""
-    return session_id in active_sessions 
+    return session_id in active_sessions
+
+
+# Enhanced WebSocket helper functions for confidence and feedback features
+
+def broadcast_confidence_threshold_change(new_threshold: float, changed_by_session: Optional[str] = None):
+    """Broadcast confidence threshold change to all sessions."""
+    try:
+        if not _socketio:
+            logger.warning("SocketIO not initialized, cannot broadcast threshold change")
+            return
+        
+        threshold_data = {
+            'event_type': 'threshold_changed',
+            'new_threshold': new_threshold,
+            'changed_by_session': changed_by_session,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        _socketio.emit('confidence_update', threshold_data, broadcast=True)
+        logger.info(f"Confidence threshold change broadcast: {new_threshold}")
+    except Exception as e:
+        logger.error(f"Error broadcasting threshold change: {e}")
+
+
+def emit_validation_stats(session_id: str, validation_stats: Dict[str, Any]):
+    """Emit validation statistics to specific session."""
+    try:
+        stats_data = {
+            'event_type': 'validation_statistics',
+            'stats': validation_stats,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        emit_confidence_update(session_id, stats_data)
+        logger.debug(f"Validation stats emitted to {session_id}")
+    except Exception as e:
+        logger.error(f"Error emitting validation stats: {e}")
+
+
+def emit_error_confidence_breakdown(session_id: str, error_breakdown: List[Dict[str, Any]]):
+    """Emit error confidence breakdown to specific session."""
+    try:
+        breakdown_data = {
+            'event_type': 'error_confidence_breakdown',
+            'breakdown': error_breakdown,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        emit_confidence_update(session_id, breakdown_data)
+        logger.debug(f"Error confidence breakdown emitted to {session_id}")
+    except Exception as e:
+        logger.error(f"Error emitting confidence breakdown: {e}")
+
+
+def emit_feedback_acknowledgment(session_id: str, feedback_id: str, feedback_type: str):
+    """Emit feedback acknowledgment to specific session."""
+    try:
+        ack_data = {
+            'event_type': 'feedback_acknowledged',
+            'feedback_id': feedback_id,
+            'feedback_type': feedback_type,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        emit_feedback_notification(session_id, ack_data)
+        logger.debug(f"Feedback acknowledgment emitted to {session_id}: {feedback_id}")
+    except Exception as e:
+        logger.error(f"Error emitting feedback acknowledgment: {e}")
+
+
+def emit_session_feedback_summary(session_id: str, feedback_summary: Dict[str, Any]):
+    """Emit session feedback summary to specific session."""
+    try:
+        summary_data = {
+            'event_type': 'session_feedback_summary',
+            'summary': feedback_summary,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        emit_feedback_notification(session_id, summary_data)
+        logger.debug(f"Session feedback summary emitted to {session_id}")
+    except Exception as e:
+        logger.error(f"Error emitting session feedback summary: {e}")
+
+
+def get_websocket_performance_metrics() -> Dict[str, Any]:
+    """Get WebSocket performance metrics."""
+    try:
+        return {
+            'active_sessions_count': len(active_sessions),
+            'active_sessions': list(active_sessions),
+            'websocket_initialized': _socketio is not None,
+            'timestamp': datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error getting WebSocket performance metrics: {e}")
+        return {'error': str(e)}
+
+
+def validate_websocket_health() -> Dict[str, Any]:
+    """Validate WebSocket system health."""
+    try:
+        health_status = {
+            'status': 'healthy',
+            'socketio_initialized': _socketio is not None,
+            'active_sessions_count': len(active_sessions),
+            'can_emit': _socketio is not None,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        # Perform basic health checks
+        if not _socketio:
+            health_status['status'] = 'unhealthy'
+            health_status['issues'] = ['SocketIO not initialized']
+        
+        return health_status
+    except Exception as e:
+        logger.error(f"Error validating WebSocket health: {e}")
+        return {
+            'status': 'error',
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        } 
