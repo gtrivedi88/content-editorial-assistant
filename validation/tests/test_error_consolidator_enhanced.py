@@ -11,7 +11,7 @@ from unittest.mock import Mock, patch
 
 # Import test dependencies
 from error_consolidation.consolidator import ErrorConsolidator
-from style_analyzer.base_types import ErrorDict, ErrorSeverity
+from style_analyzer.base_types import ErrorDict
 from validation.config.validation_thresholds_config import ValidationThresholdsConfig
 
 
@@ -378,21 +378,20 @@ class TestErrorConsolidatorEdgeCases:
         """Test handling of single error."""
         
         single_error = [
-            StyleError(
-                text="Single error test sentence.",
-                start_pos=5,
-                end_pos=15,
-                error_type="single_test",
-                message="Single test error",
-                severity=Severity.MINOR,
-                suggestion="Fix single error",
-                confidence_score=0.8,
-                rule_id="single_rule"
-            )
+            {
+                'type': 'single_test',
+                'message': 'Single test error',
+                'suggestions': ['Fix single error'],
+                'sentence': 'Single error test sentence.',
+                'sentence_index': 0,
+                'severity': 'medium',
+                'confidence_score': 0.8,
+                'rule_id': 'single_rule'
+            }
         ]
         
         try:
-            consolidated = consolidator.consolidate_errors(single_error)
+            consolidated = consolidator.consolidate(single_error)
             
             assert isinstance(consolidated, list), "Should return list for single error"
             assert len(consolidated) == 1, "Should return single error unchanged"
@@ -409,39 +408,34 @@ class TestErrorConsolidatorEdgeCases:
     def test_malformed_errors(self, consolidator):
         """Test handling of malformed error objects."""
         
-        # Create mock objects that might be missing some fields
-        class MalformedError:
-            def __init__(self, **kwargs):
-                for key, value in kwargs.items():
-                    setattr(self, key, value)
-        
+        # Create error dictionaries that might be missing some fields
         malformed_errors = [
             # Missing confidence_score
-            MalformedError(
-                text="Malformed error test",
-                start_pos=0,
-                end_pos=10,
-                error_type="malformed",
-                message="Malformed error",
-                severity=Severity.MINOR,
-                rule_id="malformed_rule"
-            ),
+            {
+                'type': 'malformed',
+                'message': 'Malformed error',
+                'suggestions': ['Fix malformed error'],
+                'sentence': 'Malformed error test',
+                'sentence_index': 0,
+                'severity': 'medium',
+                'rule_id': 'malformed_rule'
+                # Note: missing confidence_score intentionally
+            },
             # Valid error for comparison
-            StyleError(
-                text="Valid error test sentence.",
-                start_pos=15,
-                end_pos=25,
-                error_type="valid_test",
-                message="Valid test error",
-                severity=Severity.MINOR,
-                suggestion="Fix valid error",
-                confidence_score=0.8,
-                rule_id="valid_rule"
-            )
+            {
+                'type': 'valid_test',
+                'message': 'Valid test error',
+                'suggestions': ['Fix valid error'],
+                'sentence': 'Valid error test sentence.',
+                'sentence_index': 1,
+                'severity': 'medium',
+                'confidence_score': 0.8,
+                'rule_id': 'valid_rule'
+            }
         ]
         
         try:
-            consolidated = consolidator.consolidate_errors(malformed_errors)
+            consolidated = consolidator.consolidate(malformed_errors)
             
             # Should handle gracefully without crashing
             assert isinstance(consolidated, list), "Should return list for malformed errors"
@@ -460,32 +454,30 @@ class TestErrorConsolidatorEdgeCases:
         """Test handling of very low confidence errors."""
         
         very_low_confidence_errors = [
-            StyleError(
-                text="Very low confidence test sentence.",
-                start_pos=5,
-                end_pos=15,
-                error_type="low_confidence",
-                message="Very low confidence error",
-                severity=Severity.MINOR,
-                suggestion="Fix low confidence error",
-                confidence_score=0.01,  # Very low
-                rule_id="low_confidence_rule"
-            ),
-            StyleError(
-                text="Zero confidence test sentence.",
-                start_pos=20,
-                end_pos=30,
-                error_type="zero_confidence",
-                message="Zero confidence error",
-                severity=Severity.MINOR,
-                suggestion="Fix zero confidence error",
-                confidence_score=0.0,  # Zero confidence
-                rule_id="zero_confidence_rule"
-            )
+            {
+                'type': 'low_confidence',
+                'message': 'Very low confidence error',
+                'suggestions': ['Fix low confidence error'],
+                'sentence': 'Very low confidence test sentence.',
+                'sentence_index': 0,
+                'severity': 'medium',
+                'confidence_score': 0.01,  # Very low
+                'rule_id': 'low_confidence_rule'
+            },
+            {
+                'type': 'zero_confidence',
+                'message': 'Zero confidence error',
+                'suggestions': ['Fix zero confidence error'],
+                'sentence': 'Zero confidence test sentence.',
+                'sentence_index': 1,
+                'severity': 'medium',
+                'confidence_score': 0.0,  # Zero confidence
+                'rule_id': 'zero_confidence_rule'
+            }
         ]
         
         try:
-            consolidated = consolidator.consolidate_errors(very_low_confidence_errors)
+            consolidated = consolidator.consolidate(very_low_confidence_errors)
             
             # Very low confidence errors should be filtered out
             assert isinstance(consolidated, list), "Should return list for low confidence errors"
