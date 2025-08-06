@@ -10,8 +10,9 @@ from dataclasses import dataclass
 from enum import Enum
 
 from .linguistic_anchors import LinguisticAnchors, AnchorAnalysis
-from .context_analyzer import ContextAnalyzer, ContextAnalysis
+from .context_analyzer import ContextAnalyzer, ContextAnalysis, ContentType, ContentTypeResult
 from .domain_classifier import DomainClassifier, DomainAnalysis
+from .rule_reliability import get_rule_reliability_coefficient
 
 
 class ConfidenceLayer(Enum):
@@ -206,6 +207,135 @@ class ConfidenceCalculator:
             self._calculation_cache[cache_key] = breakdown
         
         return breakdown
+    
+    def calculate_normalized_confidence(self, 
+                                      text: str, 
+                                      error_position: int,
+                                      rule_type: str,
+                                      content_type: Optional[str] = None,
+                                      rule_reliability: Optional[float] = None,
+                                      base_confidence: float = 0.5) -> float:
+        """
+        Calculate normalized confidence that's comparable across all rules.
+        
+        This is the enhanced method that integrates content-type detection
+        and rule reliability for consistent confidence scoring.
+        
+        Args:
+            text: The text containing the error
+            error_position: Character position of the error
+            rule_type: Type of rule being validated (required for reliability)
+            content_type: Type of content (auto-detected if not provided)
+            rule_reliability: Rule reliability coefficient (auto-calculated if not provided)
+            base_confidence: Starting confidence level (0-1)
+            
+        Returns:
+            Normalized confidence score in range [0.0, 1.0]
+        """
+        # Auto-detect content type if not provided
+        if content_type is None:
+            content_result = self.context_analyzer.detect_content_type(text)
+            content_type = content_result.content_type.value
+        
+        # Auto-calculate rule reliability if not provided
+        if rule_reliability is None:
+            rule_reliability = get_rule_reliability_coefficient(rule_type)
+        
+        # Use existing calculate_confidence but add normalization layer
+        confidence_breakdown = self.calculate_confidence(
+            text=text,
+            error_position=error_position, 
+            rule_type=rule_type,
+            content_type=content_type,
+            base_confidence=base_confidence
+        )
+        
+        # Apply rule reliability coefficient
+        raw_confidence = confidence_breakdown.final_confidence
+        normalized_confidence = raw_confidence * rule_reliability
+        
+        # Apply content-type modifier (enhance confidence based on content type)
+        content_modifier = self._get_content_type_modifier(content_type, rule_type)
+        normalized_confidence *= content_modifier
+        
+        # Ensure final range [0.0, 1.0]
+        final_confidence = max(0.0, min(1.0, normalized_confidence))
+        
+        return final_confidence
+    
+    def _get_content_type_modifier(self, content_type: str, rule_type: str) -> float:
+        """
+        Get content-type modifier for rule-content combinations.
+        
+        This provides fine-tuned confidence adjustments based on the combination
+        of content type and rule type, reflecting real-world accuracy patterns.
+        
+        Args:
+            content_type: The content type (e.g., 'technical', 'narrative')
+            rule_type: The rule type (e.g., 'grammar', 'commands')
+            
+        Returns:
+            Modifier coefficient in range [0.7, 1.3]
+        """
+        # Content-rule modifier matrix based on empirical accuracy
+        modifier_matrix = {
+            # Technical content modifiers
+            'technical': {
+                'commands': 1.2,           # Commands very accurate in technical content
+                'programming_elements': 1.2, # Programming elements very accurate
+                'terminology': 1.1,        # Terminology rules work well
+                'grammar': 0.9,           # Grammar less reliable in technical docs
+                'tone': 0.8,              # Tone less relevant in technical content
+                'narrative': 0.7,         # Narrative patterns don't apply
+                'default': 1.0
+            },
+            # Procedural content modifiers
+            'procedural': {
+                'procedures': 1.2,        # Procedure rules very accurate
+                'lists': 1.1,            # List formatting important
+                'headings': 1.1,          # Structure important
+                'grammar': 1.0,           # Grammar accuracy normal
+                'tone': 0.9,              # Tone somewhat relevant
+                'default': 1.0
+            },
+            # Narrative content modifiers
+            'narrative': {
+                'tone': 1.2,              # Tone very important in narrative
+                'grammar': 1.1,           # Grammar accuracy higher
+                'inclusive_language': 1.1, # Inclusive language important
+                'commands': 0.8,          # Commands less relevant
+                'programming_elements': 0.7, # Programming not relevant
+                'default': 1.0
+            },
+            # Legal content modifiers
+            'legal': {
+                'claims': 1.3,            # Claims detection very accurate
+                'personal_information': 1.2, # Personal info very important
+                'grammar': 1.1,           # Grammar very important
+                'tone': 1.1,              # Formal tone important
+                'commands': 0.8,          # Commands less relevant
+                'default': 1.0
+            },
+            # Marketing content modifiers
+            'marketing': {
+                'tone': 1.2,              # Tone very important
+                'claims': 1.1,            # Claims oversight important
+                'inclusive_language': 1.1, # Inclusive language important
+                'grammar': 1.0,           # Grammar normal importance
+                'commands': 0.8,          # Commands less relevant
+                'default': 1.0
+            },
+            # General content (fallback)
+            'general': {
+                'default': 1.0            # No specific modifiers
+            }
+        }
+        
+        content_modifiers = modifier_matrix.get(content_type, modifier_matrix['general'])
+        modifier = content_modifiers.get(rule_type, content_modifiers.get('default', 1.0))
+        
+        # Ensure modifier is in reasonable range
+        return max(0.7, min(1.3, modifier))
     
     def _analyze_all_layers(self, text: str, error_position: int, 
                           rule_type: Optional[str], content_type: Optional[str]) -> List[LayerContribution]:

@@ -1275,8 +1275,21 @@ class BaseRule(ABC):
             content_type = context.get('content_type') or context.get('block_type')
             domain = context.get('domain')
         
-        # 1. Calculate confidence score
+        # 1. Calculate normalized confidence score (replaces legacy confidence calculation)
         try:
+            # Use the new normalized confidence calculation
+            normalized_confidence = self._confidence_calculator.calculate_normalized_confidence(
+                text=analysis_text,
+                error_position=error_position,
+                rule_type=self.rule_type,
+                content_type=content_type,
+                rule_reliability=self._get_rule_reliability_coefficient(),
+                base_confidence=0.5
+            )
+            
+            enhanced_fields['confidence_score'] = normalized_confidence
+            
+            # Also provide detailed breakdown for debugging/analysis
             confidence_breakdown = self._confidence_calculator.calculate_confidence(
                 text=analysis_text,
                 error_position=error_position,
@@ -1284,8 +1297,6 @@ class BaseRule(ABC):
                 content_type=content_type,
                 base_confidence=0.5
             )
-            
-            enhanced_fields['confidence_score'] = confidence_breakdown.final_confidence
             enhanced_fields['confidence_breakdown'] = self._make_serializable(confidence_breakdown)
             
         except Exception as e:
