@@ -21,6 +21,11 @@ class ArticlesRule(BaseLanguageRule):
         return 'articles'
 
     def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
+        """
+        Analyzes sentences for article errors using evidence-based scoring.
+        Uses sophisticated linguistic analysis to distinguish genuine errors from 
+        acceptable technical usage and contextual variations.
+        """
         errors = []
         if not nlp:
             return errors
@@ -32,31 +37,49 @@ class ArticlesRule(BaseLanguageRule):
         doc = nlp(text)
         for i, sent in enumerate(doc.sents):
             for token in sent:
+                # Check for incorrect a/an usage
                 if token.lower_ in ['a', 'an'] and token.i + 1 < len(doc):
                     next_token = doc[token.i + 1]
                     if self._is_incorrect_article_usage(token, next_token):
+                        # Calculate evidence score for this incorrect usage
+                        evidence_score = self._calculate_incorrect_article_evidence(
+                            token, next_token, sent, text, context
+                        )
+                        
+                        # Only create error if evidence suggests it's worth flagging
+                        if evidence_score > 0.1:  # Low threshold - let enhanced validation decide
+                            errors.append(self._create_error(
+                                sentence=sent.text, sentence_index=i,
+                                message=self._get_contextual_message_incorrect(token, next_token, evidence_score),
+                                suggestions=self._generate_smart_suggestions_incorrect(token, next_token, evidence_score, context),
+                                severity='medium',
+                                text=text,
+                                context=context,
+                                evidence_score=evidence_score,  # Your nuanced assessment
+                                span=(token.idx, next_token.idx + len(next_token.text)),
+                                flagged_text=f"{token.text} {next_token.text}"
+                            ))
+                
+                # Check for missing articles (only in appropriate content types)
+                if content_classification == 'descriptive_content' and self._is_missing_article_candidate(token, doc) and not self._is_admonition_context(token, context):
+                    # Calculate evidence score for this missing article
+                    evidence_score = self._calculate_missing_article_evidence(
+                        token, sent, text, context, content_classification
+                    )
+                    
+                    # Only create error if evidence suggests it's worth flagging
+                    if evidence_score > 0.1:  # Low threshold - let enhanced validation decide
                         errors.append(self._create_error(
                             sentence=sent.text, sentence_index=i,
-                            message=f"Incorrect article usage: Use '{'an' if self._starts_with_vowel_sound(next_token.text) else 'a'}' before '{next_token.text}'.",
-                            suggestions=[f"Change '{token.text} {next_token.text}' to '{'an' if self._starts_with_vowel_sound(next_token.text) else 'a'} {next_token.text}'."],
-                            severity='medium',
-                            text=text,  # Enhanced: Pass full text for better confidence analysis
-                            context=context,  # Enhanced: Pass context for domain-specific validation
-                            span=(token.idx, next_token.idx + len(next_token.text)),
-                            flagged_text=f"{token.text} {next_token.text}"
+                            message=self._get_contextual_message_missing(token, evidence_score),
+                            suggestions=self._generate_smart_suggestions_missing(token, evidence_score, context),
+                            severity='low',
+                            text=text,
+                            context=context,
+                            evidence_score=evidence_score,  # Your nuanced assessment
+                            span=(token.idx, token.idx + len(token.text)),
+                            flagged_text=token.text
                         ))
-                
-                if content_classification == 'descriptive_content' and self._is_missing_article_candidate(token, doc) and not self._is_admonition_context(token, context):
-                    errors.append(self._create_error(
-                        sentence=sent.text, sentence_index=i,
-                        message=f"Potentially missing article before the noun '{token.text}'.",
-                        suggestions=["Singular countable nouns often require an article (a/an/the). Please review."],
-                        severity='low',
-                        text=text,  # Enhanced: Pass full text for better confidence analysis
-                        context=context,  # Enhanced: Pass context for domain-specific validation
-                        span=(token.idx, token.idx + len(token.text)),
-                        flagged_text=token.text
-                    ))
         return errors
 
     def _starts_with_vowel_sound(self, word: str) -> bool:
@@ -361,3 +384,570 @@ class ArticlesRule(BaseLanguageRule):
             return True
         
         return False
+
+    # === EVIDENCE-BASED CALCULATION METHODS ===
+
+    def _calculate_incorrect_article_evidence(self, article_token, next_token, sentence, text: str, context: dict) -> float:
+        """
+        Calculate evidence score (0.0-1.0) for incorrect a/an usage.
+        
+        Higher scores indicate stronger evidence of a genuine error.
+        Lower scores indicate borderline cases or acceptable variations.
+        
+        Args:
+            article_token: The article token (a/an)
+            next_token: The following word token
+            sentence: Sentence containing the tokens
+            text: Full document text
+            context: Document context (block_type, content_type, etc.)
+            
+        Returns:
+            float: Evidence score from 0.0 (acceptable) to 1.0 (clear error)
+        """
+        evidence_score = 0.0
+        
+        # === STEP 1: BASE EVIDENCE ASSESSMENT ===
+        # This is definitely an incorrect article usage (phonetically wrong)
+        evidence_score = 0.8  # Start with high evidence for phonetic errors
+        
+        # === STEP 2: LINGUISTIC CLUES (MICRO-LEVEL) ===
+        evidence_score = self._apply_linguistic_clues_incorrect(evidence_score, article_token, next_token, sentence)
+        
+        # === STEP 3: STRUCTURAL CLUES (MESO-LEVEL) ===
+        evidence_score = self._apply_structural_clues_incorrect(evidence_score, article_token, next_token, context)
+        
+        # === STEP 4: SEMANTIC CLUES (MACRO-LEVEL) ===
+        evidence_score = self._apply_semantic_clues_incorrect(evidence_score, article_token, next_token, text, context)
+        
+        # === STEP 5: FEEDBACK PATTERNS (LEARNING CLUES) ===
+        evidence_score = self._apply_feedback_clues_incorrect(evidence_score, article_token, next_token, context)
+        
+        return max(0.0, min(1.0, evidence_score))  # Clamp to valid range
+
+    def _calculate_missing_article_evidence(self, noun_token, sentence, text: str, context: dict, content_classification: str) -> float:
+        """
+        Calculate evidence score (0.0-1.0) for missing article before noun.
+        
+        Higher scores indicate stronger evidence of missing article.
+        Lower scores indicate acceptable omission or technical usage.
+        
+        Args:
+            noun_token: The noun token potentially missing an article
+            sentence: Sentence containing the token
+            text: Full document text
+            context: Document context (block_type, content_type, etc.)
+            content_classification: Content type classification
+            
+        Returns:
+            float: Evidence score from 0.0 (acceptable omission) to 1.0 (missing article)
+        """
+        evidence_score = 0.0
+        
+        # === STEP 1: BASE EVIDENCE ASSESSMENT ===
+        # Start with moderate evidence for missing article candidate
+        evidence_score = 0.6  # Start with moderate evidence
+        
+        # === STEP 2: LINGUISTIC CLUES (MICRO-LEVEL) ===
+        evidence_score = self._apply_linguistic_clues_missing(evidence_score, noun_token, sentence)
+        
+        # === STEP 3: STRUCTURAL CLUES (MESO-LEVEL) ===
+        evidence_score = self._apply_structural_clues_missing(evidence_score, noun_token, context)
+        
+        # === STEP 4: SEMANTIC CLUES (MACRO-LEVEL) ===
+        evidence_score = self._apply_semantic_clues_missing(evidence_score, noun_token, text, context)
+        
+        # === STEP 5: FEEDBACK PATTERNS (LEARNING CLUES) ===
+        evidence_score = self._apply_feedback_clues_missing(evidence_score, noun_token, context)
+        
+        return max(0.0, min(1.0, evidence_score))  # Clamp to valid range
+
+    # === LINGUISTIC CLUES FOR INCORRECT A/AN USAGE ===
+
+    def _apply_linguistic_clues_incorrect(self, evidence_score: float, article_token, next_token, sentence) -> float:
+        """Apply linguistic analysis clues for incorrect a/an usage."""
+        
+        word = next_token.text.lower()
+        
+        # === COMMON WORDS WITH KNOWN PRONUNCIATION ===
+        # Words where the pronunciation is very well established
+        common_words_vowel_sound = {
+            'hour', 'honest', 'honor', 'heir', 'herb', 'api', 'fbi', 'html', 'sql', 'xml'
+        }
+        common_words_consonant_sound = {
+            'user', 'unique', 'university', 'unix', 'ubuntu', 'url', 'utility', 'one', 'once', 'european'
+        }
+        
+        if word in common_words_vowel_sound or word in common_words_consonant_sound:
+            evidence_score += 0.1  # Very clear pronunciation, high confidence in error
+        
+        # === TECHNICAL ABBREVIATIONS ===
+        # Technical abbreviations have more standardized pronunciations
+        if word.isupper() and len(word) <= 5:
+            evidence_score += 0.1  # Technical abbreviations have clear pronunciations
+        
+        # === PROPER NOUNS ===
+        # Proper nouns may have less standardized pronunciations
+        if next_token.pos_ == 'PROPN':
+            evidence_score -= 0.1  # Proper nouns might have variant pronunciations
+        
+        # === FOREIGN WORDS ===
+        # Check for potential foreign words that might have uncertain pronunciation
+        if next_token.ent_type_ in ['LANGUAGE', 'NORP']:
+            evidence_score -= 0.2  # Foreign/cultural terms might have variant pronunciations
+        
+        # === CONTEXT WITHIN SENTENCE ===
+        # Article errors in certain grammatical positions are more problematic
+        if article_token.dep_ == 'det' and next_token.dep_ == 'nsubj':
+            evidence_score += 0.1  # Subject position more noticeable
+        elif article_token.dep_ == 'det' and next_token.dep_ == 'dobj':
+            evidence_score += 0.05  # Object position somewhat noticeable
+        
+        return evidence_score
+
+    def _apply_structural_clues_incorrect(self, evidence_score: float, article_token, next_token, context: dict) -> float:
+        """Apply document structure-based clues for incorrect a/an usage."""
+        
+        if not context:
+            return evidence_score
+        
+        block_type = context.get('block_type', 'paragraph')
+        
+        # === FORMAL WRITING CONTEXTS ===
+        # In formal contexts, article errors are more problematic
+        if block_type in ['heading', 'title']:
+            evidence_score += 0.2  # Headings are highly visible
+        elif block_type == 'paragraph':
+            evidence_score += 0.1  # Body text somewhat visible
+        
+        # === TECHNICAL CONTEXTS ===
+        # In technical contexts, precision is important but tolerance may be higher
+        if block_type in ['code_block', 'literal_block']:
+            evidence_score -= 0.3  # Code comments more forgiving
+        elif block_type == 'inline_code':
+            evidence_score -= 0.2  # Inline technical content
+        
+        # === LISTS AND TABLES ===
+        # Abbreviated contexts may be more tolerant
+        if block_type in ['ordered_list_item', 'unordered_list_item']:
+            evidence_score -= 0.1  # List items often abbreviated
+        elif block_type in ['table_cell', 'table_header']:
+            evidence_score -= 0.2  # Tables often use abbreviated language
+        
+        # === ADMONITIONS ===
+        # Notes and warnings should be clear
+        if block_type == 'admonition':
+            admonition_type = context.get('admonition_type', '').upper()
+            if admonition_type in ['IMPORTANT', 'WARNING', 'CAUTION']:
+                evidence_score += 0.1  # Important messages should be clear
+        
+        return evidence_score
+
+    def _apply_semantic_clues_incorrect(self, evidence_score: float, article_token, next_token, text: str, context: dict) -> float:
+        """Apply semantic and content-type clues for incorrect a/an usage."""
+        
+        if not context:
+            return evidence_score
+        
+        content_type = context.get('content_type', 'general')
+        
+        # === CONTENT TYPE ANALYSIS ===
+        # Different content types have different tolerance for errors
+        if content_type == 'technical':
+            evidence_score -= 0.1  # Technical writing somewhat more forgiving of minor errors
+        elif content_type == 'academic':
+            evidence_score += 0.2  # Academic writing expects precision
+        elif content_type == 'legal':
+            evidence_score += 0.3  # Legal writing demands precision
+        elif content_type == 'marketing':
+            evidence_score -= 0.2  # Marketing more focused on message than perfection
+        elif content_type == 'api':
+            evidence_score -= 0.1  # API docs focus on functionality
+        
+        # === AUDIENCE CONSIDERATIONS ===
+        audience = context.get('audience', 'general')
+        if audience in ['academic', 'legal', 'professional']:
+            evidence_score += 0.1  # Professional audiences expect accuracy
+        elif audience in ['developer', 'technical']:
+            evidence_score -= 0.05  # Technical audiences may be more forgiving of minor errors
+        elif audience in ['beginner', 'student']:
+            evidence_score += 0.1  # Educational content should model correct usage
+        
+        # === DOCUMENT FORMALITY ===
+        # Check for formality indicators in the surrounding text
+        formal_indicators = self._count_formal_indicators(text)
+        if formal_indicators > 5:  # High formality
+            evidence_score += 0.1
+        elif formal_indicators < 2:  # Low formality
+            evidence_score -= 0.1
+        
+        return evidence_score
+
+    def _apply_feedback_clues_incorrect(self, evidence_score: float, article_token, next_token, context: dict) -> float:
+        """Apply feedback patterns for incorrect a/an usage."""
+        
+        # Load cached feedback patterns
+        feedback_patterns = self._get_cached_feedback_patterns()
+        
+        word = next_token.text.lower()
+        article = article_token.text.lower()
+        
+        # Check if this specific word has consistent feedback
+        word_feedback = feedback_patterns.get('word_article_corrections', {})
+        if word in word_feedback:
+            expected_article = word_feedback[word]
+            if article != expected_article:
+                evidence_score += 0.2  # Consistent user feedback indicates this is wrong
+            else:
+                evidence_score -= 0.1  # This combination is typically accepted
+        
+        # Check for common correction patterns
+        common_corrections = feedback_patterns.get('common_article_corrections', set())
+        error_pattern = f"{article} {word}"
+        if error_pattern in common_corrections:
+            evidence_score += 0.3  # This is a commonly corrected error
+        
+        return evidence_score
+
+    # === LINGUISTIC CLUES FOR MISSING ARTICLES ===
+
+    def _apply_linguistic_clues_missing(self, evidence_score: float, noun_token, sentence) -> float:
+        """Apply linguistic analysis clues for missing articles."""
+        
+        # === GRAMMATICAL ROLE ANALYSIS ===
+        # Subjects and objects usually need articles more than other roles
+        if noun_token.dep_ == 'nsubj':
+            evidence_score += 0.2  # Subjects usually need articles
+        elif noun_token.dep_ == 'dobj':
+            evidence_score += 0.1  # Direct objects often need articles
+        elif noun_token.dep_ == 'pobj':
+            evidence_score += 0.05  # Prepositional objects sometimes need articles
+        elif noun_token.dep_ in ['compound', 'npadvmod']:
+            evidence_score -= 0.3  # Compound terms often don't need articles
+        
+        # === COUNTABILITY ANALYSIS ===
+        # Use existing sophisticated countability detection
+        if self._is_uncountable(noun_token):
+            evidence_score -= 0.4  # Uncountable nouns often don't need articles
+        
+        # === TECHNICAL TERM ANALYSIS ===
+        # Technical terms often used without articles
+        if self._is_technical_compound_phrase(noun_token, noun_token.doc):
+            evidence_score -= 0.3  # Technical compounds often don't need articles
+        
+        if self._is_technical_coordination(noun_token, noun_token.doc):
+            evidence_score -= 0.2  # Coordinated technical terms often don't need articles
+        
+        # === DEFINITENESS ANALYSIS ===
+        # Check if the noun refers to something specific vs. general
+        if self._has_specific_reference(noun_token):
+            evidence_score += 0.2  # Specific references usually need 'the'
+        elif self._has_generic_reference(noun_token):
+            evidence_score += 0.1  # Generic references may need 'a/an'
+        
+        # === MASS NOUN CONTEXT ===
+        # Use existing mass noun context detection
+        if self._is_mass_noun_context(noun_token):
+            evidence_score -= 0.2  # Mass noun contexts often don't need articles
+        
+        return evidence_score
+
+    def _apply_structural_clues_missing(self, evidence_score: float, noun_token, context: dict) -> float:
+        """Apply document structure-based clues for missing articles."""
+        
+        if not context:
+            return evidence_score
+        
+        block_type = context.get('block_type', 'paragraph')
+        
+        # === FORMAL WRITING CONTEXTS ===
+        # Formal contexts expect complete article usage
+        if block_type in ['heading', 'title']:
+            evidence_score -= 0.2  # Headings often omit articles for brevity
+        elif block_type == 'paragraph':
+            evidence_score += 0.1  # Body paragraphs usually need complete grammar
+        
+        # === TECHNICAL CONTEXTS ===
+        # Technical writing often omits articles for conciseness
+        if block_type in ['code_block', 'literal_block']:
+            evidence_score -= 0.4  # Code comments very abbreviated
+        elif block_type == 'inline_code':
+            evidence_score -= 0.3  # Inline technical content abbreviated
+        
+        # === LISTS AND PROCEDURES ===
+        # Lists often omit articles for brevity
+        if block_type in ['ordered_list_item', 'unordered_list_item']:
+            evidence_score -= 0.3  # List items commonly abbreviated
+            
+            # Nested lists even more abbreviated
+            if context.get('list_depth', 1) > 1:
+                evidence_score -= 0.1
+        
+        # === TABLES ===
+        # Tables use very abbreviated language
+        if block_type in ['table_cell', 'table_header']:
+            evidence_score -= 0.4  # Tables heavily abbreviated
+        
+        # === ADMONITIONS ===
+        # Admonitions may use abbreviated language
+        if block_type == 'admonition':
+            evidence_score -= 0.2  # Admonitions often abbreviated
+        
+        return evidence_score
+
+    def _apply_semantic_clues_missing(self, evidence_score: float, noun_token, text: str, context: dict) -> float:
+        """Apply semantic and content-type clues for missing articles."""
+        
+        if not context:
+            return evidence_score
+        
+        content_type = context.get('content_type', 'general')
+        
+        # === CONTENT TYPE ANALYSIS ===
+        # Technical content often omits articles
+        if content_type == 'technical':
+            evidence_score -= 0.2  # Technical writing often omits articles
+        elif content_type == 'api':
+            evidence_score -= 0.3  # API documentation very concise
+        elif content_type == 'procedural':
+            evidence_score -= 0.2  # Instructions often abbreviated
+        elif content_type == 'academic':
+            evidence_score += 0.2  # Academic writing expects complete grammar
+        elif content_type == 'legal':
+            evidence_score += 0.1  # Legal writing fairly complete
+        elif content_type == 'marketing':
+            evidence_score -= 0.1  # Marketing may be more flexible
+        
+        # === DOMAIN-SPECIFIC PATTERNS ===
+        domain = context.get('domain', 'general')
+        if domain in ['software', 'engineering', 'devops']:
+            evidence_score -= 0.2  # Technical domains omit articles
+        elif domain in ['documentation', 'tutorial']:
+            evidence_score -= 0.1  # Educational content somewhat abbreviated
+        
+        # === AUDIENCE CONSIDERATIONS ===
+        audience = context.get('audience', 'general')
+        if audience in ['developer', 'technical', 'expert']:
+            evidence_score -= 0.2  # Technical audiences expect abbreviated style
+        elif audience in ['academic', 'professional']:
+            evidence_score += 0.1  # Professional audiences expect complete grammar
+        elif audience in ['beginner', 'general']:
+            evidence_score += 0.2  # General audiences need complete grammar
+        
+        # === TECHNICAL TERM DENSITY ===
+        # High technical term density suggests abbreviated style is acceptable
+        if self._has_high_technical_density(text):
+            evidence_score -= 0.2
+        
+        return evidence_score
+
+    def _apply_feedback_clues_missing(self, evidence_score: float, noun_token, context: dict) -> float:
+        """Apply feedback patterns for missing articles."""
+        
+        # Load cached feedback patterns
+        feedback_patterns = self._get_cached_feedback_patterns()
+        
+        noun = noun_token.text.lower()
+        
+        # Check if this noun is commonly used without articles
+        no_article_nouns = feedback_patterns.get('commonly_no_article_nouns', set())
+        if noun in no_article_nouns:
+            evidence_score -= 0.3  # Users consistently accept this without article
+        
+        # Check if this noun is commonly flagged as missing article
+        missing_article_nouns = feedback_patterns.get('commonly_missing_article_nouns', set())
+        if noun in missing_article_nouns:
+            evidence_score += 0.3  # Users consistently add articles to this
+        
+        # Check context-specific patterns
+        block_type = context.get('block_type', 'paragraph') if context else 'paragraph'
+        context_patterns = feedback_patterns.get(f'{block_type}_article_patterns', {})
+        
+        if noun in context_patterns.get('acceptable_without_article', set()):
+            evidence_score -= 0.2
+        elif noun in context_patterns.get('needs_article', set()):
+            evidence_score += 0.2
+        
+        return evidence_score
+
+    # === HELPER METHODS ===
+
+    def _has_specific_reference(self, noun_token) -> bool:
+        """Check if noun refers to something specific (might need 'the')."""
+        # Check for definite reference indicators
+        modifiers = [child.text.lower() for child in noun_token.children]
+        
+        # Demonstratives indicate specific reference
+        if any(mod in ['this', 'that', 'these', 'those'] for mod in modifiers):
+            return True
+        
+        # Superlatives indicate specific reference
+        if any(child.tag_ in ['JJS', 'RBS'] for child in noun_token.children):
+            return True
+        
+        # Ordinals indicate specific reference
+        if any(child.like_num and any(ord_word in child.text.lower() for ord_word in ['first', 'second', 'third', 'last']) for child in noun_token.children):
+            return True
+        
+        return False
+
+    def _has_generic_reference(self, noun_token) -> bool:
+        """Check if noun refers to something generic (might need 'a/an')."""
+        # Check for generic reference patterns
+        if noun_token.dep_ == 'nsubj' and noun_token.head.lemma_ in ['be', 'become', 'seem']:
+            return True  # "X is a Y" pattern
+        
+        # Check for comparison contexts
+        if any(child.lemma_ in ['like', 'such', 'similar'] for child in noun_token.ancestors):
+            return True
+        
+        return False
+
+    def _has_high_technical_density(self, text: str) -> bool:
+        """Check if text has high density of technical terms."""
+        words = text.lower().split()
+        technical_words = {
+            'api', 'server', 'client', 'database', 'system', 'application', 'service',
+            'module', 'component', 'interface', 'endpoint', 'protocol', 'configuration',
+            'deployment', 'authentication', 'authorization', 'validation', 'optimization',
+            'processing', 'analysis', 'implementation', 'integration', 'documentation'
+        }
+        
+        if len(words) == 0:
+            return False
+        
+        technical_count = sum(1 for word in words if word in technical_words)
+        technical_ratio = technical_count / len(words)
+        
+        return technical_ratio > 0.1  # More than 10% technical terms
+
+    def _count_formal_indicators(self, text: str) -> int:
+        """Count indicators of formal writing style."""
+        formal_indicators = [
+            'furthermore', 'moreover', 'consequently', 'therefore', 'nonetheless',
+            'nevertheless', 'additionally', 'specifically', 'particularly',
+            'respectively', 'accordingly', 'subsequently', 'aforementioned'
+        ]
+        
+        text_lower = text.lower()
+        return sum(1 for indicator in formal_indicators if indicator in text_lower)
+
+    def _get_cached_feedback_patterns(self):
+        """Load feedback patterns from cache or feedback analysis."""
+        # This would load from feedback analysis system
+        # For now, return patterns based on common article usage
+        return {
+            'word_article_corrections': {
+                'hour': 'an', 'honest': 'an', 'honor': 'an', 'herb': 'an',
+                'user': 'a', 'unique': 'a', 'university': 'a', 'unix': 'a',
+                'one': 'a', 'european': 'a', 'api': 'an', 'html': 'an',
+                'sql': 'an', 'xml': 'an', 'url': 'a'
+            },
+            'common_article_corrections': {
+                'a hour', 'a honest', 'an user', 'an unique', 'an university',
+                'an one', 'an european', 'a api', 'a html', 'a sql', 'a xml'
+            },
+            'commonly_no_article_nouns': {
+                'data', 'information', 'software', 'hardware', 'documentation',
+                'configuration', 'deployment', 'authentication', 'authorization',
+                'validation', 'testing', 'debugging', 'monitoring', 'analysis',
+                'processing', 'optimization', 'integration', 'implementation'
+            },
+            'commonly_missing_article_nouns': {
+                'system', 'application', 'service', 'component', 'interface',
+                'user', 'administrator', 'developer', 'customer', 'client'
+            },
+            'paragraph_article_patterns': {
+                'acceptable_without_article': {
+                    'deployment', 'testing', 'configuration', 'monitoring',
+                    'analysis', 'processing', 'optimization', 'debugging'
+                },
+                'needs_article': {
+                    'system', 'application', 'user', 'administrator', 'component'
+                }
+            },
+            'ordered_list_item_article_patterns': {
+                'acceptable_without_article': {
+                    'configuration', 'deployment', 'testing', 'validation',
+                    'documentation', 'analysis', 'processing', 'monitoring'
+                },
+                'needs_article': set()
+            }
+        }
+
+    # === HELPER METHODS FOR SMART MESSAGING ===
+
+    def _get_contextual_message_incorrect(self, article_token, next_token, evidence_score: float) -> str:
+        """Generate context-aware error messages for incorrect a/an usage."""
+        
+        correct_article = 'an' if self._starts_with_vowel_sound(next_token.text) else 'a'
+        
+        if evidence_score > 0.8:
+            return f"Incorrect article: Use '{correct_article}' before '{next_token.text}' (phonetic rule)."
+        elif evidence_score > 0.5:
+            return f"Consider using '{correct_article}' before '{next_token.text}' for standard pronunciation."
+        else:
+            return f"Article usage: '{correct_article}' is typically used before '{next_token.text}'."
+
+    def _get_contextual_message_missing(self, noun_token, evidence_score: float) -> str:
+        """Generate context-aware error messages for missing articles."""
+        
+        if evidence_score > 0.8:
+            return f"Missing article: Singular noun '{noun_token.text}' typically requires an article (a/an/the)."
+        elif evidence_score > 0.5:
+            return f"Consider adding an article before '{noun_token.text}' for clarity."
+        else:
+            return f"Article usage: '{noun_token.text}' might benefit from an article depending on context."
+
+    def _generate_smart_suggestions_incorrect(self, article_token, next_token, evidence_score: float, context: dict) -> List[str]:
+        """Generate context-aware suggestions for incorrect a/an usage."""
+        
+        suggestions = []
+        correct_article = 'an' if self._starts_with_vowel_sound(next_token.text) else 'a'
+        
+        # Base correction
+        suggestions.append(f"Change '{article_token.text} {next_token.text}' to '{correct_article} {next_token.text}'.")
+        
+        # Explanation based on evidence
+        if evidence_score > 0.7:
+            suggestions.append(f"'{next_token.text}' starts with a {'vowel' if self._starts_with_vowel_sound(next_token.text) else 'consonant'} sound, requiring '{correct_article}'.")
+        
+        # Context-specific advice
+        if context:
+            content_type = context.get('content_type', 'general')
+            if content_type in ['academic', 'legal', 'professional']:
+                suggestions.append("Correct article usage is important in formal writing.")
+            elif content_type == 'technical':
+                suggestions.append("While technical writing is concise, article accuracy aids readability.")
+        
+        return suggestions
+
+    def _generate_smart_suggestions_missing(self, noun_token, evidence_score: float, context: dict) -> List[str]:
+        """Generate context-aware suggestions for missing articles."""
+        
+        suggestions = []
+        
+        # Base suggestion
+        if self._has_specific_reference(noun_token):
+            suggestions.append(f"Consider adding 'the' before '{noun_token.text}' for specific reference.")
+        else:
+            suggestions.append(f"Consider adding 'a/an/the' before '{noun_token.text}' as appropriate.")
+        
+        # Context-specific advice
+        if context:
+            content_type = context.get('content_type', 'general')
+            block_type = context.get('block_type', 'paragraph')
+            
+            if content_type == 'technical' and block_type in ['ordered_list_item', 'unordered_list_item']:
+                suggestions.append("Technical lists often omit articles, but consider your style guide.")
+            elif content_type in ['academic', 'formal']:
+                suggestions.append("Formal writing typically includes articles for completeness.")
+            elif content_type == 'procedural':
+                suggestions.append("Instructions may omit articles for brevity, but clarity is important.")
+        
+        # Evidence-based advice
+        if evidence_score < 0.3:
+            suggestions.append("This usage may be acceptable in your context, depending on style preferences.")
+        elif evidence_score > 0.7:
+            suggestions.append("Adding an article would improve grammatical completeness.")
+        
+        return suggestions
