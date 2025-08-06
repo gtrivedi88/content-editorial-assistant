@@ -473,8 +473,9 @@ class AnalysisModeExecutor:
                 return []
             
             # Use the rules registry to get the ListsRule directly
-            from rules import RulesRegistry
-            rules_registry = RulesRegistry.get_instance()
+            rules_registry = self.rules_registry
+            if not rules_registry:
+                return []
             
             if analysis_mode == AnalysisMode.SPACY_WITH_MODULAR_RULES:
                 # Use ListsRule directly with the list items as "sentences"

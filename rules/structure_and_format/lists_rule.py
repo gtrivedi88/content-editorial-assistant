@@ -59,9 +59,9 @@ class ListsRule(BaseStructureRule):
         if not should_apply:
             return errors
         
-        return self._analyze_parallelism_only(sentences, nlp)
+        return self._analyze_parallelism_only(sentences, nlp, text, context)
     
-    def _analyze_parallelism_only(self, sentences: List[str], nlp) -> List[Dict[str, Any]]:
+    def _analyze_parallelism_only(self, sentences: List[str], nlp, text: str = None, context: dict = None) -> List[Dict[str, Any]]:
         """Analyze only grammatical parallelism to prevent rule duplication."""
         errors = []
         
