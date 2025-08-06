@@ -1,270 +1,54 @@
-# Validation Thresholds Configuration
-# Defines confidence thresholds for accepting/rejecting errors in multi-pass validation
-
-# Minimum confidence thresholds for error acceptance
-# Errors below these thresholds will be rejected or require additional validation
+# Universal threshold for all content and rule types
 minimum_confidence_thresholds:
-  # Default threshold for production use (balances quality vs. completeness)
-  default: 0.43
+  # Single universal threshold that works across all content types and rule types
+  # This threshold has been optimized based on analysis of the previous complex system
+  universal: 0.35  # Balanced threshold for production use
   
-  # High confidence - errors are accepted with single pass validation
-  high_confidence: 0.80
-  
-  # Medium confidence - errors may require additional validation passes
-  medium_confidence: 0.60
-  
-  # Low confidence - errors require multiple passes to agree
-  low_confidence: 0.40
-  
-  # Rejection threshold - errors below this are automatically rejected
-  rejection_threshold: 0.25
+  # Legacy compatibility thresholds (mapped to universal threshold)
+  # These are maintained only for backward compatibility and all map to the universal threshold
+  default: 0.35
+  high_confidence: 0.35
+  medium_confidence: 0.35
+  low_confidence: 0.35
+  rejection_threshold: 0.35
 
-# Severity-based confidence requirements
-# Different error severities require different confidence levels
-severity_thresholds:
-  # Critical errors (breaking functionality, serious grammar mistakes)
-  critical:
-    minimum_confidence: 0.85
-    require_multi_pass: true
-    minimum_passes_agreement: 3
-    
-  # Major errors (significant style violations, readability issues)
-  major:
-    minimum_confidence: 0.70
-    require_multi_pass: true
-    minimum_passes_agreement: 2
-    
-  # Minor errors (style preferences, minor grammar issues)
-  minor:
-    minimum_confidence: 0.55
-    require_multi_pass: false
-    minimum_passes_agreement: 1
-    
-  # Suggestions (recommendations, best practices)
-  suggestion:
-    minimum_confidence: 0.40
-    require_multi_pass: false
-    minimum_passes_agreement: 1
-    
-  # Informational (tips, alternative phrasings)
-  info:
-    minimum_confidence: 0.30
-    require_multi_pass: false
-    minimum_passes_agreement: 1
-
-# Multi-pass validation configuration
-# Defines how multiple validation passes interact and agree
+# Multi-pass validation configuration (simplified)
+# Multi-pass validation is still supported but uses universal threshold
 multi_pass_validation:
   # Enable multi-pass validation system
   enabled: true
   
-  # Maximum number of validation passes to run
-  max_passes: 4
-  
-  # Minimum number of passes that must agree for error acceptance
-  default_agreement_threshold: 2
-  
-  # Confidence boost for errors agreed upon by multiple passes
-  agreement_confidence_boost: 0.15
-  
-  # Confidence penalty for errors rejected by any pass
-  disagreement_confidence_penalty: 0.20
-  
-  # Individual validation pass configurations
+  # Simplified pass configuration - universal threshold applies to all
   passes:
-    # Morphological validation pass (POS, syntax, grammar structure)
+    # Morphological validation pass
     morphological:
+      enabled: true
       weight: 0.35
-      enabled: true
-      focus_areas: ["pos_tags", "dependencies", "morphology", "syntax"]
-      confidence_modifier: 1.0
       
-    # Contextual validation pass (coreference, semantic coherence)
+    # Contextual validation pass
     contextual:
+      enabled: true
       weight: 0.30
-      enabled: true
-      focus_areas: ["coreference", "semantic_coherence", "context_flow"]
-      confidence_modifier: 1.0
       
-    # Domain validation pass (terminology, subject matter expertise)
+    # Domain validation pass
     domain:
+      enabled: true
       weight: 0.20
-      enabled: true
-      focus_areas: ["terminology", "domain_knowledge", "audience_appropriateness"]
-      confidence_modifier: 1.0
       
-    # Cross-rule validation pass (rule conflicts, consistency)
+    # Cross-rule validation pass
     cross_rule:
-      weight: 0.15
       enabled: true
-      focus_areas: ["rule_conflicts", "consistency_checks", "logical_coherence"]
-      confidence_modifier: 0.9  # Slightly lower confidence as meta-validation
+      weight: 0.15
 
-# Error acceptance criteria
-# Rules for when to accept, reject, or flag errors for review
-error_acceptance_criteria:
-  # Automatic acceptance conditions
-  auto_accept:
-    # Single high-confidence error
-    single_pass_threshold: 0.85
-    
-    # Multiple passes with medium confidence
-    multi_pass_threshold: 0.65
-    min_agreeing_passes: 2
-    
-    # Confidence with rule-specific boost
-    rule_specific_boost_threshold: 0.75
-    
-  # Automatic rejection conditions  
-  auto_reject:
-    # Very low confidence
-    low_confidence_threshold: 0.25
-    
-    # High disagreement between passes
-    max_disagreement_ratio: 0.6  # If more than 60% of passes disagree
-    
-    # Conflicting rule evaluations
-    rule_conflict_threshold: 0.5
-    
-  # Manual review conditions
-  manual_review:
-    # Moderate confidence requiring human judgment
-    confidence_range:
-      min: 0.45
-      max: 0.65
-      
-    # High pass disagreement
-    disagreement_threshold: 0.4
-    
-    # Complex rule interactions
-    complex_rule_interactions: true
-
-# Confidence calculation settings for validation
-confidence_calculation:
-  # Method for combining confidence from multiple passes
-  combination_method: "weighted_consensus"  # Options: weighted_consensus, majority_vote, highest_confidence
-  
-  # Whether to normalize confidence scores across passes
-  normalize_scores: true
-  
-  # Confidence decay for errors that barely meet thresholds
-  threshold_proximity_decay:
-    enabled: true
-    decay_distance: 0.05  # Reduce confidence if within 0.05 of threshold
-    decay_factor: 0.9     # Multiply confidence by this factor
-    
-  # Confidence boost for errors with strong linguistic anchors
-  linguistic_anchor_boost:
-    enabled: true
-    strong_anchor_boost: 1.15
-    medium_anchor_boost: 1.05
-    weak_anchor_boost: 1.02
-
-# Rule-specific threshold overrides
-# Some rule types may need different validation thresholds
-rule_specific_thresholds:
-  # Pronoun rules need higher confidence due to complexity
-  pronouns:
-    minimum_confidence: 0.70
-    require_multi_pass: true
-    minimum_passes_agreement: 2
-    
-  # Grammar rules can use standard thresholds but with morphological focus
-  grammar:
-    minimum_confidence: 0.65
-    require_multi_pass: true
-    minimum_passes_agreement: 2
-    focus_pass: "morphological"
-    
-  # Terminology rules need domain validation
-  terminology:
-    minimum_confidence: 0.75
-    require_multi_pass: true
-    minimum_passes_agreement: 2
-    focus_pass: "domain"
-    
-  # Style rules are more subjective, lower threshold acceptable
-  style:
-    minimum_confidence: 0.55
-    require_multi_pass: false
-    minimum_passes_agreement: 1
-    
-  # Passive voice detection requires syntactic and contextual analysis
-  passive_voice:
-    minimum_confidence: 0.65
-    require_multi_pass: true
-    minimum_passes_agreement: 2
-    required_passes: ["morphological", "contextual"]
-    
-  # Readability rules focus on flow and coherence
-  readability:
-    minimum_confidence: 0.60
-    require_multi_pass: true
-    minimum_passes_agreement: 2
-    required_passes: ["contextual", "cross_rule"]
-
-# Content-type specific threshold adjustments
-content_type_thresholds:
-  # Technical documentation requires higher confidence
-  technical:
-    confidence_modifier: 1.1
-    terminology_boost: 1.2
-    minimum_confidence_override: 0.70
-    
-  # Narrative content allows more subjective rules
-  narrative:
-    confidence_modifier: 0.9
-    style_rule_relaxation: 0.85
-    minimum_confidence_override: 0.50
-    
-  # Procedural content needs high accuracy
-  procedural:
-    confidence_modifier: 1.05
-    clarity_boost: 1.15
-    minimum_confidence_override: 0.65
-    
-  # Marketing content balances creativity with correctness
-  marketing:
-    confidence_modifier: 0.95
-    style_flexibility: 0.8
-    minimum_confidence_override: 0.55
-
-# Fallback thresholds for unknown configurations
-fallback_thresholds:
-  # Default thresholds when no specific configuration exists
-  unknown_rule:
-    minimum_confidence: 0.60
-    require_multi_pass: true
-    minimum_passes_agreement: 2
-    
-  unknown_content:
-    confidence_modifier: 1.0
-    minimum_confidence_override: 0.60
-    
-  unknown_severity:
-    minimum_confidence: 0.60
-    require_multi_pass: false
-    minimum_passes_agreement: 1
-
-# Performance and optimization settings
+# Simplified performance settings
 performance_settings:
-  # Skip additional passes if confidence is very high
-  early_termination:
-    enabled: true
-    high_confidence_threshold: 0.90
-    
-  # Cache validation results for repeated patterns
+  # Basic caching configuration
   result_caching:
     enabled: true
-    cache_ttl: 600  # 10 minutes
+    cache_ttl: 600
     max_cache_size: 1000
     
-  # Parallel validation pass execution
-  parallel_execution:
-    enabled: true
-    max_concurrent_passes: 3
-    
-  # Timeout settings for validation passes
+  # Timeout settings
   timeouts:
-    individual_pass_timeout: 30  # seconds
-    total_validation_timeout: 120  # seconds
+    individual_pass_timeout: 30
+    total_validation_timeout: 120

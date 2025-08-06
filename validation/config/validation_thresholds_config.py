@@ -41,63 +41,41 @@ class ValidationThresholdsConfig(BaseConfig):
     
     def get_default_config(self) -> Dict[str, Any]:
         """
-        Return default validation thresholds configuration.
+        Return simplified universal threshold configuration.
+        
+        NOTE: This has been simplified to support the universal threshold system.
+        All thresholds now use the universal value of 0.35.
         
         Returns:
-            Default configuration dictionary
+            Simplified universal threshold configuration
         """
         return {
             'minimum_confidence_thresholds': {
-                'high_confidence': 0.80,
-                'medium_confidence': 0.60,
-                'low_confidence': 0.40,
-                'rejection_threshold': 0.25
-            },
-            'severity_thresholds': {
-                'critical': {
-                    'minimum_confidence': 0.85,
-                    'require_multi_pass': True,
-                    'minimum_passes_agreement': 3
-                },
-                'major': {
-                    'minimum_confidence': 0.70,
-                    'require_multi_pass': True,
-                    'minimum_passes_agreement': 2
-                },
-                'minor': {
-                    'minimum_confidence': 0.55,
-                    'require_multi_pass': False,
-                    'minimum_passes_agreement': 1
-                },
-                'suggestion': {
-                    'minimum_confidence': 0.40,
-                    'require_multi_pass': False,
-                    'minimum_passes_agreement': 1
-                }
+                'universal': 0.35,  # Universal threshold for all rule and content types
+                'default': 0.35,   # Legacy compatibility
+                'high_confidence': 0.35,
+                'medium_confidence': 0.35,
+                'low_confidence': 0.35,
+                'rejection_threshold': 0.35
             },
             'multi_pass_validation': {
                 'enabled': True,
-                'max_passes': 4,
-                'default_agreement_threshold': 2,
-                'agreement_confidence_boost': 0.15,
-                'disagreement_confidence_penalty': 0.20
-            },
-            'error_acceptance_criteria': {
-                'auto_accept': {
-                    'single_pass_threshold': 0.85,
-                    'multi_pass_threshold': 0.65,
-                    'min_agreeing_passes': 2
-                },
-                'auto_reject': {
-                    'low_confidence_threshold': 0.25,
-                    'max_disagreement_ratio': 0.6
+                'passes': {
+                    'morphological': {'enabled': True, 'weight': 0.35},
+                    'contextual': {'enabled': True, 'weight': 0.30},
+                    'domain': {'enabled': True, 'weight': 0.20},
+                    'cross_rule': {'enabled': True, 'weight': 0.15}
                 }
             },
-            'fallback_thresholds': {
-                'unknown_rule': {
-                    'minimum_confidence': 0.60,
-                    'require_multi_pass': True,
-                    'minimum_passes_agreement': 2
+            'performance_settings': {
+                'result_caching': {
+                    'enabled': True,
+                    'cache_ttl': 600,
+                    'max_cache_size': 1000
+                },
+                'timeouts': {
+                    'individual_pass_timeout': 30,
+                    'total_validation_timeout': 120
                 }
             }
         }
@@ -115,39 +93,28 @@ class ValidationThresholdsConfig(BaseConfig):
         Raises:
             ConfigurationValidationError: If configuration is invalid
         """
-        # Validate required top-level keys
-        required_keys = ['minimum_confidence_thresholds', 'severity_thresholds']
+        # Validate required top-level keys (simplified for universal threshold)
+        required_keys = ['minimum_confidence_thresholds']
         SchemaValidator.validate_required_keys(config, required_keys)
         
-        # Validate minimum confidence thresholds
+        # Validate minimum confidence thresholds (simplified)
         self._validate_minimum_confidence_thresholds(
             config['minimum_confidence_thresholds']
         )
         
-        # Validate severity thresholds
-        self._validate_severity_thresholds(config['severity_thresholds'])
-        
-        # Validate multi-pass validation settings
+        # Validate optional multi-pass validation settings
         if 'multi_pass_validation' in config:
             self._validate_multi_pass_settings(config['multi_pass_validation'])
         
-        # Validate error acceptance criteria
-        if 'error_acceptance_criteria' in config:
-            self._validate_error_acceptance_criteria(config['error_acceptance_criteria'])
-        
-        # Validate rule-specific thresholds
-        if 'rule_specific_thresholds' in config:
-            self._validate_rule_specific_thresholds(config['rule_specific_thresholds'])
-        
-        # Validate content-type thresholds
-        if 'content_type_thresholds' in config:
-            self._validate_content_type_thresholds(config['content_type_thresholds'])
+        # Validate optional performance settings
+        if 'performance_settings' in config:
+            self._validate_performance_settings(config['performance_settings'])
         
         return True
     
     def _validate_minimum_confidence_thresholds(self, thresholds: Dict[str, float]) -> None:
         """
-        Validate minimum confidence thresholds.
+        Validate simplified universal threshold configuration.
         
         Args:
             thresholds: Threshold dictionary to validate
@@ -155,9 +122,8 @@ class ValidationThresholdsConfig(BaseConfig):
         Raises:
             ConfigurationValidationError: If thresholds are invalid
         """
-        required_thresholds = [
-            'high_confidence', 'medium_confidence', 'low_confidence', 'rejection_threshold'
-        ]
+        # For universal threshold system, we just need the universal threshold
+        required_thresholds = ['universal']
         
         try:
             SchemaValidator.validate_required_keys(thresholds, required_thresholds)
@@ -165,22 +131,16 @@ class ValidationThresholdsConfig(BaseConfig):
             raise ConfigurationValidationError(f"Invalid minimum_confidence_thresholds: {e}")
         
         # Validate threshold types and ranges
-        threshold_ranges = {key: {'min': 0.0, 'max': 1.0} for key in required_thresholds}
+        threshold_ranges = {'universal': {'min': 0.0, 'max': 1.0}}
+        # Also validate legacy keys if present
+        for key in ['default', 'high_confidence', 'medium_confidence', 'low_confidence', 'rejection_threshold']:
+            if key in thresholds:
+                threshold_ranges[key] = {'min': 0.0, 'max': 1.0}
+        
         try:
             SchemaValidator.validate_value_ranges(thresholds, threshold_ranges)
         except ConfigurationValidationError as e:
             raise ConfigurationValidationError(f"Invalid minimum_confidence_thresholds: {e}")
-        
-        # Validate logical ordering: rejection < low < medium < high
-        if not (thresholds['rejection_threshold'] < thresholds['low_confidence'] < 
-                thresholds['medium_confidence'] < thresholds['high_confidence']):
-            raise ConfigurationValidationError(
-                "minimum_confidence_thresholds must be in ascending order: "
-                f"rejection ({thresholds['rejection_threshold']}) < "
-                f"low ({thresholds['low_confidence']}) < "
-                f"medium ({thresholds['medium_confidence']}) < "
-                f"high ({thresholds['high_confidence']})"
-            )
     
     def _validate_severity_thresholds(self, severities: Dict[str, Dict[str, Any]]) -> None:
         """
@@ -573,3 +533,106 @@ class ValidationThresholdsConfig(BaseConfig):
         """
         config = self.load_config()
         return list(config.get('severity_thresholds', {}).keys())
+    
+    def _validate_performance_settings(self, settings: Dict[str, Any]) -> None:
+        """
+        Validate performance settings for the universal threshold system.
+        
+        Args:
+            settings: Performance settings to validate
+            
+        Raises:
+            ConfigurationValidationError: If settings are invalid
+        """
+        # Validate result_caching if present
+        if 'result_caching' in settings:
+            caching = settings['result_caching']
+            
+            if 'enabled' in caching and not isinstance(caching['enabled'], bool):
+                raise ConfigurationValidationError(
+                    "performance_settings.result_caching.enabled must be boolean"
+                )
+            
+            if 'cache_ttl' in caching:
+                ttl = caching['cache_ttl']
+                if not isinstance(ttl, int) or ttl < 0:
+                    raise ConfigurationValidationError(
+                        f"performance_settings.result_caching.cache_ttl must be non-negative integer, got {ttl}"
+                    )
+            
+            if 'max_cache_size' in caching:
+                size = caching['max_cache_size']
+                if not isinstance(size, int) or size < 0:
+                    raise ConfigurationValidationError(
+                        f"performance_settings.result_caching.max_cache_size must be non-negative integer, got {size}"
+                    )
+        
+        # Validate timeouts if present
+        if 'timeouts' in settings:
+            timeouts = settings['timeouts']
+            
+            for timeout_name in ['individual_pass_timeout', 'total_validation_timeout']:
+                if timeout_name in timeouts:
+                    timeout = timeouts[timeout_name]
+                    if not isinstance(timeout, int) or timeout <= 0:
+                        raise ConfigurationValidationError(
+                            f"performance_settings.timeouts.{timeout_name} must be positive integer, got {timeout}"
+                        )
+    
+    def create_confidence_breakdown(self, confidence: float, rule_type: str, content_type: str = 'general') -> Dict[str, Any]:
+        """
+        Create human-readable confidence explanation for the universal threshold system.
+        
+        Args:
+            confidence: Final confidence score
+            rule_type: Type of rule (e.g., 'grammar', 'commands')
+            content_type: Type of content (e.g., 'technical', 'narrative')
+            
+        Returns:
+            Dictionary with confidence breakdown explanation
+        """
+        # Get universal threshold
+        thresholds = self.get_minimum_confidence_thresholds()
+        universal_threshold = thresholds.get('universal', 0.35)
+        
+        # Create explanation
+        explanation = {
+            'final_confidence': confidence,
+            'universal_threshold': universal_threshold,
+            'meets_threshold': confidence >= universal_threshold,
+            'rule_type': rule_type,
+            'content_type': content_type,
+            'explanation': self._generate_confidence_explanation(confidence, rule_type, content_type, universal_threshold)
+        }
+        
+        return explanation
+    
+    def _generate_confidence_explanation(self, confidence: float, rule_type: str, content_type: str, threshold: float) -> str:
+        """
+        Generate human-readable explanation of confidence calculation.
+        
+        Args:
+            confidence: Final confidence score
+            rule_type: Type of rule
+            content_type: Type of content
+            threshold: Universal threshold
+            
+        Returns:
+            Human-readable explanation string
+        """
+        status = "meets" if confidence >= threshold else "below"
+        
+        explanation_parts = [
+            f"Confidence score: {confidence:.3f}",
+            f"Universal threshold: {threshold:.3f}",
+            f"Status: {status} threshold",
+            f"Rule type: {rule_type}",
+            f"Content type: {content_type}"
+        ]
+        
+        if confidence >= threshold:
+            explanation_parts.append("✅ Error will be accepted")
+        else:
+            explanation_parts.append("❌ Error will be rejected")
+        
+        return " | ".join(explanation_parts)

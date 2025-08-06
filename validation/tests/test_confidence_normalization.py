@@ -1,6 +1,5 @@
 """
 Test Suite for Confidence Normalization System
-Comprehensive testing for the enhanced ConfidenceCalculator normalization capabilities.
 """
 
 import pytest
@@ -514,6 +513,261 @@ class TestProductionReadiness:
                     assert 0.0 <= confidence <= 1.0, f"Invalid confidence {confidence} for {rule_type}/{content_type}"
         
         print("System stability test passed for all combinations")
+
+
+class TestUniversalThresholdSystem:
+    """Test the universal threshold system implementation."""
+    
+    @pytest.fixture
+    def threshold_config(self):
+        """Create ValidationThresholdsConfig instance for testing."""
+        try:
+            from validation.config.validation_thresholds_config import ValidationThresholdsConfig
+            return ValidationThresholdsConfig()
+        except ImportError:
+            pytest.skip("ValidationThresholdsConfig not available")
+    
+    def test_universal_threshold_loading(self, threshold_config):
+        """Test that universal threshold loads correctly."""
+        
+        thresholds = threshold_config.get_minimum_confidence_thresholds()
+        
+        # Should have universal threshold
+        assert 'universal' in thresholds, "Universal threshold should be present"
+        assert thresholds['universal'] == 0.35, f"Universal threshold should be 0.35, got {thresholds['universal']}"
+        
+        # Legacy thresholds should map to universal
+        legacy_keys = ['default', 'high_confidence', 'medium_confidence', 'low_confidence', 'rejection_threshold']
+        for key in legacy_keys:
+            if key in thresholds:
+                assert thresholds[key] == 0.35, f"Legacy threshold {key} should map to 0.35, got {thresholds[key]}"
+        
+        print(f"Universal threshold validated: {thresholds['universal']}")
+    
+    def test_confidence_explanation_generation(self, threshold_config):
+        """Test confidence explanation generation."""
+        
+        test_cases = [
+            (0.5, 'grammar', 'technical', True),   # Above threshold
+            (0.2, 'tone', 'narrative', False),     # Below threshold
+            (0.35, 'commands', 'procedural', True), # Exactly at threshold
+        ]
+        
+        for confidence, rule_type, content_type, should_meet in test_cases:
+            explanation = threshold_config.create_confidence_breakdown(confidence, rule_type, content_type)
+            
+            # Validate explanation structure
+            assert 'final_confidence' in explanation, "Should have final_confidence"
+            assert 'universal_threshold' in explanation, "Should have universal_threshold"
+            assert 'meets_threshold' in explanation, "Should have meets_threshold"
+            assert 'rule_type' in explanation, "Should have rule_type"
+            assert 'content_type' in explanation, "Should have content_type"
+            assert 'explanation' in explanation, "Should have explanation text"
+            
+            # Validate explanation accuracy
+            assert explanation['final_confidence'] == confidence, f"Confidence mismatch: expected {confidence}, got {explanation['final_confidence']}"
+            assert explanation['universal_threshold'] == 0.35, f"Threshold should be 0.35, got {explanation['universal_threshold']}"
+            assert explanation['meets_threshold'] == should_meet, f"Threshold meeting should be {should_meet}, got {explanation['meets_threshold']}"
+            assert explanation['rule_type'] == rule_type, f"Rule type mismatch: expected {rule_type}, got {explanation['rule_type']}"
+            assert explanation['content_type'] == content_type, f"Content type mismatch: expected {content_type}, got {explanation['content_type']}"
+            
+            # Validate explanation text
+            explanation_text = explanation['explanation']
+            assert str(confidence) in explanation_text, "Explanation should contain confidence score"
+            assert '0.35' in explanation_text, "Explanation should contain universal threshold"
+            assert rule_type in explanation_text, "Explanation should contain rule type"
+            assert content_type in explanation_text, "Explanation should contain content type"
+            
+            if should_meet:
+                assert "✅" in explanation_text, "Explanation should indicate acceptance"
+            else:
+                assert "❌" in explanation_text, "Explanation should indicate rejection"
+            
+            print(f"Explanation for {confidence:.2f}: {explanation_text[:80]}...")
+    
+    def test_threshold_consistency_across_system(self, threshold_config):
+        """Test that universal threshold is applied consistently."""
+        
+        # Test that all threshold access methods return universal threshold
+        thresholds = threshold_config.get_minimum_confidence_thresholds()
+        universal_threshold = thresholds['universal']
+        
+        # All legacy methods should return universal threshold
+        legacy_values = [
+            thresholds.get('default', universal_threshold),
+            thresholds.get('high_confidence', universal_threshold),
+            thresholds.get('medium_confidence', universal_threshold),
+            thresholds.get('low_confidence', universal_threshold),
+            thresholds.get('rejection_threshold', universal_threshold)
+        ]
+        
+        for value in legacy_values:
+            assert value == universal_threshold, f"All threshold values should be {universal_threshold}, got {value}"
+        
+        print(f"Threshold consistency validated: all methods return {universal_threshold}")
+    
+    def test_simplified_configuration_validation(self, threshold_config):
+        """Test that simplified configuration validation works."""
+        
+        # Test valid simplified configuration
+        valid_config = {
+            'minimum_confidence_thresholds': {
+                'universal': 0.35,
+                'default': 0.35
+            },
+            'multi_pass_validation': {
+                'enabled': True,
+                'passes': {
+                    'morphological': {'enabled': True, 'weight': 0.35}
+                }
+            },
+            'performance_settings': {
+                'result_caching': {'enabled': True, 'cache_ttl': 600}
+            }
+        }
+        
+        # Should validate successfully
+        try:
+            is_valid = threshold_config.validate_config(valid_config)
+            assert is_valid, "Valid simplified config should pass validation"
+            print("✅ Simplified configuration validation passed")
+        except Exception as e:
+            pytest.fail(f"Valid simplified config failed validation: {e}")
+        
+        # Test invalid configuration
+        invalid_config = {
+            'minimum_confidence_thresholds': {
+                'universal': 1.5  # Invalid range
+            }
+        }
+        
+        with pytest.raises(Exception):
+            threshold_config.validate_config(invalid_config)
+        
+        print("✅ Invalid configuration properly rejected")
+    
+    def test_configuration_file_simplification(self, threshold_config):
+        """Test that configuration file has been simplified correctly."""
+        
+        config = threshold_config.load_config()
+        
+        # Should have required sections
+        assert 'minimum_confidence_thresholds' in config, "Should have minimum_confidence_thresholds"
+        assert config['minimum_confidence_thresholds']['universal'] == 0.35, "Universal threshold should be 0.35"
+        
+        # Should have optional sections
+        if 'multi_pass_validation' in config:
+            assert 'enabled' in config['multi_pass_validation'], "Multi-pass should have enabled flag"
+        
+        if 'performance_settings' in config:
+            assert isinstance(config['performance_settings'], dict), "Performance settings should be dict"
+        
+        # Should NOT have complex legacy sections (they should be simplified or removed)
+        legacy_complex_sections = [
+            'severity_thresholds',
+            'error_acceptance_criteria', 
+            'rule_specific_thresholds',
+            'content_type_thresholds'
+        ]
+        
+        simplified_count = 0
+        for section in legacy_complex_sections:
+            if section not in config:
+                simplified_count += 1
+        
+        print(f"Configuration simplification: {simplified_count}/{len(legacy_complex_sections)} complex sections removed")
+        
+        # At least some sections should be simplified
+        assert simplified_count > 0, "Configuration should have been simplified from original complex version"
+
+
+class TestNormalizationIntegration:
+    """Test normalization algorithm integration with universal threshold."""
+    
+    @pytest.fixture
+    def calculator(self):
+        """Create ConfidenceCalculator instance for testing."""
+        return ConfidenceCalculator(cache_results=True)
+    
+    @pytest.fixture
+    def threshold_config(self):
+        """Create ValidationThresholdsConfig instance for testing."""
+        try:
+            from validation.config.validation_thresholds_config import ValidationThresholdsConfig
+            return ValidationThresholdsConfig()
+        except ImportError:
+            pytest.skip("ValidationThresholdsConfig not available")
+    
+    def test_normalization_with_universal_threshold(self, calculator, threshold_config):
+        """Test that normalization works correctly with universal threshold."""
+        
+        test_text = "This is a test sentence for confidence normalization validation."
+        
+        # Calculate normalized confidence
+        normalized_confidence = calculator.calculate_normalized_confidence(
+            text=test_text,
+            error_position=25,
+            rule_type='grammar',
+            content_type='general'
+        )
+        
+        # Get universal threshold
+        thresholds = threshold_config.get_minimum_confidence_thresholds()
+        universal_threshold = thresholds['universal']
+        
+        # Test threshold application
+        meets_threshold = normalized_confidence >= universal_threshold
+        
+        # Generate explanation
+        explanation = threshold_config.create_confidence_breakdown(
+            normalized_confidence, 'grammar', 'general'
+        )
+        
+        # Validate integration
+        assert 0.0 <= normalized_confidence <= 1.0, f"Normalized confidence {normalized_confidence} outside valid range"
+        assert explanation['meets_threshold'] == meets_threshold, "Explanation threshold evaluation should match calculation"
+        assert explanation['universal_threshold'] == universal_threshold, "Explanation should use universal threshold"
+        
+        print(f"Normalization integration: confidence={normalized_confidence:.3f}, threshold={universal_threshold}, meets={meets_threshold}")
+    
+    def test_cross_rule_normalization_consistency(self, calculator, threshold_config):
+        """Test that normalized confidence is consistent across rule types."""
+        
+        test_text = "This sentence will be tested across multiple rule types for consistency."
+        error_position = 30
+        universal_threshold = threshold_config.get_minimum_confidence_thresholds()['universal']
+        
+        rule_types = ['grammar', 'spelling', 'punctuation', 'tone', 'word_usage']
+        normalized_confidences = {}
+        
+        for rule_type in rule_types:
+            confidence = calculator.calculate_normalized_confidence(
+                text=test_text,
+                error_position=error_position,
+                rule_type=rule_type,
+                content_type='general'
+            )
+            
+            normalized_confidences[rule_type] = confidence
+            
+            # Should be in valid range
+            assert 0.0 <= confidence <= 1.0, f"Confidence for {rule_type} outside valid range: {confidence}"
+            
+            # Test with universal threshold
+            meets_threshold = confidence >= universal_threshold
+            explanation = threshold_config.create_confidence_breakdown(confidence, rule_type, 'general')
+            assert explanation['meets_threshold'] == meets_threshold, f"Threshold evaluation inconsistent for {rule_type}"
+        
+        # Test that confidences are reasonable (not all identical, not too spread out)
+        confidence_values = list(normalized_confidences.values())
+        std_dev = (sum((c - sum(confidence_values)/len(confidence_values))**2 for c in confidence_values) / len(confidence_values))**0.5
+        
+        assert 0.01 <= std_dev <= 0.4, f"Confidence standard deviation {std_dev:.3f} indicates poor normalization"
+        
+        print(f"Cross-rule consistency: std_dev={std_dev:.3f}, universal_threshold={universal_threshold}")
+        for rule_type, confidence in normalized_confidences.items():
+            meets = "✅" if confidence >= universal_threshold else "❌"
+            print(f"  {rule_type}: {confidence:.3f} {meets}")
 
 
 if __name__ == "__main__":
