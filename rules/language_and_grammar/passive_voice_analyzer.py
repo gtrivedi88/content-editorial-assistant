@@ -1,28 +1,5 @@
 """
 Shared Passive Voice Analysis Module - Pure Linguistic Approach
-
-Centralizes passive voice detection using sophisticated linguistic analysis 
-rather than hard-coded patterns. Implements production-quality detection with:
-
-LINGUISTIC METHODOLOGY:
-- Pure morphological analysis using spaCy morphological features
-- Dependency parsing for grammatical relationship analysis
-- 5 linguistic anchors for change announcement detection
-- Aspectual class analysis (accomplishment vs. state verbs)
-- Discourse deixis and temporal reference analysis
-
-NO HARD-CODING:
-- Minimal word lists, maximum linguistic pattern analysis
-- No fallback to string matching or regex patterns
-- PhraseMatcher available for complex multi-token patterns if needed
-- Robust linguistic features handle edge cases
-
-LINGUISTIC ANCHORS:
-1. Perfective completion markers (temporal prepositional phrases)
-2. Temporal deixis with release semantics (demonstrative + temporal patterns)
-3. Accomplishment vs. state predicate analysis (aspectual class)
-4. Habitual/generic aspect markers (morphological analysis)
-5. Discourse demonstrative with change semantics (anaphoric patterns)
 """
 
 from typing import List, Dict, Any, Optional, Set, Tuple

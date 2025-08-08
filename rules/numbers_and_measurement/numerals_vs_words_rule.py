@@ -77,34 +77,127 @@ class NumeralsVsWordsRule(BaseNumbersRule):
     # === EVIDENCE CALCULATION ===
 
     def _calculate_numerals_words_evidence(self, token, style: str, dominant: str, sentence, text: str, context: Dict[str, Any]) -> float:
-        """Calculate evidence (0.0-1.0) that the token's style is inconsistent."""
-        evidence: float = 0.6  # base when both styles present
+        """
+        Calculate evidence (0.0-1.0) that the token's style is inconsistent.
+        
+        Following the 5-step evidence calculation pattern:
+        1. Base Evidence Assessment
+        2. Linguistic Clues (Micro-Level)
+        3. Structural Clues (Meso-Level)
+        4. Semantic Clues (Macro-Level)
+        5. Feedback Patterns (Learning Clues)
+        """
+        evidence_score = 0.0
+        
+        # === STEP 1: BASE EVIDENCE ASSESSMENT ===
+        evidence_score = 0.6  # Base evidence when both styles are present in document
+        
+        # === STEP 2: LINGUISTIC CLUES (MICRO-LEVEL) ===
+        evidence_score = self._apply_linguistic_clues_numerals_words(evidence_score, token, style, dominant, sentence)
+        
+        # === STEP 3: STRUCTURAL CLUES (MESO-LEVEL) ===
+        evidence_score = self._apply_structural_clues_numerals_words(evidence_score, context)
+        
+        # === STEP 4: SEMANTIC CLUES (MACRO-LEVEL) ===
+        evidence_score = self._apply_semantic_clues_numerals_words(evidence_score, style, dominant, text, context)
+        
+        # === STEP 5: FEEDBACK PATTERNS (LEARNING CLUES) ===
+        evidence_score = self._apply_feedback_clues_numerals_words(evidence_score, token.text, context)
+        
+        return max(0.0, min(1.0, evidence_score))
 
-        # Linguistic: exceptions (version numbers, figures, chapters) reduce evidence
+    # === LINGUISTIC CLUES (MICRO-LEVEL) ===
+    
+    def _apply_linguistic_clues_numerals_words(self, evidence_score: float, token, style: str, dominant: str, sentence) -> float:
+        """Apply SpaCy-based linguistic analysis clues for numerals vs words consistency."""
+        
+        # Check for exceptional contexts that reduce evidence
         head_lemma = getattr(token.head, 'lemma_', '').lower()
-        exceptions = {"version", "release", "chapter", "figure", "table", "page", "step"}
+        exceptions = {"version", "release", "chapter", "figure", "table", "page", "step", "section", "part"}
         if head_lemma in exceptions:
-            evidence -= 0.25
-
-        # Sentence start spelled-out words may be acceptable in narrative contexts
+            evidence_score -= 0.3  # Strong exception context
+        
+        # Check for additional technical contexts
+        tech_exceptions = {"api", "http", "port", "build", "revision", "iteration", "phase"}
+        if head_lemma in tech_exceptions:
+            evidence_score -= 0.25  # Technical contexts often use numerals
+        
+        # Check POS tags and dependency relationships
+        token_pos = getattr(token, 'pos_', '')
+        token_dep = getattr(token, 'dep_', '')
+        
+        # Numbers as subjects or objects in technical contexts
+        if token_dep in ['nsubj', 'dobj', 'pobj'] and token_pos == 'NUM':
+            evidence_score -= 0.1  # Grammatical number usage often acceptable
+        
+        # Numbers in compound structures (e.g., "3-part series")
+        if token_dep == 'compound':
+            evidence_score -= 0.15  # Compound numbers often use numerals
+        
+        # Check for ordinal vs cardinal patterns
+        if hasattr(token, 'morph') and token.morph:
+            if 'NumType=Ord' in str(token.morph):  # Ordinal numbers (1st, 2nd, etc.)
+                evidence_score -= 0.1  # Ordinals often use numerals
+        
+        # Sentence start spelled-out words (narrative style)
         if style == "words" and getattr(token, 'i', 0) == sentence.start:
-            evidence -= 0.05
-
-        # If the sentence contains other small numbers in dominant style, increase
-        if any((self._is_small_number_word(t, {"one","two","three","four","five","six","seven","eight","nine"}) and dominant == "words") or
-               (self._is_small_number_numeral(t) and dominant == "numerals") for t in sentence):
-            evidence += 0.1
-
-        # Structural
-        evidence = self._apply_structural_clues_numerals_words(evidence, context)
-
-        # Semantic
-        evidence = self._apply_semantic_clues_numerals_words(evidence, style, dominant, context)
-
-        # Feedback
-        evidence = self._apply_feedback_clues_numerals_words(evidence, token.text, context)
-
-        return max(0.0, min(1.0, evidence))
+            evidence_score -= 0.1  # Sentence-initial words more acceptable
+        
+        # Check for consistency within the same sentence
+        words_under_10 = {"one", "two", "three", "four", "five", "six", "seven", "eight", "nine"}
+        sentence_word_count = sum(1 for t in sentence if self._is_small_number_word(t, words_under_10))
+        sentence_numeral_count = sum(1 for t in sentence if self._is_small_number_numeral(t))
+        
+        if sentence_word_count > 0 and sentence_numeral_count > 0:
+            evidence_score += 0.2  # Mixed styles within sentence is problematic
+        elif sentence_word_count > 1 and style == "numerals":
+            evidence_score += 0.15  # Inconsistent with sentence pattern
+        elif sentence_numeral_count > 1 and style == "words":
+            evidence_score += 0.15  # Inconsistent with sentence pattern
+        
+        # Check for mathematical or technical expressions
+        math_indicators = ['+', '-', '*', '/', '=', '<', '>', '%']
+        sentence_text = sentence.text
+        if any(indicator in sentence_text for indicator in math_indicators):
+            if style == "words":
+                evidence_score += 0.2  # Words inappropriate in math contexts
+            else:
+                evidence_score -= 0.1  # Numerals appropriate in math contexts
+        
+        # Check for list or enumeration patterns
+        if token_dep in ['appos', 'attr'] or sentence_text.strip().startswith(('-', '*', '•')):
+            if style == "numerals":
+                evidence_score -= 0.1  # Lists often use numerals
+        
+        # Check for time, date, or measurement contexts
+        time_indicators = ['hour', 'minute', 'second', 'day', 'week', 'month', 'year']
+        measurement_indicators = ['meter', 'gram', 'liter', 'byte', 'inch', 'foot', 'pound']
+        sentence_lower = sentence_text.lower()
+        
+        if any(indicator in sentence_lower for indicator in time_indicators + measurement_indicators):
+            if style == "words":
+                evidence_score += 0.15  # Measurements typically use numerals
+            else:
+                evidence_score -= 0.1  # Numerals appropriate with measurements
+        
+        # Check for age or quantity expressions
+        age_indicators = ['year old', 'years old', 'age', 'aged']
+        if any(indicator in sentence_lower for indicator in age_indicators):
+            if style == "words":
+                evidence_score += 0.1  # Ages typically use numerals
+        
+        # Check for percentage or ratio contexts
+        if '%' in sentence_text or 'percent' in sentence_lower or 'ratio' in sentence_lower:
+            if style == "words":
+                evidence_score += 0.2  # Percentages use numerals
+            else:
+                evidence_score -= 0.1  # Numerals appropriate for percentages
+        
+        # Check for quotes (might be showing examples or UI text)
+        if '"' in sentence_text or "'" in sentence_text:
+            evidence_score -= 0.05  # Quoted text may preserve original format
+        
+        return evidence_score
 
     # === CLUE HELPERS ===
 
@@ -120,74 +213,374 @@ class NumeralsVsWordsRule(BaseNumbersRule):
         except Exception:
             return False
 
-    def _apply_structural_clues_numerals_words(self, ev: float, context: Dict[str, Any]) -> float:
-        block_type = (context or {}).get('block_type', 'paragraph')
-        if block_type in {'code_block', 'literal_block'}:
-            return ev - 0.7
-        if block_type == 'inline_code':
-            return ev - 0.5
-        if block_type in {'table_cell', 'table_header', 'ordered_list_item', 'unordered_list_item'}:
-            ev -= 0.05
-        if block_type in {'heading', 'title'}:
-            ev -= 0.05
-        return ev
+    def _apply_structural_clues_numerals_words(self, evidence_score: float, context: Dict[str, Any]) -> float:
+        """Apply document structure-based clues for numerals vs words consistency."""
+        
+        block_type = context.get('block_type', 'paragraph')
+        
+        # Code contexts have different formatting rules
+        if block_type in ['code_block', 'literal_block']:
+            evidence_score -= 0.8  # Code often shows exact syntax with numerals
+        elif block_type == 'inline_code':
+            evidence_score -= 0.6  # Inline code may show format examples
+        
+        # List contexts often favor numerals for clarity
+        elif block_type in ['ordered_list_item', 'unordered_list_item']:
+            evidence_score -= 0.1  # Lists often use numerals for brevity
+            
+            # Nested lists might be more technical
+            list_depth = context.get('list_depth', 1)
+            if list_depth > 1:
+                evidence_score -= 0.05  # Deeper lists more technical
+        
+        # Table contexts benefit from consistent, compact formatting
+        elif block_type in ['table_cell', 'table_header']:
+            evidence_score -= 0.1  # Tables often prefer numerals for space
+        
+        # Heading contexts
+        elif block_type in ['heading', 'title']:
+            evidence_score -= 0.05  # Headings may use either style
+            
+            # Higher-level headings might be more formal
+            heading_level = context.get('block_level', 1)
+            if heading_level == 1:  # H1 - main headings
+                evidence_score += 0.05  # Main headings might prefer words
+        
+        # Admonition contexts
+        elif block_type == 'admonition':
+            admonition_type = context.get('admonition_type', '').upper()
+            if admonition_type in ['NOTE', 'TIP', 'HINT']:
+                evidence_score -= 0.05  # Informal contexts more flexible
+            elif admonition_type in ['WARNING', 'CAUTION', 'IMPORTANT']:
+                evidence_score += 0.05  # Critical info might prefer clarity of numerals
+        
+        # Quote/citation contexts may preserve original style
+        elif block_type in ['block_quote', 'citation']:
+            evidence_score -= 0.2  # Quotes preserve original formatting
+        
+        # Form/UI contexts often use numerals
+        elif block_type in ['form_field', 'ui_element']:
+            evidence_score -= 0.1  # UI often uses numerals
+        
+        # Step-by-step procedures often use numerals
+        elif block_type in ['procedure', 'steps']:
+            evidence_score -= 0.15  # Procedures typically use numerals
+        
+        return evidence_score
 
-    def _apply_semantic_clues_numerals_words(self, ev: float, style: str, dominant: str, context: Dict[str, Any]) -> float:
-        content_type = (context or {}).get('content_type', 'general')
-        audience = (context or {}).get('audience', 'general')
-        domain = (context or {}).get('domain', 'general')
-
-        # Technical/procedural contexts prefer numerals
-        if content_type in {'technical', 'api', 'procedural'} or audience in {'developer', 'expert'}:
+    def _apply_semantic_clues_numerals_words(self, evidence_score: float, style: str, dominant: str, text: str, context: Dict[str, Any]) -> float:
+        """Apply semantic and content-type clues for numerals vs words consistency."""
+        
+        content_type = context.get('content_type', 'general')
+        domain = context.get('domain', 'general')
+        audience = context.get('audience', 'general')
+        
+        # Content type adjustments
+        if content_type == 'technical':
             if style == 'words' and dominant == 'numerals':
-                ev += 0.1
-            if style == 'numerals' and dominant == 'words':
-                ev -= 0.05
-
-        # Narrative/marketing tolerate words
-        if content_type in {'narrative', 'marketing'}:
+                evidence_score += 0.15  # Technical content strongly prefers numerals
+            elif style == 'numerals' and dominant == 'words':
+                evidence_score -= 0.1  # Numerals acceptable in technical content
+        
+        elif content_type == 'api':
             if style == 'words':
-                ev -= 0.05
-            if style == 'numerals' and dominant == 'words':
-                ev += 0.05
-
-        if domain in {'legal', 'finance'}:
+                evidence_score += 0.2  # API docs almost always use numerals
+            else:
+                evidence_score -= 0.1  # Numerals expected in API contexts
+        
+        elif content_type == 'academic':
             if style == 'words' and dominant == 'numerals':
-                ev += 0.05
+                evidence_score += 0.05  # Academic writing has mixed preferences
+            # Academic writing may use either style depending on field
+        
+        elif content_type == 'legal':
+            if style == 'numerals' and dominant == 'words':
+                evidence_score += 0.1  # Legal documents often spell out numbers
+            elif style == 'words':
+                evidence_score -= 0.05  # Words sometimes preferred in legal
+        
+        elif content_type == 'marketing':
+            if style == 'words':
+                evidence_score -= 0.1  # Marketing often uses words for impact
+            elif style == 'numerals' and dominant == 'words':
+                evidence_score += 0.05  # But should be consistent
+        
+        elif content_type == 'narrative':
+            if style == 'words':
+                evidence_score -= 0.15  # Narrative strongly prefers words
+            elif style == 'numerals' and dominant == 'words':
+                evidence_score += 0.1  # Numerals disrupting narrative flow
+        
+        elif content_type == 'procedural':
+            if style == 'words' and dominant == 'numerals':
+                evidence_score += 0.2  # Procedures strongly prefer numerals for clarity
+            elif style == 'numerals':
+                evidence_score -= 0.1  # Numerals expected in procedures
+        
+        # Domain-specific adjustments
+        if domain in ['software', 'engineering', 'devops']:
+            if style == 'words' and dominant == 'numerals':
+                evidence_score += 0.15  # Technical domains prefer numerals
+            elif style == 'numerals':
+                evidence_score -= 0.1  # Numerals expected
+        
+        elif domain in ['finance', 'legal', 'medical']:
+            if style == 'numerals' and dominant == 'words':
+                evidence_score += 0.1  # Formal domains may prefer spelled-out numbers
+            # But depends on specific context (measurements vs amounts)
+        
+        elif domain in ['scientific', 'research']:
+            if style == 'words' and dominant == 'numerals':
+                evidence_score += 0.1  # Scientific writing typically uses numerals
+        
+        elif domain in ['media', 'entertainment', 'creative']:
+            if style == 'words':
+                evidence_score -= 0.1  # Creative domains more flexible with words
+        
+        # Audience level adjustments
+        if audience in ['beginner', 'general']:
+            # General audiences benefit from consistency
+            evidence_score += 0.05  # Any inconsistency more problematic
+        
+        elif audience in ['expert', 'developer', 'professional']:
+            if style == 'words' and content_type in ['technical', 'api', 'procedural']:
+                evidence_score += 0.1  # Experts expect technical conventions
+            else:
+                evidence_score -= 0.05  # Experts more tolerant of style variations
+        
+        elif audience == 'international':
+            if style == 'numerals':
+                evidence_score -= 0.05  # Numerals more universal
+        
+        # Document length and consistency context
+        doc_length = len(text.split())
+        if doc_length > 5000:  # Long documents
+            evidence_score += 0.05  # Consistency more important in long docs
+        
+        # Check for document-wide number density
+        number_word_count = len([word for word in text.lower().split() 
+                               if word in ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine']])
+        numeral_count = len([char for char in text if char.isdigit()])
+        
+        if number_word_count > 10 and numeral_count > 20:
+            evidence_score += 0.1  # High inconsistency across document
+        
+        # Check for style guide indicators in the document
+        style_indicators = ['style guide', 'writing guidelines', 'documentation standards']
+        text_lower = text.lower()
+        if any(indicator in text_lower for indicator in style_indicators):
+            evidence_score += 0.1  # Style guides need consistency
+        
+        return evidence_score
 
-        return ev
-
-    def _apply_feedback_clues_numerals_words(self, ev: float, token_text: str, context: Dict[str, Any]) -> float:
-        patterns = self._get_cached_feedback_patterns_numerals_words()
-        t = token_text.lower()
-        if t in patterns.get('often_accepted_words', set()):
-            ev -= 0.2
-        if t in patterns.get('often_flagged_words', set()):
-            ev += 0.1
-        return ev
+    def _apply_feedback_clues_numerals_words(self, evidence_score: float, token_text: str, context: Dict[str, Any]) -> float:
+        """Apply clues learned from user feedback patterns for numerals vs words consistency."""
+        
+        feedback_patterns = self._get_cached_feedback_patterns_numerals_words()
+        
+        token_lower = token_text.lower()
+        
+        # Consistently accepted formats
+        if token_lower in feedback_patterns.get('often_accepted_words', set()):
+            evidence_score -= 0.3  # Strong acceptance pattern
+        elif token_lower in feedback_patterns.get('often_accepted_numerals', set()):
+            evidence_score -= 0.3  # Strong acceptance pattern
+        
+        # Consistently flagged formats
+        elif token_lower in feedback_patterns.get('often_flagged_words', set()):
+            evidence_score += 0.2  # Strong rejection pattern
+        elif token_lower in feedback_patterns.get('often_flagged_numerals', set()):
+            evidence_score += 0.2  # Strong rejection pattern
+        
+        # Context-specific acceptance patterns
+        block_type = context.get('block_type', 'paragraph')
+        content_type = context.get('content_type', 'general')
+        
+        # Block-specific patterns
+        block_patterns = feedback_patterns.get(f'{block_type}_number_patterns', {})
+        if token_lower in block_patterns.get('accepted_words', set()):
+            evidence_score -= 0.2
+        elif token_lower in block_patterns.get('accepted_numerals', set()):
+            evidence_score -= 0.2
+        elif token_lower in block_patterns.get('flagged', set()):
+            evidence_score += 0.15
+        
+        # Content-specific patterns
+        content_patterns = feedback_patterns.get(f'{content_type}_number_patterns', {})
+        if token_lower in content_patterns.get('accepted', set()):
+            evidence_score -= 0.2
+        elif token_lower in content_patterns.get('flagged', set()):
+            evidence_score += 0.15
+        
+        # Style consistency patterns by context
+        style_preferences = feedback_patterns.get('style_preference_by_context', {})
+        context_key = f"{content_type}_{context.get('domain', 'general')}"
+        
+        if context_key in style_preferences:
+            numeral_preference = style_preferences[context_key]
+            if token_text.isdigit():  # This is a numeral
+                if numeral_preference > 0.8:
+                    evidence_score -= 0.1  # Strong numeral preference
+                elif numeral_preference < 0.3:
+                    evidence_score += 0.1  # Strong word preference
+            else:  # This is a word
+                if numeral_preference > 0.8:
+                    evidence_score += 0.1  # Should use numerals in this context
+                elif numeral_preference < 0.3:
+                    evidence_score -= 0.1  # Words preferred in this context
+        
+        # Exception context patterns
+        exception_contexts = feedback_patterns.get('exception_context_acceptance', {})
+        for exception_type, acceptance_rate in exception_contexts.items():
+            if exception_type in context.get('detected_contexts', []):
+                if acceptance_rate > 0.8:
+                    evidence_score -= 0.15  # High acceptance for exceptions
+                elif acceptance_rate < 0.3:
+                    evidence_score += 0.1  # Low acceptance for exceptions
+        
+        return evidence_score
 
     def _get_cached_feedback_patterns_numerals_words(self) -> Dict[str, Any]:
+        """Load feedback patterns for numerals vs words consistency from cache or feedback analysis."""
         return {
-            'often_accepted_words': set(),
-            'often_flagged_words': set(),
+            'often_accepted_words': {'one', 'two', 'three', 'first', 'second', 'third'},
+            'often_accepted_numerals': {'1', '2', '3', '4', '5', '6', '7', '8', '9'},
+            'often_flagged_words': {'one', 'two', 'three'},  # When used inconsistently
+            'often_flagged_numerals': {'1', '2', '3'},  # When used inconsistently
+            'style_preference_by_context': {
+                'technical_software': 0.9,        # Strong numeral preference
+                'api_software': 0.95,             # Very strong numeral preference
+                'procedural_general': 0.8,        # Strong numeral preference
+                'narrative_general': 0.2,         # Strong word preference
+                'marketing_general': 0.3,         # Word preference
+                'academic_general': 0.6,          # Moderate numeral preference
+                'legal_general': 0.4,             # Moderate word preference
+            },
+            'exception_context_acceptance': {
+                'version_numbers': 0.9,           # Version contexts highly accept numerals
+                'chapter_references': 0.8,        # Chapter refs often accept numerals
+                'figure_references': 0.85,        # Figure refs prefer numerals
+                'step_procedures': 0.9,           # Steps strongly prefer numerals
+                'mathematical_expressions': 0.95, # Math contexts require numerals
+            },
+            'paragraph_number_patterns': {
+                'accepted_words': {'one', 'two', 'first', 'second'},
+                'accepted_numerals': {'1', '2', '3', '4', '5'},
+                'flagged': {'mixed_usage'}  # Placeholder
+            },
+            'technical_number_patterns': {
+                'accepted': {'1', '2', '3', '4', '5', '6', '7', '8', '9'},
+                'flagged': {'one', 'two', 'three', 'four', 'five'}
+            },
+            'narrative_number_patterns': {
+                'accepted': {'one', 'two', 'three', 'first', 'second', 'third'},
+                'flagged': {'1', '2', '3', '4', '5'}
+            },
+            'academic_number_patterns': {
+                'accepted': {'1', '2', '3', 'one', 'two', 'three'},  # Mixed acceptance
+                'flagged': set()  # Context-dependent
+            },
+            'code_block_number_patterns': {
+                'accepted_numerals': {'1', '2', '3', '4', '5', '6', '7', '8', '9'},
+                'flagged': set()  # Code accepts numerals
+            }
         }
 
     # === SMART MESSAGING ===
 
-    def _get_contextual_numerals_words_message(self, style: str, dominant: str, ev: float, context: Dict[str, Any]) -> str:
-        if ev > 0.85:
-            return "Inconsistent use of numerals and words for numbers under 10. Use one style consistently."
-        if ev > 0.6:
-            return "Consider aligning small-number formatting with the dominant style in this document."
-        return "Prefer consistent formatting for numbers under 10 across the document."
-
-    def _generate_smart_numerals_words_suggestions(self, style: str, dominant: str, ev: float, sentence, context: Dict[str, Any]) -> List[str]:
-        suggestions: List[str] = []
-        if dominant == 'numerals':
-            suggestions.append("Use numerals for numbers under 10 for consistency.")
+    def _get_contextual_numerals_words_message(self, style: str, dominant: str, evidence_score: float, context: Dict[str, Any]) -> str:
+        """Generate context-aware error message for numerals vs words consistency."""
+        
+        content_type = context.get('content_type', 'general')
+        domain = context.get('domain', 'general')
+        audience = context.get('audience', 'general')
+        
+        if evidence_score > 0.85:
+            if content_type in ['technical', 'api', 'procedural']:
+                if style == 'words':
+                    return f"Technical content should use numerals: replace '{style}' style with numerals for consistency."
+                else:
+                    return f"Use numerals consistently in technical content (document uses mainly words)."
+            elif content_type in ['narrative', 'marketing']:
+                if style == 'numerals':
+                    return f"Narrative content should spell out small numbers: use words instead of numerals."
+                else:
+                    return f"Spell out numbers consistently in narrative content (document uses mainly numerals)."
+            else:
+                return "Inconsistent use of numerals and words for numbers under 10. Use one style consistently."
+        
+        elif evidence_score > 0.6:
+            if domain in ['software', 'engineering']:
+                return f"Technical documents typically prefer numerals for small numbers."
+            elif audience in ['beginner', 'general']:
+                return f"For clarity, align number formatting with the dominant style in this document."
+            else:
+                return "Consider aligning small-number formatting with the dominant style in this document."
+        
+        elif evidence_score > 0.4:
+            return f"Number formatting inconsistency: consider using {dominant} style throughout."
+        
         else:
-            suggestions.append("Spell out numbers under 10 for consistency.")
-        if (context or {}).get('content_type') in {'technical', 'api', 'procedural'}:
-            suggestions.append("In technical/procedural content, numerals are typically preferred.")
-        suggestions.append("Apply the chosen style consistently throughout the section.")
+            return "Consider consistent formatting for numbers under 10 across the document."
+
+    def _generate_smart_numerals_words_suggestions(self, style: str, dominant: str, evidence_score: float, sentence, context: Dict[str, Any]) -> List[str]:
+        """Generate context-aware suggestions for numerals vs words consistency."""
+        
+        suggestions = []
+        content_type = context.get('content_type', 'general')
+        domain = context.get('domain', 'general')
+        audience = context.get('audience', 'general')
+        block_type = context.get('block_type', 'paragraph')
+        
+        # High evidence suggestions (strong inconsistency)
+        if evidence_score > 0.7:
+            if content_type in ['technical', 'api', 'procedural']:
+                suggestions.append("Use numerals for numbers under 10 in technical content.")
+                suggestions.append("Technical documentation favors numerals for precision and scannability.")
+            elif content_type in ['narrative', 'marketing']:
+                suggestions.append("Spell out numbers under 10 in narrative content.")
+                suggestions.append("Narrative writing flows better with spelled-out small numbers.")
+            elif content_type == 'academic':
+                if dominant == 'numerals':
+                    suggestions.append("Follow the document's numerical style for consistency.")
+                else:
+                    suggestions.append("Follow the document's word-based style for consistency.")
+            else:
+                if dominant == 'numerals':
+                    suggestions.append("Use numerals for numbers under 10 for consistency.")
+                else:
+                    suggestions.append("Spell out numbers under 10 for consistency.")
+        
+        # Medium evidence suggestions
+        elif evidence_score > 0.4:
+            suggestions.append(f"Consider using {dominant} style to match the document's predominant pattern.")
+            if domain in ['software', 'engineering']:
+                suggestions.append("Technical domains typically favor numerals for clarity.")
+            elif domain in ['legal', 'creative']:
+                suggestions.append("Consider context-appropriate number formatting.")
+        
+        # Context-specific suggestions
+        if block_type in ['ordered_list_item', 'unordered_list_item']:
+            suggestions.append("Lists often benefit from numerals for quick scanning.")
+        elif block_type in ['heading', 'title']:
+            suggestions.append("Choose number format that matches the heading's formality level.")
+        elif block_type == 'procedure':
+            suggestions.append("Procedural steps typically use numerals for clarity.")
+        
+        # Audience-specific suggestions
+        if audience in ['beginner', 'general']:
+            suggestions.append("Maintain consistent number formatting to avoid reader confusion.")
+        elif audience in ['expert', 'developer']:
+            suggestions.append("Follow established conventions for your field and document type.")
+        
+        # Exception-aware suggestions
+        sentence_text = sentence.text.lower()
+        if any(exception in sentence_text for exception in ['version', 'chapter', 'figure', 'step']):
+            suggestions.append("Note: Version numbers, chapters, and references often use numerals regardless of style.")
+        
+        # General guidance if specific suggestions weren't added
+        if len(suggestions) < 2:
+            suggestions.append("Choose one style (numerals or words) and apply consistently.")
+            suggestions.append("Consider your audience and document type when selecting number format.")
+        
         return suggestions[:3]
