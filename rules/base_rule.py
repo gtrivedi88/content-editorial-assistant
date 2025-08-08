@@ -1284,7 +1284,8 @@ class BaseRule(ABC):
                 rule_type=self.rule_type,
                 content_type=content_type,
                 rule_reliability=self._get_rule_reliability_coefficient(),
-                base_confidence=0.5
+                base_confidence=0.5,
+                evidence_score=extra_data.get('evidence_score')
             )
             
             enhanced_fields['confidence_score'] = normalized_confidence

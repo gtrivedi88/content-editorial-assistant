@@ -213,8 +213,9 @@ class ConfidenceCalculator:
                                       error_position: int,
                                       rule_type: str,
                                       content_type: Optional[str] = None,
-                                      rule_reliability: Optional[float] = None,
-                                      base_confidence: float = 0.5) -> float:
+                                       rule_reliability: Optional[float] = None,
+                                       base_confidence: float = 0.5,
+                                       evidence_score: Optional[float] = None) -> float:
         """
         Calculate normalized confidence that's comparable across all rules.
         
@@ -228,6 +229,7 @@ class ConfidenceCalculator:
             content_type: Type of content (auto-detected if not provided)
             rule_reliability: Rule reliability coefficient (auto-calculated if not provided)
             base_confidence: Starting confidence level (0-1)
+            evidence_score: Optional rule-level evidence score (0-1) to blend into final confidence
             
         Returns:
             Normalized confidence score in range [0.0, 1.0]
@@ -258,6 +260,27 @@ class ConfidenceCalculator:
         content_modifier = self._get_content_type_modifier(content_type, rule_type)
         normalized_confidence *= content_modifier
         
+        # Blend in rule-provided evidence score when available
+        # Dynamic weighting favors stronger evidence while maintaining stability
+        if evidence_score is not None:
+            try:
+                evidence_score = max(0.0, min(1.0, float(evidence_score)))
+                # Evidence weight scales with evidence strength: 0.2 → 0.7
+                evidence_weight = max(0.2, min(0.7, 0.2 + 0.5 * evidence_score))
+                model_weight = 1.0 - evidence_weight
+                normalized_confidence = (normalized_confidence * model_weight) + (evidence_score * evidence_weight)
+            except Exception:
+                # Ignore evidence if it's malformed and proceed with normalized confidence
+                pass
+        
+        # Confidence policy guard: ensure strong, reliable evidence isn't underrepresented
+        if evidence_score is not None:
+            try:
+                if evidence_score >= 0.85 and rule_reliability >= 0.85:
+                    normalized_confidence = max(normalized_confidence, 0.75)
+            except Exception:
+                pass
+
         # Ensure final range [0.0, 1.0]
         final_confidence = max(0.0, min(1.0, normalized_confidence))
         
