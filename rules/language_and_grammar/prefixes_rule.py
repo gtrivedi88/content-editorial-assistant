@@ -297,6 +297,45 @@ class PrefixesRule(BaseLanguageRule):
         return max(0.0, min(1.0, evidence_score))  # Clamp to valid range
 
     # === PREFIX EVIDENCE METHODS ===
+    
+    def _meets_basic_prefix_criteria(self, potential_issue: Dict[str, Any]) -> bool:
+        """
+        Check if the potential issue meets basic criteria for prefix analysis.
+        
+        Args:
+            potential_issue: Dictionary containing prefix analysis data
+            
+        Returns:
+            bool: True if this prefix should be analyzed further
+        """
+        prefix = potential_issue['prefix']
+        hyphenated_form = potential_issue['hyphenated_form']
+        
+        # Must be a recognized prefix
+        if not self._is_recognized_prefix(prefix):
+            return False
+        
+        # Must have reasonable word structure
+        if len(hyphenated_form) < 4:  # Too short to be meaningful
+            return False
+        
+        # Must have actual base word after prefix
+        base_word = potential_issue['base_word']
+        if len(base_word) < 2:  # Base word too short
+            return False
+        
+        return True
+    
+    def _is_recognized_prefix(self, prefix: str) -> bool:
+        """
+        Check if this is a recognized prefix that could be closed.
+        """
+        recognized_prefixes = {
+            're', 'pre', 'post', 'non', 'un', 'in', 'dis', 'multi', 
+            'inter', 'over', 'under', 'sub', 'super', 'co', 'counter', 
+            'anti', 'pro'
+        }
+        return prefix.lower() in recognized_prefixes
 
     def _get_base_prefix_evidence(self, prefix: str, full_word: str, tokens: List['Token']) -> float:
         """Get base evidence score for prefix closure."""
@@ -353,7 +392,7 @@ class PrefixesRule(BaseLanguageRule):
         """Apply linguistic analysis clues for prefix detection."""
         
         if not tokens:
-            return evidence_score
+            return max(0.0, min(1.0, evidence_score))  # Clamp to valid range
         
         primary_token = tokens[0]
         
@@ -407,10 +446,20 @@ class PrefixesRule(BaseLanguageRule):
         if self._has_difficult_letter_combination(prefix, base_word):
             evidence_score -= 0.2  # Difficult combinations may need hyphens
         
-        return evidence_score
+        return max(0.0, min(1.0, evidence_score))  # Clamp to valid range
 
-    def _apply_structural_clues_prefix(self, evidence_score: float, prefix: str, full_word: str, context: dict) -> float:
-        """Apply document structure clues for prefix detection."""
+    def _apply_structural_clues_prefix(self, evidence_score: float, potential_issue: Dict[str, Any], context: dict) -> float:
+        """
+        Apply document structure-based clues for prefix detection.
+        
+        Analyzes document structure and block context:
+        - Heading context and levels
+        - List context and nesting
+        - Code and technical blocks
+        - Admonition context
+        - Table context
+        - Quote/citation context
+        """
         
         block_type = context.get('block_type', 'paragraph')
         
@@ -438,18 +487,30 @@ class PrefixesRule(BaseLanguageRule):
         if block_type in ['ordered_list_item', 'unordered_list_item']:
             evidence_score += 0.05  # Lists may prefer compact forms
         
-        return evidence_score
+        return max(0.0, min(1.0, evidence_score))  # Clamp to valid range
 
-    def _apply_semantic_clues_prefix(self, evidence_score: float, prefix: str, full_word: str, 
+    def _apply_semantic_clues_prefix(self, evidence_score: float, potential_issue: Dict[str, Any], 
                                    text: str, context: dict) -> float:
-        """Apply semantic and content-type clues for prefix detection."""
+        """
+        Apply semantic and content-type clues for prefix detection.
+        
+        Analyzes meaning and content type:
+        - Content type adjustments (technical, academic, legal, marketing)
+        - Domain-specific terminology handling
+        - Document length considerations
+        - Audience level adaptation
+        - Document purpose analysis
+        """
+        
+        prefix = potential_issue['prefix']
+        hyphenated_form = potential_issue['hyphenated_form']
         
         content_type = context.get('content_type', 'general')
         
         # === CONTENT TYPE ANALYSIS ===
         if content_type == 'technical':
             # Technical content may have established hyphenated terms
-            if self._is_technical_compound(full_word):
+            if self._is_technical_compound(hyphenated_form):
                 evidence_score -= 0.2  # Technical compounds may prefer hyphens
             else:
                 evidence_score += 0.1  # General technical writing prefers standard forms
@@ -470,7 +531,7 @@ class PrefixesRule(BaseLanguageRule):
         domain = context.get('domain', 'general')
         if domain in ['software', 'engineering', 'devops']:
             # Check for domain-specific established hyphenated terms
-            if self._is_established_technical_hyphenation(full_word):
+            if self._is_established_technical_hyphenation(hyphenated_form):
                 evidence_score -= 0.3  # Established technical hyphenations
             else:
                 evidence_score += 0.1  # General software terms prefer closure
@@ -495,10 +556,23 @@ class PrefixesRule(BaseLanguageRule):
         if self._is_tutorial_content(text):
             evidence_score -= 0.05  # Tutorials may use clearer hyphenated forms
         
-        return evidence_score
+        return max(0.0, min(1.0, evidence_score))  # Clamp to valid range
 
-    def _apply_feedback_clues_prefix(self, evidence_score: float, prefix: str, full_word: str, context: dict) -> float:
-        """Apply feedback patterns for prefix detection."""
+    def _apply_feedback_clues_prefix(self, evidence_score: float, potential_issue: Dict[str, Any], context: dict) -> float:
+        """
+        Apply clues learned from user feedback patterns for prefix detection.
+        
+        Incorporates learned patterns from user feedback including:
+        - Consistently accepted terms
+        - Consistently rejected suggestions  
+        - Context-specific patterns
+        - Frequency-based adjustments
+        - Industry-specific learning
+        """
+        
+        prefix = potential_issue['prefix']
+        hyphenated_form = potential_issue['hyphenated_form']
+        closed_form = potential_issue['closed_form']
         
         feedback_patterns = self._get_cached_feedback_patterns_prefix()
         
@@ -513,7 +587,6 @@ class PrefixesRule(BaseLanguageRule):
             evidence_score -= 0.2  # Users consistently accept hyphenated form for this prefix
         
         # === WORD-SPECIFIC FEEDBACK ===
-        closed_form = full_word.replace('-', '')
         
         # Check if this specific word has feedback patterns
         accepted_closed_words = feedback_patterns.get('accepted_closed_words', set())
@@ -521,19 +594,19 @@ class PrefixesRule(BaseLanguageRule):
             evidence_score += 0.3  # Users consistently accept closed form for this word
         
         accepted_hyphenated_words = feedback_patterns.get('accepted_hyphenated_words', set())
-        if full_word.lower() in accepted_hyphenated_words:
+        if hyphenated_form.lower() in accepted_hyphenated_words:
             evidence_score -= 0.3  # Users consistently accept hyphenated form for this word
         
         # === CONTEXT-SPECIFIC FEEDBACK ===
         content_type = context.get('content_type', 'general')
         context_patterns = feedback_patterns.get(f'{content_type}_prefix_patterns', {})
         
-        if full_word.lower() in context_patterns.get('closed_acceptable', set()):
+        if closed_form.lower() in context_patterns.get('closed_acceptable', set()):
             evidence_score += 0.2
-        elif full_word.lower() in context_patterns.get('hyphenated_acceptable', set()):
+        elif hyphenated_form.lower() in context_patterns.get('hyphenated_acceptable', set()):
             evidence_score -= 0.2
         
-        return evidence_score
+        return max(0.0, min(1.0, evidence_score))  # Clamp to valid range
 
     # === HELPER METHODS FOR LINGUISTIC ANALYSIS ===
 
@@ -679,29 +752,49 @@ class PrefixesRule(BaseLanguageRule):
 
     # === HELPER METHODS FOR SMART MESSAGING ===
 
-    def _get_contextual_prefix_message(self, prefix: str, full_word: str, evidence_score: float) -> str:
-        """Generate context-aware error messages for prefix patterns."""
+    def _get_contextual_prefix_message(self, potential_issue: Dict[str, Any], evidence_score: float) -> str:
+        """
+        Generate contextual message based on evidence strength and prefix type.
         
-        closed_form = self._generate_closed_form(full_word)
+        Provides nuanced messaging that adapts to:
+        - Evidence strength (high/medium/low confidence)
+        - Prefix type and common usage patterns
+        - Context-specific considerations
+        """
+        
+        prefix = potential_issue['prefix']
+        hyphenated_form = potential_issue['hyphenated_form']
+        closed_form = potential_issue['closed_form']
         
         if evidence_score > 0.8:
-            return f"Prefix '{prefix}' should be closed: '{full_word}' should be written as '{closed_form}'."
+            return f"Prefix '{prefix}' should be closed: '{hyphenated_form}' should be written as '{closed_form}'."
         elif evidence_score > 0.5:
-            return f"Consider closing the prefix: '{full_word}' typically written as '{closed_form}'."
+            return f"Consider closing the prefix: '{hyphenated_form}' typically written as '{closed_form}'."
         else:
-            return f"The prefix '{prefix}' in '{full_word}' may benefit from closure as '{closed_form}'."
+            return f"The prefix '{prefix}' in '{hyphenated_form}' may benefit from closure as '{closed_form}'."
 
-    def _generate_smart_prefix_suggestions(self, prefix: str, full_word: str, evidence_score: float, 
-                                         context_analysis: dict, context: dict) -> List[str]:
-        """Generate context-aware suggestions for prefix patterns."""
+    def _generate_smart_prefix_suggestions(self, potential_issue: Dict[str, Any], evidence_score: float, 
+                                         context: dict) -> List[str]:
+        """
+        Generate smart, context-aware suggestions for prefix patterns.
+        
+        Provides specific guidance based on:
+        - Evidence strength and confidence level
+        - Content type and writing context  
+        - Prefix-specific usage patterns
+        - Domain and audience considerations
+        """
+        
+        prefix = potential_issue['prefix']
+        hyphenated_form = potential_issue['hyphenated_form']
+        closed_form = potential_issue['closed_form']
         
         suggestions = []
-        closed_form = self._generate_closed_form(full_word)
         
         # Base suggestions based on evidence strength
         if evidence_score > 0.7:
             suggestions.append(f"Write as '{closed_form}' without the hyphen.")
-            suggestions.append(f"{context_analysis.get('explanation', 'This prefix typically forms closed compounds.')}")
+            suggestions.append(f"This prefix typically forms closed compounds in standard usage.")
         else:
             suggestions.append(f"Consider writing as '{closed_form}' for standard usage.")
         
@@ -710,7 +803,7 @@ class PrefixesRule(BaseLanguageRule):
             content_type = context.get('content_type', 'general')
             
             if content_type in ['technical', 'api']:
-                if self._is_established_technical_hyphenation(full_word):
+                if self._is_established_technical_hyphenation(hyphenated_form):
                     suggestions.append("This hyphenated form may be standard in technical contexts.")
                 else:
                     suggestions.append("Technical writing typically uses closed prefix forms.")
@@ -725,4 +818,39 @@ class PrefixesRule(BaseLanguageRule):
         elif prefix in ['re', 'un', 'pre', 'non']:
             suggestions.append("This prefix almost always forms closed compounds.")
         
-        return suggestions[:3] 
+        return suggestions[:3]
+
+    # === ADDITIONAL HELPER METHODS FOR EVIDENCE-BASED ANALYSIS ===
+    
+    def _analyze_prefix_context(self, tokens: List['Token'], doc: 'Doc') -> Dict[str, str]:
+        """
+        Analyze the morphological and syntactic context of the prefix.
+        LINGUISTIC ANCHOR: Dependency and morphological analysis.
+        """
+        if not tokens:
+            return {'explanation': 'This prefix typically forms closed compounds.'}
+        
+        primary_token = tokens[0]
+        
+        # Analyze POS and morphological context
+        pos = getattr(primary_token, 'pos_', '')
+        dep = getattr(primary_token, 'dep_', '')
+        
+        explanations = {
+            'VERB': 'Prefixed verbs are typically written as one word.',
+            'NOUN': 'Prefixed nouns are typically written as one word.',
+            'ADJ': 'Prefixed adjectives are typically written as one word.',
+            'ADV': 'Prefixed adverbs are typically written as one word.'
+        }
+        
+        base_explanation = explanations.get(pos, 'This prefix typically forms closed compounds.')
+        
+        # Add dependency-based context
+        if dep in ['compound', 'amod']:
+            base_explanation += ' The syntactic role confirms this should be a single word.'
+        
+        return {
+            'explanation': base_explanation,
+            'pos': pos,
+            'dependency': dep
+        } 

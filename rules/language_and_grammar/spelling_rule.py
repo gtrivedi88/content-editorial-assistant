@@ -551,7 +551,7 @@ class SpellingRule(BaseLanguageRule):
             if domain in ['international', 'global']:
                 evidence_score -= 0.1  # International docs may prefer original spelling
         
-        return evidence_score
+        return max(0.0, min(1.0, evidence_score))  # Clamp to valid range
 
     def _get_cached_feedback_patterns_spelling(self) -> Dict[str, Any]:
         """Load feedback patterns from cache or feedback analysis for spelling."""

@@ -483,7 +483,7 @@ class PronounsRule(BaseLanguageRule):
         elif replacement_success < 0.3:
             evidence_score -= 0.1  # Replacements often rejected
         
-        return evidence_score
+        return max(0.0, min(1.0, evidence_score))  # Clamp to valid range
 
     def _get_cached_feedback_patterns_pronouns(self) -> Dict[str, Any]:
         """Load feedback patterns from cache or feedback analysis for pronouns."""

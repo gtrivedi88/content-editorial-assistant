@@ -20,53 +20,101 @@ class PossessivesRule(BaseLanguageRule):
 
     def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         """
-        Analyzes sentences for possessive constructions with abbreviations using evidence-based scoring.
+        Analyzes text for possessive constructions with abbreviations using evidence-based scoring.
+        
         Uses sophisticated linguistic and contextual analysis to distinguish between legitimate 
         possessive usage and situations where prepositional phrases would be more appropriate.
+        
+        Args:
+            text: Full document text
+            sentences: List of sentences (for compatibility)
+            nlp: SpaCy NLP pipeline
+            context: Document context information
+            
+        Returns:
+            List of error dictionaries with evidence-based scoring
         """
         errors = []
         if not nlp:
             return errors
 
         doc = nlp(text)
-        for i, sent in enumerate(doc.sents):
-            for token in sent:
-                if token.text == "'s":
-                    if token.i > 0:
-                        prev_token = doc[token.i - 1]
-                        
-                        # Detect potential abbreviation possessive
-                        potential_possessive = self._detect_potential_abbreviation_possessive(prev_token)
-                        
-                        if potential_possessive:
-                            # Calculate evidence score for this possessive construction
-                            evidence_score = self._calculate_possessive_evidence(
-                                prev_token, token, sent, text, context
-                            )
-                            
-                            # Only create error if evidence suggests it's worth flagging
-                            if evidence_score > 0.1:  # Low threshold - let enhanced validation decide
-                                errors.append(self._create_error(
-                                    sentence=sent.text,
-                                    sentence_index=i,
-                                    message=self._get_contextual_possessive_message(prev_token, evidence_score),
-                                    suggestions=self._generate_smart_possessive_suggestions(prev_token, evidence_score, context),
-                                    severity='medium',
-                                    text=text,
-                                    context=context,
-                                    evidence_score=evidence_score,  # Your nuanced assessment
-                                    span=(prev_token.idx, token.idx + len(token.text)),
-                                    flagged_text=f"{prev_token.text}{token.text}"
-                                ))
+        for sentence_index, sentence in enumerate(doc.sents):
+            # Find all potential possessive issues in this sentence
+            for potential_issue in self._find_potential_issues(sentence, doc):
+                # Calculate nuanced evidence score
+                evidence_score = self._calculate_possessive_evidence(
+                    potential_issue, sentence, text, context
+                )
+                
+                # Only create error if evidence suggests it's worth evaluating
+                if evidence_score > 0.1:  # Low threshold - let enhanced validation decide
+                    error = self._create_error(
+                        sentence=sentence.text,
+                        sentence_index=sentence_index,
+                        message=self._get_contextual_possessive_message(potential_issue, evidence_score),
+                        suggestions=self._generate_smart_possessive_suggestions(potential_issue, evidence_score, context),
+                        severity='medium',
+                        text=text,      # Level 2 ✅
+                        context=context, # Level 2 ✅
+                        evidence_score=evidence_score,  # Your nuanced assessment
+                        flagged_text=potential_issue['flagged_text'],
+                        span=potential_issue['span']
+                    )
+                    errors.append(error)
         return errors
 
     # === EVIDENCE-BASED CALCULATION METHODS ===
+
+    def _find_potential_issues(self, sentence, doc) -> List[Dict[str, Any]]:
+        """
+        Find all potential possessive issues in a sentence.
+        
+        Args:
+            sentence: SpaCy sentence object
+            doc: Full SpaCy document
+            
+        Returns:
+            List of potential issue dictionaries containing:
+            - abbreviation: The abbreviation token
+            - possessive_token: The 's token
+            - flagged_text: The full abbreviation's text
+            - span: Character span of the issue
+            - possessive_object: What is being "possessed" (if found)
+        """
+        potential_issues = []
+        
+        for token in sentence:
+            if token.text == "'s" and token.i > 0:
+                prev_token = doc[token.i - 1]
+                
+                # Check if this is a potential abbreviation possessive
+                if self._detect_potential_abbreviation_possessive(prev_token):
+                    # Find what comes after the possessive (the object)
+                    possessive_object = None
+                    for i in range(token.i + 1, len(doc)):
+                        if not doc[i].is_punct and not doc[i].is_space:
+                            possessive_object = doc[i]
+                            break
+                    
+                    potential_issue = {
+                        'abbreviation': prev_token,
+                        'possessive_token': token,
+                        'flagged_text': f"{prev_token.text}{token.text}",
+                        'span': (prev_token.idx, token.idx + len(token.text)),
+                        'possessive_object': possessive_object,
+                        'abbreviation_text': prev_token.text,
+                        'sentence_context': sentence
+                    }
+                    potential_issues.append(potential_issue)
+        
+        return potential_issues
 
     def _detect_potential_abbreviation_possessive(self, token) -> bool:
         """Detect tokens that could potentially be abbreviation possessives."""
         return token.is_upper and len(token.text) > 1
 
-    def _calculate_possessive_evidence(self, prev_token, possessive_token, sentence, text: str, context: dict) -> float:
+    def _calculate_possessive_evidence(self, potential_issue: Dict[str, Any], sentence, text: str, context: dict) -> float:
         """
         Calculate evidence score (0.0-1.0) for abbreviation possessive concerns.
         
@@ -74,8 +122,7 @@ class PossessivesRule(BaseLanguageRule):
         Lower scores indicate acceptable usage in specific contexts.
         
         Args:
-            prev_token: The abbreviation token before 's
-            possessive_token: The 's token
+            potential_issue: Dictionary containing possessive analysis data
             sentence: Sentence containing the possessive
             text: Full document text
             context: Document context (block_type, content_type, etc.)
@@ -86,30 +133,64 @@ class PossessivesRule(BaseLanguageRule):
         evidence_score = 0.0
         
         # === STEP 1: BASE EVIDENCE ASSESSMENT ===
-        evidence_score = self._get_base_possessive_evidence(prev_token, sentence)
+        if not self._meets_basic_possessive_criteria(potential_issue):
+            return 0.0  # No evidence, skip this possessive
+        
+        evidence_score = self._get_base_possessive_evidence(potential_issue, sentence)
         
         if evidence_score == 0.0:
             return 0.0  # No evidence, skip this possessive
         
         # === STEP 2: LINGUISTIC CLUES (MICRO-LEVEL) ===
-        evidence_score = self._apply_linguistic_clues_possessive(evidence_score, prev_token, possessive_token, sentence)
+        evidence_score = self._apply_linguistic_clues_possessive(evidence_score, potential_issue, sentence)
         
         # === STEP 3: STRUCTURAL CLUES (MESO-LEVEL) ===
-        evidence_score = self._apply_structural_clues_possessive(evidence_score, prev_token, context or {})
+        evidence_score = self._apply_structural_clues_possessive(evidence_score, potential_issue, context or {})
         
         # === STEP 4: SEMANTIC CLUES (MACRO-LEVEL) ===
-        evidence_score = self._apply_semantic_clues_possessive(evidence_score, prev_token, text, context or {})
+        evidence_score = self._apply_semantic_clues_possessive(evidence_score, potential_issue, text, context or {})
         
         # === STEP 5: FEEDBACK PATTERNS (LEARNING CLUES) ===
-        evidence_score = self._apply_feedback_clues_possessive(evidence_score, prev_token, context or {})
+        evidence_score = self._apply_feedback_clues_possessive(evidence_score, potential_issue, context or {})
         
         return max(0.0, min(1.0, evidence_score))  # Clamp to valid range
 
     # === POSSESSIVE EVIDENCE METHODS ===
 
-    def _get_base_possessive_evidence(self, prev_token, sentence) -> float:
-        """Get base evidence score for abbreviation possessive usage."""
+    def _meets_basic_possessive_criteria(self, potential_issue: Dict[str, Any]) -> bool:
+        """
+        Check if the potential issue meets basic criteria for possessive analysis.
         
+        Args:
+            potential_issue: Dictionary containing possessive analysis data
+            
+        Returns:
+            bool: True if this possessive should be analyzed further
+        """
+        abbreviation = potential_issue['abbreviation']
+        
+        # Must be uppercase abbreviation
+        if not abbreviation.is_upper:
+            return False
+            
+        # Must be longer than single character
+        if len(abbreviation.text) <= 1:
+            return False
+        
+        # Must have possessive token
+        if not potential_issue.get('possessive_token'):
+            return False
+            
+        return True
+
+    def _get_base_possessive_evidence(self, potential_issue: Dict[str, Any], sentence) -> float:
+        """
+        Get base evidence score for abbreviation possessive usage.
+        
+        Analyzes the type of abbreviation and provides initial evidence assessment.
+        """
+        
+        prev_token = potential_issue['abbreviation']
         abbreviation = prev_token.text.upper()
         
         # === ENTITY TYPE ANALYSIS ===
@@ -144,19 +225,24 @@ class PossessivesRule(BaseLanguageRule):
         # Generic abbreviations typically should use prepositional phrases
         return 0.7  # High evidence for generic abbreviations
 
-    def _apply_linguistic_clues_possessive(self, evidence_score: float, prev_token, possessive_token, sentence) -> float:
-        """Apply linguistic analysis clues for possessive detection."""
+    def _apply_linguistic_clues_possessive(self, evidence_score: float, potential_issue: Dict[str, Any], sentence) -> float:
+        """
+        Apply linguistic analysis clues for possessive detection.
+        
+        Analyzes SpaCy-based linguistic features:
+        - Part-of-speech analysis
+        - Dependency parsing
+        - Named entity recognition
+        - Possessive object analysis
+        - Surrounding context patterns
+        """
+        
+        prev_token = potential_issue['abbreviation']
+        possessive_token = potential_issue['possessive_token']
+        possessive_object = potential_issue.get('possessive_object')
         
         # === POSSESSIVE OBJECT ANALYSIS ===
         # Look at what the abbreviation "possesses" - what comes after 's
-        doc = sentence.doc
-        possessive_object = None
-        
-        # Find the object being possessed (next meaningful token)
-        for i in range(possessive_token.i + 1, len(doc)):
-            if not doc[i].is_punct and not doc[i].is_space:
-                possessive_object = doc[i]
-                break
         
         if possessive_object:
             # === OBJECT TYPE ANALYSIS ===
@@ -172,7 +258,7 @@ class PossessivesRule(BaseLanguageRule):
                 'team', 'staff', 'employees', 'members', 'users'
             }
             
-            if possessive_object.lemma_.lower() in possession_friendly_objects:
+            if hasattr(possessive_object, 'lemma_') and possessive_object.lemma_.lower() in possession_friendly_objects:
                 evidence_score -= 0.2  # Possessives work well with these objects
             
             # Technical specifications better with prepositional phrases
@@ -182,7 +268,7 @@ class PossessivesRule(BaseLanguageRule):
                 'implementation', 'architecture', 'design', 'framework'
             }
             
-            if possessive_object.lemma_.lower() in specification_objects:
+            if hasattr(possessive_object, 'lemma_') and possessive_object.lemma_.lower() in specification_objects:
                 evidence_score += 0.2  # Technical specs better with prepositions
         
         # === SENTENCE CONTEXT ===
@@ -201,8 +287,16 @@ class PossessivesRule(BaseLanguageRule):
         
         return evidence_score
 
-    def _apply_structural_clues_possessive(self, evidence_score: float, prev_token, context: dict) -> float:
-        """Apply document structure clues for possessive detection."""
+    def _apply_structural_clues_possessive(self, evidence_score: float, potential_issue: Dict[str, Any], context: dict) -> float:
+        """
+        Apply document structure-based clues for possessive detection.
+        
+        Analyzes document structure and block context:
+        - Technical documentation contexts
+        - Formal documentation contexts  
+        - Conversational contexts
+        - List contexts
+        """
         
         block_type = context.get('block_type', 'paragraph')
         
@@ -232,9 +326,19 @@ class PossessivesRule(BaseLanguageRule):
         
         return evidence_score
 
-    def _apply_semantic_clues_possessive(self, evidence_score: float, prev_token, text: str, context: dict) -> float:
-        """Apply semantic and content-type clues for possessive detection."""
+    def _apply_semantic_clues_possessive(self, evidence_score: float, potential_issue: Dict[str, Any], text: str, context: dict) -> float:
+        """
+        Apply semantic and content-type clues for possessive detection.
         
+        Analyzes meaning and content type:
+        - Content type adjustments (technical, academic, legal, marketing)
+        - Domain-specific patterns
+        - Document length context
+        - Audience level considerations
+        - Brand context analysis
+        """
+        
+        prev_token = potential_issue['abbreviation']
         content_type = context.get('content_type', 'general')
         
         # === CONTENT TYPE ANALYSIS ===
@@ -280,9 +384,19 @@ class PossessivesRule(BaseLanguageRule):
         
         return evidence_score
 
-    def _apply_feedback_clues_possessive(self, evidence_score: float, prev_token, context: dict) -> float:
-        """Apply feedback patterns for possessive detection."""
+    def _apply_feedback_clues_possessive(self, evidence_score: float, potential_issue: Dict[str, Any], context: dict) -> float:
+        """
+        Apply clues learned from user feedback patterns for possessive detection.
         
+        Incorporates learned patterns from user feedback including:
+        - Consistently accepted terms
+        - Consistently rejected suggestions  
+        - Context-specific patterns
+        - Brand possession patterns
+        - Frequency-based adjustments
+        """
+        
+        prev_token = potential_issue['abbreviation']
         feedback_patterns = self._get_cached_feedback_patterns_possessive()
         
         # === ABBREVIATION-SPECIFIC FEEDBACK ===
@@ -381,10 +495,17 @@ class PossessivesRule(BaseLanguageRule):
 
     # === HELPER METHODS FOR SMART MESSAGING ===
 
-    def _get_contextual_possessive_message(self, prev_token, evidence_score: float) -> str:
-        """Generate context-aware error messages for possessive patterns."""
+    def _get_contextual_possessive_message(self, potential_issue: Dict[str, Any], evidence_score: float) -> str:
+        """
+        Generate contextual message based on evidence strength and possessive type.
         
-        abbreviation = prev_token.text
+        Provides nuanced messaging that adapts to:
+        - Evidence strength (high/medium/low confidence)
+        - Abbreviation type and entity classification
+        - Context-specific considerations
+        """
+        
+        abbreviation = potential_issue['abbreviation_text']
         
         if evidence_score > 0.8:
             return f"Avoid using the possessive 's with the abbreviation '{abbreviation}'."
@@ -393,11 +514,20 @@ class PossessivesRule(BaseLanguageRule):
         else:
             return f"The possessive '{abbreviation}'s' may be acceptable but consider a prepositional phrase for clarity."
 
-    def _generate_smart_possessive_suggestions(self, prev_token, evidence_score: float, context: dict) -> List[str]:
-        """Generate context-aware suggestions for possessive patterns."""
+    def _generate_smart_possessive_suggestions(self, potential_issue: Dict[str, Any], evidence_score: float, context: dict) -> List[str]:
+        """
+        Generate smart, context-aware suggestions for possessive patterns.
+        
+        Provides specific guidance based on:
+        - Evidence strength and confidence level
+        - Content type and writing context  
+        - Abbreviation-specific usage patterns
+        - Domain and audience considerations
+        """
         
         suggestions = []
-        abbreviation = prev_token.text
+        prev_token = potential_issue['abbreviation']
+        abbreviation = potential_issue['abbreviation_text']
         
         # Base suggestions based on evidence strength
         if evidence_score > 0.7:
