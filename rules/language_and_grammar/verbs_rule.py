@@ -547,112 +547,1078 @@ class VerbsRule(BaseLanguageRule):
     # === EVIDENCE-BASED: FUTURE TENSE ===
 
     def _calculate_future_tense_evidence(self, will_token: Token, head_verb: Token, doc: Doc, sentence: str, text: str, context: Dict[str, Any]) -> float:
-        """Calculate evidence that future tense ('will' + verb) is undesirable."""
-        evidence: float = 0.5  # base
+        """
+        Calculate evidence score (0.0-1.0) for future tense concerns.
+        
+        Higher scores indicate stronger evidence that future tense should be corrected.
+        Lower scores indicate acceptable usage in specific contexts.
+        
+        Args:
+            will_token: The 'will' modal token
+            head_verb: The main verb following 'will'
+            doc: The sentence document
+            sentence: The sentence text
+            text: Full document text
+            context: Document context (block_type, content_type, etc.)
+            
+        Returns:
+            float: Evidence score from 0.0 (acceptable) to 1.0 (should be corrected)
+        """
+        evidence_score = 0.0
+        
+        # === STEP 1: BASE EVIDENCE ASSESSMENT ===
+        evidence_score = self._get_base_future_tense_evidence(will_token, head_verb, doc, sentence)
+        
+        if evidence_score == 0.0:
+            return 0.0  # No evidence, skip this construction
+        
+        # === STEP 2: LINGUISTIC CLUES (MICRO-LEVEL) ===
+        evidence_score = self._apply_linguistic_clues_future_tense(evidence_score, will_token, head_verb, doc, sentence)
+        
+        # === STEP 3: STRUCTURAL CLUES (MESO-LEVEL) ===
+        evidence_score = self._apply_structural_clues_future_tense(evidence_score, context)
+        
+        # === STEP 4: SEMANTIC CLUES (MACRO-LEVEL) ===
+        evidence_score = self._apply_semantic_clues_future_tense(evidence_score, will_token, head_verb, text, context)
+        
+        # === STEP 5: FEEDBACK PATTERNS (LEARNING CLUES) ===
+        evidence_score = self._apply_feedback_clues_future_tense(evidence_score, will_token, head_verb, context)
+        
+        return max(0.0, min(1.0, evidence_score))  # Clamp to valid range
 
-        # Linguistic: question forms or conditional may justify 'will'
+    # === FUTURE TENSE EVIDENCE METHODS ===
+
+    def _get_base_future_tense_evidence(self, will_token: Token, head_verb: Token, doc: Doc, sentence: str) -> float:
+        """Get base evidence score for future tense concerns."""
+        
+        # === FUTURE TENSE TYPE ANALYSIS ===
+        # Different future constructions have different evidence strengths
+        
+        # High-priority corrections (inappropriate in instructions/procedures)
+        inappropriate_contexts = {
+            'will click', 'will select', 'will enter', 'will type', 'will configure',
+            'will install', 'will setup', 'will run', 'will execute', 'will perform'
+        }
+        
+        # Medium-priority corrections (better as present tense)
+        better_as_present = {
+            'will display', 'will show', 'will provide', 'will contain', 'will include',
+            'will support', 'will enable', 'will allow', 'will require'
+        }
+        
+        # Low-priority corrections (context-dependent)
+        context_dependent = {
+            'will be', 'will have', 'will become', 'will remain', 'will continue'
+        }
+        
+        # Check construction type
+        construction = f"{will_token.text.lower()} {head_verb.lemma_.lower()}"
+        
+        if construction in inappropriate_contexts:
+            return 0.8  # High evidence for procedural/instructional contexts
+        elif construction in better_as_present:
+            return 0.6  # Medium evidence for descriptive contexts
+        elif construction in context_dependent:
+            return 0.4  # Lower evidence, context-dependent
+        else:
+            return 0.5  # Default evidence for future tense usage
+
+    def _apply_linguistic_clues_future_tense(self, evidence_score: float, will_token: Token, head_verb: Token, doc: Doc, sentence: str) -> float:
+        """
+        Apply linguistic analysis clues for future tense detection.
+        
+        Analyzes SpaCy linguistic features including question forms, conditionals,
+        temporal markers, and surrounding context to determine evidence strength
+        for future tense corrections.
+        
+        Args:
+            evidence_score: Current evidence score to modify
+            will_token: The 'will' modal token
+            head_verb: The main verb following 'will'
+            doc: The sentence document
+            sentence: The sentence text
+            
+        Returns:
+            float: Modified evidence score based on linguistic analysis
+        """
+        
         sent_lower = sentence.lower()
-        if sentence.strip().endswith('?') or any(w in sent_lower for w in ['if ', 'whether ']):
-            evidence -= 0.15
+        
+        # === QUESTION AND CONDITIONAL FORMS ===
+        # Questions and conditionals may legitimately use 'will'
+        
+        if sentence.strip().endswith('?'):
+            evidence_score -= 0.3  # Questions often need future tense
+        
+        # Conditional markers
+        conditional_markers = ['if ', 'whether ', 'when ', 'unless ', 'in case ']
+        if any(marker in sent_lower for marker in conditional_markers):
+            evidence_score -= 0.2  # Conditionals may need future tense
+        
+        # === TEMPORAL CONTEXT INDICATORS ===
+        # Legitimate future temporal markers
+        
+        scheduled_indicators = [
+            'tomorrow', 'next week', 'next month', 'next year', 'later',
+            'upcoming', 'planned', 'scheduled', 'in the future', 'eventually',
+            'soon', 'shortly', 'in time', 'by then', 'after that'
+        ]
+        
+        if any(indicator in sent_lower for indicator in scheduled_indicators):
+            evidence_score -= 0.15  # Scheduled/planned events may justify future tense
+        
+        # === ABILITY AND CAPABILITY CONSTRUCTIONS ===
+        # "will be able to" constructions
+        
+        if 'will be able to' in sent_lower:
+            evidence_score -= 0.2  # Capability expressions may justify future tense
+        
+        # Modal combinations that suggest necessity/possibility
+        modal_combinations = ['will need to', 'will have to', 'will be required to']
+        if any(combo in sent_lower for combo in modal_combinations):
+            evidence_score -= 0.1  # Necessity expressions may be acceptable
+        
+        # === SURROUNDING CONTEXT ANALYSIS ===
+        # Check for instruction vs. description context
+        
+        instruction_indicators = [
+            'step', 'click', 'select', 'enter', 'type', 'configure', 'setup',
+            'install', 'run', 'execute', 'perform', 'do the following'
+        ]
+        
+        if any(indicator in sent_lower for indicator in instruction_indicators):
+            evidence_score += 0.2  # Instructions should avoid future tense
+        
+        # === NEGATION CONTEXT ===
+        # Negative constructions may be more acceptable
+        
+        if 'will not' in sent_lower or "won't" in sent_lower:
+            evidence_score -= 0.1  # Negative futures may be acceptable for warnings
+        
+        # === VERB TYPE ANALYSIS ===
+        # Some verbs are more problematic with 'will' than others
+        
+        action_verbs = {
+            'click', 'select', 'enter', 'type', 'run', 'execute', 'perform',
+            'configure', 'install', 'setup', 'create', 'delete', 'modify'
+        }
+        
+        if head_verb.lemma_.lower() in action_verbs:
+            evidence_score += 0.15  # Action verbs should generally be imperative
+        
+        state_verbs = {
+            'be', 'have', 'become', 'remain', 'continue', 'appear', 'seem'
+        }
+        
+        if head_verb.lemma_.lower() in state_verbs:
+            evidence_score -= 0.1  # State verbs more acceptable with 'will'
+        
+        # === SENTENCE POSITION ANALYSIS ===
+        # Future tense at sentence beginning is often more problematic
+        
+        first_two_tokens = [token.text.lower() for token in doc[:2]]
+        if 'will' in first_two_tokens:
+            evidence_score += 0.1  # Sentence-initial 'will' often problematic
+        
+        return evidence_score
 
-        # Adverbs indicating scheduled/planned future reduce severity
-        if any(w in sent_lower for w in ['tomorrow', 'next ', 'later', 'upcoming', 'planned', 'will be able to']):
-            evidence -= 0.1
+    def _apply_structural_clues_future_tense(self, evidence_score: float, context: Dict[str, Any]) -> float:
+        """
+        Apply document structure clues for future tense detection.
+        
+        Analyzes document structure context including block types, heading levels,
+        and other structural elements to determine appropriate evidence adjustments
+        for future tense usage.
+        
+        Args:
+            evidence_score: Current evidence score to modify
+            context: Document context dictionary
+            
+        Returns:
+            float: Modified evidence score based on structural analysis
+        """
+        
+        block_type = context.get('block_type', 'paragraph')
+        
+        # === TECHNICAL DOCUMENTATION CONTEXTS ===
+        if block_type in ['code_block', 'literal_block']:
+            evidence_score -= 0.8  # Code blocks may contain future references
+        elif block_type == 'inline_code':
+            evidence_score -= 0.6  # Inline code may reference future behavior
+        
+        # === HEADING CONTEXT ===
+        if block_type == 'heading':
+            heading_level = context.get('block_level', 1)
+            if heading_level == 1:  # H1 - Main headings
+                evidence_score -= 0.2  # Main headings may describe future features
+            elif heading_level == 2:  # H2 - Section headings  
+                evidence_score -= 0.1  # Section headings may reference future content
+            elif heading_level >= 3:  # H3+ - Subsection headings
+                evidence_score -= 0.05  # Subsection headings less likely to need future
+        
+        # === LIST CONTEXT ===
+        elif block_type in ['ordered_list_item', 'unordered_list_item']:
+            evidence_score += 0.1  # List items should generally be present/imperative
+            
+            # Nested list items may be more procedural
+            if context.get('list_depth', 1) > 1:
+                evidence_score += 0.05  # Nested items often procedural steps
+        
+        # === TABLE CONTEXT ===
+        elif block_type in ['table_cell', 'table_header']:
+            evidence_score += 0.05  # Tables should generally use present tense
+        
+        # === ADMONITION CONTEXT ===
+        elif block_type == 'admonition':
+            admonition_type = context.get('admonition_type', '').upper()
+            if admonition_type in ['NOTE', 'TIP', 'HINT']:
+                evidence_score -= 0.1  # Notes may describe future behavior
+            elif admonition_type in ['WARNING', 'CAUTION', 'DANGER']:
+                evidence_score -= 0.15  # Warnings may describe future consequences
+            elif admonition_type in ['IMPORTANT', 'ATTENTION']:
+                evidence_score -= 0.05  # Important notices may reference future
+        
+        # === QUOTE/CITATION CONTEXT ===
+        elif block_type in ['block_quote', 'citation']:
+            evidence_score -= 0.2  # Quotes may preserve original future tense
+        
+        # === EXAMPLE/SAMPLE CONTEXT ===
+        elif block_type in ['example', 'sample']:
+            evidence_score -= 0.1  # Examples may show future scenarios
+        
+        return evidence_score
 
-        # Structural
-        block_type = (context or {}).get('block_type', 'paragraph')
-        if block_type in {'code_block', 'literal_block', 'inline_code'}:
-            evidence -= 0.6
-        elif block_type in {'heading', 'title'}:
-            evidence -= 0.05
+    def _apply_semantic_clues_future_tense(self, evidence_score: float, will_token: Token, head_verb: Token, text: str, context: Dict[str, Any]) -> float:
+        """
+        Apply semantic and content-type clues for future tense detection.
+        
+        Analyzes high-level semantic context including content type, domain, audience,
+        and document purpose to determine evidence strength for future tense corrections.
+        
+        Args:
+            evidence_score: Current evidence score to modify
+            will_token: The 'will' modal token
+            head_verb: The main verb following 'will'
+            text: Full document text
+            context: Document context dictionary
+            
+        Returns:
+            float: Modified evidence score based on semantic analysis
+        """
+        
+        content_type = context.get('content_type', 'general')
+        domain = context.get('domain', 'general')
+        audience = context.get('audience', 'general')
+        
+        # === CONTENT TYPE ANALYSIS ===
+        # Some content types strongly discourage future tense
+        if content_type == 'procedural':
+            evidence_score += 0.25  # Procedures should use imperative mood
+        elif content_type == 'api':
+            evidence_score += 0.2  # API docs should describe current behavior
+        elif content_type == 'technical':
+            evidence_score += 0.15  # Technical writing should be direct
+        elif content_type == 'tutorial':
+            evidence_score += 0.2  # Tutorials should be step-by-step present
+        elif content_type == 'legal':
+            evidence_score += 0.1  # Legal writing should be precise
+        elif content_type == 'academic':
+            evidence_score += 0.05  # Academic writing should be clear
+        elif content_type == 'marketing':
+            evidence_score -= 0.1  # Marketing may describe future benefits
+        elif content_type == 'narrative':
+            evidence_score -= 0.15  # Narrative may legitimately use future
+        
+        # === DOMAIN-SPECIFIC PATTERNS ===
+        if domain in ['software', 'engineering', 'devops']:
+            evidence_score += 0.1  # Technical domains prefer direct language
+        elif domain in ['user-documentation', 'help']:
+            evidence_score += 0.15  # User docs should be action-oriented
+        elif domain in ['training', 'education']:
+            evidence_score += 0.1  # Training should be direct
+        elif domain in ['legal', 'compliance']:
+            evidence_score += 0.05  # Legal domains prefer precision
+        elif domain in ['planning', 'roadmap']:
+            evidence_score -= 0.2  # Planning documents may legitimately use future
+        
+        # === AUDIENCE CONSIDERATIONS ===
+        if audience in ['beginner', 'general', 'consumer']:
+            evidence_score += 0.1  # General audiences need clear instructions
+        elif audience in ['professional', 'business']:
+            evidence_score += 0.05  # Professional content should be direct
+        elif audience in ['developer', 'technical', 'expert']:
+            evidence_score += 0.08  # Technical audiences expect direct language
+        
+        # === DOCUMENT PURPOSE ANALYSIS ===
+        if self._is_installation_documentation(text):
+            evidence_score += 0.2  # Installation docs should be step-by-step
+        
+        if self._is_troubleshooting_documentation(text):
+            evidence_score += 0.15  # Troubleshooting should be direct
+        
+        if self._is_user_interface_documentation(text):
+            evidence_score += 0.18  # UI docs should describe current behavior
+        
+        if self._is_release_notes_documentation(text):
+            evidence_score -= 0.3  # Release notes may describe future features
+        
+        if self._is_roadmap_documentation(text):
+            evidence_score -= 0.4  # Roadmaps legitimately use future tense
+        
+        if self._is_planning_documentation(text):
+            evidence_score -= 0.3  # Planning docs may use future tense
+        
+        # === DOCUMENT LENGTH CONTEXT ===
+        doc_length = len(text.split())
+        if doc_length < 100:  # Short documents
+            evidence_score += 0.05  # Brief content should be direct
+        elif doc_length > 5000:  # Long documents
+            evidence_score += 0.02  # Consistency important in long docs
+        
+        return evidence_score
 
-        # Semantic: discourage in procedural/technical/API; tolerate in release notes/roadmaps
-        content_type = (context or {}).get('content_type', 'general')
-        domain = (context or {}).get('domain', 'general')
-        if content_type in {'procedural', 'api', 'technical'}:
-            evidence += 0.2
-        if content_type in {'release_notes', 'roadmap'}:
-            evidence -= 0.25
-        if domain in {'legal'}:
-            evidence += 0.05
+    def _apply_feedback_clues_future_tense(self, evidence_score: float, will_token: Token, head_verb: Token, context: Dict[str, Any]) -> float:
+        """
+        Apply feedback patterns for future tense detection.
+        
+        Incorporates learned patterns from user feedback including acceptance rates,
+        context-specific patterns, and correction success rates to refine evidence
+        scoring for future tense corrections.
+        
+        Args:
+            evidence_score: Current evidence score to modify
+            will_token: The 'will' modal token
+            head_verb: The main verb following 'will'
+            context: Document context dictionary
+            
+        Returns:
+            float: Modified evidence score based on feedback analysis
+        """
+        
+        feedback_patterns = self._get_cached_feedback_patterns_future_tense()
+        
+        # === PHRASE-SPECIFIC FEEDBACK ===
+        phrase = f"{will_token.text.lower()} {head_verb.lemma_.lower()}"
+        
+        # Check if this specific phrase is commonly accepted by users
+        accepted_phrases = feedback_patterns.get('accepted_future_phrases', set())
+        if phrase in accepted_phrases:
+            evidence_score -= 0.3  # Users consistently accept this phrase
+        
+        flagged_phrases = feedback_patterns.get('flagged_future_phrases', set())
+        if phrase in flagged_phrases:
+            evidence_score += 0.2  # Users consistently flag this phrase
+        
+        # === CONTEXT-SPECIFIC FEEDBACK ===
+        content_type = context.get('content_type', 'general')
+        context_patterns = feedback_patterns.get(f'{content_type}_future_patterns', {})
+        
+        if phrase in context_patterns.get('acceptable', set()):
+            evidence_score -= 0.2
+        elif phrase in context_patterns.get('problematic', set()):
+            evidence_score += 0.25
+        
+        # === VERB-SPECIFIC PATTERNS ===
+        verb_lemma = head_verb.lemma_.lower()
+        verb_patterns = feedback_patterns.get('verb_specific_patterns', {})
+        
+        if verb_lemma in verb_patterns.get('often_accepted_with_will', set()):
+            evidence_score -= 0.15  # This verb often acceptable with 'will'
+        elif verb_lemma in verb_patterns.get('problematic_with_will', set()):
+            evidence_score += 0.2  # This verb problematic with 'will'
+        
+        # === CORRECTION SUCCESS PATTERNS ===
+        correction_patterns = feedback_patterns.get('correction_success', {})
+        correction_success = correction_patterns.get(phrase, 0.5)
+        
+        if correction_success > 0.8:
+            evidence_score += 0.1  # Corrections highly successful
+        elif correction_success < 0.3:
+            evidence_score -= 0.15  # Corrections often rejected
+        
+        return evidence_score
 
-        # Feedback stubs
-        patterns = self._get_feedback_patterns_verbs()
-        phrase = f"{will_token.text} {head_verb.text}".lower()
-        if phrase in patterns.get('accepted_future_phrases', set()):
-            evidence -= 0.2
-        if phrase in patterns.get('flagged_future_phrases', set()):
-            evidence += 0.1
-
-        return max(0.0, min(1.0, evidence))
+    def _get_cached_feedback_patterns_future_tense(self) -> Dict[str, Any]:
+        """Load feedback patterns from cache or feedback analysis for future tense."""
+        return {
+            'accepted_future_phrases': {
+                # Phrases commonly accepted by users
+                'will be removed', 'will be deprecated', 'will be available',
+                'will be released', 'will be updated', 'will become',
+                'will continue to', 'will remain', 'will vary'
+            },
+            'flagged_future_phrases': {
+                # Phrases commonly flagged by users for correction
+                'will click', 'will select', 'will enter', 'will type',
+                'will run', 'will execute', 'will configure', 'will install'
+            },
+            'procedural_future_patterns': {
+                'acceptable': {
+                    # Future phrases acceptable in procedural contexts
+                    'will be prompted', 'will appear', 'will display'
+                },
+                'problematic': {
+                    # Phrases problematic in procedures
+                    'will click', 'will select', 'will configure', 'will run'
+                }
+            },
+            'api_future_patterns': {
+                'acceptable': {
+                    # Future phrases acceptable in API contexts
+                    'will be deprecated', 'will return', 'will throw'
+                },
+                'problematic': {
+                    # Phrases problematic in API docs
+                    'will call', 'will use', 'will send'
+                }
+            },
+            'verb_specific_patterns': {
+                'often_accepted_with_will': {
+                    # Verbs often acceptable with 'will'
+                    'be', 'become', 'remain', 'continue', 'vary', 'depend'
+                },
+                'problematic_with_will': {
+                    # Verbs problematic with 'will'
+                    'click', 'select', 'enter', 'type', 'run', 'execute',
+                    'configure', 'install', 'setup', 'create', 'delete'
+                }
+            },
+            'correction_success': {
+                # Success rate of correction suggestions
+                'will click': 0.9, 'will select': 0.85, 'will run': 0.8,
+                'will be': 0.3, 'will become': 0.4, 'will remain': 0.2
+            }
+        }
 
     def _get_contextual_future_tense_message(self, flagged_text: str, ev: float, context: Dict[str, Any]) -> str:
-        if ev > 0.8:
-            return f"Avoid future tense ('{flagged_text}') in procedural/descriptive text. Use present or imperative."
-        if ev > 0.5:
-            return f"Consider using present tense instead of '{flagged_text}'."
-        return f"Prefer present tense over '{flagged_text}' for clarity."
+        """Generate context-aware error messages for future tense patterns."""
+        
+        content_type = context.get('content_type', 'general')
+        
+        if ev > 0.9:
+            return f"Future tense '{flagged_text}' should be avoided in {content_type} documentation. Use present or imperative."
+        elif ev > 0.7:
+            return f"Consider replacing '{flagged_text}' with present tense for clearer {content_type} writing."
+        elif ev > 0.5:
+            return f"Present tense is preferred over '{flagged_text}' in most technical writing."
+        else:
+            return f"The phrase '{flagged_text}' may benefit from present tense for clarity."
 
     def _generate_smart_future_tense_suggestions(self, head_verb: Token, ev: float, context: Dict[str, Any]) -> List[str]:
+        """Generate context-aware suggestions for future tense patterns."""
+        
         base = head_verb.lemma_
-        suggestions: List[str] = []
-        suggestions.append(f"Use present: '{base}s'")
-        suggestions.append(f"Use imperative: '{base.capitalize()}'")
-        if (context or {}).get('content_type') in {'procedural', 'api'}:
-            suggestions.append("Use direct, action-oriented phrasing for steps.")
+        suggestions = []
+        content_type = context.get('content_type', 'general')
+        
+        # Base suggestions based on evidence strength and context
+        if ev > 0.8:
+            if content_type == 'procedural':
+                suggestions.append(f"Use imperative: '{base.capitalize()}' (direct instruction)")
+                suggestions.append(f"Use present: 'The system {base}s' (describe current behavior)")
+            elif content_type == 'api':
+                suggestions.append(f"Use present: 'The method {base}s' (current API behavior)")
+                suggestions.append(f"Use present: 'This {base}s the resource' (API functionality)")
+            else:
+                suggestions.append(f"Use present: '{base}s' (current state/behavior)")
+                suggestions.append(f"Use imperative: '{base.capitalize()}' (direct action)")
+        else:
+            suggestions.append(f"Consider present: '{base}s'")
+            suggestions.append(f"Consider imperative: '{base.capitalize()}'")
+        
+        # Context-specific advice
+        if content_type == 'procedural':
+            suggestions.append("Use imperative mood for clear step-by-step instructions.")
+        elif content_type == 'api':
+            suggestions.append("Describe API behavior in present tense for clarity.")
+        elif content_type == 'technical':
+            suggestions.append("Technical documentation should describe current system behavior.")
+        elif content_type == 'tutorial':
+            suggestions.append("Tutorial steps should be in imperative mood.")
+        
         return suggestions[:3]
 
     # === EVIDENCE-BASED: PAST TENSE ===
 
     def _calculate_past_tense_evidence(self, root_verb: Token, doc: Doc, sentence: str, text: str, context: Dict[str, Any]) -> float:
-        """Calculate evidence that past tense is undesirable in this context."""
-        evidence: float = 0.45  # base if past tense root
+        """
+        Calculate evidence score (0.0-1.0) for past tense concerns.
+        
+        Higher scores indicate stronger evidence that past tense should be corrected.
+        Lower scores indicate acceptable usage in specific contexts.
+        
+        Args:
+            root_verb: The root verb token in past tense
+            doc: The sentence document
+            sentence: The sentence text
+            text: Full document text
+            context: Document context (block_type, content_type, etc.)
+            
+        Returns:
+            float: Evidence score from 0.0 (acceptable) to 1.0 (should be corrected)
+        """
+        evidence_score = 0.0
+        
+        # === STEP 1: BASE EVIDENCE ASSESSMENT ===
+        evidence_score = self._get_base_past_tense_evidence(root_verb, doc, sentence)
+        
+        if evidence_score == 0.0:
+            return 0.0  # No evidence, skip this construction
+        
+        # === STEP 2: LINGUISTIC CLUES (MICRO-LEVEL) ===
+        evidence_score = self._apply_linguistic_clues_past_tense(evidence_score, root_verb, doc, sentence)
+        
+        # === STEP 3: STRUCTURAL CLUES (MESO-LEVEL) ===
+        evidence_score = self._apply_structural_clues_past_tense(evidence_score, context)
+        
+        # === STEP 4: SEMANTIC CLUES (MACRO-LEVEL) ===
+        evidence_score = self._apply_semantic_clues_past_tense(evidence_score, root_verb, text, context)
+        
+        # === STEP 5: FEEDBACK PATTERNS (LEARNING CLUES) ===
+        evidence_score = self._apply_feedback_clues_past_tense(evidence_score, root_verb, context)
+        
+        return max(0.0, min(1.0, evidence_score))  # Clamp to valid range
 
-        # Reduce heavily if legitimate temporal context
-        if self._has_legitimate_temporal_context(doc, sentence):
-            evidence -= 0.4
+    # === PAST TENSE EVIDENCE METHODS ===
 
-        # Linguistic: multiple temporal markers further reduce
+    def _get_base_past_tense_evidence(self, root_verb: Token, doc: Doc, sentence: str) -> float:
+        """Get base evidence score for past tense concerns."""
+        
+        # === PAST TENSE TYPE ANALYSIS ===
+        # Different past tense contexts have different evidence strengths
+        
+        # High-priority corrections (inappropriate in instructions/current descriptions)
+        inappropriate_past_verbs = {
+            'clicked', 'selected', 'entered', 'typed', 'configured', 'installed',
+            'ran', 'executed', 'performed', 'created', 'deleted', 'modified'
+        }
+        
+        # Medium-priority corrections (better as present for current behavior)
+        better_as_present = {
+            'displayed', 'showed', 'provided', 'contained', 'included',
+            'supported', 'enabled', 'allowed', 'required', 'returned'
+        }
+        
+        # Low-priority corrections (often acceptable in temporal contexts)
+        temporal_acceptable = {
+            'was', 'were', 'had', 'became', 'remained', 'continued',
+            'appeared', 'seemed', 'occurred', 'happened'
+        }
+        
+        # Check verb type
+        verb_text = root_verb.text.lower()
+        verb_lemma = root_verb.lemma_.lower()
+        
+        if verb_text in inappropriate_past_verbs or verb_lemma in inappropriate_past_verbs:
+            return 0.7  # High evidence for action verbs in past tense
+        elif verb_text in better_as_present or verb_lemma in better_as_present:
+            return 0.5  # Medium evidence for descriptive verbs in past tense
+        elif verb_text in temporal_acceptable or verb_lemma in temporal_acceptable:
+            return 0.3  # Lower evidence for state verbs in past tense
+        else:
+            return 0.45  # Default evidence for past tense usage
+
+    def _apply_linguistic_clues_past_tense(self, evidence_score: float, root_verb: Token, doc: Doc, sentence: str) -> float:
+        """
+        Apply linguistic analysis clues for past tense detection.
+        
+        Analyzes SpaCy linguistic features including temporal markers, context indicators,
+        and surrounding constructions to determine evidence strength for past tense corrections.
+        
+        Args:
+            evidence_score: Current evidence score to modify
+            root_verb: The root verb token in past tense
+            doc: The sentence document
+            sentence: The sentence text
+            
+        Returns:
+            float: Modified evidence score based on linguistic analysis
+        """
+        
         sent_lower = sentence.lower()
-        if any(w in sent_lower for w in ['previously', 'formerly', 'before', 'earlier']):
-            evidence -= 0.1
+        
+        # === TEMPORAL CONTEXT INDICATORS ===
+        # Strong temporal indicators that justify past tense
+        
+        strong_temporal_indicators = [
+            'before this update', 'before the update', 'prior to this update',
+            'before this release', 'before the release', 'in previous versions',
+            'in earlier versions', 'previously', 'formerly', 'originally',
+            'this issue occurred', 'this problem occurred', 'the bug was',
+            'users experienced', 'this caused', 'this resulted in'
+        ]
+        
+        if any(indicator in sent_lower for indicator in strong_temporal_indicators):
+            evidence_score -= 0.4  # Strong justification for past tense
+        
+        # Weaker temporal indicators
+        weak_temporal_indicators = [
+            'in the past', 'historically', 'before', 'earlier', 'until now',
+            'up until', 'prior to', 'when', 'while', 'during'
+        ]
+        
+        if any(indicator in sent_lower for indicator in weak_temporal_indicators):
+            evidence_score -= 0.2  # Some justification for past tense
+        
+        # === LEGITIMATE TEMPORAL PATTERNS ===
+        # Use enhanced temporal detection
+        if self._has_legitimate_temporal_context(doc, sentence):
+            evidence_score -= 0.3  # Comprehensive temporal analysis
+        
+        # === ISSUE/BUG REPORTING CONTEXT ===
+        # Past tense often appropriate for issue descriptions
+        
+        issue_indicators = [
+            'failed to', 'unable to', 'could not', 'did not', 'would not',
+            'was not', 'were not', 'error', 'issue', 'problem', 'bug'
+        ]
+        
+        if any(indicator in sent_lower for indicator in issue_indicators):
+            evidence_score -= 0.25  # Issue descriptions often need past tense
+        
+        # === NEGATION CONTEXT ===
+        # Negative past constructions often describe problems
+        
+        negative_past_patterns = ['was not', 'were not', 'did not', 'could not']
+        if any(pattern in sent_lower for pattern in negative_past_patterns):
+            evidence_score -= 0.2  # Negative past often legitimate
+        
+        # === SENTENCE STRUCTURE ANALYSIS ===
+        # Check for temporal subordinate clauses
+        
+        for token in doc:
+            if token.dep_ == 'mark' and token.lemma_.lower() in ['when', 'while', 'before', 'after']:
+                # Check if this introduces a temporal clause
+                if token.head and 'Tense=Past' in str(token.head.morph):
+                    evidence_score -= 0.15  # Temporal clauses may justify past tense
+        
+        # === CONDITIONAL AND HYPOTHETICAL CONSTRUCTIONS ===
+        # Past tense in conditionals may be appropriate
+        
+        conditional_markers = ['if', 'unless', 'suppose', 'imagine', 'what if']
+        if any(marker in sent_lower for marker in conditional_markers):
+            evidence_score -= 0.1  # Conditionals may use past tense
+        
+        # === QUOTED SPEECH OR REPORTED CONTENT ===
+        # Quoted content may preserve original tense
+        
+        if '"' in sentence or "'" in sentence:
+            evidence_score -= 0.15  # Quoted content may preserve past tense
+        
+        # === COMPARISON AND CONTRAST STRUCTURES ===
+        # Comparing past vs. present states
+        
+        comparison_indicators = ['compared to', 'unlike', 'whereas', 'however', 'but now']
+        if any(indicator in sent_lower for indicator in comparison_indicators):
+            evidence_score -= 0.1  # Comparisons may need past tense
+        
+        return evidence_score
 
-        # Structural
-        block_type = (context or {}).get('block_type', 'paragraph')
-        if block_type in {'code_block', 'literal_block', 'inline_code'}:
-            evidence -= 0.5
+    def _apply_structural_clues_past_tense(self, evidence_score: float, context: Dict[str, Any]) -> float:
+        """
+        Apply document structure clues for past tense detection.
+        
+        Analyzes document structure context including block types, heading levels,
+        and other structural elements to determine appropriate evidence adjustments
+        for past tense usage.
+        
+        Args:
+            evidence_score: Current evidence score to modify
+            context: Document context dictionary
+            
+        Returns:
+            float: Modified evidence score based on structural analysis
+        """
+        
+        block_type = context.get('block_type', 'paragraph')
+        
+        # === TECHNICAL DOCUMENTATION CONTEXTS ===
+        if block_type in ['code_block', 'literal_block']:
+            evidence_score -= 0.6  # Code blocks may contain past references
+        elif block_type == 'inline_code':
+            evidence_score -= 0.4  # Inline code may reference past behavior
+        
+        # === HEADING CONTEXT ===
+        if block_type == 'heading':
+            heading_level = context.get('block_level', 1)
+            if heading_level == 1:  # H1 - Main headings
+                evidence_score += 0.1  # Main headings should generally be present
+            elif heading_level == 2:  # H2 - Section headings  
+                evidence_score += 0.05  # Section headings should be current
+            elif heading_level >= 3:  # H3+ - Subsection headings
+                evidence_score += 0.02  # Subsection headings less critical
+        
+        # === LIST CONTEXT ===
+        elif block_type in ['ordered_list_item', 'unordered_list_item']:
+            evidence_score += 0.1  # List items should generally be present/imperative
+            
+            # Nested list items may be more procedural
+            if context.get('list_depth', 1) > 1:
+                evidence_score += 0.05  # Nested items often procedural steps
+        
+        # === TABLE CONTEXT ===
+        elif block_type in ['table_cell', 'table_header']:
+            evidence_score += 0.05  # Tables should generally use present tense
+        
+        # === ADMONITION CONTEXT ===
+        elif block_type == 'admonition':
+            admonition_type = context.get('admonition_type', '').upper()
+            if admonition_type in ['NOTE', 'TIP', 'HINT']:
+                evidence_score -= 0.05  # Notes may describe past situations
+            elif admonition_type in ['WARNING', 'CAUTION', 'DANGER']:
+                evidence_score -= 0.1  # Warnings may describe past problems
+            elif admonition_type in ['IMPORTANT', 'ATTENTION']:
+                evidence_score += 0.02  # Important notices should be current
+        
+        # === QUOTE/CITATION CONTEXT ===
+        elif block_type in ['block_quote', 'citation']:
+            evidence_score -= 0.3  # Quotes may preserve original past tense
+        
+        # === EXAMPLE/SAMPLE CONTEXT ===
+        elif block_type in ['example', 'sample']:
+            evidence_score -= 0.2  # Examples may show past scenarios
+        
+        # === CHANGELOG/RELEASE NOTES CONTEXT ===
+        elif block_type in ['changelog', 'release_notes']:
+            evidence_score -= 0.4  # Change logs legitimately use past tense
+        
+        return evidence_score
 
-        # Semantic
-        content_type = (context or {}).get('content_type', 'general')
-        if content_type in {'procedural', 'api', 'technical'}:
-            evidence += 0.2
-        if content_type in {'release_notes', 'changelog'}:
-            evidence -= 0.3
-        if (context or {}).get('audience') in {'beginner', 'general'}:
-            evidence += 0.05
+    def _apply_semantic_clues_past_tense(self, evidence_score: float, root_verb: Token, text: str, context: Dict[str, Any]) -> float:
+        """
+        Apply semantic and content-type clues for past tense detection.
+        
+        Analyzes high-level semantic context including content type, domain, audience,
+        and document purpose to determine evidence strength for past tense corrections.
+        
+        Args:
+            evidence_score: Current evidence score to modify
+            root_verb: The root verb token in past tense
+            text: Full document text
+            context: Document context dictionary
+            
+        Returns:
+            float: Modified evidence score based on semantic analysis
+        """
+        
+        content_type = context.get('content_type', 'general')
+        domain = context.get('domain', 'general')
+        audience = context.get('audience', 'general')
+        
+        # === CONTENT TYPE ANALYSIS ===
+        # Some content types strongly discourage past tense
+        if content_type == 'procedural':
+            evidence_score += 0.25  # Procedures should use present/imperative
+        elif content_type == 'api':
+            evidence_score += 0.2  # API docs should describe current behavior
+        elif content_type == 'technical':
+            evidence_score += 0.15  # Technical writing should be current
+        elif content_type == 'tutorial':
+            evidence_score += 0.2  # Tutorials should be step-by-step present
+        elif content_type == 'legal':
+            evidence_score += 0.1  # Legal writing should be precise and current
+        elif content_type == 'academic':
+            evidence_score += 0.05  # Academic writing should be clear
+        elif content_type == 'marketing':
+            evidence_score += 0.1  # Marketing should focus on current benefits
+        elif content_type == 'narrative':
+            evidence_score -= 0.1  # Narrative may legitimately use past tense
+        
+        # === CONTENT TYPES THAT ACCEPT PAST TENSE ===
+        past_appropriate_types = ['release_notes', 'changelog', 'bug_report', 'issue_report']
+        if content_type in past_appropriate_types:
+            evidence_score -= 0.3  # These content types legitimately use past tense
+        
+        # === DOMAIN-SPECIFIC PATTERNS ===
+        if domain in ['software', 'engineering', 'devops']:
+            evidence_score += 0.1  # Technical domains prefer current descriptions
+        elif domain in ['user-documentation', 'help']:
+            evidence_score += 0.15  # User docs should be current and actionable
+        elif domain in ['training', 'education']:
+            evidence_score += 0.1  # Training should be current
+        elif domain in ['legal', 'compliance']:
+            evidence_score += 0.05  # Legal domains prefer current statements
+        elif domain in ['support', 'troubleshooting']:
+            evidence_score -= 0.1  # Support may describe past problems
+        
+        # === AUDIENCE CONSIDERATIONS ===
+        if audience in ['beginner', 'general', 'consumer']:
+            evidence_score += 0.1  # General audiences need current, clear language
+        elif audience in ['professional', 'business']:
+            evidence_score += 0.05  # Professional content should be current
+        elif audience in ['developer', 'technical', 'expert']:
+            evidence_score += 0.08  # Technical audiences expect current descriptions
+        
+        # === DOCUMENT PURPOSE ANALYSIS ===
+        if self._is_installation_documentation(text):
+            evidence_score += 0.2  # Installation docs should be current steps
+        
+        if self._is_troubleshooting_documentation(text):
+            evidence_score -= 0.1  # Troubleshooting may describe past problems
+        
+        if self._is_user_interface_documentation(text):
+            evidence_score += 0.18  # UI docs should describe current interface
+        
+        if self._is_release_notes_documentation(text):
+            evidence_score -= 0.4  # Release notes legitimately use past tense
+        
+        if self._is_changelog_documentation(text):
+            evidence_score -= 0.4  # Changelogs legitimately use past tense
+        
+        if self._is_bug_report_documentation(text):
+            evidence_score -= 0.3  # Bug reports may describe past issues
+        
+        # === DOCUMENT LENGTH CONTEXT ===
+        doc_length = len(text.split())
+        if doc_length < 100:  # Short documents
+            evidence_score += 0.05  # Brief content should be current
+        elif doc_length > 5000:  # Long documents
+            evidence_score += 0.02  # Consistency important in long docs
+        
+        return evidence_score
 
-        # Feedback stub
-        patterns = self._get_feedback_patterns_verbs()
-        if root_verb.lemma_.lower() in patterns.get('often_accepted_past_verbs', set()):
-            evidence -= 0.1
+    def _apply_feedback_clues_past_tense(self, evidence_score: float, root_verb: Token, context: Dict[str, Any]) -> float:
+        """
+        Apply feedback patterns for past tense detection.
+        
+        Incorporates learned patterns from user feedback including acceptance rates,
+        context-specific patterns, and correction success rates to refine evidence
+        scoring for past tense corrections.
+        
+        Args:
+            evidence_score: Current evidence score to modify
+            root_verb: The root verb token in past tense
+            context: Document context dictionary
+            
+        Returns:
+            float: Modified evidence score based on feedback analysis
+        """
+        
+        feedback_patterns = self._get_cached_feedback_patterns_past_tense()
+        
+        # === VERB-SPECIFIC FEEDBACK ===
+        verb_lemma = root_verb.lemma_.lower()
+        verb_text = root_verb.text.lower()
+        
+        # Check if this specific verb is commonly accepted in past tense by users
+        accepted_past_verbs = feedback_patterns.get('often_accepted_past_verbs', set())
+        if verb_lemma in accepted_past_verbs or verb_text in accepted_past_verbs:
+            evidence_score -= 0.3  # Users consistently accept this verb in past tense
+        
+        flagged_past_verbs = feedback_patterns.get('often_flagged_past_verbs', set())
+        if verb_lemma in flagged_past_verbs or verb_text in flagged_past_verbs:
+            evidence_score += 0.2  # Users consistently flag this verb in past tense
+        
+        # === CONTEXT-SPECIFIC FEEDBACK ===
+        content_type = context.get('content_type', 'general')
+        context_patterns = feedback_patterns.get(f'{content_type}_past_patterns', {})
+        
+        if verb_lemma in context_patterns.get('acceptable', set()):
+            evidence_score -= 0.2
+        elif verb_lemma in context_patterns.get('problematic', set()):
+            evidence_score += 0.25
+        
+        # === TEMPORAL CONTEXT FEEDBACK ===
+        # Check patterns for temporal/historical contexts
+        temporal_patterns = feedback_patterns.get('temporal_context_patterns', {})
+        if verb_lemma in temporal_patterns.get('acceptable_in_temporal', set()):
+            evidence_score -= 0.15  # This verb acceptable in temporal contexts
+        
+        # === CORRECTION SUCCESS PATTERNS ===
+        correction_patterns = feedback_patterns.get('correction_success', {})
+        correction_success = correction_patterns.get(verb_lemma, 0.5)
+        
+        if correction_success > 0.8:
+            evidence_score += 0.1  # Corrections highly successful
+        elif correction_success < 0.3:
+            evidence_score -= 0.15  # Corrections often rejected
+        
+        return evidence_score
 
-        return max(0.0, min(1.0, evidence))
+    def _get_cached_feedback_patterns_past_tense(self) -> Dict[str, Any]:
+        """Load feedback patterns from cache or feedback analysis for past tense."""
+        return {
+            'often_accepted_past_verbs': {
+                # Verbs commonly accepted in past tense
+                'fixed', 'resolved', 'addressed', 'corrected', 'improved',
+                'enhanced', 'updated', 'modified', 'changed', 'added',
+                'removed', 'deprecated', 'occurred', 'happened', 'was', 'were'
+            },
+            'often_flagged_past_verbs': {
+                # Verbs commonly flagged when in past tense
+                'clicked', 'selected', 'entered', 'typed', 'configured',
+                'installed', 'ran', 'executed', 'performed', 'created'
+            },
+            'procedural_past_patterns': {
+                'acceptable': {
+                    # Past verbs acceptable in procedural contexts
+                    'occurred', 'happened', 'was', 'were'
+                },
+                'problematic': {
+                    # Past verbs problematic in procedures
+                    'clicked', 'selected', 'configured', 'installed', 'ran'
+                }
+            },
+            'api_past_patterns': {
+                'acceptable': {
+                    # Past verbs acceptable in API contexts
+                    'deprecated', 'removed', 'changed', 'updated'
+                },
+                'problematic': {
+                    # Past verbs problematic in API docs
+                    'called', 'used', 'sent', 'received'
+                }
+            },
+            'temporal_context_patterns': {
+                'acceptable_in_temporal': {
+                    # Verbs acceptable in temporal/historical contexts
+                    'was', 'were', 'had', 'occurred', 'happened', 'caused',
+                    'resulted', 'led', 'fixed', 'resolved', 'addressed'
+                }
+            },
+            'correction_success': {
+                # Success rate of correction suggestions
+                'clicked': 0.85, 'selected': 0.8, 'configured': 0.75,
+                'was': 0.3, 'were': 0.25, 'occurred': 0.2, 'fixed': 0.4
+            }
+        }
 
     def _get_contextual_past_tense_message(self, flagged_text: str, ev: float, context: Dict[str, Any]) -> str:
-        if ev > 0.8:
-            return f"Past tense '{flagged_text}' may reduce clarity in this context. Prefer present tense."
-        if ev > 0.5:
-            return f"Consider using present tense instead of past ('{flagged_text}')."
-        return f"Present tense is generally preferred over past ('{flagged_text}')."
+        """Generate context-aware error messages for past tense patterns."""
+        
+        content_type = context.get('content_type', 'general')
+        
+        if ev > 0.9:
+            return f"Past tense '{flagged_text}' should be avoided in {content_type} documentation. Use present tense."
+        elif ev > 0.7:
+            return f"Consider replacing '{flagged_text}' with present tense for clearer {content_type} writing."
+        elif ev > 0.5:
+            return f"Present tense is preferred over '{flagged_text}' in most technical writing."
+        else:
+            return f"The verb '{flagged_text}' may benefit from present tense for clarity."
 
     def _generate_smart_past_tense_suggestions(self, root_verb: Token, ev: float, context: Dict[str, Any]) -> List[str]:
+        """Generate context-aware suggestions for past tense patterns."""
+        
         base = root_verb.lemma_
-        suggestions: List[str] = []
-        suggestions.append("Use present tense for system behavior and instructions.")
-        suggestions.append(f"Rewrite with present: '{base}s' / imperative: '{base.capitalize()}' where appropriate.")
-        if (context or {}).get('content_type') in {'procedural', 'api'}:
-            suggestions.append("Keep steps in the imperative mood.")
+        suggestions = []
+        content_type = context.get('content_type', 'general')
+        
+        # Base suggestions based on evidence strength and context
+        if ev > 0.8:
+            if content_type == 'procedural':
+                suggestions.append(f"Use imperative: '{base.capitalize()}' (direct instruction)")
+                suggestions.append(f"Use present: 'The system {base}s' (describe current behavior)")
+            elif content_type == 'api':
+                suggestions.append(f"Use present: 'The method {base}s' (current API behavior)")
+                suggestions.append(f"Use present: 'This {base}s the resource' (API functionality)")
+            else:
+                suggestions.append(f"Use present: '{base}s' (current state/behavior)")
+                suggestions.append(f"Use imperative: '{base.capitalize()}' (direct action)")
+        else:
+            suggestions.append(f"Consider present: '{base}s'")
+            suggestions.append("Consider if this describes current vs. historical behavior")
+        
+        # Context-specific advice
+        if content_type == 'procedural':
+            suggestions.append("Use imperative mood for clear step-by-step instructions.")
+        elif content_type == 'api':
+            suggestions.append("Describe current API behavior in present tense.")
+        elif content_type == 'technical':
+            suggestions.append("Technical documentation should describe current system behavior.")
+        elif content_type == 'tutorial':
+            suggestions.append("Tutorial steps should be in imperative mood.")
+        else:
+            suggestions.append("Use present tense for current behavior and instructions.")
+        
         return suggestions[:3]
+
+    # === HELPER METHODS FOR SEMANTIC ANALYSIS ===
+
+    def _is_installation_documentation(self, text: str) -> bool:
+        """Check if text appears to be installation documentation."""
+        install_indicators = [
+            'install', 'installation', 'setup', 'configure', 'configuration',
+            'download', 'deploy', 'deployment', 'prerequisites', 'requirements',
+            'system requirements', 'getting started'
+        ]
+        
+        text_lower = text.lower()
+        return sum(1 for indicator in install_indicators if indicator in text_lower) >= 3
+
+    def _is_troubleshooting_documentation(self, text: str) -> bool:
+        """Check if text appears to be troubleshooting documentation."""
+        troubleshoot_indicators = [
+            'troubleshoot', 'troubleshooting', 'problem', 'issue', 'error',
+            'debug', 'debugging', 'solution', 'resolve', 'fix', 'workaround',
+            'diagnosis', 'symptoms'
+        ]
+        
+        text_lower = text.lower()
+        return sum(1 for indicator in troubleshoot_indicators if indicator in text_lower) >= 3
+
+    def _is_user_interface_documentation(self, text: str) -> bool:
+        """Check if text appears to be user interface documentation."""
+        ui_indicators = [
+            'user interface', 'ui', 'gui', 'dialog', 'window', 'button', 'menu',
+            'toolbar', 'tab', 'panel', 'form', 'field', 'dropdown', 'checkbox',
+            'click', 'select', 'enter', 'type'
+        ]
+        
+        text_lower = text.lower()
+        return sum(1 for indicator in ui_indicators if indicator in text_lower) >= 3
+
+    def _is_release_notes_documentation(self, text: str) -> bool:
+        """Check if text appears to be release notes documentation."""
+        release_indicators = [
+            'release notes', 'release', 'version', 'changelog', 'change log',
+            'new features', 'improvements', 'bug fixes', 'fixed', 'resolved',
+            'added', 'removed', 'deprecated', 'enhanced', 'updated'
+        ]
+        
+        text_lower = text.lower()
+        return sum(1 for indicator in release_indicators if indicator in text_lower) >= 3
+
+    def _is_roadmap_documentation(self, text: str) -> bool:
+        """Check if text appears to be roadmap documentation."""
+        roadmap_indicators = [
+            'roadmap', 'future', 'planned', 'upcoming', 'next version',
+            'coming soon', 'will be', 'scheduled', 'timeline', 'milestone'
+        ]
+        
+        text_lower = text.lower()
+        return sum(1 for indicator in roadmap_indicators if indicator in text_lower) >= 2
+
+    def _is_planning_documentation(self, text: str) -> bool:
+        """Check if text appears to be planning documentation."""
+        planning_indicators = [
+            'plan', 'planning', 'strategy', 'goals', 'objectives', 'timeline',
+            'schedule', 'milestone', 'deliverable', 'project', 'initiative'
+        ]
+        
+        text_lower = text.lower()
+        return sum(1 for indicator in planning_indicators if indicator in text_lower) >= 3
+
+    def _is_changelog_documentation(self, text: str) -> bool:
+        """Check if text appears to be changelog documentation."""
+        changelog_indicators = [
+            'changelog', 'change log', 'changes', 'fixed', 'added', 'removed',
+            'changed', 'deprecated', 'security', 'unreleased', 'version'
+        ]
+        
+        text_lower = text.lower()
+        return sum(1 for indicator in changelog_indicators if indicator in text_lower) >= 3
+
+    def _is_bug_report_documentation(self, text: str) -> bool:
+        """Check if text appears to be bug report documentation."""
+        bug_report_indicators = [
+            'bug', 'issue', 'error', 'problem', 'defect', 'fault',
+            'reproduce', 'steps to reproduce', 'expected', 'actual',
+            'workaround', 'failed', 'not working'
+        ]
+        
+        text_lower = text.lower()
+        return sum(1 for indicator in bug_report_indicators if indicator in text_lower) >= 3
 
     # === Feedback patterns for verbs ===
     def _get_feedback_patterns_verbs(self) -> Dict[str, Any]:
