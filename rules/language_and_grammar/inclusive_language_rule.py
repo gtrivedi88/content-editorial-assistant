@@ -21,15 +21,46 @@ class InclusiveLanguageRule(BaseLanguageRule):
 
     def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         """
-        Analyzes sentences for non-inclusive terms using evidence-based scoring.
-        Uses sophisticated context analysis to distinguish between inappropriate usage
-        and legitimate references to legacy systems, historical documentation, or quotes.
+        Evidence-based analysis for non-inclusive language.
+        Calculates nuanced evidence scores for each detected issue using
+        linguistic, structural, semantic, and feedback clues.
         """
         errors = []
         if not nlp:
             return errors
+        
         doc = nlp(text)
 
+        # Find all potential issues first
+        potential_issues = self._find_potential_issues(doc, text)
+        
+        for potential_issue in potential_issues:
+            # Calculate nuanced evidence score
+            evidence_score = self._calculate_inclusive_language_evidence(
+                potential_issue, doc, text, context or {}
+            )
+            
+            # Only create error if evidence suggests it's worth evaluating
+            if evidence_score > 0.1:  # Low threshold - let enhanced validation decide
+                errors.append(self._create_error(
+                    sentence=potential_issue['sentence'].text,
+                    sentence_index=potential_issue['sentence_index'],
+                    message=self._get_contextual_inclusive_message(potential_issue, evidence_score),
+                    suggestions=self._generate_smart_inclusive_suggestions(potential_issue, evidence_score, context or {}),
+                    severity=potential_issue.get('severity', 'medium'),
+                    text=text,
+                    context=context,
+                    evidence_score=evidence_score,  # Your nuanced assessment
+                    span=potential_issue['span'],
+                    flagged_text=potential_issue['flagged_text']
+                ))
+        
+        return errors
+
+    def _find_potential_issues(self, doc, text: str) -> List[Dict[str, Any]]:
+        """Find all potential non-inclusive language issues in the document."""
+        potential_issues = []
+        
         # Enhanced non-inclusive terms with categorization for better evidence scoring
         non_inclusive_terms = self._get_non_inclusive_terms_categorized()
 
@@ -37,26 +68,19 @@ class InclusiveLanguageRule(BaseLanguageRule):
             for term_info in non_inclusive_terms:
                 term = term_info['term']
                 for match in re.finditer(r'\b' + re.escape(term) + r'\b', sent.text, re.IGNORECASE):
-                    # Calculate evidence score for this non-inclusive term usage
-                    evidence_score = self._calculate_inclusive_language_evidence(
-                        match, term_info, sent, text, context, doc
-                    )
-                    
-                    # Only create error if evidence suggests it's worth flagging
-                    if evidence_score > 0.1:  # Low threshold - let enhanced validation decide
-                        errors.append(self._create_error(
-                            sentence=sent.text,
-                            sentence_index=i,
-                            message=self._get_contextual_message(match.group(), term_info, evidence_score),
-                            suggestions=self._generate_smart_suggestions(match.group(), term_info, evidence_score, context),
-                            severity='medium',
-                            text=text,
-                            context=context,
-                            evidence_score=evidence_score,  # Your nuanced assessment
-                            span=(sent.start_char + match.start(), sent.start_char + match.end()),
-                            flagged_text=match.group(0)
-                        ))
-        return errors
+                    potential_issues.append({
+                        'type': 'non_inclusive_term',
+                        'match': match,
+                        'term_info': term_info,
+                        'sentence': sent,
+                        'sentence_index': i,
+                        'span': (sent.start_char + match.start(), sent.start_char + match.end()),
+                        'flagged_text': match.group(0),
+                        'matched_term': match.group(),
+                        'severity': term_info.get('severity_level', 'medium')
+                    })
+        
+        return potential_issues
 
     # === EVIDENCE-BASED CALCULATION METHODS ===
 
@@ -124,7 +148,7 @@ class InclusiveLanguageRule(BaseLanguageRule):
             }
         ]
 
-    def _calculate_inclusive_language_evidence(self, match, term_info: dict, sentence, text: str, context: dict, doc) -> float:
+    def _calculate_inclusive_language_evidence(self, potential_issue: Dict[str, Any], doc, text: str, context: Dict[str, Any]) -> float:
         """
         Calculate evidence score (0.0-1.0) for non-inclusive language concerns.
         
@@ -132,12 +156,10 @@ class InclusiveLanguageRule(BaseLanguageRule):
         Lower scores indicate acceptable usage in specific contexts (legacy references, quotes, etc.).
         
         Args:
-            match: Regex match object for the non-inclusive term
-            term_info: Dict with term information and categorization
-            sentence: Sentence containing the term
+            potential_issue: Dictionary containing issue details
+            doc: SpaCy document
             text: Full document text
             context: Document context (block_type, content_type, etc.)
-            doc: SpaCy document
             
         Returns:
             float: Evidence score from 0.0 (acceptable usage) to 1.0 (should be flagged)
@@ -145,28 +167,29 @@ class InclusiveLanguageRule(BaseLanguageRule):
         evidence_score = 0.0
         
         # === STEP 1: BASE EVIDENCE ASSESSMENT ===
-        evidence_score = self._get_base_inclusive_language_evidence(match, term_info)
+        evidence_score = self._get_base_inclusive_language_evidence(potential_issue)
         
         if evidence_score == 0.0:
             return 0.0  # No evidence, skip this term
         
         # === STEP 2: LINGUISTIC CLUES (MICRO-LEVEL) ===
-        evidence_score = self._apply_linguistic_clues_inclusive(evidence_score, match, term_info, sentence, doc)
+        evidence_score = self._apply_linguistic_clues_inclusive(evidence_score, potential_issue, doc)
         
         # === STEP 3: STRUCTURAL CLUES (MESO-LEVEL) ===
-        evidence_score = self._apply_structural_clues_inclusive(evidence_score, match, context)
+        evidence_score = self._apply_structural_clues_inclusive(evidence_score, potential_issue, context)
         
         # === STEP 4: SEMANTIC CLUES (MACRO-LEVEL) ===
-        evidence_score = self._apply_semantic_clues_inclusive(evidence_score, match, term_info, text, context)
+        evidence_score = self._apply_semantic_clues_inclusive(evidence_score, potential_issue, text, context)
         
         # === STEP 5: FEEDBACK PATTERNS (LEARNING CLUES) ===
-        evidence_score = self._apply_feedback_clues_inclusive(evidence_score, match, term_info, context)
+        evidence_score = self._apply_feedback_clues_inclusive(evidence_score, potential_issue, context)
         
         return max(0.0, min(1.0, evidence_score))  # Clamp to valid range
 
-    def _get_base_inclusive_language_evidence(self, match, term_info: dict) -> float:
+    def _get_base_inclusive_language_evidence(self, potential_issue: Dict[str, Any]) -> float:
         """Get base evidence score based on term category and severity."""
         
+        term_info = potential_issue['term_info']
         category = term_info.get('category', 'unknown')
         severity_level = term_info.get('severity_level', 'medium')
         
@@ -192,9 +215,11 @@ class InclusiveLanguageRule(BaseLanguageRule):
 
     # === LINGUISTIC CLUES FOR INCLUSIVE LANGUAGE ===
 
-    def _apply_linguistic_clues_inclusive(self, evidence_score: float, match, term_info: dict, sentence, doc) -> float:
+    def _apply_linguistic_clues_inclusive(self, evidence_score: float, potential_issue: Dict[str, Any], doc) -> float:
         """Apply linguistic analysis clues for inclusive language detection."""
         
+        match = potential_issue['match']
+        sentence = potential_issue['sentence']
         matched_text = match.group().lower()
         sentence_text = sentence.text.lower()
         
@@ -265,9 +290,9 @@ class InclusiveLanguageRule(BaseLanguageRule):
         if any(indicator in sentence_text for indicator in directive_indicators):
             evidence_score += 0.2  # New creation using non-inclusive terms
         
-        return evidence_score
+        return max(0.0, min(1.0, evidence_score))
 
-    def _apply_structural_clues_inclusive(self, evidence_score: float, match, context: dict) -> float:
+    def _apply_structural_clues_inclusive(self, evidence_score: float, potential_issue: Dict[str, Any], context: Dict[str, Any]) -> float:
         """Apply document structure-based clues for inclusive language detection."""
         
         if not context:
@@ -314,9 +339,9 @@ class InclusiveLanguageRule(BaseLanguageRule):
             elif admonition_type in ['IMPORTANT', 'TIP']:
                 evidence_score += 0.0  # Neutral adjustment
         
-        return evidence_score
+        return max(0.0, min(1.0, evidence_score))
 
-    def _apply_semantic_clues_inclusive(self, evidence_score: float, match, term_info: dict, text: str, context: dict) -> float:
+    def _apply_semantic_clues_inclusive(self, evidence_score: float, potential_issue: Dict[str, Any], text: str, context: Dict[str, Any]) -> float:
         """Apply semantic and content-type clues for inclusive language detection."""
         
         if not context:
@@ -375,6 +400,7 @@ class InclusiveLanguageRule(BaseLanguageRule):
             evidence_score += 0.2  # New development should use inclusive language
         
         # === TERM CATEGORY IN CONTEXT ===
+        term_info = potential_issue['term_info']
         category = term_info.get('category', 'unknown')
         
         # Technical terms in non-technical content more problematic
@@ -385,15 +411,17 @@ class InclusiveLanguageRule(BaseLanguageRule):
         if category == 'gendered' and content_type in ['marketing', 'academic']:
             evidence_score += 0.2  # Gendered language in professional contexts
         
-        return evidence_score
+        return max(0.0, min(1.0, evidence_score))
 
-    def _apply_feedback_clues_inclusive(self, evidence_score: float, match, term_info: dict, context: dict) -> float:
+    def _apply_feedback_clues_inclusive(self, evidence_score: float, potential_issue: Dict[str, Any], context: Dict[str, Any]) -> float:
         """Apply feedback patterns for inclusive language detection."""
         
         # Load cached feedback patterns
         feedback_patterns = self._get_cached_feedback_patterns()
         
         # === TERM-SPECIFIC FEEDBACK ===
+        match = potential_issue['match']
+        term_info = potential_issue['term_info']
         term = match.group().lower()
         category = term_info.get('category', 'unknown')
         
@@ -450,7 +478,7 @@ class InclusiveLanguageRule(BaseLanguageRule):
         elif replacement_rate < 0.2:
             evidence_score -= 0.2  # Users consistently ignore suggestions for this term
         
-        return evidence_score
+        return max(0.0, min(1.0, evidence_score))
 
     # === HELPER METHODS ===
 
@@ -563,6 +591,18 @@ class InclusiveLanguageRule(BaseLanguageRule):
         }
 
     # === HELPER METHODS FOR SMART MESSAGING ===
+
+    def _get_contextual_inclusive_message(self, potential_issue: Dict[str, Any], evidence_score: float) -> str:
+        """Generate context-aware error messages for inclusive language patterns."""
+        matched_term = potential_issue['matched_term']
+        term_info = potential_issue['term_info']
+        return self._get_contextual_message(matched_term, term_info, evidence_score)
+
+    def _generate_smart_inclusive_suggestions(self, potential_issue: Dict[str, Any], evidence_score: float, context: Dict[str, Any]) -> List[str]:
+        """Generate context-aware suggestions for inclusive language patterns."""
+        matched_term = potential_issue['matched_term']
+        term_info = potential_issue['term_info']
+        return self._generate_smart_suggestions(matched_term, term_info, evidence_score, context)
 
     def _get_contextual_message(self, matched_term: str, term_info: dict, evidence_score: float) -> str:
         """Generate context-aware error messages for inclusive language."""

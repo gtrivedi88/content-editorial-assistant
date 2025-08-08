@@ -848,7 +848,7 @@ class PassiveVoiceAnalyzer:
         elif sentence_length < 6:
             evidence_score += 0.1  # Simple sentences often better in active
         
-        return evidence_score
+        return max(0.0, min(1.0, evidence_score))
 
     def _apply_structural_clues_passive(self, evidence_score: float, construction: PassiveConstruction, context: Dict[str, Any]) -> float:
         """Apply document structure-based clues for passive voice detection."""
@@ -890,7 +890,7 @@ class PassiveVoiceAnalyzer:
         elif block_type in ['block_quote', 'citation']:
             evidence_score -= 0.2  # Quoted material may preserve passive voice
         
-        return evidence_score
+        return max(0.0, min(1.0, evidence_score))
 
     def _apply_semantic_clues_passive(self, evidence_score: float, construction: PassiveConstruction, 
                                     full_text: str, context: Dict[str, Any]) -> float:
@@ -951,7 +951,7 @@ class PassiveVoiceAnalyzer:
         if self._has_high_passive_voice_density(full_text):
             evidence_score -= 0.1  # Systematic passive usage may be intentional
         
-        return evidence_score
+        return max(0.0, min(1.0, evidence_score))
 
     def _apply_feedback_clues_passive(self, evidence_score: float, construction: PassiveConstruction, context: Dict[str, Any]) -> float:
         """Apply feedback patterns for passive voice detection."""
@@ -1010,7 +1010,7 @@ class PassiveVoiceAnalyzer:
             elif aux_acceptance < 0.3:
                 evidence_score += 0.1  # This auxiliary commonly flagged in passive
         
-        return evidence_score
+        return max(0.0, min(1.0, evidence_score))
 
     # === HELPER METHODS FOR SEMANTIC ANALYSIS ===
 

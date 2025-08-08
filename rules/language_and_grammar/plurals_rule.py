@@ -55,9 +55,9 @@ class PluralsRule(BaseLanguageRule):
 
     def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         """
-        Analyzes sentences for pluralization errors using evidence-based scoring.
-        Uses sophisticated linguistic analysis to distinguish legitimate usage from 
-        problematic patterns based on technical context and writing conventions.
+        Evidence-based analysis for pluralization errors.
+        Calculates nuanced evidence scores for each detected issue using
+        linguistic, structural, semantic, and feedback clues.
         """
         errors = []
         if not nlp:
@@ -69,14 +69,43 @@ class PluralsRule(BaseLanguageRule):
         
         doc = nlp(text)
 
-        # === RULE 1: "(s)" PATTERN ANALYSIS (evidence-based) ===
-        if not SPACY_AVAILABLE:
-            raise ImportError("spaCy is required for optimized plurals detection")
+        # Find all potential issues first
+        potential_issues = self._find_potential_issues(doc, text)
         
-        # Use spaCy Matcher for high-performance (s) detection
+        for potential_issue in potential_issues:
+            # Calculate nuanced evidence score
+            evidence_score = self._calculate_plurals_evidence(
+                potential_issue, doc, text, context or {}
+            )
+            
+            # Only create error if evidence suggests it's worth evaluating
+            if evidence_score > 0.1:  # Low threshold - let enhanced validation decide
+                errors.append(self._create_error(
+                    sentence=potential_issue['sentence'].text,
+                    sentence_index=potential_issue['sentence_index'],
+                    message=self._get_contextual_plurals_message(potential_issue, evidence_score),
+                    suggestions=self._generate_smart_plurals_suggestions(potential_issue, evidence_score, context or {}),
+                    severity=potential_issue.get('severity', 'medium'),
+                    text=text,
+                    context=context,
+                    evidence_score=evidence_score,  # Your nuanced assessment
+                    span=potential_issue['span'],
+                    flagged_text=potential_issue['flagged_text']
+                ))
+        
+        return errors
+
+    def _find_potential_issues(self, doc, text: str) -> List[Dict[str, Any]]:
+        """Find all potential pluralization issues in the document."""
+        potential_issues = []
+        
+        if not SPACY_AVAILABLE:
+            return potential_issues
+        
+        # === RULE 1: "(s)" PATTERN DETECTION ===
         matches = self.matcher(doc)
         for match_id, start, end in matches:
-            if nlp.vocab.strings[match_id] == "PARENTHETICAL_S":
+            if doc.vocab.strings[match_id] == "PARENTHETICAL_S":
                 span = doc[start:end]
                 sentence_index = self._get_sentence_index(doc, span.start_char)
                 
@@ -84,53 +113,43 @@ class PluralsRule(BaseLanguageRule):
                 if self._is_excepted(span.text):
                     continue
                 
-                # Calculate evidence score for this (s) pattern
-                evidence_score = self._calculate_parenthetical_s_evidence(
-                    span, doc, text, context
-                )
-                
-                # Only create error if evidence suggests it's worth flagging
-                if evidence_score > 0.1:  # Low threshold - let enhanced validation decide
-                    errors.append(self._create_error(
-                        sentence=span.sent.text,
-                        sentence_index=sentence_index,
-                        message=self._get_contextual_s_pattern_message(span, evidence_score),
-                        suggestions=self._generate_smart_s_pattern_suggestions(span, evidence_score, context),
-                        severity='medium',
-                        text=text,
-                        context=context,
-                        evidence_score=evidence_score,  # Your nuanced assessment
-                        span=(span.start_char, span.end_char),
-                        flagged_text=span.text
-                    ))
-
-        # === RULE 2: PLURAL ADJECTIVES ANALYSIS (evidence-based) ===
+                potential_issues.append({
+                    'type': 'parenthetical_s',
+                    'span_obj': span,
+                    'sentence': span.sent,
+                    'sentence_index': sentence_index,
+                    'span': (span.start_char, span.end_char),
+                    'flagged_text': span.text,
+                    'base_word': span[0].text,
+                    'severity': 'medium'
+                })
+        
+        # === RULE 2: PLURAL ADJECTIVES DETECTION ===
         for i, sent in enumerate(doc.sents):
             for token in sent:
                 # Find potential plural noun modifiers
-                potential_plural_modifier = self._detect_potential_plural_modifier(token)
-                
-                if potential_plural_modifier:
-                    # Calculate evidence score for this plural adjective usage
-                    evidence_score = self._calculate_plural_adjective_evidence(
-                        token, sent, text, context
-                    )
-                    
-                    # Only create error if evidence suggests it's worth flagging
-                    if evidence_score > 0.1:  # Low threshold - let enhanced validation decide
-                        errors.append(self._create_error(
-                            sentence=sent.text,
-                            sentence_index=i,
-                            message=self._get_contextual_plural_adjective_message(token, evidence_score),
-                            suggestions=self._generate_smart_plural_adjective_suggestions(token, evidence_score, context),
-                            severity='low',
-                            text=text,
-                            context=context,
-                            evidence_score=evidence_score,  # Your nuanced assessment
-                            span=(token.idx, token.idx + len(token.text)),
-                            flagged_text=token.text
-                        ))
-        return errors
+                if self._detect_potential_plural_modifier(token):
+                    potential_issues.append({
+                        'type': 'plural_adjective',
+                        'token': token,
+                        'sentence': sent,
+                        'sentence_index': i,
+                        'span': (token.idx, token.idx + len(token.text)),
+                        'flagged_text': token.text,
+                        'lemma': token.lemma_,
+                        'severity': 'low'
+                    })
+        
+        return potential_issues
+
+    def _is_excepted(self, text: str) -> bool:
+        """Check if the pattern is in exceptions."""
+        # Common abbreviations and technical terms that use (s) appropriately
+        exceptions = {
+            'parameter(s)', 'option(s)', 'setting(s)', 'value(s)', 'file(s)',
+            'directory(s)', 'argument(s)', 'variable(s)', 'property(s)'
+        }
+        return text.lower() in exceptions
 
     def _is_functioning_as_verb(self, token, doc) -> bool:
         """
@@ -331,87 +350,142 @@ class PluralsRule(BaseLanguageRule):
 
     # === EVIDENCE-BASED CALCULATION METHODS ===
 
+    def _calculate_plurals_evidence(self, potential_issue: Dict[str, Any], doc, text: str, context: Dict[str, Any]) -> float:
+        """
+        Calculate evidence score (0.0-1.0) for pluralization concerns.
+        
+        Higher scores indicate stronger evidence that the issue should be flagged.
+        Lower scores indicate acceptable usage in specific contexts.
+        
+        Args:
+            potential_issue: Dictionary containing issue details
+            doc: SpaCy document
+            text: Full document text
+            context: Document context (block_type, content_type, etc.)
+            
+        Returns:
+            float: Evidence score from 0.0 (acceptable) to 1.0 (should be flagged)
+        """
+        evidence_score = 0.0
+        
+        # === STEP 1: BASE EVIDENCE ASSESSMENT ===
+        evidence_score = self._get_base_plurals_evidence(potential_issue)
+        
+        if evidence_score == 0.0:
+            return 0.0  # No evidence, skip this issue
+        
+        # === STEP 2: LINGUISTIC CLUES (MICRO-LEVEL) ===
+        evidence_score = self._apply_linguistic_clues_plurals(evidence_score, potential_issue, doc)
+        
+        # === STEP 3: STRUCTURAL CLUES (MESO-LEVEL) ===
+        evidence_score = self._apply_structural_clues_plurals(evidence_score, potential_issue, context)
+        
+        # === STEP 4: SEMANTIC CLUES (MACRO-LEVEL) ===
+        evidence_score = self._apply_semantic_clues_plurals(evidence_score, potential_issue, text, context)
+        
+        # === STEP 5: FEEDBACK PATTERNS (LEARNING CLUES) ===
+        evidence_score = self._apply_feedback_clues_plurals(evidence_score, potential_issue, context)
+        
+        return max(0.0, min(1.0, evidence_score))  # Clamp to valid range
+
+    def _get_base_plurals_evidence(self, potential_issue: Dict[str, Any]) -> float:
+        """Get base evidence score based on issue type."""
+        issue_type = potential_issue['type']
+        
+        if issue_type == 'parenthetical_s':
+            # All (s) patterns start with moderate evidence
+            return 0.7  # Default moderate evidence for (s) patterns
+        elif issue_type == 'plural_adjective':
+            # Use existing sophisticated analysis to determine base evidence
+            token = potential_issue['token']
+            doc = potential_issue['sentence'].doc
+            
+            # If it's functioning as a verb, no evidence for plural adjective error
+            if self._is_functioning_as_verb(token, doc):
+                return 0.0
+            
+            # If it's a compound head noun, no evidence for plural adjective error
+            if self._is_compound_head_noun(token, doc):
+                return 0.0
+            
+            # If it's a legitimate technical compound, low evidence
+            if self._is_legitimate_technical_compound(token, doc):
+                return 0.3  # Low evidence - technical context may justify it
+            
+            # Otherwise, moderate evidence that it's a plural adjective problem
+            return 0.7  # Moderate evidence for potential plural adjective issue
+        
+        return 0.5  # Default evidence for unknown issue types
+
     def _detect_potential_plural_modifier(self, token) -> bool:
         """Detect tokens that could potentially be plural noun modifiers."""
         return (token.tag_ == 'NNS' and 
                 token.dep_ in ('compound', 'nsubj', 'amod') and
                 token.lemma_ != token.lower_)
 
-    def _calculate_parenthetical_s_evidence(self, span, doc, text: str, context: dict) -> float:
+    def _apply_linguistic_clues_plurals(self, evidence_score: float, potential_issue: Dict[str, Any], doc) -> float:
         """
-        Calculate evidence score (0.0-1.0) for parenthetical (s) pattern concerns.
+        Apply linguistic analysis clues for pluralization detection.
         
-        Higher scores indicate stronger evidence that the (s) pattern should be flagged.
-        Lower scores indicate acceptable usage in specific contexts.
-        
-        Args:
-            span: SpaCy span containing the (s) pattern
-            doc: SpaCy document for the sentence
-            text: Full document text
-            context: Document context (block_type, content_type, etc.)
-            
-        Returns:
-            float: Evidence score from 0.0 (acceptable) to 1.0 (should be flagged)
+        Analyzes SpaCy linguistic features including POS tags, dependency parsing,
+        morphological features, and surrounding context to determine evidence strength.
         """
-        evidence_score = 0.0
+        issue_type = potential_issue['type']
         
-        # === STEP 1: BASE EVIDENCE ASSESSMENT ===
-        evidence_score = self._get_base_s_pattern_evidence(span)
+        if issue_type == 'parenthetical_s':
+            return self._apply_linguistic_clues_s_pattern(evidence_score, potential_issue['span_obj'], doc)
+        elif issue_type == 'plural_adjective':
+            return self._apply_linguistic_clues_plural_adjective(evidence_score, potential_issue['token'], potential_issue['sentence'])
         
-        if evidence_score == 0.0:
-            return 0.0  # No evidence, skip this pattern
-        
-        # === STEP 2: LINGUISTIC CLUES (MICRO-LEVEL) ===
-        evidence_score = self._apply_linguistic_clues_s_pattern(evidence_score, span, doc)
-        
-        # === STEP 3: STRUCTURAL CLUES (MESO-LEVEL) ===
-        evidence_score = self._apply_structural_clues_s_pattern(evidence_score, span, context or {})
-        
-        # === STEP 4: SEMANTIC CLUES (MACRO-LEVEL) ===
-        evidence_score = self._apply_semantic_clues_s_pattern(evidence_score, span, text, context or {})
-        
-        # === STEP 5: FEEDBACK PATTERNS (LEARNING CLUES) ===
-        evidence_score = self._apply_feedback_clues_s_pattern(evidence_score, span, context or {})
-        
-        return max(0.0, min(1.0, evidence_score))  # Clamp to valid range
+        return evidence_score
 
-    def _calculate_plural_adjective_evidence(self, token, sentence, text: str, context: dict) -> float:
+    def _apply_structural_clues_plurals(self, evidence_score: float, potential_issue: Dict[str, Any], context: Dict[str, Any]) -> float:
         """
-        Calculate evidence score (0.0-1.0) for plural adjective concerns.
+        Apply document structure clues for pluralization detection.
         
-        Higher scores indicate stronger evidence that the plural adjective should be flagged.
-        Lower scores indicate acceptable usage in technical or compound contexts.
-        
-        Args:
-            token: The potential plural adjective token
-            sentence: Sentence containing the token
-            text: Full document text
-            context: Document context (block_type, content_type, etc.)
-            
-        Returns:
-            float: Evidence score from 0.0 (acceptable) to 1.0 (should be flagged)
+        Analyzes document structure context including block types, heading levels,
+        and other structural elements.
         """
-        evidence_score = 0.0
+        issue_type = potential_issue['type']
         
-        # === STEP 1: BASE EVIDENCE ASSESSMENT ===
-        evidence_score = self._get_base_plural_adjective_evidence(token, sentence)
+        if issue_type == 'parenthetical_s':
+            return self._apply_structural_clues_s_pattern(evidence_score, potential_issue['span_obj'], context)
+        elif issue_type == 'plural_adjective':
+            return self._apply_structural_clues_plural_adjective(evidence_score, potential_issue['token'], context)
         
-        if evidence_score == 0.0:
-            return 0.0  # No evidence, skip this token
+        return evidence_score
+
+    def _apply_semantic_clues_plurals(self, evidence_score: float, potential_issue: Dict[str, Any], text: str, context: Dict[str, Any]) -> float:
+        """
+        Apply semantic and content-type clues for pluralization detection.
         
-        # === STEP 2: LINGUISTIC CLUES (MICRO-LEVEL) ===
-        evidence_score = self._apply_linguistic_clues_plural_adjective(evidence_score, token, sentence)
+        Analyzes high-level semantic context including content type, domain, audience,
+        and document purpose.
+        """
+        issue_type = potential_issue['type']
         
-        # === STEP 3: STRUCTURAL CLUES (MESO-LEVEL) ===
-        evidence_score = self._apply_structural_clues_plural_adjective(evidence_score, token, context or {})
+        if issue_type == 'parenthetical_s':
+            return self._apply_semantic_clues_s_pattern(evidence_score, potential_issue['span_obj'], text, context)
+        elif issue_type == 'plural_adjective':
+            return self._apply_semantic_clues_plural_adjective(evidence_score, potential_issue['token'], text, context)
         
-        # === STEP 4: SEMANTIC CLUES (MACRO-LEVEL) ===
-        evidence_score = self._apply_semantic_clues_plural_adjective(evidence_score, token, text, context or {})
+        return evidence_score
+
+    def _apply_feedback_clues_plurals(self, evidence_score: float, potential_issue: Dict[str, Any], context: Dict[str, Any]) -> float:
+        """
+        Apply feedback patterns for pluralization detection.
         
-        # === STEP 5: FEEDBACK PATTERNS (LEARNING CLUES) ===
-        evidence_score = self._apply_feedback_clues_plural_adjective(evidence_score, token, context or {})
+        Incorporates learned patterns from user feedback including acceptance rates,
+        context-specific patterns, and correction success rates.
+        """
+        issue_type = potential_issue['type']
         
-        return max(0.0, min(1.0, evidence_score))  # Clamp to valid range
+        if issue_type == 'parenthetical_s':
+            return self._apply_feedback_clues_s_pattern(evidence_score, potential_issue['span_obj'], context)
+        elif issue_type == 'plural_adjective':
+            return self._apply_feedback_clues_plural_adjective(evidence_score, potential_issue['token'], context)
+        
+        return evidence_score
 
     # === PARENTHETICAL (S) EVIDENCE METHODS ===
 
@@ -565,27 +639,6 @@ class PluralsRule(BaseLanguageRule):
         return evidence_score
 
     # === PLURAL ADJECTIVE EVIDENCE METHODS ===
-
-    def _get_base_plural_adjective_evidence(self, token, sentence) -> float:
-        """Get base evidence score for plural adjective usage."""
-        
-        # Use existing sophisticated analysis to determine base evidence
-        doc = sentence.doc
-        
-        # If it's functioning as a verb, no evidence for plural adjective error
-        if self._is_functioning_as_verb(token, doc):
-            return 0.0
-        
-        # If it's a compound head noun, no evidence for plural adjective error
-        if self._is_compound_head_noun(token, doc):
-            return 0.0
-        
-        # If it's a legitimate technical compound, low evidence
-        if self._is_legitimate_technical_compound(token, doc):
-            return 0.3  # Low evidence - technical context may justify it
-        
-        # Otherwise, moderate evidence that it's a plural adjective problem
-        return 0.7  # Moderate evidence for potential plural adjective issue
 
     def _apply_linguistic_clues_plural_adjective(self, evidence_score: float, token, sentence) -> float:
         """Apply linguistic analysis clues for plural adjective detection."""
@@ -843,6 +896,28 @@ class PluralsRule(BaseLanguageRule):
         }
 
     # === HELPER METHODS FOR SMART MESSAGING ===
+
+    def _get_contextual_plurals_message(self, potential_issue: Dict[str, Any], evidence_score: float) -> str:
+        """Generate context-aware error messages for pluralization patterns."""
+        issue_type = potential_issue['type']
+        
+        if issue_type == 'parenthetical_s':
+            return self._get_contextual_s_pattern_message(potential_issue['span_obj'], evidence_score)
+        elif issue_type == 'plural_adjective':
+            return self._get_contextual_plural_adjective_message(potential_issue['token'], evidence_score)
+        
+        return f"Pluralization issue detected in '{potential_issue['flagged_text']}'."
+
+    def _generate_smart_plurals_suggestions(self, potential_issue: Dict[str, Any], evidence_score: float, context: Dict[str, Any]) -> List[str]:
+        """Generate context-aware suggestions for pluralization patterns."""
+        issue_type = potential_issue['type']
+        
+        if issue_type == 'parenthetical_s':
+            return self._generate_smart_s_pattern_suggestions(potential_issue['span_obj'], evidence_score, context)
+        elif issue_type == 'plural_adjective':
+            return self._generate_smart_plural_adjective_suggestions(potential_issue['token'], evidence_score, context)
+        
+        return ["Consider reviewing the pluralization pattern."]
 
     def _get_contextual_s_pattern_message(self, span, evidence_score: float) -> str:
         """Generate context-aware error messages for (s) patterns."""
