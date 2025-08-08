@@ -74,6 +74,9 @@ class PassiveConstruction:
     span_end: Optional[int] = None
     flagged_text: str = ""
     
+    # Evidence-based scoring
+    evidence_score: float = 0.0
+    
     def __post_init__(self):
         if self.all_tokens is None:
             self.all_tokens = []
@@ -689,6 +692,10 @@ class PassiveVoiceAnalyzer:
                 construction.confidence = self._calculate_confidence(construction, doc)
                 construction.has_clear_actor = self._has_clear_actor(construction, doc)
                 
+                # Calculate evidence score (will be overridden when called from rules with full context)
+                # This provides a default evidence score based on sentence-level analysis
+                construction.evidence_score = self.calculate_passive_voice_evidence(construction, doc)
+                
                 unique_constructions.append(construction)
         
         return unique_constructions
@@ -720,4 +727,416 @@ class PassiveVoiceAnalyzer:
         clear_actors = {'system', 'user', 'administrator', 'you', 'we', 'they'}
         sentence_words = [token.lemma_.lower() for token in doc]
         
-        return any(actor in sentence_words for actor in clear_actors) 
+        return any(actor in sentence_words for actor in clear_actors)
+    
+    # === EVIDENCE-BASED CALCULATION METHODS ===
+    
+    def calculate_passive_voice_evidence(self, construction: PassiveConstruction, doc: Doc, 
+                                       full_text: str = "", context: Dict[str, Any] = None) -> float:
+        """
+        Calculate evidence score (0.0-1.0) for passive voice concerns.
+        
+        Higher scores indicate stronger evidence that passive voice should be flagged.
+        Lower scores indicate acceptable usage in specific contexts.
+        
+        Args:
+            construction: PassiveConstruction with linguistic analysis
+            doc: SpaCy document for the sentence
+            full_text: Full document text for broader context analysis
+            context: Document context (block_type, content_type, etc.)
+            
+        Returns:
+            float: Evidence score from 0.0 (acceptable) to 1.0 (should be flagged)
+        """
+        evidence_score = 0.0
+        
+        # === STEP 1: BASE EVIDENCE ASSESSMENT ===
+        evidence_score = self._get_base_passive_voice_evidence(construction, doc)
+        
+        if evidence_score == 0.0:
+            return 0.0  # No evidence, skip this construction
+        
+        # === STEP 2: LINGUISTIC CLUES (MICRO-LEVEL) ===
+        evidence_score = self._apply_linguistic_clues_passive(evidence_score, construction, doc)
+        
+        # === STEP 3: STRUCTURAL CLUES (MESO-LEVEL) ===
+        evidence_score = self._apply_structural_clues_passive(evidence_score, construction, context or {})
+        
+        # === STEP 4: SEMANTIC CLUES (MACRO-LEVEL) ===
+        evidence_score = self._apply_semantic_clues_passive(evidence_score, construction, full_text, context or {})
+        
+        # === STEP 5: FEEDBACK PATTERNS (LEARNING CLUES) ===
+        evidence_score = self._apply_feedback_clues_passive(evidence_score, construction, context or {})
+        
+        # Store evidence score in construction for reference
+        construction.evidence_score = max(0.0, min(1.0, evidence_score))
+        
+        return construction.evidence_score
+
+    def _get_base_passive_voice_evidence(self, construction: PassiveConstruction, doc: Doc) -> float:
+        """Get base evidence score based on passive construction characteristics."""
+        
+        # === DESCRIPTIVE CONTEXT ANALYSIS ===
+        # The analyzer already has sophisticated context classification
+        context_type = construction.context_type
+        
+        if context_type == ContextType.DESCRIPTIVE:
+            # Descriptive passive voice often acceptable in technical documentation
+            base_evidence = 0.3  # Low base evidence for descriptive contexts
+        elif context_type == ContextType.INSTRUCTIONAL:
+            # Instructional passive voice often problematic
+            base_evidence = 0.8  # High base evidence for instructional contexts
+        else:
+            # Uncertain contexts get moderate evidence
+            base_evidence = 0.6  # Moderate base evidence for uncertain contexts
+        
+        # === CONSTRUCTION QUALITY ANALYSIS ===
+        # Factor in the existing linguistic analysis
+        
+        # Clear agent (by-phrase) reduces evidence - intentional passive
+        if construction.has_by_phrase:
+            base_evidence -= 0.2  # Intentional passive with clear agent
+        
+        # Change announcements often legitimate passive usage
+        if self._is_change_announcement(construction, doc):
+            base_evidence -= 0.3  # Change announcements often use passive appropriately
+        
+        # Strong passive evidence increases base score
+        if self._has_strong_passive_evidence(construction, doc):
+            base_evidence += 0.1  # Clear passive construction
+        
+        # System functionality descriptions are often acceptable
+        if self._is_system_functionality_description(construction, doc):
+            base_evidence -= 0.2  # System descriptions often use legitimate passive
+        
+        return max(0.0, min(1.0, base_evidence))
+
+    def _apply_linguistic_clues_passive(self, evidence_score: float, construction: PassiveConstruction, doc: Doc) -> float:
+        """Apply linguistic analysis clues for passive voice detection."""
+        
+        main_verb = construction.main_verb
+        
+        # === VERB SEMANTIC ANALYSIS ===
+        # State-oriented verbs are often legitimate in passive
+        if main_verb.lemma_ in self.state_oriented_verbs:
+            evidence_score -= 0.3  # State verbs often acceptable in passive
+        
+        # Characteristic verbs in technical contexts often legitimate
+        if main_verb.lemma_ in self.characteristic_verbs:
+            evidence_score -= 0.2  # Technical implementation verbs
+        
+        # === AUXILIARY VERB ANALYSIS ===
+        if construction.auxiliary:
+            aux = construction.auxiliary
+            
+            # Present tense auxiliary suggests ongoing/descriptive state
+            if aux.tag_ in ['VBZ', 'VBP']:  # is/are configured
+                evidence_score -= 0.2  # Present tense often descriptive
+            
+            # Past tense auxiliary suggests completed action (more problematic)
+            elif aux.tag_ in ['VBD']:  # was/were configured
+                evidence_score += 0.1  # Past tense completion often inappropriate
+            
+            # Modal auxiliaries suggest capability/requirement
+            elif aux.lemma_ in self.capability_modals:
+                evidence_score -= 0.3  # "can be configured" - capability description
+            elif aux.lemma_ in self.requirement_modals:
+                evidence_score += 0.2  # "must be configured" - instruction context
+        
+        # === SUBJECT ANALYSIS ===
+        if construction.passive_subject:
+            subject = construction.passive_subject
+            
+            # Technical entity subjects often legitimate
+            if subject.text.lower() in self.technical_entities:
+                evidence_score -= 0.2  # "The system is configured" - technical description
+            
+            # Personal pronouns as subjects less appropriate in passive
+            if subject.pos_ == 'PRON' and subject.lemma_ in ['you', 'they', 'we']:
+                evidence_score += 0.2  # "You are configured" - awkward passive
+            
+            # Generic/indefinite subjects suggest weak agency
+            if subject.lemma_ in ['it', 'this', 'that']:
+                evidence_score += 0.1  # Vague passive subjects
+        
+        # === AGENT ANALYSIS ===
+        # Clear actor availability (implicit agent)
+        if construction.has_clear_actor:
+            evidence_score += 0.1  # Clear agent available - could be active
+        
+        # === SENTENCE COMPLEXITY ===
+        sentence_length = len([token for token in doc if not token.is_punct])
+        if sentence_length > 15:
+            evidence_score -= 0.1  # Complex sentences may need passive for clarity
+        elif sentence_length < 6:
+            evidence_score += 0.1  # Simple sentences often better in active
+        
+        return evidence_score
+
+    def _apply_structural_clues_passive(self, evidence_score: float, construction: PassiveConstruction, context: Dict[str, Any]) -> float:
+        """Apply document structure-based clues for passive voice detection."""
+        
+        block_type = context.get('block_type', 'paragraph')
+        
+        # === TECHNICAL DOCUMENTATION CONTEXTS ===
+        # Technical contexts often legitimately use passive voice
+        if block_type in ['code_block', 'literal_block']:
+            evidence_score -= 0.4  # Code documentation often uses passive appropriately
+        elif block_type == 'inline_code':
+            evidence_score -= 0.3  # Inline code descriptions
+        
+        # === PROCEDURAL CONTEXTS ===
+        # Lists and procedures vary in passive voice appropriateness
+        if block_type in ['ordered_list_item', 'unordered_list_item']:
+            evidence_score -= 0.1  # Lists may document configurations passively
+        elif block_type in ['table_cell', 'table_header']:
+            evidence_score -= 0.2  # Tables often describe states passively
+        
+        # === HEADING CONTEXTS ===
+        # Headings should generally be clear and active
+        if block_type in ['heading', 'title']:
+            evidence_score += 0.2  # Headings better in active voice
+        
+        # === ADMONITION CONTEXTS ===
+        # Warnings and notes vary by type
+        if block_type == 'admonition':
+            admonition_type = context.get('admonition_type', '').upper()
+            if admonition_type in ['NOTE', 'TIP']:
+                evidence_score -= 0.1  # Notes may describe states passively
+            elif admonition_type in ['WARNING', 'CAUTION', 'IMPORTANT']:
+                evidence_score += 0.1  # Warnings should be clear and direct
+        
+        # === EXAMPLE CONTEXTS ===
+        # Examples and samples often show passive configurations
+        if block_type in ['example', 'sample']:
+            evidence_score -= 0.3  # Examples may show passive configurations
+        elif block_type in ['block_quote', 'citation']:
+            evidence_score -= 0.2  # Quoted material may preserve passive voice
+        
+        return evidence_score
+
+    def _apply_semantic_clues_passive(self, evidence_score: float, construction: PassiveConstruction, 
+                                    full_text: str, context: Dict[str, Any]) -> float:
+        """Apply semantic and content-type clues for passive voice detection."""
+        
+        content_type = context.get('content_type', 'general')
+        
+        # === CONTENT TYPE ANALYSIS ===
+        # Different content types have different passive voice expectations
+        if content_type == 'technical':
+            evidence_score -= 0.2  # Technical documentation often uses passive appropriately
+        elif content_type == 'api':
+            evidence_score -= 0.3  # API documentation often describes passive configurations
+        elif content_type == 'academic':
+            evidence_score -= 0.1  # Academic writing sometimes uses passive appropriately
+        elif content_type == 'legal':
+            evidence_score -= 0.2  # Legal writing often uses passive for objectivity
+        elif content_type == 'marketing':
+            evidence_score += 0.2  # Marketing should be active and engaging
+        elif content_type == 'narrative':
+            evidence_score += 0.1  # Narrative writing often better in active voice
+        elif content_type == 'procedural':
+            evidence_score += 0.2  # Procedures should be clear and direct
+        
+        # === DOMAIN-SPECIFIC PATTERNS ===
+        domain = context.get('domain', 'general')
+        if domain in ['software', 'engineering', 'devops']:
+            evidence_score -= 0.2  # Technical domains often use passive for system descriptions
+        elif domain in ['configuration', 'setup', 'installation']:
+            evidence_score -= 0.1  # Configuration domains may use passive
+        elif domain in ['tutorial', 'documentation']:
+            evidence_score += 0.1  # Educational content should be clear and direct
+        elif domain in ['user-guide', 'manual']:
+            evidence_score += 0.2  # User guides should be action-oriented
+        
+        # === AUDIENCE CONSIDERATIONS ===
+        audience = context.get('audience', 'general')
+        if audience in ['developer', 'technical', 'expert']:
+            evidence_score -= 0.1  # Technical audiences understand passive technical descriptions
+        elif audience in ['beginner', 'general', 'user']:
+            evidence_score += 0.2  # General audiences need clear, active instructions
+        elif audience in ['administrator', 'maintainer']:
+            evidence_score -= 0.1  # Admin audiences understand system descriptions
+        
+        # === DOCUMENT PURPOSE ANALYSIS ===
+        # Analyze document purpose from content patterns
+        if self._is_configuration_documentation(full_text):
+            evidence_score -= 0.2  # Configuration docs often describe passive states
+        
+        if self._is_troubleshooting_documentation(full_text):
+            evidence_score += 0.1  # Troubleshooting should be action-oriented
+        
+        if self._is_user_instruction_content(full_text):
+            evidence_score += 0.3  # User instructions should be active and clear
+        
+        # === PASSIVE VOICE DENSITY ===
+        # High passive voice density in document suggests systematic usage
+        if self._has_high_passive_voice_density(full_text):
+            evidence_score -= 0.1  # Systematic passive usage may be intentional
+        
+        return evidence_score
+
+    def _apply_feedback_clues_passive(self, evidence_score: float, construction: PassiveConstruction, context: Dict[str, Any]) -> float:
+        """Apply feedback patterns for passive voice detection."""
+        
+        # Load cached feedback patterns
+        feedback_patterns = self._get_cached_feedback_patterns_passive()
+        
+        # === VERB-SPECIFIC FEEDBACK ===
+        verb_lemma = construction.main_verb.lemma_
+        
+        # Check if this verb is commonly accepted in passive voice
+        accepted_passive_verbs = feedback_patterns.get('accepted_passive_verbs', set())
+        if verb_lemma in accepted_passive_verbs:
+            evidence_score -= 0.3  # Users consistently accept this verb in passive
+        
+        flagged_passive_verbs = feedback_patterns.get('flagged_passive_verbs', set())
+        if verb_lemma in flagged_passive_verbs:
+            evidence_score += 0.3  # Users consistently flag this verb in passive
+        
+        # === CONTEXT-SPECIFIC FEEDBACK ===
+        content_type = context.get('content_type', 'general')
+        context_patterns = feedback_patterns.get(f'{content_type}_passive_patterns', {})
+        
+        # Construction type feedback
+        construction_key = f"{construction.context_type.value}_{verb_lemma}"
+        if construction_key in context_patterns.get('acceptable', set()):
+            evidence_score -= 0.2  # Users accept this construction in this context
+        elif construction_key in context_patterns.get('problematic', set()):
+            evidence_score += 0.2  # Users flag this construction in this context
+        
+        # === CHANGE ANNOUNCEMENT FEEDBACK ===
+        # Special handling for change announcements
+        if self._is_change_announcement(construction, construction.main_verb.doc):
+            change_acceptance = feedback_patterns.get('change_announcement_acceptance', 0.7)
+            if change_acceptance > 0.8:
+                evidence_score -= 0.2  # Users accept passive in change announcements
+            elif change_acceptance < 0.3:
+                evidence_score += 0.2  # Users prefer active in change announcements
+        
+        # === TECHNICAL ENTITY + PASSIVE FEEDBACK ===
+        if (construction.passive_subject and 
+            construction.passive_subject.text.lower() in self.technical_entities):
+            tech_passive_acceptance = feedback_patterns.get('technical_entity_passive_acceptance', 0.6)
+            if tech_passive_acceptance > 0.7:
+                evidence_score -= 0.2  # Users accept technical entity passive constructions
+            elif tech_passive_acceptance < 0.4:
+                evidence_score += 0.1  # Users prefer active for technical entities
+        
+        # === AUXILIARY VERB FEEDBACK ===
+        if construction.auxiliary:
+            aux_patterns = feedback_patterns.get('auxiliary_patterns', {})
+            aux_acceptance = aux_patterns.get(construction.auxiliary.lemma_, 0.5)
+            
+            if aux_acceptance > 0.7:
+                evidence_score -= 0.1  # This auxiliary commonly accepted in passive
+            elif aux_acceptance < 0.3:
+                evidence_score += 0.1  # This auxiliary commonly flagged in passive
+        
+        return evidence_score
+
+    # === HELPER METHODS FOR SEMANTIC ANALYSIS ===
+
+    def _is_configuration_documentation(self, text: str) -> bool:
+        """Check if text appears to be configuration documentation."""
+        config_indicators = [
+            'configuration', 'configure', 'config', 'setting', 'parameter',
+            'option', 'property', 'attribute', 'variable', 'flag', 'switch',
+            'default', 'preset', 'initialize', 'setup', 'install'
+        ]
+        
+        text_lower = text.lower()
+        return sum(1 for indicator in config_indicators if indicator in text_lower) >= 3
+
+    def _is_troubleshooting_documentation(self, text: str) -> bool:
+        """Check if text appears to be troubleshooting documentation."""
+        troubleshooting_indicators = [
+            'troubleshoot', 'troubleshooting', 'problem', 'issue', 'error',
+            'fix', 'resolve', 'solution', 'debug', 'diagnose', 'repair',
+            'restore', 'recover', 'failure', 'broken', 'not working'
+        ]
+        
+        text_lower = text.lower()
+        return sum(1 for indicator in troubleshooting_indicators if indicator in text_lower) >= 2
+
+    def _is_user_instruction_content(self, text: str) -> bool:
+        """Check if text appears to be user instruction content."""
+        instruction_indicators = [
+            'follow', 'complete', 'perform', 'execute', 'run', 'start',
+            'stop', 'create', 'add', 'remove', 'delete', 'modify', 'update',
+            'step', 'procedure', 'instruction', 'guide', 'how to', 'tutorial'
+        ]
+        
+        text_lower = text.lower()
+        return sum(1 for indicator in instruction_indicators if indicator in text_lower) >= 3
+
+    def _has_high_passive_voice_density(self, text: str) -> bool:
+        """Check if document has high density of passive voice constructions."""
+        # This is a simplified heuristic - in production, would use full analysis
+        passive_indicators = ['is configured', 'are set', 'was implemented', 'were created', 'been established']
+        text_lower = text.lower()
+        
+        passive_count = sum(1 for indicator in passive_indicators if indicator in text_lower)
+        word_count = len(text.split())
+        
+        # Consider high density if > 2% of content has passive indicators
+        return passive_count > 0 and (passive_count / max(word_count, 1)) > 0.02
+
+    def _get_cached_feedback_patterns_passive(self):
+        """Load feedback patterns from cache or feedback analysis for passive voice."""
+        # This would load from feedback analysis system
+        # For now, return patterns based on common passive voice usage
+        return {
+            'accepted_passive_verbs': {
+                # Verbs users often accept in passive voice (technical contexts)
+                'configure', 'implement', 'design', 'build', 'create', 'develop',
+                'install', 'deploy', 'setup', 'establish', 'define', 'specify',
+                'validate', 'verify', 'test', 'document', 'describe', 'support'
+            },
+            'flagged_passive_verbs': {
+                # Verbs users consistently want to be active
+                'perform', 'execute', 'run', 'start', 'stop', 'complete',
+                'follow', 'use', 'apply', 'ensure', 'check', 'verify'
+            },
+            'technical_passive_patterns': {
+                'acceptable': {
+                    # Context-specific patterns users accept
+                    'descriptive_configure', 'descriptive_implement', 'descriptive_design',
+                    'descriptive_build', 'descriptive_create', 'descriptive_install'
+                },
+                'problematic': {
+                    # Context-specific patterns users flag
+                    'instructional_perform', 'instructional_execute', 'instructional_run',
+                    'instructional_follow', 'instructional_complete'
+                }
+            },
+            'api_passive_patterns': {
+                'acceptable': {
+                    'descriptive_configure', 'descriptive_implement', 'descriptive_support',
+                    'descriptive_provide', 'descriptive_enable', 'descriptive_validate'
+                },
+                'problematic': {
+                    'instructional_use', 'instructional_call', 'instructional_send',
+                    'instructional_request', 'instructional_access'
+                }
+            },
+            'procedural_passive_patterns': {
+                'acceptable': set(),  # Very few passive constructions acceptable in procedures
+                'problematic': {
+                    'instructional_perform', 'instructional_execute', 'instructional_complete',
+                    'instructional_follow', 'instructional_run', 'instructional_start',
+                    'instructional_configure', 'instructional_setup', 'instructional_install'
+                }
+            },
+            'change_announcement_acceptance': 0.8,  # High acceptance for passive in change announcements
+            'technical_entity_passive_acceptance': 0.7,  # Good acceptance for technical entity passive
+            'auxiliary_patterns': {
+                # Acceptance rates for different auxiliary verbs in passive
+                'is': 0.8, 'are': 0.8,      # High acceptance for present tense descriptive
+                'was': 0.4, 'were': 0.4,    # Lower acceptance for past tense
+                'been': 0.5,                # Moderate acceptance for perfect aspect
+                'being': 0.3,               # Lower acceptance for progressive
+                'can': 0.7, 'may': 0.7,     # High acceptance for capability modals
+                'must': 0.3, 'should': 0.3  # Lower acceptance for requirement modals
+            }
+        } 

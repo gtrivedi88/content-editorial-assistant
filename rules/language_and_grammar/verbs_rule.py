@@ -5,7 +5,7 @@ Based on IBM Style Guide topics: "Verbs: Tense", "Verbs: Voice"
 This refactored version uses the centralized PassiveVoiceAnalyzer to eliminate
 code duplication while maintaining sophisticated context-aware suggestions.
 """
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 try:
     from .base_language_rule import BaseLanguageRule
@@ -38,14 +38,15 @@ except ImportError:
                 return error
 
 try:
-    from .passive_voice_analyzer import PassiveVoiceAnalyzer, ContextType
+    from .passive_voice_analyzer import PassiveVoiceAnalyzer, ContextType, PassiveConstruction
 except ImportError:
     # Fallback for direct execution
     try:
-        from passive_voice_analyzer import PassiveVoiceAnalyzer, ContextType
+        from passive_voice_analyzer import PassiveVoiceAnalyzer, ContextType, PassiveConstruction
     except ImportError:
         PassiveVoiceAnalyzer = None
         ContextType = None
+        PassiveConstruction = None
 
 try:
     from spacy.tokens import Doc, Token
@@ -80,34 +81,33 @@ class VerbsRule(BaseLanguageRule):
             
             doc = nlp(sent_text)
             
-            # --- PASSIVE VOICE ANALYSIS (using shared analyzer) ---
+            # --- PASSIVE VOICE ANALYSIS (evidence-based using shared analyzer) ---
             passive_constructions = self.passive_analyzer.find_passive_constructions(doc)
             
             for construction in passive_constructions:
-                # Enhanced context classification
-                context_type = self.passive_analyzer.classify_context(construction, doc)
-                construction.context_type = context_type
+                # Calculate evidence score using enhanced analyzer with full context
+                evidence_score = self.passive_analyzer.calculate_passive_voice_evidence(
+                    construction, doc, text, context
+                )
                 
-                # Only flag passive voice in inappropriate contexts
-                # Skip legitimate descriptive uses in technical documentation
-                if context_type == ContextType.DESCRIPTIVE:
-                    # Skip descriptive passive voice (e.g., "parameter was configured")
-                    continue
-                
-                # Generate context-aware suggestions
-                suggestions = self._generate_context_aware_suggestions(construction, doc, sent_text)
-                
-                errors.append(self._create_error(
-                    sentence=sent_text,
-                    sentence_index=i,
-                    message="Sentence may be in the passive voice.",
-                    suggestions=suggestions,
-                    severity='medium',
-                    text=text,  # Enhanced: Pass full text for better confidence analysis
-                    context=context,  # Enhanced: Pass context for domain-specific validation
-                    span=(construction.span_start, construction.span_end),
-                    flagged_text=construction.flagged_text
-                ))
+                # Only create error if evidence suggests it's worth flagging
+                if evidence_score > 0.1:  # Low threshold - let enhanced validation decide
+                    # Generate context-aware suggestions
+                    suggestions = self._generate_context_aware_suggestions(construction, doc, sent_text)
+                    message = self._get_contextual_passive_voice_message(construction, evidence_score)
+                    
+                    errors.append(self._create_error(
+                        sentence=sent_text,
+                        sentence_index=i,
+                        message=message,
+                        suggestions=suggestions,
+                        severity='medium',
+                        text=text,
+                        context=context,
+                        evidence_score=evidence_score,  # Your nuanced assessment
+                        span=(construction.span_start, construction.span_end),
+                        flagged_text=construction.flagged_text
+                    ))
 
             # --- FUTURE TENSE CHECK ('will') ---
             for token in doc:
@@ -516,3 +516,24 @@ class VerbsRule(BaseLanguageRule):
                 return True
         
         return False
+
+    def _get_contextual_passive_voice_message(self, construction: PassiveConstruction, evidence_score: float) -> str:
+        """Generate context-aware error messages for passive voice."""
+        
+        context_type = construction.context_type
+        
+        # Base message varies by evidence strength
+        if evidence_score > 0.8:
+            base_msg = "Sentence is in the passive voice."
+        elif evidence_score > 0.5:
+            base_msg = "Sentence may be in the passive voice."
+        else:
+            base_msg = "Sentence appears to use passive voice."
+        
+        # Add context-specific guidance
+        if context_type == ContextType.INSTRUCTIONAL:
+            return f"{base_msg} Consider using active voice for clearer instructions."
+        elif context_type == ContextType.DESCRIPTIVE:
+            return f"{base_msg} While acceptable for descriptions, active voice may be clearer."
+        else:
+            return f"{base_msg} Consider using active voice for clarity."

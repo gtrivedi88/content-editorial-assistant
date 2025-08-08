@@ -55,8 +55,9 @@ class PluralsRule(BaseLanguageRule):
 
     def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         """
-        Analyzes sentences for pluralization errors.
-        OPTIMIZED: (s) pattern detection now uses spaCy Matcher for better performance
+        Analyzes sentences for pluralization errors using evidence-based scoring.
+        Uses sophisticated linguistic analysis to distinguish legitimate usage from 
+        problematic patterns based on technical context and writing conventions.
         """
         errors = []
         if not nlp:
@@ -68,7 +69,7 @@ class PluralsRule(BaseLanguageRule):
         
         doc = nlp(text)
 
-        # Rule 1: Avoid using "(s)" to indicate plural - DIRECT REPLACEMENT with Matcher
+        # === RULE 1: "(s)" PATTERN ANALYSIS (evidence-based) ===
         if not SPACY_AVAILABLE:
             raise ImportError("spaCy is required for optimized plurals detection")
         
@@ -83,47 +84,49 @@ class PluralsRule(BaseLanguageRule):
                 if self._is_excepted(span.text):
                     continue
                 
-                errors.append(self._create_error(
-                    sentence=span.sent.text,
-                    sentence_index=sentence_index,
-                    message="Avoid using '(s)' to indicate a plural.",
-                    suggestions=["Rewrite the sentence to use either the singular or plural form, or use a phrase like 'one or more'."],
-                    severity='medium',
-                    text=text,  # Enhanced: Pass full text for better confidence analysis
-                    context=context,  # Enhanced: Pass context for domain-specific validation
-                    span=(span.start_char, span.end_char),
-                    flagged_text=span.text
-                ))
+                # Calculate evidence score for this (s) pattern
+                evidence_score = self._calculate_parenthetical_s_evidence(
+                    span, doc, text, context
+                )
+                
+                # Only create error if evidence suggests it's worth flagging
+                if evidence_score > 0.1:  # Low threshold - let enhanced validation decide
+                    errors.append(self._create_error(
+                        sentence=span.sent.text,
+                        sentence_index=sentence_index,
+                        message=self._get_contextual_s_pattern_message(span, evidence_score),
+                        suggestions=self._generate_smart_s_pattern_suggestions(span, evidence_score, context),
+                        severity='medium',
+                        text=text,
+                        context=context,
+                        evidence_score=evidence_score,  # Your nuanced assessment
+                        span=(span.start_char, span.end_char),
+                        flagged_text=span.text
+                    ))
 
-        # Rule 2: Avoid using plural nouns as adjectives (with technical exceptions)
-        # PRESERVED: All existing morphological analysis logic
+        # === RULE 2: PLURAL ADJECTIVES ANALYSIS (evidence-based) ===
         for i, sent in enumerate(doc.sents):
             for token in sent:
-                # LINGUISTIC ANCHOR: Check for plural nouns in modifier positions
-                is_modifier = (token.tag_ == 'NNS' and 
-                              token.dep_ in ('compound', 'nsubj', 'amod') and
-                              token.lemma_ != token.lower_)
+                # Find potential plural noun modifiers
+                potential_plural_modifier = self._detect_potential_plural_modifier(token)
                 
-                if is_modifier:
-                    # LINGUISTIC ANCHOR: Skip words that are actually functioning as verbs
-                    if self._is_functioning_as_verb(token, sent.doc):
-                        continue
+                if potential_plural_modifier:
+                    # Calculate evidence score for this plural adjective usage
+                    evidence_score = self._calculate_plural_adjective_evidence(
+                        token, sent, text, context
+                    )
                     
-                    # LINGUISTIC ANCHOR: Skip if this is actually the head noun of a compound phrase
-                    # (e.g., "images" in "BYO Knowledge images")
-                    if self._is_compound_head_noun(token, sent.doc):
-                        continue
-                        
-                    # LINGUISTIC ANCHOR: Skip legitimate technical compound plurals
-                    if not self._is_legitimate_technical_compound(token, sent.doc):
+                    # Only create error if evidence suggests it's worth flagging
+                    if evidence_score > 0.1:  # Low threshold - let enhanced validation decide
                         errors.append(self._create_error(
                             sentence=sent.text,
                             sentence_index=i,
-                            message=f"Potential misuse of a plural noun '{token.text}' as an adjective.",
-                            suggestions=[f"Consider using the singular form '{token.lemma_}' when a noun modifies another noun."],
+                            message=self._get_contextual_plural_adjective_message(token, evidence_score),
+                            suggestions=self._generate_smart_plural_adjective_suggestions(token, evidence_score, context),
                             severity='low',
-                            text=text,  # Enhanced: Pass full text for better confidence analysis
-                            context=context,  # Enhanced: Pass context for domain-specific validation
+                            text=text,
+                            context=context,
+                            evidence_score=evidence_score,  # Your nuanced assessment
                             span=(token.idx, token.idx + len(token.text)),
                             flagged_text=token.text
                         ))
@@ -325,3 +328,593 @@ class PluralsRule(BaseLanguageRule):
             return True
         
         return False
+
+    # === EVIDENCE-BASED CALCULATION METHODS ===
+
+    def _detect_potential_plural_modifier(self, token) -> bool:
+        """Detect tokens that could potentially be plural noun modifiers."""
+        return (token.tag_ == 'NNS' and 
+                token.dep_ in ('compound', 'nsubj', 'amod') and
+                token.lemma_ != token.lower_)
+
+    def _calculate_parenthetical_s_evidence(self, span, doc, text: str, context: dict) -> float:
+        """
+        Calculate evidence score (0.0-1.0) for parenthetical (s) pattern concerns.
+        
+        Higher scores indicate stronger evidence that the (s) pattern should be flagged.
+        Lower scores indicate acceptable usage in specific contexts.
+        
+        Args:
+            span: SpaCy span containing the (s) pattern
+            doc: SpaCy document for the sentence
+            text: Full document text
+            context: Document context (block_type, content_type, etc.)
+            
+        Returns:
+            float: Evidence score from 0.0 (acceptable) to 1.0 (should be flagged)
+        """
+        evidence_score = 0.0
+        
+        # === STEP 1: BASE EVIDENCE ASSESSMENT ===
+        evidence_score = self._get_base_s_pattern_evidence(span)
+        
+        if evidence_score == 0.0:
+            return 0.0  # No evidence, skip this pattern
+        
+        # === STEP 2: LINGUISTIC CLUES (MICRO-LEVEL) ===
+        evidence_score = self._apply_linguistic_clues_s_pattern(evidence_score, span, doc)
+        
+        # === STEP 3: STRUCTURAL CLUES (MESO-LEVEL) ===
+        evidence_score = self._apply_structural_clues_s_pattern(evidence_score, span, context or {})
+        
+        # === STEP 4: SEMANTIC CLUES (MACRO-LEVEL) ===
+        evidence_score = self._apply_semantic_clues_s_pattern(evidence_score, span, text, context or {})
+        
+        # === STEP 5: FEEDBACK PATTERNS (LEARNING CLUES) ===
+        evidence_score = self._apply_feedback_clues_s_pattern(evidence_score, span, context or {})
+        
+        return max(0.0, min(1.0, evidence_score))  # Clamp to valid range
+
+    def _calculate_plural_adjective_evidence(self, token, sentence, text: str, context: dict) -> float:
+        """
+        Calculate evidence score (0.0-1.0) for plural adjective concerns.
+        
+        Higher scores indicate stronger evidence that the plural adjective should be flagged.
+        Lower scores indicate acceptable usage in technical or compound contexts.
+        
+        Args:
+            token: The potential plural adjective token
+            sentence: Sentence containing the token
+            text: Full document text
+            context: Document context (block_type, content_type, etc.)
+            
+        Returns:
+            float: Evidence score from 0.0 (acceptable) to 1.0 (should be flagged)
+        """
+        evidence_score = 0.0
+        
+        # === STEP 1: BASE EVIDENCE ASSESSMENT ===
+        evidence_score = self._get_base_plural_adjective_evidence(token, sentence)
+        
+        if evidence_score == 0.0:
+            return 0.0  # No evidence, skip this token
+        
+        # === STEP 2: LINGUISTIC CLUES (MICRO-LEVEL) ===
+        evidence_score = self._apply_linguistic_clues_plural_adjective(evidence_score, token, sentence)
+        
+        # === STEP 3: STRUCTURAL CLUES (MESO-LEVEL) ===
+        evidence_score = self._apply_structural_clues_plural_adjective(evidence_score, token, context or {})
+        
+        # === STEP 4: SEMANTIC CLUES (MACRO-LEVEL) ===
+        evidence_score = self._apply_semantic_clues_plural_adjective(evidence_score, token, text, context or {})
+        
+        # === STEP 5: FEEDBACK PATTERNS (LEARNING CLUES) ===
+        evidence_score = self._apply_feedback_clues_plural_adjective(evidence_score, token, context or {})
+        
+        return max(0.0, min(1.0, evidence_score))  # Clamp to valid range
+
+    # === PARENTHETICAL (S) EVIDENCE METHODS ===
+
+    def _get_base_s_pattern_evidence(self, span) -> float:
+        """Get base evidence score for (s) pattern."""
+        # All (s) patterns start with moderate evidence
+        # The context will determine if it's acceptable or problematic
+        return 0.7  # Default moderate evidence for (s) patterns
+
+    def _apply_linguistic_clues_s_pattern(self, evidence_score: float, span, doc) -> float:
+        """Apply linguistic analysis clues for (s) pattern detection."""
+        
+        # Get the word before (s)
+        base_word = span[0]  # The word before (s)
+        
+        # === WORD TYPE ANALYSIS ===
+        # Technical terms often have legitimate (s) usage for variability
+        if base_word.pos_ in ['NOUN', 'PROPN']:
+            if base_word.text.lower() in ['parameter', 'option', 'setting', 'value', 'file', 'directory']:
+                evidence_score -= 0.3  # Technical terms often need (s) for flexibility
+        
+        # === SENTENCE POSITION ANALYSIS ===
+        # (s) patterns at end of sentences often more problematic
+        remaining_tokens = [t for t in span.sent[span.end:] if not t.is_punct and not t.is_space]
+        if len(remaining_tokens) == 0:
+            evidence_score += 0.1  # End of sentence (s) patterns more problematic
+        
+        # === SURROUNDING CONTEXT ===
+        # Look for specification language around the (s) pattern
+        specification_indicators = ['specify', 'configure', 'set', 'define', 'provide', 'enter']
+        sentence_text = span.sent.text.lower()
+        
+        if any(indicator in sentence_text for indicator in specification_indicators):
+            evidence_score -= 0.2  # Specification contexts often need (s) for flexibility
+        
+        # Look for placeholder/example language
+        placeholder_indicators = ['example', 'sample', 'placeholder', 'template', 'format']
+        if any(indicator in sentence_text for indicator in placeholder_indicators):
+            evidence_score -= 0.3  # Placeholder contexts often use (s) appropriately
+        
+        return evidence_score
+
+    def _apply_structural_clues_s_pattern(self, evidence_score: float, span, context: dict) -> float:
+        """Apply document structure clues for (s) pattern detection."""
+        
+        block_type = context.get('block_type', 'paragraph')
+        
+        # === TECHNICAL DOCUMENTATION CONTEXTS ===
+        if block_type in ['code_block', 'literal_block']:
+            evidence_score -= 0.4  # Code examples often need (s) for variability
+        elif block_type == 'inline_code':
+            evidence_score -= 0.3  # Inline code often shows optional parameters
+        
+        # === SPECIFICATION CONTEXTS ===
+        if block_type in ['table_cell', 'table_header']:
+            evidence_score -= 0.2  # Tables often show parameter variations
+        elif block_type in ['ordered_list_item', 'unordered_list_item']:
+            evidence_score -= 0.1  # Lists may show optional items
+        
+        # === FORMAL CONTEXTS ===
+        if block_type in ['heading', 'title']:
+            evidence_score += 0.2  # Headings should be clear and definitive
+        
+        # === EXAMPLE CONTEXTS ===
+        if block_type in ['example', 'sample']:
+            evidence_score -= 0.3  # Examples often show variations with (s)
+        elif block_type in ['admonition']:
+            admonition_type = context.get('admonition_type', '').upper()
+            if admonition_type in ['NOTE', 'TIP']:
+                evidence_score -= 0.1  # Notes may explain optional variations
+            elif admonition_type in ['WARNING', 'IMPORTANT']:
+                evidence_score += 0.1  # Warnings should be definitive
+        
+        return evidence_score
+
+    def _apply_semantic_clues_s_pattern(self, evidence_score: float, span, text: str, context: dict) -> float:
+        """Apply semantic and content-type clues for (s) pattern detection."""
+        
+        content_type = context.get('content_type', 'general')
+        
+        # === CONTENT TYPE ANALYSIS ===
+        if content_type == 'technical':
+            evidence_score -= 0.2  # Technical docs often need (s) for parameter flexibility
+        elif content_type == 'api':
+            evidence_score -= 0.3  # API docs often show optional parameters with (s)
+        elif content_type == 'academic':
+            evidence_score += 0.1  # Academic writing should be precise
+        elif content_type == 'legal':
+            evidence_score += 0.2  # Legal writing must be unambiguous
+        elif content_type == 'marketing':
+            evidence_score += 0.2  # Marketing should be clear and direct
+        elif content_type == 'procedural':
+            evidence_score += 0.1  # Procedures should be specific
+        elif content_type == 'narrative':
+            evidence_score += 0.2  # Narrative writing should be clear
+        
+        # === DOMAIN-SPECIFIC PATTERNS ===
+        domain = context.get('domain', 'general')
+        if domain in ['software', 'engineering', 'devops']:
+            evidence_score -= 0.2  # Technical domains often use (s) appropriately
+        elif domain in ['configuration', 'installation']:
+            evidence_score -= 0.3  # Setup domains often show optional steps
+        elif domain in ['user-guide', 'tutorial']:
+            evidence_score += 0.1  # User guides should be clear
+        
+        # === AUDIENCE CONSIDERATIONS ===
+        audience = context.get('audience', 'general')
+        if audience in ['developer', 'technical', 'expert']:
+            evidence_score -= 0.1  # Technical audiences understand (s) notation
+        elif audience in ['beginner', 'general', 'user']:
+            evidence_score += 0.2  # General audiences need clearer language
+        
+        # === DOCUMENT PURPOSE ANALYSIS ===
+        if self._is_specification_documentation(text):
+            evidence_score -= 0.2  # Specifications often need (s) for options
+        
+        if self._is_reference_documentation(text):
+            evidence_score -= 0.1  # Reference docs may show variations
+        
+        if self._is_tutorial_content(text):
+            evidence_score += 0.2  # Tutorials should be step-by-step clear
+        
+        return evidence_score
+
+    def _apply_feedback_clues_s_pattern(self, evidence_score: float, span, context: dict) -> float:
+        """Apply feedback patterns for (s) pattern detection."""
+        
+        feedback_patterns = self._get_cached_feedback_patterns_plurals()
+        
+        # === WORD-SPECIFIC FEEDBACK ===
+        base_word = span[0].text.lower()
+        
+        # Check if this word commonly has accepted (s) usage
+        accepted_s_words = feedback_patterns.get('accepted_s_patterns', set())
+        if base_word in accepted_s_words:
+            evidence_score -= 0.3  # Users consistently accept (s) for this word
+        
+        flagged_s_words = feedback_patterns.get('flagged_s_patterns', set())
+        if base_word in flagged_s_words:
+            evidence_score += 0.3  # Users consistently flag (s) for this word
+        
+        # === CONTEXT-SPECIFIC FEEDBACK ===
+        content_type = context.get('content_type', 'general')
+        context_patterns = feedback_patterns.get(f'{content_type}_s_patterns', {})
+        
+        if base_word in context_patterns.get('acceptable', set()):
+            evidence_score -= 0.2
+        elif base_word in context_patterns.get('problematic', set()):
+            evidence_score += 0.2
+        
+        return evidence_score
+
+    # === PLURAL ADJECTIVE EVIDENCE METHODS ===
+
+    def _get_base_plural_adjective_evidence(self, token, sentence) -> float:
+        """Get base evidence score for plural adjective usage."""
+        
+        # Use existing sophisticated analysis to determine base evidence
+        doc = sentence.doc
+        
+        # If it's functioning as a verb, no evidence for plural adjective error
+        if self._is_functioning_as_verb(token, doc):
+            return 0.0
+        
+        # If it's a compound head noun, no evidence for plural adjective error
+        if self._is_compound_head_noun(token, doc):
+            return 0.0
+        
+        # If it's a legitimate technical compound, low evidence
+        if self._is_legitimate_technical_compound(token, doc):
+            return 0.3  # Low evidence - technical context may justify it
+        
+        # Otherwise, moderate evidence that it's a plural adjective problem
+        return 0.7  # Moderate evidence for potential plural adjective issue
+
+    def _apply_linguistic_clues_plural_adjective(self, evidence_score: float, token, sentence) -> float:
+        """Apply linguistic analysis clues for plural adjective detection."""
+        
+        # === DEPENDENCY ANALYSIS ===
+        # Compound modifiers are more suspicious than other dependencies
+        if token.dep_ == 'compound':
+            evidence_score += 0.1  # Compound modifiers more likely to be errors
+        elif token.dep_ == 'amod':
+            evidence_score += 0.2  # Adjectival modifiers very likely to be errors
+        elif token.dep_ == 'nsubj':
+            evidence_score -= 0.1  # Subjects less likely to be adjective errors
+        
+        # === WORD FREQUENCY ANALYSIS ===
+        # Common plurals used as modifiers have lower evidence
+        common_modifier_plurals = {
+            'systems', 'operations', 'services', 'applications', 'users',
+            'communications', 'networks', 'resources', 'components', 'tools'
+        }
+        
+        if token.text.lower() in common_modifier_plurals:
+            evidence_score -= 0.2  # Common technical modifier plurals
+        
+        # === HEAD NOUN ANALYSIS ===
+        head_noun = token.head
+        if head_noun.pos_ == 'NOUN':
+            # Technical head nouns often accept plural modifiers
+            technical_heads = {
+                'architecture', 'management', 'administration', 'analysis',
+                'monitoring', 'configuration', 'documentation', 'interface'
+            }
+            
+            if head_noun.lemma_.lower() in technical_heads:
+                evidence_score -= 0.2  # Technical head nouns accept plural modifiers
+        
+        # === MORPHOLOGICAL ANALYSIS ===
+        # Some plurals are inherently acceptable as modifiers
+        inherent_modifier_plurals = {
+            'data', 'media', 'criteria', 'metadata', 'analytics', 'metrics',
+            'statistics', 'graphics', 'diagnostics', 'logistics'
+        }
+        
+        if token.lemma_.lower() in inherent_modifier_plurals:
+            evidence_score -= 0.4  # Inherently acceptable plural modifiers
+        
+        return evidence_score
+
+    def _apply_structural_clues_plural_adjective(self, evidence_score: float, token, context: dict) -> float:
+        """Apply document structure clues for plural adjective detection."""
+        
+        block_type = context.get('block_type', 'paragraph')
+        
+        # === TECHNICAL CONTEXTS ===
+        # Technical documentation more tolerant of plural adjectives
+        if block_type in ['code_block', 'literal_block']:
+            evidence_score -= 0.3  # Code contexts often use technical compound plurals
+        elif block_type == 'inline_code':
+            evidence_score -= 0.2  # Inline code may reference plural concepts
+        
+        # === SPECIFICATION CONTEXTS ===
+        if block_type in ['table_cell', 'table_header']:
+            evidence_score -= 0.2  # Tables often use abbreviated compound terms
+        elif block_type in ['ordered_list_item', 'unordered_list_item']:
+            evidence_score -= 0.1  # Lists may use compact compound terms
+        
+        # === FORMAL CONTEXTS ===
+        if block_type in ['heading', 'title']:
+            evidence_score += 0.1  # Headings should use proper grammar
+        
+        # === DOCUMENTATION CONTEXTS ===
+        if block_type in ['admonition']:
+            admonition_type = context.get('admonition_type', '').upper()
+            if admonition_type in ['NOTE', 'TIP']:
+                evidence_score -= 0.1  # Notes may use technical shorthand
+        
+        return evidence_score
+
+    def _apply_semantic_clues_plural_adjective(self, evidence_score: float, token, text: str, context: dict) -> float:
+        """Apply semantic and content-type clues for plural adjective detection."""
+        
+        content_type = context.get('content_type', 'general')
+        
+        # === CONTENT TYPE ANALYSIS ===
+        if content_type == 'technical':
+            evidence_score -= 0.2  # Technical content more tolerant of plural adjectives
+        elif content_type == 'api':
+            evidence_score -= 0.2  # API docs often use technical compound terms
+        elif content_type == 'academic':
+            evidence_score += 0.2  # Academic writing prefers proper grammar
+        elif content_type == 'legal':
+            evidence_score += 0.1  # Legal writing should be grammatically correct
+        elif content_type == 'marketing':
+            evidence_score += 0.2  # Marketing should be grammatically polished
+        elif content_type == 'procedural':
+            evidence_score += 0.1  # Procedures should be clear and grammatical
+        
+        # === DOMAIN-SPECIFIC PATTERNS ===
+        domain = context.get('domain', 'general')
+        if domain in ['software', 'engineering', 'devops']:
+            evidence_score -= 0.2  # Technical domains accept plural adjectives
+        elif domain in ['systems-administration', 'network-management']:
+            evidence_score -= 0.3  # System admin domains heavily use plural adjectives
+        elif domain in ['user-documentation', 'tutorial']:
+            evidence_score += 0.1  # User docs should be grammatically clear
+        
+        # === AUDIENCE CONSIDERATIONS ===
+        audience = context.get('audience', 'general')
+        if audience in ['developer', 'technical', 'expert']:
+            evidence_score -= 0.1  # Technical audiences accept technical compounds
+        elif audience in ['beginner', 'general', 'user']:
+            evidence_score += 0.1  # General audiences prefer standard grammar
+        
+        # === TECHNICAL DENSITY ANALYSIS ===
+        if self._has_high_technical_density(text):
+            evidence_score -= 0.1  # High technical density tolerates plural adjectives
+        
+        return evidence_score
+
+    def _apply_feedback_clues_plural_adjective(self, evidence_score: float, token, context: dict) -> float:
+        """Apply feedback patterns for plural adjective detection."""
+        
+        feedback_patterns = self._get_cached_feedback_patterns_plurals()
+        
+        # === TOKEN-SPECIFIC FEEDBACK ===
+        token_text = token.text.lower()
+        
+        # Check if this specific plural is commonly accepted as modifier
+        accepted_plural_modifiers = feedback_patterns.get('accepted_plural_modifiers', set())
+        if token_text in accepted_plural_modifiers:
+            evidence_score -= 0.3  # Users consistently accept this plural modifier
+        
+        flagged_plural_modifiers = feedback_patterns.get('flagged_plural_modifiers', set())
+        if token_text in flagged_plural_modifiers:
+            evidence_score += 0.3  # Users consistently flag this plural modifier
+        
+        # === CONTEXT-SPECIFIC FEEDBACK ===
+        content_type = context.get('content_type', 'general')
+        context_patterns = feedback_patterns.get(f'{content_type}_plural_patterns', {})
+        
+        if token_text in context_patterns.get('acceptable', set()):
+            evidence_score -= 0.2
+        elif token_text in context_patterns.get('problematic', set()):
+            evidence_score += 0.2
+        
+        # === COMPOUND PHRASE FEEDBACK ===
+        # Check if this token is part of commonly accepted compound phrases
+        head_noun = token.head
+        if head_noun.pos_ == 'NOUN':
+            compound_phrase = f"{token_text}_{head_noun.lemma_.lower()}"
+            accepted_compounds = feedback_patterns.get('accepted_compound_phrases', set())
+            
+            if compound_phrase in accepted_compounds:
+                evidence_score -= 0.2  # This compound phrase is commonly accepted
+        
+        return evidence_score
+
+    # === HELPER METHODS FOR SEMANTIC ANALYSIS ===
+
+    def _is_specification_documentation(self, text: str) -> bool:
+        """Check if text appears to be specification documentation."""
+        spec_indicators = [
+            'specification', 'spec', 'parameter', 'option', 'setting',
+            'configure', 'configuration', 'syntax', 'format', 'schema'
+        ]
+        
+        text_lower = text.lower()
+        return sum(1 for indicator in spec_indicators if indicator in text_lower) >= 3
+
+    def _is_reference_documentation(self, text: str) -> bool:
+        """Check if text appears to be reference documentation."""
+        reference_indicators = [
+            'reference', 'api', 'documentation', 'manual', 'guide',
+            'function', 'method', 'class', 'module', 'library'
+        ]
+        
+        text_lower = text.lower()
+        return sum(1 for indicator in reference_indicators if indicator in text_lower) >= 2
+
+    def _is_tutorial_content(self, text: str) -> bool:
+        """Check if text appears to be tutorial content."""
+        tutorial_indicators = [
+            'tutorial', 'how to', 'step', 'procedure', 'follow', 'complete',
+            'first', 'next', 'then', 'finally', 'getting started'
+        ]
+        
+        text_lower = text.lower()
+        return sum(1 for indicator in tutorial_indicators if indicator in text_lower) >= 2
+
+    def _has_high_technical_density(self, text: str) -> bool:
+        """Check if document has high density of technical terms."""
+        technical_indicators = [
+            'system', 'server', 'database', 'application', 'service', 'api',
+            'configuration', 'parameter', 'variable', 'function', 'method',
+            'interface', 'protocol', 'network', 'security', 'authentication'
+        ]
+        
+        text_lower = text.lower()
+        word_count = len(text.split())
+        technical_count = sum(1 for indicator in technical_indicators if indicator in text_lower)
+        
+        # Consider high density if > 5% of content has technical indicators
+        return technical_count > 0 and (technical_count / max(word_count, 1)) > 0.05
+
+    def _get_cached_feedback_patterns_plurals(self):
+        """Load feedback patterns from cache or feedback analysis for plurals."""
+        # This would load from feedback analysis system
+        # For now, return patterns based on common plurals usage
+        return {
+            'accepted_s_patterns': {
+                # Words where (s) is commonly accepted
+                'parameter', 'option', 'setting', 'value', 'file', 'directory',
+                'argument', 'variable', 'property', 'attribute', 'field'
+            },
+            'flagged_s_patterns': {
+                # Words where (s) is commonly flagged
+                'user', 'item', 'element', 'component', 'object'
+            },
+            'accepted_plural_modifiers': {
+                # Plural modifiers commonly accepted by users
+                'systems', 'operations', 'services', 'applications', 'communications',
+                'networks', 'resources', 'utilities', 'components', 'tools',
+                'data', 'media', 'metadata', 'analytics', 'metrics', 'statistics'
+            },
+            'flagged_plural_modifiers': {
+                # Plural modifiers commonly flagged by users
+                'elements', 'objects', 'items', 'things', 'parts'
+            },
+            'technical_s_patterns': {
+                'acceptable': {
+                    # (s) patterns acceptable in technical contexts
+                    'parameter', 'option', 'setting', 'configuration', 'variable'
+                },
+                'problematic': {
+                    # (s) patterns problematic even in technical contexts
+                    'user', 'person', 'individual', 'member'
+                }
+            },
+            'technical_plural_patterns': {
+                'acceptable': {
+                    # Plural adjectives acceptable in technical contexts
+                    'systems', 'operations', 'services', 'networks', 'data',
+                    'communications', 'applications', 'resources', 'tools'
+                },
+                'problematic': {
+                    # Plural adjectives problematic even in technical contexts
+                    'elements', 'objects', 'items', 'things'
+                }
+            },
+            'accepted_compound_phrases': {
+                # Compound phrases commonly accepted
+                'systems_architecture', 'operations_management', 'services_layer',
+                'applications_server', 'users_guide', 'communications_protocol',
+                'networks_topology', 'resources_allocation', 'data_processing'
+            }
+        }
+
+    # === HELPER METHODS FOR SMART MESSAGING ===
+
+    def _get_contextual_s_pattern_message(self, span, evidence_score: float) -> str:
+        """Generate context-aware error messages for (s) patterns."""
+        
+        base_word = span[0].text
+        
+        if evidence_score > 0.8:
+            return f"Avoid using '({base_word})' to indicate a plural."
+        elif evidence_score > 0.5:
+            return f"Consider avoiding '({base_word})' pattern. Use either singular or plural form."
+        else:
+            return f"The '({base_word})' pattern may be acceptable in technical contexts but consider clarity."
+
+    def _get_contextual_plural_adjective_message(self, token, evidence_score: float) -> str:
+        """Generate context-aware error messages for plural adjectives."""
+        
+        if evidence_score > 0.8:
+            return f"Potential misuse of plural noun '{token.text}' as an adjective."
+        elif evidence_score > 0.5:
+            return f"Consider using singular form: '{token.text}' may work better as '{token.lemma_}'."
+        else:
+            return f"Plural adjective '{token.text}' noted. May be acceptable in technical contexts."
+
+    def _generate_smart_s_pattern_suggestions(self, span, evidence_score: float, context: dict) -> List[str]:
+        """Generate context-aware suggestions for (s) patterns."""
+        
+        suggestions = []
+        base_word = span[0].text
+        
+        # Base suggestions based on evidence strength
+        if evidence_score > 0.7:
+            suggestions.append(f"Use either '{base_word}' or '{base_word}s' consistently.")
+            suggestions.append("Rewrite to use 'one or more' or 'multiple' instead.")
+        else:
+            suggestions.append(f"Consider using either '{base_word}' or '{base_word}s' for clarity.")
+        
+        # Context-specific advice
+        if context:
+            content_type = context.get('content_type', 'general')
+            
+            if content_type in ['technical', 'api']:
+                suggestions.append("In technical docs, consider showing both forms in separate examples.")
+            elif content_type in ['procedural', 'tutorial']:
+                suggestions.append("For step-by-step instructions, use the specific form needed.")
+            elif content_type == 'specification':
+                suggestions.append("In specifications, use precise language without ambiguity.")
+        
+        return suggestions[:3]
+
+    def _generate_smart_plural_adjective_suggestions(self, token, evidence_score: float, context: dict) -> List[str]:
+        """Generate context-aware suggestions for plural adjectives."""
+        
+        suggestions = []
+        singular_form = token.lemma_
+        
+        # Base suggestions based on evidence strength
+        if evidence_score > 0.7:
+            suggestions.append(f"Use the singular form '{singular_form}' when modifying another noun.")
+        else:
+            suggestions.append(f"Consider using '{singular_form}' instead of '{token.text}'.")
+        
+        # Context-specific advice
+        if context:
+            content_type = context.get('content_type', 'general')
+            
+            if content_type in ['technical', 'api']:
+                suggestions.append("Technical writing may accept this usage if it's industry standard.")
+            elif content_type in ['academic', 'formal']:
+                suggestions.append("Use singular forms for grammatical correctness.")
+        
+        # Token-specific advice
+        if token.text.lower() in ['systems', 'operations', 'services']:
+            suggestions.append("This may be acceptable in technical compound terms.")
+        
+        return suggestions[:3]
