@@ -114,45 +114,51 @@ class VerbsRule(BaseLanguageRule):
                 if token.lemma_.lower() == "will" and token.tag_ == "MD":
                     head_verb = token.head
                     if head_verb.pos_ == "VERB":
-                        suggestion = f"Use the present tense '{head_verb.lemma_}s' or the imperative mood '{head_verb.lemma_.capitalize()}'."
-                        flagged_text = f"{token.text} {head_verb.text}"
-                        span_start = token.idx
-                        span_end = head_verb.idx + len(head_verb.text)
-                        errors.append(self._create_error(
-                            sentence=sent_text,
-                            sentence_index=i,
-                            message="Avoid future tense in procedural and descriptive text.",
-                            suggestions=[suggestion],
-                            severity='medium',
-                            text=text,  # Enhanced: Pass full text for better confidence analysis
-                            context=context,  # Enhanced: Pass context for domain-specific validation
-                            span=(span_start, span_end),
-                            flagged_text=flagged_text
-                        ))
+                        evidence_score = self._calculate_future_tense_evidence(
+                            token, head_verb, doc, sent_text, text, context or {}
+                        )
+                        if evidence_score > 0.1:
+                            flagged_text = f"{token.text} {head_verb.text}"
+                            span_start = token.idx
+                            span_end = head_verb.idx + len(head_verb.text)
+                            errors.append(self._create_error(
+                                sentence=sent_text,
+                                sentence_index=i,
+                                message=self._get_contextual_future_tense_message(flagged_text, evidence_score, context or {}),
+                                suggestions=self._generate_smart_future_tense_suggestions(head_verb, evidence_score, context or {}),
+                                severity='low' if evidence_score < 0.6 else 'medium',
+                                text=text,
+                                context=context,
+                                evidence_score=evidence_score,
+                                span=(span_start, span_end),
+                                flagged_text=flagged_text
+                            ))
 
             # --- PAST TENSE CHECK (with temporal context awareness) ---
             root_verb = self._find_root_token(doc)
-            if (root_verb and root_verb.pos_ == 'VERB' and 'Tense=Past' in str(root_verb.morph) 
+            if (root_verb and root_verb.pos_ == 'VERB' and 'Tense=Past' in str(root_verb.morph)
                 and not self._is_passive_construction(root_verb, doc)):
-                
-                # ENHANCED: Skip past tense flagging when temporal context justifies it
-                if self._has_legitimate_temporal_context(doc, sent_text):
-                    continue
-                
-                flagged_text = root_verb.text
-                span_start = root_verb.idx
-                span_end = span_start + len(flagged_text)
-                errors.append(self._create_error(
-                    sentence=sent_text,
-                    sentence_index=i,
-                    message="Sentence may not be in the preferred present tense.",
-                    suggestions=["Use present tense for instructions and system descriptions."],
-                    severity='low',
-                    text=text,  # Enhanced: Pass full text for better confidence analysis
-                    context=context,  # Enhanced: Pass context for domain-specific validation
-                    span=(span_start, span_end),
-                    flagged_text=flagged_text
-                ))
+
+                evidence_score_past = self._calculate_past_tense_evidence(
+                    root_verb, doc, sent_text, text, context or {}
+                )
+
+                if evidence_score_past > 0.1:
+                    flagged_text = root_verb.text
+                    span_start = root_verb.idx
+                    span_end = span_start + len(flagged_text)
+                    errors.append(self._create_error(
+                        sentence=sent_text,
+                        sentence_index=i,
+                        message=self._get_contextual_past_tense_message(flagged_text, evidence_score_past, context or {}),
+                        suggestions=self._generate_smart_past_tense_suggestions(root_verb, evidence_score_past, context or {}),
+                        severity='low',
+                        text=text,
+                        context=context,
+                        evidence_score=evidence_score_past,
+                        span=(span_start, span_end),
+                        flagged_text=flagged_text
+                    ))
         
         return errors
 
@@ -537,3 +543,125 @@ class VerbsRule(BaseLanguageRule):
             return f"{base_msg} While acceptable for descriptions, active voice may be clearer."
         else:
             return f"{base_msg} Consider using active voice for clarity."
+
+    # === EVIDENCE-BASED: FUTURE TENSE ===
+
+    def _calculate_future_tense_evidence(self, will_token: Token, head_verb: Token, doc: Doc, sentence: str, text: str, context: Dict[str, Any]) -> float:
+        """Calculate evidence that future tense ('will' + verb) is undesirable."""
+        evidence: float = 0.5  # base
+
+        # Linguistic: question forms or conditional may justify 'will'
+        sent_lower = sentence.lower()
+        if sentence.strip().endswith('?') or any(w in sent_lower for w in ['if ', 'whether ']):
+            evidence -= 0.15
+
+        # Adverbs indicating scheduled/planned future reduce severity
+        if any(w in sent_lower for w in ['tomorrow', 'next ', 'later', 'upcoming', 'planned', 'will be able to']):
+            evidence -= 0.1
+
+        # Structural
+        block_type = (context or {}).get('block_type', 'paragraph')
+        if block_type in {'code_block', 'literal_block', 'inline_code'}:
+            evidence -= 0.6
+        elif block_type in {'heading', 'title'}:
+            evidence -= 0.05
+
+        # Semantic: discourage in procedural/technical/API; tolerate in release notes/roadmaps
+        content_type = (context or {}).get('content_type', 'general')
+        domain = (context or {}).get('domain', 'general')
+        if content_type in {'procedural', 'api', 'technical'}:
+            evidence += 0.2
+        if content_type in {'release_notes', 'roadmap'}:
+            evidence -= 0.25
+        if domain in {'legal'}:
+            evidence += 0.05
+
+        # Feedback stubs
+        patterns = self._get_feedback_patterns_verbs()
+        phrase = f"{will_token.text} {head_verb.text}".lower()
+        if phrase in patterns.get('accepted_future_phrases', set()):
+            evidence -= 0.2
+        if phrase in patterns.get('flagged_future_phrases', set()):
+            evidence += 0.1
+
+        return max(0.0, min(1.0, evidence))
+
+    def _get_contextual_future_tense_message(self, flagged_text: str, ev: float, context: Dict[str, Any]) -> str:
+        if ev > 0.8:
+            return f"Avoid future tense ('{flagged_text}') in procedural/descriptive text. Use present or imperative."
+        if ev > 0.5:
+            return f"Consider using present tense instead of '{flagged_text}'."
+        return f"Prefer present tense over '{flagged_text}' for clarity."
+
+    def _generate_smart_future_tense_suggestions(self, head_verb: Token, ev: float, context: Dict[str, Any]) -> List[str]:
+        base = head_verb.lemma_
+        suggestions: List[str] = []
+        suggestions.append(f"Use present: '{base}s'")
+        suggestions.append(f"Use imperative: '{base.capitalize()}'")
+        if (context or {}).get('content_type') in {'procedural', 'api'}:
+            suggestions.append("Use direct, action-oriented phrasing for steps.")
+        return suggestions[:3]
+
+    # === EVIDENCE-BASED: PAST TENSE ===
+
+    def _calculate_past_tense_evidence(self, root_verb: Token, doc: Doc, sentence: str, text: str, context: Dict[str, Any]) -> float:
+        """Calculate evidence that past tense is undesirable in this context."""
+        evidence: float = 0.45  # base if past tense root
+
+        # Reduce heavily if legitimate temporal context
+        if self._has_legitimate_temporal_context(doc, sentence):
+            evidence -= 0.4
+
+        # Linguistic: multiple temporal markers further reduce
+        sent_lower = sentence.lower()
+        if any(w in sent_lower for w in ['previously', 'formerly', 'before', 'earlier']):
+            evidence -= 0.1
+
+        # Structural
+        block_type = (context or {}).get('block_type', 'paragraph')
+        if block_type in {'code_block', 'literal_block', 'inline_code'}:
+            evidence -= 0.5
+
+        # Semantic
+        content_type = (context or {}).get('content_type', 'general')
+        if content_type in {'procedural', 'api', 'technical'}:
+            evidence += 0.2
+        if content_type in {'release_notes', 'changelog'}:
+            evidence -= 0.3
+        if (context or {}).get('audience') in {'beginner', 'general'}:
+            evidence += 0.05
+
+        # Feedback stub
+        patterns = self._get_feedback_patterns_verbs()
+        if root_verb.lemma_.lower() in patterns.get('often_accepted_past_verbs', set()):
+            evidence -= 0.1
+
+        return max(0.0, min(1.0, evidence))
+
+    def _get_contextual_past_tense_message(self, flagged_text: str, ev: float, context: Dict[str, Any]) -> str:
+        if ev > 0.8:
+            return f"Past tense '{flagged_text}' may reduce clarity in this context. Prefer present tense."
+        if ev > 0.5:
+            return f"Consider using present tense instead of past ('{flagged_text}')."
+        return f"Present tense is generally preferred over past ('{flagged_text}')."
+
+    def _generate_smart_past_tense_suggestions(self, root_verb: Token, ev: float, context: Dict[str, Any]) -> List[str]:
+        base = root_verb.lemma_
+        suggestions: List[str] = []
+        suggestions.append("Use present tense for system behavior and instructions.")
+        suggestions.append(f"Rewrite with present: '{base}s' / imperative: '{base.capitalize()}' where appropriate.")
+        if (context or {}).get('content_type') in {'procedural', 'api'}:
+            suggestions.append("Keep steps in the imperative mood.")
+        return suggestions[:3]
+
+    # === Feedback patterns for verbs ===
+    def _get_feedback_patterns_verbs(self) -> Dict[str, Any]:
+        return {
+            'accepted_future_phrases': {
+                'will be removed', 'will be deprecated', 'will be available'
+            },
+            'flagged_future_phrases': {
+                'will click', 'will go', 'will run'
+            },
+            'often_accepted_past_verbs': {'fixed', 'resolved', 'addressed'}
+        }
