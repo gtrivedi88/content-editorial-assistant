@@ -841,6 +841,32 @@ class PassiveVoiceAnalyzer:
         if construction.has_clear_actor:
             evidence_score += 0.1  # Clear agent available - could be active
         
+        # === NAMED ENTITY RECOGNITION ===
+        # Named entities may affect passive voice appropriateness
+        if construction.passive_subject and hasattr(construction.passive_subject, 'ent_type_'):
+            if construction.passive_subject.ent_type_:
+                ent_type = construction.passive_subject.ent_type_
+                # Organizations and products often legitimate passive subjects
+                if ent_type in ['ORG', 'PRODUCT', 'FAC']:
+                    evidence_score -= 0.1  # Organizations often configured/managed passively
+                # Personal entities less appropriate as passive subjects
+                elif ent_type == 'PERSON':
+                    evidence_score += 0.2  # People should be active agents
+                # Technical entities often legitimate passive subjects
+                elif ent_type in ['GPE', 'EVENT']:
+                    evidence_score -= 0.05  # Geographic/event entities
+        
+        # Check for named entities in the broader sentence context
+        for token in doc:
+            if hasattr(token, 'ent_type_') and token.ent_type_:
+                ent_type = token.ent_type_
+                # Technical product entities suggest technical documentation
+                if ent_type in ['PRODUCT', 'ORG', 'FAC']:
+                    evidence_score -= 0.02  # Technical context allows more passive voice
+                # Money/quantity entities suggest formal documentation
+                elif ent_type in ['MONEY', 'QUANTITY', 'PERCENT']:
+                    evidence_score -= 0.01  # Financial/quantitative contexts
+        
         # === SENTENCE COMPLEXITY ===
         sentence_length = len([token for token in doc if not token.is_punct])
         if sentence_length > 15:
@@ -1058,6 +1084,212 @@ class PassiveVoiceAnalyzer:
         
         # Consider high density if > 2% of content has passive indicators
         return passive_count > 0 and (passive_count / max(word_count, 1)) > 0.02
+
+    def _is_api_documentation_context(self, text: str, context: dict) -> bool:
+        """
+        Detect if content is API reference documentation.
+        
+        API docs often use passive voice to describe system behaviors,
+        configurations, and capabilities in an objective manner.
+        
+        Args:
+            text: Document text
+            context: Document context
+            
+        Returns:
+            bool: True if API documentation context detected
+        """
+        api_indicators = {
+            'api', 'endpoint', 'method', 'request', 'response', 'parameter',
+            'authentication', 'authorization', 'header', 'payload', 'json',
+            'rest', 'restful', 'http', 'https', 'get', 'post', 'put', 'delete',
+            'webhook', 'callback', 'token', 'key', 'secret', 'client'
+        }
+        
+        text_lower = text.lower()
+        domain = context.get('domain', '')
+        content_type = context.get('content_type', '')
+        
+        # Direct text indicators
+        api_score = sum(1 for indicator in api_indicators if indicator in text_lower)
+        
+        # Context-based indicators
+        if domain in {'api', 'web-service', 'microservice', 'rest', 'graphql'}:
+            api_score += 2
+        
+        if content_type in {'api', 'reference', 'specification', 'openapi'}:
+            api_score += 2
+        
+        # Check for API-specific patterns
+        api_patterns = [
+            'api endpoint', 'http method', 'request parameter', 'response body',
+            'authentication header', 'authorization token', 'json payload',
+            'api call', 'api response', 'rest api', 'web service'
+        ]
+        
+        pattern_matches = sum(1 for pattern in api_patterns if pattern in text_lower)
+        api_score += pattern_matches
+        
+        # Threshold for API context detection
+        return api_score >= 3
+
+    def _is_architecture_documentation_context(self, text: str, context: dict) -> bool:
+        """
+        Detect if content is architecture or design documentation.
+        
+        Architecture docs often use passive voice to describe how systems
+        are structured, connected, and configured.
+        
+        Args:
+            text: Document text
+            context: Document context
+            
+        Returns:
+            bool: True if architecture documentation context detected
+        """
+        architecture_indicators = {
+            'architecture', 'design', 'pattern', 'component', 'module', 'service',
+            'microservice', 'infrastructure', 'deployment', 'topology', 'layer',
+            'tier', 'distributed', 'scalable', 'fault-tolerant', 'high-availability',
+            'load-balancer', 'database', 'cache', 'queue', 'message', 'event'
+        }
+        
+        text_lower = text.lower()
+        domain = context.get('domain', '')
+        content_type = context.get('content_type', '')
+        
+        # Direct text indicators
+        arch_score = sum(1 for indicator in architecture_indicators if indicator in text_lower)
+        
+        # Context-based indicators
+        if domain in {'architecture', 'design', 'infrastructure', 'platform', 'system'}:
+            arch_score += 2
+        
+        if content_type in {'architecture', 'design', 'specification', 'blueprint'}:
+            arch_score += 2
+        
+        # Check for architecture-specific patterns
+        architecture_patterns = [
+            'system architecture', 'service architecture', 'application architecture',
+            'data flow', 'message flow', 'component interaction', 'service communication',
+            'distributed system', 'microservice pattern', 'design pattern'
+        ]
+        
+        pattern_matches = sum(1 for pattern in architecture_patterns if pattern in text_lower)
+        arch_score += pattern_matches
+        
+        # Threshold for architecture context detection
+        return arch_score >= 3
+
+    # === CONTEXT-AWARE MESSAGING AND SUGGESTIONS ===
+
+    def get_contextual_passive_voice_message(self, construction: PassiveConstruction, evidence_score: float, context: dict = None) -> str:
+        """
+        Generate context-aware error messages for passive voice constructions.
+        
+        Tailors the message based on evidence strength, document context, and writing style
+        to provide meaningful feedback that respects the writing situation.
+        
+        Args:
+            construction: PassiveConstruction with linguistic analysis
+            evidence_score: Calculated evidence score for this construction
+            context: Document context for message customization
+            
+        Returns:
+            str: Contextual error message
+        """
+        content_type = context.get('content_type', 'general') if context else 'general'
+        audience = context.get('audience', 'general') if context else 'general'
+        verb = construction.main_verb.lemma_
+        
+        if evidence_score > 0.8:
+            if content_type in ['procedural', 'tutorial']:
+                return f"Passive voice found: '{verb}'. Instructions should be clear and direct - consider using active voice."
+            elif audience in ['beginner', 'general']:
+                return f"Passive voice detected: '{verb}'. Active voice is clearer for readers."
+            else:
+                return f"Passive voice construction: '{verb}'. Consider using active voice for clarity."
+        elif evidence_score > 0.5:
+            if content_type in ['technical', 'api']:
+                return f"Passive voice usage: '{verb}'. Verify this aligns with your documentation style."
+            elif construction.context_type == ContextType.INSTRUCTIONAL:
+                return f"Passive voice in instruction: '{verb}'. Consider if active voice would be clearer."
+            else:
+                return f"Passive voice noted: '{verb}'. Consider whether active voice would improve clarity."
+        else:
+            if content_type in ['technical', 'api']:
+                return f"Passive voice: '{verb}'. May be appropriate for technical descriptions."
+            elif construction.context_type == ContextType.DESCRIPTIVE:
+                return f"Descriptive passive voice: '{verb}'. This may be acceptable for system descriptions."
+            else:
+                return f"Passive voice usage: '{verb}'. Verify appropriateness for your context."
+
+    def generate_smart_passive_voice_suggestions(self, construction: PassiveConstruction, evidence_score: float, context: dict = None) -> List[str]:
+        """
+        Generate context-aware suggestions for passive voice constructions.
+        
+        Provides actionable suggestions that consider document type, audience,
+        and specific passive voice patterns found in the sentence.
+        
+        Args:
+            construction: PassiveConstruction with linguistic analysis
+            evidence_score: Calculated evidence score for this construction
+            context: Document context for suggestion customization
+            
+        Returns:
+            List[str]: Context-appropriate suggestions for improvement
+        """
+        suggestions = []
+        content_type = context.get('content_type', 'general') if context else 'general'
+        audience = context.get('audience', 'general') if context else 'general'
+        verb = construction.main_verb.lemma_
+        
+        # High evidence cases need clear corrections
+        if evidence_score > 0.7:
+            if content_type in ['procedural', 'tutorial']:
+                suggestions.append(f"Rewrite in active voice: 'You {verb}...' or 'To {verb}...'")
+                suggestions.append("Use imperative mood for clear instructions.")
+            elif audience in ['beginner', 'general']:
+                suggestions.append("Identify who performs the action and make them the subject.")
+                suggestions.append("Use active voice to make instructions clearer for readers.")
+            else:
+                suggestions.append("Convert to active voice by identifying the actor.")
+                suggestions.append("Consider restructuring to emphasize the action performer.")
+        else:
+            suggestions.append("Consider whether active voice would improve clarity.")
+        
+        # Context-specific advice
+        if content_type == 'technical' and construction.context_type == ContextType.DESCRIPTIVE:
+            suggestions.append("Passive voice may be acceptable for technical system descriptions.")
+        elif content_type == 'api':
+            suggestions.append("For API docs, consider if this describes system behavior (passive OK) or user actions (active better).")
+        elif content_type == 'procedural':
+            suggestions.append("Instructions should be direct: use active voice or imperative mood.")
+        elif construction.has_by_phrase:
+            suggestions.append("The by-phrase suggests intentional passive voice - verify if appropriate.")
+        elif self._is_change_announcement(construction, construction.main_verb.doc):
+            suggestions.append("Change announcements may appropriately use passive voice.")
+        
+        # Audience-specific advice
+        if audience in ['beginner', 'general']:
+            suggestions.append("Active voice is generally clearer for general audiences.")
+        elif audience in ['technical', 'developer']:
+            suggestions.append("Technical audiences may accept passive voice for system descriptions.")
+        
+        # Evidence-based advice
+        if evidence_score < 0.3:
+            suggestions.append("This passive voice usage may be appropriate in your context.")
+        elif evidence_score > 0.8:
+            suggestions.append("Strong recommendation to use active voice here.")
+        
+        # Construction-specific suggestions
+        if construction.context_type == ContextType.INSTRUCTIONAL:
+            suggestions.append("Instructions are clearer when they specify who should perform actions.")
+        elif construction.context_type == ContextType.DESCRIPTIVE:
+            suggestions.append("Descriptive content may appropriately use passive voice.")
+        
+        # Limit to most relevant suggestions
+        return suggestions[:3]
 
     def _get_cached_feedback_patterns_passive(self):
         """Load feedback patterns from cache or feedback analysis for passive voice."""

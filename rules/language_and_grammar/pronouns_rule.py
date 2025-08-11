@@ -143,6 +143,19 @@ class PronounsRule(BaseLanguageRule):
         dep = getattr(token, 'dep_', '')
         pos = getattr(token, 'pos_', '')
         
+        # === PENN TREEBANK TAG ANALYSIS ===
+        # Detailed grammatical analysis using Penn Treebank tags
+        if hasattr(token, 'tag_'):
+            tag = token.tag_
+            
+            # Personal pronoun tags analysis
+            if tag in ['PRP']:  # Personal pronouns (I, you, he, she, etc.)
+                evidence_score += 0.15  # Personal pronouns highly visible
+            elif tag in ['PRP$']:  # Possessive pronouns (my, your, his, her, etc.)
+                evidence_score += 0.1  # Possessive pronouns easier to replace
+            elif tag in ['WP']:  # Wh-pronouns (who, what, which)
+                evidence_score += 0.05  # Wh-pronouns may be gendered (who)
+        
         # === PART-OF-SPEECH ANALYSIS ===
         # Possessive determiners (his/her) in attributive use are often easy to replace
         if lemma_lower in {'his', 'her'} and dep in {'det', 'poss'}:

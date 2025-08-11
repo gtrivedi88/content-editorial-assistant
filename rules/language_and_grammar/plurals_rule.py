@@ -501,6 +501,28 @@ class PluralsRule(BaseLanguageRule):
         # Get the word before (s)
         base_word = span[0]  # The word before (s)
         
+        # === NAMED ENTITY RECOGNITION ===
+        # Named entities may affect (s) pattern appropriateness
+        if hasattr(base_word, 'ent_type_') and base_word.ent_type_:
+            ent_type = base_word.ent_type_
+            # Organizations and products often have established naming conventions
+            if ent_type in ['ORG', 'PRODUCT', 'FAC']:
+                evidence_score -= 0.3  # Organizations may legitimately use (s) for variations
+            # Technical entities may have domain-specific conventions
+            elif ent_type in ['GPE', 'NORP']:
+                evidence_score -= 0.1  # Geographic/nationality entities may have variations
+        
+        # Check for named entities in sentence context
+        for sent_token in span.sent:
+            if hasattr(sent_token, 'ent_type_') and sent_token.ent_type_:
+                ent_type = sent_token.ent_type_
+                # Technical product entities suggest technical documentation
+                if ent_type in ['PRODUCT', 'ORG', 'FAC']:
+                    evidence_score -= 0.02  # Technical context allows more (s) usage
+                # Money/quantity entities suggest formal specification
+                elif ent_type in ['MONEY', 'QUANTITY', 'PERCENT']:
+                    evidence_score -= 0.01  # Formal contexts may need (s) for ranges
+        
         # === WORD TYPE ANALYSIS ===
         # Technical terms often have legitimate (s) usage for variability
         if base_word.pos_ in ['NOUN', 'PROPN']:
@@ -662,9 +684,40 @@ class PluralsRule(BaseLanguageRule):
         if token.text.lower() in common_modifier_plurals:
             evidence_score -= 0.2  # Common technical modifier plurals
         
+        # === NAMED ENTITY RECOGNITION ===
+        # Named entities may affect pluralization appropriateness
+        if hasattr(token, 'ent_type_') and token.ent_type_:
+            ent_type = token.ent_type_
+            # Organizations and products often have specific naming conventions
+            if ent_type in ['ORG', 'PRODUCT', 'FAC']:
+                evidence_score -= 0.2  # Organizations may have established plural usage
+            # Personal entities should follow standard grammar rules
+            elif ent_type == 'PERSON':
+                evidence_score += 0.1  # Personal entities should be grammatically correct
+            # Technical entities may have domain-specific conventions
+            elif ent_type in ['GPE', 'EVENT']:
+                evidence_score -= 0.1  # Geographic/event entities may have special conventions
+        
+        # Check for named entities in surrounding context
+        sentence = token.sent
+        for sent_token in sentence:
+            if hasattr(sent_token, 'ent_type_') and sent_token.ent_type_:
+                ent_type = sent_token.ent_type_
+                # Technical product entities suggest technical documentation
+                if ent_type in ['PRODUCT', 'ORG', 'FAC']:
+                    evidence_score -= 0.02  # Technical context allows more flexible pluralization
+                # Money/quantity entities suggest formal documentation
+                elif ent_type in ['MONEY', 'QUANTITY', 'PERCENT']:
+                    evidence_score -= 0.01  # Financial/quantitative contexts may be more formal
+        
         # === HEAD NOUN ANALYSIS ===
         head_noun = token.head
         if head_noun.pos_ == 'NOUN':
+            # Check if head noun is a named entity
+            if hasattr(head_noun, 'ent_type_') and head_noun.ent_type_:
+                if head_noun.ent_type_ in ['PRODUCT', 'ORG']:
+                    evidence_score -= 0.1  # Product/org head nouns may have special conventions
+            
             # Technical head nouns often accept plural modifiers
             technical_heads = {
                 'architecture', 'management', 'administration', 'analysis',

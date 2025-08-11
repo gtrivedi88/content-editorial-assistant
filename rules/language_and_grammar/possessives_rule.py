@@ -241,10 +241,86 @@ class PossessivesRule(BaseLanguageRule):
         possessive_token = potential_issue['possessive_token']
         possessive_object = potential_issue.get('possessive_object')
         
+        # === PART-OF-SPEECH ANALYSIS ===
+        # Analyze POS tags for both abbreviation and possessive object
+        if hasattr(prev_token, 'pos_'):
+            # Proper nouns often appropriate with possessives
+            if prev_token.pos_ == 'PROPN':
+                evidence_score -= 0.1  # Proper nouns commonly use possessives
+            # Generic nouns may be less appropriate
+            elif prev_token.pos_ == 'NOUN':
+                evidence_score += 0.1  # Generic nouns often better with prepositions
+        
+        # === DEPENDENCY ANALYSIS ===
+        # Analyze dependency relationships for context clues
+        if hasattr(prev_token, 'dep_'):
+            # Subject abbreviations may be more appropriate with possessives
+            if prev_token.dep_ in ['nsubj', 'nsubjpass']:
+                evidence_score -= 0.1  # Subjects often appropriate with possessives
+            # Object abbreviations may be less appropriate
+            elif prev_token.dep_ in ['dobj', 'pobj']:
+                evidence_score += 0.1  # Objects often better with prepositions
+        
+        # === PENN TREEBANK TAG ANALYSIS ===
+        # More detailed grammatical analysis using Penn Treebank tags
+        if hasattr(prev_token, 'tag_'):
+            # Proper noun analysis (NNP, NNPS)
+            if prev_token.tag_ in ['NNP', 'NNPS']:
+                evidence_score -= 0.1  # Proper nouns often appropriate with possessives
+            # Common noun analysis (NN, NNS)
+            elif prev_token.tag_ in ['NN', 'NNS']:
+                evidence_score += 0.1  # Common nouns may need prepositions
+        
+        # === MORPHOLOGICAL FEATURES ===
+        # Analyze morphological features for additional context
+        if hasattr(prev_token, 'morph') and prev_token.morph:
+            morph_str = str(prev_token.morph)
+            # Number analysis
+            if 'Number=Sing' in morph_str:
+                evidence_score -= 0.05  # Singular forms often work with possessives
+            elif 'Number=Plur' in morph_str:
+                evidence_score += 0.05  # Plural forms may be awkward with possessives
+        
+        # === NAMED ENTITY RECOGNITION ===
+        # Enhanced NER analysis for possessive context
+        if hasattr(prev_token, 'ent_type_') and prev_token.ent_type_:
+            ent_type = prev_token.ent_type_
+            # Organizations often have established possessive usage
+            if ent_type == 'ORG':
+                evidence_score -= 0.2  # Organizations commonly use possessives
+            # Products may have brand-specific conventions
+            elif ent_type == 'PRODUCT':
+                evidence_score -= 0.1  # Products may use possessives for branding
+            # Geographic entities less common with possessives
+            elif ent_type == 'GPE':
+                evidence_score += 0.1  # Geographic entities often use prepositions
+            # Facility names may use possessives
+            elif ent_type == 'FAC':
+                evidence_score -= 0.1  # Facilities may appropriately use possessives
+        
         # === POSSESSIVE OBJECT ANALYSIS ===
         # Look at what the abbreviation "possesses" - what comes after 's
         
         if possessive_object:
+            # === OBJECT POS ANALYSIS ===
+            # Analyze the part-of-speech of the possessed object
+            if hasattr(possessive_object, 'pos_'):
+                # Abstract nouns work well with possessives
+                if possessive_object.pos_ == 'NOUN':
+                    evidence_score -= 0.05  # Nouns generally work with possessives
+                # Adjectives may suggest descriptive possessives
+                elif possessive_object.pos_ == 'ADJ':
+                    evidence_score += 0.05  # Adjectives may be awkward with possessives
+            
+            # === OBJECT DEPENDENCY ANALYSIS ===
+            if hasattr(possessive_object, 'dep_'):
+                # Direct objects of possessives are natural
+                if possessive_object.dep_ == 'poss':
+                    evidence_score -= 0.1  # Proper possessive relationship
+                # Attributes and modifiers work well
+                elif possessive_object.dep_ in ['attr', 'amod']:
+                    evidence_score -= 0.05  # Attributes work with possessives
+            
             # === OBJECT TYPE ANALYSIS ===
             # Some objects work better with possessives than others
             
@@ -375,12 +451,29 @@ class PossessivesRule(BaseLanguageRule):
         elif audience in ['beginner', 'general', 'user']:
             evidence_score -= 0.1  # General audiences may prefer simpler possessives
         
-        # === BRAND CONTEXT ANALYSIS ===
+        # === DOCUMENT PURPOSE ANALYSIS ===
+        # Use enhanced helper methods for semantic analysis
         if self._is_brand_focused_content(text):
             evidence_score -= 0.2  # Brand-focused content often uses possessives
         
         if self._is_specification_documentation(text):
             evidence_score += 0.2  # Specification docs prefer formal constructions
+        
+        if self._is_api_documentation_context(text, context):
+            evidence_score += 0.1  # API docs prefer precise prepositional phrases
+        
+        if self._is_technical_reference_context(text, context):
+            evidence_score += 0.2  # Technical reference prefers formal constructions
+        
+        if self._is_marketing_content_context(text, context):
+            evidence_score -= 0.3  # Marketing content accepts brand possessives
+        
+        if self._is_formal_legal_context(text, context):
+            evidence_score += 0.3  # Legal contexts strongly prefer prepositional phrases
+        
+        # === POSSESSIVE DENSITY ANALYSIS ===
+        if self._has_high_possessive_density(text):
+            evidence_score -= 0.1  # High possessive density suggests informal/brand context
         
         return evidence_score
 
@@ -451,6 +544,223 @@ class PossessivesRule(BaseLanguageRule):
         
         text_lower = text.lower()
         return sum(1 for indicator in spec_indicators if indicator in text_lower) >= 3
+
+    def _is_api_documentation_context(self, text: str, context: dict) -> bool:
+        """
+        Detect if content is API reference documentation.
+        
+        API docs often use possessives for brand/product ownership but
+        prefer prepositional phrases for technical specifications.
+        
+        Args:
+            text: Document text
+            context: Document context
+            
+        Returns:
+            bool: True if API documentation context detected
+        """
+        api_indicators = {
+            'api', 'endpoint', 'method', 'request', 'response', 'parameter',
+            'authentication', 'authorization', 'header', 'payload', 'json',
+            'rest', 'restful', 'http', 'https', 'get', 'post', 'put', 'delete',
+            'webhook', 'callback', 'token', 'key', 'secret', 'client'
+        }
+        
+        text_lower = text.lower()
+        domain = context.get('domain', '')
+        content_type = context.get('content_type', '')
+        
+        # Direct text indicators
+        api_score = sum(1 for indicator in api_indicators if indicator in text_lower)
+        
+        # Context-based indicators
+        if domain in {'api', 'web-service', 'microservice', 'rest', 'graphql'}:
+            api_score += 2
+        
+        if content_type in {'api', 'reference', 'specification', 'openapi'}:
+            api_score += 2
+        
+        # Check for API-specific patterns
+        api_patterns = [
+            'api endpoint', 'http method', 'request parameter', 'response body',
+            'authentication header', 'authorization token', 'json payload',
+            'api call', 'api response', 'rest api', 'web service'
+        ]
+        
+        pattern_matches = sum(1 for pattern in api_patterns if pattern in text_lower)
+        api_score += pattern_matches
+        
+        # Threshold for API context detection
+        return api_score >= 3
+
+    def _is_technical_reference_context(self, text: str, context: dict) -> bool:
+        """
+        Detect if content is technical reference documentation.
+        
+        Technical reference docs typically prefer prepositional phrases
+        for precision and clarity over possessive constructions.
+        
+        Args:
+            text: Document text
+            context: Document context
+            
+        Returns:
+            bool: True if technical reference context detected
+        """
+        technical_indicators = {
+            'function', 'method', 'class', 'module', 'library', 'package',
+            'parameter', 'argument', 'return', 'exception', 'error',
+            'configuration', 'setting', 'option', 'flag', 'variable',
+            'syntax', 'format', 'structure', 'schema', 'protocol'
+        }
+        
+        text_lower = text.lower()
+        domain = context.get('domain', '')
+        content_type = context.get('content_type', '')
+        
+        # Direct text indicators
+        tech_score = sum(1 for indicator in technical_indicators if indicator in text_lower)
+        
+        # Context-based indicators
+        if domain in {'software', 'programming', 'development', 'engineering'}:
+            tech_score += 2
+        
+        if content_type in {'reference', 'documentation', 'manual', 'guide'}:
+            tech_score += 2
+        
+        # Check for technical reference patterns
+        reference_patterns = [
+            'function reference', 'method reference', 'api reference',
+            'parameter list', 'return value', 'error code', 'status code',
+            'configuration file', 'syntax reference', 'command reference'
+        ]
+        
+        pattern_matches = sum(1 for pattern in reference_patterns if pattern in text_lower)
+        tech_score += pattern_matches
+        
+        # Threshold for technical reference detection
+        return tech_score >= 3
+
+    def _is_marketing_content_context(self, text: str, context: dict) -> bool:
+        """
+        Detect if content is marketing or promotional material.
+        
+        Marketing content often uses possessives to create brand connection
+        and emotional attachment (e.g., "Microsoft's innovative solutions").
+        
+        Args:
+            text: Document text
+            context: Document context
+            
+        Returns:
+            bool: True if marketing content context detected
+        """
+        marketing_indicators = {
+            'solution', 'innovative', 'leading', 'premier', 'trusted',
+            'award-winning', 'industry-leading', 'cutting-edge', 'state-of-the-art',
+            'customer', 'client', 'partner', 'benefit', 'advantage',
+            'transform', 'revolutionize', 'empower', 'enable', 'deliver',
+            'success', 'growth', 'efficiency', 'productivity', 'roi'
+        }
+        
+        text_lower = text.lower()
+        domain = context.get('domain', '')
+        content_type = context.get('content_type', '')
+        
+        # Direct text indicators
+        marketing_score = sum(1 for indicator in marketing_indicators if indicator in text_lower)
+        
+        # Context-based indicators
+        if domain in {'marketing', 'sales', 'branding', 'advertising'}:
+            marketing_score += 3
+        
+        if content_type in {'marketing', 'promotional', 'sales', 'branding'}:
+            marketing_score += 3
+        
+        # Check for marketing-specific patterns
+        marketing_patterns = [
+            'leading provider', 'trusted partner', 'innovative solution',
+            'award-winning', 'industry leader', 'market leader',
+            'transform your business', 'drive success', 'competitive advantage'
+        ]
+        
+        pattern_matches = sum(1 for pattern in marketing_patterns if pattern in text_lower)
+        marketing_score += pattern_matches * 2
+        
+        # Threshold for marketing context detection
+        return marketing_score >= 4
+
+    def _is_formal_legal_context(self, text: str, context: dict) -> bool:
+        """
+        Detect if content is formal or legal documentation.
+        
+        Formal and legal contexts strongly prefer prepositional phrases
+        for precision and to avoid ambiguity.
+        
+        Args:
+            text: Document text
+            context: Document context
+            
+        Returns:
+            bool: True if formal/legal context detected
+        """
+        formal_indicators = {
+            'accordance', 'pursuant', 'compliance', 'regulation', 'statute',
+            'provision', 'clause', 'section', 'subsection', 'paragraph',
+            'agreement', 'contract', 'license', 'terms', 'conditions',
+            'liability', 'warranty', 'disclaimer', 'indemnification',
+            'intellectual property', 'copyright', 'trademark', 'patent'
+        }
+        
+        text_lower = text.lower()
+        domain = context.get('domain', '')
+        content_type = context.get('content_type', '')
+        
+        # Direct text indicators
+        formal_score = sum(1 for indicator in formal_indicators if indicator in text_lower)
+        
+        # Context-based indicators
+        if domain in {'legal', 'compliance', 'regulatory', 'governance'}:
+            formal_score += 3
+        
+        if content_type in {'legal', 'formal', 'compliance', 'contract', 'agreement'}:
+            formal_score += 3
+        
+        # Check for formal/legal patterns
+        formal_patterns = [
+            'in accordance with', 'pursuant to', 'subject to', 'as defined in',
+            'terms and conditions', 'intellectual property rights',
+            'under this agreement', 'governed by', 'compliance with'
+        ]
+        
+        pattern_matches = sum(1 for pattern in formal_patterns if pattern in text_lower)
+        formal_score += pattern_matches * 2
+        
+        # Threshold for formal/legal context detection
+        return formal_score >= 3
+
+    def _has_high_possessive_density(self, text: str) -> bool:
+        """
+        Check if document has high density of possessive constructions.
+        
+        High possessive density may indicate informal or brand-focused content
+        where possessives are more acceptable.
+        
+        Args:
+            text: Document text
+            
+        Returns:
+            bool: True if high possessive density detected
+        """
+        # Count possessive patterns
+        possessive_patterns = ["'s ", "'s.", "'s,", "'s;", "'s:", "'s!", "'s?"]
+        possessive_count = sum(text.count(pattern) for pattern in possessive_patterns)
+        
+        # Count total words
+        word_count = len(text.split())
+        
+        # Consider high density if > 1% of content has possessives
+        return possessive_count > 0 and (possessive_count / max(word_count, 1)) > 0.01
 
     def _get_cached_feedback_patterns_possessive(self):
         """Load feedback patterns from cache or feedback analysis for possessives."""

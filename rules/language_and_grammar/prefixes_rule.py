@@ -396,6 +396,45 @@ class PrefixesRule(BaseLanguageRule):
         
         primary_token = tokens[0]
         
+        # === PENN TREEBANK TAG ANALYSIS ===
+        # Detailed grammatical analysis using Penn Treebank tags
+        if hasattr(primary_token, 'tag_'):
+            tag = primary_token.tag_
+            
+            # Verb tags analysis
+            if tag in ['VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ']:
+                evidence_score += 0.2  # Prefixed verbs strongly favor closure
+            # Noun tags analysis
+            elif tag in ['NN', 'NNS', 'NNP', 'NNPS']:
+                evidence_score += 0.1  # Prefixed nouns often close
+            # Adjective tags analysis
+            elif tag in ['JJ', 'JJR', 'JJS']:
+                evidence_score += 0.15  # Prefixed adjectives typically close
+            # Adverb tags analysis
+            elif tag in ['RB', 'RBR', 'RBS']:
+                evidence_score += 0.1  # Prefixed adverbs often close
+        
+        # === NAMED ENTITY RECOGNITION ===
+        # Named entities may have specific prefix conventions
+        if hasattr(primary_token, 'ent_type_') and primary_token.ent_type_:
+            ent_type = primary_token.ent_type_
+            # Organizations and products may have established conventions
+            if ent_type in ['ORG', 'PRODUCT', 'FAC']:
+                evidence_score -= 0.1  # Organizations may have specific hyphenation rules
+            # Technical entities often use standard prefix closure
+            elif ent_type in ['MISC', 'EVENT']:
+                evidence_score += 0.05  # Technical/event entities favor standard forms
+        
+        # Check for named entities in surrounding context for technical context
+        if tokens and len(tokens) > 0:
+            sentence = tokens[0].sent
+            for token in sentence:
+                if hasattr(token, 'ent_type_') and token.ent_type_:
+                    ent_type = token.ent_type_
+                    # Technical context detection
+                    if ent_type in ['PRODUCT', 'ORG', 'FAC']:
+                        evidence_score -= 0.02  # Technical context may allow established hyphenations
+        
         # === MORPHOLOGICAL ANALYSIS ===
         # Use existing morphological analysis from the current implementation
         if hasattr(primary_token, 'morph') and primary_token.morph:
@@ -448,7 +487,7 @@ class PrefixesRule(BaseLanguageRule):
         
         return max(0.0, min(1.0, evidence_score))  # Clamp to valid range
 
-    def _apply_structural_clues_prefix(self, evidence_score: float, potential_issue: Dict[str, Any], context: dict) -> float:
+    def _apply_structural_clues_prefix(self, evidence_score: float, prefix: str, full_word: str, context: dict) -> float:
         """
         Apply document structure-based clues for prefix detection.
         
@@ -489,7 +528,7 @@ class PrefixesRule(BaseLanguageRule):
         
         return max(0.0, min(1.0, evidence_score))  # Clamp to valid range
 
-    def _apply_semantic_clues_prefix(self, evidence_score: float, potential_issue: Dict[str, Any], 
+    def _apply_semantic_clues_prefix(self, evidence_score: float, prefix: str, full_word: str, 
                                    text: str, context: dict) -> float:
         """
         Apply semantic and content-type clues for prefix detection.
@@ -502,8 +541,7 @@ class PrefixesRule(BaseLanguageRule):
         - Document purpose analysis
         """
         
-        prefix = potential_issue['prefix']
-        hyphenated_form = potential_issue['hyphenated_form']
+        hyphenated_form = full_word
         
         content_type = context.get('content_type', 'general')
         
@@ -556,9 +594,19 @@ class PrefixesRule(BaseLanguageRule):
         if self._is_tutorial_content(text):
             evidence_score -= 0.05  # Tutorials may use clearer hyphenated forms
         
+        if self._is_api_documentation_context(text, context):
+            evidence_score += 0.1  # API docs prefer consistent established forms
+        
+        if self._is_enterprise_software_context(text, context):
+            evidence_score -= 0.1  # Enterprise contexts may have established hyphenated terms
+        
+        # === HYPHENATION DENSITY ANALYSIS ===
+        if self._has_high_hyphenation_density(text):
+            evidence_score -= 0.1  # High hyphenation density suggests established hyphenated forms
+        
         return max(0.0, min(1.0, evidence_score))  # Clamp to valid range
 
-    def _apply_feedback_clues_prefix(self, evidence_score: float, potential_issue: Dict[str, Any], context: dict) -> float:
+    def _apply_feedback_clues_prefix(self, evidence_score: float, prefix: str, full_word: str, context: dict) -> float:
         """
         Apply clues learned from user feedback patterns for prefix detection.
         
@@ -570,9 +618,8 @@ class PrefixesRule(BaseLanguageRule):
         - Industry-specific learning
         """
         
-        prefix = potential_issue['prefix']
-        hyphenated_form = potential_issue['hyphenated_form']
-        closed_form = potential_issue['closed_form']
+        hyphenated_form = full_word
+        closed_form = full_word.replace('-', '')
         
         feedback_patterns = self._get_cached_feedback_patterns_prefix()
         
@@ -702,6 +749,126 @@ class PrefixesRule(BaseLanguageRule):
         text_lower = text.lower()
         return sum(1 for indicator in tutorial_indicators if indicator in text_lower) >= 2
 
+    def _is_api_documentation_context(self, text: str, context: dict) -> bool:
+        """
+        Detect if content is API reference documentation.
+        
+        API docs often prefer consistent, established terminology forms,
+        typically favoring closed prefixes for standard terms.
+        
+        Args:
+            text: Document text
+            context: Document context
+            
+        Returns:
+            bool: True if API documentation context detected
+        """
+        api_indicators = {
+            'api', 'endpoint', 'method', 'request', 'response', 'parameter',
+            'authentication', 'authorization', 'header', 'payload', 'json',
+            'rest', 'restful', 'http', 'https', 'get', 'post', 'put', 'delete',
+            'webhook', 'callback', 'token', 'key', 'secret', 'client'
+        }
+        
+        text_lower = text.lower()
+        domain = context.get('domain', '')
+        content_type = context.get('content_type', '')
+        
+        # Direct text indicators
+        api_score = sum(1 for indicator in api_indicators if indicator in text_lower)
+        
+        # Context-based indicators
+        if domain in {'api', 'web-service', 'microservice', 'rest', 'graphql'}:
+            api_score += 2
+        
+        if content_type in {'api', 'reference', 'specification', 'openapi'}:
+            api_score += 2
+        
+        # Check for API-specific patterns
+        api_patterns = [
+            'api endpoint', 'http method', 'request parameter', 'response body',
+            'authentication header', 'authorization token', 'json payload',
+            'api call', 'api response', 'rest api', 'web service'
+        ]
+        
+        pattern_matches = sum(1 for pattern in api_patterns if pattern in text_lower)
+        api_score += pattern_matches
+        
+        # Threshold for API context detection
+        return api_score >= 3
+
+    def _is_enterprise_software_context(self, text: str, context: dict) -> bool:
+        """
+        Detect if content is enterprise software documentation.
+        
+        Enterprise software often has established hyphenated terms
+        for specific architectural patterns and system configurations.
+        
+        Args:
+            text: Document text
+            context: Document context
+            
+        Returns:
+            bool: True if enterprise software context detected
+        """
+        enterprise_indicators = {
+            'enterprise', 'microservice', 'microservices', 'distributed',
+            'scalable', 'fault-tolerant', 'high-availability', 'load-balancer',
+            'multi-tenant', 'multi-tenancy', 'service-oriented', 'soa',
+            'container', 'kubernetes', 'docker', 'cloud-native', 'serverless',
+            'infrastructure', 'platform', 'deployment', 'orchestration'
+        }
+        
+        text_lower = text.lower()
+        domain = context.get('domain', '')
+        content_type = context.get('content_type', '')
+        
+        # Direct text indicators
+        enterprise_score = sum(1 for indicator in enterprise_indicators if indicator in text_lower)
+        
+        # Context-based indicators
+        if domain in {'enterprise', 'architecture', 'infrastructure', 'platform'}:
+            enterprise_score += 2
+        
+        if content_type in {'architecture', 'enterprise', 'infrastructure'}:
+            enterprise_score += 2
+        
+        # Check for enterprise-specific patterns
+        enterprise_patterns = [
+            'enterprise architecture', 'microservice architecture', 'service mesh',
+            'multi-tenant architecture', 'cloud-native platform', 'container orchestration',
+            'distributed system', 'scalable infrastructure', 'fault-tolerant design'
+        ]
+        
+        pattern_matches = sum(1 for pattern in enterprise_patterns if pattern in text_lower)
+        enterprise_score += pattern_matches
+        
+        # Threshold for enterprise context detection
+        return enterprise_score >= 3
+
+    def _has_high_hyphenation_density(self, text: str) -> bool:
+        """
+        Check if document has high density of hyphenated constructions.
+        
+        High hyphenation density may indicate technical documentation
+        where established hyphenated forms are preferred.
+        
+        Args:
+            text: Document text
+            
+        Returns:
+            bool: True if high hyphenation density detected
+        """
+        # Count hyphenated patterns
+        hyphenated_patterns = re.findall(r'\b\w+-\w+\b', text)
+        hyphenated_count = len(hyphenated_patterns)
+        
+        # Count total words
+        word_count = len(text.split())
+        
+        # Consider high density if > 2% of content has hyphens
+        return hyphenated_count > 0 and (hyphenated_count / max(word_count, 1)) > 0.02
+
     def _get_cached_feedback_patterns_prefix(self):
         """Load feedback patterns from cache or feedback analysis for prefixes."""
         # This would load from feedback analysis system
@@ -752,7 +919,7 @@ class PrefixesRule(BaseLanguageRule):
 
     # === HELPER METHODS FOR SMART MESSAGING ===
 
-    def _get_contextual_prefix_message(self, potential_issue: Dict[str, Any], evidence_score: float) -> str:
+    def _get_contextual_prefix_message(self, prefix: str, full_word: str, evidence_score: float) -> str:
         """
         Generate contextual message based on evidence strength and prefix type.
         
@@ -762,9 +929,8 @@ class PrefixesRule(BaseLanguageRule):
         - Context-specific considerations
         """
         
-        prefix = potential_issue['prefix']
-        hyphenated_form = potential_issue['hyphenated_form']
-        closed_form = potential_issue['closed_form']
+        hyphenated_form = full_word
+        closed_form = full_word.replace('-', '')
         
         if evidence_score > 0.8:
             return f"Prefix '{prefix}' should be closed: '{hyphenated_form}' should be written as '{closed_form}'."
@@ -773,8 +939,8 @@ class PrefixesRule(BaseLanguageRule):
         else:
             return f"The prefix '{prefix}' in '{hyphenated_form}' may benefit from closure as '{closed_form}'."
 
-    def _generate_smart_prefix_suggestions(self, potential_issue: Dict[str, Any], evidence_score: float, 
-                                         context: dict) -> List[str]:
+    def _generate_smart_prefix_suggestions(self, prefix: str, full_word: str, evidence_score: float, 
+                                         context_analysis: dict, context: dict) -> List[str]:
         """
         Generate smart, context-aware suggestions for prefix patterns.
         
@@ -785,9 +951,8 @@ class PrefixesRule(BaseLanguageRule):
         - Domain and audience considerations
         """
         
-        prefix = potential_issue['prefix']
-        hyphenated_form = potential_issue['hyphenated_form']
-        closed_form = potential_issue['closed_form']
+        hyphenated_form = full_word
+        closed_form = full_word.replace('-', '')
         
         suggestions = []
         

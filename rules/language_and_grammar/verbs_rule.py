@@ -695,6 +695,29 @@ class VerbsRule(BaseLanguageRule):
         if 'will not' in sent_lower or "won't" in sent_lower:
             evidence_score -= 0.1  # Negative futures may be acceptable for warnings
         
+        # === NAMED ENTITY RECOGNITION ===
+        # Named entities may affect verb usage appropriateness
+        
+        for token in doc:
+            if hasattr(token, 'ent_type_') and token.ent_type_:
+                ent_type = token.ent_type_
+                
+                # Organization or product entities may use different verb patterns
+                if ent_type in ['ORG', 'PRODUCT', 'WORK_OF_ART']:
+                    # Check if entity is related to the verb construction
+                    if abs(token.i - will_token.i) <= 3:  # Within 3 tokens
+                        evidence_score -= 0.1  # Entity contexts may justify future tense
+                
+                # Person entities may use different language patterns
+                elif ent_type in ['PERSON', 'GPE']:
+                    if abs(token.i - will_token.i) <= 2:  # Within 2 tokens
+                        evidence_score -= 0.05  # Person/place contexts may be more flexible
+                
+                # Event or temporal entities may justify future constructions
+                elif ent_type in ['EVENT', 'DATE', 'TIME']:
+                    if abs(token.i - will_token.i) <= 4:  # Within 4 tokens
+                        evidence_score -= 0.15  # Temporal entities may justify future tense
+        
         # === VERB TYPE ANALYSIS ===
         # Some verbs are more problematic with 'will' than others
         
@@ -1204,6 +1227,36 @@ class VerbsRule(BaseLanguageRule):
         
         if '"' in sentence or "'" in sentence:
             evidence_score -= 0.15  # Quoted content may preserve past tense
+        
+        # === NAMED ENTITY RECOGNITION ===
+        # Named entities may affect past tense appropriateness
+        
+        for token in doc:
+            if hasattr(token, 'ent_type_') and token.ent_type_:
+                ent_type = token.ent_type_
+                
+                # Organization or product entities may reference historical states
+                if ent_type in ['ORG', 'PRODUCT', 'WORK_OF_ART']:
+                    # Check if entity is related to the past tense verb
+                    if abs(token.i - root_verb.i) <= 3:  # Within 3 tokens
+                        evidence_score -= 0.08  # Entity contexts may justify past tense
+                
+                # Person entities in past contexts often legitimate
+                elif ent_type in ['PERSON', 'GPE']:
+                    if abs(token.i - root_verb.i) <= 2:  # Within 2 tokens
+                        evidence_score -= 0.1  # Person/place historical references
+                
+                # Event or temporal entities strongly justify past tense
+                elif ent_type in ['EVENT', 'DATE', 'TIME']:
+                    if abs(token.i - root_verb.i) <= 4:  # Within 4 tokens
+                        evidence_score -= 0.2  # Temporal entities strongly justify past tense
+                
+                # Version or release entities may justify past tense
+                elif ent_type in ['CARDINAL', 'ORDINAL']:
+                    # Check if this might be a version number
+                    if any(word in doc.text.lower() for word in ['version', 'release', 'update']):
+                        if abs(token.i - root_verb.i) <= 3:
+                            evidence_score -= 0.12  # Version contexts may justify past tense
         
         # === COMPARISON AND CONTRAST STRUCTURES ===
         # Comparing past vs. present states

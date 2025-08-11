@@ -193,6 +193,56 @@ class SpellingRule(BaseLanguageRule):
             if token_text.istitle() and not getattr(token, 'is_sent_start', False):
                 evidence_score -= 0.3  # Proper nouns often maintain original spelling
             
+            # === PENN TREEBANK TAG ANALYSIS ===
+            # Detailed grammatical analysis using Penn Treebank tags
+            if hasattr(token, 'tag_'):
+                tag = token.tag_
+                
+                # Proper noun tags analysis
+                if tag in ['NNP', 'NNPS']:  # Proper nouns (singular and plural)
+                    evidence_score -= 0.4  # Proper nouns may maintain original spelling
+                # Common noun tags analysis
+                elif tag in ['NN', 'NNS']:  # Common nouns
+                    evidence_score += 0.1  # Common nouns should follow US conventions
+                # Verb tags analysis
+                elif tag in ['VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ']:  # All verb forms
+                    evidence_score += 0.15  # Verbs should be consistent with US forms
+                # Adjective tags analysis
+                elif tag in ['JJ', 'JJR', 'JJS']:  # Adjectives
+                    evidence_score += 0.1  # Adjectives should follow US conventions
+            
+            # === DEPENDENCY PARSING ===
+            # Analyze syntactic role which affects spelling importance
+            if hasattr(token, 'dep_'):
+                dep = token.dep_
+                
+                # Subject positions are more visible
+                if dep in ['nsubj', 'nsubjpass']:
+                    evidence_score += 0.05  # Subject position more prominent
+                # Object positions
+                elif dep in ['dobj', 'iobj', 'pobj']:
+                    evidence_score += 0.02  # Object positions somewhat visible
+                # Compound words may have different conventions
+                elif dep == 'compound':
+                    evidence_score -= 0.1  # Compounds may preserve specific spellings
+                # Modifiers
+                elif dep in ['amod', 'advmod']:
+                    evidence_score += 0.03  # Modifiers should be consistent
+            
+            # === LEMMA ANALYSIS ===
+            # Base form analysis for morphological consistency
+            if hasattr(token, 'lemma_'):
+                lemma = token.lemma_.lower()
+                
+                # Check if the lemma itself suggests US vs non-US patterns
+                us_lemma_indicators = {'color', 'center', 'organize', 'realize', 'analyze'}
+                non_us_lemma_indicators = {'colour', 'centre', 'organise', 'realise', 'analyse'}
+                
+                if lemma in us_lemma_indicators:
+                    evidence_score += 0.1  # Lemma suggests US form preference
+                elif lemma in non_us_lemma_indicators:
+                    evidence_score += 0.15  # Non-US lemma should be corrected
+            
             # === PART-OF-SPEECH ANALYSIS ===
             pos = getattr(token, 'pos_', '')
             

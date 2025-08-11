@@ -184,6 +184,77 @@ class TerminologyRule(BaseLanguageRule):
             elif ent_type in ['EVENT', 'LAW']:
                 evidence_score -= 0.5  # Some reduction for events/laws
             
+            # === PENN TREEBANK TAG ANALYSIS ===
+            # Detailed grammatical analysis using Penn Treebank tags
+            if hasattr(token, 'tag_'):
+                tag = token.tag_
+                
+                # Proper noun tags analysis
+                if tag in ['NNP', 'NNPS']:  # Proper nouns (singular and plural)
+                    evidence_score -= 0.4  # Proper nouns may maintain original terminology
+                # Common noun tags analysis
+                elif tag in ['NN', 'NNS']:  # Common nouns
+                    evidence_score += 0.1  # Common nouns should follow preferred terminology
+                # Verb tags analysis
+                elif tag in ['VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ']:  # All verb forms
+                    evidence_score += 0.12  # Verbs should be consistent with preferred terms
+                # Adjective tags analysis
+                elif tag in ['JJ', 'JJR', 'JJS']:  # Adjectives
+                    evidence_score += 0.08  # Adjectives should follow preferred terminology
+                # Modal verbs often in procedural contexts
+                elif tag == 'MD':  # Modal verb
+                    evidence_score += 0.05  # Modal contexts should use preferred terms
+            
+            # === DEPENDENCY PARSING ===
+            # Analyze syntactic role which affects terminology importance
+            if hasattr(token, 'dep_'):
+                dep = token.dep_
+                
+                # Subject positions are more visible
+                if dep in ['nsubj', 'nsubjpass']:
+                    evidence_score += 0.05  # Subject position more prominent
+                # Object positions
+                elif dep in ['dobj', 'iobj', 'pobj']:
+                    evidence_score += 0.03  # Object positions somewhat visible
+                # Compound words may have specific terminology conventions
+                elif dep == 'compound':
+                    evidence_score -= 0.1  # Compounds may preserve specific terminology
+                # Modifiers
+                elif dep in ['amod', 'advmod']:
+                    evidence_score += 0.02  # Modifiers should be consistent
+                # Root words in sentences are more important
+                elif dep == 'ROOT':
+                    evidence_score += 0.08  # Root words are central to meaning
+            
+            # === LEMMA ANALYSIS ===
+            # Base form analysis for terminology consistency
+            if hasattr(token, 'lemma_'):
+                lemma = token.lemma_.lower()
+                
+                # Check if the lemma itself suggests preferred terminology patterns
+                preferred_lemmas = {'email', 'website', 'dialog', 'user', 'login', 'uninstall'}
+                non_preferred_lemmas = {'e-mail', 'web site', 'dialog box', 'end user', 'log on', 'logon'}
+                
+                if lemma in preferred_lemmas:
+                    evidence_score -= 0.1  # Lemma suggests this is actually preferred form
+                elif lemma in non_preferred_lemmas:
+                    evidence_score += 0.15  # Non-preferred lemma should be corrected
+            
+            # === MORPHOLOGICAL FEATURES ===
+            # Morphological analysis for terminology patterns
+            if hasattr(token, 'morph') and token.morph:
+                morph_dict = token.morph.to_dict()
+                
+                # Check for foreign language markers
+                if morph_dict.get('Foreign') == 'Yes':
+                    evidence_score -= 0.3  # Foreign words may keep original terminology
+                
+                # Tense information can affect terminology decisions
+                if morph_dict.get('Tense') == 'Past':
+                    evidence_score += 0.02  # Past tense contexts should use preferred terms
+                elif morph_dict.get('Tense') == 'Pres':
+                    evidence_score += 0.05  # Present tense contexts should be current
+            
             # === PART-OF-SPEECH ANALYSIS ===
             pos = getattr(token, 'pos_', '')
             
