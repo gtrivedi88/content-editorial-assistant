@@ -193,33 +193,43 @@ class PossessivesRule(BaseLanguageRule):
         prev_token = potential_issue['abbreviation']
         abbreviation = prev_token.text.upper()
         
-        # === ENTITY TYPE ANALYSIS ===
-        # Check if this is a named entity (organization, person, etc.)
-        if prev_token.ent_type_ in ['ORG', 'PERSON', 'GPE']:
-            return 0.2  # Low evidence - named entities often use possessives appropriately
+        # === ABBREVIATION TYPE ANALYSIS ===
+        # Prioritize abbreviation-specific classification over entity detection
         
-        # === BRAND/PRODUCT NAME ANALYSIS ===
-        # Well-known brand names and products often use possessives appropriately
-        brand_names = {
-            'IBM', 'NASA', 'GOOGLE', 'MICROSOFT', 'APPLE', 'ORACLE', 'SAP',
-            'AWS', 'AZURE', 'GCP', 'API', 'SDK', 'IDE', 'OS', 'CPU', 'GPU',
-            'SQL', 'JSON', 'XML', 'HTML', 'CSS', 'REST', 'SOAP', 'HTTP', 'HTTPS'
-        }
-        
-        if abbreviation in brand_names:
-            return 0.3  # Low evidence - brand names commonly use possessives
-        
-        # === TECHNICAL ACRONYM ANALYSIS ===
-        # Technical acronyms in certain contexts may be acceptable
+        # === TECHNICAL ACRONYMS (HIGH EVIDENCE) ===
+        # Technical acronyms that should prefer prepositional phrases
         technical_acronyms = {
-            'API', 'SDK', 'IDE', 'OS', 'CPU', 'GPU', 'RAM', 'ROM', 'SSD', 'HDD',
             'SQL', 'JSON', 'XML', 'HTML', 'CSS', 'JS', 'PHP', 'PDF', 'CSV',
             'REST', 'SOAP', 'HTTP', 'HTTPS', 'FTP', 'SSH', 'SSL', 'TLS',
             'DNS', 'IP', 'TCP', 'UDP', 'VPN', 'LAN', 'WAN', 'WiFi', 'USB'
         }
         
         if abbreviation in technical_acronyms:
-            return 0.5  # Moderate evidence - technical acronyms often better with prepositions
+            return 0.6  # Moderate-high evidence - these technical acronyms often better with prepositions
+        
+        # === CONTEXT-DEPENDENT TECHNICAL TERMS (MODERATE EVIDENCE) ===
+        # These can go either way depending on context
+        context_dependent_terms = {
+            'API', 'SDK', 'IDE', 'OS', 'CPU', 'GPU', 'RAM', 'ROM', 'SSD', 'HDD'
+        }
+        
+        if abbreviation in context_dependent_terms:
+            return 0.5  # Moderate evidence - context will determine appropriateness
+        
+        # === BRAND/PRODUCT NAMES (LOW EVIDENCE) ===
+        # Well-known brand names that often use possessives appropriately
+        brand_names = {
+            'IBM', 'NASA', 'GOOGLE', 'MICROSOFT', 'APPLE', 'ORACLE', 'SAP',
+            'AWS', 'AZURE', 'GCP'
+        }
+        
+        if abbreviation in brand_names:
+            return 0.2  # Low evidence - brand names commonly use possessives
+        
+        # === ENTITY TYPE ANALYSIS (FALLBACK) ===
+        # Check if this is a named entity (only if not in specific lists above)
+        if prev_token.ent_type_ in ['ORG', 'PERSON', 'GPE']:
+            return 0.3  # Low-moderate evidence - named entities often use possessives appropriately
         
         # === GENERIC ABBREVIATIONS ===
         # Generic abbreviations typically should use prepositional phrases
@@ -241,35 +251,44 @@ class PossessivesRule(BaseLanguageRule):
         possessive_token = potential_issue['possessive_token']
         possessive_object = potential_issue.get('possessive_object')
         
-        # === PART-OF-SPEECH ANALYSIS ===
-        # Analyze POS tags for both abbreviation and possessive object
-        if hasattr(prev_token, 'pos_'):
-            # Proper nouns often appropriate with possessives
+        # === GRAMMATICAL CLASSIFICATION ===
+        # Analyze the fundamental grammatical nature of the token
+        # Note: Only apply ONE adjustment per token to avoid triple-penalizing
+        
+        grammatical_adjustment_applied = False
+        
+        # Check named entity first (most specific classification)
+        if hasattr(prev_token, 'ent_type_') and prev_token.ent_type_:
+            ent_type = prev_token.ent_type_
+            if ent_type == 'ORG':
+                evidence_score -= 0.1  # Organizations commonly use possessives
+                grammatical_adjustment_applied = True
+            elif ent_type == 'PRODUCT':
+                evidence_score -= 0.05  # Products may use possessives for branding
+                grammatical_adjustment_applied = True
+            elif ent_type == 'GPE':
+                evidence_score += 0.05  # Geographic entities often use prepositions
+                grammatical_adjustment_applied = True
+            elif ent_type == 'FAC':
+                evidence_score -= 0.05  # Facilities may appropriately use possessives
+                grammatical_adjustment_applied = True
+        
+        # If no named entity classification, check POS tags
+        elif hasattr(prev_token, 'pos_') and not grammatical_adjustment_applied:
             if prev_token.pos_ == 'PROPN':
                 evidence_score -= 0.1  # Proper nouns commonly use possessives
-            # Generic nouns may be less appropriate
+                grammatical_adjustment_applied = True
             elif prev_token.pos_ == 'NOUN':
                 evidence_score += 0.1  # Generic nouns often better with prepositions
+                grammatical_adjustment_applied = True
         
         # === DEPENDENCY ANALYSIS ===
-        # Analyze dependency relationships for context clues
+        # Analyze dependency relationships for context clues (independent of grammatical type)
         if hasattr(prev_token, 'dep_'):
-            # Subject abbreviations may be more appropriate with possessives
             if prev_token.dep_ in ['nsubj', 'nsubjpass']:
-                evidence_score -= 0.1  # Subjects often appropriate with possessives
-            # Object abbreviations may be less appropriate
+                evidence_score -= 0.05  # Subjects often appropriate with possessives
             elif prev_token.dep_ in ['dobj', 'pobj']:
-                evidence_score += 0.1  # Objects often better with prepositions
-        
-        # === PENN TREEBANK TAG ANALYSIS ===
-        # More detailed grammatical analysis using Penn Treebank tags
-        if hasattr(prev_token, 'tag_'):
-            # Proper noun analysis (NNP, NNPS)
-            if prev_token.tag_ in ['NNP', 'NNPS']:
-                evidence_score -= 0.1  # Proper nouns often appropriate with possessives
-            # Common noun analysis (NN, NNS)
-            elif prev_token.tag_ in ['NN', 'NNS']:
-                evidence_score += 0.1  # Common nouns may need prepositions
+                evidence_score += 0.05  # Objects often better with prepositions
         
         # === MORPHOLOGICAL FEATURES ===
         # Analyze morphological features for additional context
@@ -281,22 +300,8 @@ class PossessivesRule(BaseLanguageRule):
             elif 'Number=Plur' in morph_str:
                 evidence_score += 0.05  # Plural forms may be awkward with possessives
         
-        # === NAMED ENTITY RECOGNITION ===
-        # Enhanced NER analysis for possessive context
-        if hasattr(prev_token, 'ent_type_') and prev_token.ent_type_:
-            ent_type = prev_token.ent_type_
-            # Organizations often have established possessive usage
-            if ent_type == 'ORG':
-                evidence_score -= 0.2  # Organizations commonly use possessives
-            # Products may have brand-specific conventions
-            elif ent_type == 'PRODUCT':
-                evidence_score -= 0.1  # Products may use possessives for branding
-            # Geographic entities less common with possessives
-            elif ent_type == 'GPE':
-                evidence_score += 0.1  # Geographic entities often use prepositions
-            # Facility names may use possessives
-            elif ent_type == 'FAC':
-                evidence_score -= 0.1  # Facilities may appropriately use possessives
+        # === NAMED ENTITY ANALYSIS COMPLETED ABOVE ===
+        # (Moved to grammatical classification section to avoid double-counting)
         
         # === POSSESSIVE OBJECT ANALYSIS ===
         # Look at what the abbreviation "possesses" - what comes after 's
@@ -459,16 +464,16 @@ class PossessivesRule(BaseLanguageRule):
         if self._is_specification_documentation(text):
             evidence_score += 0.2  # Specification docs prefer formal constructions
         
-        if self._is_api_documentation_context(text, context):
+        if self._is_api_documentation(text):
             evidence_score += 0.1  # API docs prefer precise prepositional phrases
         
-        if self._is_technical_reference_context(text, context):
+        if self._is_technical_documentation(text):
             evidence_score += 0.2  # Technical reference prefers formal constructions
         
-        if self._is_marketing_content_context(text, context):
+        if self._is_marketing_content_possessive(text, context):
             evidence_score -= 0.3  # Marketing content accepts brand possessives
         
-        if self._is_formal_legal_context(text, context):
+        if self._is_legal_documentation_possessive(text, context):
             evidence_score += 0.3  # Legal contexts strongly prefer prepositional phrases
         
         # === POSSESSIVE DENSITY ANALYSIS ===
@@ -490,7 +495,7 @@ class PossessivesRule(BaseLanguageRule):
         """
         
         prev_token = potential_issue['abbreviation']
-        feedback_patterns = self._get_cached_feedback_patterns_possessive()
+        feedback_patterns = self._get_cached_feedback_patterns('possessives')
         
         # === ABBREVIATION-SPECIFIC FEEDBACK ===
         abbreviation = prev_token.text.upper()
@@ -534,210 +539,71 @@ class PossessivesRule(BaseLanguageRule):
         text_lower = text.lower()
         return sum(1 for indicator in brand_indicators if indicator in text_lower) >= 2
 
-    def _is_specification_documentation(self, text: str) -> bool:
-        """Check if text appears to be specification documentation."""
-        spec_indicators = [
-            'specification', 'spec', 'format', 'syntax', 'structure',
-            'schema', 'standard', 'protocol', 'implementation',
-            'definition', 'reference', 'documentation'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in spec_indicators if indicator in text_lower) >= 3
-
-    def _is_api_documentation_context(self, text: str, context: dict) -> bool:
+    def _is_marketing_content_possessive(self, text: str, context: dict) -> bool:
         """
-        Detect if content is API reference documentation.
+        Detect marketing content that commonly uses possessives for brand connection.
         
-        API docs often use possessives for brand/product ownership but
-        prefer prepositional phrases for technical specifications.
-        
-        Args:
-            text: Document text
-            context: Document context
-            
-        Returns:
-            bool: True if API documentation context detected
+        Specialized for possessive analysis - marketing content often uses possessives
+        to create emotional attachment (e.g., "Microsoft's innovative solutions").
         """
-        api_indicators = {
-            'api', 'endpoint', 'method', 'request', 'response', 'parameter',
-            'authentication', 'authorization', 'header', 'payload', 'json',
-            'rest', 'restful', 'http', 'https', 'get', 'post', 'put', 'delete',
-            'webhook', 'callback', 'token', 'key', 'secret', 'client'
-        }
-        
-        text_lower = text.lower()
-        domain = context.get('domain', '')
-        content_type = context.get('content_type', '')
-        
-        # Direct text indicators
-        api_score = sum(1 for indicator in api_indicators if indicator in text_lower)
-        
-        # Context-based indicators
-        if domain in {'api', 'web-service', 'microservice', 'rest', 'graphql'}:
-            api_score += 2
-        
-        if content_type in {'api', 'reference', 'specification', 'openapi'}:
-            api_score += 2
-        
-        # Check for API-specific patterns
-        api_patterns = [
-            'api endpoint', 'http method', 'request parameter', 'response body',
-            'authentication header', 'authorization token', 'json payload',
-            'api call', 'api response', 'rest api', 'web service'
-        ]
-        
-        pattern_matches = sum(1 for pattern in api_patterns if pattern in text_lower)
-        api_score += pattern_matches
-        
-        # Threshold for API context detection
-        return api_score >= 3
-
-    def _is_technical_reference_context(self, text: str, context: dict) -> bool:
-        """
-        Detect if content is technical reference documentation.
-        
-        Technical reference docs typically prefer prepositional phrases
-        for precision and clarity over possessive constructions.
-        
-        Args:
-            text: Document text
-            context: Document context
-            
-        Returns:
-            bool: True if technical reference context detected
-        """
-        technical_indicators = {
-            'function', 'method', 'class', 'module', 'library', 'package',
-            'parameter', 'argument', 'return', 'exception', 'error',
-            'configuration', 'setting', 'option', 'flag', 'variable',
-            'syntax', 'format', 'structure', 'schema', 'protocol'
-        }
-        
-        text_lower = text.lower()
-        domain = context.get('domain', '')
-        content_type = context.get('content_type', '')
-        
-        # Direct text indicators
-        tech_score = sum(1 for indicator in technical_indicators if indicator in text_lower)
-        
-        # Context-based indicators
-        if domain in {'software', 'programming', 'development', 'engineering'}:
-            tech_score += 2
-        
-        if content_type in {'reference', 'documentation', 'manual', 'guide'}:
-            tech_score += 2
-        
-        # Check for technical reference patterns
-        reference_patterns = [
-            'function reference', 'method reference', 'api reference',
-            'parameter list', 'return value', 'error code', 'status code',
-            'configuration file', 'syntax reference', 'command reference'
-        ]
-        
-        pattern_matches = sum(1 for pattern in reference_patterns if pattern in text_lower)
-        tech_score += pattern_matches
-        
-        # Threshold for technical reference detection
-        return tech_score >= 3
-
-    def _is_marketing_content_context(self, text: str, context: dict) -> bool:
-        """
-        Detect if content is marketing or promotional material.
-        
-        Marketing content often uses possessives to create brand connection
-        and emotional attachment (e.g., "Microsoft's innovative solutions").
-        
-        Args:
-            text: Document text
-            context: Document context
-            
-        Returns:
-            bool: True if marketing content context detected
-        """
+        # Marketing content indicators specific to possessive usage
         marketing_indicators = {
             'solution', 'innovative', 'leading', 'premier', 'trusted',
-            'award-winning', 'industry-leading', 'cutting-edge', 'state-of-the-art',
-            'customer', 'client', 'partner', 'benefit', 'advantage',
-            'transform', 'revolutionize', 'empower', 'enable', 'deliver',
-            'success', 'growth', 'efficiency', 'productivity', 'roi'
+            'award-winning', 'industry-leading', 'cutting-edge',
+            'customer', 'client', 'partner', 'benefit', 'advantage'
         }
         
-        text_lower = text.lower()
-        domain = context.get('domain', '')
-        content_type = context.get('content_type', '')
+        # Brand connection phrases that often use possessives
+        brand_connection_phrases = [
+            'our company', 'our solution', 'our product', 'our service',
+            'company\'s mission', 'brand\'s vision', 'team\'s expertise',
+            'organization\'s commitment', 'industry\'s leading'
+        ]
         
-        # Direct text indicators
+        text_lower = text.lower()
         marketing_score = sum(1 for indicator in marketing_indicators if indicator in text_lower)
+        possessive_marketing_score = sum(1 for phrase in brand_connection_phrases if phrase in text_lower)
         
-        # Context-based indicators
-        if domain in {'marketing', 'sales', 'branding', 'advertising'}:
-            marketing_score += 3
+        # Marketing content type or domain
+        content_type = context.get('content_type', '')
+        domain = context.get('domain', '')
         
-        if content_type in {'marketing', 'promotional', 'sales', 'branding'}:
-            marketing_score += 3
+        context_marketing = (content_type in {'marketing', 'promotional', 'sales', 'branding'} or
+                           domain in {'marketing', 'sales', 'branding', 'advertising'})
         
-        # Check for marketing-specific patterns
-        marketing_patterns = [
-            'leading provider', 'trusted partner', 'innovative solution',
-            'award-winning', 'industry leader', 'market leader',
-            'transform your business', 'drive success', 'competitive advantage'
-        ]
-        
-        pattern_matches = sum(1 for pattern in marketing_patterns if pattern in text_lower)
-        marketing_score += pattern_matches * 2
-        
-        # Threshold for marketing context detection
-        return marketing_score >= 4
+        return marketing_score >= 3 or possessive_marketing_score >= 1 or context_marketing
 
-    def _is_formal_legal_context(self, text: str, context: dict) -> bool:
+    def _is_legal_documentation_possessive(self, text: str, context: dict) -> bool:
         """
-        Detect if content is formal or legal documentation.
+        Detect legal content that strongly prefers prepositional phrases over possessives.
         
-        Formal and legal contexts strongly prefer prepositional phrases
-        for precision and to avoid ambiguity.
-        
-        Args:
-            text: Document text
-            context: Document context
-            
-        Returns:
-            bool: True if formal/legal context detected
+        Specialized for possessive analysis - legal documents prefer precision.
         """
-        formal_indicators = {
+        # Legal content indicators
+        legal_indicators = {
             'accordance', 'pursuant', 'compliance', 'regulation', 'statute',
-            'provision', 'clause', 'section', 'subsection', 'paragraph',
-            'agreement', 'contract', 'license', 'terms', 'conditions',
-            'liability', 'warranty', 'disclaimer', 'indemnification',
-            'intellectual property', 'copyright', 'trademark', 'patent'
+            'provision', 'clause', 'section', 'agreement', 'contract',
+            'license', 'terms', 'conditions', 'liability', 'warranty'
         }
         
-        text_lower = text.lower()
-        domain = context.get('domain', '')
-        content_type = context.get('content_type', '')
-        
-        # Direct text indicators
-        formal_score = sum(1 for indicator in formal_indicators if indicator in text_lower)
-        
-        # Context-based indicators
-        if domain in {'legal', 'compliance', 'regulatory', 'governance'}:
-            formal_score += 3
-        
-        if content_type in {'legal', 'formal', 'compliance', 'contract', 'agreement'}:
-            formal_score += 3
-        
-        # Check for formal/legal patterns
-        formal_patterns = [
-            'in accordance with', 'pursuant to', 'subject to', 'as defined in',
-            'terms and conditions', 'intellectual property rights',
-            'under this agreement', 'governed by', 'compliance with'
+        # Possessive-sensitive legal terms
+        possessive_sensitive_terms = [
+            'intellectual property rights', 'proprietary rights', 'ownership rights',
+            'trademark rights', 'copyright ownership', 'patent rights'
         ]
         
-        pattern_matches = sum(1 for pattern in formal_patterns if pattern in text_lower)
-        formal_score += pattern_matches * 2
+        text_lower = text.lower()
+        legal_score = sum(1 for indicator in legal_indicators if indicator in text_lower)
+        possessive_legal_score = sum(1 for term in possessive_sensitive_terms if term in text_lower)
         
-        # Threshold for formal/legal context detection
-        return formal_score >= 3
+        # Legal content type or domain
+        content_type = context.get('content_type', '')
+        domain = context.get('domain', '')
+        
+        context_legal = (content_type in {'legal', 'formal', 'compliance', 'contract', 'agreement'} or
+                        domain in {'legal', 'compliance', 'regulatory', 'governance'})
+        
+        return legal_score >= 3 or possessive_legal_score >= 1 or context_legal
 
     def _has_high_possessive_density(self, text: str) -> bool:
         """
@@ -761,47 +627,6 @@ class PossessivesRule(BaseLanguageRule):
         
         # Consider high density if > 1% of content has possessives
         return possessive_count > 0 and (possessive_count / max(word_count, 1)) > 0.01
-
-    def _get_cached_feedback_patterns_possessive(self):
-        """Load feedback patterns from cache or feedback analysis for possessives."""
-        # This would load from feedback analysis system
-        # For now, return patterns based on common possessive usage
-        return {
-            'accepted_possessive_abbreviations': {
-                # Brand names commonly accepted with possessives
-                'IBM', 'NASA', 'GOOGLE', 'MICROSOFT', 'APPLE', 'ORACLE',
-                'AWS', 'AZURE', 'GCP'
-            },
-            'flagged_possessive_abbreviations': {
-                # Technical acronyms commonly flagged with possessives
-                'JSON', 'XML', 'HTML', 'CSS', 'SQL', 'REST', 'HTTP'
-            },
-            'technical_possessive_patterns': {
-                'acceptable': {
-                    # Possessives acceptable in technical contexts
-                    'API', 'SDK', 'IDE', 'OS'
-                },
-                'problematic': {
-                    # Possessives problematic in technical contexts
-                    'JSON', 'XML', 'HTML', 'CSS', 'SQL'
-                }
-            },
-            'marketing_possessive_patterns': {
-                'acceptable': {
-                    # Possessives acceptable in marketing contexts
-                    'IBM', 'GOOGLE', 'MICROSOFT', 'APPLE', 'AWS', 'API'
-                },
-                'problematic': {
-                    # Possessives problematic even in marketing
-                    'HTTP', 'HTTPS', 'FTP', 'SSH'
-                }
-            },
-            'accepted_brand_possessives': {
-                # Brand possessives commonly accepted across contexts
-                'IBM', 'NASA', 'GOOGLE', 'MICROSOFT', 'APPLE', 'ORACLE',
-                'AWS', 'AZURE', 'GCP'
-            }
-        }
 
     # === HELPER METHODS FOR SMART MESSAGING ===
 

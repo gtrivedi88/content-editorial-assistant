@@ -103,24 +103,35 @@ class PluralsRule(BaseLanguageRule):
             return potential_issues
         
         # === RULE 1: "(s)" PATTERN DETECTION ===
-        matches = self.matcher(doc)
-        for match_id, start, end in matches:
-            if doc.vocab.strings[match_id] == "PARENTHETICAL_S":
-                span = doc[start:end]
-                sentence_index = self._get_sentence_index(doc, span.start_char)
-                
-                # Skip if this pattern is in exceptions
-                if self._is_excepted(span.text):
-                    continue
-                
+        # Use regex approach as SpaCy tokenization can split (s) patterns
+        s_pattern_regex = re.compile(r'\b(\w+)\(s\)', re.IGNORECASE)
+        
+        for match in s_pattern_regex.finditer(text):
+            full_match = match.group(0)  # e.g., "user(s)"
+            base_word = match.group(1)   # e.g., "user"
+            
+            # Skip if this pattern is in exceptions
+            if self._is_excepted(full_match):
+                continue
+            
+            # Find which sentence this belongs to
+            sentence_index = 0
+            match_sentence = None
+            for i, sent in enumerate(doc.sents):
+                if sent.start_char <= match.start() < sent.end_char:
+                    sentence_index = i
+                    match_sentence = sent
+                    break
+            
+            if match_sentence:
                 potential_issues.append({
                     'type': 'parenthetical_s',
-                    'span_obj': span,
-                    'sentence': span.sent,
+                    'span_obj': None,  # We don't have a spaCy span for regex matches
+                    'sentence': match_sentence,
                     'sentence_index': sentence_index,
-                    'span': (span.start_char, span.end_char),
-                    'flagged_text': span.text,
-                    'base_word': span[0].text,
+                    'span': (match.start(), match.end()),
+                    'flagged_text': full_match,
+                    'base_word': base_word,
                     'severity': 'medium'
                 })
         
@@ -481,7 +492,8 @@ class PluralsRule(BaseLanguageRule):
         issue_type = potential_issue['type']
         
         if issue_type == 'parenthetical_s':
-            return self._apply_feedback_clues_s_pattern(evidence_score, potential_issue['span_obj'], context)
+            # For (s) patterns, pass the base word for feedback analysis
+            return self._apply_feedback_clues_s_pattern_enhanced(evidence_score, potential_issue['span_obj'], context, potential_issue.get('base_word'))
         elif issue_type == 'plural_adjective':
             return self._apply_feedback_clues_plural_adjective(evidence_score, potential_issue['token'], context)
         
@@ -497,6 +509,12 @@ class PluralsRule(BaseLanguageRule):
 
     def _apply_linguistic_clues_s_pattern(self, evidence_score: float, span, doc) -> float:
         """Apply linguistic analysis clues for (s) pattern detection."""
+        
+        # Handle both spaCy span and regex-based detection
+        if span is None:
+            # For regex-based detection, we don't have a spaCy span
+            # The evidence calculation will work with sentence-level analysis
+            return evidence_score
         
         # Get the word before (s)
         base_word = span[0]  # The word before (s)
@@ -553,6 +571,11 @@ class PluralsRule(BaseLanguageRule):
     def _apply_structural_clues_s_pattern(self, evidence_score: float, span, context: dict) -> float:
         """Apply document structure clues for (s) pattern detection."""
         
+        # Handle case where span might be None (regex-based detection)
+        if span is None:
+            # Use context-based analysis only
+            pass
+        
         block_type = context.get('block_type', 'paragraph')
         
         # === TECHNICAL DOCUMENTATION CONTEXTS ===
@@ -585,6 +608,11 @@ class PluralsRule(BaseLanguageRule):
 
     def _apply_semantic_clues_s_pattern(self, evidence_score: float, span, text: str, context: dict) -> float:
         """Apply semantic and content-type clues for (s) pattern detection."""
+        
+        # Handle case where span might be None (regex-based detection)
+        if span is None:
+            # Use context-based analysis only
+            pass
         
         content_type = context.get('content_type', 'general')
         
@@ -635,27 +663,41 @@ class PluralsRule(BaseLanguageRule):
     def _apply_feedback_clues_s_pattern(self, evidence_score: float, span, context: dict) -> float:
         """Apply feedback patterns for (s) pattern detection."""
         
-        feedback_patterns = self._get_cached_feedback_patterns_plurals()
+        feedback_patterns = self._get_cached_feedback_patterns('plurals')
+        
+        # This method is replaced by _apply_feedback_clues_s_pattern_enhanced
+        return evidence_score
+    
+    def _apply_feedback_clues_s_pattern_enhanced(self, evidence_score: float, span, context: dict, base_word: str = None) -> float:
+        """Enhanced feedback patterns for (s) pattern detection."""
+        
+        feedback_patterns = self._get_cached_feedback_patterns('plurals')
         
         # === WORD-SPECIFIC FEEDBACK ===
-        base_word = span[0].text.lower()
+        # Handle both spaCy span and regex-based detection
+        if span is not None:
+            word_to_check = span[0].text.lower()
+        elif base_word is not None:
+            word_to_check = base_word.lower()
+        else:
+            return evidence_score  # Can't do word-specific analysis
         
         # Check if this word commonly has accepted (s) usage
         accepted_s_words = feedback_patterns.get('accepted_s_patterns', set())
-        if base_word in accepted_s_words:
+        if word_to_check in accepted_s_words:
             evidence_score -= 0.3  # Users consistently accept (s) for this word
         
         flagged_s_words = feedback_patterns.get('flagged_s_patterns', set())
-        if base_word in flagged_s_words:
+        if word_to_check in flagged_s_words:
             evidence_score += 0.3  # Users consistently flag (s) for this word
         
         # === CONTEXT-SPECIFIC FEEDBACK ===
         content_type = context.get('content_type', 'general')
         context_patterns = feedback_patterns.get(f'{content_type}_s_patterns', {})
         
-        if base_word in context_patterns.get('acceptable', set()):
+        if word_to_check in context_patterns.get('acceptable', set()):
             evidence_score -= 0.2
-        elif base_word in context_patterns.get('problematic', set()):
+        elif word_to_check in context_patterns.get('problematic', set()):
             evidence_score += 0.2
         
         return evidence_score
@@ -813,7 +855,7 @@ class PluralsRule(BaseLanguageRule):
     def _apply_feedback_clues_plural_adjective(self, evidence_score: float, token, context: dict) -> float:
         """Apply feedback patterns for plural adjective detection."""
         
-        feedback_patterns = self._get_cached_feedback_patterns_plurals()
+        feedback_patterns = self._get_cached_feedback_patterns('plurals')
         
         # === TOKEN-SPECIFIC FEEDBACK ===
         token_text = token.text.lower()
@@ -848,106 +890,6 @@ class PluralsRule(BaseLanguageRule):
         
         return evidence_score
 
-    # === HELPER METHODS FOR SEMANTIC ANALYSIS ===
-
-    def _is_specification_documentation(self, text: str) -> bool:
-        """Check if text appears to be specification documentation."""
-        spec_indicators = [
-            'specification', 'spec', 'parameter', 'option', 'setting',
-            'configure', 'configuration', 'syntax', 'format', 'schema'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in spec_indicators if indicator in text_lower) >= 3
-
-    def _is_reference_documentation(self, text: str) -> bool:
-        """Check if text appears to be reference documentation."""
-        reference_indicators = [
-            'reference', 'api', 'documentation', 'manual', 'guide',
-            'function', 'method', 'class', 'module', 'library'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in reference_indicators if indicator in text_lower) >= 2
-
-    def _is_tutorial_content(self, text: str) -> bool:
-        """Check if text appears to be tutorial content."""
-        tutorial_indicators = [
-            'tutorial', 'how to', 'step', 'procedure', 'follow', 'complete',
-            'first', 'next', 'then', 'finally', 'getting started'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in tutorial_indicators if indicator in text_lower) >= 2
-
-    def _has_high_technical_density(self, text: str) -> bool:
-        """Check if document has high density of technical terms."""
-        technical_indicators = [
-            'system', 'server', 'database', 'application', 'service', 'api',
-            'configuration', 'parameter', 'variable', 'function', 'method',
-            'interface', 'protocol', 'network', 'security', 'authentication'
-        ]
-        
-        text_lower = text.lower()
-        word_count = len(text.split())
-        technical_count = sum(1 for indicator in technical_indicators if indicator in text_lower)
-        
-        # Consider high density if > 5% of content has technical indicators
-        return technical_count > 0 and (technical_count / max(word_count, 1)) > 0.05
-
-    def _get_cached_feedback_patterns_plurals(self):
-        """Load feedback patterns from cache or feedback analysis for plurals."""
-        # This would load from feedback analysis system
-        # For now, return patterns based on common plurals usage
-        return {
-            'accepted_s_patterns': {
-                # Words where (s) is commonly accepted
-                'parameter', 'option', 'setting', 'value', 'file', 'directory',
-                'argument', 'variable', 'property', 'attribute', 'field'
-            },
-            'flagged_s_patterns': {
-                # Words where (s) is commonly flagged
-                'user', 'item', 'element', 'component', 'object'
-            },
-            'accepted_plural_modifiers': {
-                # Plural modifiers commonly accepted by users
-                'systems', 'operations', 'services', 'applications', 'communications',
-                'networks', 'resources', 'utilities', 'components', 'tools',
-                'data', 'media', 'metadata', 'analytics', 'metrics', 'statistics'
-            },
-            'flagged_plural_modifiers': {
-                # Plural modifiers commonly flagged by users
-                'elements', 'objects', 'items', 'things', 'parts'
-            },
-            'technical_s_patterns': {
-                'acceptable': {
-                    # (s) patterns acceptable in technical contexts
-                    'parameter', 'option', 'setting', 'configuration', 'variable'
-                },
-                'problematic': {
-                    # (s) patterns problematic even in technical contexts
-                    'user', 'person', 'individual', 'member'
-                }
-            },
-            'technical_plural_patterns': {
-                'acceptable': {
-                    # Plural adjectives acceptable in technical contexts
-                    'systems', 'operations', 'services', 'networks', 'data',
-                    'communications', 'applications', 'resources', 'tools'
-                },
-                'problematic': {
-                    # Plural adjectives problematic even in technical contexts
-                    'elements', 'objects', 'items', 'things'
-                }
-            },
-            'accepted_compound_phrases': {
-                # Compound phrases commonly accepted
-                'systems_architecture', 'operations_management', 'services_layer',
-                'applications_server', 'users_guide', 'communications_protocol',
-                'networks_topology', 'resources_allocation', 'data_processing'
-            }
-        }
-
     # === HELPER METHODS FOR SMART MESSAGING ===
 
     def _get_contextual_plurals_message(self, potential_issue: Dict[str, Any], evidence_score: float) -> str:
@@ -955,7 +897,7 @@ class PluralsRule(BaseLanguageRule):
         issue_type = potential_issue['type']
         
         if issue_type == 'parenthetical_s':
-            return self._get_contextual_s_pattern_message(potential_issue['span_obj'], evidence_score)
+            return self._get_contextual_s_pattern_message(potential_issue['span_obj'], evidence_score, potential_issue.get('base_word'))
         elif issue_type == 'plural_adjective':
             return self._get_contextual_plural_adjective_message(potential_issue['token'], evidence_score)
         
@@ -966,16 +908,20 @@ class PluralsRule(BaseLanguageRule):
         issue_type = potential_issue['type']
         
         if issue_type == 'parenthetical_s':
-            return self._generate_smart_s_pattern_suggestions(potential_issue['span_obj'], evidence_score, context)
+            return self._generate_smart_s_pattern_suggestions(potential_issue['span_obj'], evidence_score, context, potential_issue.get('base_word'))
         elif issue_type == 'plural_adjective':
             return self._generate_smart_plural_adjective_suggestions(potential_issue['token'], evidence_score, context)
         
         return ["Consider reviewing the pluralization pattern."]
 
-    def _get_contextual_s_pattern_message(self, span, evidence_score: float) -> str:
+    def _get_contextual_s_pattern_message(self, span, evidence_score: float, base_word: str = None) -> str:
         """Generate context-aware error messages for (s) patterns."""
         
-        base_word = span[0].text
+        # Handle both spaCy span and regex-based detection
+        if span is not None:
+            base_word = span[0].text
+        elif base_word is None:
+            base_word = "term"  # Fallback
         
         if evidence_score > 0.8:
             return f"Avoid using '({base_word})' to indicate a plural."
@@ -994,11 +940,15 @@ class PluralsRule(BaseLanguageRule):
         else:
             return f"Plural adjective '{token.text}' noted. May be acceptable in technical contexts."
 
-    def _generate_smart_s_pattern_suggestions(self, span, evidence_score: float, context: dict) -> List[str]:
+    def _generate_smart_s_pattern_suggestions(self, span, evidence_score: float, context: dict, base_word: str = None) -> List[str]:
         """Generate context-aware suggestions for (s) patterns."""
         
         suggestions = []
-        base_word = span[0].text
+        # Handle both spaCy span and regex-based detection
+        if span is not None:
+            base_word = span[0].text
+        elif base_word is None:
+            base_word = "term"  # Fallback
         
         # Base suggestions based on evidence strength
         if evidence_score > 0.7:
