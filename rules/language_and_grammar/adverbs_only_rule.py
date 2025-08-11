@@ -269,17 +269,17 @@ class AdverbsOnlyRule(BaseLanguageRule):
         
         # === CONTENT TYPE ANALYSIS ===
         # Use helper methods for enhanced content type analysis
-        if self._is_api_documentation(text, context):
+        if self._is_api_documentation(text):
             evidence_score -= 0.3  # API docs use "only" for clear restrictions
-        elif self._is_procedural_documentation(text, context):
+        elif self._is_procedural_documentation(text):
             evidence_score -= 0.2  # Procedural docs use "only" precisely
-        elif self._is_reference_documentation(text, context):
+        elif self._is_reference_documentation(text):
             evidence_score -= 0.2  # Reference docs use "only" for specifications
-        elif self._is_troubleshooting_content(text, context):
+        elif self._is_troubleshooting_documentation(text):  # Use base class method
             evidence_score -= 0.1  # Troubleshooting often uses "only" for conditions
-        elif self._is_installation_documentation(text, context):
+        elif self._is_installation_documentation(text):
             evidence_score -= 0.2  # Installation docs use "only" for requirements
-        elif self._is_configuration_documentation(text, context):
+        elif self._is_configuration_documentation(text):
             evidence_score -= 0.2  # Config docs use "only" for settings
         
         # General technical content analysis
@@ -287,7 +287,7 @@ class AdverbsOnlyRule(BaseLanguageRule):
             evidence_score -= 0.2  # Technical writing more precise
             
             # Check for technical patterns nearby
-            if self._has_technical_context_words(token, distance=5):
+            if self._has_technical_context_words(token.sent.text, distance=5):
                 evidence_score -= 0.2  # "only supports HTTPS", "read-only access"
         
         # Procedural content uses "only" for clear restrictions
@@ -344,7 +344,7 @@ class AdverbsOnlyRule(BaseLanguageRule):
         """Apply clues learned from user feedback patterns for "only" placement."""
         
         # Load cached feedback patterns
-        feedback_patterns = self._get_cached_feedback_patterns()
+        feedback_patterns = self._get_cached_feedback_patterns('adverbs_only')
         
         # Get sentence context for pattern matching
         sentence_text = token.sent.text.lower()
@@ -387,166 +387,6 @@ class AdverbsOnlyRule(BaseLanguageRule):
                 evidence_score += 0.2
         
         return evidence_score
-
-    def _get_cached_feedback_patterns(self):
-        """Load feedback patterns from cache or feedback analysis."""
-        # This would load from feedback analysis system
-        # For now, return patterns based on common "only" usage
-        return {
-            'accepted_only_patterns': {
-                'only if', 'only when', 'only supports', 'only available',
-                'only works', 'only allows', 'only accepts', 'read-only',
-                'write-only', 'only applies', 'only required', 'the only'
-            },
-            'flagged_only_patterns': {
-                'developers only can', 'users only have', 'only developers can access'
-            },
-            'only_position_feedback': {
-                'beginning': 0.8,  # "Only developers can..." generally accepted
-                'middle': 0.4,     # "Developers only can..." often ambiguous
-                'end': 0.6         # "Can access only" moderately accepted
-            }
-        }
-
-    # === HELPER METHODS ===
-
-    def _is_api_documentation(self, text: str, context: dict) -> bool:
-        """Check if content is API documentation."""
-        content_type = context.get('content_type', '')
-        domain = context.get('domain', '')
-        
-        # Direct indicators
-        if content_type == 'api' or domain == 'api':
-            return True
-        
-        # Text-based indicators for API documentation
-        api_indicators = [
-            'endpoint', 'request', 'response', 'parameter', 'header',
-            'json', 'rest api', 'graphql', 'swagger', 'openapi',
-            'get', 'post', 'put', 'delete', 'patch', 'http',
-            'status code', 'authentication', 'authorization', 'token'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in api_indicators if indicator in text_lower) >= 3
-
-    def _is_procedural_documentation(self, text: str, context: dict) -> bool:
-        """Check if content is procedural/instructional documentation."""
-        content_type = context.get('content_type', '')
-        domain = context.get('domain', '')
-        
-        # Direct indicators
-        if content_type in ['procedural', 'instructions'] or domain in ['tutorial', 'guide']:
-            return True
-        
-        # Text-based indicators
-        procedural_indicators = [
-            'step', 'follow', 'click', 'select', 'choose', 'enter',
-            'navigate', 'proceed', 'continue', 'complete', 'finish',
-            'install', 'configure', 'setup', 'create', 'add', 'remove',
-            'first', 'next', 'then', 'finally', 'before', 'after'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in procedural_indicators if indicator in text_lower) >= 4
-
-    def _is_reference_documentation(self, text: str, context: dict) -> bool:
-        """Check if content is reference documentation."""
-        content_type = context.get('content_type', '')
-        domain = context.get('domain', '')
-        
-        # Direct indicators
-        if content_type in ['reference', 'specification'] or domain in ['reference', 'spec']:
-            return True
-        
-        # Text-based indicators
-        reference_indicators = [
-            'reference', 'specification', 'definition', 'parameter',
-            'property', 'attribute', 'method', 'function', 'class',
-            'interface', 'type', 'value', 'option', 'setting',
-            'syntax', 'format', 'structure', 'schema', 'protocol'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in reference_indicators if indicator in text_lower) >= 4
-
-    def _is_troubleshooting_content(self, text: str, context: dict) -> bool:
-        """Check if content is troubleshooting/debugging related."""
-        content_type = context.get('content_type', '')
-        domain = context.get('domain', '')
-        
-        # Direct indicators
-        if content_type in ['troubleshooting', 'debugging'] or domain in ['support', 'troubleshooting']:
-            return True
-        
-        # Text-based indicators
-        troubleshooting_indicators = [
-            'troubleshoot', 'debug', 'error', 'problem', 'issue', 'fix',
-            'solve', 'diagnose', 'identify', 'resolve', 'workaround',
-            'symptom', 'cause', 'solution', 'check', 'verify', 'test',
-            'validate', 'investigate', 'analyze', 'examine', 'fails'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in troubleshooting_indicators if indicator in text_lower) >= 4
-
-    def _is_installation_documentation(self, text: str, context: dict) -> bool:
-        """Check if content is installation/setup documentation."""
-        content_type = context.get('content_type', '')
-        domain = context.get('domain', '')
-        
-        # Direct indicators
-        if content_type in ['installation', 'setup'] or domain in ['install', 'deployment']:
-            return True
-        
-        # Text-based indicators
-        installation_indicators = [
-            'install', 'installation', 'setup', 'configure', 'deployment',
-            'download', 'extract', 'unzip', 'compile', 'build', 'make',
-            'package', 'dependencies', 'requirements', 'prerequisites',
-            'environment', 'path', 'directory', 'folder', 'permissions'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in installation_indicators if indicator in text_lower) >= 4
-
-    def _is_configuration_documentation(self, text: str, context: dict) -> bool:
-        """Check if content is configuration documentation."""
-        content_type = context.get('content_type', '')
-        domain = context.get('domain', '')
-        
-        # Direct indicators
-        if content_type in ['configuration', 'config'] or domain in ['configuration', 'settings']:
-            return True
-        
-        # Text-based indicators
-        config_indicators = [
-            'configuration', 'config', 'settings', 'options', 'properties',
-            'parameters', 'variables', 'environment', 'customize', 'modify',
-            'adjust', 'change', 'set', 'enable', 'disable', 'toggle',
-            'default', 'override', 'specify', 'define', 'configure'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in config_indicators if indicator in text_lower) >= 4
-
-    def _has_technical_context_words(self, token, distance: int = 5) -> bool:
-        """Check if technical context words appear near the token."""
-        technical_words = {
-            'api', 'server', 'client', 'database', 'function', 'method', 'class',
-            'endpoint', 'request', 'response', 'protocol', 'access', 'permission',
-            'authentication', 'authorization', 'configuration', 'parameter',
-            'https', 'http', 'ssl', 'tls', 'read-only', 'write-only',
-            'supports', 'compatible', 'available', 'enabled', 'disabled'
-        }
-        
-        start_idx = max(0, token.i - distance)
-        end_idx = min(len(token.doc), token.i + distance)
-        
-        for i in range(start_idx, end_idx):
-            if token.doc[i].text.lower() in technical_words:
-                return True
-        return False
 
     # === HELPER METHODS FOR SMART MESSAGING ===
 

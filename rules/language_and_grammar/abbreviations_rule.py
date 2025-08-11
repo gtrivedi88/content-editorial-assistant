@@ -452,7 +452,7 @@ class AbbreviationsRule(BaseLanguageRule):
         
         # === STEP 1: BASE EVIDENCE ASSESSMENT ===
         if self._is_latin_abbreviation(token, token.doc):
-            evidence_score = 0.7  # Start with moderate evidence
+            evidence_score = 0.5  # Start with lower base to preserve differentiation
         else:
             return 0.0  # No evidence, skip this token
         
@@ -743,7 +743,7 @@ class AbbreviationsRule(BaseLanguageRule):
             evidence_score -= 0.2  # Technical content more permissive
             
             # Check for technical indicators nearby
-            if self._has_technical_context_words(token, distance=10):
+            if self._has_technical_context_words(token.sent.text, distance=10):
                 evidence_score -= 0.2  # API, SDK, JSON, etc. nearby
         
         # Domain-specific contexts
@@ -802,7 +802,7 @@ class AbbreviationsRule(BaseLanguageRule):
         """Apply clues learned from user feedback patterns for Latin abbreviations."""
         
         # Load cached feedback patterns
-        feedback_patterns = self._get_cached_feedback_patterns()
+        feedback_patterns = self._get_cached_feedback_patterns('abbreviations')
         
         # Check if this specific Latin abbreviation is consistently accepted
         if token.text.lower() in feedback_patterns.get('accepted_latin_terms', set()):
@@ -817,7 +817,7 @@ class AbbreviationsRule(BaseLanguageRule):
     def _apply_feedback_clues_undefined(self, evidence_score: float, token: 'Token', context: Optional[Dict[str, Any]]) -> float:
         """Apply clues learned from user feedback patterns for undefined abbreviations."""
         
-        feedback_patterns = self._get_cached_feedback_patterns()
+        feedback_patterns = self._get_cached_feedback_patterns('abbreviations')
         
         # Check if this abbreviation is consistently accepted without definition
         if token.text in feedback_patterns.get('accepted_undefined_terms', set()):
@@ -835,7 +835,7 @@ class AbbreviationsRule(BaseLanguageRule):
     def _apply_feedback_clues_verb(self, evidence_score: float, token: 'Token', context: Optional[Dict[str, Any]]) -> float:
         """Apply clues learned from user feedback patterns for verb usage."""
         
-        feedback_patterns = self._get_cached_feedback_patterns()
+        feedback_patterns = self._get_cached_feedback_patterns('abbreviations')
         
         # Check if this verb usage is consistently accepted
         if token.text.lower() in feedback_patterns.get('accepted_verb_abbreviations', set()):
@@ -843,19 +843,7 @@ class AbbreviationsRule(BaseLanguageRule):
         
         return evidence_score
 
-    def _get_cached_feedback_patterns(self):
-        """Load feedback patterns from cache or feedback analysis."""
-        # This would load from feedback analysis system
-        # For now, return patterns based on common technical writing
-        return {
-            'accepted_latin_terms': {'e.g.', 'i.e.', 'etc.', 'vs.'},
-            'rejected_latin_suggestions': set(),
-            'accepted_undefined_terms': {'API', 'SDK', 'HTTP', 'HTTPS', 'URL', 'JSON', 'XML', 'HTML', 'CSS'},
-            'accepted_verb_abbreviations': set(),
-            'software_accepted_abbreviations': {'API', 'SDK', 'IDE', 'CLI', 'GUI', 'REST', 'SOAP'},
-            'finance_accepted_abbreviations': {'ROI', 'KPI', 'SLA'},
-            'devops_accepted_abbreviations': {'CI', 'CD', 'AWS', 'GCP', 'K8S'},
-        }
+    # Removed _get_cached_feedback_patterns - using base class utility
 
     # === HELPER METHODS FOR EVIDENCE CALCULATION ===
 
@@ -868,21 +856,7 @@ class AbbreviationsRule(BaseLanguageRule):
         }
         return text.upper() in common_acronyms
 
-    def _has_technical_context_words(self, token: 'Token', distance: int = 10) -> bool:
-        """Check if technical context words appear near the token."""
-        technical_words = {
-            'api', 'server', 'client', 'database', 'function', 'method', 'class',
-            'object', 'variable', 'parameter', 'endpoint', 'response', 'request',
-            'configuration', 'deployment', 'development', 'production', 'testing'
-        }
-        
-        start_idx = max(0, token.i - distance)
-        end_idx = min(len(token.doc), token.i + distance)
-        
-        for i in range(start_idx, end_idx):
-            if token.doc[i].text.lower() in technical_words:
-                return True
-        return False
+    # Removed _has_technical_context_words - using base class utility
 
     def _is_imperative_context(self, token: 'Token', text: str) -> bool:
         """Check if the token appears in an imperative/command context."""

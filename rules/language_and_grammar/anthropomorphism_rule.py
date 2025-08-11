@@ -424,11 +424,11 @@ class AnthropomorphismRule(BaseLanguageRule):
         
         # === CONTENT TYPE ANALYSIS ===
         # Use helper methods for enhanced content type analysis
-        if self._is_api_documentation(text, context):
+        if self._is_api_documentation(text):
             evidence_score -= 0.4  # API docs heavily anthropomorphic by convention
         elif self._is_technical_specification(text, context):
             evidence_score -= 0.3  # Technical specs allow anthropomorphic language
-        elif self._is_user_interface_documentation(text, context):
+        elif self._is_user_interface_documentation(text):
             evidence_score -= 0.3  # UI docs often anthropomorphize interfaces
         elif self._is_system_administration_content(text, context):
             evidence_score -= 0.3  # Sysadmin content often anthropomorphizes systems
@@ -442,7 +442,7 @@ class AnthropomorphismRule(BaseLanguageRule):
             evidence_score -= 0.3  # Technical writing conventionally anthropomorphic
             
             # Check for technical context words nearby
-            if self._has_technical_context_words(verb_token, distance=10):
+            if self._has_technical_context_words(verb_token.sent.text, distance=10):
                 evidence_score -= 0.3  # "The API expects JSON response"
         
         # API documentation specifically very permissive
@@ -518,7 +518,7 @@ class AnthropomorphismRule(BaseLanguageRule):
         """Apply clues learned from user feedback patterns for anthropomorphism."""
         
         # Load cached feedback patterns
-        feedback_patterns = self._get_cached_feedback_patterns()
+        feedback_patterns = self._get_cached_feedback_patterns('anthropomorphism')
         
         verb_lemma = verb_token.lemma_.lower()
         subject_lemma = subject_token.lemma_.lower()
@@ -555,62 +555,6 @@ class AnthropomorphismRule(BaseLanguageRule):
         
         return evidence_score
 
-    def _get_cached_feedback_patterns(self):
-        """Load feedback patterns from cache or feedback analysis."""
-        # This would load from feedback analysis system
-        # For now, return patterns based on common technical writing
-        return {
-            'accepted_anthropomorphic_patterns': {
-                'api expects', 'api returns', 'api accepts', 'api requires',
-                'system allows', 'system permits', 'system supports', 'system enables',
-                'application detects', 'application determines', 'application selects',
-                'server responds', 'server serves', 'server listens', 'server handles',
-                'database stores', 'database contains', 'database retrieves',
-                'interface displays', 'interface shows', 'interface presents',
-                'function returns', 'function accepts', 'function expects', 'function takes',
-                'method performs', 'method executes', 'method calls', 'method invokes'
-            },
-            'flagged_anthropomorphic_patterns': {
-                'system thinks', 'system believes', 'system feels', 'system wants',
-                'application loves', 'application hates', 'application worries',
-                'software dreams', 'software hopes', 'software fears'
-            },
-            'verb_acceptance_rates': {
-                'expect': 0.9, 'return': 0.95, 'accept': 0.9, 'require': 0.85,
-                'allow': 0.9, 'permit': 0.85, 'support': 0.9, 'enable': 0.9,
-                'detect': 0.85, 'determine': 0.8, 'select': 0.8,
-                'think': 0.1, 'believe': 0.1, 'feel': 0.05, 'want': 0.2,
-                'love': 0.05, 'hate': 0.05, 'worry': 0.1, 'dream': 0.05,
-                'know': 0.1, 'learn': 0.1
-            },
-            'subject_acceptance_rates': {
-                'api': 0.9, 'system': 0.8, 'application': 0.75, 'server': 0.85,
-                'database': 0.8, 'interface': 0.7, 'function': 0.85, 'method': 0.85
-            }
-        }
-
-    # === HELPER METHODS ===
-
-    def _is_api_documentation(self, text: str, context: dict) -> bool:
-        """Check if content is API documentation."""
-        content_type = context.get('content_type', '')
-        domain = context.get('domain', '')
-        
-        # Direct indicators
-        if content_type == 'api' or domain == 'api':
-            return True
-        
-        # Text-based indicators for API documentation
-        api_indicators = [
-            'endpoint', 'request', 'response', 'parameter', 'header',
-            'json', 'rest api', 'graphql', 'swagger', 'openapi',
-            'get', 'post', 'put', 'delete', 'patch', 'http',
-            'status code', 'authentication', 'authorization', 'token'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in api_indicators if indicator in text_lower) >= 3
-
     def _is_technical_specification(self, text: str, context: dict) -> bool:
         """Check if content is technical specification."""
         domain = context.get('domain', '')
@@ -631,25 +575,7 @@ class AnthropomorphismRule(BaseLanguageRule):
         text_lower = text.lower()
         return sum(1 for indicator in spec_indicators if indicator in text_lower) >= 3
 
-    def _is_user_interface_documentation(self, text: str, context: dict) -> bool:
-        """Check if content is user interface documentation."""
-        content_type = context.get('content_type', '')
-        domain = context.get('domain', '')
-        
-        # Direct indicators
-        if content_type in ['ui', 'interface', 'user'] or domain in ['ui', 'interface']:
-            return True
-        
-        # Text-based indicators
-        ui_indicators = [
-            'interface', 'window', 'dialog', 'menu', 'button', 'form',
-            'field', 'screen', 'display', 'panel', 'tab', 'dropdown',
-            'checkbox', 'radio', 'input', 'output', 'user', 'click',
-            'select', 'enter', 'navigate', 'scroll', 'view', 'page'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in ui_indicators if indicator in text_lower) >= 4
+    # Removed _is_user_interface_documentation - using base class utility
 
     def _is_system_administration_content(self, text: str, context: dict) -> bool:
         """Check if content is system administration related."""
@@ -711,25 +637,6 @@ class AnthropomorphismRule(BaseLanguageRule):
         text_lower = text.lower()
         return sum(1 for indicator in troubleshooting_indicators if indicator in text_lower) >= 4
 
-    def _has_technical_context_words(self, token, distance: int = 10) -> bool:
-        """Check if technical context words appear near the token."""
-        technical_words = {
-            'api', 'endpoint', 'server', 'client', 'database', 'function', 'method',
-            'class', 'object', 'parameter', 'argument', 'response', 'request',
-            'configuration', 'setting', 'option', 'feature', 'module', 'component',
-            'service', 'application', 'system', 'software', 'program', 'code',
-            'data', 'information', 'value', 'variable', 'constant', 'field'
-        }
-        
-        start_idx = max(0, token.i - distance)
-        end_idx = min(len(token.doc), token.i + distance)
-        
-        for i in range(start_idx, end_idx):
-            if token.doc[i].text.lower() in technical_words:
-                return True
-        return False
-
-    # === HELPER METHODS FOR SMART MESSAGING ===
 
     def _get_contextual_message(self, verb_token, subject_token, evidence_score: float) -> str:
         """Generate context-aware error messages based on evidence score."""
