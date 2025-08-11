@@ -586,7 +586,7 @@ class ArticlesRule(BaseLanguageRule):
         """Apply feedback patterns for incorrect a/an usage."""
         
         # Load cached feedback patterns
-        feedback_patterns = self._get_cached_feedback_patterns()
+        feedback_patterns = self._get_cached_feedback_patterns('articles')
         
         word = next_token.text.lower()
         article = article_token.text.lower()
@@ -735,9 +735,9 @@ class ArticlesRule(BaseLanguageRule):
         
         # === CONTENT TYPE SPECIFIC ANALYSIS ===
         # Use helper methods to analyze content type
-        if self._is_procedural_documentation(text, context):
+        if self._is_procedural_documentation(text):
             evidence_score -= 0.3  # Instructions often omit articles for brevity
-        elif self._is_reference_documentation(text, context):
+        elif self._is_reference_documentation(text):
             evidence_score -= 0.2  # Reference docs use abbreviated style
         
         # === TECHNICAL TERM DENSITY ===
@@ -751,7 +751,7 @@ class ArticlesRule(BaseLanguageRule):
         """Apply feedback patterns for missing articles."""
         
         # Load cached feedback patterns
-        feedback_patterns = self._get_cached_feedback_patterns()
+        feedback_patterns = self._get_cached_feedback_patterns('articles')
         
         noun = noun_token.text.lower()
         
@@ -809,63 +809,11 @@ class ArticlesRule(BaseLanguageRule):
         
         return False
 
-    def _has_high_technical_density(self, text: str) -> bool:
-        """Check if text has high density of technical terms."""
-        words = text.lower().split()
-        technical_words = {
-            'api', 'server', 'client', 'database', 'system', 'application', 'service',
-            'module', 'component', 'interface', 'endpoint', 'protocol', 'configuration',
-            'deployment', 'authentication', 'authorization', 'validation', 'optimization',
-            'processing', 'analysis', 'implementation', 'integration', 'documentation'
-        }
-        
-        if len(words) == 0:
-            return False
-        
-        technical_count = sum(1 for word in words if word in technical_words)
-        technical_ratio = technical_count / len(words)
-        
-        return technical_ratio > 0.1  # More than 10% technical terms
+    # Removed _has_high_technical_density - using base class utility
 
-    def _is_procedural_documentation(self, text: str, context: dict) -> bool:
-        """Check if content is procedural/instructional documentation."""
-        content_type = context.get('content_type', '')
-        domain = context.get('domain', '')
-        
-        # Direct indicators
-        if content_type in ['procedural', 'instructional', 'tutorial'] or domain in ['tutorial', 'guide']:
-            return True
-        
-        # Text-based indicators
-        procedural_indicators = [
-            'step', 'procedure', 'instruction', 'tutorial', 'guide', 'process',
-            'follow', 'complete', 'perform', 'execute', 'configure', 'install',
-            'setup', 'initialize', 'create', 'delete', 'modify', 'update',
-            'first', 'next', 'then', 'finally', 'before', 'after'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in procedural_indicators if indicator in text_lower) >= 4
+    # Removed _is_procedural_documentation - using base class utility
 
-    def _is_reference_documentation(self, text: str, context: dict) -> bool:
-        """Check if content is reference documentation."""
-        content_type = context.get('content_type', '')
-        domain = context.get('domain', '')
-        
-        # Direct indicators
-        if content_type in ['reference', 'specification'] or domain in ['reference', 'specification']:
-            return True
-        
-        # Text-based indicators
-        reference_indicators = [
-            'reference', 'specification', 'manual', 'documentation', 'guide',
-            'parameter', 'option', 'argument', 'value', 'property', 'attribute',
-            'method', 'function', 'class', 'interface', 'endpoint', 'schema',
-            'format', 'syntax', 'grammar', 'structure', 'definition', 'describes'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in reference_indicators if indicator in text_lower) >= 4
+    # Removed _is_reference_documentation - using base class utility
 
     def _count_formal_indicators(self, text: str) -> int:
         """Count indicators of formal writing style."""
@@ -878,48 +826,7 @@ class ArticlesRule(BaseLanguageRule):
         text_lower = text.lower()
         return sum(1 for indicator in formal_indicators if indicator in text_lower)
 
-    def _get_cached_feedback_patterns(self):
-        """Load feedback patterns from cache or feedback analysis."""
-        # This would load from feedback analysis system
-        # For now, return patterns based on common article usage
-        return {
-            'word_article_corrections': {
-                'hour': 'an', 'honest': 'an', 'honor': 'an', 'herb': 'an',
-                'user': 'a', 'unique': 'a', 'university': 'a', 'unix': 'a',
-                'one': 'a', 'european': 'a', 'api': 'an', 'html': 'an',
-                'sql': 'an', 'xml': 'an', 'url': 'a'
-            },
-            'common_article_corrections': {
-                'a hour', 'a honest', 'an user', 'an unique', 'an university',
-                'an one', 'an european', 'a api', 'a html', 'a sql', 'a xml'
-            },
-            'commonly_no_article_nouns': {
-                'data', 'information', 'software', 'hardware', 'documentation',
-                'configuration', 'deployment', 'authentication', 'authorization',
-                'validation', 'testing', 'debugging', 'monitoring', 'analysis',
-                'processing', 'optimization', 'integration', 'implementation'
-            },
-            'commonly_missing_article_nouns': {
-                'system', 'application', 'service', 'component', 'interface',
-                'user', 'administrator', 'developer', 'customer', 'client'
-            },
-            'paragraph_article_patterns': {
-                'acceptable_without_article': {
-                    'deployment', 'testing', 'configuration', 'monitoring',
-                    'analysis', 'processing', 'optimization', 'debugging'
-                },
-                'needs_article': {
-                    'system', 'application', 'user', 'administrator', 'component'
-                }
-            },
-            'ordered_list_item_article_patterns': {
-                'acceptable_without_article': {
-                    'configuration', 'deployment', 'testing', 'validation',
-                    'documentation', 'analysis', 'processing', 'monitoring'
-                },
-                'needs_article': set()
-            }
-        }
+    # Removed _get_cached_feedback_patterns - using base class utility
 
     # === HELPER METHODS FOR SMART MESSAGING ===
 

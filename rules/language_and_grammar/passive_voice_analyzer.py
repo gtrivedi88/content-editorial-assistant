@@ -6,6 +6,8 @@ from typing import List, Dict, Any, Optional, Set, Tuple
 from dataclasses import dataclass
 from enum import Enum
 
+
+
 try:
     from spacy.tokens import Doc, Token
 except ImportError:
@@ -961,14 +963,6 @@ class PassiveVoiceAnalyzer:
         elif audience in ['administrator', 'maintainer']:
             evidence_score -= 0.1  # Admin audiences understand system descriptions
         
-        # === DOCUMENT PURPOSE ANALYSIS ===
-        # Analyze document purpose from content patterns
-        if self._is_configuration_documentation(full_text):
-            evidence_score -= 0.2  # Configuration docs often describe passive states
-        
-        if self._is_troubleshooting_documentation(full_text):
-            evidence_score += 0.1  # Troubleshooting should be action-oriented
-        
         if self._is_user_instruction_content(full_text):
             evidence_score += 0.3  # User instructions should be active and clear
         
@@ -1040,27 +1034,9 @@ class PassiveVoiceAnalyzer:
 
     # === HELPER METHODS FOR SEMANTIC ANALYSIS ===
 
-    def _is_configuration_documentation(self, text: str) -> bool:
-        """Check if text appears to be configuration documentation."""
-        config_indicators = [
-            'configuration', 'configure', 'config', 'setting', 'parameter',
-            'option', 'property', 'attribute', 'variable', 'flag', 'switch',
-            'default', 'preset', 'initialize', 'setup', 'install'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in config_indicators if indicator in text_lower) >= 3
 
-    def _is_troubleshooting_documentation(self, text: str) -> bool:
-        """Check if text appears to be troubleshooting documentation."""
-        troubleshooting_indicators = [
-            'troubleshoot', 'troubleshooting', 'problem', 'issue', 'error',
-            'fix', 'resolve', 'solution', 'debug', 'diagnose', 'repair',
-            'restore', 'recover', 'failure', 'broken', 'not working'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in troubleshooting_indicators if indicator in text_lower) >= 2
+
+
 
     def _is_user_instruction_content(self, text: str) -> bool:
         """Check if text appears to be user instruction content."""

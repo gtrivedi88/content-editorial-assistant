@@ -468,7 +468,7 @@ class CapitalizationRule(BaseLanguageRule):
         
         # === CONTENT TYPE SPECIFIC ANALYSIS ===
         # Use helper methods to analyze content type
-        if self._is_api_documentation(text, context):
+        if self._is_api_documentation(text):
             evidence_score -= 0.3  # API docs very technical
         elif self._is_technical_specification(text, context):
             evidence_score -= 0.2  # Technical specs allow variant capitalization
@@ -495,7 +495,7 @@ class CapitalizationRule(BaseLanguageRule):
         """Apply feedback patterns for capitalization."""
         
         # Load cached feedback patterns
-        feedback_patterns = self._get_cached_feedback_patterns()
+        feedback_patterns = self._get_cached_feedback_patterns('capitalization')
         
         word_lower = token.text.lower()
         
@@ -531,25 +531,7 @@ class CapitalizationRule(BaseLanguageRule):
 
     # === HELPER METHODS ===
 
-    def _is_api_documentation(self, text: str, context: dict) -> bool:
-        """Check if content is API documentation."""
-        content_type = context.get('content_type', '')
-        domain = context.get('domain', '')
-        
-        # Direct indicators
-        if content_type == 'api' or domain == 'api':
-            return True
-        
-        # Text-based indicators
-        api_indicators = [
-            'endpoint', 'request', 'response', 'parameter', 'header',
-            'json', 'rest api', 'graphql', 'swagger', 'openapi',
-            'get', 'post', 'put', 'delete', 'patch', 'http',
-            'status code', 'authentication', 'authorization'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in api_indicators if indicator in text_lower) >= 3
+    # Removed _is_api_documentation - using base class utility
 
     def _is_technical_specification(self, text: str, context: dict) -> bool:
         """Check if content is technical specification."""
@@ -657,25 +639,7 @@ class CapitalizationRule(BaseLanguageRule):
         
         return any(pattern(text) for pattern in technical_patterns)
 
-    def _has_high_technical_density(self, text: str) -> bool:
-        """Check if text has high density of technical terms."""
-        words = text.lower().split()
-        technical_words = {
-            'api', 'server', 'client', 'database', 'system', 'application', 'service',
-            'module', 'component', 'interface', 'endpoint', 'protocol', 'configuration',
-            'deployment', 'authentication', 'authorization', 'validation', 'optimization',
-            'processing', 'analysis', 'implementation', 'integration', 'documentation',
-            'json', 'xml', 'html', 'css', 'sql', 'http', 'https', 'url', 'uri',
-            'github', 'gitlab', 'docker', 'kubernetes', 'aws', 'azure', 'gcp'
-        }
-        
-        if len(words) == 0:
-            return False
-        
-        technical_count = sum(1 for word in words if word in technical_words)
-        technical_ratio = technical_count / len(words)
-        
-        return technical_ratio > 0.15  # More than 15% technical terms
+    # Removed _has_high_technical_density - using base class utility
 
     def _is_in_brand_context(self, token, text: str) -> bool:
         """Check if token appears in a context with other brand/product names."""
@@ -695,67 +659,7 @@ class CapitalizationRule(BaseLanguageRule):
         except ValueError:
             return False
 
-    def _get_cached_feedback_patterns(self):
-        """Load feedback patterns from cache or feedback analysis."""
-        # This would load from feedback analysis system
-        # For now, return patterns based on common capitalization usage
-        return {
-            'accepted_lowercase_terms': {
-                # Technical terms commonly accepted lowercase
-                'api', 'url', 'http', 'json', 'xml', 'html', 'css', 'sql',
-                'github', 'npm', 'node', 'react', 'vue', 'docker', 'git',
-                'linux', 'ubuntu', 'windows', 'macos', 'ios', 'android',
-                'app', 'web', 'email', 'wifi', 'bluetooth', 'usb'
-            },
-            'flagged_for_capitalization': {
-                # Terms users commonly correct to capitalize
-                'microsoft', 'apple', 'google', 'amazon', 'facebook', 'twitter',
-                'netflix', 'spotify', 'youtube', 'instagram', 'linkedin',
-                'adobe', 'oracle', 'salesforce', 'github', 'gitlab',
-                'new york', 'san francisco', 'los angeles', 'washington'
-            },
-            'person_patterns': {
-                'acceptable_lowercase': set(),
-                'needs_capitalization': {
-                    'john', 'jane', 'smith', 'johnson', 'williams', 'brown',
-                    'davis', 'miller', 'wilson', 'moore', 'taylor', 'anderson'
-                }
-            },
-            'org_patterns': {
-                'acceptable_lowercase': {
-                    'api', 'github', 'npm', 'docker', 'kubernetes'
-                },
-                'needs_capitalization': {
-                    'microsoft', 'apple', 'google', 'amazon', 'facebook',
-                    'netflix', 'adobe', 'oracle', 'salesforce'
-                }
-            },
-            'gpe_patterns': {
-                'acceptable_lowercase': set(),
-                'needs_capitalization': {
-                    'america', 'california', 'texas', 'florida', 'newyork',
-                    'london', 'paris', 'tokyo', 'sydney', 'toronto'
-                }
-            },
-            'paragraph_capitalization_patterns': {
-                'acceptable_lowercase': {
-                    'api', 'json', 'xml', 'html', 'css', 'sql', 'http',
-                    'email', 'app', 'web', 'wifi', 'usb'
-                },
-                'needs_capitalization': {
-                    'microsoft', 'apple', 'google', 'amazon'
-                }
-            },
-            'code_block_capitalization_patterns': {
-                'acceptable_lowercase': {
-                    # Most terms acceptable lowercase in code context
-                    'api', 'json', 'xml', 'html', 'css', 'sql', 'http',
-                    'github', 'docker', 'kubernetes', 'linux', 'windows',
-                    'microsoft', 'apple', 'google', 'amazon'
-                },
-                'needs_capitalization': set()
-            }
-        }
+    # Removed _get_cached_feedback_patterns - using base class utility
 
     # === HELPER METHODS FOR SMART MESSAGING ===
 

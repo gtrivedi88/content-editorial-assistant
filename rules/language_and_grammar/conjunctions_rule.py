@@ -76,6 +76,14 @@ class ConjunctionsRule(BaseLanguageRule):
         for comma_idx in comma_positions:
             comma_token = doc[comma_idx]
             
+            # Skip if this comma has a coordinating conjunction nearby (proper grammar)
+            if self._has_coordinating_conjunction_nearby(doc, comma_idx):
+                continue  # This is correct comma usage, not a splice
+            
+            # Skip if this comma is part of a list (not a comma splice)
+            if self._is_list_comma(doc, comma_idx):
+                continue  # This is list usage, not a splice
+            
             # Check for independent clauses on both sides of the comma
             left_clause = self._has_independent_clause_before(doc, comma_idx)
             right_clause = self._has_independent_clause_after(doc, comma_idx)
@@ -91,8 +99,8 @@ class ConjunctionsRule(BaseLanguageRule):
                     'left_clause': left_clause_info,
                     'right_clause': right_clause_info,
                     'flagged_text': self._get_flagged_text_around_comma(doc, comma_idx),
-                    'is_list_comma': self._is_list_comma(doc, comma_idx),
-                    'has_nearby_conjunction': self._has_coordinating_conjunction_nearby(doc, comma_idx)
+                    'is_list_comma': False,  # Already checked above
+                    'has_nearby_conjunction': False  # Already checked above
                 }
                 potential_splices.append(comma_info)
         
@@ -181,10 +189,19 @@ class ConjunctionsRule(BaseLanguageRule):
     
     def _has_coordinating_conjunction_nearby(self, doc, comma_idx: int) -> bool:
         """Check if there's a coordinating conjunction near the comma."""
+        # Common coordinating conjunctions (FANBOYS + so)
+        coordinating_conjunctions = {'and', 'but', 'or', 'nor', 'for', 'yet', 'so'}
+        
         # Check a few tokens before and after the comma
         for i in range(max(0, comma_idx - 2), min(len(doc), comma_idx + 3)):
-            if i != comma_idx and doc[i].pos_ == 'CCONJ':  # Coordinating conjunction
-                return True
+            if i != comma_idx:
+                token = doc[i]
+                # Check by POS tag (preferred method)
+                if token.pos_ == 'CCONJ':
+                    return True
+                # Check by text (backup method for cases like "so")
+                elif token.text.lower() in coordinating_conjunctions:
+                    return True
         return False
 
     # === EVIDENCE-BASED CALCULATION METHODS ===
@@ -503,17 +520,17 @@ class ConjunctionsRule(BaseLanguageRule):
 
         # === DOCUMENT TYPE DETECTION ===
         # Use helper methods to detect document types and adjust accordingly
-        if self._is_api_documentation(text, context):
+        if self._is_api_documentation(text):
             evidence_score -= 0.3  # API docs use comma-separated parameter lists
-        elif self._is_procedural_documentation(text, context):
+        elif self._is_procedural_documentation(text):
             evidence_score -= 0.2  # Procedural docs may use comma-separated steps
         elif self._is_technical_specification(text, context):
             evidence_score -= 0.2  # Technical specs use abbreviated structures
-        elif self._is_reference_documentation(text, context):
+        elif self._is_reference_documentation(text):
             evidence_score -= 0.3  # Reference docs use comma-separated listings
         elif self._is_data_documentation(text, context):
             evidence_score -= 0.3  # Data docs use comma-separated field lists
-        elif self._is_configuration_documentation(text, context):
+        elif self._is_configuration_documentation(text):
             evidence_score -= 0.2  # Config docs use comma-separated options
 
         # === INTERNATIONAL CONTEXT ===
@@ -528,7 +545,7 @@ class ConjunctionsRule(BaseLanguageRule):
         """Apply feedback patterns for comma splice detection."""
         
         # Load cached feedback patterns
-        feedback_patterns = self._get_cached_feedback_patterns()
+        feedback_patterns = self._get_cached_feedback_patterns('conjunctions')
         
         # === CLAUSE PATTERN FEEDBACK ===
         # Check if this type of clause pattern is commonly accepted
@@ -718,51 +735,9 @@ class ConjunctionsRule(BaseLanguageRule):
         text_lower = text.lower()
         return any(indicator in text_lower for indicator in formal_indicators)
 
-    def _is_api_documentation(self, text: str, context: dict) -> bool:
-        """
-        Detect if content is API reference documentation.
-        
-        API docs often use comma-separated parameter lists that aren't comma splices.
-        
-        Args:
-            text: Document text
-            context: Document context
-            
-        Returns:
-            bool: True if API documentation detected
-        """
-        api_indicators = {
-            'api', 'endpoint', 'parameter', 'response', 'request',
-            'method', 'function', 'class', 'object', 'property',
-            'json', 'xml', 'http', 'get', 'post', 'put', 'delete'
-        }
-        text_lower = text.lower()
-        content_type = context.get('content_type', '')
-        return (any(indicator in text_lower for indicator in api_indicators) or
-                content_type in {'api', 'reference'})
+    # Removed _is_api_documentation - using base class utility
 
-    def _is_procedural_documentation(self, text: str, context: dict) -> bool:
-        """
-        Detect if content is procedural/instructional documentation.
-        
-        Procedural docs often use comma-separated steps that may be acceptable.
-        
-        Args:
-            text: Document text
-            context: Document context
-            
-        Returns:
-            bool: True if procedural documentation detected
-        """
-        procedural_indicators = {
-            'step', 'first', 'second', 'third', 'next', 'then', 'finally',
-            'install', 'configure', 'setup', 'create', 'delete', 'modify',
-            'follow these steps', 'to do this', 'procedure', 'instructions'
-        }
-        text_lower = text.lower()
-        content_type = context.get('content_type', '')
-        return (any(indicator in text_lower for indicator in procedural_indicators) or
-                content_type in {'procedural', 'tutorial', 'how-to'})
+    # Removed _is_procedural_documentation - using base class utility
 
     def _is_technical_specification(self, text: str, context: dict) -> bool:
         """
@@ -787,28 +762,7 @@ class ConjunctionsRule(BaseLanguageRule):
         return (any(indicator in text_lower for indicator in spec_indicators) or
                 domain in {'technical', 'engineering', 'specification'})
 
-    def _is_reference_documentation(self, text: str, context: dict) -> bool:
-        """
-        Detect if content is reference documentation.
-        
-        Reference docs often use condensed comma-separated listings.
-        
-        Args:
-            text: Document text
-            context: Document context
-            
-        Returns:
-            bool: True if reference documentation detected
-        """
-        reference_indicators = {
-            'reference', 'manual', 'guide', 'documentation', 'handbook',
-            'catalog', 'index', 'glossary', 'appendix', 'syntax',
-            'options', 'parameters', 'arguments', 'flags'
-        }
-        text_lower = text.lower()
-        content_type = context.get('content_type', '')
-        return (any(indicator in text_lower for indicator in reference_indicators) or
-                content_type in {'reference', 'manual'})
+    # Removed _is_reference_documentation - using base class utility
 
     def _is_data_documentation(self, text: str, context: dict) -> bool:
         """
@@ -833,65 +787,9 @@ class ConjunctionsRule(BaseLanguageRule):
         return (any(indicator in text_lower for indicator in data_indicators) or
                 domain in {'database', 'data', 'analytics'})
 
-    def _is_configuration_documentation(self, text: str, context: dict) -> bool:
-        """
-        Detect if content is configuration documentation.
-        
-        Config docs often use comma-separated option lists and values.
-        
-        Args:
-            text: Document text
-            context: Document context
-            
-        Returns:
-            bool: True if configuration documentation detected
-        """
-        config_indicators = {
-            'configuration', 'config', 'settings', 'options', 'preferences',
-            'properties', 'environment', 'variable', 'flag', 'parameter',
-            'default', 'value', 'override', 'customize'
-        }
-        text_lower = text.lower()
-        content_type = context.get('content_type', '')
-        return (any(indicator in text_lower for indicator in config_indicators) or
-                content_type in {'configuration', 'settings'})
+    # Removed _is_configuration_documentation - using base class utility
 
-    def _get_cached_feedback_patterns(self):
-        """Load feedback patterns from cache or feedback analysis."""
-        # This would load from feedback analysis system
-        # For now, return patterns based on common comma splice usage
-        return {
-            'accepted_comma_patterns': {
-                # Short, common patterns users often accept
-                'phrase_comma_phrase', 'basic_clause_comma_phrase',
-                'simple_clause_comma_basic_clause'
-            },
-            'flagged_comma_patterns': {
-                # Clear comma splice patterns users flag
-                'independent_clause_comma_independent_clause',
-                'simple_clause_comma_simple_clause'
-            },
-            'paragraph_comma_patterns': {
-                'acceptable': {
-                    'phrase_comma_phrase', 'basic_clause_comma_phrase'
-                },
-                'problematic': {
-                    'independent_clause_comma_independent_clause'
-                }
-            },
-            'ordered_list_item_comma_patterns': {
-                'acceptable': {
-                    'phrase_comma_phrase', 'basic_clause_comma_phrase',
-                    'simple_clause_comma_basic_clause', 'independent_clause_comma_phrase'
-                },
-                'problematic': set()
-            },
-            'short_clause_acceptance': {
-                'acceptable': {
-                    'phrase', 'basic_clause'
-                }
-            }
-        }
+    # Removed _get_cached_feedback_patterns - using base class utility
 
     # === HELPER METHODS FOR SMART MESSAGING ===
 

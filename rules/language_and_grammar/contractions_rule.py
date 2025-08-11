@@ -127,7 +127,7 @@ class ContractionsRule(BaseLanguageRule):
             )
             
             # Only create error if evidence suggests it's worth evaluating
-            if evidence_score > 0.1:  # Low threshold - let enhanced validation decide
+            if evidence_score >= 0.1:  # Low threshold - let enhanced validation decide
                 errors.append(self._create_error(
                     sentence=potential_issue['sentence'].text,
                     sentence_index=potential_issue['sentence_index'],
@@ -546,7 +546,7 @@ class ContractionsRule(BaseLanguageRule):
             )
             
             # Only create error if evidence suggests it's worth flagging
-            if evidence_score > 0.1:  # Low threshold - let enhanced validation decide
+            if evidence_score >= 0.1:  # Low threshold - let enhanced validation decide
                 errors.append(self._create_error(
                     sentence=sent.text,
                     sentence_index=sent_index,
@@ -758,7 +758,7 @@ class ContractionsRule(BaseLanguageRule):
             contraction_text = potential_issue['contraction_text']
             contraction_type = suggestion_info.get('type', '').lower()
             pattern = 'regex_detected'
-            token = type('MockToken', (), {'text': contraction_text})()
+            # Use contraction_text directly instead of creating mock token
         else:
             return 0.5  # Default evidence for unknown types
         
@@ -773,14 +773,17 @@ class ContractionsRule(BaseLanguageRule):
         
         # Auxiliary verb contractions vary by formality
         elif 'auxiliary' in contraction_type or pattern.startswith('specific_'):
+            # Get the text to analyze (either from token or contraction_text)
+            text_to_check = token.text.lower() if issue_type == 'morphological_contraction' else contraction_text.lower()
+            
             # Common auxiliaries like 're, 've, 'll
-            if "'re" in token.text.lower() or "'ve" in token.text.lower() or "'ll" in token.text.lower():
+            if "'re" in text_to_check or "'ve" in text_to_check or "'ll" in text_to_check:
                 return 0.6  # Moderate-high evidence
             # Less formal contractions like 's (is), 'm (am)
-            elif "'s" in token.text.lower() or "'m" in token.text.lower():
+            elif "'s" in text_to_check or "'m" in text_to_check:
                 return 0.5  # Moderate evidence
             # Ambiguous contractions like 'd (would/had)
-            elif "'d" in token.text.lower():
+            elif "'d" in text_to_check:
                 return 0.7  # Higher evidence - ambiguous meaning
             else:
                 return 0.5  # Default moderate evidence
@@ -1085,35 +1088,79 @@ class ContractionsRule(BaseLanguageRule):
     def _apply_semantic_clues_regex_contraction(self, evidence_score: float, contraction_text: str, suggestion_info: dict, text: str, context: dict) -> float:
         """Apply semantic clues for regex-detected contractions."""
         
-        # Create a mock potential_issue for compatibility
-        mock_potential_issue = {
-            'type': 'regex_contraction',
-            'suggestion_info': suggestion_info
-        }
+        if not context:
+            return evidence_score
         
-        # Reuse most of the semantic logic from the main method
-        evidence_score = self._apply_semantic_clues_contraction(evidence_score, mock_potential_issue, text, context)
+        content_type = context.get('content_type', 'general')
+        contraction_type = suggestion_info.get('type', '').lower()
+        
+        # === CONTENT TYPE ANALYSIS ===
+        # Different content types have different contraction tolerance
+        if content_type == 'technical':
+            evidence_score -= 0.2  # Technical writing often conversational for clarity
+        elif content_type == 'api':
+            evidence_score -= 0.3  # API docs often use conversational tone
+        elif content_type == 'academic':
+            evidence_score += 0.3  # Academic writing expects formal language
+        elif content_type == 'legal':
+            evidence_score += 0.4  # Legal writing demands precision and formality
+        elif content_type == 'marketing':
+            evidence_score -= 0.4  # Marketing uses conversational tone
+        elif content_type == 'narrative':
+            evidence_score -= 0.3  # Storytelling often uses contractions
+        elif content_type == 'procedural':
+            evidence_score -= 0.2  # Instructions often use contractions for clarity
+        
+        # === DOMAIN-SPECIFIC PATTERNS ===
+        domain = context.get('domain', 'general')
+        if domain in ['software', 'engineering', 'devops']:
+            evidence_score -= 0.2  # Technical domains often informal for readability
+        elif domain in ['documentation', 'tutorial']:
+            evidence_score -= 0.2  # Educational content often conversational
+        elif domain in ['academic', 'research', 'scientific']:
+            evidence_score += 0.2  # Academic domains expect formality
+        elif domain in ['legal', 'compliance', 'regulatory']:
+            evidence_score += 0.3  # Legal domains demand precision
+        
+        # === AUDIENCE CONSIDERATIONS ===
+        audience = context.get('audience', 'general')
+        if audience in ['developer', 'technical', 'expert']:
+            evidence_score -= 0.2  # Technical audiences expect practical communication
+        elif audience in ['academic', 'research']:
+            evidence_score += 0.2  # Academic audiences expect formal language
+        elif audience in ['beginner', 'general', 'consumer']:
+            evidence_score -= 0.3  # General audiences benefit from conversational tone
+        elif audience in ['professional', 'business']:
+            evidence_score += 0.1  # Professional contexts more formal
         
         # === SPECIFIC PATTERN ANALYSIS ===
         contraction_lower = contraction_text.lower()
         
         # Common conversational contractions
         if contraction_lower in ["let's", "it's", "that's", "what's", "how's"]:
-            if context and context.get('content_type') in ['marketing', 'narrative', 'tutorial']:
+            if content_type in ['marketing', 'narrative', 'tutorial']:
                 evidence_score -= 0.2  # Very appropriate in conversational contexts
         
         # Formal-sounding contractions
         elif contraction_lower in ["shan't", "won't", "can't"]:
-            if context and context.get('content_type') in ['academic', 'legal']:
+            if content_type in ['academic', 'legal']:
                 evidence_score += 0.1  # Even formal contractions problematic in academic/legal
         
-        return evidence_score
+        # Possessive contractions particularly problematic in formal writing
+        if 'possessive' in contraction_type and content_type in ['academic', 'legal']:
+            evidence_score += 0.2  # Possessives especially problematic in formal contexts
+        
+        # Negative contractions often acceptable even in formal contexts
+        if 'negative' in contraction_type and content_type not in ['legal']:
+            evidence_score -= 0.1  # Negative contractions more broadly acceptable
+        
+        return max(0.0, min(1.0, evidence_score))
 
     def _apply_feedback_clues_contraction(self, evidence_score: float, potential_issue: Dict[str, Any], context: Dict[str, Any]) -> float:
         """Apply feedback patterns for contraction analysis."""
         
         # Load cached feedback patterns
-        feedback_patterns = self._get_cached_feedback_patterns()
+        feedback_patterns = self._get_cached_feedback_patterns('contractions')
         
         # === CONTRACTION-SPECIFIC FEEDBACK ===
         issue_type = potential_issue.get('type', '')
@@ -1189,21 +1236,54 @@ class ContractionsRule(BaseLanguageRule):
     def _apply_feedback_clues_regex_contraction(self, evidence_score: float, contraction_text: str, suggestion_info: dict, context: dict) -> float:
         """Apply feedback patterns for regex-detected contractions."""
         
-        # Create a mock contraction_info for compatibility
-        mock_contraction_info = {
-            'type': suggestion_info.get('type', ''),
-            'pattern': 'regex_detected'
-        }
+        # Load cached feedback patterns
+        feedback_patterns = self._get_cached_feedback_patterns('contractions')
         
-        # Create a mock token for compatibility
-        class MockToken:
-            def __init__(self, text):
-                self.text = text
+        contraction_text_lower = contraction_text.lower()
+        contraction_type = suggestion_info.get('type', '').lower()
         
-        mock_token = MockToken(contraction_text)
+        # Check if this specific contraction is commonly accepted
+        accepted_contractions = feedback_patterns.get('accepted_contractions', set())
+        if contraction_text_lower in accepted_contractions:
+            evidence_score -= 0.3  # Users consistently accept this contraction
         
-        # Reuse the main feedback logic
-        return self._apply_feedback_clues_contraction(evidence_score, mock_token, mock_contraction_info, context)
+        flagged_contractions = feedback_patterns.get('flagged_contractions', set())
+        if contraction_text_lower in flagged_contractions:
+            evidence_score += 0.3  # Users consistently flag this contraction
+        
+        # === CONTRACTION TYPE FEEDBACK ===
+        type_patterns = feedback_patterns.get('contraction_type_patterns', {})
+        
+        if 'possessive' in contraction_type:
+            possessive_acceptance = type_patterns.get('possessive_acceptance_rate', 0.3)
+            if possessive_acceptance > 0.7:
+                evidence_score -= 0.2
+            elif possessive_acceptance < 0.3:
+                evidence_score += 0.2
+        elif 'negative' in contraction_type:
+            negative_acceptance = type_patterns.get('negative_acceptance_rate', 0.6)
+            if negative_acceptance > 0.7:
+                evidence_score -= 0.2
+            elif negative_acceptance < 0.4:
+                evidence_score += 0.1
+        elif 'auxiliary' in contraction_type:
+            auxiliary_acceptance = type_patterns.get('auxiliary_acceptance_rate', 0.5)
+            if auxiliary_acceptance > 0.7:
+                evidence_score -= 0.2
+            elif auxiliary_acceptance < 0.3:
+                evidence_score += 0.2
+        
+        # === CONTEXT-SPECIFIC FEEDBACK ===
+        if context:
+            content_type = context.get('content_type', 'general')
+            context_patterns = feedback_patterns.get(f'{content_type}_contraction_patterns', {})
+            
+            if contraction_text_lower in context_patterns.get('acceptable', set()):
+                evidence_score -= 0.2
+            elif contraction_text_lower in context_patterns.get('problematic', set()):
+                evidence_score += 0.2
+        
+        return max(0.0, min(1.0, evidence_score))
 
     # === HELPER METHODS ===
 
@@ -1361,58 +1441,6 @@ class ContractionsRule(BaseLanguageRule):
         # Threshold for business context detection
         return business_score >= 3
 
-    def _get_cached_feedback_patterns(self):
-        """Load feedback patterns from cache or feedback analysis."""
-        # This would load from feedback analysis system
-        # For now, return patterns based on common contraction usage
-        return {
-            'accepted_contractions': {
-                # Common contractions users often accept in technical contexts
-                "let's", "it's", "that's", "here's", "there's", "what's",
-                "don't", "won't", "can't", "shouldn't", "wouldn't"
-            },
-            'flagged_contractions': {
-                # Contractions users commonly flag in formal contexts
-                "ain't", "gonna", "wanna", "gotta", "dunno"
-            },
-            'contraction_type_patterns': {
-                'possessive_acceptance_rate': 0.2,  # Low acceptance for possessive contractions
-                'negative_acceptance_rate': 0.6,    # Moderate acceptance for negative contractions
-                'auxiliary_acceptance_rate': 0.4,   # Context-dependent acceptance for auxiliary contractions
-            },
-            'technical_contraction_patterns': {
-                'acceptable': {
-                    "let's", "it's", "that's", "don't", "won't", "can't"
-                },
-                'problematic': {
-                    "ain't", "gonna", "wanna"
-                }
-            },
-            'academic_contraction_patterns': {
-                'acceptable': set(),  # Very few contractions acceptable in academic writing
-                'problematic': {
-                    "it's", "that's", "don't", "won't", "can't", "shouldn't", "wouldn't"
-                }
-            },
-            'marketing_contraction_patterns': {
-                'acceptable': {
-                    "let's", "it's", "that's", "here's", "there's", "what's",
-                    "don't", "won't", "can't", "shouldn't", "wouldn't", "you'll", "we'll"
-                },
-                'problematic': {
-                    "ain't", "gonna", "wanna"
-                }
-            },
-            'contraction_frequencies': {
-                "it's": 100, "that's": 80, "don't": 90, "won't": 70, "can't": 85,
-                "let's": 60, "here's": 40, "there's": 50
-            },
-            'contraction_acceptance_rates': {
-                "it's": 0.6, "that's": 0.5, "don't": 0.7, "won't": 0.6, "can't": 0.7,
-                "let's": 0.8, "here's": 0.6, "there's": 0.6
-            }
-        }
-
     # === HELPER METHODS FOR SMART MESSAGING ===
 
     def _get_contextual_contraction_message(self, potential_issue: Dict[str, Any], evidence_score: float) -> str:
@@ -1503,10 +1531,30 @@ class ContractionsRule(BaseLanguageRule):
     def _generate_smart_suggestions_regex(self, contraction_text: str, suggestion_info: dict, evidence_score: float, context: dict) -> List[str]:
         """Generate context-aware suggestions for regex-detected contractions."""
         
-        # Create mock token for compatibility
-        class MockToken:
-            def __init__(self, text):
-                self.text = text
+        suggestions = []
+        base_suggestion = suggestion_info.get('suggestion', 'expand the contraction')
         
-        mock_token = MockToken(contraction_text)
-        return self._generate_smart_suggestions(mock_token, suggestion_info, evidence_score, context)
+        # Base suggestions based on evidence strength
+        if evidence_score > 0.7:
+            suggestions.append(f"Expand for formal tone: {base_suggestion}.")
+        else:
+            suggestions.append(f"Consider expansion: {base_suggestion}.")
+        
+        # Context-specific advice
+        if context:
+            content_type = context.get('content_type', 'general')
+            
+            if content_type in ['academic', 'legal']:
+                suggestions.append("Formal writing typically avoids contractions entirely.")
+            elif content_type in ['marketing', 'narrative']:
+                suggestions.append("Contractions may be acceptable for conversational tone.")
+            elif content_type == 'technical':
+                suggestions.append("Technical documentation may use contractions for readability.")
+        
+        # Evidence-based advice
+        if evidence_score < 0.3:
+            suggestions.append("This contraction may be acceptable in your writing context.")
+        elif evidence_score > 0.8:
+            suggestions.append("Strong recommendation to expand this contraction.")
+        
+        return suggestions

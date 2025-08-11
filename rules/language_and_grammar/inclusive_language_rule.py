@@ -524,7 +524,7 @@ class InclusiveLanguageRule(BaseLanguageRule):
         """Apply feedback patterns for inclusive language detection."""
         
         # Load cached feedback patterns
-        feedback_patterns = self._get_cached_feedback_patterns()
+        feedback_patterns = self._get_cached_feedback_patterns('inclusive_language')
         
         # === TERM-SPECIFIC FEEDBACK ===
         match = potential_issue['match']
@@ -613,16 +613,7 @@ class InclusiveLanguageRule(BaseLanguageRule):
         
         return False
 
-    def _is_migration_documentation(self, text: str) -> bool:
-        """Check if text appears to be migration documentation."""
-        migration_indicators = [
-            'migration', 'migrating', 'migrate from', 'upgrade from',
-            'transitioning', 'moving from', 'replacing', 'legacy system',
-            'deprecated', 'end of life', 'sunset', 'phase out'
-        ]
-        
-        text_lower = text.lower()
-        return any(indicator in text_lower for indicator in migration_indicators)
+
 
     def _is_historical_documentation(self, text: str) -> bool:
         """Check if text appears to be historical documentation."""
@@ -772,56 +763,7 @@ class InclusiveLanguageRule(BaseLanguageRule):
         # Threshold for compliance context detection
         return compliance_score >= 4
 
-    def _get_cached_feedback_patterns(self):
-        """Load feedback patterns from cache or feedback analysis."""
-        # This would load from feedback analysis system
-        # For now, return patterns based on common inclusive language usage
-        return {
-            'accepted_legacy_terms': {
-                # Terms users often accept in legacy/migration contexts
-                'master', 'slave', 'whitelist', 'blacklist'
-            },
-            'flagged_terms': {
-                # Terms users consistently want to flag regardless of context
-                'man-hours', 'manned', 'sanity check'
-            },
-            'category_patterns': {
-                'technical_acceptance_rate': 0.4,   # Moderate acceptance for technical terms
-                'gendered_acceptance_rate': 0.1,    # Low acceptance for gendered terms
-                'ableist_acceptance_rate': 0.2,     # Low acceptance for ableist terms
-            },
-            'technical_inclusive_patterns': {
-                'acceptable': {
-                    # Terms acceptable in technical migration contexts
-                    'master', 'slave', 'whitelist', 'blacklist'
-                },
-                'problematic': {
-                    # Terms problematic even in technical contexts
-                    'man-hours', 'manned'
-                }
-            },
-            'academic_inclusive_patterns': {
-                'acceptable': set(),  # Very few non-inclusive terms acceptable in academic writing
-                'problematic': {
-                    # All non-inclusive terms problematic in academic writing
-                    'master', 'slave', 'whitelist', 'blacklist', 'man-hours', 'manned', 'sanity check'
-                }
-            },
-            'marketing_inclusive_patterns': {
-                'acceptable': set(),  # No non-inclusive terms acceptable in marketing
-                'problematic': {
-                    # All non-inclusive terms problematic in marketing
-                    'master', 'slave', 'whitelist', 'blacklist', 'man-hours', 'manned', 'sanity check'
-                }
-            },
-            'replacement_success': {
-                # Success rates for term replacement
-                'whitelist': 0.8, 'blacklist': 0.8,  # High success rate
-                'master': 0.3, 'slave': 0.3,         # Low success rate (legacy systems)
-                'man-hours': 0.9, 'manned': 0.9,     # High success rate
-                'sanity check': 0.7                  # Moderate success rate
-            }
-        }
+
 
     # === HELPER METHODS FOR SMART MESSAGING ===
 
