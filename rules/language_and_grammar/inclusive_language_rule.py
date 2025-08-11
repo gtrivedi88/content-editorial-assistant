@@ -223,6 +223,95 @@ class InclusiveLanguageRule(BaseLanguageRule):
         matched_text = match.group().lower()
         sentence_text = sentence.text.lower()
         
+        # === SPACY TOKEN ANALYSIS ===
+        # Find the SpaCy token(s) corresponding to the matched text
+        matched_tokens = self._find_matching_tokens(match, sentence, doc)
+        
+        if matched_tokens:
+            for token in matched_tokens:
+                # === PART-OF-SPEECH ANALYSIS ===
+                if hasattr(token, 'pos_') and token.pos_:
+                    # Nouns are more likely to be problematic non-inclusive terms
+                    if token.pos_ in ['NOUN', 'PROPN']:
+                        evidence_score += 0.1  # Nouns often represent concepts to change
+                    # Adjectives may be descriptive and context-dependent
+                    elif token.pos_ == 'ADJ':
+                        evidence_score += 0.05  # Adjectives may have neutral alternatives
+                    # Verbs in past tense might indicate established practices
+                    elif token.pos_ == 'VERB':
+                        evidence_score += 0.02  # Verbal usage patterns
+                
+                # === DEPENDENCY PARSING ===
+                if hasattr(token, 'dep_') and token.dep_:
+                    # Subjects and objects are more central to meaning
+                    if token.dep_ in ['nsubj', 'nsubjpass', 'dobj', 'pobj']:
+                        evidence_score += 0.1  # Central grammatical roles
+                    # Compound words often technical terms
+                    elif token.dep_ == 'compound':
+                        evidence_score -= 0.1  # Technical compounds may be legacy
+                    # Attributes and modifiers may be easier to change
+                    elif token.dep_ in ['amod', 'nmod', 'advmod']:
+                        evidence_score += 0.05  # Modifiers often changeable
+                
+                # === PENN TREEBANK TAG ANALYSIS ===
+                if hasattr(token, 'tag_') and token.tag_:
+                    # Plural nouns might indicate established systems
+                    if token.tag_ in ['NNS', 'NNPS']:
+                        evidence_score -= 0.05  # Plural forms often systematic
+                    # Singular proper nouns might be product/system names
+                    elif token.tag_ == 'NNP':
+                        evidence_score -= 0.1  # Proper nouns often legacy systems
+                    # Past participles might indicate established processes
+                    elif token.tag_ in ['VBN', 'VBD']:
+                        evidence_score -= 0.03  # Past forms suggest established usage
+                
+                # === NAMED ENTITY RECOGNITION ===
+                if hasattr(token, 'ent_type_') and token.ent_type_:
+                    ent_type = token.ent_type_
+                    # Organizations and products often have established names
+                    if ent_type in ['ORG', 'PRODUCT', 'FAC']:
+                        evidence_score -= 0.2  # Organizational terms harder to change
+                    # Person names rarely non-inclusive (different context)
+                    elif ent_type == 'PERSON':
+                        evidence_score -= 0.1  # Person names different category
+                    # Technical entities might be system names
+                    elif ent_type in ['GPE', 'EVENT']:
+                        evidence_score -= 0.05  # Geographic/event entities
+                
+                # === LEMMA ANALYSIS ===
+                if hasattr(token, 'lemma_') and token.lemma_:
+                    lemma_lower = token.lemma_.lower()
+                    # Check if lemma is in our non-inclusive terms
+                    term_info = potential_issue['term_info']
+                    base_term = term_info.get('term', '').lower()
+                    
+                    if lemma_lower == base_term:
+                        evidence_score += 0.1  # Lemma matches our target term
+                    
+                    # Technical verb lemmas
+                    if lemma_lower in ['configure', 'implement', 'deploy', 'manage', 'control']:
+                        evidence_score -= 0.05  # Technical action verbs
+                    
+                    # Administrative lemmas
+                    elif lemma_lower in ['administer', 'supervise', 'oversee', 'govern']:
+                        evidence_score += 0.05  # Administrative terms often changeable
+                
+                # === MORPHOLOGICAL FEATURES ===
+                if hasattr(token, 'morph') and token.morph:
+                    morph_str = str(token.morph)
+                    
+                    # Plural forms might indicate systematic usage
+                    if 'Number=Plur' in morph_str:
+                        evidence_score -= 0.03  # Plural suggests system-wide usage
+                    
+                    # Past tense might indicate established processes
+                    if 'Tense=Past' in morph_str:
+                        evidence_score -= 0.02  # Past tense suggests established usage
+                    
+                    # Definite articles suggest specific references
+                    if 'Definite=Def' in morph_str:
+                        evidence_score -= 0.02  # Definite references to specific systems
+        
         # === QUOTATION CONTEXT ANALYSIS ===
         # Terms in quotes often reference external sources
         if self._is_in_quotation_context(match, sentence):
@@ -411,6 +500,24 @@ class InclusiveLanguageRule(BaseLanguageRule):
         if category == 'gendered' and content_type in ['marketing', 'academic']:
             evidence_score += 0.2  # Gendered language in professional contexts
         
+        # === SYSTEM ARCHITECTURE CONTEXT ===
+        # Architecture docs often reference established patterns with legacy terminology
+        if self._is_system_architecture_context(text, context):
+            evidence_score -= 0.3  # Architecture docs may need legacy term references
+            
+            # But still flag new architecture designs
+            if self._is_new_development_content(text):
+                evidence_score += 0.2  # New designs should use inclusive language
+        
+        # === COMPLIANCE DOCUMENTATION CONTEXT ===
+        # Compliance docs may be constrained by legal/regulatory requirements
+        if self._is_compliance_documentation_context(text, context):
+            evidence_score -= 0.2  # Compliance docs may have regulatory constraints
+            
+            # But internal policies should still be inclusive
+            if content_type in ['policy', 'procedure'] and 'internal' in text.lower():
+                evidence_score += 0.1  # Internal policies can be more inclusive
+        
         return max(0.0, min(1.0, evidence_score))
 
     def _apply_feedback_clues_inclusive(self, evidence_score: float, potential_issue: Dict[str, Any], context: Dict[str, Any]) -> float:
@@ -538,6 +645,132 @@ class InclusiveLanguageRule(BaseLanguageRule):
         
         text_lower = text.lower()
         return any(indicator in text_lower for indicator in new_development_indicators)
+
+    def _find_matching_tokens(self, match, sentence, doc):
+        """Find SpaCy tokens that correspond to the regex match."""
+        matched_tokens = []
+        match_start = match.start()
+        match_end = match.end()
+        
+        # Find tokens that overlap with the match span
+        for token in sentence:
+            token_start = token.idx - sentence.start_char
+            token_end = token_start + len(token.text)
+            
+            # Check if token overlaps with match
+            if (token_start < match_end and token_end > match_start):
+                matched_tokens.append(token)
+        
+        return matched_tokens
+
+    def _is_system_architecture_context(self, text: str, context: dict) -> bool:
+        """
+        Detect if content is system architecture documentation.
+        
+        System architecture docs often reference established patterns and
+        legacy system designs that may use non-inclusive terminology.
+        
+        Args:
+            text: Document text
+            context: Document context
+            
+        Returns:
+            bool: True if system architecture context detected
+        """
+        architecture_indicators = {
+            'architecture', 'design', 'blueprint', 'schema', 'framework',
+            'infrastructure', 'topology', 'hierarchy', 'component', 'module',
+            'service', 'microservice', 'distributed', 'scalable', 'pattern',
+            'client-server', 'master-slave', 'producer-consumer', 'pipeline'
+        }
+        
+        text_lower = text.lower()
+        domain = context.get('domain', '')
+        content_type = context.get('content_type', '')
+        
+        # Direct text indicators
+        arch_score = sum(1 for indicator in architecture_indicators if indicator in text_lower)
+        
+        # Context-based indicators
+        if domain in {'architecture', 'infrastructure', 'systems', 'platform'}:
+            arch_score += 2
+        
+        if content_type in {'technical', 'specification', 'design', 'architecture'}:
+            arch_score += 2
+        
+        # Check for architecture patterns in text
+        architecture_patterns = [
+            'system design', 'distributed system', 'service architecture',
+            'data flow', 'component diagram', 'system topology',
+            'master node', 'slave node', 'control plane'
+        ]
+        
+        pattern_matches = sum(1 for pattern in architecture_patterns if pattern in text_lower)
+        arch_score += pattern_matches
+        
+        # Threshold for architecture context detection
+        return arch_score >= 3
+
+    def _is_compliance_documentation_context(self, text: str, context: dict) -> bool:
+        """
+        Detect if content is compliance or regulatory documentation.
+        
+        Compliance docs often reference specific legal or regulatory
+        terminology that may be difficult to change due to legal requirements.
+        
+        Args:
+            text: Document text
+            context: Document context
+            
+        Returns:
+            bool: True if compliance documentation context detected
+        """
+        compliance_indicators = {
+            'compliance', 'regulation', 'regulatory', 'legal', 'audit',
+            'policy', 'procedure', 'standard', 'certification', 'requirement',
+            'mandate', 'directive', 'guideline', 'framework', 'governance',
+            'sox', 'gdpr', 'hipaa', 'pci', 'iso', 'cmmi'
+        }
+        
+        text_lower = text.lower()
+        domain = context.get('domain', '')
+        content_type = context.get('content_type', '')
+        audience = context.get('audience', '')
+        
+        # Direct text indicators
+        compliance_score = sum(1 for indicator in compliance_indicators if indicator in text_lower)
+        
+        # Context-based indicators
+        if domain in {'legal', 'compliance', 'regulatory', 'governance', 'audit'}:
+            compliance_score += 2
+        
+        if content_type in {'legal', 'compliance', 'policy', 'procedure', 'regulatory'}:
+            compliance_score += 2
+            
+        if audience in {'auditor', 'compliance', 'legal', 'regulatory', 'governance'}:
+            compliance_score += 2
+        
+        # Check for compliance-specific patterns
+        compliance_patterns = [
+            'regulatory requirement', 'compliance standard', 'audit requirement',
+            'legal mandate', 'regulatory framework', 'compliance policy',
+            'industry standard', 'certification requirement'
+        ]
+        
+        pattern_matches = sum(1 for pattern in compliance_patterns if pattern in text_lower)
+        compliance_score += pattern_matches
+        
+        # Legal language patterns
+        legal_patterns = [
+            'shall be', 'must be', 'is required to', 'in accordance with',
+            'pursuant to', 'subject to', 'notwithstanding', 'whereas'
+        ]
+        
+        legal_matches = sum(1 for pattern in legal_patterns if pattern in text_lower)
+        compliance_score += legal_matches
+        
+        # Threshold for compliance context detection
+        return compliance_score >= 4
 
     def _get_cached_feedback_patterns(self):
         """Load feedback patterns from cache or feedback analysis."""

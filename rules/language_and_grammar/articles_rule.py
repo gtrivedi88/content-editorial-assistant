@@ -733,6 +733,13 @@ class ArticlesRule(BaseLanguageRule):
         elif audience in ['beginner', 'general']:
             evidence_score += 0.2  # General audiences need complete grammar
         
+        # === CONTENT TYPE SPECIFIC ANALYSIS ===
+        # Use helper methods to analyze content type
+        if self._is_procedural_documentation(text, context):
+            evidence_score -= 0.3  # Instructions often omit articles for brevity
+        elif self._is_reference_documentation(text, context):
+            evidence_score -= 0.2  # Reference docs use abbreviated style
+        
         # === TECHNICAL TERM DENSITY ===
         # High technical term density suggests abbreviated style is acceptable
         if self._has_high_technical_density(text):
@@ -819,6 +826,46 @@ class ArticlesRule(BaseLanguageRule):
         technical_ratio = technical_count / len(words)
         
         return technical_ratio > 0.1  # More than 10% technical terms
+
+    def _is_procedural_documentation(self, text: str, context: dict) -> bool:
+        """Check if content is procedural/instructional documentation."""
+        content_type = context.get('content_type', '')
+        domain = context.get('domain', '')
+        
+        # Direct indicators
+        if content_type in ['procedural', 'instructional', 'tutorial'] or domain in ['tutorial', 'guide']:
+            return True
+        
+        # Text-based indicators
+        procedural_indicators = [
+            'step', 'procedure', 'instruction', 'tutorial', 'guide', 'process',
+            'follow', 'complete', 'perform', 'execute', 'configure', 'install',
+            'setup', 'initialize', 'create', 'delete', 'modify', 'update',
+            'first', 'next', 'then', 'finally', 'before', 'after'
+        ]
+        
+        text_lower = text.lower()
+        return sum(1 for indicator in procedural_indicators if indicator in text_lower) >= 4
+
+    def _is_reference_documentation(self, text: str, context: dict) -> bool:
+        """Check if content is reference documentation."""
+        content_type = context.get('content_type', '')
+        domain = context.get('domain', '')
+        
+        # Direct indicators
+        if content_type in ['reference', 'specification'] or domain in ['reference', 'specification']:
+            return True
+        
+        # Text-based indicators
+        reference_indicators = [
+            'reference', 'specification', 'manual', 'documentation', 'guide',
+            'parameter', 'option', 'argument', 'value', 'property', 'attribute',
+            'method', 'function', 'class', 'interface', 'endpoint', 'schema',
+            'format', 'syntax', 'grammar', 'structure', 'definition', 'describes'
+        ]
+        
+        text_lower = text.lower()
+        return sum(1 for indicator in reference_indicators if indicator in text_lower) >= 4
 
     def _count_formal_indicators(self, text: str) -> int:
         """Count indicators of formal writing style."""

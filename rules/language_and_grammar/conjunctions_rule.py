@@ -47,8 +47,8 @@ class ConjunctionsRule(BaseLanguageRule):
                     errors.append(self._create_error(
                         sentence=sent_text,
                         sentence_index=i,
-                        message=self._get_contextual_message(comma_info, evidence_score),
-                        suggestions=self._generate_smart_suggestions(comma_info, evidence_score, context),
+                        message=self._get_contextual_comma_splice_message(comma_info, evidence_score, context),
+                        suggestions=self._generate_smart_comma_splice_suggestions(comma_info, evidence_score, context or {}),
                         severity='medium',
                         text=text,
                         context=context,
@@ -307,6 +307,101 @@ class ConjunctionsRule(BaseLanguageRule):
         sentence_lower = sentence.lower()
         if '; ' in sentence or ' - ' in sentence or ' : ' in sentence:
             evidence_score -= 0.1  # Other punctuation suggests intentional structure
+
+        # === MORPHOLOGICAL FEATURES ===
+        # Analyze morphological features of verbs around the comma
+        comma_token = comma_info['comma_token']
+        if hasattr(comma_token, 'morph') and comma_token.morph:
+            # Check verbs within context of comma
+            for token in doc[max(0, comma_idx-3):min(len(doc), comma_idx+4)]:
+                if token.pos_ in ['VERB', 'AUX'] and hasattr(token, 'morph') and token.morph:
+                    morph_str = str(token.morph)
+                    # Past tense verbs may indicate completed actions
+                    if 'Tense=Past' in morph_str:
+                        evidence_score += 0.02  # Past tense supports independence
+                    # Present tense with 3rd person may indicate strong clauses
+                    if 'Tense=Pres' in morph_str and 'Person=3' in morph_str:
+                        evidence_score += 0.03  # Strong present tense forms
+                    # Participles often indicate subordination
+                    if 'VerbForm=Part' in morph_str:
+                        evidence_score -= 0.05  # Participles reduce independence
+
+        # === NAMED ENTITY RECOGNITION ===
+        # Named entities may require comma-separated precision
+        entity_tokens = [t for t in doc if getattr(t, 'ent_type_', '')]
+        if entity_tokens:
+            for token in entity_tokens:
+                ent_type = getattr(token, 'ent_type_', '')
+                # Organizations, places, products often need comma precision
+                if ent_type in ['ORG', 'GPE', 'PRODUCT', 'FAC']:
+                    evidence_score -= 0.03  # Entities often need comma separation
+                # People and dates less likely to be in comma splices
+                elif ent_type in ['PERSON', 'DATE', 'TIME']:
+                    evidence_score -= 0.02  # Named entities reduce splice likelihood
+                # Money, quantities often in comma-separated lists
+                elif ent_type in ['MONEY', 'QUANTITY', 'PERCENT']:
+                    evidence_score -= 0.04  # Numeric entities often listed
+        
+        # === ENHANCED TAG ANALYSIS ===
+        # Penn Treebank tags provide granular grammatical analysis
+        comma_token = comma_info['comma_token']
+        comma_idx = comma_info['comma_idx']
+        
+        # Analyze tags around the comma for grammatical patterns
+        for i in range(max(0, comma_idx-3), min(len(doc), comma_idx+4)):
+            token = doc[i]
+            if hasattr(token, 'tag_') and token.tag_:
+                # Proper nouns often in lists or technical contexts
+                if token.tag_ in ['NNP', 'NNPS']:  # Proper nouns
+                    evidence_score -= 0.02  # Proper nouns often listed
+                # Personal pronouns suggest narrative flow
+                elif token.tag_ in ['PRP', 'PRP$']:  # Personal pronouns
+                    evidence_score += 0.01  # Pronouns suggest clause connection
+                # Determiners often start independent clauses
+                elif token.tag_ in ['DT', 'PDT']:  # Determiners
+                    if i > comma_idx:  # After comma
+                        evidence_score += 0.02  # "the", "this" after comma suggests new clause
+                # Modal verbs often indicate independence
+                elif token.tag_ == 'MD':  # Modal verbs
+                    evidence_score += 0.03  # "can", "will", "should" suggest independence
+                # Coordinating conjunctions reduce splice evidence
+                elif token.tag_ == 'CC':  # Coordinating conjunctions
+                    evidence_score -= 0.05  # "and", "but", "or" connect properly
+                # Subordinating conjunctions reduce independence
+                elif token.tag_ == 'IN' and token.text.lower() in ['because', 'since', 'although', 'while']:
+                    evidence_score -= 0.04  # Subordination reduces independence
+        
+        # === LEMMA-BASED ANALYSIS ===
+        # Use lemmatized forms for semantic analysis
+        for i in range(max(0, comma_idx-5), min(len(doc), comma_idx+6)):
+            token = doc[i]
+            if hasattr(token, 'lemma_') and token.lemma_:
+                lemma_lower = token.lemma_.lower()
+                
+                # Action verbs suggest independent clauses
+                if lemma_lower in ['be', 'have', 'do', 'make', 'get', 'go', 'come', 'take']:
+                    if token.pos_ == 'VERB':  # Main verb, not auxiliary
+                        evidence_score += 0.02  # Common action verbs suggest independence
+                
+                # Linking verbs often create simple structures
+                elif lemma_lower in ['seem', 'appear', 'become', 'remain', 'feel', 'look', 'sound']:
+                    evidence_score += 0.01  # Linking verbs suggest predicate structures
+                
+                # Communication verbs often in narrative comma splices
+                elif lemma_lower in ['say', 'tell', 'ask', 'speak', 'talk', 'write', 'read']:
+                    evidence_score += 0.03  # "He said, she replied" patterns
+                
+                # Technical verbs common in procedural writing
+                elif lemma_lower in ['configure', 'install', 'setup', 'deploy', 'execute', 'run']:
+                    evidence_score -= 0.02  # Technical procedures often comma-separated
+                
+                # Temporal connectors suggest sequence, not splice
+                elif lemma_lower in ['then', 'next', 'first', 'finally', 'meanwhile', 'afterwards']:
+                    evidence_score -= 0.03  # Temporal sequence words
+                
+                # Logical connectors suggest relationships
+                elif lemma_lower in ['therefore', 'however', 'furthermore', 'moreover', 'nevertheless']:
+                    evidence_score -= 0.02  # Logical connectors often comma-preceded
         
         return evidence_score
 
@@ -405,6 +500,27 @@ class ConjunctionsRule(BaseLanguageRule):
         
         if self._has_formal_writing_indicators(text):
             evidence_score += 0.2  # Formal writing should avoid comma splices
+
+        # === DOCUMENT TYPE DETECTION ===
+        # Use helper methods to detect document types and adjust accordingly
+        if self._is_api_documentation(text, context):
+            evidence_score -= 0.3  # API docs use comma-separated parameter lists
+        elif self._is_procedural_documentation(text, context):
+            evidence_score -= 0.2  # Procedural docs may use comma-separated steps
+        elif self._is_technical_specification(text, context):
+            evidence_score -= 0.2  # Technical specs use abbreviated structures
+        elif self._is_reference_documentation(text, context):
+            evidence_score -= 0.3  # Reference docs use comma-separated listings
+        elif self._is_data_documentation(text, context):
+            evidence_score -= 0.3  # Data docs use comma-separated field lists
+        elif self._is_configuration_documentation(text, context):
+            evidence_score -= 0.2  # Config docs use comma-separated options
+
+        # === INTERNATIONAL CONTEXT ===
+        # Check for international audience indicators
+        audience = context.get('audience', 'general')
+        if audience in ['international', 'global'] or 'global' in domain:
+            evidence_score += 0.1  # International readers need clearer grammar
         
         return evidence_score
 
@@ -602,6 +718,144 @@ class ConjunctionsRule(BaseLanguageRule):
         text_lower = text.lower()
         return any(indicator in text_lower for indicator in formal_indicators)
 
+    def _is_api_documentation(self, text: str, context: dict) -> bool:
+        """
+        Detect if content is API reference documentation.
+        
+        API docs often use comma-separated parameter lists that aren't comma splices.
+        
+        Args:
+            text: Document text
+            context: Document context
+            
+        Returns:
+            bool: True if API documentation detected
+        """
+        api_indicators = {
+            'api', 'endpoint', 'parameter', 'response', 'request',
+            'method', 'function', 'class', 'object', 'property',
+            'json', 'xml', 'http', 'get', 'post', 'put', 'delete'
+        }
+        text_lower = text.lower()
+        content_type = context.get('content_type', '')
+        return (any(indicator in text_lower for indicator in api_indicators) or
+                content_type in {'api', 'reference'})
+
+    def _is_procedural_documentation(self, text: str, context: dict) -> bool:
+        """
+        Detect if content is procedural/instructional documentation.
+        
+        Procedural docs often use comma-separated steps that may be acceptable.
+        
+        Args:
+            text: Document text
+            context: Document context
+            
+        Returns:
+            bool: True if procedural documentation detected
+        """
+        procedural_indicators = {
+            'step', 'first', 'second', 'third', 'next', 'then', 'finally',
+            'install', 'configure', 'setup', 'create', 'delete', 'modify',
+            'follow these steps', 'to do this', 'procedure', 'instructions'
+        }
+        text_lower = text.lower()
+        content_type = context.get('content_type', '')
+        return (any(indicator in text_lower for indicator in procedural_indicators) or
+                content_type in {'procedural', 'tutorial', 'how-to'})
+
+    def _is_technical_specification(self, text: str, context: dict) -> bool:
+        """
+        Detect if content is technical specification documentation.
+        
+        Technical specs may use abbreviated comma structures for precision.
+        
+        Args:
+            text: Document text
+            context: Document context
+            
+        Returns:
+            bool: True if technical specification detected
+        """
+        spec_indicators = {
+            'specification', 'spec', 'protocol', 'standard', 'rfc',
+            'format', 'schema', 'definition', 'interface', 'architecture',
+            'requirement', 'constraint', 'implementation'
+        }
+        text_lower = text.lower()
+        domain = context.get('domain', '')
+        return (any(indicator in text_lower for indicator in spec_indicators) or
+                domain in {'technical', 'engineering', 'specification'})
+
+    def _is_reference_documentation(self, text: str, context: dict) -> bool:
+        """
+        Detect if content is reference documentation.
+        
+        Reference docs often use condensed comma-separated listings.
+        
+        Args:
+            text: Document text
+            context: Document context
+            
+        Returns:
+            bool: True if reference documentation detected
+        """
+        reference_indicators = {
+            'reference', 'manual', 'guide', 'documentation', 'handbook',
+            'catalog', 'index', 'glossary', 'appendix', 'syntax',
+            'options', 'parameters', 'arguments', 'flags'
+        }
+        text_lower = text.lower()
+        content_type = context.get('content_type', '')
+        return (any(indicator in text_lower for indicator in reference_indicators) or
+                content_type in {'reference', 'manual'})
+
+    def _is_data_documentation(self, text: str, context: dict) -> bool:
+        """
+        Detect if content is data/database documentation.
+        
+        Data docs often use comma-separated field lists and values.
+        
+        Args:
+            text: Document text
+            context: Document context
+            
+        Returns:
+            bool: True if data documentation detected
+        """
+        data_indicators = {
+            'database', 'table', 'field', 'column', 'row', 'record',
+            'query', 'sql', 'schema', 'entity', 'attribute', 'relation',
+            'dataset', 'data structure', 'csv', 'json', 'xml'
+        }
+        text_lower = text.lower()
+        domain = context.get('domain', '')
+        return (any(indicator in text_lower for indicator in data_indicators) or
+                domain in {'database', 'data', 'analytics'})
+
+    def _is_configuration_documentation(self, text: str, context: dict) -> bool:
+        """
+        Detect if content is configuration documentation.
+        
+        Config docs often use comma-separated option lists and values.
+        
+        Args:
+            text: Document text
+            context: Document context
+            
+        Returns:
+            bool: True if configuration documentation detected
+        """
+        config_indicators = {
+            'configuration', 'config', 'settings', 'options', 'preferences',
+            'properties', 'environment', 'variable', 'flag', 'parameter',
+            'default', 'value', 'override', 'customize'
+        }
+        text_lower = text.lower()
+        content_type = context.get('content_type', '')
+        return (any(indicator in text_lower for indicator in config_indicators) or
+                content_type in {'configuration', 'settings'})
+
     def _get_cached_feedback_patterns(self):
         """Load feedback patterns from cache or feedback analysis."""
         # This would load from feedback analysis system
@@ -641,45 +895,106 @@ class ConjunctionsRule(BaseLanguageRule):
 
     # === HELPER METHODS FOR SMART MESSAGING ===
 
-    def _get_contextual_message(self, comma_info: dict, evidence_score: float) -> str:
-        """Generate context-aware error messages for comma splices."""
+    def _get_contextual_comma_splice_message(self, comma_info: dict, evidence_score: float, context: dict = None) -> str:
+        """
+        Generate context-aware error messages for comma splices.
+        
+        Tailors the message based on evidence strength, document context, and writing style
+        to provide meaningful feedback that respects the writing situation.
+        
+        Args:
+            comma_info: Dictionary with comma location and clause information
+            evidence_score: Calculated evidence score for this comma splice
+            context: Document context for message customization
+            
+        Returns:
+            str: Contextual error message
+        """
+        content_type = context.get('content_type', 'general') if context else 'general'
+        audience = context.get('audience', 'general') if context else 'general'
         
         if evidence_score > 0.8:
-            return "Comma splice detected: two independent clauses are joined by only a comma."
+            if content_type in ['academic', 'legal']:
+                return "Comma splice detected: formal writing requires proper separation of independent clauses."
+            elif audience in ['beginner', 'general']:
+                return "Comma splice: two complete thoughts are joined by only a comma. This can confuse readers."
+            else:
+                return "Comma splice detected: two independent clauses are joined by only a comma."
         elif evidence_score > 0.5:
-            return "Possible comma splice: consider whether these clauses should be separated differently."
+            if content_type in ['technical', 'api']:
+                return "Possible comma splice: verify that comma-separated elements are not independent clauses."
+            elif content_type == 'narrative':
+                return "Potential comma splice: consider whether this serves a stylistic purpose or should be corrected."
+            else:
+                return "Possible comma splice: consider whether these clauses should be separated differently."
         else:
-            return "Comma usage: verify that this comma correctly connects the clauses."
+            if content_type in ['reference', 'api']:
+                return "Comma usage: verify formatting aligns with documentation standards."
+            else:
+                return "Comma usage: verify that this comma correctly connects the clauses."
 
-    def _generate_smart_suggestions(self, comma_info: dict, evidence_score: float, context: dict) -> List[str]:
-        """Generate context-aware suggestions for comma splices."""
+    def _generate_smart_comma_splice_suggestions(self, comma_info: dict, evidence_score: float, context: dict) -> List[str]:
+        """
+        Generate context-aware suggestions for comma splices.
         
+        Provides actionable suggestions that consider document type, audience,
+        and specific comma splice patterns found in the sentence.
+        
+        Args:
+            comma_info: Dictionary with comma location and clause information
+            evidence_score: Calculated evidence score for this comma splice
+            context: Document context for suggestion customization
+            
+        Returns:
+            List[str]: Context-appropriate suggestions for improvement
+        """
         suggestions = []
+        content_type = context.get('content_type', 'general')
+        block_type = context.get('block_type', 'paragraph')
+        audience = context.get('audience', 'general')
         
-        # Base suggestions
+        # High evidence cases need clear corrections
         if evidence_score > 0.7:
-            suggestions.append("Use a period to create two separate sentences.")
-            suggestions.append("Use a semicolon to connect related independent clauses.")
-            suggestions.append("Add a coordinating conjunction (and, but, or, so) after the comma.")
+            if content_type in ['academic', 'legal']:
+                suggestions.append("Use a period to create two separate sentences for formal clarity.")
+                suggestions.append("Use a semicolon to connect closely related independent clauses.")
+            elif audience in ['beginner', 'general']:
+                suggestions.append("Split into two sentences to make each idea clear.")
+                suggestions.append("Add 'and', 'but', or 'so' after the comma to connect the thoughts.")
+            else:
+                suggestions.append("Use a period to create two separate sentences.")
+                suggestions.append("Use a semicolon to connect related independent clauses.")
+                suggestions.append("Add a coordinating conjunction (and, but, or, so) after the comma.")
         else:
             suggestions.append("Consider using a period, semicolon, or conjunction if these are independent clauses.")
         
         # Context-specific advice
-        if context:
-            content_type = context.get('content_type', 'general')
-            block_type = context.get('block_type', 'paragraph')
-            
-            if content_type == 'technical' and block_type in ['ordered_list_item', 'unordered_list_item']:
-                suggestions.append("In technical lists, comma-separated items may be acceptable.")
-            elif content_type in ['academic', 'legal']:
-                suggestions.append("Formal writing requires clear separation of independent clauses.")
-            elif content_type == 'narrative':
-                suggestions.append("Consider whether this comma splice serves a stylistic purpose.")
-        
+        if content_type == 'technical' and block_type in ['ordered_list_item', 'unordered_list_item']:
+            suggestions.append("In technical lists, comma-separated items may be acceptable if they're not complete sentences.")
+        elif content_type in ['api', 'reference']:
+            suggestions.append("For documentation, ensure comma usage follows your style guide for parameter lists.")
+        elif content_type == 'procedural':
+            suggestions.append("In step-by-step instructions, consider using numbered steps instead of comma-separated clauses.")
+        elif content_type == 'narrative':
+            suggestions.append("Consider whether this comma splice serves a stylistic purpose or should be corrected.")
+        elif content_type in ['academic', 'legal']:
+            suggestions.append("Formal writing requires clear separation of independent clauses.")
+
+        # Audience-specific advice
+        if audience in ['international', 'global']:
+            suggestions.append("Use clear sentence boundaries to help international readers.")
+        elif audience in ['developer', 'technical']:
+            suggestions.append("Technical audiences expect precise punctuation in documentation.")
+
         # Evidence-based advice
         if evidence_score < 0.3:
             suggestions.append("This may be acceptable depending on your writing style and context.")
         elif evidence_score > 0.8:
             suggestions.append("This appears to be a clear comma splice that should be corrected.")
-        
-        return suggestions
+
+        # Clause-specific suggestions
+        if comma_info.get('left_clause', {}).get('is_simple_clause') and comma_info.get('right_clause', {}).get('is_simple_clause'):
+            suggestions.append("Both parts are complete thoughts - they need stronger separation than a comma.")
+
+        # Limit to most relevant suggestions
+        return suggestions[:3]

@@ -766,6 +766,10 @@ class AbbreviationsRule(BaseLanguageRule):
         elif audience in ['beginner', 'general']:
             evidence_score += 0.2  # General audience needs definitions
         
+        # Brand/product context analysis
+        if self._is_brand_product_context(token, text, context):
+            evidence_score -= 0.4  # Brand/product names often don't need definition
+        
         return evidence_score
 
     def _apply_semantic_clues_verb(self, evidence_score: float, token: 'Token', text: str, context: Optional[Dict[str, Any]]) -> float:
@@ -896,6 +900,61 @@ class AbbreviationsRule(BaseLanguageRule):
         for word in command_indicators:
             if word in sent.text.lower():
                 return True
+        
+        return False
+
+    def _is_brand_product_context(self, token: 'Token', text: str, context: Optional[Dict[str, Any]]) -> bool:
+        """Check if abbreviation appears in brand/product naming context."""
+        if not context:
+            return False
+        
+        # Direct context indicators
+        content_type = context.get('content_type', '')
+        domain = context.get('domain', '')
+        
+        if content_type in ['marketing', 'branding'] or domain in ['product', 'brand']:
+            return True
+        
+        # Text-based indicators around the token
+        sent = token.sent
+        sent_text = sent.text.lower()
+        
+        # Brand/product context words
+        brand_indicators = [
+            'product', 'service', 'platform', 'solution', 'software',
+            'application', 'system', 'technology', 'framework', 'library',
+            'brand', 'company', 'corporation', 'enterprise', 'inc', 'ltd',
+            'trademark', 'registered', 'patent', 'proprietary', 'licensed'
+        ]
+        
+        # Check for brand context nearby
+        if any(indicator in sent_text for indicator in brand_indicators):
+            return True
+        
+        # Check if token is followed by version numbers or product identifiers
+        next_token = token.nbor(1) if token.i < len(token.doc) - 1 else None
+        if next_token:
+            # Pattern: "API 2.0", "SDK v3", "Platform Pro"
+            if (next_token.like_num or 
+                next_token.text.lower() in ['pro', 'enterprise', 'premium', 'standard', 'lite'] or
+                re.match(r'^v?\d+', next_token.text.lower())):
+                return True
+        
+        # Check for capitalization patterns suggesting brand names
+        # Look for other capitalized words nearby (brand name pattern)
+        nearby_tokens = []
+        start_idx = max(0, token.i - 3)
+        end_idx = min(len(token.doc), token.i + 4)
+        
+        for i in range(start_idx, end_idx):
+            if i != token.i:
+                nearby_tokens.append(token.doc[i])
+        
+        capitalized_count = sum(1 for t in nearby_tokens if t.text and t.text[0].isupper() and t.is_alpha)
+        
+        # High density of capitalized words suggests brand/product context
+        if len(nearby_tokens) > 0 and capitalized_count / len(nearby_tokens) > 0.3:
+            return True
         
         return False
 

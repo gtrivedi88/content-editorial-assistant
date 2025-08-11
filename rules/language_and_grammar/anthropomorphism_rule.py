@@ -245,7 +245,7 @@ class AnthropomorphismRule(BaseLanguageRule):
     # === LINGUISTIC CLUES (MICRO-LEVEL) ===
 
     def _apply_linguistic_clues_anthropomorphism(self, evidence_score: float, verb_token, subject_token, sentence) -> float:
-        """Apply SpaCy-based linguistic analysis clues for anthropomorphism."""
+        """Apply comprehensive SpaCy-based linguistic analysis clues for anthropomorphism."""
         
         # === VERB TENSE AND MOOD ANALYSIS ===
         # Present tense feels more anthropomorphic than past/future
@@ -253,6 +253,80 @@ class AnthropomorphismRule(BaseLanguageRule):
             evidence_score += 0.1  # "The system thinks" vs "The system thought"
         elif verb_token.tag_ in ['VBD', 'VBN']:  # Past tense/participle
             evidence_score -= 0.1  # Less anthropomorphic feeling
+        elif verb_token.tag_ in ['VBG']:  # Present participle
+            evidence_score += 0.05  # "The system is thinking" slightly anthropomorphic
+        
+        # === MORPHOLOGICAL FEATURES ANALYSIS ===
+        # Enhanced morphological analysis using SpaCy's morph features
+        if hasattr(verb_token, 'morph') and verb_token.morph:
+            morph_str = str(verb_token.morph)
+            
+            # Tense features
+            if 'Tense=Pres' in morph_str:
+                evidence_score += 0.1  # Present tense more anthropomorphic
+            elif 'Tense=Past' in morph_str:
+                evidence_score -= 0.05  # Past tense less anthropomorphic
+            
+            # Person features
+            if 'Person=3' in morph_str:
+                evidence_score += 0.05  # Third person ("it thinks") more anthropomorphic
+            
+            # Number features
+            if 'Number=Sing' in morph_str:
+                evidence_score += 0.03  # Singular subjects often more anthropomorphic
+            
+            # Voice features
+            if 'Voice=Pass' in morph_str:
+                evidence_score -= 0.15  # Passive voice less anthropomorphic
+        
+        # === DEPENDENCY PARSING ENHANCED ANALYSIS ===
+        # More detailed dependency relationship analysis
+        if verb_token.dep_ == 'ROOT':
+            evidence_score += 0.05  # Main verb in sentence more prominent
+        elif verb_token.dep_ in ['xcomp', 'ccomp']:
+            evidence_score -= 0.1  # Complement clauses less anthropomorphic
+        elif verb_token.dep_ in ['acl', 'relcl']:
+            evidence_score -= 0.05  # Relative clauses less anthropomorphic
+        
+        # === ENHANCED SUBJECT ANALYSIS ===
+        # More comprehensive subject type analysis
+        if hasattr(subject_token, 'morph') and subject_token.morph:
+            subj_morph = str(subject_token.morph)
+            if 'Number=Plur' in subj_morph:
+                evidence_score -= 0.1  # Plural subjects less anthropomorphic
+        
+        # Check subject's part-of-speech tag for more detail
+        if subject_token.tag_ in ['NNP', 'NNPS']:  # Proper nouns
+            if subject_token.ent_type_ in ['ORG', 'PRODUCT']:
+                evidence_score -= 0.1  # Organizations/products can have agency
+        elif subject_token.tag_ in ['NN', 'NNS']:  # Common nouns
+            evidence_score += 0.05  # Common nouns more likely to be inappropriate
+        
+        # === ENHANCED NAMED ENTITY ANALYSIS ===
+        # More nuanced entity type handling with IOB tags
+        if subject_token.ent_type_:
+            # Check entity IOB tags for confidence
+            if hasattr(subject_token, 'ent_iob_'):
+                if subject_token.ent_iob_ == 'B':  # Beginning of entity
+                    evidence_score -= 0.1  # High confidence entity
+                elif subject_token.ent_iob_ == 'I':  # Inside entity
+                    evidence_score -= 0.05  # Part of entity
+        
+        # === POS TAG ANALYSIS ===
+        # Part-of-speech based evidence adjustment
+        if hasattr(subject_token, 'pos_'):
+            if subject_token.pos_ == 'PROPN':  # Proper noun
+                evidence_score -= 0.2  # Proper nouns can have more agency
+            elif subject_token.pos_ == 'NOUN':  # Common noun
+                evidence_score += 0.05  # Common nouns more likely inappropriate
+            elif subject_token.pos_ == 'PRON':  # Pronoun
+                evidence_score -= 0.3  # Pronouns refer to entities with agency
+        
+        if hasattr(verb_token, 'pos_'):
+            if verb_token.pos_ == 'VERB':  # Main verb
+                evidence_score += 0.05  # Main verbs more prominent
+            elif verb_token.pos_ == 'AUX':  # Auxiliary verb
+                evidence_score -= 0.1  # Auxiliary verbs less anthropomorphic
         
         # === SUBJECT ANALYSIS ===
         # Animate vs inanimate subject indicators
@@ -349,8 +423,22 @@ class AnthropomorphismRule(BaseLanguageRule):
         content_type = context.get('content_type', 'general')
         
         # === CONTENT TYPE ANALYSIS ===
-        # Technical documentation is very permissive of anthropomorphism
-        if content_type == 'technical':
+        # Use helper methods for enhanced content type analysis
+        if self._is_api_documentation(text, context):
+            evidence_score -= 0.4  # API docs heavily anthropomorphic by convention
+        elif self._is_technical_specification(text, context):
+            evidence_score -= 0.3  # Technical specs allow anthropomorphic language
+        elif self._is_user_interface_documentation(text, context):
+            evidence_score -= 0.3  # UI docs often anthropomorphize interfaces
+        elif self._is_system_administration_content(text, context):
+            evidence_score -= 0.3  # Sysadmin content often anthropomorphizes systems
+        elif self._is_software_architecture_content(text, context):
+            evidence_score -= 0.2  # Architecture docs moderately anthropomorphic
+        elif self._is_troubleshooting_content(text, context):
+            evidence_score -= 0.2  # Troubleshooting often personalizes systems
+        
+        # General technical content analysis
+        elif content_type == 'technical':
             evidence_score -= 0.3  # Technical writing conventionally anthropomorphic
             
             # Check for technical context words nearby
@@ -502,6 +590,126 @@ class AnthropomorphismRule(BaseLanguageRule):
         }
 
     # === HELPER METHODS ===
+
+    def _is_api_documentation(self, text: str, context: dict) -> bool:
+        """Check if content is API documentation."""
+        content_type = context.get('content_type', '')
+        domain = context.get('domain', '')
+        
+        # Direct indicators
+        if content_type == 'api' or domain == 'api':
+            return True
+        
+        # Text-based indicators for API documentation
+        api_indicators = [
+            'endpoint', 'request', 'response', 'parameter', 'header',
+            'json', 'rest api', 'graphql', 'swagger', 'openapi',
+            'get', 'post', 'put', 'delete', 'patch', 'http',
+            'status code', 'authentication', 'authorization', 'token'
+        ]
+        
+        text_lower = text.lower()
+        return sum(1 for indicator in api_indicators if indicator in text_lower) >= 3
+
+    def _is_technical_specification(self, text: str, context: dict) -> bool:
+        """Check if content is technical specification."""
+        domain = context.get('domain', '')
+        content_type = context.get('content_type', '')
+        
+        # Direct indicators
+        if content_type in ['specification', 'technical'] or domain in ['engineering', 'technical']:
+            return True
+        
+        # Text-based indicators
+        spec_indicators = [
+            'specification', 'requirement', 'protocol', 'standard',
+            'implementation', 'architecture', 'design', 'interface',
+            'component', 'module', 'system', 'framework', 'library',
+            'algorithm', 'data structure', 'performance', 'scalability'
+        ]
+        
+        text_lower = text.lower()
+        return sum(1 for indicator in spec_indicators if indicator in text_lower) >= 3
+
+    def _is_user_interface_documentation(self, text: str, context: dict) -> bool:
+        """Check if content is user interface documentation."""
+        content_type = context.get('content_type', '')
+        domain = context.get('domain', '')
+        
+        # Direct indicators
+        if content_type in ['ui', 'interface', 'user'] or domain in ['ui', 'interface']:
+            return True
+        
+        # Text-based indicators
+        ui_indicators = [
+            'interface', 'window', 'dialog', 'menu', 'button', 'form',
+            'field', 'screen', 'display', 'panel', 'tab', 'dropdown',
+            'checkbox', 'radio', 'input', 'output', 'user', 'click',
+            'select', 'enter', 'navigate', 'scroll', 'view', 'page'
+        ]
+        
+        text_lower = text.lower()
+        return sum(1 for indicator in ui_indicators if indicator in text_lower) >= 4
+
+    def _is_system_administration_content(self, text: str, context: dict) -> bool:
+        """Check if content is system administration related."""
+        domain = context.get('domain', '')
+        content_type = context.get('content_type', '')
+        
+        # Direct indicators
+        if domain in ['sysadmin', 'devops', 'administration'] or content_type in ['administration', 'devops']:
+            return True
+        
+        # Text-based indicators
+        sysadmin_indicators = [
+            'server', 'administrator', 'configuration', 'deployment',
+            'monitoring', 'logging', 'backup', 'security', 'firewall',
+            'network', 'database', 'service', 'daemon', 'process',
+            'install', 'configure', 'manage', 'maintain', 'troubleshoot'
+        ]
+        
+        text_lower = text.lower()
+        return sum(1 for indicator in sysadmin_indicators if indicator in text_lower) >= 4
+
+    def _is_software_architecture_content(self, text: str, context: dict) -> bool:
+        """Check if content is software architecture related."""
+        domain = context.get('domain', '')
+        content_type = context.get('content_type', '')
+        
+        # Direct indicators
+        if domain in ['architecture', 'software'] or content_type in ['architecture', 'design']:
+            return True
+        
+        # Text-based indicators
+        architecture_indicators = [
+            'architecture', 'design', 'pattern', 'framework', 'structure',
+            'component', 'module', 'layer', 'tier', 'microservice',
+            'service', 'interface', 'dependency', 'coupling', 'cohesion',
+            'scalability', 'performance', 'reliability', 'maintainability'
+        ]
+        
+        text_lower = text.lower()
+        return sum(1 for indicator in architecture_indicators if indicator in text_lower) >= 4
+
+    def _is_troubleshooting_content(self, text: str, context: dict) -> bool:
+        """Check if content is troubleshooting/debugging related."""
+        content_type = context.get('content_type', '')
+        domain = context.get('domain', '')
+        
+        # Direct indicators
+        if content_type in ['troubleshooting', 'debugging'] or domain in ['support', 'troubleshooting']:
+            return True
+        
+        # Text-based indicators
+        troubleshooting_indicators = [
+            'troubleshoot', 'debug', 'error', 'problem', 'issue', 'fix',
+            'solve', 'diagnose', 'identify', 'resolve', 'workaround',
+            'symptom', 'cause', 'solution', 'check', 'verify', 'test',
+            'validate', 'investigate', 'analyze', 'examine'
+        ]
+        
+        text_lower = text.lower()
+        return sum(1 for indicator in troubleshooting_indicators if indicator in text_lower) >= 4
 
     def _has_technical_context_words(self, token, distance: int = 10) -> bool:
         """Check if technical context words appear near the token."""

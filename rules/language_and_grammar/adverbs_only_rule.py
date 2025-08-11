@@ -150,6 +150,14 @@ class AdverbsOnlyRule(BaseLanguageRule):
                 evidence_score -= 0.2  # "the only way" - clear
             elif prev_token.pos_ == 'VERB':
                 evidence_score += 0.1  # "supports only" - could be clearer
+            
+            # Enhanced morphological analysis of previous token
+            if hasattr(prev_token, 'morph') and prev_token.morph:
+                morph_str = str(prev_token.morph)
+                if 'VerbForm=Fin' in morph_str:  # Finite verb
+                    evidence_score += 0.05  # "processes only" - could be clearer
+                elif 'VerbForm=Inf' in morph_str:  # Infinitive
+                    evidence_score -= 0.05  # "to only process" - clearer
         
         if next_token:
             if next_token.pos_ in ['NOUN', 'PRON', 'PROPN']:
@@ -158,6 +166,38 @@ class AdverbsOnlyRule(BaseLanguageRule):
                 evidence_score -= 0.1  # "only if condition" - clear conditional
             elif next_token.pos_ == 'VERB':
                 evidence_score += 0.2  # "only run" vs "run only" - ambiguous
+            
+            # Enhanced morphological analysis of next token
+            if hasattr(next_token, 'morph') and next_token.morph:
+                morph_str = str(next_token.morph)
+                if 'Number=Sing' in morph_str and next_token.pos_ == 'NOUN':
+                    evidence_score -= 0.05  # "only user" - clear singular
+                elif 'Number=Plur' in morph_str and next_token.pos_ == 'NOUN':
+                    evidence_score -= 0.1  # "only users" - clear plural
+                
+                # Check for definite/indefinite articles effect
+                if 'Definite=Def' in morph_str:
+                    evidence_score -= 0.05  # Definite forms clearer
+        
+        # === ENHANCED POS TAG ANALYSIS ===
+        # More detailed part-of-speech analysis
+        if hasattr(token, 'tag_'):
+            if token.tag_ == 'RB':  # Adverb
+                evidence_score -= 0.1  # Standard adverbial use
+            elif token.tag_ == 'JJ':  # Adjective (rare but possible)
+                evidence_score += 0.2  # Unusual usage, potentially ambiguous
+        
+        # === ENHANCED ENTITY TYPE ANALYSIS ===
+        # Check if "only" is near named entities
+        if hasattr(next_token, 'ent_type_') and next_token.ent_type_:
+            if next_token.ent_type_ in ['PERSON', 'ORG', 'PRODUCT']:
+                evidence_score -= 0.15  # "only Microsoft" - clear entity restriction
+            elif next_token.ent_type_ in ['CARDINAL', 'ORDINAL']:
+                evidence_score -= 0.1  # "only three", "only first" - clear numeric
+        
+        if prev_token and hasattr(prev_token, 'ent_type_') and prev_token.ent_type_:
+            if prev_token.ent_type_ in ['VERB', 'ACTION']:
+                evidence_score += 0.05  # Action + only might be ambiguous
         
         # === SENTENCE COMPLEXITY ===
         # Simple sentences with "only" are usually clearer
@@ -228,8 +268,22 @@ class AdverbsOnlyRule(BaseLanguageRule):
         content_type = context.get('content_type', 'general')
         
         # === CONTENT TYPE ANALYSIS ===
-        # Technical documentation often uses "only" precisely
-        if content_type == 'technical':
+        # Use helper methods for enhanced content type analysis
+        if self._is_api_documentation(text, context):
+            evidence_score -= 0.3  # API docs use "only" for clear restrictions
+        elif self._is_procedural_documentation(text, context):
+            evidence_score -= 0.2  # Procedural docs use "only" precisely
+        elif self._is_reference_documentation(text, context):
+            evidence_score -= 0.2  # Reference docs use "only" for specifications
+        elif self._is_troubleshooting_content(text, context):
+            evidence_score -= 0.1  # Troubleshooting often uses "only" for conditions
+        elif self._is_installation_documentation(text, context):
+            evidence_score -= 0.2  # Installation docs use "only" for requirements
+        elif self._is_configuration_documentation(text, context):
+            evidence_score -= 0.2  # Config docs use "only" for settings
+        
+        # General technical content analysis
+        elif content_type == 'technical':
             evidence_score -= 0.2  # Technical writing more precise
             
             # Check for technical patterns nearby
@@ -355,6 +409,126 @@ class AdverbsOnlyRule(BaseLanguageRule):
         }
 
     # === HELPER METHODS ===
+
+    def _is_api_documentation(self, text: str, context: dict) -> bool:
+        """Check if content is API documentation."""
+        content_type = context.get('content_type', '')
+        domain = context.get('domain', '')
+        
+        # Direct indicators
+        if content_type == 'api' or domain == 'api':
+            return True
+        
+        # Text-based indicators for API documentation
+        api_indicators = [
+            'endpoint', 'request', 'response', 'parameter', 'header',
+            'json', 'rest api', 'graphql', 'swagger', 'openapi',
+            'get', 'post', 'put', 'delete', 'patch', 'http',
+            'status code', 'authentication', 'authorization', 'token'
+        ]
+        
+        text_lower = text.lower()
+        return sum(1 for indicator in api_indicators if indicator in text_lower) >= 3
+
+    def _is_procedural_documentation(self, text: str, context: dict) -> bool:
+        """Check if content is procedural/instructional documentation."""
+        content_type = context.get('content_type', '')
+        domain = context.get('domain', '')
+        
+        # Direct indicators
+        if content_type in ['procedural', 'instructions'] or domain in ['tutorial', 'guide']:
+            return True
+        
+        # Text-based indicators
+        procedural_indicators = [
+            'step', 'follow', 'click', 'select', 'choose', 'enter',
+            'navigate', 'proceed', 'continue', 'complete', 'finish',
+            'install', 'configure', 'setup', 'create', 'add', 'remove',
+            'first', 'next', 'then', 'finally', 'before', 'after'
+        ]
+        
+        text_lower = text.lower()
+        return sum(1 for indicator in procedural_indicators if indicator in text_lower) >= 4
+
+    def _is_reference_documentation(self, text: str, context: dict) -> bool:
+        """Check if content is reference documentation."""
+        content_type = context.get('content_type', '')
+        domain = context.get('domain', '')
+        
+        # Direct indicators
+        if content_type in ['reference', 'specification'] or domain in ['reference', 'spec']:
+            return True
+        
+        # Text-based indicators
+        reference_indicators = [
+            'reference', 'specification', 'definition', 'parameter',
+            'property', 'attribute', 'method', 'function', 'class',
+            'interface', 'type', 'value', 'option', 'setting',
+            'syntax', 'format', 'structure', 'schema', 'protocol'
+        ]
+        
+        text_lower = text.lower()
+        return sum(1 for indicator in reference_indicators if indicator in text_lower) >= 4
+
+    def _is_troubleshooting_content(self, text: str, context: dict) -> bool:
+        """Check if content is troubleshooting/debugging related."""
+        content_type = context.get('content_type', '')
+        domain = context.get('domain', '')
+        
+        # Direct indicators
+        if content_type in ['troubleshooting', 'debugging'] or domain in ['support', 'troubleshooting']:
+            return True
+        
+        # Text-based indicators
+        troubleshooting_indicators = [
+            'troubleshoot', 'debug', 'error', 'problem', 'issue', 'fix',
+            'solve', 'diagnose', 'identify', 'resolve', 'workaround',
+            'symptom', 'cause', 'solution', 'check', 'verify', 'test',
+            'validate', 'investigate', 'analyze', 'examine', 'fails'
+        ]
+        
+        text_lower = text.lower()
+        return sum(1 for indicator in troubleshooting_indicators if indicator in text_lower) >= 4
+
+    def _is_installation_documentation(self, text: str, context: dict) -> bool:
+        """Check if content is installation/setup documentation."""
+        content_type = context.get('content_type', '')
+        domain = context.get('domain', '')
+        
+        # Direct indicators
+        if content_type in ['installation', 'setup'] or domain in ['install', 'deployment']:
+            return True
+        
+        # Text-based indicators
+        installation_indicators = [
+            'install', 'installation', 'setup', 'configure', 'deployment',
+            'download', 'extract', 'unzip', 'compile', 'build', 'make',
+            'package', 'dependencies', 'requirements', 'prerequisites',
+            'environment', 'path', 'directory', 'folder', 'permissions'
+        ]
+        
+        text_lower = text.lower()
+        return sum(1 for indicator in installation_indicators if indicator in text_lower) >= 4
+
+    def _is_configuration_documentation(self, text: str, context: dict) -> bool:
+        """Check if content is configuration documentation."""
+        content_type = context.get('content_type', '')
+        domain = context.get('domain', '')
+        
+        # Direct indicators
+        if content_type in ['configuration', 'config'] or domain in ['configuration', 'settings']:
+            return True
+        
+        # Text-based indicators
+        config_indicators = [
+            'configuration', 'config', 'settings', 'options', 'properties',
+            'parameters', 'variables', 'environment', 'customize', 'modify',
+            'adjust', 'change', 'set', 'enable', 'disable', 'toggle',
+            'default', 'override', 'specify', 'define', 'configure'
+        ]
+        
+        text_lower = text.lower()
+        return sum(1 for indicator in config_indicators if indicator in text_lower) >= 4
 
     def _has_technical_context_words(self, token, distance: int = 5) -> bool:
         """Check if technical context words appear near the token."""
