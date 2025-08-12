@@ -1,9 +1,11 @@
 """
 Conversational Style Rule
 Based on IBM Style Guide topic: "Conversational style"
+Uses YAML-based vocabulary management for maintainable, updateable vocabularies.
 """
 from typing import List, Dict, Any
 from .base_audience_rule import BaseAudienceRule
+from .services.vocabulary_service import get_conversational_vocabulary, DomainContext
 import re
 
 try:
@@ -13,10 +15,19 @@ except ImportError:
 
 class ConversationalStyleRule(BaseAudienceRule):
     """
-    Checks for language that is overly formal or complex, hindering a
-    conversational style. It suggests simpler alternatives for common
-    complex words.
+    PRODUCTION-GRADE: Checks for language that is overly formal or complex.
+    
+    Features:
+    - YAML-based vocabulary management
+    - Dynamic morphological variant generation
+    - Context-aware evidence calculation
+    - Zero false positive guards
     """
+    
+    def __init__(self):
+        super().__init__()
+        self.vocabulary_service = get_conversational_vocabulary()
+    
     def _get_rule_type(self) -> str:
         return 'conversational_style'
 
@@ -32,42 +43,54 @@ class ConversationalStyleRule(BaseAudienceRule):
 
         doc = nlp(text)
 
-        # Linguistic Anchor: Complex → simpler alternatives
-        complex_word_map = {
-            "utilize": "use",
-            "facilitate": "help",
-            "commence": "start",
-            "terminate": "end",
-            "demonstrate": "show",
-            "implement": "do or set up",
-            "endeavor": "try",
-            "assistance": "help",
-            "provide": "give",
-        }
+        # PRODUCTION-GRADE: Use YAML-based vocabulary service
+        # Create domain context for vocabulary service
+        domain_context = DomainContext(
+            content_type=context.get('content_type', ''),
+            domain=context.get('domain', ''),
+            audience=context.get('audience', ''),
+            block_type=context.get('block_type', '')
+        )
 
         for i, sent in enumerate(doc.sents):
             for token in sent:
                 lemma_lower = getattr(token, 'lemma_', '').lower()
-                if lemma_lower in complex_word_map:
+                
+                # Check if this formal word is in our YAML vocabulary
+                vocab_entry = self.vocabulary_service.get_vocabulary_entry(lemma_lower)
+                if vocab_entry:
                     evidence_score = self._calculate_conversational_evidence(
-                        token, sent, text, context or {}
+                        token=token, sentence=sent, text=text, context=context or {}
                     )
                     if evidence_score > 0.1:
-                        simple = complex_word_map[lemma_lower]
-                        message = self._get_contextual_conversational_message(token.text, simple, evidence_score, context or {})
-                        suggestions = self._generate_smart_conversational_suggestions(token.text, simple, evidence_score, sent, context or {})
-
+                        # Get conversational alternative from vocabulary
+                        conversational_alt = vocab_entry.context_adjustments.get('conversational_alternative', 'simpler alternative')
+                        
                         errors.append(self._create_error(
                             sentence=sent.text,
                             sentence_index=i,
-                            message=message,
-                            suggestions=suggestions,
+                            message=self._get_contextual_conversational_message(
+                                formal=token.text, 
+                                simple=conversational_alt, 
+                                ev=evidence_score, 
+                                context=context or {},
+                                vocab_entry=vocab_entry
+                            ),
+                            suggestions=self._generate_smart_conversational_suggestions(
+                                formal=token.text, 
+                                simple=conversational_alt, 
+                                ev=evidence_score, 
+                                sentence=sent, 
+                                context=context or {},
+                                vocab_entry=vocab_entry
+                            ),
                             severity='low' if evidence_score < 0.7 else 'medium',
                             text=text,
                             context=context,
                             evidence_score=evidence_score,
                             span=(token.idx, token.idx + len(token.text)),
-                            flagged_text=token.text
+                            flagged_text=token.text,
+                            vocab_entry=vocab_entry
                         ))
         return errors
 
@@ -151,7 +174,7 @@ class ConversationalStyleRule(BaseAudienceRule):
             else:
                 evidence += 0.05  # still beneficial for general technical content
         if content_type in {'legal', 'academic'}:
-            evidence -= 0.15  # formal tone acceptable
+            evidence -= 0.6  # PRODUCTION FIX: formal tone is fully appropriate in legal/academic contexts
 
         if audience in {'beginner', 'general', 'user'}:
             evidence += 0.05
@@ -197,16 +220,47 @@ class ConversationalStyleRule(BaseAudienceRule):
 
     # === SMART MESSAGING ===
 
-    def _get_contextual_conversational_message(self, formal: str, simple: str, ev: float, context: Dict[str, Any]) -> str:
+    def _get_contextual_conversational_message(self, formal: str, simple: str, ev: float, context: Dict[str, Any], vocab_entry=None) -> str:
+        """PRODUCTION-GRADE: Generate context-aware messages using vocabulary metadata."""
+        category = vocab_entry.category if vocab_entry else 'formal'
+        
         if ev > 0.8:
-            return f"'{formal}' sounds overly formal here. Prefer a conversational alternative like '{simple}'."
+            if category == 'overused_formal':
+                return f"'{formal}' is overused business language. Use '{simple}' for better clarity."
+            elif category == 'legal_formal':
+                return f"'{formal}' sounds too legal/formal here. Consider '{simple}' instead."
+            else:
+                return f"'{formal}' sounds overly formal here. Prefer a conversational alternative like '{simple}'."
         if ev > 0.6:
             return f"Consider a simpler alternative to '{formal}', such as '{simple}'."
         return f"A simpler word than '{formal}' (e.g., '{simple}') can improve conversational tone."
 
-    def _generate_smart_conversational_suggestions(self, formal: str, simple: str, ev: float, sentence, context: Dict[str, Any]) -> List[str]:
+    def _generate_smart_conversational_suggestions(self, formal: str, simple: str, ev: float, sentence, context: Dict[str, Any], vocab_entry=None) -> List[str]:
+        """PRODUCTION-GRADE: Generate smart suggestions using vocabulary metadata."""
         suggestions: List[str] = []
-        suggestions.append(f"Replace '{formal}' with '{simple}'.")
+        category = vocab_entry.category if vocab_entry else 'formal'
+        
+        suggestions.append(f"Replace '{formal}' with '{simple}' for a more conversational tone.")
+        
+        # Category-specific suggestions
+        if category == 'overused_formal':
+            suggestions.append("This word is commonly overused in business writing. Simple alternatives are more effective.")
+        elif category == 'legal_formal':
+            suggestions.append("Legal terminology can confuse general audiences. Use everyday language instead.")
+        elif category == 'academic_formal':
+            suggestions.append("Academic language may not suit conversational content. Consider simpler phrasing.")
+        
+        # Context-aware suggestions
+        content_type = context.get('content_type', '')
+        if content_type == 'tutorial':
+            suggestions.append("Keep tutorial language simple and accessible for all skill levels.")
+        elif content_type == 'documentation':
+            suggestions.append("Use plain language to make documentation more user-friendly.")
+        
+        # Evidence-based suggestions
+        if ev > 0.8:
+            suggestions.append("This formal language may alienate readers seeking conversational content.")
+        
         # Streamline common verbose phrases
         if 'in order to' in sentence.text.lower():
             suggestions.append("Shorten 'in order to' to 'to'.")

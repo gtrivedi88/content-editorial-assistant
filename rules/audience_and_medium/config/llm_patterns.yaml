@@ -1,0 +1,235 @@
+# LLM Consumability Vocabulary Configuration
+# Manages patterns that are difficult for LLMs to process
+# Updates can be made without code changes for zero false positives
+
+# Content Length Patterns
+content_length:
+  # Word count thresholds for different content types
+  thresholds:
+    general:
+      single_word: 0.7
+      two_words: 0.5
+      three_to_four_words: 0.2
+      five_to_seven_words: 0.05
+      eight_plus_words: 0.0
+    
+    headings:
+      single_word: 0.6
+      two_words: 0.3
+      three_to_four_words: 0.1
+      five_plus_words: 0.0
+    
+    step_descriptions:
+      single_word: 0.8
+      two_words: 0.6
+      three_to_four_words: 0.3
+      five_plus_words: 0.0
+    
+    explanations:
+      single_word: 0.9
+      two_words: 0.7
+      three_words: 0.4
+      four_words: 0.2
+      five_plus_words: 0.0
+
+# Linguistic Completeness Indicators
+completeness_indicators:
+  # Patterns that indicate incomplete thoughts
+  incomplete_patterns:
+    - pattern: "for more information"
+      evidence_base: 0.8
+      category: "dangling_reference"
+    - pattern: "see the following"
+      evidence_base: 0.8
+      category: "dangling_reference"
+    - pattern: "refer to"
+      evidence_base: 0.6
+      category: "external_reference"
+    - pattern: "as mentioned"
+      evidence_base: 0.5
+      category: "vague_reference"
+    - pattern: "see below"
+      evidence_base: 0.6
+      category: "positional_reference"
+    - pattern: "see above"
+      evidence_base: 0.6
+      category: "positional_reference"
+  
+  # Sentence fragments that need completion
+  fragment_indicators:
+    - pattern: "to be determined"
+      evidence_base: 0.9
+      category: "placeholder"
+    - pattern: "coming soon"
+      evidence_base: 0.9
+      category: "placeholder"
+    - pattern: "under construction"
+      evidence_base: 0.9
+      category: "placeholder"
+    - pattern: "todo"
+      evidence_base: 0.95
+      category: "placeholder"
+    - pattern: "fixme"
+      evidence_base: 0.95
+      category: "placeholder"
+
+# Verb Presence Requirements
+verb_requirements:
+  # Content types that require verbs for completeness
+  verb_required_contexts:
+    - "paragraph"
+    - "explanation"
+    - "instruction"
+    - "description"
+  
+  # Content types where verbs are optional
+  verb_optional_contexts:
+    - "heading"
+    - "title"
+    - "label"
+    - "list_item"
+  
+  # Evidence bonus for missing verbs in required contexts
+  missing_verb_evidence: 0.1
+
+# Punctuation Completeness
+punctuation_patterns:
+  # Endings that suggest incomplete thoughts
+  incomplete_endings:
+    - ending: ":"
+      evidence_bonus: 0.05
+      description: "Colon suggests more content follows"
+    - ending: "..."
+      evidence_bonus: 0.1
+      description: "Ellipsis suggests incomplete thought"
+    - ending: "-"
+      evidence_bonus: 0.08
+      description: "Dash suggests continuation"
+  
+  # Missing terminal punctuation
+  missing_terminal:
+    evidence_bonus: 0.05
+    applies_to: ["paragraph", "explanation", "instruction"]
+
+# Context-Specific Exemptions
+exemptions:
+  # Content types that should not be analyzed for LLM consumability
+  exempt_content_types:
+    - "technical_identifier"
+    - "navigation_label"
+    - "data_reference"
+    - "code_snippet"
+    - "variable_name"
+    - "api_endpoint"
+  
+  # Block types that should not be analyzed
+  exempt_block_types:
+    - "code_block"
+    - "inline_code"
+    - "literal_block"
+    - "table_header"
+    - "table_cell"
+  
+  # Patterns that indicate intentionally short content
+  intentionally_short:
+    - "API"
+    - "URL"
+    - "FAQ"
+    - "CLI"
+    - "SDK"
+    - "IDE"
+
+# Accordion and UI Complexity Patterns
+ui_complexity:
+  # Problematic UI patterns for LLM consumption
+  accordion_patterns:
+    - pattern: "click to expand"
+      evidence_base: 0.8
+      category: "interactive_dependency"
+    - pattern: "toggle to show"
+      evidence_base: 0.8
+      category: "interactive_dependency"
+    - pattern: "expand section"
+      evidence_base: 0.7
+      category: "interactive_dependency"
+    - pattern: "show/hide"
+      evidence_base: 0.7
+      category: "interactive_dependency"
+    - pattern: "collapsible"
+      evidence_base: 0.6
+      category: "interactive_dependency"
+  
+  # Dynamic content indicators
+  dynamic_content:
+    - pattern: "dynamically loaded"
+      evidence_base: 0.9
+      category: "dynamic_dependency"
+    - pattern: "loaded on demand"
+      evidence_base: 0.9
+      category: "dynamic_dependency"
+    - pattern: "ajax content"
+      evidence_base: 0.8
+      category: "dynamic_dependency"
+
+# Structural Context Adjustments
+structural_adjustments:
+  # Block types that get reduced evidence
+  reduced_evidence_blocks:
+    heading:
+      reduction: 0.1
+      description: "Headings can be shorter"
+    title:
+      reduction: 0.15
+      description: "Titles are naturally brief"
+    list_item:
+      reduction: 0.05
+      description: "List items can be concise"
+  
+  # Block types that get increased evidence
+  increased_evidence_blocks:
+    paragraph:
+      increase: 0.1
+      description: "Paragraphs should be complete thoughts"
+    explanation:
+      increase: 0.15
+      description: "Explanations need detail"
+    instruction:
+      increase: 0.1
+      description: "Instructions should be clear and complete"
+
+# Semantic Context Adjustments
+semantic_adjustments:
+  # Content types that get different treatment
+  content_type_modifiers:
+    tutorial:
+      completeness_requirement: 0.1
+      description: "Tutorials need complete instructions"
+    documentation:
+      completeness_requirement: 0.05
+      description: "Documentation should be thorough"
+    marketing:
+      completeness_requirement: -0.05
+      description: "Marketing can be more concise"
+    reference:
+      completeness_requirement: -0.1
+      description: "Reference material can be brief"
+
+# Feedback Patterns (learned from user interactions)
+feedback_patterns:
+  # Content users have indicated is acceptable despite brevity
+  accepted_short_content: []
+  
+  # Content users have flagged as too brief
+  flagged_brief_content:
+    - "Overview"
+    - "Introduction" 
+    - "Getting Started"
+  
+  # Context-specific feedback
+  heading_patterns:
+    accepted: 
+      - "API Reference"
+      - "Quick Start"
+    flagged:
+      - "TODO"
+      - "Notes"

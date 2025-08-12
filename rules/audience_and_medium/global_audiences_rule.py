@@ -1,9 +1,11 @@
 """
 Global Audiences Rule
 Based on IBM Style Guide topic: "Global audiences"
+Uses YAML-based vocabulary management for maintainable, updateable patterns.
 """
 from typing import List, Dict, Any
 from .base_audience_rule import BaseAudienceRule
+from .services.vocabulary_service import get_global_patterns, DomainContext
 
 try:
     from spacy.tokens import Doc
@@ -12,9 +14,19 @@ except ImportError:
 
 class GlobalAudiencesRule(BaseAudienceRule):
     """
-    Checks for constructs that are difficult for a global audience to understand,
-    such as negative constructions and overly long sentences.
+    PRODUCTION-GRADE: Checks for constructs difficult for global audiences.
+    
+    Features:
+    - YAML-based pattern management
+    - Context-aware negative construction detection
+    - Configurable sentence length thresholds
+    - Dynamic evidence calculation
     """
+    
+    def __init__(self):
+        super().__init__()
+        self.vocabulary_service = get_global_patterns()
+    
     def _get_rule_type(self) -> str:
         return 'global_audiences'
 
@@ -39,11 +51,26 @@ class GlobalAudiencesRule(BaseAudienceRule):
                         neg_token=token, head=head, sentence=sent, text=text, context=context or {}
                     )
                     if evidence_score > 0.1:
-                        # Best-effort flagged span: from neg to head or to acomp
+                        # PRODUCTION FIX: Better flagged text construction for contractions
                         acomp = next((c for c in head.children if c.dep_ == 'acomp'), None)
                         span_start = min(token.idx, (acomp.idx if acomp else head.idx))
                         span_end = (acomp.idx + len(acomp.text)) if acomp else (head.idx + len(head.text))
-                        flagged_text = f"{token.text} {(acomp.text if acomp else head.text)}"
+                        
+                        # Handle contractions properly - flag the full word, not just "n't"
+                        if token.text == "n't" and token.idx > 0:
+                            # Find the contraction start (e.g., "Don't", "can't")
+                            full_word_start = token.idx
+                            sent_start = sent.start_char
+                            text_pos = token.idx - sent_start
+                            
+                            while text_pos > 0 and sent.text[text_pos - 1].isalpha():
+                                text_pos -= 1
+                                full_word_start -= 1
+                            
+                            contraction = sent.text[text_pos:token.idx - sent_start + len(token.text)]
+                            flagged_text = contraction
+                        else:
+                            flagged_text = f"{token.text} {(acomp.text if acomp else head.text)}"
                         errors.append(self._create_error(
                             sentence=sent.text,
                             sentence_index=i,
@@ -166,14 +193,22 @@ class GlobalAudiencesRule(BaseAudienceRule):
         domain = (context or {}).get('domain', 'general')
         audience = (context or {}).get('audience', 'general')
 
-        # Encourage simplicity for global audiences in these contexts
-        if content_type in {'marketing', 'procedural', 'tutorial', 'technical'}:
+        # PRODUCTION FIX: More nuanced technical context handling
+        # Technical warnings and API documentation may appropriately use negative constructions
+        sent_text = sentence.text.lower()
+        if (content_type == 'technical' and 
+            any(word in sent_text for word in ['deprecated', 'warning', 'error', 'caution', 'avoid'])):
+            evidence -= 0.5  # PRODUCTION FIX: Technical warnings appropriately use negative constructions
+        elif content_type in {'marketing', 'procedural', 'tutorial'}:
             evidence += 0.08
-        if content_type in {'legal', 'academic'}:
+        elif content_type in {'legal', 'academic'}:
             evidence -= 0.1
 
         if audience in {'beginner', 'general', 'user'}:
             evidence += 0.07
+        elif audience in {'developer', 'expert'} and content_type == 'technical':
+            evidence -= 0.1  # Developers can handle more complex constructions
+            
         if domain in {'legal', 'finance'}:
             evidence -= 0.05
 
@@ -189,10 +224,8 @@ class GlobalAudiencesRule(BaseAudienceRule):
         return evidence
 
     def _get_cached_feedback_patterns_global(self) -> Dict[str, Any]:
-        return {
-            'accepted_phrases': set(),
-            'flagged_phrases': {'do not', 'cannot', 'should not'},
-        }
+        """PRODUCTION-GRADE: Get feedback patterns from YAML configuration."""
+        return self.vocabulary_service.get_feedback_patterns()
 
     # === Smart messaging & suggestions ===
 

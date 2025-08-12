@@ -1,10 +1,12 @@
 """
-Tone Rule (Production-Grade)
+Tone Rule
 Evidence-based professional tone analysis following production standards.
 Implements rule-specific evidence calculation for optimal precision and zero false positives.
+Uses YAML-based vocabulary management for maintainable, updateable vocabularies.
 """
 from typing import List, Dict, Any
 from .base_audience_rule import BaseAudienceRule
+from .services.vocabulary_service import get_tone_vocabulary, DomainContext
 import re
 
 try:
@@ -22,10 +24,16 @@ class ToneRule(BaseAudienceRule):
     - Colloquialisms and slang
     
     Features:
+    - YAML-based vocabulary management
     - Zero false positive guards for quoted text, code blocks
     - Dynamic base evidence scoring based on phrase specificity
     - Evidence-aware messaging and suggestions
     """
+    
+    def __init__(self):
+        super().__init__()
+        self.vocabulary_service = get_tone_vocabulary()
+    
     def _get_rule_type(self) -> str:
         return 'tone'
 
@@ -78,43 +86,35 @@ class ToneRule(BaseAudienceRule):
     
     def _find_potential_tone_issues(self, doc, text: str, context: Dict[str, Any]) -> List[Dict[str, Any]]:
         """
-        Find potential tone issues for evidence assessment.
-        Detects idioms, slang, and casual expressions.
+        PRODUCTION-GRADE: Find potential tone issues using YAML-based vocabulary.
+        Detects idioms, slang, and casual expressions from configurable vocabularies.
         """
         issues = []
         
-        # Professional tone violation patterns with specificity levels
-        informal_phrases = {
-            # Extremely inappropriate phrases (high base evidence)
-            "take a dump": 0.95,
-            "bit the dust": 0.9,
-            
-            # Clear business jargon (high base evidence)
-            "low-hanging fruit": 0.85,
-            "low hanging fruit": 0.85,  # Handle both hyphenated and non-hyphenated versions
-            "a slam dunk": 0.85,
-            "slam dunk": 0.85,  # Handle both with and without article
-            "game changer": 0.85,
-            "game-changer": 0.85,  # Handle hyphenated version
-            "move the needle": 0.85,
-            "leverage": 0.8,  # Add common business term
-            
-            # Common informal expressions (medium-high base evidence)
-            "nail it": 0.8,
-            "no-brainer": 0.8,
-            "in the ballpark": 0.8,
-            "hit the ground running": 0.8,
-            
-            # Mild colloquialisms (medium base evidence)
-            "elephant in the room": 0.75,
-            "it's not rocket science": 0.75,
-            "full-court press": 0.75,
-            "in your wheelhouse": 0.75
-        }
+        # Create domain context for vocabulary service
+        domain_context = DomainContext(
+            content_type=context.get('content_type', ''),
+            domain=context.get('domain', ''),
+            audience=context.get('audience', ''),
+            block_type=context.get('block_type', '')
+        )
         
         for i, sent in enumerate(doc.sents):
-            for phrase, base_evidence in informal_phrases.items():
-                for match in re.finditer(r'\b' + re.escape(phrase) + r'\b', sent.text, re.IGNORECASE):
+            # Check each vocabulary entry against the sentence
+            sent_text = sent.text
+            
+            # Get all vocabulary entries and check for matches
+            for phrase in self._get_all_vocabulary_phrases():
+                vocab_entry = self.vocabulary_service.get_vocabulary_entry(phrase)
+                if not vocab_entry:
+                    continue
+                    
+                # Use regex to find phrase matches
+                pattern = r'\b' + re.escape(phrase) + r'\b'
+                for match in re.finditer(pattern, sent_text, re.IGNORECASE):
+                    # Get evidence score (may be adjusted for context)
+                    base_evidence = vocab_entry.evidence
+                    
                     issues.append({
                         'type': 'tone',
                         'subtype': 'informal_phrase',
@@ -126,10 +126,17 @@ class ToneRule(BaseAudienceRule):
                         'base_evidence': base_evidence,
                         'sentence_obj': sent,
                         'match_start': match.start(),
-                        'match_end': match.end()
+                        'match_end': match.end(),
+                        'vocab_entry': vocab_entry,
+                        'domain_context': domain_context
                     })
-        
+
         return issues
+    
+    def _get_all_vocabulary_phrases(self) -> List[str]:
+        """Get all phrases from the vocabulary service."""
+        # Access the internal vocabulary of the service
+        return list(self.vocabulary_service._vocabulary.keys())
     
     def _calculate_tone_evidence(self, issue: Dict[str, Any], doc, text: str, context: Dict[str, Any]) -> float:
         """
@@ -294,8 +301,13 @@ class ToneRule(BaseAudienceRule):
         content_type = context.get('content_type', '')
         block_type = context.get('block_type', '')
         
-        # Marketing copy often uses informal language intentionally
-        if content_type == 'marketing':
+        # PRODUCTION FIX: Don't blanket exempt marketing - business jargon should still be flagged
+        # Only exempt specific casual contexts like testimonials, social media, etc.
+        if content_type == 'social_media' or block_type == 'testimonial':
+            return True
+        
+        # Code comments can have informal explanations
+        if block_type == 'code_comment':
             return True
             
         # User quotes or testimonials
@@ -318,31 +330,17 @@ class ToneRule(BaseAudienceRule):
     
     def _is_domain_appropriate_phrase(self, phrase: str, context: Dict[str, Any]) -> bool:
         """
-        Surgical check: Is this phrase appropriate for the specific domain?
-        Only returns True when phrase is genuinely domain-appropriate.
+        PRODUCTION-GRADE: Check domain appropriateness using YAML configuration.
+        Uses vocabulary service for maintainable domain-specific rules.
         """
-        domain = context.get('domain', '')
-        content_type = context.get('content_type', '')
-        phrase_lower = phrase.lower()
+        domain_context = DomainContext(
+            content_type=context.get('content_type', ''),
+            domain=context.get('domain', ''),
+            audience=context.get('audience', ''),
+            block_type=context.get('block_type', '')
+        )
         
-        # Domain-specific appropriateness mapping
-        domain_appropriate = {
-            'gaming': ['game changer', 'level up', 'power up'],
-            'sports': ['slam dunk', 'home run', 'touchdown'],
-            'business': ['low-hanging fruit', 'move the needle'],  # Only in business context
-            'startup': ['disruptive', 'game changer', 'breakthrough'],
-            'finance': ['cash flow', 'bottom line', 'profit margin']
-        }
-        
-        # Check if phrase is appropriate for this specific domain
-        if domain in domain_appropriate:
-            return phrase_lower in domain_appropriate[domain]
-            
-        # Content type specific checks
-        if content_type == 'marketing' and phrase_lower in ['game changer', 'breakthrough']:
-            return True
-            
-        return False
+        return self.vocabulary_service.is_domain_appropriate(phrase, domain_context)
     
     def _is_proper_noun_phrase(self, phrase: str, sentence_obj) -> bool:
         """

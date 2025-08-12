@@ -1,9 +1,11 @@
 """
 LLM Consumability Rule
 Based on IBM Style Guide topic: "LLM consumability"
+Uses YAML-based pattern management for maintainable, updateable thresholds.
 """
 from typing import List, Dict, Any
 from .base_audience_rule import BaseAudienceRule
+from .services.vocabulary_service import get_llm_patterns, DomainContext
 import re
 
 try:
@@ -13,10 +15,19 @@ except ImportError:
 
 class LLMConsumabilityRule(BaseAudienceRule):
     """
-    Checks for content patterns that are difficult for Large Language Models (LLMs)
-    to process effectively, such as overly short topics or complex structures
-    like accordions.
+    PRODUCTION-GRADE: Checks for content patterns difficult for LLMs to process.
+    
+    Features:
+    - YAML-based threshold management
+    - Dynamic content classification
+    - Configurable exemption patterns
+    - Context-aware evidence calculation
     """
+    
+    def __init__(self):
+        super().__init__()
+        self.vocabulary_service = get_llm_patterns()
+    
     def _get_rule_type(self) -> str:
         return 'llm_consumability'
 
@@ -31,20 +42,17 @@ class LLMConsumabilityRule(BaseAudienceRule):
         if not nlp:
             return errors
 
-        # ENTERPRISE CONTEXT INTELLIGENCE: Check if completeness rules should apply
-        # Special handling for LLM consumability - only block for clear non-content cases
-        content_classification = self._get_content_classification(text, context, nlp)
+        # PRODUCTION-GRADE: Use YAML-based exemption patterns
+        domain_context = DomainContext(
+            content_type=context.get('content_type', ''),
+            domain=context.get('domain', ''),
+            audience=context.get('audience', ''),
+            block_type=context.get('block_type', '')
+        )
         
-        # LLM consumability should apply more broadly than other completeness rules
-        # Only skip for content that is clearly not meant to be consumed by LLMs
-        if content_classification in ['technical_identifier', 'navigation_label']:
-            # But allow if it's in a regular paragraph context (could be incomplete sentence)
-            block_type = context.get('block_type', 'paragraph') if context else 'paragraph'
-            if block_type in ['paragraph', 'admonition', 'list_item']:
-                # Let it proceed - might be incomplete descriptive content
-                pass
-            else:
-                return errors  # Skip for table headers, code blocks, etc.
+        # Check if content should be exempt from analysis
+        if self.vocabulary_service.is_exempt_content(text, domain_context):
+            return errors
         
         # For all other classifications (including data_reference), proceed with analysis
 
@@ -98,17 +106,25 @@ class LLMConsumabilityRule(BaseAudienceRule):
         tokens = [t for t in sentence if not t.is_space]
         length = len(tokens)
 
-        # Base evidence rises steeply for very short sentences
-        if length >= 10:  # More generous for adequate length
-            base = 0.0
-        elif length >= 6:   # 6-9 words is acceptable
-            base = 0.1
-        elif length >= 4:   # 4-5 words needs some expansion
-            base = 0.3
-        elif length >= 2:   # 2-3 words likely needs expansion
-            base = 0.6
-        else:               # 1 word definitely needs expansion
-            base = 0.8
+        # PRODUCTION-GRADE: Use YAML-based thresholds
+        content_type = context.get('content_type', 'general')
+        thresholds = self.vocabulary_service.get_length_thresholds(content_type)
+        
+        if not thresholds:
+            # Fallback to default if YAML not available
+            base = 0.2 if length >= 3 else 0.7
+        else:
+            # Use YAML-configured thresholds
+            if length == 1:
+                base = thresholds.get('single_word', 0.7)
+            elif length == 2:
+                base = thresholds.get('two_words', 0.5)
+            elif length <= 4:
+                base = thresholds.get('three_to_four_words', 0.2)
+            elif length <= 7:
+                base = thresholds.get('five_to_seven_words', 0.05)
+            else:
+                base = thresholds.get('eight_plus_words', 0.0)
 
         evidence: float = base
 

@@ -1,0 +1,163 @@
+# Tone Vocabulary Configuration
+# Manages business jargon, informal phrases, and domain-specific appropriateness
+# Updates can be made without code changes for zero false positives
+
+# Business Jargon and Informal Phrases
+business_jargon:
+  # Extremely inappropriate phrases (base evidence: 0.95)
+  extremely_inappropriate:
+    - phrase: "take a dump"
+      evidence: 0.95
+      category: "vulgar"
+    - phrase: "bit the dust"
+      evidence: 0.9
+      category: "death_metaphor"
+
+  # Clear business jargon (base evidence: 0.85)
+  high_business_jargon:
+    - phrase: "low-hanging fruit"
+      evidence: 0.85
+      category: "business_metaphor"
+      variants: ["low hanging fruit"]
+    - phrase: "slam dunk"
+      evidence: 0.85
+      category: "sports_metaphor"
+      variants: ["a slam dunk"]
+    - phrase: "game changer"
+      evidence: 0.85
+      category: "business_metaphor"
+      variants: ["game-changer", "game changers", "game-changers"]
+    - phrase: "move the needle"
+      evidence: 0.85
+      category: "business_metaphor"
+    - phrase: "cutting-edge"
+      evidence: 0.85
+      category: "marketing_buzzword"
+      variants: ["cutting edge"]
+    - phrase: "best-in-class"
+      evidence: 0.85
+      category: "marketing_buzzword"
+      variants: ["best in class"]
+    - phrase: "state-of-the-art"
+      evidence: 0.85
+      category: "marketing_buzzword"
+      variants: ["state of the art"]
+    - phrase: "bleeding edge"
+      evidence: 0.85
+      category: "technology_buzzword"
+    - phrase: "paradigm shift"
+      evidence: 0.85
+      category: "business_buzzword"
+
+  # Medium business jargon (base evidence: 0.75-0.8)
+  medium_business_jargon:
+    - phrase: "leverage"
+      evidence: 0.8
+      category: "business_verb"
+      variants: ["leverages", "leveraged", "leveraging"]
+    - phrase: "disruptive"
+      evidence: 0.8
+      category: "business_adjective"
+    - phrase: "synergy"
+      evidence: 0.8
+      category: "business_concept"
+      variants: ["synergies"]
+    - phrase: "scalable"
+      evidence: 0.75
+      category: "technical_buzzword"
+    - phrase: "robust"
+      evidence: 0.75
+      category: "technical_buzzword"
+
+  # Common informal expressions (base evidence: 0.8)
+  informal_expressions:
+    - phrase: "nail it"
+      evidence: 0.8
+      category: "informal_achievement"
+    - phrase: "no-brainer"
+      evidence: 0.8
+      category: "informal_decision"
+    - phrase: "in the ballpark"
+      evidence: 0.8
+      category: "informal_estimation"
+    - phrase: "hit the ground running"
+      evidence: 0.8
+      category: "informal_action"
+
+  # Mild colloquialisms (base evidence: 0.75)
+  mild_colloquialisms:
+    - phrase: "elephant in the room"
+      evidence: 0.75
+      category: "colloquial_metaphor"
+    - phrase: "it's not rocket science"
+      evidence: 0.75
+      category: "colloquial_comparison"
+    - phrase: "full-court press"
+      evidence: 0.75
+      category: "sports_metaphor"
+    - phrase: "in your wheelhouse"
+      evidence: 0.75
+      category: "colloquial_metaphor"
+
+# Domain-Specific Appropriateness
+# Phrases that are appropriate in certain domains/contexts
+domain_appropriateness:
+  gaming:
+    - "game changer"
+    - "level up"
+    - "power up"
+  sports:
+    - "slam dunk"
+    - "home run"
+    - "touchdown"
+  business:
+    - "low-hanging fruit"
+    - "move the needle"
+  startup:
+    - "disruptive"
+    - "game changer"
+    - "breakthrough"
+  finance:
+    - "cash flow"
+    - "bottom line"
+    - "profit margin"
+  # Technical domains where "leverage" is appropriate
+  technology:
+    - "leverage"
+    - "leverages"
+    - "leveraging"
+    - "leveraged"
+  ai:
+    - "leverage"
+    - "leverages"
+    - "leveraging"
+    - "leveraged"
+  data:
+    - "leverage"
+    - "leverages"
+    - "leveraging"
+    - "leveraged"
+  ml:
+    - "leverage"
+    - "leverages"
+    - "leveraging"
+    - "leveraged"
+
+# Content Type Appropriateness
+# Phrases that may be appropriate in certain content types
+content_type_appropriateness:
+  marketing:
+    - "game changer"
+    - "breakthrough"
+  # Note: marketing should still flag "leverage" as business jargon
+  # Only technical content allows "leverage"
+
+# Feedback Patterns (learned from user interactions)
+feedback_patterns:
+  accepted_phrases: []
+  flagged_phrases:
+    - "circle back"
+    - "touch base"
+    - "deep dive"
+    - "think outside the box"
+    - "at the end of the day"

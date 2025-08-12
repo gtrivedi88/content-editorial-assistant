@@ -1,0 +1,177 @@
+# Global Audiences Vocabulary Configuration
+# Manages patterns that are difficult for global audiences
+# Updates can be made without code changes for zero false positives
+
+# Negative Construction Patterns
+negative_constructions:
+  # Common problematic patterns
+  problematic_patterns:
+    - pattern: "do not"
+      severity: "medium"
+      evidence_base: 0.6
+      alternatives: ["avoid", "refrain from"]
+    - pattern: "don't"
+      severity: "medium" 
+      evidence_base: 0.6
+      alternatives: ["avoid", "skip"]
+    - pattern: "cannot"
+      severity: "medium"
+      evidence_base: 0.6
+      alternatives: ["unable to", "lacks the ability to"]
+    - pattern: "can't"
+      severity: "medium"
+      evidence_base: 0.6
+      alternatives: ["unable to", "lacks the ability to"]
+    - pattern: "should not"
+      severity: "medium"
+      evidence_base: 0.65
+      alternatives: ["avoid", "better to skip"]
+    - pattern: "shouldn't"
+      severity: "medium"
+      evidence_base: 0.65
+      alternatives: ["avoid", "better to skip"]
+    - pattern: "will not"
+      severity: "low"
+      evidence_base: 0.5
+      alternatives: ["will avoid", "will skip"]
+    - pattern: "won't"
+      severity: "low"
+      evidence_base: 0.5
+      alternatives: ["will avoid", "will skip"]
+
+  # Problematic adjective complements
+  problematic_complements:
+    - complement: "different"
+      evidence_bonus: 0.15
+      description: "Negative + different confuses non-native speakers"
+    - complement: "unusual"
+      evidence_bonus: 0.15
+      description: "Negative + unusual creates double confusion"
+    - complement: "dissimilar"
+      evidence_bonus: 0.15
+      description: "Negative + dissimilar is complex"
+    - complement: "impossible"
+      evidence_bonus: 0.15
+      description: "Negative + impossible creates emphasis confusion"
+    - complement: "unsupported"
+      evidence_bonus: 0.15
+      description: "Negative + unsupported is technical and confusing"
+    - complement: "incorrect"
+      evidence_bonus: 0.15
+      description: "Negative + incorrect creates double negative feel"
+
+# Context-Specific Appropriateness
+context_appropriateness:
+  # Technical contexts where negative constructions are appropriate
+  technical_warnings:
+    patterns:
+      - "deprecated"
+      - "warning"
+      - "error"
+      - "caution"
+      - "avoid"
+      - "forbidden"
+    evidence_reduction: 0.5
+    description: "Technical warnings appropriately use negative constructions"
+  
+  # Content types that may use negative constructions appropriately
+  appropriate_content_types:
+    legal:
+      evidence_reduction: 0.2
+      description: "Legal content often requires precise negation"
+    academic:
+      evidence_reduction: 0.2
+      description: "Academic writing may need complex constructions"
+    safety:
+      evidence_reduction: 0.3
+      description: "Safety instructions need clear prohibitions"
+    marketing:
+      evidence_reduction: 0.3
+      description: "Marketing content may use casual contractions appropriately"
+  
+  # Audiences that can handle complex negative constructions
+  appropriate_audiences:
+    developer:
+      evidence_reduction: 0.1
+      description: "Developers expect technical precision"
+    expert:
+      evidence_reduction: 0.1
+      description: "Expert audiences handle complexity"
+    native_english:
+      evidence_reduction: 0.05
+      description: "Native speakers handle negation better"
+
+# Sentence Length Patterns
+sentence_length:
+  # Word count thresholds for different contexts
+  thresholds:
+    general:
+      warning_threshold: 25
+      error_threshold: 32
+      evidence_base: 0.4
+    beginner_audience:
+      warning_threshold: 20
+      error_threshold: 28
+      evidence_base: 0.5
+    global_audience:
+      warning_threshold: 22
+      error_threshold: 30
+      evidence_base: 0.45
+    technical_content:
+      warning_threshold: 30
+      error_threshold: 38
+      evidence_base: 0.3
+  
+  # Complexity factors that increase evidence
+  complexity_factors:
+    comma_weight: 0.04
+    semicolon_weight: 0.06
+    conjunction_weight: 0.05
+    subordinate_weight: 0.05
+  
+  # Clause indicators
+  clause_indicators:
+    conjunctions:
+      - "and"
+      - "or"
+      - "but"
+    subordinating:
+      - "because"
+      - "although"
+      - "while" 
+      - "since"
+      - "if"
+      - "when"
+      - "where"
+
+# Domain-Specific Adjustments
+domain_adjustments:
+  legal:
+    sentence_length_tolerance: 0.3
+    negative_construction_tolerance: 0.2
+  finance:
+    sentence_length_tolerance: 0.2
+    negative_construction_tolerance: 0.1
+  medical:
+    sentence_length_tolerance: 0.25
+    negative_construction_tolerance: 0.3
+
+# Feedback Patterns (learned from user interactions)
+feedback_patterns:
+  # Patterns users have indicated are acceptable
+  accepted_phrases: []
+  
+  # Patterns users frequently flag as problematic
+  flagged_phrases:
+    - "do not"
+    - "cannot" 
+    - "should not"
+  
+  # Context-specific user feedback
+  technical_accepted:
+    - "Don't use deprecated APIs"
+    - "This won't work without permissions"
+  
+  ui_flagged:
+    - "Don't forget to save"
+    - "Can't access without login"

@@ -1,0 +1,218 @@
+# Conversational Style Vocabulary Configuration
+# Manages formal words and their conversational alternatives
+# Updates can be made without code changes for zero false positives
+
+# Formal Words to Conversational Alternatives
+formal_to_conversational:
+  # Basic formal verbs
+  basic_formal_verbs:
+    - formal: "utilize"
+      conversational: "use"
+      evidence_base: 0.7
+      category: "overused_formal"
+    - formal: "facilitate"
+      conversational: "help"
+      evidence_base: 0.65
+      category: "business_formal"
+    - formal: "commence"
+      conversational: "start"
+      evidence_base: 0.7
+      category: "basic_formal"
+    - formal: "terminate"
+      conversational: "end"
+      evidence_base: 0.7
+      category: "basic_formal"
+    - formal: "demonstrate"
+      conversational: "show"
+      evidence_base: 0.6
+      category: "basic_formal"
+    - formal: "implement"
+      conversational: "do or set up"
+      evidence_base: 0.5
+      category: "technical_formal"
+    - formal: "endeavor"
+      conversational: "try"
+      evidence_base: 0.75
+      category: "archaic_formal"
+
+  # Advanced formal words
+  advanced_formal_words:
+    - formal: "subsequently"
+      conversational: "then"
+      evidence_base: 0.75
+      category: "academic_formal"
+    - formal: "aforementioned"
+      conversational: "mentioned earlier"
+      evidence_base: 0.8
+      category: "legal_formal"
+    - formal: "transmission"
+      conversational: "sending"
+      evidence_base: 0.6
+      category: "technical_formal"
+    - formal: "accomplish"
+      conversational: "complete"
+      evidence_base: 0.6
+      category: "basic_formal"
+    - formal: "methodology"
+      conversational: "method"
+      evidence_base: 0.65
+      category: "academic_formal"
+    - formal: "outcome"
+      conversational: "result"
+      evidence_base: 0.55
+      category: "business_formal"
+    - formal: "optimal"
+      conversational: "best"
+      evidence_base: 0.6
+      category: "technical_formal"
+
+  # Formal transitional words
+  formal_transitions:
+    - formal: "desired"
+      conversational: "wanted"
+      evidence_base: 0.55
+      category: "business_formal"
+    - formal: "obtain"
+      conversational: "get"
+      evidence_base: 0.65
+      category: "basic_formal"
+    - formal: "acquire"
+      conversational: "get"
+      evidence_base: 0.7
+      category: "business_formal"
+    - formal: "sufficient"
+      conversational: "enough"
+      evidence_base: 0.6
+      category: "basic_formal"
+    - formal: "numerous"
+      conversational: "many"
+      evidence_base: 0.6
+      category: "basic_formal"
+    - formal: "construct"
+      conversational: "build"
+      evidence_base: 0.6
+      category: "technical_formal"
+    - formal: "establish"
+      conversational: "set up"
+      evidence_base: 0.6
+      category: "business_formal"
+    - formal: "determine"
+      conversational: "find out"
+      evidence_base: 0.6
+      category: "basic_formal"
+    - formal: "require"
+      conversational: "need"
+      evidence_base: 0.5
+      category: "basic_formal"
+    - formal: "principal"
+      conversational: "main"
+      evidence_base: 0.65
+      category: "academic_formal"
+    - formal: "primary"
+      conversational: "main"
+      evidence_base: 0.55
+      category: "basic_formal"
+    - formal: "maximum"
+      conversational: "most"
+      evidence_base: 0.55
+      category: "technical_formal"
+    - formal: "minimum"
+      conversational: "least"
+      evidence_base: 0.55
+      category: "technical_formal"
+
+  # Nouns and other parts of speech
+  formal_nouns:
+    - formal: "assistance"
+      conversational: "help"
+      evidence_base: 0.6
+      category: "business_formal"
+    - formal: "provide"
+      conversational: "give"
+      evidence_base: 0.5
+      category: "basic_formal"
+
+# Context-Specific Adjustments
+context_adjustments:
+  # Content types where formal language is more acceptable
+  formal_appropriate_contexts:
+    legal:
+      evidence_reduction: 0.6
+      description: "Legal documents require formal tone"
+    academic:
+      evidence_reduction: 0.6
+      description: "Academic writing uses formal language"
+    scientific:
+      evidence_reduction: 0.4
+      description: "Scientific writing often formal"
+    
+  # Audience types that accept more formal language
+  formal_appropriate_audiences:
+    expert:
+      evidence_reduction: 0.2
+      description: "Expert audiences comfortable with formal terms"
+    developer:
+      evidence_reduction: 0.2
+      description: "Technical audiences expect precision"
+    legal:
+      evidence_reduction: 0.5
+      description: "Legal audience expects formal language"
+
+  # Technical contexts where some formal words are appropriate
+  technical_contexts:
+    api_documentation:
+      accepted_formal_words: ["implement", "establish", "determine"]
+      evidence_reduction: 0.1
+    system_architecture:
+      accepted_formal_words: ["implement", "construct", "establish"]
+      evidence_reduction: 0.1
+
+# Feedback Patterns (learned from user interactions)
+feedback_patterns:
+  # Words users have indicated are acceptable in certain contexts
+  accepted_formal_terms: []
+  
+  # Words users frequently flag as problematic
+  often_flagged_formal_terms:
+    - "utilize"
+    - "facilitate"
+    - "aforementioned"
+  
+  # Content-specific patterns
+  marketing_patterns:
+    accepted: []
+    flagged: 
+      - "utilize"
+      - "commence"
+  
+  technical_patterns:
+    accepted: 
+      - "implement"
+    flagged: 
+      - "utilize"
+  
+  legal_patterns:
+    accepted:
+      - "aforementioned"
+      - "subsequently"
+      - "establish"
+    flagged: []
+
+# Morphological Patterns
+# Rules for handling word variations automatically
+morphological_rules:
+  # Automatically generate variations for formal words
+  auto_generate_variants:
+    verbs:
+      - "s"    # third person singular: utilize -> utilizes
+      - "d"    # past tense: utilize -> utilized
+      - "ing"  # present participle: utilize -> utilizing
+    adjectives:
+      - "ly"   # adverb form: optimal -> optimally
+  
+  # Exception patterns (words that don't follow standard rules)
+  exceptions:
+    - word: "demonstrate"
+      variants: ["demonstrates", "demonstrated", "demonstrating", "demonstration"]
+    - word: "provide"
+      variants: ["provides", "provided", "providing", "provision"]
