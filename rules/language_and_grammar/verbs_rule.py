@@ -1,11 +1,12 @@
 """
-Verbs Rule (Refactored to use Shared Passive Voice Analyzer)
+Verbs Rule (YAML-based with Shared Passive Voice Analyzer)
 Based on IBM Style Guide topics: "Verbs: Tense", "Verbs: Voice"
 
-This refactored version uses the centralized PassiveVoiceAnalyzer to eliminate
-code duplication while maintaining sophisticated context-aware suggestions.
+Uses YAML-based corrections vocabulary and centralized PassiveVoiceAnalyzer
+to eliminate code duplication while maintaining sophisticated context-aware suggestions.
 """
 from typing import List, Dict, Any, Optional
+from .services.language_vocabulary_service import get_verbs_vocabulary
 
 try:
     from .base_language_rule import BaseLanguageRule
@@ -66,6 +67,7 @@ class VerbsRule(BaseLanguageRule):
             self.passive_analyzer = PassiveVoiceAnalyzer()
         else:
             self.passive_analyzer = None
+        self.vocabulary_service = get_verbs_vocabulary()
     
     def _get_rule_type(self) -> str:
         return 'verbs'
@@ -159,6 +161,29 @@ class VerbsRule(BaseLanguageRule):
                         span=(span_start, span_end),
                         flagged_text=flagged_text
                     ))
+
+            # --- NOUN-FORMS-AS-VERBS CHECK ---
+            for token in doc:
+                if self._is_noun_form_as_verb_issue(token, doc, sent_text):
+                    evidence_score = self._calculate_noun_verb_evidence(
+                        token, doc, sent_text, text, context or {}
+                    )
+                    if evidence_score > 0.1:
+                        flagged_text = token.text
+                        span_start = token.idx
+                        span_end = span_start + len(flagged_text)
+                        errors.append(self._create_error(
+                            sentence=sent_text,
+                            sentence_index=i,
+                            message=self._get_contextual_noun_verb_message(flagged_text, evidence_score, context or {}),
+                            suggestions=self._generate_smart_noun_verb_suggestions(token, evidence_score, context or {}),
+                            severity='medium',
+                            text=text,
+                            context=context,
+                            evidence_score=evidence_score,
+                            span=(span_start, span_end),
+                            flagged_text=flagged_text
+                        ))
         
         return errors
 
@@ -1549,6 +1574,72 @@ class VerbsRule(BaseLanguageRule):
         
         text_lower = text.lower()
         return sum(1 for indicator in bug_report_indicators if indicator in text_lower) >= 3
+
+    # === NOUN-FORMS-AS-VERBS DETECTION METHODS ===
+
+    def _is_noun_form_as_verb_issue(self, token, doc, sentence: str) -> bool:
+        """Check if token is a noun form being used incorrectly as a verb using YAML vocabulary."""
+        if token.pos_ != 'VERB':
+            return False
+        
+        # Load noun forms from YAML vocabulary
+        corrections = self.vocabulary_service.get_verbs_corrections()
+        noun_forms_as_verbs = corrections.get('noun_forms_as_verbs', {})
+        
+        token_lower = token.text.lower()
+        return token_lower in noun_forms_as_verbs
+
+    def _calculate_noun_verb_evidence(self, token, doc, sentence: str, text: str, context: dict) -> float:
+        """Calculate evidence score for noun-forms-as-verbs issues."""
+        evidence_score = 0.8  # Base evidence - these are clear style violations
+        
+        # Adjust based on context
+        content_type = context.get('content_type', '')
+        
+        # Higher evidence in formal documentation
+        if content_type in ['documentation', 'tutorial', 'guide']:
+            evidence_score += 0.1
+        
+        # Lower evidence in casual contexts
+        if content_type in ['chat', 'social', 'informal']:
+            evidence_score -= 0.2
+        
+        return max(0.0, min(1.0, evidence_score))
+
+    def _get_contextual_noun_verb_message(self, flagged_text: str, evidence_score: float, context: dict) -> str:
+        """Generate contextual message for noun-forms-as-verbs issues using YAML vocabulary."""
+        # Load corrections from YAML vocabulary
+        corrections = self.vocabulary_service.get_verbs_corrections()
+        noun_forms_as_verbs = corrections.get('noun_forms_as_verbs', {})
+        
+        flagged_lower = flagged_text.lower()
+        
+        if flagged_lower in noun_forms_as_verbs:
+            correction_info = noun_forms_as_verbs[flagged_lower]
+            correct_form = correction_info.get('correct_form', 'use proper verb form')
+        else:
+            correct_form = 'use proper verb form'
+        
+        return f"Use '{correct_form}' instead of '{flagged_text}' as a verb."
+
+    def _generate_smart_noun_verb_suggestions(self, token, evidence_score: float, context: dict) -> List[str]:
+        """Generate smart suggestions for noun-forms-as-verbs issues using YAML vocabulary."""
+        # Load corrections from YAML vocabulary
+        corrections = self.vocabulary_service.get_verbs_corrections()
+        noun_forms_as_verbs = corrections.get('noun_forms_as_verbs', {})
+        
+        token_lower = token.text.lower()
+        correction_info = noun_forms_as_verbs.get(token_lower)
+        
+        if correction_info:
+            correct_form = correction_info.get('correct_form')
+            if correct_form:
+                # Preserve original capitalization
+                if token.text[0].isupper():
+                    correct_form = correct_form.capitalize()
+                return [correct_form]
+        
+        return ['use proper verb form']
 
     def _is_ui_documentation(self, text: str) -> bool:
         """Check if text appears to be user interface documentation."""

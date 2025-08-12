@@ -81,6 +81,27 @@ class PrepositionsRule(BaseLanguageRule):
                     flagged_text=sent.text
                 ))
 
+            # Check for incorrect preposition usage
+            for incorrect_prep in self._find_incorrect_preposition_usage(sent, doc):
+                evidence_score = self._calculate_incorrect_prep_evidence(incorrect_prep, sent, text, context or {})
+                
+                if evidence_score > 0.1:
+                    message = self._get_contextual_incorrect_prep_message(incorrect_prep, evidence_score)
+                    suggestions = self._generate_smart_incorrect_prep_suggestions(incorrect_prep, evidence_score, context or {})
+                    
+                    errors.append(self._create_error(
+                        sentence=sent.text,
+                        sentence_index=i,
+                        message=message,
+                        suggestions=suggestions,
+                        severity='medium',
+                        text=text,
+                        context=context,
+                        evidence_score=evidence_score,
+                        span=(incorrect_prep['span'][0], incorrect_prep['span'][1]),
+                        flagged_text=incorrect_prep['flagged_text']
+                    ))
+
         return errors
 
     # === EVIDENCE-BASED CALCULATION METHODS ===
@@ -697,4 +718,116 @@ class PrepositionsRule(BaseLanguageRule):
             suggestions.append("Consider using coordinating conjunctions (and, but, or) to link related ideas instead of embedding them in prepositional phrases.")
 
         # Limit to most relevant suggestions
+        return suggestions[:3]
+
+    # === INCORRECT PREPOSITION USAGE METHODS ===
+
+    def _find_incorrect_preposition_usage(self, sent, doc) -> List[Dict[str, Any]]:
+        """Find incorrect preposition usage patterns in a sentence."""
+        incorrect_patterns = []
+        
+        # Define common incorrect verb-preposition combinations
+        incorrect_verb_prep_patterns = {
+            # Pattern: (verb, incorrect_prep): correct_prep
+            ('click', 'in'): 'on',
+            ('click', 'at'): 'on',
+            ('connect', 'at'): 'to',
+            ('connect', 'with'): 'to',  # sometimes incorrect
+            ('log', 'on'): 'in',  # "log on to" -> "log in to"
+            ('focus', 'at'): 'on',
+            ('concentrate', 'at'): 'on',
+            ('listen', 'at'): 'to',
+            ('arrive', 'to'): 'at',
+            ('reach', 'at'): 'to',  # "reach at" -> "reach"
+            ('discuss', 'about'): '',  # "discuss about" -> "discuss"
+            ('emphasize', 'on'): '',   # "emphasize on" -> "emphasize"
+            ('stress', 'on'): '',      # "stress on" -> "stress"
+        }
+        
+        # Look for verb + preposition patterns
+        for token in sent:
+            if token.pos_ == 'VERB':
+                # Look for preposition that follows this verb
+                for child in token.children:
+                    if child.dep_ == 'prep' and child.pos_ == 'ADP':
+                        verb_lemma = token.lemma_.lower()
+                        prep_text = child.text.lower()
+                        
+                        pattern_key = (verb_lemma, prep_text)
+                        if pattern_key in incorrect_verb_prep_patterns:
+                            correct_prep = incorrect_verb_prep_patterns[pattern_key]
+                            
+                            # Calculate span
+                            start_idx = token.idx
+                            end_idx = child.idx + len(child.text)
+                            flagged_text = f"{token.text} {child.text}"
+                            
+                            incorrect_patterns.append({
+                                'verb': token.text,
+                                'incorrect_prep': child.text,
+                                'correct_prep': correct_prep,
+                                'span': (start_idx, end_idx),
+                                'flagged_text': flagged_text,
+                                'verb_token': token,
+                                'prep_token': child
+                            })
+        
+        return incorrect_patterns
+
+    def _calculate_incorrect_prep_evidence(self, incorrect_prep: Dict[str, Any], sent, text: str, context: Dict[str, Any]) -> float:
+        """Calculate evidence score for incorrect preposition usage."""
+        evidence_score = 0.8  # Base evidence - these are clear grammar errors
+        
+        # Adjust based on context
+        content_type = context.get('content_type', '')
+        
+        # Higher evidence in formal documentation
+        if content_type in ['documentation', 'tutorial', 'guide']:
+            evidence_score += 0.1
+        
+        # Lower evidence in casual contexts
+        if content_type in ['chat', 'social', 'informal']:
+            evidence_score -= 0.2
+        
+        # Some patterns are more flexible than others
+        verb = incorrect_prep['verb'].lower()
+        incorrect_prep_text = incorrect_prep['incorrect_prep'].lower()
+        
+        # "connect with" can be acceptable in some contexts
+        if verb == 'connect' and incorrect_prep_text == 'with':
+            evidence_score -= 0.3  # More lenient
+        
+        return max(0.0, min(1.0, evidence_score))
+
+    def _get_contextual_incorrect_prep_message(self, incorrect_prep: Dict[str, Any], evidence_score: float) -> str:
+        """Generate contextual message for incorrect preposition usage."""
+        verb = incorrect_prep['verb']
+        incorrect_prep_text = incorrect_prep['incorrect_prep']
+        correct_prep = incorrect_prep['correct_prep']
+        
+        if correct_prep == '':
+            return f"'{verb} {incorrect_prep_text}' is incorrect. Use '{verb}' without a preposition."
+        else:
+            return f"'{verb} {incorrect_prep_text}' is incorrect. Use '{verb} {correct_prep}' instead."
+
+    def _generate_smart_incorrect_prep_suggestions(self, incorrect_prep: Dict[str, Any], evidence_score: float, context: Dict[str, Any]) -> List[str]:
+        """Generate smart suggestions for incorrect preposition usage."""
+        verb = incorrect_prep['verb']
+        correct_prep = incorrect_prep['correct_prep']
+        
+        suggestions = []
+        
+        if correct_prep == '':
+            # Verb doesn't need a preposition
+            suggestions.append(f"Use '{verb}' without a preposition")
+            suggestions.append(f"'{verb}' is a transitive verb and takes a direct object")
+        else:
+            # Verb needs a different preposition
+            suggestion = f"{verb} {correct_prep}"
+            # Preserve original capitalization
+            if incorrect_prep['verb'][0].isupper():
+                suggestion = suggestion.capitalize()
+            suggestions.append(suggestion)
+            suggestions.append(f"Use '{verb} {correct_prep}' for correct idiomatic usage")
+        
         return suggestions[:3]

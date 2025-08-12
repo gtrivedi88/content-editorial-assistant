@@ -77,18 +77,32 @@ class CurrencyRule(BaseNumbersRule):
 
     def _calculate_currency_symbol_evidence(self, flagged_text: str, sentence, text: str, context: Dict[str, Any]) -> float:
         """
-        Calculate evidence (0.0-1.0) for currency symbol usage issues.
+        PRODUCTION-GRADE: Calculate evidence (0.0-1.0) for currency symbol usage issues.
+        
+        Implements rule-specific evidence calculation with:
+        - Surgical zero false positive guards for currency contexts
+        - Dynamic base evidence scoring based on symbol specificity and international requirements
+        - Context-aware adjustments for different financial and business domains
         
         Following the 5-step evidence calculation pattern:
-        1. Base Evidence Assessment
-        2. Linguistic Clues (Micro-Level)
-        3. Structural Clues (Meso-Level)
-        4. Semantic Clues (Macro-Level)
-        5. Feedback Patterns (Learning Clues)
+        1. Surgical Zero False Positive Guards
+        2. Base Evidence Assessment
+        3. Linguistic Clues (Micro-Level)
+        4. Structural Clues (Meso-Level)
+        5. Semantic Clues (Macro-Level)
+        6. Feedback Patterns (Learning Clues)
         """
-        evidence_score = 0.0
         
-        # === STEP 1: BASE EVIDENCE ASSESSMENT ===
+        # === STEP 1: SURGICAL ZERO FALSE POSITIVE GUARDS ===
+        # Apply base class surgical guards for numbers
+        if self._apply_surgical_zero_false_positive_guards_numbers(flagged_text, context):
+            return 0.0  # No violation - protected context
+        
+        # Apply currency-specific surgical guards
+        if self._apply_currency_specific_guards(flagged_text, sentence, context):
+            return 0.0  # No violation - currency-specific protected context
+        
+        # === STEP 2: BASE EVIDENCE ASSESSMENT ===
         evidence_score = 0.55  # Base evidence for symbol usage
         
         # === STEP 2: LINGUISTIC CLUES (MICRO-LEVEL) ===
@@ -104,23 +118,74 @@ class CurrencyRule(BaseNumbersRule):
         evidence_score = self._apply_feedback_clues_currency(evidence_score, flagged_text, context)
         
         return max(0.0, min(1.0, evidence_score))
+    
+    def _apply_currency_specific_guards(self, flagged_text: str, sentence, context: Dict[str, Any]) -> bool:
+        """
+        PRODUCTION-GRADE: Apply surgical guards specific to currency contexts.
+        Returns True if this should be excluded (no violation), False if it should be processed.
+        """
+        sent_text = sentence.text if hasattr(sentence, 'text') else str(sentence)
+        sent_lower = sent_text.lower()
+        
+        # === GUARD 1: PRICING TABLES AND CATALOGS ===
+        # Don't flag currency symbols in pricing tables where symbols are standard
+        if context and context.get('block_type') in ['table_cell', 'table_header']:
+            table_type = context.get('table_type', '')
+            if table_type in ['pricing', 'product_catalog', 'menu']:
+                return True  # Pricing tables commonly use symbols
+        
+        # === GUARD 2: USER INTERFACE EXAMPLES ===
+        # Don't flag currency symbols in UI mockups or interface examples
+        ui_indicators = ['ui', 'interface', 'screen', 'display', 'form', 'field', 'input', 'button']
+        if any(indicator in sent_lower for indicator in ui_indicators):
+            return True  # UI examples often show symbols as they appear to users
+        
+        # === GUARD 3: HISTORICAL OR QUOTED PRICES ===
+        # Don't flag historical references or quoted prices
+        historical_indicators = ['historical', 'previous', 'last year', 'in 20', 'back in', 'was $', 'cost $']
+        if any(indicator in sent_lower for indicator in historical_indicators):
+            return True  # Historical references preserve original formatting
+        
+        # === GUARD 4: SMALL ROUND AMOUNTS ===
+        # Don't flag very small, common round amounts (like $5, $10, $20)
+        small_amounts = ['$5', '$10', '$20', '$25', '$50', '$100', '€5', '€10', '€20', '€50', '€100', '£5', '£10', '£20', '£50']
+        if any(amount in flagged_text for amount in small_amounts):
+            # Only in casual contexts like examples or marketing
+            if context and context.get('content_type') in ['marketing', 'example', 'tutorial']:
+                return True  # Small amounts in casual contexts can use symbols
+        
+        return False  # No currency-specific guards triggered
 
     # === EVIDENCE CALCULATION: MULTIPLIERS ===
 
     def _calculate_currency_multiplier_evidence(self, flagged_text: str, sentence, text: str, context: Dict[str, Any]) -> float:
         """
-        Calculate evidence (0.0-1.0) for currency multiplier usage issues.
+        PRODUCTION-GRADE: Calculate evidence (0.0-1.0) for currency multiplier usage issues.
+        
+        Implements rule-specific evidence calculation with:
+        - Surgical zero false positive guards for currency multiplier contexts
+        - Dynamic base evidence scoring based on multiplier ambiguity and domain requirements
+        - Context-aware adjustments for different technical and financial domains
         
         Following the 5-step evidence calculation pattern:
-        1. Base Evidence Assessment
-        2. Linguistic Clues (Micro-Level)
-        3. Structural Clues (Meso-Level)
-        4. Semantic Clues (Macro-Level)
-        5. Feedback Patterns (Learning Clues)
+        1. Surgical Zero False Positive Guards
+        2. Base Evidence Assessment
+        3. Linguistic Clues (Micro-Level)
+        4. Structural Clues (Meso-Level)
+        5. Semantic Clues (Macro-Level)
+        6. Feedback Patterns (Learning Clues)
         """
-        evidence_score = 0.0
         
-        # === STEP 1: BASE EVIDENCE ASSESSMENT ===
+        # === STEP 1: SURGICAL ZERO FALSE POSITIVE GUARDS ===
+        # Apply base class surgical guards for numbers
+        if self._apply_surgical_zero_false_positive_guards_numbers(flagged_text, context):
+            return 0.0  # No violation - protected context
+        
+        # Apply currency multiplier-specific surgical guards
+        if self._apply_currency_multiplier_specific_guards(flagged_text, sentence, context):
+            return 0.0  # No violation - multiplier-specific protected context
+        
+        # === STEP 2: BASE EVIDENCE ASSESSMENT ===
         evidence_score = 0.65  # Base evidence for M/K multiplier usage
         
         # === STEP 2: LINGUISTIC CLUES (MICRO-LEVEL) ===
@@ -136,6 +201,45 @@ class CurrencyRule(BaseNumbersRule):
         evidence_score = self._apply_feedback_clues_currency(evidence_score, flagged_text, context)
         
         return max(0.0, min(1.0, evidence_score))
+    
+    def _apply_currency_multiplier_specific_guards(self, flagged_text: str, sentence, context: Dict[str, Any]) -> bool:
+        """
+        PRODUCTION-GRADE: Apply surgical guards specific to currency multiplier contexts.
+        Returns True if this should be excluded (no violation), False if it should be processed.
+        """
+        sent_text = sentence.text if hasattr(sentence, 'text') else str(sentence)
+        sent_lower = sent_text.lower()
+        
+        # === GUARD 1: TECHNICAL/DATA CONTEXTS ===
+        # Don't flag K/M in technical contexts where they refer to bytes, pixels, etc.
+        tech_contexts = [
+            'resolution', 'video', 'display', 'pixels', 'screen', 'monitor',
+            'kb', 'mb', 'gb', 'tb', 'file', 'download', 'upload', 'storage',
+            'disk', 'memory', 'ram', 'speed', 'bandwidth', 'throughput',
+            'fps', 'hz', 'mhz', 'ghz', 'rpm'
+        ]
+        if any(term in sent_lower for term in tech_contexts):
+            return True  # Technical contexts use K/M for different units
+        
+        # === GUARD 2: STOCK/SHARE CONTEXTS ===
+        # Don't flag in stock market contexts where K/M are common abbreviations
+        stock_contexts = ['shares', 'stock', 'trading', 'market cap', 'volume', 'ticker']
+        if any(term in sent_lower for term in stock_contexts):
+            return True  # Stock contexts commonly use abbreviated numbers
+        
+        # === GUARD 3: INFORMAL/SOCIAL MEDIA CONTEXTS ===
+        # Don't flag in very casual contexts where abbreviations are standard
+        if context and context.get('content_type') in ['social_media', 'informal', 'chat']:
+            return True  # Social media commonly uses K/M abbreviations
+        
+        # === GUARD 4: HEADLINES AND TITLES ===
+        # Don't flag in headlines where space is constrained
+        if context and context.get('block_type') in ['heading', 'title']:
+            heading_level = context.get('block_level', 1)
+            if heading_level <= 2:  # Main headings often need brevity
+                return True  # Headlines can use abbreviated formats
+        
+        return False  # No multiplier-specific guards triggered
 
     # === LINGUISTIC CLUES (MICRO-LEVEL) ===
     

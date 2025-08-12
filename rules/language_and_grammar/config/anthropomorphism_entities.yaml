@@ -1,0 +1,255 @@
+# Anthropomorphism Entities Configuration
+# Manages entities and verbs for detecting anthropomorphic language
+# Used by AnthropomorphismRule for identifying inappropriate human-like descriptions
+
+# Categories of potentially anthropomorphic verbs
+anthropomorphic_verbs:
+  # Core human cognitive/emotional verbs (most problematic)
+  core_human_verbs:
+    - think
+    - believe
+    - feel
+    - want
+    - wish
+    - hope
+    - fear
+    - love
+    - hate
+    - worry
+    - care
+    - remember
+    - forget
+    - dream
+    - imagine
+    - doubt
+    - know
+    - learn
+
+  # Human communication verbs (context-dependent)
+  communication_verbs:
+    - say
+    - tell
+    - speak
+    - talk
+    - ask
+    - answer
+    - reply
+    - explain
+    - describe
+    - mention
+    - suggest
+    - recommend
+    - advise
+
+  # Human decision/judgment verbs (often acceptable in technical contexts)
+  decision_verbs:
+    - decide
+    - choose
+    - select
+    - prefer
+    - judge
+    - evaluate
+    - determine
+    - conclude
+    - assume
+    - expect
+
+  # Human perception verbs (context-dependent, but NOT detect)
+  perception_verbs:
+    - see
+    - look
+    - watch
+    - observe
+    - notice
+    - hear
+    - listen
+    - smell
+    - taste
+    - touch
+
+  # Human action verbs (often acceptable)
+  action_verbs:
+    - allow
+    - permit
+    - let
+    - enable
+    - disable
+    - prevent
+    - help
+    - assist
+    - support
+    - protect
+    - serve
+
+# Technical verbs that are acceptable for systems/software
+technical_verbs:
+  acceptable_system_verbs:
+    - detect
+    - identify
+    - recognize
+    - analyze
+    - process
+    - validate
+    - verify
+    - check
+    - monitor
+    - track
+    - scan
+    - search
+    - find
+    - locate
+    - measure
+    - calculate
+    - compute
+    - execute
+    - run
+    - operate
+    - function
+    - perform
+    - handle
+    - manage
+    - control
+    - coordinate
+    - synchronize
+    - optimize
+    - configure
+    - initialize
+    - terminate
+    - start
+    - stop
+    - pause
+    - resume
+    - update
+    - upgrade
+    - install
+    - deploy
+    - backup
+    - restore
+
+# Technical system entities (context-dependent)
+technical_entities:
+  systems:
+    - system
+    - application
+    - program
+    - software
+    - app
+    - service
+    - platform
+    - framework
+    - library
+    - module
+    - component
+    - tool
+    - utility
+
+  infrastructure:
+    - server
+    - client
+    - database
+    - network
+    - router
+    - switch
+    - firewall
+    - load balancer
+
+  interfaces:
+    - api
+    - interface
+    - endpoint
+    - gateway
+    - connector
+    - adapter
+    - bridge
+
+  data_entities:
+    - algorithm
+    - function
+    - method
+    - procedure
+    - routine
+    - script
+    - query
+    - command
+
+# Non-technical entities that should not be anthropomorphized
+inanimate_entities:
+  objects:
+    - document
+    - file
+    - folder
+    - directory
+    - report
+    - chart
+    - graph
+    - table
+    - form
+    - template
+
+  concepts:
+    - policy
+    - rule
+    - guideline
+    - standard
+    - protocol
+    - specification
+    - requirement
+    - constraint
+
+# Acceptable anthropomorphic phrases in specific contexts
+acceptable_exceptions:
+  user_interface_context:
+    - "the wizard guides you"
+    - "the assistant helps you"
+    - "the agent acts on your behalf"
+  
+  marketing_context:
+    - "intelligent automation"
+    - "smart recommendations"
+    - "learns from your behavior"
+  
+  established_terminology:
+    - "machine learning"
+    - "artificial intelligence"
+    - "smart contracts"
+    - "intelligent systems"
+
+# Evidence scoring guidelines
+evidence_levels:
+  core_human_verbs: 1.0      # Always problematic
+  communication_verbs: 0.8   # Usually problematic
+  perception_verbs: 0.6      # Context-dependent
+  decision_verbs: 0.4        # Often acceptable in technical contexts
+  action_verbs: 0.2          # Usually acceptable
+
+# Context modifiers
+context_adjustments:
+  technical_content: -0.2
+  marketing_content: -0.1
+  user_interface: -0.1
+  educational_content: +0.1
+  
+# Examples for validation
+examples:
+  inappropriate:
+    - text: "The system thinks the user wants to delete files"
+      issue: "Systems don't think"
+      correction: "The system detects that the user attempts to delete files"
+    
+    - text: "The application remembers your preferences"
+      issue: "Applications don't remember"
+      correction: "The application stores your preferences"
+    
+    - text: "The database feels overwhelmed"
+      issue: "Databases don't have feelings"
+      correction: "The database is experiencing high load"
+
+  acceptable:
+    - text: "The system detects network issues"
+      reason: "detect is a technical verb"
+    
+    - text: "The service monitors performance"
+      reason: "monitor is appropriate for systems"
+    
+    - text: "The AI assistant helps users"
+      reason: "acceptable in user interface context"

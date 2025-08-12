@@ -1,10 +1,12 @@
 """
-Plurals Rule
+Plurals Rule (YAML-based)
 Based on IBM Style Guide topic: "Plurals"
+Uses YAML-based corrections vocabulary for maintainable pluralization rules.
 """
 import re
 from typing import List, Dict, Any
 from .base_language_rule import BaseLanguageRule
+from .services.language_vocabulary_service import get_plurals_vocabulary
 
 try:
     from spacy.tokens import Doc
@@ -25,6 +27,7 @@ class PluralsRule(BaseLanguageRule):
         super().__init__()
         self.matcher = None
         self._patterns_initialized = False
+        self.vocabulary_service = get_plurals_vocabulary()
     
     def _get_rule_type(self) -> str:
         return 'plurals'
@@ -151,6 +154,21 @@ class PluralsRule(BaseLanguageRule):
                         'severity': 'low'
                     })
         
+        # === RULE 3: INCORRECT PLURAL FORMS DETECTION ===
+        for i, sent in enumerate(doc.sents):
+            for token in sent:
+                if self._is_incorrect_plural_form(token):
+                    potential_issues.append({
+                        'type': 'incorrect_plural',
+                        'token': token,
+                        'sentence': sent,
+                        'sentence_index': i,
+                        'span': (token.idx, token.idx + len(token.text)),
+                        'flagged_text': token.text,
+                        'lemma': token.lemma_,
+                        'severity': 'high'
+                    })
+        
         return potential_issues
 
     def _is_excepted(self, text: str) -> bool:
@@ -161,6 +179,24 @@ class PluralsRule(BaseLanguageRule):
             'directory(s)', 'argument(s)', 'variable(s)', 'property(s)'
         }
         return text.lower() in exceptions
+
+    def _is_incorrect_plural_form(self, token) -> bool:
+        """Check if token is an incorrect plural form using YAML vocabulary."""
+        if token.pos_ != 'NOUN':
+            return False
+        
+        # Load incorrect plurals from YAML vocabulary
+        corrections = self.vocabulary_service.get_plurals_corrections()
+        incorrect_plurals = corrections.get('incorrect_plurals', {})
+        
+        # Check all categories of incorrect plurals
+        all_incorrect = set()
+        for category in incorrect_plurals.values():
+            if isinstance(category, dict):
+                all_incorrect.update(category.keys())
+        
+        token_lower = token.text.lower()
+        return token_lower in all_incorrect
 
     def _is_functioning_as_verb(self, token, doc) -> bool:
         """
@@ -425,6 +461,9 @@ class PluralsRule(BaseLanguageRule):
             
             # Otherwise, moderate evidence that it's a plural adjective problem
             return 0.7  # Moderate evidence for potential plural adjective issue
+        elif issue_type == 'incorrect_plural':
+            # Incorrect plural forms are always high evidence
+            return 0.9  # High evidence - these are clear grammar errors
         
         return 0.5  # Default evidence for unknown issue types
 
@@ -900,6 +939,8 @@ class PluralsRule(BaseLanguageRule):
             return self._get_contextual_s_pattern_message(potential_issue['span_obj'], evidence_score, potential_issue.get('base_word'))
         elif issue_type == 'plural_adjective':
             return self._get_contextual_plural_adjective_message(potential_issue['token'], evidence_score)
+        elif issue_type == 'incorrect_plural':
+            return self._get_contextual_incorrect_plural_message(potential_issue['token'], evidence_score)
         
         return f"Pluralization issue detected in '{potential_issue['flagged_text']}'."
 
@@ -911,6 +952,8 @@ class PluralsRule(BaseLanguageRule):
             return self._generate_smart_s_pattern_suggestions(potential_issue['span_obj'], evidence_score, context, potential_issue.get('base_word'))
         elif issue_type == 'plural_adjective':
             return self._generate_smart_plural_adjective_suggestions(potential_issue['token'], evidence_score, context)
+        elif issue_type == 'incorrect_plural':
+            return self._generate_smart_incorrect_plural_suggestions(potential_issue['token'], evidence_score, context)
         
         return ["Consider reviewing the pluralization pattern."]
 
@@ -994,5 +1037,66 @@ class PluralsRule(BaseLanguageRule):
         # Token-specific advice
         if token.text.lower() in ['systems', 'operations', 'services']:
             suggestions.append("This may be acceptable in technical compound terms.")
+        
+        return suggestions[:3]
+
+    def _get_contextual_incorrect_plural_message(self, token, evidence_score: float) -> str:
+        """Generate context-aware error messages for incorrect plural forms using YAML vocabulary."""
+        
+        # Load corrections from YAML vocabulary
+        corrections = self.vocabulary_service.get_plurals_corrections()
+        incorrect_plurals = corrections.get('incorrect_plurals', {})
+        
+        token_lower = token.text.lower()
+        correct_form = 'correct form'
+        
+        # Find the correct form from all categories
+        for category in incorrect_plurals.values():
+            if isinstance(category, dict) and token_lower in category:
+                correct_form = category[token_lower]['correct_form']
+                break
+        
+        return f"'{token.text}' is not a correct plural form. Use '{correct_form}' instead."
+
+    def _generate_smart_incorrect_plural_suggestions(self, token, evidence_score: float, context: Dict[str, Any]) -> List[str]:
+        """Generate smart suggestions for incorrect plural forms using YAML vocabulary."""
+        
+        # Load corrections from YAML vocabulary
+        corrections = self.vocabulary_service.get_plurals_corrections()
+        incorrect_plurals = corrections.get('incorrect_plurals', {})
+        
+        token_lower = token.text.lower()
+        correct_form = None
+        correction_info = None
+        
+        # Find the correct form and additional info from all categories
+        for category in incorrect_plurals.values():
+            if isinstance(category, dict) and token_lower in category:
+                correction_info = category[token_lower]
+                correct_form = correction_info['correct_form']
+                break
+        
+        suggestions = []
+        if correct_form and correction_info:
+            # Preserve original capitalization
+            if token.text[0].isupper():
+                correct_form_cap = correct_form.capitalize()
+                suggestions.append(correct_form_cap)
+            else:
+                suggestions.append(correct_form)
+                
+            # Add explanation based on type
+            correction_type = correction_info.get('type', 'correction')
+            if correction_type == 'uncountable':
+                suggestions.append(f"'{correct_form}' is uncountable and doesn't take a plural form")
+            else:
+                suggestions.append(f"The correct plural form is '{correct_form}'")
+                
+            # Add usage explanation if available
+            explanation = correction_info.get('explanation')
+            if explanation:
+                suggestions.append(explanation)
+        else:
+            suggestions.append("Use the correct plural form")
         
         return suggestions[:3]

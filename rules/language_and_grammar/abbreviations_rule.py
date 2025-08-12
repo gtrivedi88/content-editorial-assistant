@@ -568,16 +568,31 @@ class AbbreviationsRule(BaseLanguageRule):
     def _apply_linguistic_clues_undefined(self, evidence_score: float, token: 'Token', sentence) -> float:
         """Apply SpaCy-based linguistic analysis clues for undefined abbreviations."""
         
-        # Named Entity Recognition - if it's a known entity, likely doesn't need definition
-        if token.ent_type_ in ['PERSON', 'ORG', 'GPE', 'PRODUCT']:
-            evidence_score -= 0.8  # Names/entities are not abbreviation errors
+        # Named Entity Recognition - be selective about entity-based reductions
+        # Only reduce for entities that are clearly proper nouns, not potential abbreviations
+        if token.ent_type_ == 'PERSON':
+            # Person names don't need definition
+            evidence_score -= 0.6
+        elif token.ent_type_ == 'GPE':
+            # Geographic/political entities don't need definition
+            evidence_score -= 0.6
+        elif token.ent_type_ == 'ORG':
+            # BE CAREFUL: Organizations can be abbreviations that need definition
+            # Only reduce if it's clearly a proper organization name (contains lowercase)
+            if any(c.islower() for c in token.text):
+                evidence_score -= 0.6  # Proper org name like "Microsoft"
+            else:
+                evidence_score -= 0.1  # Could be abbreviation like "API", "IBM"
+        elif token.ent_type_ == 'PRODUCT':
+            # Product names often don't need definition
+            evidence_score -= 0.4
         elif token.ent_type_ in ['MISC', 'EVENT']:
-            evidence_score -= 0.3  # Miscellaneous entities often acceptable
+            evidence_score -= 0.2  # Miscellaneous entities, be conservative
         
         # Check if it's a common technical acronym
         if len(token.text) <= 5 and token.text.isupper():
             if self._is_common_technical_acronym(token.text):
-                evidence_score -= 0.4  # Common acronyms may not need definition
+                evidence_score -= 0.3  # Reduce, but not as aggressively
         
         # Check for contextual definition patterns
         if self._is_contextually_defined(token, token.doc):
@@ -585,7 +600,7 @@ class AbbreviationsRule(BaseLanguageRule):
         
         # Check if in admonition context
         if self._is_admonition_context(token, None):
-            evidence_score -= 0.3  # Admonition keywords are acceptable
+            evidence_score -= 0.2  # Reduce conservatively
         
         return evidence_score
 
@@ -737,38 +752,44 @@ class AbbreviationsRule(BaseLanguageRule):
         
         content_type = context.get('content_type', 'general')
         domain = context.get('domain', 'general')
+        audience = context.get('audience', 'general')
         
-        # Technical content assumes domain knowledge
-        if content_type == 'technical':
-            evidence_score -= 0.2  # Technical content more permissive
-            
-            # Check for technical indicators nearby
-            if self._has_technical_context_words(token.sent.text, distance=10):
-                evidence_score -= 0.2  # API, SDK, JSON, etc. nearby
+        # CRITICAL: Check if this is a universally known abbreviation first
+        if self._is_universally_known_abbreviation(token.text):
+            # For universally known abbreviations, reduce evidence significantly
+            evidence_score -= 0.5
+            # In technical contexts with technical audiences, reduce even more
+            if content_type == 'technical' and audience in ['expert', 'developer']:
+                evidence_score -= 0.2  # Total reduction: 0.7
+            return max(0.0, evidence_score)
+
+        # For non-universal abbreviations, be much more conservative with reductions
+        # These abbreviations SHOULD be flagged in most contexts
         
-        # Domain-specific contexts
+        # Only minimal reductions for expert technical content
+        if content_type == 'technical' and audience in ['expert', 'developer']:
+            evidence_score -= 0.05  # Very minimal reduction
+
+        # Domain-specific contexts - be conservative
         if domain in ['software', 'engineering', 'devops']:
-            evidence_score -= 0.3  # Technical domains more permissive
+            evidence_score -= 0.05  # Minimal reduction for technical domains
         elif domain in ['finance', 'legal', 'medical']:
             evidence_score += 0.1  # Professional domains need clarity
-        
-        # Document length context
+
+        # Document length context - be more conservative
         doc_length = len(text.split())
-        if doc_length < 100:  # Short documents
-            evidence_score -= 0.1  # More permissive for brief content
+        if doc_length < 50:  # Only very short documents get reduction
+            evidence_score -= 0.05  # Minimal reduction for brief content
         elif doc_length > 2000:  # Long documents
             evidence_score += 0.1  # Consistency more important in long docs
-        
-        # Audience level
-        audience = context.get('audience', 'general')
-        if audience in ['expert', 'developer']:
-            evidence_score -= 0.3  # Expert audience expects technical terms
-        elif audience in ['beginner', 'general']:
-            evidence_score += 0.2  # General audience needs definitions
-        
+
+        # Audience level - prioritize clarity
+        if audience in ['beginner', 'general']:
+            evidence_score += 0.2  # Strong boost for general audience
+
         # Brand/product context analysis
         if self._is_brand_product_context(token, text, context):
-            evidence_score -= 0.4  # Brand/product names often don't need definition
+            evidence_score -= 0.3  # Moderate reduction for brand/product names
         
         return evidence_score
 
@@ -856,6 +877,30 @@ class AbbreviationsRule(BaseLanguageRule):
         }
         return text.upper() in common_acronyms
 
+    def _count_technical_density(self, text: str) -> int:
+        """Count the density of technical terms in the text."""
+        technical_terms = [
+            'api', 'sdk', 'json', 'xml', 'http', 'https', 'html', 'css', 'sql',
+            'database', 'server', 'client', 'protocol', 'framework', 'library',
+            'algorithm', 'function', 'method', 'class', 'object', 'interface',
+            'deployment', 'configuration', 'authentication', 'authorization'
+        ]
+        
+        text_lower = text.lower()
+        count = sum(1 for term in technical_terms if term in text_lower)
+        return count
+
+    def _is_universally_known_abbreviation(self, text: str) -> bool:
+        """Check if this is a universally known abbreviation that might not need definition."""
+        # Very common abbreviations that are widely understood
+        # Should be conservative - only truly universal terms
+        universal_abbreviations = {
+            'HTTP', 'HTTPS', 'HTML', 'CSS', 'XML', 'JSON', 'PDF', 'URL', 'URI',
+            'USB', 'WIFI', 'GPS', 'CPU', 'GPU', 'RAM', 'SSD', 'DVD', 'CD',
+            'SMS', 'EMAIL', 'FAQ', 'CEO', 'CTO', 'HR', 'IT', 'ID', 'IP'
+        }
+        return text.upper() in universal_abbreviations
+
     # Removed _has_technical_context_words - using base class utility
 
     def _is_imperative_context(self, token: 'Token', text: str) -> bool:
@@ -893,17 +938,35 @@ class AbbreviationsRule(BaseLanguageRule):
         sent = token.sent
         sent_text = sent.text.lower()
         
-        # Brand/product context words
-        brand_indicators = [
-            'product', 'service', 'platform', 'solution', 'software',
-            'application', 'system', 'technology', 'framework', 'library',
-            'brand', 'company', 'corporation', 'enterprise', 'inc', 'ltd',
-            'trademark', 'registered', 'patent', 'proprietary', 'licensed'
+        # Brand/product context words - be more specific
+        # Only flag as brand context if there are CLEAR brand/product naming patterns
+        explicit_brand_indicators = [
+            'brand', 'trademark', 'registered', 'patent', 'proprietary', 'licensed',
+            'inc', 'ltd', 'corporation', 'enterprise'
         ]
         
-        # Check for brand context nearby
-        if any(indicator in sent_text for indicator in brand_indicators):
+        # Check for explicit brand context
+        if any(indicator in sent_text for indicator in explicit_brand_indicators):
             return True
+        
+        # Check for product naming patterns (token followed by version or ownership)
+        # e.g., "Microsoft Office", "IBM Watson", "Oracle Database"
+        token_lower = token.text.lower()
+        token_pos = sent_text.find(token_lower)
+        if token_pos >= 0:
+            # Look for company + product patterns
+            before_token = sent_text[:token_pos].strip()
+            after_token = sent_text[token_pos + len(token_lower):].strip()
+            
+            # Company names before the token
+            company_names = ['microsoft', 'google', 'apple', 'ibm', 'oracle', 'amazon', 'adobe']
+            if any(company in before_token[-20:] for company in company_names):
+                return True
+            
+            # Product descriptors after the token
+            product_descriptors = ['software', 'platform', 'solution', 'service']
+            if any(descriptor in after_token[:20] for descriptor in product_descriptors):
+                return True
         
         # Check if token is followed by version numbers or product identifiers
         next_token = token.nbor(1) if token.i < len(token.doc) - 1 else None
@@ -914,20 +977,26 @@ class AbbreviationsRule(BaseLanguageRule):
                 re.match(r'^v?\d+', next_token.text.lower())):
                 return True
         
-        # Check for capitalization patterns suggesting brand names
-        # Look for other capitalized words nearby (brand name pattern)
+        # Check for specific brand name patterns (not just any capitalization)
+        # Look for multi-word capitalized sequences that aren't just technical terms
         nearby_tokens = []
-        start_idx = max(0, token.i - 3)
-        end_idx = min(len(token.doc), token.i + 4)
+        start_idx = max(0, token.i - 2)
+        end_idx = min(len(token.doc), token.i + 3)
         
         for i in range(start_idx, end_idx):
             if i != token.i:
                 nearby_tokens.append(token.doc[i])
         
-        capitalized_count = sum(1 for t in nearby_tokens if t.text and t.text[0].isupper() and t.is_alpha)
+        # Count non-abbreviation capitalized words (longer than 3 chars, mixed case)
+        brand_like_tokens = []
+        for t in nearby_tokens:
+            if (t.text and t.text[0].isupper() and t.is_alpha and 
+                len(t.text) > 3 and any(c.islower() for c in t.text)):
+                brand_like_tokens.append(t.text)
         
-        # High density of capitalized words suggests brand/product context
-        if len(nearby_tokens) > 0 and capitalized_count / len(nearby_tokens) > 0.3:
+        # Only flag as brand context if we have multiple brand-like proper nouns
+        # Not just technical abbreviations
+        if len(brand_like_tokens) >= 2:
             return True
         
         return False

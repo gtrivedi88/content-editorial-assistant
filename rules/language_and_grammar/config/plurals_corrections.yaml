@@ -1,0 +1,167 @@
+# Plurals Corrections Configuration
+# Manages incorrect plural forms and their corrections
+# Used by PluralsRule for detecting and correcting improper pluralization
+
+# Incorrect plural forms and their correct alternatives
+incorrect_plurals:
+  # Uncountable nouns that don't take plural forms
+  uncountable_nouns:
+    datas:
+      correct_form: "data"
+      type: "uncountable"
+      explanation: "data is already plural; datum is singular"
+      examples:
+        incorrect: "These datas show..."
+        correct: "This data shows..." 
+    
+    informations:
+      correct_form: "information"
+      type: "uncountable"
+      explanation: "information is uncountable"
+      examples:
+        incorrect: "Several informations were provided"
+        correct: "Several pieces of information were provided"
+    
+    softwares:
+      correct_form: "software"
+      type: "uncountable"
+      explanation: "software is uncountable"
+      examples:
+        incorrect: "Many softwares are available"
+        correct: "Many software packages are available"
+    
+    hardwares:
+      correct_form: "hardware"
+      type: "uncountable"
+      explanation: "hardware is uncountable"
+      examples:
+        incorrect: "Different hardwares support this"
+        correct: "Different hardware components support this"
+    
+    equipments:
+      correct_form: "equipment"
+      type: "uncountable"
+      explanation: "equipment is uncountable"
+      examples:
+        incorrect: "All equipments are ready"
+        correct: "All equipment is ready"
+    
+    researches:
+      correct_form: "research"
+      type: "uncountable"
+      explanation: "research is uncountable; use 'research studies' for plural"
+      examples:
+        incorrect: "Multiple researches indicate..."
+        correct: "Multiple research studies indicate..."
+    
+    advices:
+      correct_form: "advice"
+      type: "uncountable"
+      explanation: "advice is uncountable; use 'pieces of advice' for plural"
+      examples:
+        incorrect: "He gave me several advices"
+        correct: "He gave me several pieces of advice"
+    
+    knowledges:
+      correct_form: "knowledge"
+      type: "uncountable"
+      explanation: "knowledge is uncountable"
+      examples:
+        incorrect: "Different knowledges are required"
+        correct: "Different types of knowledge are required"
+    
+    feedbacks:
+      correct_form: "feedback"
+      type: "uncountable"
+      explanation: "feedback is uncountable; use 'feedback items' for plural"
+      examples:
+        incorrect: "We received many feedbacks"
+        correct: "We received much feedback"
+    
+    trainings:
+      correct_form: "training"
+      type: "uncountable"
+      explanation: "training is uncountable; use 'training sessions' for plural"
+      examples:
+        incorrect: "Several trainings are scheduled"
+        correct: "Several training sessions are scheduled"
+    
+    documentations:
+      correct_form: "documentation"
+      type: "uncountable"
+      explanation: "documentation is uncountable"
+      examples:
+        incorrect: "Update all documentations"
+        correct: "Update all documentation"
+
+  # Incorrect plural formations
+  wrong_formations:
+    processers:
+      correct_form: "processors"
+      type: "wrong_formation"
+      explanation: "correct plural of processor"
+      examples:
+        incorrect: "Multiple processers handle the task"
+        correct: "Multiple processors handle the task"
+
+# Parenthetical (s) patterns to avoid
+parenthetical_s_patterns:
+  discouraged:
+    - "user(s)"
+    - "file(s)"
+    - "option(s)"
+    - "parameter(s)"
+    - "setting(s)"
+    - "value(s)"
+    - "directory(ies)"
+    - "variable(s)"
+    - "property(ies)"
+  
+  alternatives:
+    "user(s)":
+      - "users"
+      - "a user"
+      - "one or more users"
+    "file(s)":
+      - "files"
+      - "a file"
+      - "multiple files"
+    "option(s)":
+      - "options"
+      - "an option"
+      - "available options"
+
+# Exceptions where (s) might be acceptable
+exceptions:
+  technical_documentation:
+    - "parameter(s) in the config file"
+    - "property(s) defined in the schema"
+  
+  context_conditions:
+    - short_forms_in_tables
+    - space_constrained_ui
+    - established_terminology
+
+# Plural adjective issues
+plural_adjectives:
+  # Nouns incorrectly used as adjectives in plural form
+  incorrect_usage:
+    systems_administrator: "system administrator"
+    networks_topology: "network topology"
+    databases_management: "database management"
+    servers_monitoring: "server monitoring"
+    users_interface: "user interface"
+    
+  # Acceptable technical compound terms
+  acceptable_compounds:
+    - "systems engineering"
+    - "operations research"
+    - "services architecture"
+    - "resources management"
+    - "tools development"
+
+# Evidence scoring guidelines
+evidence_levels:
+  high: 0.9  # Clear grammar errors (datas, informations)
+  medium: 0.7  # Parenthetical (s) patterns
+  low: 0.3  # Plural adjectives in technical contexts

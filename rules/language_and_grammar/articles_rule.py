@@ -1,10 +1,12 @@
 """
-Articles Rule (with True Linguistic Analysis)
+Articles Rule (YAML-based Linguistic Analysis)
 Based on IBM Style Guide topic: "Articles"
+Uses YAML-based phonetics vocabulary for maintainable article rules.
 """
 from typing import List, Dict, Any, Optional
 import pyinflect
 from .base_language_rule import BaseLanguageRule
+from .services.language_vocabulary_service import get_articles_vocabulary
 
 try:
     from spacy.tokens import Doc, Token
@@ -14,9 +16,14 @@ except ImportError:
 
 class ArticlesRule(BaseLanguageRule):
     """
-    Checks for common article errors. This version uses true linguistic
-    analysis to distinguish between countable and uncountable (mass) nouns.
+    Checks for common article errors using YAML-based phonetics vocabulary.
+    Uses true linguistic analysis to distinguish between countable and uncountable (mass) nouns.
     """
+    
+    def __init__(self):
+        super().__init__()
+        self.vocabulary_service = get_articles_vocabulary()
+    
     def _get_rule_type(self) -> str:
         return 'articles'
 
@@ -84,34 +91,27 @@ class ArticlesRule(BaseLanguageRule):
 
     def _starts_with_vowel_sound(self, word: str) -> bool:
         """
-        LINGUISTIC ANCHOR: Morphological analysis for article selection.
-        Determines vowel vs. consonant sound based on phonetics, not spelling.
+        YAML-based phonetic analysis for article selection.
+        Determines vowel vs. consonant sound based on YAML vocabulary, not spelling.
         """
         word_lower = word.lower()
         
-        # LINGUISTIC ANCHOR 1: Words starting with vowel letters but consonant sounds
-        consonant_sound_words = {
-            # U sounds (pronounced /j/ - "yoo" sound)
-            'user', 'users', 'usage', 'used', 'useful', 'useless', 'usually',
-            'unit', 'units', 'united', 'university', 'unique', 'uniform',
-            'unicode', 'unix', 'ubuntu', 'url', 'utility', 'utilize',
-            
-            # O sounds (pronounced /w/ - "one" sound)  
-            'one', 'once', 'ones',
-            
-            # EU sounds (pronounced /j/ - "yoo" sound)
-            'european', 'euro', 'eucalyptus', 'euphemism', 'eureka'
-        }
+        # Load phonetics vocabulary from YAML
+        phonetics = self.vocabulary_service.get_articles_phonetics()
         
-        # LINGUISTIC ANCHOR 2: Words starting with consonant letters but vowel sounds
-        vowel_sound_words = {
-            # Silent H words
-            'hour', 'hours', 'honest', 'honestly', 'honor', 'honored', 'honorable',
-            'heir', 'heiress', 'herb', 'herbs', 'homage', 'humble',
-            
-            # Acronyms/abbreviations pronounced as letters starting with vowels
-            'fbi', 'html', 'http', 'led', 'lcd', 'sql', 'xml', 'api', 'url'
-        }
+        # Check consonant sound words (vowel letters but consonant sounds)
+        consonant_sound_words = set()
+        consonant_data = phonetics.get('consonant_sound_words', {})
+        for category in consonant_data.values():
+            if isinstance(category, list):
+                consonant_sound_words.update(category)
+        
+        # Check vowel sound words (consonant letters but vowel sounds)
+        vowel_sound_words = set()
+        vowel_data = phonetics.get('vowel_sound_words', {})
+        for category in vowel_data.values():
+            if isinstance(category, list):
+                vowel_sound_words.update(category)
         
         # Check exact word matches first (most accurate)
         if word_lower in consonant_sound_words:

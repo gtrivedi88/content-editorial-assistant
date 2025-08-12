@@ -78,33 +78,101 @@ class NumeralsVsWordsRule(BaseNumbersRule):
 
     def _calculate_numerals_words_evidence(self, token, style: str, dominant: str, sentence, text: str, context: Dict[str, Any]) -> float:
         """
-        Calculate evidence (0.0-1.0) that the token's style is inconsistent.
+        PRODUCTION-GRADE: Calculate evidence (0.0-1.0) that the token's style is inconsistent.
         
-        Following the 5-step evidence calculation pattern:
-        1. Base Evidence Assessment
-        2. Linguistic Clues (Micro-Level)
-        3. Structural Clues (Meso-Level)
-        4. Semantic Clues (Macro-Level)
-        5. Feedback Patterns (Learning Clues)
+        Implements rule-specific evidence calculation with:
+        - Surgical zero false positive guards for numerals/words contexts
+        - Dynamic base evidence based on style consistency and domain requirements
+        - Context-aware adjustments for different numerical communication standards
+        
+        Following the enhanced evidence calculation pattern:
+        1. Surgical Zero False Positive Guards
+        2. Base Evidence Assessment
+        3. Linguistic Clues (Micro-Level)
+        4. Structural Clues (Meso-Level)
+        5. Semantic Clues (Macro-Level)
+        6. Feedback Patterns (Learning Clues)
         """
-        evidence_score = 0.0
         
-        # === STEP 1: BASE EVIDENCE ASSESSMENT ===
+        # === STEP 1: SURGICAL ZERO FALSE POSITIVE GUARDS ===
+        # Apply base class surgical guards for numbers
+        if self._apply_surgical_zero_false_positive_guards_numbers(token.text, context):
+            return 0.0  # No violation - protected context
+            
+        # Apply numerals/words-specific surgical guards
+        if self._apply_numerals_words_specific_guards(token, style, sentence, context):
+            return 0.0  # No violation - numerals/words-specific protected context
+        
+        # === STEP 2: BASE EVIDENCE ASSESSMENT ===
         evidence_score = 0.6  # Base evidence when both styles are present in document
         
-        # === STEP 2: LINGUISTIC CLUES (MICRO-LEVEL) ===
+        # === STEP 3: LINGUISTIC CLUES (MICRO-LEVEL) ===
         evidence_score = self._apply_linguistic_clues_numerals_words(evidence_score, token, style, dominant, sentence)
         
-        # === STEP 3: STRUCTURAL CLUES (MESO-LEVEL) ===
+        # === STEP 4: STRUCTURAL CLUES (MESO-LEVEL) ===
         evidence_score = self._apply_structural_clues_numerals_words(evidence_score, context)
         
-        # === STEP 4: SEMANTIC CLUES (MACRO-LEVEL) ===
+        # === STEP 5: SEMANTIC CLUES (MACRO-LEVEL) ===
         evidence_score = self._apply_semantic_clues_numerals_words(evidence_score, style, dominant, text, context)
         
-        # === STEP 5: FEEDBACK PATTERNS (LEARNING CLUES) ===
+        # === STEP 6: FEEDBACK PATTERNS (LEARNING CLUES) ===
         evidence_score = self._apply_feedback_clues_numerals_words(evidence_score, token.text, context)
         
         return max(0.0, min(1.0, evidence_score))
+    
+    # === SURGICAL ZERO FALSE POSITIVE GUARD METHODS ===
+    
+    def _apply_numerals_words_specific_guards(self, token, style: str, sentence, context: Dict[str, Any]) -> bool:
+        """
+        PRODUCTION-GRADE: Apply surgical guards specific to numerals vs words contexts.
+        Returns True if this should be excluded (no violation), False if it should be processed.
+        """
+        sent_text = sentence.text
+        sent_lower = sent_text.lower()
+        token_text = token.text
+        
+        # === GUARD 1: EXCEPTIONAL REFERENCE CONTEXTS ===
+        # Don't flag numbers in contexts where specific style is conventional
+        exceptional_contexts = ['version', 'chapter', 'section', 'figure', 'table', 'page', 'step', 'part']
+        head_lemma = getattr(token.head, 'lemma_', '').lower()
+        if head_lemma in exceptional_contexts:
+            return True  # Reference contexts often have specific conventions
+        
+        # === GUARD 2: TECHNICAL IDENTIFIERS AND SPECIFICATIONS ===
+        # Don't flag numbers that are part of technical specifications
+        tech_contexts = ['api', 'http', 'port', 'build', 'revision', 'iteration', 'phase', 'level']
+        if head_lemma in tech_contexts:
+            return True  # Technical contexts often require specific formats
+        
+        # === GUARD 3: ORDINAL NUMBERS IN FORMAL CONTEXTS ===
+        # Don't flag ordinal numbers which have different conventions
+        if hasattr(token, 'morph') and token.morph:
+            if 'NumType=Ord' in str(token.morph):
+                return True  # Ordinals have different style rules
+        
+        # === GUARD 4: MATHEMATICAL AND MEASUREMENT CONTEXTS ===
+        # Don't flag numbers in mathematical or measurement contexts
+        math_indicators = ['+', '-', '*', '/', '=', '<', '>', '%', '±']
+        measurement_indicators = ['meter', 'gram', 'liter', 'byte', 'inch', 'foot', 'pound', 'second', 'minute', 'hour']
+        
+        if any(indicator in sent_text for indicator in math_indicators):
+            return True  # Mathematical contexts require numerals
+        
+        if any(indicator in sent_lower for indicator in measurement_indicators):
+            return True  # Measurement contexts typically use numerals
+        
+        # === GUARD 5: AGE, TIME, AND PERCENTAGE CONTEXTS ===
+        # Don't flag numbers in specific quantity contexts
+        specific_quantity_indicators = ['year old', 'years old', 'age', 'aged', '%', 'percent', 'ratio']
+        if any(indicator in sent_lower for indicator in specific_quantity_indicators):
+            return True  # Specific quantities have conventional formats
+        
+        # === GUARD 6: TITLE CASE AND PROPER NOUNS ===
+        # Don't flag numbers at the start of sentences or in titles
+        if getattr(token, 'i', 0) == sentence.start and style == 'words':
+            return True  # Sentence-initial words often acceptable
+        
+        return False  # No numerals/words-specific guards triggered
 
     # === LINGUISTIC CLUES (MICRO-LEVEL) ===
     

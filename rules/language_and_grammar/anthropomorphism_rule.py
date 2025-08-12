@@ -1,9 +1,11 @@
 """
-Anthropomorphism Rule
+Anthropomorphism Rule (YAML-based)
 Based on IBM Style Guide topic: "Anthropomorphism"
+Uses YAML-based entities vocabulary for maintainable anthropomorphism detection.
 """
 from typing import List, Dict, Any
 from .base_language_rule import BaseLanguageRule
+from .services.language_vocabulary_service import get_anthropomorphism_vocabulary
 
 try:
     from spacy.tokens import Doc
@@ -13,9 +15,14 @@ except ImportError:
 class AnthropomorphismRule(BaseLanguageRule):
     """
     Checks for instances where inanimate objects or abstract concepts are
-    given human characteristics, using dependency parsing to identify the
-    grammatical subject of human-like verbs.
+    given human characteristics using YAML-based entity vocabulary.
+    Uses dependency parsing to identify the grammatical subject of human-like verbs.
     """
+    
+    def __init__(self):
+        super().__init__()
+        self.vocabulary_service = get_anthropomorphism_vocabulary()
+    
     def _get_rule_type(self) -> str:
         """Returns the unique identifier for this rule."""
         return 'anthropomorphism'
@@ -89,39 +96,27 @@ class AnthropomorphismRule(BaseLanguageRule):
         return None
 
     def _could_be_anthropomorphic_verb(self, token):
-        """Check if token could be a verb that anthropomorphizes inanimate subjects."""
+        """Check if token could be a verb that anthropomorphizes inanimate subjects using YAML vocabulary."""
         
-        # Core human cognitive/emotional verbs (most problematic)
-        core_human_verbs = {
-            'think', 'believe', 'feel', 'want', 'wish', 'hope', 'fear', 'love', 'hate',
-            'worry', 'care', 'remember', 'forget', 'dream', 'imagine', 'doubt', 'know', 'learn'
-        }
+        # Load verb categories from YAML vocabulary
+        entities_vocab = self.vocabulary_service.get_anthropomorphism_entities()
+        anthropomorphic_verbs = entities_vocab.get('anthropomorphic_verbs', {})
         
-        # Human communication verbs (context-dependent)
-        communication_verbs = {
-            'say', 'tell', 'speak', 'talk', 'ask', 'answer', 'reply', 'explain',
-            'describe', 'mention', 'suggest', 'recommend', 'advise'
-        }
+        # Extract verb sets from YAML
+        core_human_verbs = set(anthropomorphic_verbs.get('core_human_verbs', []))
+        communication_verbs = set(anthropomorphic_verbs.get('communication_verbs', []))
+        decision_verbs = set(anthropomorphic_verbs.get('decision_verbs', []))
+        perception_verbs = set(anthropomorphic_verbs.get('perception_verbs', []))
+        action_verbs = set(anthropomorphic_verbs.get('action_verbs', []))
         
-        # Human decision/judgment verbs (often acceptable in technical contexts)
-        decision_verbs = {
-            'decide', 'choose', 'select', 'prefer', 'judge', 'evaluate',
-            'determine', 'conclude', 'assume', 'expect'
-        }
-        
-        # Human perception verbs (context-dependent)
-        perception_verbs = {
-            'see', 'look', 'watch', 'observe', 'notice', 'detect',
-            'hear', 'listen', 'smell', 'taste', 'touch'
-        }
-        
-        # Human action verbs (often acceptable)
-        action_verbs = {
-            'allow', 'permit', 'let', 'enable', 'disable', 'prevent',
-            'help', 'assist', 'support', 'protect', 'serve'
-        }
+        # Load technical verbs that are acceptable
+        technical_verbs = set(entities_vocab.get('technical_verbs', {}).get('acceptable_system_verbs', []))
         
         verb_lemma = token.lemma_.lower()
+        
+        # Don't flag technical verbs that are acceptable for systems
+        if verb_lemma in technical_verbs:
+            return False
         
         # Return True if it's any kind of potentially anthropomorphic verb
         return (verb_lemma in core_human_verbs or 
@@ -131,39 +126,15 @@ class AnthropomorphismRule(BaseLanguageRule):
                 verb_lemma in action_verbs)
 
     def _could_be_inappropriately_anthropomorphized(self, subject):
-        """Check if subject could be inappropriately anthropomorphized."""
+        """Check if subject could be inappropriately anthropomorphized using YAML vocabulary."""
         
-        # Technical system entities (context-dependent)
-        technical_entities = {
-            'system', 'application', 'program', 'software', 'app',
-            'server', 'client', 'database', 'api', 'service',
-            'module', 'component', 'library', 'framework',
-            'algorithm', 'function', 'method', 'process'
-        }
-        
-        # Hardware entities
-        hardware_entities = {
-            'computer', 'machine', 'device', 'processor', 'cpu',
-            'memory', 'disk', 'drive', 'network', 'router'
-        }
-        
-        # Interface entities
-        interface_entities = {
-            'interface', 'window', 'dialog', 'menu', 'button',
-            'form', 'field', 'screen', 'display', 'panel'
-        }
-        
-        # Document/content entities
-        content_entities = {
-            'document', 'file', 'page', 'section', 'chapter',
-            'paragraph', 'text', 'content', 'data', 'information'
-        }
-        
-        # Business/abstract entities
-        business_entities = {
-            'company', 'organization', 'team', 'department',
-            'project', 'product', 'feature', 'tool', 'solution'
-        }
+        # Load entities from YAML vocabulary
+        entities_vocab = self.vocabulary_service.get_anthropomorphism_entities()
+        technical_entities = set(entities_vocab.get('technical_entities', {}).get('systems', []))
+        hardware_entities = set(entities_vocab.get('technical_entities', {}).get('infrastructure', []))
+        interface_entities = set(entities_vocab.get('technical_entities', {}).get('interfaces', []))
+        content_entities = set(entities_vocab.get('inanimate_entities', {}).get('objects', []))
+        business_entities = set(entities_vocab.get('inanimate_entities', {}).get('concepts', []))
         
         subject_lemma = subject.lemma_.lower()
         

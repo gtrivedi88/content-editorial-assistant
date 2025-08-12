@@ -1,0 +1,113 @@
+# Articles Phonetics Configuration
+# Manages vowel/consonant sound classifications for article selection
+# Used by ArticlesRule for "a" vs "an" determination
+
+# Words that start with vowel letters but have consonant sounds
+consonant_sound_words:
+  # U sounds (pronounced /j/ - "yoo" sound)
+  u_sounds:
+    - user
+    - users
+    - usage
+    - used
+    - useful
+    - useless
+    - usually
+    - unit
+    - units
+    - united
+    - university
+    - unique
+    - uniform
+    - unicode
+    - unix
+    - ubuntu
+    - url
+    - utility
+    - utilize
+    
+  # O sounds (pronounced /w/ - "one" sound)
+  o_sounds:
+    - one
+    - once
+    - ones
+    
+  # EU sounds (pronounced /j/ - "yoo" sound)
+  eu_sounds:
+    - european
+    - euro
+    - eucalyptus
+    - euphemism
+    - eureka
+
+# Words that start with consonant letters but have vowel sounds
+vowel_sound_words:
+  # Silent H words
+  silent_h:
+    - hour
+    - hours
+    - honest
+    - honestly
+    - honor
+    - honored
+    - honorable
+    - heir
+    - heiress
+    - herb
+    - herbs
+    - homage
+    - humble
+    
+  # Acronyms/abbreviations pronounced as letters starting with vowels
+  acronyms:
+    - fbi      # eff-bee-eye
+    - html     # aitch-tee-em-el
+    - http     # aitch-tee-tee-pee
+    - led      # el-ee-dee
+    - lcd      # el-see-dee
+    - sql      # ess-cue-el
+    - xml      # ex-em-el
+    - api      # ay-pee-eye
+    - url      # you-are-el
+
+# Phonetic rules for prefixes
+prefix_rules:
+  # Most "uni-" words are pronounced /j/ (university, uniform, etc.)
+  uni_consonant_sound:
+    pattern: "uni"
+    min_length: 4
+    sound_type: "consonant"
+    examples:
+      - university
+      - uniform
+      - unique
+      - unicode
+    
+  # Words starting with vowel letters (default behavior)
+  vowel_letter_default:
+    pattern: "[aeiou]"
+    sound_type: "vowel"
+    exceptions: "handled_by_specific_lists"
+
+# Usage examples for validation
+examples:
+  correct_a:
+    - "a user interface"
+    - "a unique solution"
+    - "a one-time event"
+    - "a European standard"
+    
+  correct_an:
+    - "an hour ago"
+    - "an honest mistake"
+    - "an API endpoint"
+    - "an HTML document"
+    - "an SQL query"
+    
+  incorrect_usage:
+    - text: "an user interface"
+      correction: "a user interface"
+      reason: "user starts with consonant /j/ sound"
+    - text: "a hour ago"
+      correction: "an hour ago"
+      reason: "hour has silent h, starts with vowel sound"

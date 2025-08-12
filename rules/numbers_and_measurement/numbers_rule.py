@@ -83,18 +83,28 @@ class NumbersRule(BaseNumbersRule):
 
     def _calculate_thousands_separator_evidence(self, number_str: str, sentence, text: str, context: Dict[str, Any]) -> float:
         """
-        Calculate evidence (0.0-1.0) that a large integer should use separators.
+        PRODUCTION-GRADE: Calculate evidence (0.0-1.0) that a large integer should use separators.
         
-        Following the 5-step evidence calculation pattern:
-        1. Base Evidence Assessment
-        2. Linguistic Clues (Micro-Level)
-        3. Structural Clues (Meso-Level)
-        4. Semantic Clues (Macro-Level)
-        5. Feedback Patterns (Learning Clues)
+        Implements rule-specific evidence calculation with:
+        - Surgical zero false positive guards for number contexts
+        - Dynamic base evidence scoring based on number length and readability requirements
+        - Context-aware adjustments for different numeric domains
+        
+        Following the enhanced evidence calculation pattern:
+        1. Surgical Zero False Positive Guards
+        2. Base Evidence Assessment
+        3. Linguistic Clues (Micro-Level)
+        4. Structural Clues (Meso-Level)
+        5. Semantic Clues (Macro-Level)
+        6. Feedback Patterns (Learning Clues)
         """
-        evidence_score = 0.0
         
-        # === STEP 1: BASE EVIDENCE ASSESSMENT ===
+        # === STEP 1: SURGICAL ZERO FALSE POSITIVE GUARDS ===
+        # Apply base class surgical guards for numbers
+        if self._apply_surgical_zero_false_positive_guards_numbers(number_str, context):
+            return 0.0  # No violation - protected context
+        
+        # === STEP 2: BASE EVIDENCE ASSESSMENT ===
         try:
             digits = len(number_str)
         except Exception:
@@ -123,18 +133,28 @@ class NumbersRule(BaseNumbersRule):
 
     def _calculate_leading_decimal_evidence(self, flagged: str, sentence, text: str, context: Dict[str, Any]) -> float:
         """
-        Calculate evidence (0.0-1.0) that a <1 decimal needs a leading zero.
+        PRODUCTION-GRADE: Calculate evidence (0.0-1.0) that a <1 decimal needs a leading zero.
         
-        Following the 5-step evidence calculation pattern:
-        1. Base Evidence Assessment
-        2. Linguistic Clues (Micro-Level)
-        3. Structural Clues (Meso-Level)
-        4. Semantic Clues (Macro-Level)
-        5. Feedback Patterns (Learning Clues)
+        Implements rule-specific evidence calculation with:
+        - Surgical zero false positive guards for decimal contexts
+        - Dynamic base evidence scoring based on decimal precision and clarity requirements
+        - Context-aware adjustments for different measurement and scientific domains
+        
+        Following the enhanced evidence calculation pattern:
+        1. Surgical Zero False Positive Guards
+        2. Base Evidence Assessment
+        3. Linguistic Clues (Micro-Level)
+        4. Structural Clues (Meso-Level)
+        5. Semantic Clues (Macro-Level)
+        6. Feedback Patterns (Learning Clues)
         """
-        evidence_score = 0.0
         
-        # === STEP 1: BASE EVIDENCE ASSESSMENT ===
+        # === STEP 1: SURGICAL ZERO FALSE POSITIVE GUARDS ===
+        # Apply base class surgical guards for numbers
+        if self._apply_surgical_zero_false_positive_guards_numbers(flagged, context):
+            return 0.0  # No violation - protected context
+        
+        # === STEP 2: BASE EVIDENCE ASSESSMENT ===
         evidence_score = 0.6  # Base evidence for missing leading zero
         
         # === STEP 2: LINGUISTIC CLUES (MICRO-LEVEL) ===

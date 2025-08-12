@@ -1,9 +1,11 @@
 """
-Inclusive Language Rule
+Inclusive Language Rule (YAML-based)
 Based on IBM Style Guide topic: "Inclusive language"
+Uses YAML-based terms vocabulary for maintainable inclusive language checks.
 """
 from typing import List, Dict, Any
 from .base_language_rule import BaseLanguageRule
+from .services.language_vocabulary_service import get_inclusive_language_vocabulary
 import re
 
 try:
@@ -13,9 +15,14 @@ except ImportError:
 
 class InclusiveLanguageRule(BaseLanguageRule):
     """
-    Checks for non-inclusive terms and suggests modern, neutral alternatives
-    as specified by the IBM Style Guide.
+    Checks for non-inclusive terms using YAML-based vocabulary.
+    Suggests modern, neutral alternatives as specified by the IBM Style Guide.
     """
+    
+    def __init__(self):
+        super().__init__()
+        self.vocabulary_service = get_inclusive_language_vocabulary()
+    
     def _get_rule_type(self) -> str:
         return 'inclusive_language'
 
@@ -85,68 +92,28 @@ class InclusiveLanguageRule(BaseLanguageRule):
     # === EVIDENCE-BASED CALCULATION METHODS ===
 
     def _get_non_inclusive_terms_categorized(self) -> List[Dict[str, Any]]:
-        """Get categorized non-inclusive terms for better evidence scoring."""
-        return [
-            # Technical terms (often have legacy system justifications)
-            {
-                'term': 'whitelist',
-                'replacement': 'allowlist',
-                'category': 'technical',
-                'severity_level': 'medium',
-                'description': 'access control terminology'
-            },
-            {
-                'term': 'blacklist',
-                'replacement': 'blocklist',
-                'category': 'technical',
-                'severity_level': 'medium',
-                'description': 'access control terminology'
-            },
-            {
-                'term': 'master',
-                'replacement': 'primary, main, or controller',
-                'category': 'technical',
-                'severity_level': 'high',
-                'description': 'hierarchical system terminology'
-            },
-            {
-                'term': 'slave',
-                'replacement': 'secondary, replica, or agent',
-                'category': 'technical',
-                'severity_level': 'high',
-                'description': 'hierarchical system terminology'
-            },
-            # Gendered language (often easier to change)
-            {
-                'term': 'man-hours',
-                'replacement': 'person-hours or work-hours',
-                'category': 'gendered',
-                'severity_level': 'medium',
-                'description': 'gendered work measurement'
-            },
-            {
-                'term': 'man hours',
-                'replacement': 'person-hours or work-hours',
-                'category': 'gendered',
-                'severity_level': 'medium',
-                'description': 'gendered work measurement'
-            },
-            {
-                'term': 'manned',
-                'replacement': 'staffed, operated, or crewed',
-                'category': 'gendered',
-                'severity_level': 'medium',
-                'description': 'gendered operation terminology'
-            },
-            # Ableist language (often unconscious usage)
-            {
-                'term': 'sanity check',
-                'replacement': 'coherence check, confirmation, or validation',
-                'category': 'ableist',
-                'severity_level': 'medium',
-                'description': 'mental health terminology'
-            }
-        ]
+        """Get categorized non-inclusive terms from YAML vocabulary."""
+        # Load terms from YAML vocabulary
+        inclusive_vocab = self.vocabulary_service.get_inclusive_language_terms()
+        non_inclusive_terms_dict = inclusive_vocab.get('non_inclusive_terms', {})
+        
+        terms_list = []
+        
+        # Convert YAML structure to list format for compatibility
+        for category_name, category_terms in non_inclusive_terms_dict.items():
+            if isinstance(category_terms, dict):
+                for term, term_data in category_terms.items():
+                    if isinstance(term_data, dict):
+                        terms_list.append({
+                            'term': term,
+                            'replacement': term_data.get('replacement', ''),
+                            'category': term_data.get('category', category_name.replace('_', ' ')),
+                            'severity_level': term_data.get('severity_level', 'medium'),
+                            'description': term_data.get('description', ''),
+                            'alternatives': term_data.get('alternatives', [])
+                        })
+        
+        return terms_list
 
     def _calculate_inclusive_language_evidence(self, potential_issue: Dict[str, Any], doc, text: str, context: Dict[str, Any]) -> float:
         """

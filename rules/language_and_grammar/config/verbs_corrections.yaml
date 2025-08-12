@@ -1,0 +1,171 @@
+# Verbs Corrections Configuration
+# Manages noun forms incorrectly used as verbs and their proper verb forms
+# Used by VerbsRule for detecting and correcting improper verb usage
+
+# Noun forms incorrectly used as verbs
+noun_forms_as_verbs:
+  # Authentication and access
+  login:
+    correct_form: "log in"
+    type: "phrasal_verb"
+    explanation: "login is a noun; log in is the verb"
+    examples:
+      incorrect: "Login to the system"
+      correct: "Log in to the system"
+    usage_note: "Use 'login' as a noun (the login page) and 'log in' as a verb"
+  
+  logon:
+    correct_form: "log on"
+    type: "phrasal_verb"
+    explanation: "logon is a noun; log on is the verb"
+    examples:
+      incorrect: "Logon with your credentials"
+      correct: "Log on with your credentials"
+    usage_note: "Prefer 'log in' over 'log on' in modern usage"
+  
+  signup:
+    correct_form: "sign up"
+    type: "phrasal_verb"
+    explanation: "signup is a noun; sign up is the verb"
+    examples:
+      incorrect: "Signup for our newsletter"
+      correct: "Sign up for our newsletter"
+    usage_note: "Use 'signup' as a noun (the signup process) and 'sign up' as a verb"
+  
+  # System operations
+  setup:
+    correct_form: "set up"
+    type: "phrasal_verb"
+    explanation: "setup is a noun; set up is the verb"
+    examples:
+      incorrect: "Setup the database"
+      correct: "Set up the database"
+    usage_note: "Use 'setup' as a noun (the setup process) and 'set up' as a verb"
+  
+  backup:
+    correct_form: "back up"
+    type: "phrasal_verb"
+    explanation: "backup is a noun; back up is the verb"
+    examples:
+      incorrect: "Backup your files regularly"
+      correct: "Back up your files regularly"
+    usage_note: "Use 'backup' as a noun (a backup copy) and 'back up' as a verb"
+  
+  checkout:
+    correct_form: "check out"
+    type: "phrasal_verb"
+    explanation: "checkout is a noun; check out is the verb"
+    examples:
+      incorrect: "Checkout the latest version"
+      correct: "Check out the latest version"
+    usage_note: "Use 'checkout' as a noun (the checkout process) and 'check out' as a verb"
+  
+  startup:
+    correct_form: "start up"
+    type: "phrasal_verb"
+    explanation: "startup is a noun; start up is the verb"
+    examples:
+      incorrect: "Startup the application"
+      correct: "Start up the application"
+    usage_note: "Use 'startup' as a noun (a startup company) and 'start up' as a verb"
+  
+  shutdown:
+    correct_form: "shut down"
+    type: "phrasal_verb"
+    explanation: "shutdown is a noun; shut down is the verb"
+    examples:
+      incorrect: "Shutdown the server"
+      correct: "Shut down the server"
+    usage_note: "Use 'shutdown' as a noun (a system shutdown) and 'shut down' as a verb"
+  
+  # Deployment and operations
+  rollout:
+    correct_form: "roll out"
+    type: "phrasal_verb"
+    explanation: "rollout is a noun; roll out is the verb"
+    examples:
+      incorrect: "Rollout the new feature"
+      correct: "Roll out the new feature"
+    usage_note: "Use 'rollout' as a noun (the rollout plan) and 'roll out' as a verb"
+  
+  workflow:
+    correct_form: "work flow"
+    type: "compound_confusion"
+    explanation: "workflow is a noun; work flow describes the action"
+    examples:
+      incorrect: "Workflow through the process"
+      correct: "Work through the process"
+    usage_note: "Use 'workflow' as a noun (the workflow design) and avoid as a verb"
+
+# Passive voice patterns (managed by PassiveVoiceAnalyzer)
+passive_voice_guidance:
+  inappropriate_contexts:
+    - "instructional_content"
+    - "user_guides"
+    - "api_documentation"
+    - "troubleshooting"
+  
+  acceptable_contexts:
+    - "system_descriptions"
+    - "feature_overviews"
+    - "architectural_documentation"
+  
+  common_patterns:
+    - "is configured"
+    - "are processed" 
+    - "was implemented"
+    - "will be deployed"
+
+# Past tense guidance
+past_tense_guidance:
+  inappropriate_in_instructions:
+    - "clicked"
+    - "selected"
+    - "entered"
+    - "typed"
+    - "configured"
+    - "installed"
+    - "ran"
+    - "executed"
+    - "performed"
+    - "created"
+    - "deleted"
+    - "modified"
+  
+  better_as_present:
+    - "displayed"
+    - "showed"
+    - "provided"
+    - "contained"
+    - "included"
+    - "supported"
+    - "enabled"
+    - "allowed"
+    - "required"
+    - "returned"
+  
+  acceptable_temporal:
+    - "was"
+    - "were"
+    - "had"
+    - "became"
+    - "remained"
+    - "continued"
+    - "appeared"
+    - "seemed"
+    - "occurred"
+    - "happened"
+
+# Evidence scoring for different violation types
+evidence_levels:
+  noun_as_verb: 0.8      # High evidence - clear style violation
+  passive_voice: 0.6     # Medium evidence - context dependent
+  past_tense: 0.5        # Medium evidence - often acceptable
+  
+# Context adjustments
+context_modifiers:
+  technical_content: -0.05
+  tutorial_content: +0.1
+  api_documentation: +0.1
+  beginner_audience: +0.1
+  expert_audience: -0.05
