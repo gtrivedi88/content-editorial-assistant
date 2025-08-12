@@ -45,7 +45,8 @@ class ClaimsRule(BaseLegalRule):
         # Linguistic Anchor: subjective/absolute claim terms
         claim_words = {
             "secure", "easy", "effortless", "best practice", "future-proof",
-            "guaranteed", "guarantee", "guarantees", "bulletproof", "always", "never"
+            "guaranteed", "guarantee", "guarantees", "bulletproof", "always", "never",
+            "best", "fastest", "safest", "most secure"
         }
 
         for i, sent in enumerate(doc.sents):
@@ -195,9 +196,11 @@ class ClaimsRule(BaseLegalRule):
         if self._is_technical_specification(term, sentence, context):
             return 0.0  # Technical specs are not subjective claims
             
-        # Apply common legal guards (structural, entities, etc.)
-        if self._apply_surgical_zero_false_positive_guards_legal(token, context):
-            return 0.0
+        # PRODUCTION FIX: Apply common legal guards BEFORE rule-specific guards
+        # This allows rule-specific logic to override if needed
+        # BUT skip entity blocking for claims - claims can be entities
+        if context and context.get('block_type') in ['code_block', 'inline_code', 'literal_block', 'config']:
+            return 0.0  # Only structural blocking for claims rule
         
         # === DYNAMIC BASE EVIDENCE ASSESSMENT ===
         evidence_score = self._get_base_claim_evidence_score(term, sentence, context)
@@ -234,7 +237,7 @@ class ClaimsRule(BaseLegalRule):
             return 0.98  # Very specific, very high legal risk (surgical increase)
         
         # High-risk performance claims
-        performance_claims = ['best', 'fastest', 'most secure', 'completely safe', 'bulletproof']
+        performance_claims = ['best', 'fastest', 'most secure', 'completely safe', 'bulletproof', 'safest']
         if term_lower in performance_claims or any(claim in term_lower for claim in performance_claims):
             return 0.85  # Specific pattern, high legal risk
         
@@ -310,24 +313,27 @@ class ClaimsRule(BaseLegalRule):
         sent_text = sentence.text.lower()
         term_lower = term.lower()
         
-        # Technical specification context indicators
+        # PRODUCTION FIX: Very specific technical specification indicators only
+        # Don't block marketing claims that happen to mention technical terms
         tech_spec_indicators = [
-            'encryption', 'algorithm', 'protocol', 'specification', 'standard',
-            'implementation', 'architecture', 'configuration', 'parameter',
-            'api', 'interface', 'library', 'framework', 'version'
+            'encryption algorithm', 'protocol specification', 'technical standard',
+            'implementation detail', 'system architecture', 'configuration parameter',
+            'api interface', 'library framework', 'version number'
         ]
         
-        # Check if term appears in technical specification context
+        # Check if term appears in genuine technical specification context
+        # Use more specific phrases to avoid blocking marketing content
         if any(indicator in sent_text for indicator in tech_spec_indicators):
             return True
         
-        # Check for technical measurement context
-        measurement_context = [
-            'bit', 'byte', 'mb', 'gb', 'tb', 'ms', 'latency', 'throughput',
-            'bandwidth', 'frequency', 'rate', 'speed', 'performance'
+        # PRODUCTION FIX: Only block genuine technical measurements, not marketing performance claims
+        technical_measurement_context = [
+            'measured in ms', 'bandwidth of', 'frequency at', 'latency under',
+            'throughput rate', 'bit rate', 'byte size', 'memory allocation'
         ]
         
-        if any(measure in sent_text for measure in measurement_context):
+        # Don't block subjective performance claims like "fastest device"
+        if any(measure in sent_text for measure in technical_measurement_context):
             return True
         
         # Check if in code or configuration context
@@ -390,7 +396,7 @@ class ClaimsRule(BaseLegalRule):
         if content_type in {'marketing', 'legal'}:
             ev += 0.0  # Ultra-precision for 100% compliance
         if content_type in {'technical', 'api', 'procedural'}:
-            ev += 0.05  # Reduced from 0.08
+            ev += 0.0  # Technical content - don't reduce claims detection
         
         if domain in {'legal', 'finance', 'medical'}:
             ev += 0.1

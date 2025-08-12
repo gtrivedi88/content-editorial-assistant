@@ -1,0 +1,115 @@
+# Production-Grade Company Database Configuration
+# This file can be updated without code changes and supports multiple data sources
+
+# Company Registry Configuration
+company_sources:
+  # Primary source: Static configuration (for immediate deployment)
+  static:
+    enabled: true
+    companies:
+      # Major Tech Companies
+      - name: "Microsoft"
+        legal_names: ["Microsoft Corporation", "Microsoft Corp"]
+        aliases: ["MSFT"]
+        industry: "technology"
+        priority: "high"
+      - name: "Amazon" 
+        legal_names: ["Amazon.com, Inc.", "Amazon Inc"]
+        aliases: ["AMZN"]
+        industry: "technology"
+        priority: "high"
+      - name: "Google"
+        legal_names: ["Alphabet Inc.", "Google LLC"]
+        aliases: ["GOOGL", "Alphabet"]
+        industry: "technology"
+        priority: "high"
+      - name: "Apple"
+        legal_names: ["Apple Inc."]
+        aliases: ["AAPL"]
+        industry: "technology"
+        priority: "high"
+      - name: "Meta"
+        legal_names: ["Meta Platforms, Inc."]
+        aliases: ["Facebook", "FB"]
+        industry: "technology"
+        priority: "high"
+      - name: "Oracle"
+        legal_names: ["Oracle Corporation"]
+        aliases: []
+        industry: "technology"
+        priority: "high"
+      - name: "Salesforce"
+        legal_names: ["Salesforce, Inc."]
+        aliases: []
+        industry: "technology"
+        priority: "high"
+      - name: "Netflix"
+        legal_names: ["Netflix, Inc."]
+        aliases: ["NFLX"]
+        industry: "media"
+        priority: "medium"
+      - name: "Uber"
+        legal_names: ["Uber Technologies, Inc."]
+        aliases: []
+        industry: "transportation"
+        priority: "medium"
+      - name: "Airbnb"
+        legal_names: ["Airbnb, Inc."]
+        aliases: []
+        industry: "hospitality"
+        priority: "medium"
+      - name: "Tesla"
+        legal_names: ["Tesla, Inc.", "Tesla Motors Inc."]
+        aliases: ["TSLA"]
+        industry: "automotive"
+        priority: "high"
+      - name: "IBM"
+        legal_names: ["International Business Machines Corporation"]
+        aliases: ["Big Blue"]
+        industry: "technology"
+        priority: "high"
+
+  # Future: API integration for dynamic updates
+  api:
+    enabled: false
+    endpoint: "https://api.company-registry.com/v1/companies"
+    api_key_env: "COMPANY_REGISTRY_API_KEY"
+    cache_ttl: 3600  # 1 hour cache
+    
+  # Future: Database integration
+  database:
+    enabled: false
+    connection_string_env: "COMPANY_DB_CONNECTION"
+    table: "companies"
+    
+# Legal Suffix Configuration
+legal_suffixes:
+  - "Corp"
+  - "Corporation" 
+  - "Inc"
+  - "Incorporated"
+  - "LLC"
+  - "Ltd"
+  - "Limited"
+  - "PLC"
+  - "GmbH"
+  - "S.A."
+  - "NV"
+  - "Co."
+  - "Company"
+  - "Enterprises"
+
+# Rule Configuration
+detection_settings:
+  # Minimum confidence threshold for SpaCy entity detection
+  spacy_confidence_threshold: 0.7
+  
+  # Whether to use fuzzy matching for company names
+  fuzzy_matching: true
+  fuzzy_threshold: 0.85
+  
+  # Whether to check aliases in addition to primary names
+  check_aliases: true
+  
+  # Case sensitivity for name matching
+  case_sensitive: false

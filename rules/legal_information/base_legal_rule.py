@@ -171,9 +171,11 @@ class BaseLegalRule(BaseRule):
             return True
             
         # === ENTITY AND PROPER NOUN GUARDS ===
-        # Named entities are not legal violations
-        if hasattr(token, 'ent_type_') and token.ent_type_ in ['PERSON', 'ORG', 'PRODUCT', 'EVENT', 'GPE']:
-            return True
+        # PRODUCTION FIX: Only block entities that are clearly not relevant to legal rules
+        # Legal rules NEED to check entities (companies, products, etc.)
+        # Only block entities that are definitively non-legal (events, locations)
+        if hasattr(token, 'ent_type_') and token.ent_type_ in ['EVENT', 'GPE']:
+            return True  # Only block events and geo-political entities
             
         # === TECHNICAL IDENTIFIER GUARDS ===
         # URLs, file paths, technical identifiers

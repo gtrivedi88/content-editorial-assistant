@@ -123,10 +123,10 @@ class PersonalInformationRule(BaseLegalRule):
         if self._is_cultural_education_context(term, sentence, context):
             return 0.0  # Educational content explaining cultural differences
             
-        # Apply common legal guards BUT SKIP problematic guards for personal info terms
-        # Personal information rule NEEDS to check potentially problematic terms
-        if self._apply_personal_info_specific_legal_guards(context):
-            return 0.0
+        # PRODUCTION FIX: Apply minimal guards for personal info
+        # Personal information terms can be any entity type
+        if context and context.get('block_type') in ['code_block', 'inline_code', 'literal_block', 'config']:
+            return 0.0  # Only structural blocking for personal info rule
         
         # === DYNAMIC BASE EVIDENCE ASSESSMENT ===
         evidence_score = self._get_base_personal_info_evidence_score(term, sentence, context)
@@ -283,17 +283,26 @@ class PersonalInformationRule(BaseLegalRule):
         """
         sent_text = sentence.text.lower()
         
-        # Educational context indicators
+        # Educational context indicators - EXPANDED for historical context
         educational_indicators = [
             'for example', 'such as', 'in some cultures', 'western cultures',
             'traditionally called', 'also known as', 'historically',
-            'cultural difference', 'naming convention', 'varies by culture'
+            'cultural difference', 'naming convention', 'varies by culture',
+            'historical records', 'from', 'era', 'period', 'typical of', 'used'
         ]
         
-        # Check for educational context
+        # PRODUCTION FIX: Also check for historical dates/years
+        import re
+        has_historical_year = bool(re.search(r'\b(18|19|20)\d{2}\b', sent_text))
+        
+        # Check for educational context OR historical reference
         for indicator in educational_indicators:
             if indicator in sent_text:
                 return True
+                
+        # Check for historical years
+        if has_historical_year:
+            return True
         
         # Check for comparison or explanation patterns
         comparison_patterns = [
