@@ -32,7 +32,8 @@ class NumbersRule(BaseNumbersRule):
         
         doc = nlp(text)
         
-        no_comma_pattern = re.compile(r'\b\d{5,}\b')
+        # More aggressive patterns for better detection
+        no_comma_pattern = re.compile(r'\b\d{4,}\b')  # Changed from 5+ to 4+ digits
         leading_decimal_pattern = re.compile(r'(?<!\d)\.\d+')
 
         for i, sent in enumerate(doc.sents):
@@ -41,7 +42,7 @@ class NumbersRule(BaseNumbersRule):
                 flagged = match.group(0)
                 span = (sent.start_char + match.start(), sent.start_char + match.end())
                 ev_sep = self._calculate_thousands_separator_evidence(flagged, sent, text, context or {})
-                if ev_sep > 0.1:
+                if ev_sep > 0.05:  # Lowered threshold for more aggressive detection
                     message = self._get_contextual_thousands_message(flagged, ev_sep, context or {})
                     suggestions = self._generate_smart_thousands_suggestions(flagged, ev_sep, sent, context or {})
                     errors.append(self._create_error(
@@ -62,7 +63,7 @@ class NumbersRule(BaseNumbersRule):
                 flagged = match.group(0)
                 span = (sent.start_char + match.start(), sent.start_char + match.end())
                 ev_dec = self._calculate_leading_decimal_evidence(flagged, sent, text, context or {})
-                if ev_dec > 0.1:
+                if ev_dec > 0.05:  # Lowered threshold for more aggressive detection
                     message = self._get_contextual_leading_decimal_message(flagged, ev_dec, context or {})
                     suggestions = self._generate_smart_leading_decimal_suggestions(flagged, ev_dec, sent, context or {})
                     errors.append(self._create_error(
@@ -101,7 +102,11 @@ class NumbersRule(BaseNumbersRule):
         
         # === STEP 1: SURGICAL ZERO FALSE POSITIVE GUARDS ===
         # Apply base class surgical guards for numbers
-        if self._apply_surgical_zero_false_positive_guards_numbers(number_str, context):
+        # Add sentence text to context for better version detection
+        enhanced_context = context.copy()
+        enhanced_context['sentence_text'] = sentence.text if hasattr(sentence, 'text') else str(sentence)
+        
+        if self._apply_surgical_zero_false_positive_guards_numbers(number_str, enhanced_context):
             return 0.0  # No violation - protected context
         
         # === STEP 2: BASE EVIDENCE ASSESSMENT ===
@@ -110,8 +115,8 @@ class NumbersRule(BaseNumbersRule):
         except Exception:
             digits = 5
         
-        if digits < 5:
-            return 0.0  # Numbers under 5 digits don't need separators
+        if digits < 4:
+            return 0.0  # Numbers under 4 digits don't need separators
         
         # Base scales with length beyond 4
         over = max(0, digits - 4)

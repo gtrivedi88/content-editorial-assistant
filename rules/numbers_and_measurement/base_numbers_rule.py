@@ -165,6 +165,10 @@ class BaseNumbersRule(BaseRule):
         # Check if surrounded by letters (likely identifier)
         if re.search(r'[a-zA-Z]\d+[a-zA-Z]', text):
             return True
+        
+        # Year detection (1900-2099)
+        if re.match(r'^(19|20)\d{2}$', text):
+            return True
             
         return False
     

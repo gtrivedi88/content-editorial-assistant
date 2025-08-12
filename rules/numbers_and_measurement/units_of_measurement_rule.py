@@ -84,22 +84,25 @@ class UnitsOfMeasurementRule(BaseNumbersRule):
         """
         issues = []
         
-        # Comprehensive unit patterns organized by category
+        # EXPANDED unit patterns organized by category - covers ALL common units
         unit_patterns = {
-            'length': ['mm', 'cm', 'm', 'km', 'in', 'ft', 'yd', 'mi'],
-            'weight': ['mg', 'g', 'kg', 'oz', 'lb', 'ton'],
-            'volume': ['ml', 'l', 'gal', 'qt', 'pt', 'fl oz'],
-            'time': ['ms', 's', 'min', 'hr', 'h'],
-            'frequency': ['Hz', 'kHz', 'MHz', 'GHz'],
-            'data': ['B', 'KB', 'MB', 'GB', 'TB', 'PB'],
-            'power': ['W', 'kW', 'MW', 'mW'],
-            'voltage': ['V', 'kV', 'mV'],
-            'current': ['A', 'mA', 'kA'],
-            'temperature': ['C', 'F', 'K'],
-            'pressure': ['Pa', 'kPa', 'MPa', 'psi', 'bar'],
-            'speed': ['mph', 'kph', 'fps', 'mps'],
-            'angle': ['deg', 'rad'],
-            'percentage': ['%']
+            'length': ['mm', 'cm', 'm', 'km', 'in', 'ft', 'yd', 'mi', 'nm', 'μm', 'pm'],
+            'weight': ['mg', 'g', 'kg', 'oz', 'lb', 'ton', 'ng', 'μg'],
+            'volume': ['ml', 'l', 'gal', 'qt', 'pt', 'fl oz', 'μl', 'nl'],
+            'time': ['ms', 's', 'min', 'hr', 'h', 'ns', 'μs', 'ps'],
+            'frequency': ['Hz', 'kHz', 'MHz', 'GHz', 'THz', 'PHz'],
+            'data': ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB', 'bit', 'kbit', 'Mbit', 'Gbit'],
+            'network': ['bps', 'kbps', 'Mbps', 'Gbps', 'Tbps'],  # MISSING KEY PATTERNS!
+            'power': ['W', 'kW', 'MW', 'mW', 'μW', 'nW'],
+            'voltage': ['V', 'kV', 'mV', 'μV'],
+            'current': ['A', 'mA', 'kA', 'μA', 'nA'],
+            'temperature': ['C', 'F', 'K', '°C', '°F'],
+            'pressure': ['Pa', 'kPa', 'MPa', 'psi', 'bar', 'atm', 'mmHg'],
+            'speed': ['mph', 'kph', 'fps', 'mps', 'kmh', 'ms'],
+            'angle': ['deg', 'rad', '°'],
+            'percentage': ['%'],
+            'rpm': ['rpm', 'rps'],
+            'memory_extended': ['kiB', 'MiB', 'GiB', 'TiB']  # Binary units
         }
         
         # Build comprehensive pattern
@@ -107,9 +110,9 @@ class UnitsOfMeasurementRule(BaseNumbersRule):
         for category, units in unit_patterns.items():
             all_units.extend(units)
         
-        # Create pattern for numbers without spaces before units
+        # Create pattern for numbers without spaces before units (case-insensitive)
         units_regex = '|'.join(re.escape(unit) for unit in all_units)
-        no_space_pattern = re.compile(r'\b(\d+(?:\.\d+)?)(' + units_regex + r')\b')
+        no_space_pattern = re.compile(r'\b(\d+(?:\.\d+)?)(' + units_regex + r')\b', re.IGNORECASE)
         
         for i, sent in enumerate(doc.sents):
             sent_text = sent.text

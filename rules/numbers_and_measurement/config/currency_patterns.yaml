@@ -1,0 +1,187 @@
+# Currency Formatting Configuration
+# Manages currency symbols, ISO codes, and multiplier patterns
+# Updates can be made without code changes for zero false positives
+
+# Currency Symbol Patterns
+currency_symbols:
+  major_currencies:
+    - symbol: "$"
+      iso_code: "USD"
+      evidence_base: 0.6
+      international_evidence: 0.8
+      domestic_penalty: -0.6
+      regions: ["US", "Canada", "Australia"]
+    - symbol: "€"
+      iso_code: "EUR"
+      evidence_base: 0.6
+      international_evidence: 0.8
+      domestic_penalty: -0.5
+      regions: ["Europe"]
+    - symbol: "£"
+      iso_code: "GBP"
+      evidence_base: 0.6
+      international_evidence: 0.8
+      domestic_penalty: -0.5
+      regions: ["UK"]
+    - symbol: "¥"
+      iso_code: "JPY"
+      evidence_base: 0.7
+      international_evidence: 0.9
+      domestic_penalty: -0.4
+      regions: ["Japan"]
+
+# Currency Multiplier Patterns (always problematic)
+currency_multipliers:
+  letter_multipliers:
+    - multiplier: "K"
+      evidence_base: 0.9
+      severity: "medium"
+      alternatives: ["thousand", "thousands"]
+      ambiguity_reason: "Could mean thousand or kilobytes"
+    - multiplier: "M"
+      evidence_base: 0.9
+      severity: "medium"
+      alternatives: ["million", "millions"]
+      ambiguity_reason: "Could mean million or meters"
+    - multiplier: "B"
+      evidence_base: 0.9
+      severity: "medium"
+      alternatives: ["billion", "billions"]
+      ambiguity_reason: "Could mean billion or bytes"
+
+# ISO Currency Codes (preferred formats)
+iso_currency_codes:
+  recommended_codes:
+    - code: "USD"
+      name: "US Dollar"
+      evidence_reduction: -0.3
+    - code: "EUR"
+      name: "Euro"
+      evidence_reduction: -0.3
+    - code: "GBP"
+      name: "British Pound"
+      evidence_reduction: -0.3
+    - code: "JPY"
+      name: "Japanese Yen"
+      evidence_reduction: -0.3
+    - code: "CAD"
+      name: "Canadian Dollar"
+      evidence_reduction: -0.3
+    - code: "AUD"
+      name: "Australian Dollar"
+      evidence_reduction: -0.3
+
+# Context-Based Evidence Adjustments
+context_adjustments:
+  audience_modifiers:
+    international:
+      evidence_increase: 0.2
+      message_priority: "high"
+    global:
+      evidence_increase: 0.2
+      message_priority: "high"
+    worldwide:
+      evidence_increase: 0.2
+      message_priority: "high"
+    domestic:
+      evidence_decrease: -0.6
+      message_priority: "low"
+    local:
+      evidence_decrease: -0.6
+      message_priority: "low"
+    regional:
+      evidence_decrease: -0.6
+      message_priority: "low"
+  
+  content_type_modifiers:
+    financial:
+      evidence_increase: 0.1
+      requires_precision: true
+    business:
+      evidence_increase: 0.1
+      requires_consistency: true
+    marketing:
+      evidence_decrease: -0.1
+      allows_symbols: true
+
+# Detection Patterns (Regex)
+detection_patterns:
+  currency_with_multiplier:
+    pattern: '(\$\s?\d+(?:[,.]\d+)*(?:[KMB])?)'
+    example: "$2.5M"
+    issue_type: "currency_symbol"
+  
+  standalone_multiplier:
+    pattern: '(\d+(?:[,.]\d+)*\s?[KMB])'
+    example: "2.5M"
+    issue_type: "currency_multiplier"
+  
+  euro_pattern:
+    pattern: '(€\s?\d+(?:[,.]\d+)*(?:[KMB])?)'
+    example: "€1.5M"
+    issue_type: "currency_symbol"
+  
+  pound_pattern:
+    pattern: '(£\s?\d+(?:[,.]\d+)*(?:[KMB])?)'
+    example: "£500K"
+    issue_type: "currency_symbol"
+
+# Surgical Guard Patterns (contexts to exclude)
+surgical_guards:
+  code_contexts:
+    - "api returns"
+    - "response:"
+    - "json:"
+    - "format:"
+    - "parameter:"
+  
+  example_contexts:
+    - "for example:"
+    - "e.g."
+    - "such as:"
+    - "example:"
+    - "sample:"
+  
+  quote_patterns:
+    - 'within "..."'
+    - "within '...'"
+    - 'within "..."'
+    - "within '...'"
+
+# Evidence-Aware Messaging
+messages:
+  high_evidence:
+    currency_symbol: "Use the three-letter ISO currency code before the amount for global audiences."
+    currency_multiplier: "Avoid letter abbreviations like '{flagged}' in currency amounts. Spell out the full amount."
+  
+  medium_evidence:
+    currency_symbol: "Consider using ISO currency code instead of symbol in '{flagged}'."
+    currency_multiplier: "Consider spelling out '{flagged}' for clarity in financial contexts."
+  
+  low_evidence:
+    currency_symbol: "ISO currency codes improve clarity for international readers."
+    currency_multiplier: "Currency formatting could be improved: '{flagged}'."
+
+# Suggestions Based on Evidence Level
+suggestions:
+  currency_symbol:
+    high_evidence:
+      - "Replace with '{iso_code} {amount}' (or appropriate ISO code)."
+      - "Use ISO codes ({iso_codes}) consistently across the document."
+      - "International audiences require ISO currency codes to avoid confusion."
+    medium_evidence:
+      - "Consider using '{iso_code} {amount}' format."
+      - "Use ISO codes for consistency across the document."
+    low_evidence:
+      - "ISO currency codes improve clarity."
+  
+  currency_multiplier:
+    high_evidence:
+      - "Spell out the full amount instead of using '{flagged}'."
+      - "Use precise numbers to avoid ambiguity."
+      - "Letter abbreviations are ambiguous in international contexts."
+    medium_evidence:
+      - "Consider spelling out '{flagged}' for clarity."
+      - "Use precise numbers when possible."
+    low_evidence:
+      - "Consider spelling out multipliers for clarity."

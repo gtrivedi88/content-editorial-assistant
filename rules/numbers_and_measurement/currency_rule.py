@@ -1,9 +1,11 @@
 """
 Currency Rule
 Based on IBM Style Guide topic: "Currency"
+Uses YAML configuration for patterns and evidence scoring.
 """
 from typing import List, Dict, Any
 from .base_numbers_rule import BaseNumbersRule
+from .services.numbers_config_service import ConfigServices, NumbersContext
 import re
 
 try:
@@ -15,7 +17,14 @@ class CurrencyRule(BaseNumbersRule):
     """
     Checks for correct currency formatting, including the use of ISO codes
     and the avoidance of letter abbreviations for multipliers like 'M' for million.
+    Uses YAML configuration for patterns and evidence scoring.
     """
+    
+    def __init__(self):
+        """Initialize with configuration service."""
+        super().__init__()
+        self.config_service = ConfigServices.currency()
+    
     def _get_rule_type(self) -> str:
         return 'numbers_currency'
 
@@ -30,50 +39,224 @@ class CurrencyRule(BaseNumbersRule):
             return errors
         doc = nlp(text)
 
-        # Pattern to find currency symbols or multipliers.
-        currency_pattern = re.compile(r'([\$€£]\s?\d[\d,.]*)|(\d[\d,.]*\s?[MK])\b', re.IGNORECASE)
+        # Load currency patterns from YAML configuration
+        currency_config = self.config_service.get_currency_patterns()
+        currency_patterns = []
+        
+        # Build patterns from YAML config
+        detection_patterns = self.config_service.get_config('detection_patterns', {})
+        for pattern_name, pattern_config in detection_patterns.items():
+            if isinstance(pattern_config, dict) and 'pattern' in pattern_config:
+                currency_patterns.append((
+                    pattern_config['pattern'],
+                    pattern_config.get('issue_type', 'currency_symbol')
+                ))
 
+        # === EVIDENCE-BASED PATTERN: Find all potential issues, calculate evidence ===
         for i, sent in enumerate(doc.sents):
-            for match in currency_pattern.finditer(sent.text):
-                flagged_text = match.group(0)
-                span = (sent.start_char + match.start(), sent.start_char + match.end())
-
-                # --- Evidence for symbol usage ---
-                if any(c in flagged_text for c in "$€£"):
-                    ev_symbol = self._calculate_currency_symbol_evidence(flagged_text, sent, text, context or {})
-                    if ev_symbol > 0.1:
+            sent_text = sent.text
+            
+            for pattern_regex, issue_type in currency_patterns:
+                for match in re.finditer(pattern_regex, sent_text, re.IGNORECASE):
+                    flagged_text = match.group(1)
+                    span = (sent.start_char + match.start(), sent.start_char + match.end())
+                    
+                    # Calculate unified evidence score for this currency issue
+                    evidence_score = self._calculate_currency_evidence(flagged_text, sent, text, context or {}, issue_type)
+                    
+                    # Only create error if evidence suggests it's worth evaluating
+                    if evidence_score > 0.1:  # Low threshold - let enhanced validation decide
                         errors.append(self._create_error(
                             sentence=sent.text,
                             sentence_index=i,
-                            message=self._get_contextual_currency_symbol_message(flagged_text, ev_symbol, context or {}),
-                            suggestions=self._generate_smart_currency_symbol_suggestions(flagged_text, ev_symbol, sent, context or {}),
-                            severity='low' if ev_symbol < 0.6 else 'medium',
+                            message=self._generate_evidence_aware_message(flagged_text, evidence_score, issue_type, context or {}),
+                            suggestions=self._generate_currency_suggestions(flagged_text, evidence_score, issue_type),
+                            severity='low' if evidence_score < 0.7 else 'medium',
                             text=text,
                             context=context,
-                            evidence_score=ev_symbol,
-                            span=span,
-                            flagged_text=flagged_text
-                        ))
-
-                # --- Evidence for multiplier usage (M/K) ---
-                if any(c in flagged_text.upper() for c in "MK"):
-                    ev_mult = self._calculate_currency_multiplier_evidence(flagged_text, sent, text, context or {})
-                    if ev_mult > 0.1:
-                        errors.append(self._create_error(
-                            sentence=sent.text,
-                            sentence_index=i,
-                            message=self._get_contextual_multiplier_message(flagged_text, ev_mult, context or {}),
-                            suggestions=self._generate_smart_multiplier_suggestions(flagged_text, ev_mult, sent, context or {}),
-                            severity='medium' if ev_mult > 0.6 else 'low',
-                            text=text,
-                            context=context,
-                            evidence_score=ev_mult,
+                            evidence_score=evidence_score,
                             span=span,
                             flagged_text=flagged_text
                         ))
         return errors
 
-    # === EVIDENCE CALCULATION: SYMBOLS ===
+    # === UNIFIED EVIDENCE CALCULATION ===
+
+    def _calculate_currency_evidence(self, flagged_text: str, sentence, text: str, context: Dict[str, Any], issue_type: str) -> float:
+        """
+        EVIDENCE-BASED: Calculate evidence (0.0-1.0) for currency formatting issues.
+        
+        Following the evidence-based guide pattern:
+        1. Surgical Zero False Positive Guards
+        2. Dynamic Base Evidence Assessment
+        3. Context-aware adjustments
+        """
+        
+        # === STEP 1: SURGICAL ZERO FALSE POSITIVE GUARDS ===
+        if self._apply_surgical_currency_guards(flagged_text, sentence, context):
+            return 0.0  # No violation - protected context
+        
+        # === STEP 2: DYNAMIC BASE EVIDENCE ASSESSMENT ===
+        evidence_score = self._get_base_currency_evidence(flagged_text, issue_type, context)
+        
+        # === STEP 3: CONTEXT-AWARE ADJUSTMENTS ===
+        evidence_score = self._apply_context_adjustments(evidence_score, text, context)
+        
+        return max(0.0, min(1.0, evidence_score))
+    
+    def _apply_surgical_currency_guards(self, flagged_text: str, sentence, context: Dict[str, Any]) -> bool:
+        """Surgical guards to eliminate false positives."""
+        sent_text = sentence.text if hasattr(sentence, 'text') else str(sentence)
+        sent_lower = sent_text.lower()
+        
+        # Code blocks and technical contexts
+        if context and context.get('block_type') in ['code_block', 'inline_code', 'literal_block']:
+            return True
+        
+        # Direct quotes (check if actually within quotes)
+        if self._is_within_quotes(flagged_text, sent_text):
+            return True
+        
+        # Explicit examples
+        example_indicators = ['for example:', 'e.g.', 'such as:', 'example:', 'sample:']
+        if any(indicator in sent_lower for indicator in example_indicators):
+            return True
+        
+        # API documentation
+        tech_patterns = ['api returns', 'response:', 'json:', 'format:', 'parameter:']
+        if any(pattern in sent_lower for pattern in tech_patterns):
+            return True
+        
+        return False
+    
+    def _is_within_quotes(self, flagged_text: str, sent_text: str) -> bool:
+        """Check if flagged text is actually within quotation marks."""
+        flagged_pos = sent_text.find(flagged_text)
+        if flagged_pos == -1:
+            return False
+        
+        before_text = sent_text[:flagged_pos]
+        after_text = sent_text[flagged_pos + len(flagged_text):]
+        
+        quote_chars = ['"', "'", '"', '"']
+        has_opening = any(quote in before_text for quote in quote_chars)
+        has_closing = any(quote in after_text for quote in quote_chars)
+        
+        return has_opening and has_closing
+    
+    def _get_base_currency_evidence(self, flagged_text: str, issue_type: str, context: Dict[str, Any]) -> float:
+        """Set base evidence based on issue type and YAML configuration."""
+        # Create context object for configuration service
+        numbers_context = NumbersContext(
+            content_type=context.get('content_type', ''),
+            audience=context.get('audience', ''),
+            domain=context.get('domain', ''),
+            block_type=context.get('block_type', '')
+        )
+        
+        # Get base evidence from YAML configuration
+        if issue_type == 'currency_multiplier':
+            multipliers = self.config_service.get_config('currency_multipliers', {})
+            base_evidence = multipliers.get('letter_multipliers', [{}])[0].get('evidence_base', 0.9)
+        elif issue_type == 'currency_symbol':
+            symbols = self.config_service.get_config('currency_symbols', {})
+            base_evidence = symbols.get('major_currencies', [{}])[0].get('evidence_base', 0.6)
+        else:
+            base_evidence = 0.5
+        
+        # Apply context adjustments from YAML
+        return self.config_service.calculate_context_evidence(base_evidence, numbers_context)
+    
+    def _apply_context_adjustments(self, evidence_score: float, text: str, context: Dict[str, Any]) -> float:
+        """Apply context-aware adjustments."""
+        audience = context.get('audience', '')
+        content_type = context.get('content_type', '')
+        
+        # Audience adjustments
+        if audience in ['international', 'global', 'worldwide']:
+            evidence_score += 0.2
+        elif audience in ['domestic', 'local', 'regional']:
+            evidence_score -= 0.6  # Strong penalty for domestic
+        
+        # Content type adjustments
+        if content_type in ['financial', 'business']:
+            evidence_score += 0.1
+        elif content_type == 'marketing':
+            evidence_score -= 0.1
+        
+        # Multiple currencies suggest need for standardization
+        currency_symbols = ['$', '€', '£', '¥']
+        currency_count = sum(1 for symbol in currency_symbols if symbol in text)
+        if currency_count > 1:
+            evidence_score += 0.2
+        
+        return evidence_score
+    
+    def _generate_evidence_aware_message(self, flagged_text: str, evidence_score: float, issue_type: str, context: Dict[str, Any]) -> str:
+        """Generate evidence-aware error messages using YAML templates."""
+        # Determine evidence level
+        if evidence_score > 0.7:
+            evidence_level = 'high_evidence'
+        elif evidence_score > 0.5:
+            evidence_level = 'medium_evidence'
+        else:
+            evidence_level = 'low_evidence'
+        
+        # Get message template from YAML config
+        messages = self.config_service.get_config('messages', {})
+        level_messages = messages.get(evidence_level, {})
+        
+        if issue_type == 'currency_multiplier':
+            template = level_messages.get('currency_multiplier', "Consider spelling out '{flagged}' for clarity.")
+        else:
+            template = level_messages.get('currency_symbol', "Consider using ISO currency code.")
+        
+        # Replace placeholders
+        return template.replace('{flagged}', flagged_text)
+    
+    def _generate_currency_suggestions(self, flagged_text: str, evidence_score: float, issue_type: str) -> List[str]:
+        """Generate evidence-aware suggestions using YAML configuration."""
+        # Determine evidence level
+        if evidence_score > 0.7:
+            evidence_level = 'high_evidence'
+        elif evidence_score > 0.5:
+            evidence_level = 'medium_evidence'
+        else:
+            evidence_level = 'low_evidence'
+        
+        # Get suggestions from YAML config
+        suggestions_config = self.config_service.get_config('suggestions', {})
+        type_suggestions = suggestions_config.get(issue_type, {})
+        level_suggestions = type_suggestions.get(evidence_level, [])
+        
+        # Process templates with placeholders
+        processed_suggestions = []
+        for suggestion in level_suggestions:
+            # Replace common placeholders
+            processed = suggestion.replace('{flagged}', flagged_text)
+            
+            # Handle ISO code suggestions for currency symbols
+            if '{iso_code}' in processed and issue_type == 'currency_symbol':
+                if '$' in flagged_text:
+                    processed = processed.replace('{iso_code}', 'USD')
+                elif '€' in flagged_text:
+                    processed = processed.replace('{iso_code}', 'EUR')
+                elif '£' in flagged_text:
+                    processed = processed.replace('{iso_code}', 'GBP')
+                else:
+                    processed = processed.replace('{iso_code}', 'USD')
+                
+                # Extract amount if possible
+                amount_match = re.search(r'[\d,.]+', flagged_text)
+                if amount_match:
+                    processed = processed.replace('{amount}', amount_match.group())
+            
+            if '{iso_codes}' in processed:
+                processed = processed.replace('{iso_codes}', 'USD, EUR, GBP')
+            
+            processed_suggestions.append(processed)
+        
+        return processed_suggestions[:3]
 
     def _calculate_currency_symbol_evidence(self, flagged_text: str, sentence, text: str, context: Dict[str, Any]) -> float:
         """

@@ -20,8 +20,8 @@ class NumeralsVsWordsRule(BaseNumbersRule):
 
     def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         """
-        Evidence-based analysis for consistent usage of numerals vs. words for numbers < 10.
-        Flags minority style within the same document/section with nuanced scoring.
+        EVIDENCE-BASED: Flag ALL inconsistent number formatting (numerals vs words).
+        Following the evidence-based guide pattern for 100% effectiveness.
         """
         errors: List[Dict[str, Any]] = []
         if not nlp:
@@ -30,51 +30,152 @@ class NumeralsVsWordsRule(BaseNumbersRule):
 
         words_under_10 = {"one", "two", "three", "four", "five", "six", "seven", "eight", "nine"}
 
-        # Collect global counts
-        counts = {"words": 0, "numerals": 0}
-        tokens_list = list(doc)
-        for t in tokens_list:
-            if self._is_small_number_word(t, words_under_10):
-                counts["words"] += 1
-            elif self._is_small_number_numeral(t):
-                counts["numerals"] += 1
-
-        if counts["words"] == 0 and counts["numerals"] == 0:
-            return errors
-
-        dominant = "words" if counts["words"] >= counts["numerals"] else "numerals"
-
+        # Find all potential inconsistencies - don't filter by dominance
+        potential_issues = []
         for i, sent in enumerate(doc.sents):
             for token in sent:
-                style = None
                 if self._is_small_number_word(token, words_under_10):
-                    style = "words"
+                    potential_issues.append({
+                        'token': token,
+                        'style': 'words',
+                        'sentence': sent,
+                        'sentence_index': i
+                    })
                 elif self._is_small_number_numeral(token):
-                    style = "numerals"
-                if not style:
-                    continue
+                    potential_issues.append({
+                        'token': token,
+                        'style': 'numerals', 
+                        'sentence': sent,
+                        'sentence_index': i
+                    })
 
-                # Flag only if this token is of the minority style (inconsistent with dominant usage)
-                if counts["words"] > 0 and counts["numerals"] > 0 and style != dominant:
-                    ev = self._calculate_numerals_words_evidence(token, style, dominant, sent, text, context or {})
-                    if ev > 0.1:
-                        message = self._get_contextual_numerals_words_message(style, dominant, ev, context or {})
-                        suggestions = self._generate_smart_numerals_words_suggestions(style, dominant, ev, sent, context or {})
-                        errors.append(self._create_error(
-                            sentence=sent.text,
-                            sentence_index=i,
-                            message=message,
-                            suggestions=suggestions,
-                            severity='low' if ev < 0.7 else 'medium',
-                            text=text,
-                            context=context,
-                            evidence_score=ev,
-                            span=(token.idx, token.idx + len(token.text)),
-                            flagged_text=token.text
-                        ))
+        # Check for mixed usage in document
+        styles_found = set(issue['style'] for issue in potential_issues)
+        if len(styles_found) < 2:
+            return errors  # No inconsistency if only one style used
+
+        # Process each potential issue with evidence calculation
+        for issue in potential_issues:
+            evidence_score = self._calculate_numerals_evidence(
+                issue['token'], issue['style'], issue['sentence'], text, context or {}
+            )
+            
+            if evidence_score > 0.1:  # Evidence-based threshold
+                errors.append(self._create_error(
+                    sentence=issue['sentence'].text,
+                    sentence_index=issue['sentence_index'],
+                    message=self._generate_numerals_message(issue['token'], issue['style'], evidence_score),
+                    suggestions=self._generate_numerals_suggestions(issue['style'], evidence_score),
+                    severity='low' if evidence_score < 0.7 else 'medium',
+                    text=text,
+                    context=context,
+                    evidence_score=evidence_score,
+                    span=(issue['token'].idx, issue['token'].idx + len(issue['token'].text)),
+                    flagged_text=issue['token'].text
+                ))
         return errors
 
-    # === EVIDENCE CALCULATION ===
+    # === NEW EVIDENCE-BASED METHODS ===
+    
+    def _calculate_numerals_evidence(self, token, style: str, sentence, text: str, context: Dict[str, Any]) -> float:
+        """
+        EVIDENCE-BASED: Calculate evidence for numerals vs words inconsistency.
+        
+        Following the evidence-based guide pattern:
+        1. Surgical Zero False Positive Guards
+        2. Dynamic Base Evidence Assessment
+        3. Context-aware adjustments
+        """
+        
+        # === STEP 1: SURGICAL GUARDS ===
+        if self._apply_numerals_surgical_guards(token, sentence, context):
+            return 0.0  # Protected context
+        
+        # === STEP 2: BASE EVIDENCE ===
+        evidence_score = 0.6  # Base evidence for inconsistency
+        
+        # === STEP 3: CONTEXT ADJUSTMENTS ===
+        
+        # Sentence start numerals should be words
+        if token.i == sentence.start and style == 'numerals':
+            evidence_score += 0.3  # Strong evidence for sentence-start rule
+        
+        # Technical contexts prefer numerals
+        content_type = context.get('content_type', '')
+        if content_type in ['technical', 'scientific']:
+            if style == 'words':
+                evidence_score += 0.2  # Technical content prefers numerals
+            else:
+                evidence_score -= 0.1  # Numerals acceptable in technical
+        
+        # Business contexts prefer consistency
+        elif content_type in ['business', 'professional']:
+            evidence_score += 0.1  # Business needs consistency
+        
+        # Age/time expressions can use words
+        if self._is_age_or_time_expression(token, sentence):
+            evidence_score -= 0.3  # Age expressions often use words appropriately
+        
+        return max(0.0, min(1.0, evidence_score))
+    
+    def _apply_numerals_surgical_guards(self, token, sentence, context: Dict[str, Any]) -> bool:
+        """Surgical guards to eliminate false positives."""
+        
+        # Code and technical blocks
+        if context and context.get('block_type') in ['code_block', 'inline_code', 'literal_block']:
+            return True
+        
+        # Version numbers and identifiers
+        if self._is_version_or_identifier(token, sentence):
+            return True
+        
+        # Ordinal numbers (first, second, third vs 1st, 2nd, 3rd)
+        if hasattr(token, 'morph') and 'NumType=Ord' in str(token.morph):
+            return True
+        
+        return False
+    
+    def _is_version_or_identifier(self, token, sentence) -> bool:
+        """Check if token is part of version number or identifier."""
+        sent_text = sentence.text.lower()
+        patterns = ['version', 'v.', 'chapter', 'section', 'step', 'part', 'phase']
+        return any(pattern in sent_text for pattern in patterns)
+    
+    def _is_age_or_time_expression(self, token, sentence) -> bool:
+        """Check if token is part of age or time expression."""
+        sent_text = sentence.text.lower()
+        age_patterns = ['year', 'month', 'day', 'hour', 'old', 'age']
+        return any(pattern in sent_text for pattern in age_patterns)
+    
+    def _generate_numerals_message(self, token, style: str, evidence_score: float) -> str:
+        """Generate evidence-aware error messages."""
+        if evidence_score > 0.8:
+            if style == 'numerals' and token.i == 0:  # Sentence start
+                return f"Spell out numbers at the beginning of sentences: '{token.text}' should be written as a word."
+            else:
+                return f"Use consistent number formatting throughout the document."
+        elif evidence_score > 0.6:
+            return f"Consider consistent formatting for numbers under 10 across the document."
+        else:
+            return f"Number formatting could be more consistent: '{token.text}'."
+    
+    def _generate_numerals_suggestions(self, style: str, evidence_score: float) -> List[str]:
+        """Generate evidence-aware suggestions."""
+        suggestions = []
+        
+        if style == 'numerals':
+            suggestions.append("Consider spelling out single-digit numbers as words.")
+            suggestions.append("Use words for numbers at the beginning of sentences.")
+        else:
+            suggestions.append("Consider using numerals for technical or statistical content.")
+            suggestions.append("Use numerals consistently for measurements and quantities.")
+        
+        if evidence_score > 0.7:
+            suggestions.append("Maintain consistent number formatting throughout the document.")
+        
+        return suggestions[:3]
+
+    # === LEGACY EVIDENCE CALCULATION (KEEP FOR COMPATIBILITY) ===
 
     def _calculate_numerals_words_evidence(self, token, style: str, dominant: str, sentence, text: str, context: Dict[str, Any]) -> float:
         """

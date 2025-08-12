@@ -91,8 +91,9 @@ class DatesAndTimesRule(BaseNumbersRule):
         numeric_date_pattern = re.compile(r'\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b')
         iso_8601_pattern = re.compile(r'\b\d{4}-\d{2}-\d{2}\b')
         
-        # Time patterns
-        am_pm_pattern = re.compile(r'\b(\d{1,2}:\d{2})\s?(A\.M\.|P\.M\.|a\.m\.|p\.m\.|am|pm)\b')
+        # Time patterns - EXPANDED for better detection
+        am_pm_pattern = re.compile(r'\b(\d{1,2}:\d{2})(AM|PM|am|pm|A\.M\.|P\.M\.|a\.m\.|p\.m\.)\b')  # No space
+        time_no_space_pattern = re.compile(r'\b(\d{1,2}:\d{2})(AM|PM|am|pm)\b')  # Missing space specifically
         
         for i, sent in enumerate(doc.sents):
             sent_text = sent.text
@@ -116,27 +117,26 @@ class DatesAndTimesRule(BaseNumbersRule):
                         'iso_pattern': iso_8601_pattern
                     })
             
-            # Check for AM/PM formatting
-            for match in am_pm_pattern.finditer(sent_text):
+            # Check for time formatting issues - missing spaces and case problems
+            for match in time_no_space_pattern.finditer(sent_text):
                 time_part = match.group(1)
                 ampm_part = match.group(2)
                 flagged_text = match.group(0)
                 
-                # Check if AM/PM formatting needs correction
-                if ampm_part not in ['AM', 'PM']:  # Only flag non-standard formats
-                    issues.append({
-                        'type': 'ampm_format',
-                        'subtype': 'incorrect_case_or_periods',
-                        'time_part': time_part,
-                        'ampm_part': ampm_part,
-                        'flagged_text': flagged_text,
-                        'sentence': sent.text,
-                        'sentence_index': i,
-                        'span': [sent.start_char + match.start(), sent.start_char + match.end()],
-                        'sentence_obj': sent,
-                        'match_start': match.start(),
-                        'match_end': match.end()
-                    })
+                # Flag times without space before AM/PM
+                issues.append({
+                    'type': 'ampm_format',
+                    'subtype': 'missing_space',
+                    'time_part': time_part,
+                    'ampm_part': ampm_part,
+                    'flagged_text': flagged_text,
+                    'sentence': sent.text,
+                    'sentence_index': i,
+                    'span': [sent.start_char + match.start(), sent.start_char + match.end()],
+                    'sentence_obj': sent,
+                    'match_start': match.start(),
+                    'match_end': match.end()
+                })
         
         return issues
 
@@ -225,9 +225,13 @@ class DatesAndTimesRule(BaseNumbersRule):
             return 0.0  # No violation - time-specific protected context
         
         # === STEP 2: BASE EVIDENCE ASSESSMENT ===
-        evidence_score = 0.6  # Base for wrong case/periods
-        
+        subtype = issue.get('subtype', '')
         ampm_part = issue.get('ampm_part', '')
+        
+        if subtype == 'missing_space':
+            evidence_score = 0.8  # Missing space is clear violation
+        else:
+            evidence_score = 0.6  # Base for wrong case/periods
         
         # Lowercase increases severity; periods increase severity
         if re.search(r'\b(am|pm)\b', ampm_part):
@@ -314,41 +318,7 @@ class DatesAndTimesRule(BaseNumbersRule):
         
         return max(0.0, min(1.0, evidence_score))
 
-    def _calculate_ampm_evidence(self, flagged: str, sentence, text: str, context: Dict[str, Any]) -> float:
-        """
-        Calculate evidence (0.0-1.0) that AM/PM formatting is incorrect.
-        
-        Following the 5-step evidence calculation pattern:
-        1. Base Evidence Assessment
-        2. Linguistic Clues (Micro-Level)
-        3. Structural Clues (Meso-Level)
-        4. Semantic Clues (Macro-Level) 
-        5. Feedback Patterns (Learning Clues)
-        """
-        evidence_score = 0.0
-        
-        # === STEP 1: BASE EVIDENCE ASSESSMENT ===
-        evidence_score = 0.6  # Base for wrong case/periods
-        
-        # Lowercase increases severity; periods increase severity
-        if re.search(r'\b(am|pm)\b', flagged):
-            evidence_score += 0.1
-        if '.' in flagged:
-            evidence_score += 0.1
-        
-        # === STEP 2: LINGUISTIC CLUES (MICRO-LEVEL) ===
-        evidence_score = self._apply_linguistic_clues_ampm(evidence_score, flagged, sentence)
-        
-        # === STEP 3: STRUCTURAL CLUES (MESO-LEVEL) ===
-        evidence_score = self._apply_structural_clues_dates(evidence_score, context)
-        
-        # === STEP 4: SEMANTIC CLUES (MACRO-LEVEL) ===
-        evidence_score = self._apply_semantic_clues_dates(evidence_score, text, context)
-        
-        # === STEP 5: FEEDBACK PATTERNS (LEARNING CLUES) ===
-        evidence_score = self._apply_feedback_clues_dates(evidence_score, flagged, context)
-        
-        return max(0.0, min(1.0, evidence_score))
+
 
     # === LINGUISTIC CLUES (MICRO-LEVEL) ===
     
