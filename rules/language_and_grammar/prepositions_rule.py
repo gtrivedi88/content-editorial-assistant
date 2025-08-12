@@ -355,17 +355,17 @@ class PrepositionsRule(BaseLanguageRule):
             evidence_score -= 0.02  # Professional audiences somewhat tolerant
 
         # Document purpose detection
-        if self._is_installation_documentation(text, context):
+        if self._is_installation_documentation(text):
             evidence_score -= 0.03  # Installation steps often use prepositions
-        elif self._is_troubleshooting_documentation(text, context):
+        elif self._is_troubleshooting_documentation(text):
             evidence_score += 0.03  # Troubleshooting should be clear and direct
-        elif self._is_api_documentation(text, context):
+        elif self._is_api_documentation(text):
             evidence_score -= 0.05  # API docs need prepositional precision
-        elif self._is_policy_documentation(text, context):
+        elif self._is_policy_documentation(text):
             evidence_score += 0.05  # Policy docs should be clear and accessible
-        elif self._is_specification_documentation(text, context):
+        elif self._is_specification_documentation(text):
             evidence_score -= 0.03  # Specifications often detailed
-        elif self._is_user_documentation(text, context):
+        elif self._is_user_documentation(text):
             evidence_score += 0.03  # User docs should be accessible
 
         # Document length context
@@ -400,7 +400,7 @@ class PrepositionsRule(BaseLanguageRule):
         Returns:
             float: Modified evidence score based on learned feedback patterns
         """
-        feedback = self._get_cached_feedback_patterns_prepositions()
+        feedback = self._get_cached_feedback_patterns('prepositions')
         sent_lower = sentence.text.lower()
 
         # Phrase-specific feedback patterns
@@ -560,130 +560,17 @@ class PrepositionsRule(BaseLanguageRule):
 
     # === SEMANTIC ANALYSIS HELPERS ===
 
-    def _is_installation_documentation(self, text: str, context: Dict[str, Any]) -> bool:
-        """
-        Detect if content is installation/setup documentation.
-        
-        Installation docs often use prepositional phrases for clarity:
-        "Install the package in the virtual environment"
-        
-        Args:
-            text: Document text
-            context: Document context
-            
-        Returns:
-            bool: True if installation documentation detected
-        """
-        install_indicators = {
-            'install', 'installation', 'setup', 'configure', 'configuration',
-            'deploy', 'deployment', 'getting started', 'quick start'
-        }
-        text_lower = text.lower()
-        return any(indicator in text_lower for indicator in install_indicators)
+    # Removed _is_installation_documentation - using base class utility
 
-    def _is_troubleshooting_documentation(self, text: str, context: Dict[str, Any]) -> bool:
-        """
-        Detect if content is troubleshooting/debugging documentation.
-        
-        Troubleshooting should be clear and direct, minimizing complexity.
-        
-        Args:
-            text: Document text
-            context: Document context
-            
-        Returns:
-            bool: True if troubleshooting documentation detected
-        """
-        troubleshoot_indicators = {
-            'troubleshoot', 'troubleshooting', 'debug', 'debugging', 'error',
-            'problem', 'issue', 'fix', 'resolve', 'solution', 'faq'
-        }
-        text_lower = text.lower()
-        return any(indicator in text_lower for indicator in troubleshoot_indicators)
+    # Removed _is_troubleshooting_documentation - using base class utility
 
-    def _is_api_documentation(self, text: str, context: Dict[str, Any]) -> bool:
-        """
-        Detect if content is API reference documentation.
-        
-        API docs often need prepositional precision for parameter descriptions.
-        
-        Args:
-            text: Document text
-            context: Document context
-            
-        Returns:
-            bool: True if API documentation detected
-        """
-        api_indicators = {
-            'api', 'endpoint', 'parameter', 'response', 'request',
-            'method', 'function', 'class', 'object', 'property'
-        }
-        text_lower = text.lower()
-        content_type = context.get('content_type', '')
-        return (any(indicator in text_lower for indicator in api_indicators) or
-                content_type in {'api', 'reference'})
+    # Removed _is_api_documentation - using base class utility
 
-    def _is_policy_documentation(self, text: str, context: Dict[str, Any]) -> bool:
-        """
-        Detect if content is policy/governance documentation.
-        
-        Policy docs should be clear and accessible to all audiences.
-        
-        Args:
-            text: Document text
-            context: Document context
-            
-        Returns:
-            bool: True if policy documentation detected
-        """
-        policy_indicators = {
-            'policy', 'governance', 'guideline', 'standard', 'procedure',
-            'compliance', 'regulation', 'requirement', 'mandate'
-        }
-        text_lower = text.lower()
-        return any(indicator in text_lower for indicator in policy_indicators)
+    # Removed _is_policy_documentation - using base class utility
 
-    def _is_specification_documentation(self, text: str, context: Dict[str, Any]) -> bool:
-        """
-        Detect if content is technical specification documentation.
-        
-        Specifications often require detailed prepositional relationships.
-        
-        Args:
-            text: Document text
-            context: Document context
-            
-        Returns:
-            bool: True if specification documentation detected
-        """
-        spec_indicators = {
-            'specification', 'spec', 'technical', 'architecture',
-            'design', 'protocol', 'format', 'schema', 'standard'
-        }
-        text_lower = text.lower()
-        return any(indicator in text_lower for indicator in spec_indicators)
+    # Removed _is_specification_documentation - using base class utility
 
-    def _is_user_documentation(self, text: str, context: Dict[str, Any]) -> bool:
-        """
-        Detect if content is end-user documentation.
-        
-        User docs should prioritize clarity and simplicity.
-        
-        Args:
-            text: Document text
-            context: Document context
-            
-        Returns:
-            bool: True if user documentation detected
-        """
-        user_indicators = {
-            'user guide', 'user manual', 'how to', 'tutorial',
-            'getting started', 'beginner', 'introduction'
-        }
-        text_lower = text.lower()
-        audience = context.get('audience', '')
-        return (any(indicator in text_lower for indicator in user_indicators) or
-                audience in {'beginner', 'general', 'consumer'})
+    # Removed _is_user_documentation - using base class utility
 
     def _is_international_documentation(self, context: Dict[str, Any]) -> bool:
         """
@@ -702,65 +589,7 @@ class PrepositionsRule(BaseLanguageRule):
         return (audience in {'international', 'global'} or
                 'global' in domain or 'international' in domain)
 
-    def _get_cached_feedback_patterns_prepositions(self) -> Dict[str, Any]:
-        """
-        Load feedback patterns from cache or feedback analysis.
-        
-        This method would integrate with the actual feedback system to load
-        patterns learned from user acceptance/rejection of prepositional flagging.
-        
-        Returns:
-            Dict containing feedback patterns for prepositional analysis
-        """
-        return {
-            'accepted_phrases': {
-                'as part of', 'in accordance with', 'in place of',
-                'in response to', 'as a result of', 'on behalf of',
-                'in addition to', 'in contrast to', 'in relation to'
-            },
-            'flagged_phrases': {
-                'in order to', 'due to the fact that', 'for the purpose of',
-                'in the event that', 'with regard to', 'in reference to'
-            },
-            'technical_patterns': {
-                'accepted': {
-                    'as part of the configuration', 'in response to',
-                    'in the context of', 'as a function of'
-                },
-                'flagged': {
-                    'in order to increase', 'for the purpose of enabling'
-                }
-            },
-            'marketing_patterns': {
-                'accepted': {'in partnership with', 'as a leader in'},
-                'flagged': {'in order to', 'for the purpose of'}
-            },
-            'api_patterns': {
-                'accepted': {
-                    'in the request', 'as part of the response',
-                    'in the header', 'as a parameter'
-                },
-                'flagged': set()
-            },
-            'density_acceptance': {
-                '0.1-0.2': 0.9,  # Low density highly accepted
-                '0.2-0.3': 0.7,  # Moderate density mostly accepted
-                '0.3-0.4': 0.4,  # High density often flagged
-                '0.4+': 0.1      # Very high density almost always flagged
-            },
-            'paragraph_patterns': {
-                'accepted': {'as described in', 'in the following'},
-                'flagged': {'in order to', 'due to the fact that'}
-            },
-            'heading_patterns': {
-                'accepted': {'in the system', 'for the application'},
-                'flagged': set()
-            },
-            'code_patterns': {
-                'accepted': set(),  # Code blocks very permissive
-                'flagged': set()
-            }
-        }
+    # Removed _get_cached_feedback_patterns_prepositions - using base class utility
 
     # === SMART MESSAGING AND SUGGESTIONS ===
 

@@ -6,7 +6,25 @@ from typing import List, Dict, Any, Optional, Set, Tuple
 from dataclasses import dataclass
 from enum import Enum
 
-
+try:
+    from .base_language_rule import BaseLanguageRule
+except ImportError:
+    # Fallback for direct execution
+    try:
+        from base_language_rule import BaseLanguageRule
+    except ImportError:
+        # Define a minimal BaseLanguageRule for testing
+        class BaseLanguageRule:
+            def __init__(self):
+                pass
+            def _is_api_documentation(self, text: str) -> bool:
+                return False
+            def _is_technical_documentation(self, text: str) -> bool:
+                return False
+            def _is_procedural_documentation(self, text: str) -> bool:
+                return False
+            def _get_cached_feedback_patterns(self, rule_type: str) -> Dict[str, Any]:
+                return {}
 
 try:
     from spacy.tokens import Doc, Token
@@ -65,7 +83,7 @@ class PassiveConstruction:
             self.flagged_text = self.main_verb.text
 
 
-class PassiveVoiceAnalyzer:
+class PassiveVoiceAnalyzer(BaseLanguageRule):
     """
     Production-quality passive voice analyzer using spaCy linguistic features.
     
@@ -74,7 +92,8 @@ class PassiveVoiceAnalyzer:
     """
     
     def __init__(self):
-        # Linguistic feature sets for semantic categorization
+        super().__init__()
+        # Initialize linguistic feature sets for semantic categorization
         self.state_oriented_verbs = {
             'done', 'finished', 'ready', 'prepared', 'set', 'fixed', 'broken', 
             'closed', 'open', 'available', 'busy', 'free', 'connected', 'offline'
@@ -108,6 +127,10 @@ class PassiveVoiceAnalyzer:
         self.imperative_indicators = {
             'must', 'should', 'need', 'require', 'ensure', 'make sure'
         }
+    
+    def _get_rule_type(self) -> str:
+        """Returns the identifier for this analyzer (shared component)."""
+        return 'passive_voice_analyzer'
     
     def find_passive_constructions(self, doc: Doc) -> List[PassiveConstruction]:
         """
@@ -963,7 +986,7 @@ class PassiveVoiceAnalyzer:
         elif audience in ['administrator', 'maintainer']:
             evidence_score -= 0.1  # Admin audiences understand system descriptions
         
-        if self._is_user_instruction_content(full_text):
+        if self._is_procedural_documentation(full_text):
             evidence_score += 0.3  # User instructions should be active and clear
         
         # === PASSIVE VOICE DENSITY ===
@@ -977,7 +1000,7 @@ class PassiveVoiceAnalyzer:
         """Apply feedback patterns for passive voice detection."""
         
         # Load cached feedback patterns
-        feedback_patterns = self._get_cached_feedback_patterns_passive()
+        feedback_patterns = self._get_cached_feedback_patterns('passive_voice')
         
         # === VERB-SPECIFIC FEEDBACK ===
         verb_lemma = construction.main_verb.lemma_
@@ -1038,16 +1061,7 @@ class PassiveVoiceAnalyzer:
 
 
 
-    def _is_user_instruction_content(self, text: str) -> bool:
-        """Check if text appears to be user instruction content."""
-        instruction_indicators = [
-            'follow', 'complete', 'perform', 'execute', 'run', 'start',
-            'stop', 'create', 'add', 'remove', 'delete', 'modify', 'update',
-            'step', 'procedure', 'instruction', 'guide', 'how to', 'tutorial'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in instruction_indicators if indicator in text_lower) >= 3
+    # Removed _is_user_instruction_content - now using base class _is_procedural_documentation
 
     def _has_high_passive_voice_density(self, text: str) -> bool:
         """Check if document has high density of passive voice constructions."""
@@ -1061,101 +1075,9 @@ class PassiveVoiceAnalyzer:
         # Consider high density if > 2% of content has passive indicators
         return passive_count > 0 and (passive_count / max(word_count, 1)) > 0.02
 
-    def _is_api_documentation_context(self, text: str, context: dict) -> bool:
-        """
-        Detect if content is API reference documentation.
-        
-        API docs often use passive voice to describe system behaviors,
-        configurations, and capabilities in an objective manner.
-        
-        Args:
-            text: Document text
-            context: Document context
-            
-        Returns:
-            bool: True if API documentation context detected
-        """
-        api_indicators = {
-            'api', 'endpoint', 'method', 'request', 'response', 'parameter',
-            'authentication', 'authorization', 'header', 'payload', 'json',
-            'rest', 'restful', 'http', 'https', 'get', 'post', 'put', 'delete',
-            'webhook', 'callback', 'token', 'key', 'secret', 'client'
-        }
-        
-        text_lower = text.lower()
-        domain = context.get('domain', '')
-        content_type = context.get('content_type', '')
-        
-        # Direct text indicators
-        api_score = sum(1 for indicator in api_indicators if indicator in text_lower)
-        
-        # Context-based indicators
-        if domain in {'api', 'web-service', 'microservice', 'rest', 'graphql'}:
-            api_score += 2
-        
-        if content_type in {'api', 'reference', 'specification', 'openapi'}:
-            api_score += 2
-        
-        # Check for API-specific patterns
-        api_patterns = [
-            'api endpoint', 'http method', 'request parameter', 'response body',
-            'authentication header', 'authorization token', 'json payload',
-            'api call', 'api response', 'rest api', 'web service'
-        ]
-        
-        pattern_matches = sum(1 for pattern in api_patterns if pattern in text_lower)
-        api_score += pattern_matches
-        
-        # Threshold for API context detection
-        return api_score >= 3
+    # Removed _is_api_documentation_context - now using base class _is_api_documentation
 
-    def _is_architecture_documentation_context(self, text: str, context: dict) -> bool:
-        """
-        Detect if content is architecture or design documentation.
-        
-        Architecture docs often use passive voice to describe how systems
-        are structured, connected, and configured.
-        
-        Args:
-            text: Document text
-            context: Document context
-            
-        Returns:
-            bool: True if architecture documentation context detected
-        """
-        architecture_indicators = {
-            'architecture', 'design', 'pattern', 'component', 'module', 'service',
-            'microservice', 'infrastructure', 'deployment', 'topology', 'layer',
-            'tier', 'distributed', 'scalable', 'fault-tolerant', 'high-availability',
-            'load-balancer', 'database', 'cache', 'queue', 'message', 'event'
-        }
-        
-        text_lower = text.lower()
-        domain = context.get('domain', '')
-        content_type = context.get('content_type', '')
-        
-        # Direct text indicators
-        arch_score = sum(1 for indicator in architecture_indicators if indicator in text_lower)
-        
-        # Context-based indicators
-        if domain in {'architecture', 'design', 'infrastructure', 'platform', 'system'}:
-            arch_score += 2
-        
-        if content_type in {'architecture', 'design', 'specification', 'blueprint'}:
-            arch_score += 2
-        
-        # Check for architecture-specific patterns
-        architecture_patterns = [
-            'system architecture', 'service architecture', 'application architecture',
-            'data flow', 'message flow', 'component interaction', 'service communication',
-            'distributed system', 'microservice pattern', 'design pattern'
-        ]
-        
-        pattern_matches = sum(1 for pattern in architecture_patterns if pattern in text_lower)
-        arch_score += pattern_matches
-        
-        # Threshold for architecture context detection
-        return arch_score >= 3
+    # Removed _is_architecture_documentation_context - now using base class _is_technical_documentation
 
     # === CONTEXT-AWARE MESSAGING AND SUGGESTIONS ===
 
@@ -1267,61 +1189,4 @@ class PassiveVoiceAnalyzer:
         # Limit to most relevant suggestions
         return suggestions[:3]
 
-    def _get_cached_feedback_patterns_passive(self):
-        """Load feedback patterns from cache or feedback analysis for passive voice."""
-        # This would load from feedback analysis system
-        # For now, return patterns based on common passive voice usage
-        return {
-            'accepted_passive_verbs': {
-                # Verbs users often accept in passive voice (technical contexts)
-                'configure', 'implement', 'design', 'build', 'create', 'develop',
-                'install', 'deploy', 'setup', 'establish', 'define', 'specify',
-                'validate', 'verify', 'test', 'document', 'describe', 'support'
-            },
-            'flagged_passive_verbs': {
-                # Verbs users consistently want to be active
-                'perform', 'execute', 'run', 'start', 'stop', 'complete',
-                'follow', 'use', 'apply', 'ensure', 'check', 'verify'
-            },
-            'technical_passive_patterns': {
-                'acceptable': {
-                    # Context-specific patterns users accept
-                    'descriptive_configure', 'descriptive_implement', 'descriptive_design',
-                    'descriptive_build', 'descriptive_create', 'descriptive_install'
-                },
-                'problematic': {
-                    # Context-specific patterns users flag
-                    'instructional_perform', 'instructional_execute', 'instructional_run',
-                    'instructional_follow', 'instructional_complete'
-                }
-            },
-            'api_passive_patterns': {
-                'acceptable': {
-                    'descriptive_configure', 'descriptive_implement', 'descriptive_support',
-                    'descriptive_provide', 'descriptive_enable', 'descriptive_validate'
-                },
-                'problematic': {
-                    'instructional_use', 'instructional_call', 'instructional_send',
-                    'instructional_request', 'instructional_access'
-                }
-            },
-            'procedural_passive_patterns': {
-                'acceptable': set(),  # Very few passive constructions acceptable in procedures
-                'problematic': {
-                    'instructional_perform', 'instructional_execute', 'instructional_complete',
-                    'instructional_follow', 'instructional_run', 'instructional_start',
-                    'instructional_configure', 'instructional_setup', 'instructional_install'
-                }
-            },
-            'change_announcement_acceptance': 0.8,  # High acceptance for passive in change announcements
-            'technical_entity_passive_acceptance': 0.7,  # Good acceptance for technical entity passive
-            'auxiliary_patterns': {
-                # Acceptance rates for different auxiliary verbs in passive
-                'is': 0.8, 'are': 0.8,      # High acceptance for present tense descriptive
-                'was': 0.4, 'were': 0.4,    # Lower acceptance for past tense
-                'been': 0.5,                # Moderate acceptance for perfect aspect
-                'being': 0.3,               # Lower acceptance for progressive
-                'can': 0.7, 'may': 0.7,     # High acceptance for capability modals
-                'must': 0.3, 'should': 0.3  # Lower acceptance for requirement modals
-            }
-        } 
+    # Removed _get_cached_feedback_patterns_passive - now using base class _get_cached_feedback_patterns 

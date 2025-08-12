@@ -472,7 +472,7 @@ class SpellingRule(BaseLanguageRule):
         if self._is_policy_documentation(text):
             evidence_score += 0.25  # Policies must be consistent
         
-        if self._is_training_content(text):
+        if self._is_tutorial_content(text):
             evidence_score += 0.15  # Training should be clear and consistent
         
         if self._is_user_documentation(text):
@@ -511,10 +511,10 @@ class SpellingRule(BaseLanguageRule):
         
         # === INDUSTRY STANDARDS ===
         # Some industries may have established spelling conventions
-        if self._is_academic_publication(text):
-            evidence_score += 0.1  # Academic publications should be consistent
+        if self._is_technical_documentation(text):
+            evidence_score += 0.1  # Technical documentation should be consistent
         
-        if self._is_technical_specification(text):
+        if self._is_specification_documentation(text):
             evidence_score += 0.15  # Technical specs should be precise
         
         # === CONSISTENCY ANALYSIS ===
@@ -543,7 +543,7 @@ class SpellingRule(BaseLanguageRule):
             float: Modified evidence score based on feedback analysis
         """
         
-        feedback_patterns = self._get_cached_feedback_patterns_spelling()
+        feedback_patterns = self._get_cached_feedback_patterns('spelling')
         
         # === WORD-SPECIFIC FEEDBACK ===
         non_us_lower = non_us.lower()
@@ -603,156 +603,23 @@ class SpellingRule(BaseLanguageRule):
         
         return max(0.0, min(1.0, evidence_score))  # Clamp to valid range
 
-    def _get_cached_feedback_patterns_spelling(self) -> Dict[str, Any]:
-        """Load feedback patterns from cache or feedback analysis for spelling."""
-        # This would load from feedback analysis system
-        # For now, return patterns based on common spelling usage
-        return {
-            'accepted_non_us_terms': {
-                # Common product/project names that intentionally use British variants
-                'greylog', 'dialogflow', 'colour-picker', 'grey-scale',
-                'centre-align', 'behaviour-driven'  # Technical compound terms
-            },
-            'often_flagged_non_us': {
-                # Spellings commonly flagged by users for correction
-                'colour', 'organise', 'programme', 'centre', 'realise', 'analyse'
-            },
-            'technical_spelling_patterns': {
-                'acceptable': {
-                    # Spellings acceptable in technical contexts
-                    'greylog', 'dialogflow', 'colour-picker', 'grey-scale'
-                },
-                'problematic': {
-                    # Spellings problematic even in technical contexts
-                    'colour', 'centre', 'organisation'
-                }
-            },
-            'academic_spelling_patterns': {
-                'acceptable': {
-                    # Spellings acceptable in academic contexts
-                    'honour', 'favour'  # May be acceptable in academic citations
-                },
-                'problematic': {
-                    # Spellings problematic in academic contexts
-                    'colour', 'centre', 'realise', 'analyse'
-                }
-            },
-            'marketing_spelling_patterns': {
-                'acceptable': {
-                    # Spellings acceptable in marketing contexts
-                    # (Usually none - marketing should be consistent)
-                },
-                'problematic': {
-                    # Spellings problematic in marketing contexts
-                    'colour', 'centre', 'programme', 'grey'
-                }
-            },
-            'spelling_frequencies': {
-                # Frequency of spelling usage (would be calculated from corpus)
-                'colour': 150, 'centre': 100, 'organisation': 80, 'programme': 90,
-                'grey': 70, 'realise': 60, 'analyse': 85
-            },
-            'spelling_acceptance': {
-                # Historical acceptance rates (would be calculated from feedback)
-                'colour': 0.2, 'centre': 0.3, 'organisation': 0.1, 'programme': 0.2,
-                'grey': 0.4, 'greylog': 0.9, 'dialogflow': 0.95
-            },
-            'correction_success': {
-                # Success rate of correction suggestions
-                'colour': 0.8, 'centre': 0.9, 'organisation': 0.85, 'programme': 0.75,
-                'grey': 0.6, 'greylog': 0.1, 'dialogflow': 0.1
-            },
-            'brand_spellings': {
-                # Known brand/product names that use non-US spelling
-                'greylog', 'dialogflow', 'grey-scale', 'colour-picker',
-                'centre-point', 'behaviour-driven'
-            },
-            'regional_preferences': {
-                'uk_preferred': {
-                    # Spellings that may be preferred in UK contexts
-                    'colour', 'centre', 'organisation', 'realise', 'honour'
-                }
-            }
-        }
+    # Removed _get_cached_feedback_patterns_spelling - using base class utility
 
     # === HELPER METHODS FOR SEMANTIC ANALYSIS ===
 
-    def _is_specification_documentation(self, text: str) -> bool:
-        """Check if text appears to be specification documentation."""
-        spec_indicators = [
-            'specification', 'spec', 'standard', 'protocol', 'definition',
-            'schema', 'format', 'syntax', 'implementation', 'reference',
-            'requirements', 'compliance'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in spec_indicators if indicator in text_lower) >= 2
+    # Removed _is_specification_documentation - using base class utility
 
-    def _is_policy_documentation(self, text: str) -> bool:
-        """Check if text appears to be policy documentation."""
-        policy_indicators = [
-            'policy', 'policies', 'guideline', 'guidelines', 'standard',
-            'standards', 'procedure', 'procedures', 'compliance', 'regulation',
-            'code of conduct', 'best practice', 'governance'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in policy_indicators if indicator in text_lower) >= 2
+    # Removed _is_policy_documentation - using base class utility
 
-    def _is_training_content(self, text: str) -> bool:
-        """Check if text appears to be training content."""
-        training_indicators = [
-            'training', 'tutorial', 'course', 'lesson', 'workshop',
-            'learning', 'education', 'instruction', 'guide', 'walkthrough',
-            'getting started', 'how to', 'step by step'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in training_indicators if indicator in text_lower) >= 2
+    # Removed _is_training_content - using base class utility
 
-    def _is_user_documentation(self, text: str) -> bool:
-        """Check if text appears to be user-facing documentation."""
-        user_doc_indicators = [
-            'user guide', 'user manual', 'help', 'documentation',
-            'instructions', 'how to use', 'getting started', 'quick start',
-            'user interface', 'end user', 'customer', 'client'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in user_doc_indicators if indicator in text_lower) >= 2
+    # Removed _is_user_documentation - using base class utility
 
-    def _is_api_documentation(self, text: str) -> bool:
-        """Check if text appears to be API documentation."""
-        api_indicators = [
-            'api', 'endpoint', 'method', 'parameter', 'request', 'response',
-            'authentication', 'authorization', 'rest', 'graphql', 'sdk',
-            'integration', 'webhook', 'callback'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in api_indicators if indicator in text_lower) >= 3
+    # Removed _is_api_documentation - using base class utility
 
-    def _is_academic_publication(self, text: str) -> bool:
-        """Check if text appears to be an academic publication."""
-        academic_indicators = [
-            'abstract', 'introduction', 'methodology', 'conclusion', 'references',
-            'bibliography', 'citation', 'journal', 'conference', 'paper',
-            'research', 'study', 'analysis', 'findings'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in academic_indicators if indicator in text_lower) >= 3
+    # Removed _is_academic_publication - using base class utility
 
-    def _is_technical_specification(self, text: str) -> bool:
-        """Check if text appears to be a technical specification."""
-        tech_spec_indicators = [
-            'specification', 'requirements', 'architecture', 'design',
-            'implementation', 'protocol', 'algorithm', 'interface',
-            'system', 'component', 'module', 'framework'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in tech_spec_indicators if indicator in text_lower) >= 4
+    # Removed _is_technical_specification - using base class utility
 
     def _analyze_spelling_consistency(self, text: str, non_us: str, us: str) -> float:
         """

@@ -594,7 +594,7 @@ class PrefixesRule(BaseLanguageRule):
         if self._is_tutorial_content(text):
             evidence_score -= 0.05  # Tutorials may use clearer hyphenated forms
         
-        if self._is_api_documentation_context(text, context):
+        if self._is_api_documentation(text):
             evidence_score += 0.1  # API docs prefer consistent established forms
         
         if self._is_enterprise_software_context(text, context):
@@ -621,7 +621,7 @@ class PrefixesRule(BaseLanguageRule):
         hyphenated_form = full_word
         closed_form = full_word.replace('-', '')
         
-        feedback_patterns = self._get_cached_feedback_patterns_prefix()
+        feedback_patterns = self._get_cached_feedback_patterns('prefixes')
         
         # === PREFIX-SPECIFIC FEEDBACK ===
         # Check if this prefix commonly has accepted closed usage
@@ -729,73 +729,11 @@ class PrefixesRule(BaseLanguageRule):
         
         return word.lower() in established_hyphenated
 
-    def _is_specification_documentation(self, text: str) -> bool:
-        """Check if text appears to be specification documentation."""
-        spec_indicators = [
-            'specification', 'spec', 'standard', 'protocol', 'definition',
-            'schema', 'format', 'syntax', 'implementation', 'reference'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in spec_indicators if indicator in text_lower) >= 2
+    # Removed _is_specification_documentation - using base class utility
 
-    def _is_tutorial_content(self, text: str) -> bool:
-        """Check if text appears to be tutorial content."""
-        tutorial_indicators = [
-            'tutorial', 'how to', 'guide', 'step', 'procedure', 'walkthrough',
-            'getting started', 'introduction', 'learn', 'example'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in tutorial_indicators if indicator in text_lower) >= 2
+    # Removed _is_tutorial_content - using base class utility
 
-    def _is_api_documentation_context(self, text: str, context: dict) -> bool:
-        """
-        Detect if content is API reference documentation.
-        
-        API docs often prefer consistent, established terminology forms,
-        typically favoring closed prefixes for standard terms.
-        
-        Args:
-            text: Document text
-            context: Document context
-            
-        Returns:
-            bool: True if API documentation context detected
-        """
-        api_indicators = {
-            'api', 'endpoint', 'method', 'request', 'response', 'parameter',
-            'authentication', 'authorization', 'header', 'payload', 'json',
-            'rest', 'restful', 'http', 'https', 'get', 'post', 'put', 'delete',
-            'webhook', 'callback', 'token', 'key', 'secret', 'client'
-        }
-        
-        text_lower = text.lower()
-        domain = context.get('domain', '')
-        content_type = context.get('content_type', '')
-        
-        # Direct text indicators
-        api_score = sum(1 for indicator in api_indicators if indicator in text_lower)
-        
-        # Context-based indicators
-        if domain in {'api', 'web-service', 'microservice', 'rest', 'graphql'}:
-            api_score += 2
-        
-        if content_type in {'api', 'reference', 'specification', 'openapi'}:
-            api_score += 2
-        
-        # Check for API-specific patterns
-        api_patterns = [
-            'api endpoint', 'http method', 'request parameter', 'response body',
-            'authentication header', 'authorization token', 'json payload',
-            'api call', 'api response', 'rest api', 'web service'
-        ]
-        
-        pattern_matches = sum(1 for pattern in api_patterns if pattern in text_lower)
-        api_score += pattern_matches
-        
-        # Threshold for API context detection
-        return api_score >= 3
+    # Removed _is_api_documentation_context - using base class utility
 
     def _is_enterprise_software_context(self, text: str, context: dict) -> bool:
         """
@@ -869,53 +807,7 @@ class PrefixesRule(BaseLanguageRule):
         # Consider high density if > 2% of content has hyphens
         return hyphenated_count > 0 and (hyphenated_count / max(word_count, 1)) > 0.02
 
-    def _get_cached_feedback_patterns_prefix(self):
-        """Load feedback patterns from cache or feedback analysis for prefixes."""
-        # This would load from feedback analysis system
-        # For now, return patterns based on common prefix usage
-        return {
-            'accepted_closed_prefixes': {
-                # Prefixes commonly accepted in closed form
-                're', 'un', 'non', 'pre', 'over', 'under', 'super', 'anti', 'dis', 'in'
-            },
-            'accepted_hyphenated_prefixes': {
-                # Prefixes commonly accepted in hyphenated form
-                'co', 'multi', 'inter', 'sub'
-            },
-            'accepted_closed_words': {
-                # Specific words commonly accepted in closed form
-                'rearrange', 'preprocess', 'undo', 'nonexistent', 'override',
-                'subdomain', 'superuser', 'interface', 'multicore', 'antivirus'
-            },
-            'accepted_hyphenated_words': {
-                # Specific words commonly accepted in hyphenated form
-                'co-location', 'multi-tenant', 'sub-domain', 'inter-service',
-                'co-processor', 'multi-cloud', 'sub-network', 'inter-process'
-            },
-            'technical_prefix_patterns': {
-                'closed_acceptable': {
-                    # Closed forms acceptable in technical contexts
-                    'preprocess', 'subprocess', 'multicore', 'interface',
-                    'override', 'superuser', 'antivirus', 'nonblocking'
-                },
-                'hyphenated_acceptable': {
-                    # Hyphenated forms acceptable in technical contexts
-                    'co-location', 'multi-tenant', 'sub-domain', 'inter-service',
-                    'co-processor', 'multi-cloud', 'non-blocking', 'anti-pattern'
-                }
-            },
-            'academic_prefix_patterns': {
-                'closed_acceptable': {
-                    # Closed forms preferred in academic contexts
-                    'rearrange', 'preprocess', 'nonexistent', 'inconsistent',
-                    'counteract', 'proactive', 'disconnect', 'inactive'
-                },
-                'hyphenated_acceptable': {
-                    # Hyphenated forms acceptable in academic contexts
-                    'co-author', 'multi-modal', 'inter-disciplinary'
-                }
-            }
-        }
+    # Removed _get_cached_feedback_patterns_prefix - using base class utility
 
     # === HELPER METHODS FOR SMART MESSAGING ===
 

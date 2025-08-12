@@ -386,7 +386,7 @@ class PronounsRule(BaseLanguageRule):
         if self._is_policy_documentation(text):
             evidence_score += 0.2  # Policies must be inclusive
         
-        if self._is_training_content(text):
+        if self._is_tutorial_content(text):
             evidence_score += 0.15  # Training should be inclusive
         
         # === INCLUSIVE LANGUAGE INDICATORS ===
@@ -440,7 +440,7 @@ class PronounsRule(BaseLanguageRule):
             float: Modified evidence score based on feedback analysis
         """
         
-        feedback_patterns = self._get_cached_feedback_patterns_pronouns()
+        feedback_patterns = self._get_cached_feedback_patterns('pronouns')
         
         # === TOKEN-SPECIFIC FEEDBACK ===
         token_text = getattr(token, 'text', '').lower()
@@ -498,144 +498,23 @@ class PronounsRule(BaseLanguageRule):
         
         return max(0.0, min(1.0, evidence_score))  # Clamp to valid range
 
-    def _get_cached_feedback_patterns_pronouns(self) -> Dict[str, Any]:
-        """Load feedback patterns from cache or feedback analysis for pronouns."""
-        # This would load from feedback analysis system
-        # For now, return patterns based on common pronoun usage
-        return {
-            'accepted_pronouns': {
-                # Pronouns commonly accepted by users in specific contexts
-                # (This would be populated by actual feedback data)
-            },
-            'flagged_pronouns': {
-                # Pronouns commonly flagged by users
-                'his', 'her', 'he', 'him'  # Generally flagged in generic contexts
-            },
-            'technical_pronoun_patterns': {
-                'acceptable': {
-                    # Pronouns acceptable in technical contexts
-                    # (Populated by feedback in technical documents)
-                },
-                'problematic': {
-                    # Pronouns problematic even in technical contexts
-                    'his', 'her', 'he', 'him'
-                }
-            },
-            'procedural_pronoun_patterns': {
-                'acceptable': {
-                    # Pronouns acceptable in procedural contexts
-                },
-                'problematic': {
-                    # Pronouns problematic in procedures
-                    'his', 'her', 'he', 'him'
-                }
-            },
-            'role_based_patterns': {
-                'developer': {
-                    'accepted_pronouns': set(),
-                    'rejected_pronouns': {'his', 'her', 'he', 'him'}
-                },
-                'user': {
-                    'accepted_pronouns': set(),
-                    'rejected_pronouns': {'his', 'her', 'he', 'him'}
-                },
-                'administrator': {
-                    'accepted_pronouns': set(),
-                    'rejected_pronouns': {'his', 'her', 'he', 'him'}
-                }
-            },
-            'pronoun_frequencies': {
-                # Frequency of pronoun usage (would be calculated from corpus)
-                'his': 100, 'her': 80, 'he': 90, 'him': 70
-            },
-            'pronoun_acceptance': {
-                # Historical acceptance rates (would be calculated from feedback)
-                'his': 0.2, 'her': 0.2, 'he': 0.1, 'him': 0.1
-            },
-            'replacement_success': {
-                # Success rate of replacement suggestions
-                'his': 0.8, 'her': 0.8, 'he': 0.9, 'him': 0.85
-            }
-        }
+    # Removed _get_cached_feedback_patterns_pronouns - using base class utility
 
     # === HELPER METHODS FOR SEMANTIC ANALYSIS ===
 
-    def _is_specification_documentation(self, text: str) -> bool:
-        """Check if text appears to be specification documentation."""
-        spec_indicators = [
-            'specification', 'spec', 'standard', 'protocol', 'definition',
-            'schema', 'format', 'syntax', 'implementation', 'reference',
-            'requirements', 'compliance'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in spec_indicators if indicator in text_lower) >= 2
+    # Removed _is_specification_documentation - using base class utility
 
-    def _is_policy_documentation(self, text: str) -> bool:
-        """Check if text appears to be policy documentation."""
-        policy_indicators = [
-            'policy', 'policies', 'guideline', 'guidelines', 'standard',
-            'standards', 'procedure', 'procedures', 'compliance', 'regulation',
-            'code of conduct', 'best practice', 'governance'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in policy_indicators if indicator in text_lower) >= 2
+    # Removed _is_policy_documentation - using base class utility
 
-    def _is_training_content(self, text: str) -> bool:
-        """Check if text appears to be training content."""
-        training_indicators = [
-            'training', 'tutorial', 'course', 'lesson', 'workshop',
-            'learning', 'education', 'instruction', 'guide', 'walkthrough',
-            'getting started', 'how to', 'step by step'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in training_indicators if indicator in text_lower) >= 2
+    # Removed _is_training_content - using base class utility
 
-    def _is_user_documentation(self, text: str) -> bool:
-        """Check if text appears to be user-facing documentation."""
-        user_doc_indicators = [
-            'user guide', 'user manual', 'help', 'documentation',
-            'instructions', 'how to use', 'getting started', 'quick start',
-            'user interface', 'end user', 'customer', 'client'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in user_doc_indicators if indicator in text_lower) >= 2
+    # Removed _is_user_documentation - using base class utility
 
-    def _is_api_documentation(self, text: str) -> bool:
-        """Check if text appears to be API documentation."""
-        api_indicators = [
-            'api', 'endpoint', 'method', 'parameter', 'request', 'response',
-            'authentication', 'authorization', 'rest', 'graphql', 'sdk',
-            'integration', 'webhook', 'callback'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in api_indicators if indicator in text_lower) >= 3
+    # Removed _is_api_documentation - using base class utility
 
-    def _is_procedural_documentation(self, text: str) -> bool:
-        """Check if text appears to be procedural documentation."""
-        procedural_indicators = [
-            'procedure', 'step', 'process', 'workflow', 'instruction',
-            'follow', 'complete', 'perform', 'execute', 'configure',
-            'install', 'setup', 'deploy'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in procedural_indicators if indicator in text_lower) >= 3
+    # Removed _is_procedural_documentation - using base class utility
 
-    def _is_international_documentation(self, text: str) -> bool:
-        """Check if text appears to be for international audiences."""
-        international_indicators = [
-            'global', 'international', 'worldwide', 'multi-national',
-            'cross-cultural', 'diverse', 'inclusive', 'accessibility',
-            'localization', 'translation', 'multilingual'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in international_indicators if indicator in text_lower) >= 2
+    # Removed _is_international_documentation - using base class utility
 
     # === HELPER METHODS FOR SMART MESSAGING ===
 

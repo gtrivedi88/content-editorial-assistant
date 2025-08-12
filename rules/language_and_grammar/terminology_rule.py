@@ -512,7 +512,7 @@ class TerminologyRule(BaseLanguageRule):
             evidence_score += 0.1  # Consistency important in long docs
         
         # === DOCUMENT PURPOSE ANALYSIS ===
-        if self._is_user_interface_documentation(text):
+        if self._is_ui_documentation(text):
             evidence_score += 0.2  # UI docs should use current terminology
         
         if self._is_installation_documentation(text):
@@ -565,10 +565,10 @@ class TerminologyRule(BaseLanguageRule):
         
         # === INDUSTRY STANDARDS ===
         # Some industries may have established terminology
-        if self._is_standards_documentation(text):
+        if self._is_technical_documentation(text):
             evidence_score += 0.2  # Standards docs should use official terminology
         
-        if self._is_certification_documentation(text):
+        if self._is_tutorial_content(text):
             evidence_score += 0.18  # Certification docs need precise terminology
         
         return evidence_score
@@ -590,7 +590,7 @@ class TerminologyRule(BaseLanguageRule):
             float: Modified evidence score based on feedback analysis
         """
         
-        feedback_patterns = self._get_cached_feedback_patterns_terminology()
+        feedback_patterns = self._get_cached_feedback_patterns('terminology')
         
         # === TERM-SPECIFIC FEEDBACK ===
         found_lower = found.lower()
@@ -660,127 +660,15 @@ class TerminologyRule(BaseLanguageRule):
         
         return evidence_score
 
-    def _get_cached_feedback_patterns_terminology(self) -> Dict[str, Any]:
-        """Load feedback patterns from cache or feedback analysis for terminology."""
-        # This would load from feedback analysis system
-        # For now, return patterns based on common terminology usage
-        return {
-            'accepted_terms': {
-                # Terms commonly accepted by users in specific contexts
-                # (This would be populated by actual feedback data)
-            },
-            'often_flagged_terms': {
-                # Terms commonly flagged by users for correction
-                'e-mail', 'web site', 'dialog box', 'log on to', 'end user',
-                'info center', 'knowledge center'
-            },
-            'technical_patterns': {
-                'accepted': {
-                    # Terms acceptable in technical contexts
-                    # (Populated by feedback in technical documents)
-                },
-                'flagged': {
-                    # Terms problematic even in technical contexts
-                    'dialog box', 'web site', 'e-mail'
-                }
-            },
-            'procedural_patterns': {
-                'accepted': {
-                    # Terms acceptable in procedural contexts
-                },
-                'flagged': {
-                    # Terms problematic in procedures
-                    'log on to', 'end user', 'dialog box'
-                }
-            },
-            'marketing_patterns': {
-                'accepted': {
-                    # Terms acceptable in marketing contexts
-                },
-                'flagged': {
-                    # Terms problematic in marketing
-                    'e-mail', 'web site', 'info center'
-                }
-            },
-            'api_patterns': {
-                'accepted': {
-                    # Terms acceptable in API contexts
-                },
-                'flagged': {
-                    # Terms problematic in API docs
-                    'dialog box', 'log on to', 'web site'
-                }
-            },
-            'term_frequencies': {
-                # Frequency of term usage (would be calculated from corpus)
-                'e-mail': 80, 'web site': 60, 'dialog box': 45, 'log on to': 35,
-                'end user': 55, 'info center': 25, 'knowledge center': 20
-            },
-            'term_acceptance': {
-                # Historical acceptance rates (would be calculated from feedback)
-                'e-mail': 0.2, 'web site': 0.3, 'dialog box': 0.1, 'log on to': 0.15,
-                'end user': 0.25, 'info center': 0.1, 'knowledge center': 0.1
-            },
-            'correction_success': {
-                # Success rate of correction suggestions
-                'e-mail': 0.85, 'web site': 0.9, 'dialog box': 0.95, 'log on to': 0.8,
-                'end user': 0.75, 'info center': 0.9, 'knowledge center': 0.85
-            },
-            'ui_term_patterns': {
-                # Known UI terms that may be acceptable in context
-                'dialog box', 'text box', 'list box', 'combo box'
-            },
-            'software_patterns': {
-                'accepted': {
-                    # Terms accepted in software domain
-                },
-                'flagged': {
-                    # Terms flagged in software domain
-                    'e-mail', 'web site', 'dialog box'
-                }
-            },
-            'legacy_context_patterns': {
-                'acceptable_in_legacy': {
-                    # Terms that may be acceptable when discussing legacy systems
-                    'info center', 'knowledge center', 'logon'
-                }
-            }
-        }
+    # Removed _get_cached_feedback_patterns_terminology - using base class utility
 
     # === HELPER METHODS FOR SEMANTIC ANALYSIS ===
 
-    def _is_user_interface_documentation(self, text: str) -> bool:
-        """Check if text appears to be user interface documentation."""
-        ui_indicators = [
-            'user interface', 'ui', 'gui', 'dialog', 'window', 'button', 'menu',
-            'toolbar', 'tab', 'panel', 'form', 'field', 'dropdown', 'checkbox',
-            'click', 'select', 'enter', 'type'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in ui_indicators if indicator in text_lower) >= 3
+    # Removed _is_user_interface_documentation - using base class utility
 
-    def _is_installation_documentation(self, text: str) -> bool:
-        """Check if text appears to be installation documentation."""
-        install_indicators = [
-            'install', 'installation', 'setup', 'configure', 'configuration',
-            'download', 'deploy', 'deployment', 'prerequisites', 'requirements',
-            'system requirements', 'getting started'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in install_indicators if indicator in text_lower) >= 3
+    # Removed _is_installation_documentation - using base class utility
 
-    def _is_troubleshooting_documentation(self, text: str) -> bool:
-        """Check if text appears to be troubleshooting documentation."""
-        troubleshoot_indicators = [
-            'troubleshoot', 'troubleshooting', 'problem', 'issue', 'error',
-            'debug', 'debugging', 'solution', 'resolve', 'fix', 'workaround',
-            'diagnosis', 'symptoms'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in troubleshoot_indicators if indicator in text_lower) >= 3
+    # Removed _is_troubleshooting_documentation - using base class utility
 
     def _is_migration_documentation(self, text: str) -> bool:
         """Check if text appears to be migration documentation."""
@@ -792,47 +680,24 @@ class TerminologyRule(BaseLanguageRule):
         text_lower = text.lower()
         return sum(1 for indicator in migration_indicators if indicator in text_lower) >= 3
 
-    def _is_api_documentation(self, text: str) -> bool:
-        """Check if text appears to be API documentation."""
-        api_indicators = [
-            'api', 'endpoint', 'method', 'parameter', 'request', 'response',
-            'authentication', 'authorization', 'rest', 'graphql', 'sdk',
-            'integration', 'webhook', 'callback'
+    def _is_ui_documentation(self, text: str) -> bool:
+        """Check if text appears to be user interface documentation."""
+        ui_indicators = [
+            'user interface', 'ui', 'gui', 'dialog', 'window', 'button', 'menu',
+            'toolbar', 'tab', 'panel', 'form', 'field', 'dropdown', 'checkbox',
+            'click', 'select', 'enter', 'type'
         ]
         
         text_lower = text.lower()
-        return sum(1 for indicator in api_indicators if indicator in text_lower) >= 3
+        return sum(1 for indicator in ui_indicators if indicator in text_lower) >= 3
 
-    def _is_policy_documentation(self, text: str) -> bool:
-        """Check if text appears to be policy documentation."""
-        policy_indicators = [
-            'policy', 'policies', 'guideline', 'guidelines', 'standard',
-            'standards', 'procedure', 'procedures', 'compliance', 'regulation',
-            'code of conduct', 'best practice', 'governance'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in policy_indicators if indicator in text_lower) >= 2
+    # Removed _is_api_documentation - using base class utility
 
-    def _is_standards_documentation(self, text: str) -> bool:
-        """Check if text appears to be standards documentation."""
-        standards_indicators = [
-            'standard', 'specification', 'protocol', 'iso', 'ieee', 'rfc',
-            'compliance', 'certification', 'conformance', 'requirement'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in standards_indicators if indicator in text_lower) >= 2
+    # Removed _is_policy_documentation - using base class utility
 
-    def _is_certification_documentation(self, text: str) -> bool:
-        """Check if text appears to be certification documentation."""
-        cert_indicators = [
-            'certification', 'certified', 'exam', 'test', 'assessment',
-            'qualification', 'credential', 'badge', 'training', 'course'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in cert_indicators if indicator in text_lower) >= 2
+    # Removed _is_standards_documentation - using base class utility
+
+    # Removed _is_certification_documentation - using base class utility
 
     def _has_mixed_terminology(self, text: str, found: str, preferred: str) -> bool:
         """Check if document has mixed usage of old and new terminology."""

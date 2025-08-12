@@ -879,7 +879,7 @@ class VerbsRule(BaseLanguageRule):
         if self._is_troubleshooting_documentation(text):
             evidence_score += 0.15  # Troubleshooting should be direct
         
-        if self._is_user_interface_documentation(text):
+        if self._is_ui_documentation(text):
             evidence_score += 0.18  # UI docs should describe current behavior
         
         if self._is_release_notes_documentation(text):
@@ -918,7 +918,7 @@ class VerbsRule(BaseLanguageRule):
             float: Modified evidence score based on feedback analysis
         """
         
-        feedback_patterns = self._get_cached_feedback_patterns_future_tense()
+        feedback_patterns = self._get_cached_feedback_patterns('verbs_future_tense')
         
         # === PHRASE-SPECIFIC FEEDBACK ===
         phrase = f"{will_token.text.lower()} {head_verb.lemma_.lower()}"
@@ -961,57 +961,7 @@ class VerbsRule(BaseLanguageRule):
         
         return evidence_score
 
-    def _get_cached_feedback_patterns_future_tense(self) -> Dict[str, Any]:
-        """Load feedback patterns from cache or feedback analysis for future tense."""
-        return {
-            'accepted_future_phrases': {
-                # Phrases commonly accepted by users
-                'will be removed', 'will be deprecated', 'will be available',
-                'will be released', 'will be updated', 'will become',
-                'will continue to', 'will remain', 'will vary'
-            },
-            'flagged_future_phrases': {
-                # Phrases commonly flagged by users for correction
-                'will click', 'will select', 'will enter', 'will type',
-                'will run', 'will execute', 'will configure', 'will install'
-            },
-            'procedural_future_patterns': {
-                'acceptable': {
-                    # Future phrases acceptable in procedural contexts
-                    'will be prompted', 'will appear', 'will display'
-                },
-                'problematic': {
-                    # Phrases problematic in procedures
-                    'will click', 'will select', 'will configure', 'will run'
-                }
-            },
-            'api_future_patterns': {
-                'acceptable': {
-                    # Future phrases acceptable in API contexts
-                    'will be deprecated', 'will return', 'will throw'
-                },
-                'problematic': {
-                    # Phrases problematic in API docs
-                    'will call', 'will use', 'will send'
-                }
-            },
-            'verb_specific_patterns': {
-                'often_accepted_with_will': {
-                    # Verbs often acceptable with 'will'
-                    'be', 'become', 'remain', 'continue', 'vary', 'depend'
-                },
-                'problematic_with_will': {
-                    # Verbs problematic with 'will'
-                    'click', 'select', 'enter', 'type', 'run', 'execute',
-                    'configure', 'install', 'setup', 'create', 'delete'
-                }
-            },
-            'correction_success': {
-                # Success rate of correction suggestions
-                'will click': 0.9, 'will select': 0.85, 'will run': 0.8,
-                'will be': 0.3, 'will become': 0.4, 'will remain': 0.2
-            }
-        }
+    # Removed _get_cached_feedback_patterns_future_tense - using base class utility
 
     def _get_contextual_future_tense_message(self, flagged_text: str, ev: float, context: Dict[str, Any]) -> str:
         """Generate context-aware error messages for future tense patterns."""
@@ -1409,7 +1359,7 @@ class VerbsRule(BaseLanguageRule):
         if self._is_troubleshooting_documentation(text):
             evidence_score -= 0.1  # Troubleshooting may describe past problems
         
-        if self._is_user_interface_documentation(text):
+        if self._is_ui_documentation(text):
             evidence_score += 0.18  # UI docs should describe current interface
         
         if self._is_release_notes_documentation(text):
@@ -1447,7 +1397,7 @@ class VerbsRule(BaseLanguageRule):
             float: Modified evidence score based on feedback analysis
         """
         
-        feedback_patterns = self._get_cached_feedback_patterns_past_tense()
+        feedback_patterns = self._get_cached_feedback_patterns('verbs_past_tense')
         
         # === VERB-SPECIFIC FEEDBACK ===
         verb_lemma = root_verb.lemma_.lower()
@@ -1488,53 +1438,7 @@ class VerbsRule(BaseLanguageRule):
         
         return evidence_score
 
-    def _get_cached_feedback_patterns_past_tense(self) -> Dict[str, Any]:
-        """Load feedback patterns from cache or feedback analysis for past tense."""
-        return {
-            'often_accepted_past_verbs': {
-                # Verbs commonly accepted in past tense
-                'fixed', 'resolved', 'addressed', 'corrected', 'improved',
-                'enhanced', 'updated', 'modified', 'changed', 'added',
-                'removed', 'deprecated', 'occurred', 'happened', 'was', 'were'
-            },
-            'often_flagged_past_verbs': {
-                # Verbs commonly flagged when in past tense
-                'clicked', 'selected', 'entered', 'typed', 'configured',
-                'installed', 'ran', 'executed', 'performed', 'created'
-            },
-            'procedural_past_patterns': {
-                'acceptable': {
-                    # Past verbs acceptable in procedural contexts
-                    'occurred', 'happened', 'was', 'were'
-                },
-                'problematic': {
-                    # Past verbs problematic in procedures
-                    'clicked', 'selected', 'configured', 'installed', 'ran'
-                }
-            },
-            'api_past_patterns': {
-                'acceptable': {
-                    # Past verbs acceptable in API contexts
-                    'deprecated', 'removed', 'changed', 'updated'
-                },
-                'problematic': {
-                    # Past verbs problematic in API docs
-                    'called', 'used', 'sent', 'received'
-                }
-            },
-            'temporal_context_patterns': {
-                'acceptable_in_temporal': {
-                    # Verbs acceptable in temporal/historical contexts
-                    'was', 'were', 'had', 'occurred', 'happened', 'caused',
-                    'resulted', 'led', 'fixed', 'resolved', 'addressed'
-                }
-            },
-            'correction_success': {
-                # Success rate of correction suggestions
-                'clicked': 0.85, 'selected': 0.8, 'configured': 0.75,
-                'was': 0.3, 'were': 0.25, 'occurred': 0.2, 'fixed': 0.4
-            }
-        }
+    # Removed _get_cached_feedback_patterns_past_tense - using base class utility
 
     def _get_contextual_past_tense_message(self, flagged_text: str, ev: float, context: Dict[str, Any]) -> str:
         """Generate context-aware error messages for past tense patterns."""
@@ -1588,38 +1492,11 @@ class VerbsRule(BaseLanguageRule):
 
     # === HELPER METHODS FOR SEMANTIC ANALYSIS ===
 
-    def _is_installation_documentation(self, text: str) -> bool:
-        """Check if text appears to be installation documentation."""
-        install_indicators = [
-            'install', 'installation', 'setup', 'configure', 'configuration',
-            'download', 'deploy', 'deployment', 'prerequisites', 'requirements',
-            'system requirements', 'getting started'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in install_indicators if indicator in text_lower) >= 3
+    # Removed _is_installation_documentation - using base class utility
 
-    def _is_troubleshooting_documentation(self, text: str) -> bool:
-        """Check if text appears to be troubleshooting documentation."""
-        troubleshoot_indicators = [
-            'troubleshoot', 'troubleshooting', 'problem', 'issue', 'error',
-            'debug', 'debugging', 'solution', 'resolve', 'fix', 'workaround',
-            'diagnosis', 'symptoms'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in troubleshoot_indicators if indicator in text_lower) >= 3
+    # Removed _is_troubleshooting_documentation - using base class utility
 
-    def _is_user_interface_documentation(self, text: str) -> bool:
-        """Check if text appears to be user interface documentation."""
-        ui_indicators = [
-            'user interface', 'ui', 'gui', 'dialog', 'window', 'button', 'menu',
-            'toolbar', 'tab', 'panel', 'form', 'field', 'dropdown', 'checkbox',
-            'click', 'select', 'enter', 'type'
-        ]
-        
-        text_lower = text.lower()
-        return sum(1 for indicator in ui_indicators if indicator in text_lower) >= 3
+    # Removed _is_user_interface_documentation - using base class utility
 
     def _is_release_notes_documentation(self, text: str) -> bool:
         """Check if text appears to be release notes documentation."""
@@ -1672,6 +1549,17 @@ class VerbsRule(BaseLanguageRule):
         
         text_lower = text.lower()
         return sum(1 for indicator in bug_report_indicators if indicator in text_lower) >= 3
+
+    def _is_ui_documentation(self, text: str) -> bool:
+        """Check if text appears to be user interface documentation."""
+        ui_indicators = [
+            'user interface', 'ui', 'gui', 'dialog', 'window', 'button', 'menu',
+            'toolbar', 'tab', 'panel', 'form', 'field', 'dropdown', 'checkbox',
+            'click', 'select', 'enter', 'type'
+        ]
+        
+        text_lower = text.lower()
+        return sum(1 for indicator in ui_indicators if indicator in text_lower) >= 3
 
     # === Feedback patterns for verbs ===
     def _get_feedback_patterns_verbs(self) -> Dict[str, Any]:
