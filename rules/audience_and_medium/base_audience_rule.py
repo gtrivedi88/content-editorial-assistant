@@ -1,8 +1,8 @@
 """
 Base Audience and Medium Rule
-A base class that all specific audience and medium rules will inherit from.
-This ensures a consistent interface for all rules in this category.
-Enhanced with robust SpaCy morphological analysis and linguistic anchors.
+Enhanced base class following evidence-based rule development standards.
+Provides shared utilities for audience/medium rules while enforcing rule-specific evidence calculation.
+Each rule must implement its own _calculate_[RULE_TYPE]_evidence() method.
 """
 
 from typing import List, Dict, Any, Set, Tuple, Optional
@@ -57,8 +57,14 @@ except ImportError:
 
 class BaseAudienceRule(BaseRule):
     """
-    Enhanced base class for all audience and medium rules using pure SpaCy morphological analysis.
-    Provides robust linguistic analysis utilities specific to audience and medium concerns.
+    This class provides shared utilities for audience and medium rules.Each rule must implement its own _calculate_[RULE_TYPE]_evidence()
+    method for zero false positive goals.
+    
+    Provides:
+    - Shared linguistic analysis utilities
+    - Common morphological pattern detection
+    - Consistent error message formatting
+    - Evidence-aware suggestion generation helpers
     """
 
     def __init__(self):
@@ -115,149 +121,230 @@ class BaseAudienceRule(BaseRule):
 
     def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         """
-        Analyzes the text for a specific audience or medium violation.
-        This method must be implemented by all subclasses.
+        ABSTRACT: Each rule must implement its own analyze method.
+        
+        Rules must implement rule-specific evidence calculation
+        rather than using centralized evidence methods for optimal precision.
+        
+        Required implementation pattern:
+        1. Find potential issues using rule-specific detection
+        2. Calculate evidence using rule-specific _calculate_[RULE_TYPE]_evidence()
+        3. Apply zero false positive guards specific to rule domain
+        4. Use evidence-aware messaging and suggestions
+        
+        Returns:
+            List of errors with rule-specific evidence scores
         """
-        raise NotImplementedError("Subclasses must implement the analyze method.")
+        raise NotImplementedError(
+            f"{self.__class__.__name__} must implement its own analyze() method "
+            f"with rule-specific evidence calculation."
+        )
     
-    def _analyze_conversational_appropriateness(self, doc, sentence: str, sentence_index: int, text: str = None, context: Dict[str, Any] = None) -> List[Dict[str, Any]]:
+    # === SHARED UTILITIES ===
+    # These methods provide common functionality for all audience/medium rules
+    # while each rule implements its own evidence calculation for precision
+    
+    def _apply_zero_false_positive_guards_audience(self, token, context: Dict[str, Any]) -> bool:
         """
-        Analyze conversational appropriateness using morphological complexity.
-        Returns errors for overly formal language that hinders conversational tone.
-        """
-        errors = []
+        Apply surgical zero false positive guards for audience/medium rules.
+        Returns True if evidence should be killed immediately.
         
+        CRITICAL: These guards must be surgical - eliminate false positives while 
+        preserving ALL legitimate violations. Individual rules should extend with 
+        rule-specific guards.
+        """
+        if not token or not hasattr(token, 'text'):
+            return True
+            
+        # === STRUCTURAL CONTEXT GUARDS ===
+        # Code blocks have different linguistic rules
+        if context and context.get('block_type') in ['code_block', 'inline_code', 'literal_block']:
+            return True
+            
+        # === ENTITY AND PROPER NOUN GUARDS ===
+        # Named entities are not style violations
+        if hasattr(token, 'ent_type_') and token.ent_type_ in ['PERSON', 'ORG', 'PRODUCT', 'EVENT', 'GPE']:
+            return True
+            
+        # === TECHNICAL IDENTIFIER GUARDS ===
+        # URLs, file paths, technical identifiers
+        if hasattr(token, 'like_url') and token.like_url:
+            return True
+        if hasattr(token, 'text') and ('/' in token.text or '\\' in token.text or token.text.startswith('http')):
+            return True
+            
+        # === ACRONYM AND ABBREVIATION GUARDS ===
+        # Short uppercase tokens in technical contexts (but allow style rules to check appropriateness)
+        if (hasattr(token, 'text') and token.text.isupper() and len(token.text) <= 5 and
+            context and context.get('content_type') in ['technical', 'api', 'code']):
+            return True
+            
+        # === QUOTED CONTENT GUARDS ===
+        # Don't flag content in quotes (examples, citations, UI labels)
+        if self._is_in_quoted_context(token, context):
+            return True
+            
+        # === FOREIGN LANGUAGE GUARDS ===
+        # Don't flag tokens identified as foreign language
+        if hasattr(token, 'lang_') and token.lang_ != 'en':
+            return True
+            
+        return False
+    
+    def _is_in_quoted_context(self, token, context: Dict[str, Any]) -> bool:
+        """
+        Check if token appears in quoted context (examples, citations, UI labels).
+        Surgical check - only true quotes, not legitimate content with apostrophes.
+        """
+        if not hasattr(token, 'doc') or not token.doc:
+            return False
+            
+        # Look for actual quotation marks around the token
+        sent = token.sent
+        token_idx = token.i - sent.start
+        
+        # Check for quotation marks in reasonable proximity
+        quote_chars = ['"', '"', '"', "'", "'"]
+        
+        # Look backwards and forwards for quote pairs
+        before_quotes = 0
+        after_quotes = 0
+        
+        # Search backwards
+        for i in range(max(0, token_idx - 10), token_idx):
+            if i < len(sent) and sent[i].text in quote_chars:
+                before_quotes += 1
+                
+        # Search forwards  
+        for i in range(token_idx + 1, min(len(sent), token_idx + 10)):
+            if i < len(sent) and sent[i].text in quote_chars:
+                after_quotes += 1
+        
+        # If we have quotes both before and after, likely quoted content
+        return before_quotes > 0 and after_quotes > 0
+    
+    def _generate_evidence_aware_message(self, issue: Dict[str, Any], evidence_score: float, 
+                                       rule_type: str = "audience") -> str:
+        """
+        Generate evidence-aware error messages for audience/medium rules.
+        Adapts message tone based on evidence confidence.
+        """
+        token_text = issue.get('text', issue.get('phrase', ''))
+        
+        if evidence_score > 0.85:
+            # High confidence -> Direct, authoritative message
+            return f"The {rule_type} concern '{token_text}' clearly violates style guidelines."
+        elif evidence_score > 0.6:
+            # Medium confidence -> Balanced suggestion
+            return f"Consider if '{token_text}' is appropriate for your target audience."
+        else:
+            # Low confidence -> Gentle, optional suggestion
+            return f"'{token_text}' may be acceptable, but alternatives could improve audience alignment."
+    
+    def _generate_evidence_aware_suggestions(self, issue: Dict[str, Any], evidence_score: float,
+                                           context: Dict[str, Any], rule_type: str = "audience") -> List[str]:
+        """
+        Generate evidence-aware suggestions for audience/medium rules.
+        Higher evidence = more confident, direct suggestions.
+        """
+        suggestions = []
+        token_text = issue.get('text', issue.get('phrase', ''))
+        
+        if evidence_score > 0.8:
+            # High confidence -> Direct, confident suggestions
+            suggestions.append(f"Replace '{token_text}' for immediate compliance with {rule_type} guidelines.")
+            suggestions.append("This clearly violates professional communication standards.")
+        elif evidence_score > 0.6:
+            # Medium confidence -> Balanced suggestions  
+            suggestions.append(f"Consider revising '{token_text}' for better audience alignment.")
+            suggestions.append("A more appropriate alternative would improve communication effectiveness.")
+        else:
+            # Low confidence -> Gentle, optional suggestions
+            suggestions.append(f"'{token_text}' may be acceptable, but consider alternatives for optimization.")
+            suggestions.append("This is a minor style suggestion for enhanced audience engagement.")
+        
+        # Add context-specific suggestions based on evidence
+        if evidence_score > 0.7:
+            audience = context.get('audience', 'general')
+            if audience in ['general', 'beginner']:
+                suggestions.append("Simpler language improves accessibility for general audiences.")
+            elif audience in ['expert', 'developer']:
+                suggestions.append("Even expert audiences benefit from clear, direct communication.")
+        
+        return suggestions[:3]  # Limit to 3 suggestions
+    
+    # === SHARED MORPHOLOGICAL ANALYSIS UTILITIES ===
+    
+    def _get_shared_formality_indicators(self, token) -> Dict[str, Any]:
+        """Get formality indicators that are shared across audience rules."""
+        if not token or not hasattr(token, 'text'):
+            return {}
+            
+        return {
+            'formality_score': self._analyze_formality_level(token),
+            'morphological_complexity': self._calculate_morphological_complexity(token),
+            'has_latinate_morphology': self._has_latinate_morphology(token),
+            'semantic_field': self._analyze_semantic_field(token),
+            'syllable_count': self._estimate_syllables_morphological(token),
+            'word_frequency_class': self._analyze_word_frequency_class(token)
+        }
+    
+    def _detect_common_audience_patterns(self, doc) -> Dict[str, List[Dict[str, Any]]]:
+        """
+        Detect common patterns that multiple audience rules care about.
+        Returns categorized findings for rules to use in their specific evidence calculation.
+        """
         if not doc:
-            return errors
-        
-        # Analyze each token for formality level
-        overly_formal_tokens = []
-        
-        for token in doc:
-            if not token.is_alpha or token.is_stop:
-                continue
+            return {}
             
-            # Calculate formality using morphological features
-            formality_score = self._analyze_formality_level(token)
-            morphological_complexity = self._calculate_morphological_complexity(token)
-            
-            # Check for overly formal morphological patterns
-            if (formality_score > 0.8 and 
-                morphological_complexity > 2.0 and 
-                token.pos_ in ['VERB', 'NOUN', 'ADJ']):
-                
-                # Find simpler alternatives using morphological analysis
-                simpler_alternative = self._find_simpler_morphological_alternative(token)
-                
-                if simpler_alternative:
-                    overly_formal_tokens.append({
+        patterns = {
+            'formal_words': [],
+            'informal_patterns': [],
+            'complex_constructions': [],
+            'accessibility_issues': []
+        }
+        
+        try:
+            for token in doc:
+                if not token.is_alpha or token.is_stop:
+                    continue
+                    
+                # Detect overly formal words
+                formality_indicators = self._get_shared_formality_indicators(token)
+                if (formality_indicators['formality_score'] > 0.7 and 
+                    formality_indicators['morphological_complexity'] > 1.8):
+                    patterns['formal_words'].append({
                         'token': token,
-                        'alternative': simpler_alternative,
-                        'formality_score': formality_score,
-                        'complexity': morphological_complexity
+                        'indicators': formality_indicators
+                    })
+                
+                # Detect informal patterns (contractions, discourse markers)
+                if "'" in token.text and token.pos_ in ['VERB', 'AUX']:
+                    patterns['informal_patterns'].append({
+                        'token': token,
+                        'type': 'contraction',
+                        'indicators': formality_indicators
+                    })
+                
+                # Detect complex constructions
+                if token.dep_ in ['nsubjpass', 'ccomp', 'xcomp', 'advcl']:
+                    patterns['complex_constructions'].append({
+                        'token': token,
+                        'construction_type': token.dep_,
+                        'complexity': formality_indicators['morphological_complexity']
                     })
         
-        # Generate errors for overly formal tokens
-        for formal_token in overly_formal_tokens:
-            token = formal_token['token']
-            alternative = formal_token['alternative']
+        except Exception:
+            pass  # Graceful degradation
             
-            errors.append(self._create_error(
-                sentence=sentence,
-                sentence_index=sentence_index,
-                message=f"The word '{token.text}' is too formal for conversational style. Use simpler language.",
-                suggestions=[f"Replace '{token.text}' with '{alternative}' for better conversational tone."],
-                severity='low',
-                text=text,  # Enhanced: Pass full text for better confidence analysis
-                context=context,  # Enhanced: Pass context for domain-specific validation
-                linguistic_analysis={
-                    'formality_score': formal_token['formality_score'],
-                    'morphological_complexity': formal_token['complexity'],
-                    'morphological_features': self._get_morphological_features(token)
-                }
-            ))
-        
-        return errors
-    
-    def _analyze_global_accessibility(self, doc, sentence: str, sentence_index: int, text: str = None, context: Dict[str, Any] = None) -> List[Dict[str, Any]]:
-        """
-        Analyze text for global audience accessibility using morphological and syntactic features.
-        """
-        errors = []
-        
-        if not doc:
-            return errors
-        
-        # Check sentence length and complexity
-        sentence_complexity = self._calculate_sentence_complexity(doc)
-        
-        if sentence_complexity['word_count'] > self.complexity_morphological_indicators['syntactic_complexity']['max_sentence_length']:
-            errors.append(self._create_error(
-                sentence=sentence,
-                sentence_index=sentence_index,
-                message=f"Sentence is too long ({sentence_complexity['word_count']} words) for global audiences. Aim for 32 words or fewer.",
-                suggestions=["Break this sentence into shorter, simpler sentences."],
-                severity='medium',
-                text=text,  # Enhanced: Pass full text for better confidence analysis
-                context=context,  # Enhanced: Pass context for domain-specific validation
-                linguistic_analysis=sentence_complexity
-            ))
-        
-        # Detect negative constructions using dependency parsing
-        negative_constructions = self._detect_negative_constructions(doc)
-        
-        for neg_construction in negative_constructions:
-            errors.append(self._create_error(
-                sentence=sentence,
-                sentence_index=sentence_index,
-                message="Avoid negative constructions. State conditions positively for global audiences.",
-                suggestions=[f"Rewrite '{neg_construction['text']}' using positive language."],
-                severity='medium',
-                text=text,  # Enhanced: Pass full text for better confidence analysis
-                context=context,  # Enhanced: Pass context for domain-specific validation
-                linguistic_analysis={
-                    'negative_construction': neg_construction,
-                    'morphological_pattern': neg_construction.get('pattern')
-                }
-            ))
-        
-        return errors
-    
-    def _analyze_professional_tone(self, doc, sentence: str, sentence_index: int, text: str = None, context: Dict[str, Any] = None) -> List[Dict[str, Any]]:
-        """
-        Analyze professional tone using morphological and semantic analysis.
-        """
-        errors = []
-        
-        if not doc:
-            return errors
-        
-        # Detect informal language patterns
-        informal_patterns = self._detect_informal_language_patterns(doc)
-        
-        for pattern in informal_patterns:
-            errors.append(self._create_error(
-                sentence=sentence,
-                sentence_index=sentence_index,
-                message=f"The language pattern '{pattern['text']}' is too informal for professional communication.",
-                suggestions=["Use more direct and professional language."],
-                severity='medium',
-                text=text,  # Enhanced: Pass full text for better confidence analysis
-                context=context,  # Enhanced: Pass context for domain-specific validation
-                linguistic_analysis={
-                    'informal_pattern': pattern,
-                    'pattern_type': pattern.get('type'),
-                    'morphological_features': pattern.get('morphological_features')
-                }
-            ))
-        
-        return errors
+        return patterns
     
     def _find_simpler_morphological_alternative(self, token) -> Optional[str]:
         """
         Find simpler alternatives using morphological analysis.
+        Shared utility for audience rules that need to suggest alternatives.
         """
-        if not token:
+        if not token or not hasattr(token, 'lemma_'):
             return None
         
         # Morphologically-derived alternatives based on semantic fields
@@ -294,185 +381,3 @@ class BaseAudienceRule(BaseRule):
                 return 'good' if token.pos_ == 'ADJ' else 'well'
         
         return None
-    
-    def _calculate_sentence_complexity(self, doc) -> Dict[str, Any]:
-        """
-        Calculate comprehensive sentence complexity using morphological and syntactic features.
-        """
-        if not doc:
-            return {'word_count': 0, 'complexity_score': 0.0}
-        
-        try:
-            # Basic metrics
-            word_count = len([token for token in doc if token.is_alpha])
-            
-            # Dependency depth (syntactic complexity)
-            dependency_depth = self._calculate_dependency_depth(doc)
-            
-            # Morphological complexity
-            avg_morphological_complexity = sum(
-                self._calculate_morphological_complexity(token) 
-                for token in doc if token.is_alpha
-            ) / max(word_count, 1)
-            
-            # Lexical diversity (type-token ratio)
-            unique_lemmas = len(set(token.lemma_.lower() for token in doc if token.is_alpha))
-            lexical_diversity = unique_lemmas / max(word_count, 1)
-            
-            # Complex constructions count
-            complex_deps = len([
-                token for token in doc 
-                if token.dep_ in self.complexity_morphological_indicators['syntactic_complexity']['complex_constructions']
-            ])
-            
-            # Overall complexity score
-            complexity_score = (
-                (word_count / 32.0) * 0.3 +  # Length factor
-                (dependency_depth / 5.0) * 0.3 +  # Syntactic factor
-                avg_morphological_complexity * 0.2 +  # Morphological factor
-                (complex_deps / max(word_count, 1)) * 0.2  # Construction factor
-            )
-            
-            return {
-                'word_count': word_count,
-                'dependency_depth': dependency_depth,
-                'avg_morphological_complexity': avg_morphological_complexity,
-                'lexical_diversity': lexical_diversity,
-                'complex_constructions': complex_deps,
-                'complexity_score': complexity_score
-            }
-        
-        except Exception:
-            return {
-                'word_count': len(doc) if doc else 0,
-                'complexity_score': 0.0,
-                'error': 'complexity_calculation_failed'
-            }
-    
-    def _calculate_dependency_depth(self, doc) -> int:
-        """Calculate maximum dependency tree depth."""
-        if not doc:
-            return 0
-        
-        def get_depth(token, visited=None):
-            if visited is None:
-                visited = set()
-            
-            if token in visited:
-                return 0
-            
-            visited.add(token)
-            
-            if not list(token.children):
-                return 1
-            
-            return 1 + max(get_depth(child, visited.copy()) for child in token.children)
-        
-        try:
-            # Find root token
-            root_tokens = [token for token in doc if token.dep_ == 'ROOT']
-            if not root_tokens:
-                return 0
-            
-            return max(get_depth(root) for root in root_tokens)
-        
-        except Exception:
-            return 0
-    
-    def _detect_negative_constructions(self, doc) -> List[Dict[str, Any]]:
-        """
-        Detect negative constructions using dependency parsing and morphological analysis.
-        """
-        negative_constructions = []
-        
-        if not doc:
-            return negative_constructions
-        
-        try:
-            for token in doc:
-                # Look for negation patterns
-                if token.dep_ == 'neg':
-                    head = token.head
-                    
-                    # Analyze the morphological context of the negation
-                    construction_info = {
-                        'negation_token': self._token_to_dict(token),
-                        'head_token': self._token_to_dict(head),
-                        'text': f"{token.text} {head.text}",
-                        'pattern': f"{token.dep_}+{head.pos_}",
-                        'morphological_features': {
-                            'negation': self._get_morphological_features(token),
-                            'head': self._get_morphological_features(head)
-                        }
-                    }
-                    
-                    # Check for specific problematic patterns
-                    if (head.lemma_ in ['be', 'seem', 'appear'] and 
-                        any(child.pos_ == 'ADJ' and child.lemma_ in ['different', 'unusual', 'uncommon'] 
-                            for child in head.children)):
-                        
-                        construction_info['type'] = 'negative_state_with_adjective'
-                        construction_info['severity'] = 'high'
-                        negative_constructions.append(construction_info)
-                    
-                    elif head.pos_ == 'VERB':
-                        construction_info['type'] = 'negative_verb'
-                        construction_info['severity'] = 'medium'
-                        negative_constructions.append(construction_info)
-        
-        except Exception:
-            pass
-        
-        return negative_constructions
-    
-    def _detect_informal_language_patterns(self, doc) -> List[Dict[str, Any]]:
-        """
-        Detect informal language patterns using morphological and semantic analysis.
-        """
-        informal_patterns = []
-        
-        if not doc:
-            return informal_patterns
-        
-        try:
-            for token in doc:
-                # Check for contractions using morphological analysis
-                if "'" in token.text and token.pos_ in ['VERB', 'AUX']:
-                    informal_patterns.append({
-                        'token': self._token_to_dict(token),
-                        'text': token.text,
-                        'type': 'contraction',
-                        'morphological_features': self._get_morphological_features(token),
-                        'formality_score': self._analyze_formality_level(token)
-                    })
-                
-                # Check for discourse markers and filler words
-                if (token.dep_ == 'discourse' or 
-                    (token.lemma_.lower() in ['like', 'you know', 'basically', 'actually'] and 
-                     token.pos_ in ['INTJ', 'ADV'])):
-                    
-                    informal_patterns.append({
-                        'token': self._token_to_dict(token),
-                        'text': token.text,
-                        'type': 'discourse_marker',
-                        'morphological_features': self._get_morphological_features(token),
-                        'semantic_field': self._analyze_semantic_field(token)
-                    })
-                
-                # Check for overly casual intensifiers
-                if (token.pos_ == 'ADV' and 
-                    token.lemma_.lower() in ['really', 'totally', 'super', 'way'] and
-                    any(child.pos_ == 'ADJ' for child in token.children)):
-                    
-                    informal_patterns.append({
-                        'token': self._token_to_dict(token),
-                        'text': token.text,
-                        'type': 'casual_intensifier',
-                        'morphological_features': self._get_morphological_features(token),
-                        'modified_adjective': [self._token_to_dict(child) for child in token.children if child.pos_ == 'ADJ']
-                    })
-        
-        except Exception:
-            pass
-        
-        return informal_patterns

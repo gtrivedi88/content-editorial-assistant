@@ -13,3 +13,5 @@ data/
 cache/
 temp/
 .env
+
+CLAUDE.md
