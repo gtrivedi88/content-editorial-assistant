@@ -258,40 +258,21 @@ class ToneRule(BaseAudienceRule):
     
     def _is_phrase_in_actual_quotes(self, phrase: str, sent_text: str, issue: Dict[str, Any]) -> bool:
         """
-        Surgical check: Is the phrase actually within quotation marks?
-        Only returns True for genuine quoted content, not incidental apostrophes.
+        Check if phrase is in quoted text using simple, reliable pattern matching.
         """
-        match_start = issue.get('match_start', 0)
-        match_end = issue.get('match_end', len(phrase))
+        # Simple regex patterns for common quote structures
+        quote_patterns = [
+            r'[""\'\']\s*[^""\'\']*?' + re.escape(phrase) + r'[^""\'\']*?\s*[""\'\']+',
+            r':\s*[""\'\']\s*[^""\'\']*?' + re.escape(phrase) + r'[^""\'\']*?\s*[""\'\']+',
+            r'said[^.]*?[""\'\']\s*[^""\'\']*?' + re.escape(phrase) + r'[^""\'\']*?\s*[""\'\']+',
+            r'announced[^.]*?[""\'\']\s*[^""\'\']*?' + re.escape(phrase) + r'[^""\'\']*?\s*[""\'\']+',
+        ]
         
-        # Look for quote pairs that actually enclose the phrase
-        quote_chars = ['"', '"', '"', "'", "'", "'"]
+        for pattern in quote_patterns:
+            if re.search(pattern, sent_text, re.IGNORECASE):
+                return True
         
-        # Check text before phrase for opening quote
-        before_text = sent_text[:match_start]
-        after_text = sent_text[match_end:]
-        
-        # Find closest quote before and after
-        open_quote_found = False
-        close_quote_found = False
-        
-        # Look backwards for opening quote
-        for i in range(len(before_text) - 1, -1, -1):
-            if before_text[i] in quote_chars:
-                open_quote_found = True
-                break
-            elif before_text[i] in '.!?':  # Sentence boundary
-                break
-                
-        # Look forwards for closing quote
-        for i in range(len(after_text)):
-            if after_text[i] in quote_chars:
-                close_quote_found = True
-                break
-            elif after_text[i] in '.!?':  # Sentence boundary
-                break
-        
-        return open_quote_found and close_quote_found
+        return False
     
     def _is_intentional_informal_context(self, sentence_obj, context: Dict[str, Any]) -> bool:
         """
