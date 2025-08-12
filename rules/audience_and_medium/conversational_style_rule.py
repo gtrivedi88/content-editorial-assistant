@@ -75,6 +75,12 @@ class ConversationalStyleRule(BaseAudienceRule):
 
     def _calculate_conversational_evidence(self, token, sentence, text: str, context: Dict[str, Any]) -> float:
         """Calculate evidence (0.0-1.0) that a word is too formal for a conversational style."""
+        
+        # === ZERO FALSE POSITIVE GUARDS FIRST ===
+        # Apply common audience guards
+        if self._apply_zero_false_positive_guards_audience(token, context):
+            return 0.0
+        
         evidence: float = 0.6  # base for formal term present
 
         # Linguistic clues (micro)
@@ -121,9 +127,9 @@ class ConversationalStyleRule(BaseAudienceRule):
     def _apply_structural_clues_conversational(self, evidence: float, context: Dict[str, Any]) -> float:
         block_type = (context or {}).get('block_type', 'paragraph')
         if block_type in {'code_block', 'literal_block'}:
-            return evidence - 0.6
+            return 0.0  # Code blocks should not flag conversational style issues
         if block_type == 'inline_code':
-            return evidence - 0.4
+            return 0.0  # Inline code should not flag conversational style issues
         if block_type in {'table_cell', 'table_header'}:
             evidence -= 0.05
         if block_type in {'heading', 'title'}:
@@ -139,12 +145,19 @@ class ConversationalStyleRule(BaseAudienceRule):
         if content_type in {'marketing', 'tutorial', 'procedural'}:
             evidence += 0.1
         if content_type in {'api', 'technical'}:
-            evidence += 0.05  # still beneficial, but slightly less strong
+            # Technical content for experts should be more permissive
+            if audience in {'expert', 'developer'}:
+                evidence -= 0.2  # Much more permissive for technical experts
+            else:
+                evidence += 0.05  # still beneficial for general technical content
         if content_type in {'legal', 'academic'}:
             evidence -= 0.15  # formal tone acceptable
 
         if audience in {'beginner', 'general', 'user'}:
             evidence += 0.05
+        elif audience in {'expert', 'developer'}:
+            evidence -= 0.1  # Experts more comfortable with formal terms
+            
         if domain in {'legal', 'finance'}:
             evidence -= 0.05
 

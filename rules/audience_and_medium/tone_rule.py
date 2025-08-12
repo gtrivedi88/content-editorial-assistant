@@ -91,9 +91,13 @@ class ToneRule(BaseAudienceRule):
             
             # Clear business jargon (high base evidence)
             "low-hanging fruit": 0.85,
+            "low hanging fruit": 0.85,  # Handle both hyphenated and non-hyphenated versions
             "a slam dunk": 0.85,
+            "slam dunk": 0.85,  # Handle both with and without article
             "game changer": 0.85,
+            "game-changer": 0.85,  # Handle hyphenated version
             "move the needle": 0.85,
+            "leverage": 0.8,  # Add common business term
             
             # Common informal expressions (medium-high base evidence)
             "nail it": 0.8,

@@ -32,10 +32,21 @@ class LLMConsumabilityRule(BaseAudienceRule):
             return errors
 
         # ENTERPRISE CONTEXT INTELLIGENCE: Check if completeness rules should apply
+        # Special handling for LLM consumability - only block for clear non-content cases
         content_classification = self._get_content_classification(text, context, nlp)
-        should_apply = self._should_apply_rule(self._get_rule_category(), content_classification)
-        if not should_apply:
-            return errors
+        
+        # LLM consumability should apply more broadly than other completeness rules
+        # Only skip for content that is clearly not meant to be consumed by LLMs
+        if content_classification in ['technical_identifier', 'navigation_label']:
+            # But allow if it's in a regular paragraph context (could be incomplete sentence)
+            block_type = context.get('block_type', 'paragraph') if context else 'paragraph'
+            if block_type in ['paragraph', 'admonition', 'list_item']:
+                # Let it proceed - might be incomplete descriptive content
+                pass
+            else:
+                return errors  # Skip for table headers, code blocks, etc.
+        
+        # For all other classifications (including data_reference), proceed with analysis
 
         doc = nlp(text)
 
@@ -88,14 +99,16 @@ class LLMConsumabilityRule(BaseAudienceRule):
         length = len(tokens)
 
         # Base evidence rises steeply for very short sentences
-        if length >= 12:
+        if length >= 10:  # More generous for adequate length
             base = 0.0
-        elif length >= 8:
-            base = 0.2
-        elif length >= 5:
-            base = 0.45
-        else:
-            base = 0.75
+        elif length >= 6:   # 6-9 words is acceptable
+            base = 0.1
+        elif length >= 4:   # 4-5 words needs some expansion
+            base = 0.3
+        elif length >= 2:   # 2-3 words likely needs expansion
+            base = 0.6
+        else:               # 1 word definitely needs expansion
+            base = 0.8
 
         evidence: float = base
 
@@ -150,28 +163,37 @@ class LLMConsumabilityRule(BaseAudienceRule):
     def _apply_structural_clues_llm(self, ev: float, context: Dict[str, Any]) -> float:
         block_type = (context or {}).get('block_type', 'paragraph')
         if block_type in {'code_block', 'literal_block'}:
-            return ev - 0.6
+            return 0.0  # Code should not be flagged for LLM consumability
         if block_type == 'inline_code':
-            return ev - 0.4
+            return 0.0  # Inline code should not be flagged
         if block_type in {'table_cell', 'table_header'}:
-            ev -= 0.1
+            ev -= 0.2  # Tables are more permissive for short content
         if block_type in {'heading', 'title'}:
-            ev -= 0.05
+            ev -= 0.3  # Headings are naturally short
         if block_type == 'admonition':
-            ev -= 0.05
+            ev -= 0.1  # Admonitions can be concise
         return ev
 
     def _apply_semantic_clues_llm(self, ev: float, context: Dict[str, Any]) -> float:
         content_type = (context or {}).get('content_type', 'general')
         audience = (context or {}).get('audience', 'general')
 
-        if content_type in {'procedural', 'tutorial', 'how_to', 'api', 'technical'}:
-            ev += 0.1
-        if content_type in {'marketing', 'narrative'}:
-            ev -= 0.05
+        # Procedural content benefits from completeness for LLMs
+        if content_type in {'procedural', 'tutorial', 'how_to'}:
+            ev += 0.05  # Reduced from 0.1 to be less aggressive
+        elif content_type in {'api', 'technical'}:
+            # Technical content for experts can be more concise
+            if audience in {'expert', 'developer'}:
+                ev -= 0.1  # Technical experts can handle brief content
+            else:
+                ev += 0.05  # General audience needs more context
+        elif content_type in {'marketing', 'narrative'}:
+            ev -= 0.1  # Marketing can be punchy and brief
 
         if audience in {'beginner', 'general', 'user'}:
-            ev += 0.05
+            ev += 0.05  # General users need more context
+        elif audience in {'expert', 'developer'}:
+            ev -= 0.05  # Experts can understand brief content
 
         return ev
 

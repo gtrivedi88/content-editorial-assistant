@@ -148,9 +148,9 @@ class GlobalAudiencesRule(BaseAudienceRule):
     def _apply_structural_clues_global(self, evidence: float, context: Dict[str, Any]) -> float:
         block_type = (context or {}).get('block_type', 'paragraph')
         if block_type in {'code_block', 'literal_block'}:
-            return evidence - 0.7
+            return 0.0  # Code blocks should not be flagged for global audience issues
         if block_type == 'inline_code':
-            return evidence - 0.5
+            return 0.0  # Inline code should not be flagged
         if block_type in {'table_cell', 'table_header'}:
             evidence -= 0.1
         if block_type in {'heading', 'title'}:
