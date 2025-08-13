@@ -1,0 +1,130 @@
+# UI Elements Rule Configuration
+# Production-grade YAML configuration for UI element interaction patterns
+# Evidence-based scoring with context adjustments
+
+# UI Element Verb Mapping - Correct and incorrect verbs for UI elements
+ui_elements:
+  high_specificity:
+    - element: "checkbox"
+      approved_verbs: ["select", "check", "clear", "uncheck", "toggle"]
+      incorrect_verbs: ["click", "press", "push", "hit", "tap"]
+      evidence: 0.85
+      category: "selection_element"
+      description: "Checkbox interactions should use selection terminology"
+      
+    - element: "radio button"
+      approved_verbs: ["select", "choose"]
+      incorrect_verbs: ["click", "press", "push", "hit", "tap", "check"]
+      evidence: 0.85
+      category: "selection_element"
+      description: "Radio button interactions should use selection terminology"
+      
+    - element: "toggle"
+      approved_verbs: ["toggle", "switch", "turn on", "turn off"]
+      incorrect_verbs: ["click", "press", "select", "check"]
+      evidence: 0.8
+      category: "toggle_element"
+      description: "Toggle interactions should use toggle terminology"
+      
+    - element: "switch"
+      approved_verbs: ["toggle", "switch", "turn on", "turn off"]
+      incorrect_verbs: ["click", "press", "select", "check"]
+      evidence: 0.8
+      category: "toggle_element"
+      description: "Switch interactions should use toggle terminology"
+
+  medium_specificity:
+    - element: "field"
+      approved_verbs: ["type", "enter", "specify", "input", "fill"]
+      incorrect_verbs: ["click", "select", "press", "choose"]
+      evidence: 0.75
+      category: "input_element"
+      description: "Field interactions should use input terminology"
+      
+    - element: "text box"
+      approved_verbs: ["type", "enter", "input", "fill"]
+      incorrect_verbs: ["click", "select", "press"]
+      evidence: 0.75
+      category: "input_element"
+      description: "Text box interactions should use input terminology"
+      
+    - element: "dropdown"
+      approved_verbs: ["select", "choose", "open"]
+      incorrect_verbs: ["type", "enter", "fill", "press"]
+      evidence: 0.8
+      category: "selection_element"
+      description: "Dropdown interactions should use selection terminology"
+      
+    - element: "menu"
+      approved_verbs: ["select", "choose", "navigate"]
+      incorrect_verbs: ["type", "enter", "fill"]
+      evidence: 0.7
+      category: "navigation_element"
+      description: "Menu interactions should use navigation terminology"
+      
+    - element: "list"
+      approved_verbs: ["select", "choose"]
+      incorrect_verbs: ["type", "enter", "press", "push"]
+      evidence: 0.7
+      category: "selection_element"
+      description: "List interactions should use selection terminology"
+
+  lower_specificity:
+    - element: "button"
+      approved_verbs: ["click", "press", "select"]
+      incorrect_verbs: ["type", "enter", "fill"]
+      evidence: 0.6
+      category: "action_element"
+      description: "Button interactions should use action terminology"
+      
+    - element: "link"
+      approved_verbs: ["click", "select", "follow"]
+      incorrect_verbs: ["type", "enter", "fill", "press"]
+      evidence: 0.65
+      category: "navigation_element"
+      description: "Link interactions should use navigation terminology"
+      
+    - element: "icon"
+      approved_verbs: ["click", "select"]
+      incorrect_verbs: ["type", "enter", "fill"]
+      evidence: 0.6
+      category: "action_element"
+      description: "Icon interactions should use action terminology"
+
+# Context Adjustments
+context_adjustments:
+  content_type:
+    user_guide: -0.05
+    tutorial: -0.1
+    technical: 0.0
+    
+  audience:
+    general: 0.1
+    beginner: 0.05
+    expert: 0.0
+
+# Thresholds and Messages
+thresholds:
+  detection_threshold: 0.1
+  high_confidence: 0.8
+
+messages:
+  high_confidence:
+    template: "UI element '{element}' should not use verb '{incorrect_verb}'. Use appropriate interaction terminology instead."
+
+suggestions:
+  high_confidence:
+    - "Use appropriate verb for {element}: {approved_verbs}"
+    - "UI documentation benefits from precise interaction terminology"
+
+guard_patterns:
+  code_blocks: true
+  inline_code: true
+  literal_blocks: true
+  
+  legitimate_contexts:
+    - "ui element"
+    - "user interface"
+    - "interface element"
+    - "form element"
+    - "control element"

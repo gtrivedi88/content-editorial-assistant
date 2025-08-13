@@ -1,0 +1,110 @@
+# Programming Elements Rule Configuration
+# Production-grade YAML configuration for programming keyword patterns
+# Evidence-based scoring with context adjustments
+
+# Programming Keywords - Keywords that shouldn't be used as verbs
+programming_keywords:
+  sql_keywords:
+    - keyword: "select"
+      evidence: 0.85
+      category: "sql_command"
+      description: "SQL keyword used as verb"
+      legitimate_patterns: ["select statement", "select query", "sql select", "select command", "select a", "select an", "select from"]
+      
+    - keyword: "insert"
+      evidence: 0.85
+      category: "sql_command"
+      description: "SQL keyword used as verb"
+      legitimate_patterns: ["insert statement", "insert query", "sql insert", "insert command", "insert a", "insert an", "insert into"]
+      
+    - keyword: "update"
+      evidence: 0.85
+      category: "sql_command"
+      description: "SQL keyword used as verb"
+      legitimate_patterns: ["update statement", "update query", "sql update", "update command", "keep updated", "stay updated", "regularly update", "update your", "update the", "update information", "update status", "update progress", "update settings", "update profile"]
+      
+    - keyword: "delete"
+      evidence: 0.85
+      category: "sql_command"
+      description: "SQL keyword used as verb"
+      legitimate_patterns: ["delete statement", "delete query", "sql delete", "delete command", "delete files", "delete manually", "delete content", "delete permanently", "delete selected", "delete all"]
+
+  language_keywords:
+    - keyword: "import"
+      evidence: 0.8
+      category: "language_keyword"
+      description: "Programming keyword used as verb"
+      legitimate_patterns: ["import statement", "import module", "import package", "import library"]
+      
+    - keyword: "export"
+      evidence: 0.8
+      category: "language_keyword"
+      description: "Programming keyword used as verb"
+      legitimate_patterns: ["export statement", "export function", "export module", "export data"]
+      
+    - keyword: "return"
+      evidence: 0.7
+      category: "language_keyword"
+      description: "Programming keyword used as verb"
+      legitimate_patterns: ["return statement", "return value", "function returns", "method returns", "returns a", "returns an", "returns the", "returns data", "returns object", "return home", "return items", "return call", "return later", "return policy", "function will return", "method will return", "will return a", "will return the", "return the result"]
+      
+    - keyword: "throw"
+      evidence: 0.75
+      category: "language_keyword"
+      description: "Programming keyword used as verb"
+      legitimate_patterns: ["throw statement", "throw exception", "throw error"]
+      
+    - keyword: "catch"
+      evidence: 0.7
+      category: "language_keyword"
+      description: "Programming keyword used as verb"
+      legitimate_patterns: ["catch block", "catch exception", "catch error", "try catch"]
+
+  api_keywords:
+    - keyword: "execute"
+      evidence: 0.6
+      category: "api_keyword"
+      description: "API keyword used as verb"
+      legitimate_patterns: ["execute command", "execute function", "execute query", "execute script"]
+      
+    - keyword: "invoke"
+      evidence: 0.7
+      category: "api_keyword"
+      description: "API keyword used as verb"
+      legitimate_patterns: ["invoke method", "invoke function", "invoke api"]
+      
+    - keyword: "call"
+      evidence: 0.4
+      category: "api_keyword"
+      description: "API keyword used as verb (low confidence due to common usage)"
+      legitimate_patterns: ["api call", "function call", "method call", "call function", "call api", "phone call", "call support", "call meeting"]
+
+# Context Adjustments
+context_adjustments:
+  content_type:
+    technical: 0.0
+    api: 0.0
+    tutorial: -0.1
+    
+  audience:
+    developer: 0.0
+    general: 0.1
+
+# Thresholds and Messages
+thresholds:
+  detection_threshold: 0.1
+  high_confidence: 0.8
+
+messages:
+  high_confidence:
+    template: "Programming keyword '{keyword}' is being used as a verb. Use proper programming syntax instead."
+
+suggestions:
+  high_confidence:
+    - "Use proper programming syntax: 'Use the {keyword} statement'"
+    - "Consider: 'Execute {keyword} to...'"
+
+guard_patterns:
+  code_blocks: true
+  inline_code: true
+  literal_blocks: true

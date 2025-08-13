@@ -1,0 +1,240 @@
+# Keyboard Keys Rule Configuration
+# Production-grade YAML configuration for keyboard key formatting patterns
+# Evidence-based scoring with context adjustments
+
+# Key Combination Violations - Formatting issues in key combinations
+key_combinations:
+  lowercase_violations:
+    - pattern: "ctrl\\+[A-Za-z0-9]+"
+      evidence: 0.9
+      category: "lowercase_key"
+      description: "Lowercase modifier keys should be capitalized"
+      correct_format: "Ctrl+{key}"
+      
+    - pattern: "alt\\+[A-Za-z0-9]+"
+      evidence: 0.9
+      category: "lowercase_key"
+      description: "Lowercase Alt key should be capitalized"
+      correct_format: "Alt+{key}"
+      
+    - pattern: "shift\\+[A-Za-z0-9]+"
+      evidence: 0.9
+      category: "lowercase_key"
+      description: "Lowercase Shift key should be capitalized"
+      correct_format: "Shift+{key}"
+      
+    - pattern: "cmd\\+[A-Za-z0-9]+"
+      evidence: 0.9
+      category: "lowercase_key"
+      description: "Lowercase Cmd key should be capitalized"
+      correct_format: "Cmd+{key}"
+      
+    - pattern: "command\\+[A-Za-z0-9]+"
+      evidence: 0.9
+      category: "lowercase_key"
+      description: "Lowercase Command key should be capitalized"
+      correct_format: "Command+{key}"
+
+  spacing_violations:
+    - pattern: "(Ctrl|Alt|Shift|Cmd|Command)\\s+[A-Za-z0-9]+"
+      evidence: 0.85
+      category: "missing_plus"
+      description: "Key combinations should use + separator, not space"
+      correct_format: "{modifier}+{key}"
+      
+    - pattern: "(Ctrl|Alt|Shift|Cmd|Command)\\s+(Ctrl|Alt|Shift|Cmd|Command)\\s+[A-Za-z0-9]+"
+      evidence: 0.9
+      category: "missing_plus_triple"
+      description: "Triple key combinations should use + separators"
+      correct_format: "{modifier1}+{modifier2}+{key}"
+
+# Individual Key Names - Standalone key formatting
+individual_keys:
+  lowercase_keys:
+    - key: "enter"
+      evidence: 0.8
+      category: "lowercase_key_name"
+      correct_format: "Enter"
+      legitimate_patterns: ["enter key", "press enter", "hit enter"]
+      
+    - key: "shift"
+      evidence: 0.8
+      category: "lowercase_key_name"
+      correct_format: "Shift"
+      legitimate_patterns: ["shift key", "press shift", "hold shift"]
+      
+    - key: "alt"
+      evidence: 0.8
+      category: "lowercase_key_name"
+      correct_format: "Alt"
+      legitimate_patterns: ["alt key", "press alt", "alt text"]
+      
+    - key: "ctrl"
+      evidence: 0.8
+      category: "lowercase_key_name"
+      correct_format: "Ctrl"
+      legitimate_patterns: ["ctrl key", "press ctrl", "control key"]
+      
+    - key: "esc"
+      evidence: 0.75
+      category: "lowercase_key_name"
+      correct_format: "Esc"
+      legitimate_patterns: ["esc key", "press esc", "escape key"]
+      
+    - key: "tab"
+      evidence: 0.7
+      category: "lowercase_key_name"
+      correct_format: "Tab"
+      legitimate_patterns: ["tab key", "press tab", "tab character"]
+      
+    - key: "return"
+      evidence: 0.8
+      category: "lowercase_key_name"
+      correct_format: "Return"
+      legitimate_patterns: ["return key", "press return"]
+      
+    - key: "backspace"
+      evidence: 0.8
+      category: "lowercase_key_name"
+      correct_format: "Backspace"
+      legitimate_patterns: ["backspace key", "press backspace"]
+      
+    - key: "space"
+      evidence: 0.6
+      category: "lowercase_key_name"
+      correct_format: "Space"
+      legitimate_patterns: ["space key", "space bar", "press space"]
+      
+    - key: "delete"
+      evidence: 0.7
+      category: "lowercase_key_name"
+      correct_format: "Delete"
+      legitimate_patterns: ["delete key", "press delete"]
+      
+    - key: "home"
+      evidence: 0.6
+      category: "lowercase_key_name"
+      correct_format: "Home"
+      legitimate_patterns: ["home key", "press home", "home directory"]
+      
+    - key: "end"
+      evidence: 0.6
+      category: "lowercase_key_name"
+      correct_format: "End"
+      legitimate_patterns: ["end key", "press end", "at the end"]
+      
+    - key: "pageup"
+      evidence: 0.75
+      category: "lowercase_key_name"
+      correct_format: "Page Up"
+      legitimate_patterns: ["page up key", "press page up"]
+      
+    - key: "pagedown"
+      evidence: 0.75
+      category: "lowercase_key_name"
+      correct_format: "Page Down"
+      legitimate_patterns: ["page down key", "press page down"]
+      
+    - key: "insert"
+      evidence: 0.75
+      category: "lowercase_key_name"
+      correct_format: "Insert"
+      legitimate_patterns: ["insert key", "press insert", "insert mode"]
+
+# Function Keys
+function_keys:
+  - pattern: "f[0-9]+"
+    evidence: 0.8
+    category: "lowercase_function_key"
+    description: "Function keys should be capitalized"
+    correct_format: "F{number}"
+
+# Context Adjustments
+context_adjustments:
+  content_type:
+    tutorial: -0.1
+    technical: 0.0
+    api: 0.0
+    developer: 0.0
+    guide: -0.05
+    
+  audience:
+    developer: 0.0
+    engineer: 0.0
+    expert: 0.0
+    general: 0.1
+    beginner: 0.05
+    
+  domain:
+    software: 0.0
+    programming: 0.0
+    gaming: -0.1        # Gaming contexts may be more casual
+    design: 0.0
+    general: 0.1
+
+# Evidence Thresholds
+thresholds:
+  detection_threshold: 0.1
+  high_confidence: 0.8
+  medium_confidence: 0.6
+
+# Message Templates
+messages:
+  high_confidence:
+    template: "Key combination '{flagged_text}' should use proper formatting: {correct_format}"
+    examples:
+      - "Use 'Ctrl+C' instead of 'ctrl+c'"
+      - "Use 'Alt+F4' instead of 'alt+f4'"
+      
+  medium_confidence:
+    template: "Consider formatting '{flagged_text}' as '{correct_format}' for consistency"
+    examples:
+      - "Proper key formatting improves documentation clarity"
+      
+  low_confidence:
+    template: "'{flagged_text}' formatting is acceptable but could follow standard conventions"
+    examples:
+      - "This is a minor formatting suggestion"
+
+# Suggestions
+suggestions:
+  high_confidence:
+    - "Use proper capitalization: {correct_format}"
+    - "Key combinations should use + separator: {correct_format}"
+    - "Follow standard keyboard notation: {correct_format}"
+    
+  medium_confidence:
+    - "Consider using standard key formatting: {correct_format}"
+    - "Consistent key notation improves user interface documentation"
+    
+  low_confidence:
+    - "Optional: Use standard key formatting for consistency"
+    - "This follows common keyboard notation conventions"
+
+# Guard Patterns
+guard_patterns:
+  code_blocks: true
+  inline_code: true
+  literal_blocks: true
+  
+  legitimate_contexts:
+    - "keyboard shortcut"
+    - "key combination"
+    - "hotkey"
+    - "accelerator key"
+    - "keyboard mapping"
+    - "key binding"
+    - "keyboard input"
+    - "keystroke"
+    - "key sequence"
+    
+  non_keyboard_contexts:
+    - "function returns"
+    - "return value"
+    - "return statement"
+    - "home directory"
+    - "home page"
+    - "delete file"
+    - "insert into"
+    - "end of"
+    - "space between"

@@ -5,6 +5,7 @@ Evidence-based analysis with surgical zero false positive guards for mouse actio
 """
 from typing import List, Dict, Any
 from .base_technical_rule import BaseTechnicalRule
+from .services.technical_config_service import TechnicalConfigServices, TechnicalContext
 import re
 
 try:
@@ -22,10 +23,17 @@ class MouseButtonsRule(BaseTechnicalRule):
     - UI element interaction phrasing
     
     Features:
+    - YAML-based configuration for maintainable pattern management
     - Surgical zero false positive guards for mouse action contexts
     - Dynamic base evidence scoring based on action specificity
     - Evidence-aware messaging for UI interaction documentation
     """
+    
+    def __init__(self):
+        """Initialize with YAML configuration service."""
+        super().__init__()
+        self.config_service = TechnicalConfigServices.mouse()
+    
     def _get_rule_type(self) -> str:
         return 'technical_mouse_buttons'
 
@@ -69,19 +77,19 @@ class MouseButtonsRule(BaseTechnicalRule):
         return errors
     
     def _find_potential_mouse_issues(self, doc, text: str, context: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Find potential mouse action issues for evidence assessment."""
+        """Find potential mouse action issues for evidence assessment using YAML configuration."""
         issues = []
         
-        # Mouse action patterns with unnecessary prepositions
-        mouse_action_patterns = {
-            r'\bclick on\b': 0.85,      # High evidence for "click on"
-            r'\bdouble-click on\b': 0.85,  # High evidence for "double-click on"
-            r'\bright-click on\b': 0.85,   # High evidence for "right-click on"
-            r'\bselect on\b': 0.8,      # High evidence for "select on"
-            r'\bchoose on\b': 0.75,     # Medium-high evidence for "choose on"
-            r'\btap on\b': 0.7,        # Medium evidence for "tap on" (mobile context)
-            r'\bpress on\b': 0.6,      # Lower evidence (can be legitimate)
-        }
+        # Load mouse action patterns from YAML configuration
+        all_patterns = self.config_service.get_patterns()
+        mouse_action_patterns = {}
+        
+        for pattern_id, pattern_config in all_patterns.items():
+            if hasattr(pattern_config, 'pattern'):
+                # This is a mouse action pattern - create regex pattern
+                action = pattern_config.pattern
+                regex_pattern = rf'\b{re.escape(action)}\b'
+                mouse_action_patterns[regex_pattern] = pattern_config.evidence
         
         for i, sent in enumerate(doc.sents):
             sent_text = sent.text
@@ -89,6 +97,14 @@ class MouseButtonsRule(BaseTechnicalRule):
             # Check for each mouse action pattern
             for pattern, base_evidence in mouse_action_patterns.items():
                 for match in re.finditer(pattern, sent_text, re.IGNORECASE):
+                    # Find corresponding pattern config for additional details
+                    pattern_config = None
+                    action_phrase = match.group(0).strip()
+                    for pid, config in all_patterns.items():
+                        if hasattr(config, 'pattern') and config.pattern.lower() == action_phrase.lower():
+                            pattern_config = config
+                            break
+                    
                     issues.append({
                         'type': 'mouse',
                         'subtype': 'unnecessary_preposition',
@@ -100,7 +116,8 @@ class MouseButtonsRule(BaseTechnicalRule):
                         'base_evidence': base_evidence,
                         'flagged_text': match.group(0),
                         'match_obj': match,
-                        'sentence_obj': sent
+                        'sentence_obj': sent,
+                        'pattern_config': pattern_config
                     })
         
         return issues
@@ -132,11 +149,19 @@ class MouseButtonsRule(BaseTechnicalRule):
             'text': action_phrase, 
             'sent': sentence_obj
         })
-        if self._apply_surgical_zero_false_positive_guards_technical(mock_token, context):
-            return 0.0
+        # Apply selective technical guards (skip technical context guard for mouse actions)
+        # Mouse action violations should be flagged even in technical contexts
+        
+        # Only check code blocks
+        block_type = context.get('block_type', 'paragraph')
+        if block_type in ['code_block', 'literal_block', 'inline_code']:
+            return 0.0  # Code blocks have their own formatting rules
         
         # === DYNAMIC BASE EVIDENCE ASSESSMENT ===
         evidence_score = issue.get('base_evidence', 0.7)
+        
+        # === CONTEXT ADJUSTMENTS FROM YAML ===
+        evidence_score = self.config_service.calculate_context_evidence(evidence_score, context or {})
         
         # === LINGUISTIC CLUES ===
         evidence_score = self._apply_mouse_linguistic_clues(evidence_score, issue, sentence_obj)

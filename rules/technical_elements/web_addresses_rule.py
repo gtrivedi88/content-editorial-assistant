@@ -5,6 +5,7 @@ Evidence-based analysis with surgical zero false positive guards for web address
 """
 from typing import List, Dict, Any
 from .base_technical_rule import BaseTechnicalRule
+from .services.technical_config_service import TechnicalConfigServices, TechnicalContext
 import re
 
 try:
@@ -14,19 +15,20 @@ except ImportError:
 
 class WebAddressesRule(BaseTechnicalRule):
     """
-    PRODUCTION-GRADE: Checks for common formatting errors in web addresses, such as trailing slashes.
-    
-    Implements rule-specific evidence calculation for:
-    - URLs with unnecessary trailing slashes
-    - Inconsistent URL formatting in documentation
-    - Missing protocol specifications
-    - Email address formatting issues
+    Checks for common formatting errors in web addresses.
     
     Features:
+    - YAML-based configuration for maintainable pattern management
     - Surgical zero false positive guards for web address contexts
     - Dynamic base evidence scoring based on address type specificity
     - Evidence-aware messaging for web documentation
     """
+    
+    def __init__(self):
+        """Initialize with YAML configuration service."""
+        super().__init__()
+        self.config_service = TechnicalConfigServices.web_addresses()
+    
     def _get_rule_type(self) -> str:
         return 'technical_web_addresses'
 
@@ -73,36 +75,19 @@ class WebAddressesRule(BaseTechnicalRule):
         """Find potential web address issues for evidence assessment."""
         issues = []
         
-        # Web address patterns with their base evidence scores
-        web_address_patterns = {
-            # URLs with trailing slashes (high evidence for violation)
-            r'https?://[^\s/]+/[^\s]*?/(?=\s|$|[.!?])': {
-                'type': 'trailing_slash',
-                'base_evidence': 0.8,
-                'description': 'URL with unnecessary trailing slash'
-            },
-            
-            # URLs without protocol in documentation (medium evidence)
-            r'(?<![:/])www\.[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(?:[/\w.-]*)?': {
-                'type': 'missing_protocol',
-                'base_evidence': 0.6,
-                'description': 'URL missing protocol specification'
-            },
-            
-            # Inconsistent URL formatting (mixed protocols)
-            r'(?:http://.*?)(?=\s+https://)|(?:https://.*?)(?=\s+http://)': {
-                'type': 'mixed_protocols',
-                'base_evidence': 0.7,
-                'description': 'Mixed HTTP/HTTPS protocols in same context'
-            },
-            
-            # Email addresses with formatting issues
-            r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b': {
-                'type': 'email_format',
-                'base_evidence': 0.5,  # Lower - most emails are formatted correctly
-                'description': 'Email address formatting check'
-            }
-        }
+        # Load web address patterns from YAML configuration
+        all_patterns = self.config_service.get_patterns()
+        web_address_patterns = {}
+        
+        for pattern_id, pattern_config in all_patterns.items():
+            if hasattr(pattern_config, 'pattern'):
+                # This is a web address pattern
+                web_address_patterns[pattern_config.pattern] = {
+                    'type': pattern_config.category,
+                    'base_evidence': pattern_config.evidence,
+                    'description': pattern_config.description,
+                    'pattern_config': pattern_config
+                }
         
         for i, sent in enumerate(doc.sents):
             sent_text = sent.text
@@ -127,7 +112,8 @@ class WebAddressesRule(BaseTechnicalRule):
                                 'flagged_text': url,
                                 'match_obj': match,
                                 'sentence_obj': sent,
-                                'description': pattern_info['description']
+                                'description': pattern_info['description'],
+                                'pattern_config': pattern_info.get('pattern_config')
                             })
                     
                     elif pattern_info['type'] == 'missing_protocol':
@@ -145,8 +131,45 @@ class WebAddressesRule(BaseTechnicalRule):
                                 'flagged_text': match.group(0),
                                 'match_obj': match,
                                 'sentence_obj': sent,
-                                'description': pattern_info['description']
+                                'description': pattern_info['description'],
+                                'pattern_config': pattern_info.get('pattern_config')
                             })
+                    
+                    elif pattern_info['type'] == 'mixed_protocols':
+                        # Flag mixed HTTP/HTTPS protocols
+                        issues.append({
+                            'type': 'web_address',
+                            'subtype': pattern_info['type'],
+                            'url': match.group(0),
+                            'text': match.group(0),
+                            'sentence': sent_text,
+                            'sentence_index': i,
+                            'span': [sent.start_char + match.start(), sent.start_char + match.end()],
+                            'base_evidence': pattern_info['base_evidence'],
+                            'flagged_text': match.group(0),
+                            'match_obj': match,
+                            'sentence_obj': sent,
+                            'description': pattern_info['description'],
+                            'pattern_config': pattern_info.get('pattern_config')
+                        })
+                    
+                    elif pattern_info['type'] == 'email_format':
+                        # Flag email addresses for format consideration
+                        issues.append({
+                            'type': 'web_address',
+                            'subtype': pattern_info['type'],
+                            'url': match.group(0),
+                            'text': match.group(0),
+                            'sentence': sent_text,
+                            'sentence_index': i,
+                            'span': [sent.start_char + match.start(), sent.start_char + match.end()],
+                            'base_evidence': pattern_info['base_evidence'],
+                            'flagged_text': match.group(0),
+                            'match_obj': match,
+                            'sentence_obj': sent,
+                            'description': pattern_info['description'],
+                            'pattern_config': pattern_info.get('pattern_config')
+                        })
         
         return issues
     
@@ -208,20 +231,29 @@ class WebAddressesRule(BaseTechnicalRule):
         if self._is_api_documentation_url(url, sentence_obj, context):
             return 0.0  # API docs often have specific URL requirements
             
-        # === GUARD 4: PLACEHOLDER OR EXAMPLE URLS ===
-        if self._is_placeholder_url(url, sentence_obj, context):
-            return 0.0  # Example URLs don't need perfect formatting
+        # === GUARD 4: PLACEHOLDER OR EXAMPLE URLS (SELECTIVE) ===
+        # Only protect localhost and actual placeholders, not example.com URLs
+        if 'localhost' in url.lower() or '127.0.0.1' in url or 'placeholder' in url.lower():
+            return 0.0  # Localhost and true placeholders don't need perfect formatting
             
         # Apply common technical guards
         mock_token = type('MockToken', (), {
             'text': url, 
             'sent': sentence_obj
         })
-        if self._apply_surgical_zero_false_positive_guards_technical(mock_token, context):
-            return 0.0
+        # Apply selective technical guards (skip technical context guard for web addresses)  
+        # Web address violations should be flagged even in technical contexts
+        
+        # Only check code blocks
+        block_type = context.get('block_type', 'paragraph')
+        if block_type in ['code_block', 'literal_block', 'inline_code']:
+            return 0.0  # Code blocks have their own formatting rules
         
         # === DYNAMIC BASE EVIDENCE ASSESSMENT ===
         evidence_score = issue.get('base_evidence', 0.7)
+        
+        # === CONTEXT ADJUSTMENTS FROM YAML ===
+        evidence_score = self.config_service.calculate_context_evidence(evidence_score, context or {})
         
         # === LINGUISTIC CLUES ===
         evidence_score = self._apply_web_address_linguistic_clues(evidence_score, issue, sentence_obj)
@@ -240,7 +272,7 @@ class WebAddressesRule(BaseTechnicalRule):
         
         # Functional contexts where URLs need specific formatting
         functional_indicators = [
-            'curl', 'wget', 'fetch', 'request', 'api call', 'endpoint',
+            'curl', 'wget', 'fetch', 'request', 'api call', 
             'redirect', 'htaccess', 'rewrite', 'proxy', 'server config'
         ]
         
@@ -258,10 +290,10 @@ class WebAddressesRule(BaseTechnicalRule):
         """Check if URL is in API documentation context."""
         sent_text = sentence_obj.text.lower()
         
-        # API documentation indicators
+        # API documentation indicators - only for strict API specifications
         api_indicators = [
-            'api', 'endpoint', 'rest', 'graphql', 'webhook', 'callback',
-            'service', 'microservice', 'backend', 'server'
+            'openapi spec', 'swagger doc', 'api specification', 'rest specification',
+            'graphql schema', 'webhook specification'
         ]
         
         return any(indicator in sent_text for indicator in api_indicators)

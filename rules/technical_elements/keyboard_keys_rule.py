@@ -2,9 +2,11 @@
 Keyboard Keys Rule (Production-Grade)
 Based on IBM Style Guide topic: "Keyboard keys"
 Evidence-based analysis with surgical zero false positive guards for keyboard key formatting.
+Uses YAML-based configuration for maintainable pattern management.
 """
 from typing import List, Dict, Any
 from .base_technical_rule import BaseTechnicalRule
+from .services.technical_config_service import TechnicalConfigServices, TechnicalContext
 import re
 
 try:
@@ -22,10 +24,17 @@ class KeyboardKeysRule(BaseTechnicalRule):
     - Missing formatting around key references
     
     Features:
+    - YAML-based configuration for maintainable pattern management
     - Surgical zero false positive guards for keyboard contexts
     - Dynamic base evidence scoring based on key type specificity
     - Evidence-aware messaging for UI interaction documentation
     """
+    
+    def __init__(self):
+        """Initialize with YAML configuration service."""
+        super().__init__()
+        self.config_service = TechnicalConfigServices.keyboard()
+    
     def _get_rule_type(self) -> str:
         return 'technical_keyboard_keys'
 
@@ -69,60 +78,69 @@ class KeyboardKeysRule(BaseTechnicalRule):
         return errors
     
     def _find_potential_keyboard_issues(self, doc, text: str, context: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Find potential keyboard key issues for evidence assessment."""
+        """Find potential keyboard key issues for evidence assessment.
+        Uses YAML-based configuration for maintainable pattern management."""
         issues = []
         
-        # Key combination patterns (missing + separator)
-        key_combo_patterns = {
-            r'\b(Ctrl|Alt|Shift|Cmd|Command)\s+[A-Za-z0-9]+\b': 0.85,  # High evidence for key combos
-            r'\b(Ctrl|Alt|Shift|Cmd|Command)\s+(Ctrl|Alt|Shift|Cmd|Command)\s+[A-Za-z0-9]+\b': 0.9,  # Very high for triple combos
-        }
+        # Load keyboard patterns from YAML configuration
+        keyboard_patterns = self.config_service.get_patterns()
         
-        # Key names that should be capitalized
-        key_names = {
-            "enter": 0.8, "shift": 0.8, "alt": 0.8, "ctrl": 0.8, 
-            "esc": 0.75, "tab": 0.7, "return": 0.8, "backspace": 0.8,
-            "space": 0.6, "delete": 0.7, "home": 0.6, "end": 0.6,
-            "pageup": 0.75, "pagedown": 0.75, "insert": 0.75
-        }
+        # Build pattern dictionaries from YAML
+        key_combo_patterns = {}
+        key_names = {}
+        
+        for pattern_id, pattern_config in keyboard_patterns.items():
+            if hasattr(pattern_config, 'compiled_pattern') and pattern_config.compiled_pattern:
+                # Regex pattern for key combinations
+                key_combo_patterns[pattern_config.pattern] = pattern_config.evidence
+            else:
+                # Individual key names
+                key_names[pattern_config.pattern] = pattern_config.evidence
         
         for i, sent in enumerate(doc.sents):
             sent_text = sent.text
             
-            # Check for key combination issues
-            for pattern, base_evidence in key_combo_patterns.items():
-                for match in re.finditer(pattern, sent_text, re.IGNORECASE):
-                    issues.append({
-                        'type': 'keyboard',
-                        'subtype': 'key_combination_spacing',
-                        'text': match.group(0),
-                        'sentence': sent_text,
-                        'sentence_index': i,
-                        'span': [sent.start_char + match.start(), sent.start_char + match.end()],
-                        'base_evidence': base_evidence,
-                        'flagged_text': match.group(0),
-                        'match_obj': match,
-                        'sentence_obj': sent
-                    })
+            # Check for key combination issues using compiled patterns
+            for pattern_id, pattern_config in keyboard_patterns.items():
+                if hasattr(pattern_config, 'compiled_pattern') and pattern_config.compiled_pattern:
+                    for match in pattern_config.compiled_pattern.finditer(sent_text):
+                        issues.append({
+                            'type': 'keyboard',
+                            'subtype': 'key_combination_spacing',
+                            'text': match.group(0),
+                            'sentence': sent_text,
+                            'sentence_index': i,
+                            'span': [sent.start_char + match.start(), sent.start_char + match.end()],
+                            'base_evidence': pattern_config.evidence,
+                            'flagged_text': match.group(0),
+                            'match_obj': match,
+                            'sentence_obj': sent,
+                            'pattern_config': pattern_config
+                        })
             
-            # Check for lowercase key names
+            # Check for lowercase key names using YAML patterns
             for token in sent:
                 if hasattr(token, 'lemma_') and hasattr(token, 'is_lower'):
                     token_lower = token.lemma_.lower()
-                    if token_lower in key_names and token.is_lower:
-                        issues.append({
-                            'type': 'keyboard',
-                            'subtype': 'lowercase_key_name',
-                            'key_name': token_lower,
-                            'text': token.text,
-                            'sentence': sent_text,
-                            'sentence_index': i,
-                            'span': [token.idx, token.idx + len(token.text)],
-                            'base_evidence': key_names[token_lower],
-                            'flagged_text': token.text,
-                            'token': token,
-                            'sentence_obj': sent
-                        })
+                    
+                    # Find matching pattern config for this key
+                    for pattern_id, pattern_config in keyboard_patterns.items():
+                        if (not hasattr(pattern_config, 'compiled_pattern') or not pattern_config.compiled_pattern) and \
+                           pattern_config.pattern == token_lower and token.is_lower:
+                            issues.append({
+                                'type': 'keyboard',
+                                'subtype': 'lowercase_key_name',
+                                'key_name': token_lower,
+                                'text': token.text,
+                                'sentence': sent_text,
+                                'sentence_index': i,
+                                'span': [token.idx, token.idx + len(token.text)],
+                                'base_evidence': pattern_config.evidence,
+                                'flagged_text': token.text,
+                                'token': token,
+                                'sentence_obj': sent,
+                                'pattern_config': pattern_config
+                            })
         
         return issues
     
@@ -145,10 +163,13 @@ class KeyboardKeysRule(BaseTechnicalRule):
         if self._is_non_keyboard_context(flagged_text, sentence_obj, context):
             return 0.0  # Not referring to keyboard keys
             
-        # Apply common technical guards
-        token = issue.get('token')
-        if token and self._apply_surgical_zero_false_positive_guards_technical(token, context):
-            return 0.0
+        # Apply selective technical guards (skip technical context guard for keyboard keys)
+        # Keyboard key violations should be flagged even in technical contexts
+        
+        # Only check code blocks and entities
+        block_type = context.get('block_type', 'paragraph')
+        if block_type in ['code_block', 'literal_block', 'inline_code']:
+            return 0.0  # Code blocks have their own formatting rules
         
         # === DYNAMIC BASE EVIDENCE ASSESSMENT ===
         evidence_score = issue.get('base_evidence', 0.7)

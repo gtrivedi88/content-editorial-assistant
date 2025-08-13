@@ -1,0 +1,233 @@
+# Commands Rule Configuration
+# Production-grade YAML configuration for technical command patterns
+# Evidence-based scoring with context adjustments
+
+# Unix/Linux Commands - High specificity violations when used as verbs
+unix_commands:
+  high_specificity:
+    - command: "grep"
+      evidence: 0.9
+      category: "unix_utility"
+      description: "Text search utility"
+      legitimate_patterns: ["grep command", "use grep", "grep utility", "with grep"]
+      
+    - command: "awk"
+      evidence: 0.9
+      category: "unix_utility"
+      description: "Text processing tool"
+      legitimate_patterns: ["awk script", "awk command", "use awk", "with awk"]
+      
+    - command: "sed"
+      evidence: 0.9
+      category: "unix_utility"
+      description: "Stream editor"
+      legitimate_patterns: ["sed command", "use sed", "sed script", "with sed"]
+      
+    - command: "ls"
+      evidence: 0.9
+      category: "unix_utility"
+      description: "List directory contents"
+      legitimate_patterns: ["ls command", "use ls", "ls utility", "ls -la"]
+      
+    - command: "cat"
+      evidence: 0.8
+      category: "unix_utility"
+      description: "Display file contents"
+      legitimate_patterns: ["cat command", "use cat", "cat file", "cat utility"]
+      
+    - command: "find"
+      evidence: 0.7
+      category: "unix_utility"
+      description: "Search for files"
+      legitimate_patterns: ["find command", "use find", "find utility", "the find command"]
+      
+    - command: "sort"
+      evidence: 0.6
+      category: "unix_utility"
+      description: "Sort lines of text"
+      legitimate_patterns: ["sort command", "use sort", "sort utility", "sort data"]
+
+  medium_specificity:
+    - command: "tar"
+      evidence: 0.8
+      category: "archive_utility"
+      description: "Archive utility"
+      legitimate_patterns: ["tar command", "tar archive", "use tar", "tar file"]
+      
+    - command: "zip"
+      evidence: 0.7
+      category: "archive_utility"
+      description: "Compression utility"
+      legitimate_patterns: ["zip command", "zip file", "use zip", "zip archive"]
+      
+    - command: "chmod"
+      evidence: 0.9
+      category: "file_permission"
+      description: "Change file permissions"
+      legitimate_patterns: ["chmod command", "use chmod", "chmod permissions"]
+      
+    - command: "chown"
+      evidence: 0.9
+      category: "file_permission"
+      description: "Change file ownership"
+      legitimate_patterns: ["chown command", "use chown", "chown ownership"]
+
+# Git Commands - Version control operations
+git_commands:
+  high_specificity:
+    - command: "commit"
+      evidence: 0.8
+      category: "git_operation"
+      description: "Save changes to repository"
+      legitimate_patterns: ["git commit", "commit message", "commit changes", "commit hash", "commit to", "commit ourselves", "commit crime", "commit memory"]
+      
+    - command: "push"
+      evidence: 0.7
+      category: "git_operation"
+      description: "Upload local changes"
+      legitimate_patterns: ["git push", "push changes", "push to remote", "push branch"]
+      
+    - command: "pull"
+      evidence: 0.7
+      category: "git_operation"
+      description: "Download remote changes"
+      legitimate_patterns: ["git pull", "pull changes", "pull request", "pull from remote"]
+      
+    - command: "merge"
+      evidence: 0.7
+      category: "git_operation"
+      description: "Combine branches"
+      legitimate_patterns: ["git merge", "merge branch", "merge conflict", "merge request"]
+      
+    - command: "clone"
+      evidence: 0.8
+      category: "git_operation"
+      description: "Copy repository"
+      legitimate_patterns: ["git clone", "clone repository", "clone repo", "clone project"]
+
+  medium_specificity:
+    - command: "branch"
+      evidence: 0.6
+      category: "git_operation"
+      description: "Manage branches"
+      legitimate_patterns: ["git branch", "branch name", "create branch", "switch branch"]
+      
+    - command: "checkout"
+      evidence: 0.7
+      category: "git_operation"
+      description: "Switch branches or restore files"
+      legitimate_patterns: ["git checkout", "checkout branch", "checkout file"]
+      
+    - command: "rebase"
+      evidence: 0.8
+      category: "git_operation"
+      description: "Reapply commits"
+      legitimate_patterns: ["git rebase", "rebase branch", "interactive rebase"]
+
+# Database Commands - SQL and database operations
+database_commands:
+  high_specificity:
+    - command: "select"
+      evidence: 0.85
+      category: "sql_command"
+      description: "Query data from database"
+      legitimate_patterns: ["SELECT statement", "select query", "SQL select", "select command"]
+      
+    - command: "insert"
+      evidence: 0.85
+      category: "sql_command"
+      description: "Add data to database"
+      legitimate_patterns: ["INSERT statement", "insert query", "SQL insert", "insert command"]
+      
+    - command: "update"
+      evidence: 0.8
+      category: "sql_command"
+      description: "Modify database data"
+      legitimate_patterns: ["UPDATE statement", "update query", "SQL update", "update command"]
+      
+    - command: "delete"
+      evidence: 0.85
+      category: "sql_command"
+      description: "Remove data from database"
+      legitimate_patterns: ["DELETE statement", "delete query", "SQL delete", "delete command"]
+
+# Context Adjustments - Modify evidence based on content context
+context_adjustments:
+  content_type:
+    tutorial: -0.1          # Tutorials can be more informal
+    technical: 0.0          # Technical docs should be precise
+    api: 0.0               # API docs require precision
+    developer: 0.0         # Developer content should be precise
+    guide: -0.05           # Guides can be slightly more flexible
+    
+  audience:
+    developer: 0.0         # Developers expect precise terminology
+    engineer: 0.0          # Engineers expect precise terminology
+    expert: 0.0            # Experts expect precise terminology
+    general: 0.2           # General audience may be more forgiving
+    beginner: 0.1          # Beginners may need more flexible language
+    
+  domain:
+    software: 0.0          # Software domain should be precise
+    programming: 0.0       # Programming domain should be precise
+    devops: 0.0           # DevOps domain should be precise
+    engineering: 0.0       # Engineering domain should be precise
+    technology: 0.0        # Technology domain should be precise
+    general: 0.1          # General domain more flexible
+
+# Evidence Thresholds
+thresholds:
+  detection_threshold: 0.1    # Minimum evidence to flag violation
+  high_confidence: 0.8        # High confidence violation threshold
+  medium_confidence: 0.6      # Medium confidence violation threshold
+
+# Message Templates - Evidence-aware messaging
+messages:
+  high_confidence:
+    template: "Command '{command}' is being used as a verb. Use proper command syntax instead."
+    examples: 
+      - "Instead of 'grep the file', write 'use the grep command' or 'search the file with grep'"
+      - "Instead of 'ls the directory', write 'use ls to list the directory'"
+      
+  medium_confidence:
+    template: "Consider using proper command syntax for '{command}' instead of using it as a verb."
+    examples:
+      - "Technical documentation benefits from precise command terminology"
+      
+  low_confidence:
+    template: "'{command}' may benefit from more precise command syntax for technical clarity."
+    examples:
+      - "This is a minor suggestion for technical consistency"
+
+# Suggestions - Evidence-aware suggestions
+suggestions:
+  high_confidence:
+    - "Use proper command syntax: 'Use the {command} command to...'"
+    - "Replace with: 'Execute {command} to...'"
+    - "Consider: 'Run the {command} utility to...'"
+    
+  medium_confidence:
+    - "Consider using: 'the {command} command'"
+    - "Technical writing benefits from precise command terminology"
+    
+  low_confidence:
+    - "Optional: Use more specific command terminology"
+    - "This is acceptable but could be more precise"
+
+# Guard Patterns - Patterns that should NOT be flagged
+guard_patterns:
+  code_blocks: true             # Never flag commands in code blocks
+  inline_code: true             # Never flag commands in inline code
+  literal_blocks: true          # Never flag commands in literal blocks
+  
+  legitimate_contexts:
+    - "command line"
+    - "command prompt"
+    - "terminal command"
+    - "shell command"
+    - "execute command"
+    - "run command"
+    - "use command"
+    - "command syntax"
+    - "command reference"
+    - "command documentation"

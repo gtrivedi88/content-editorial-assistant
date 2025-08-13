@@ -5,6 +5,7 @@ Evidence-based analysis with surgical zero false positive guards for UI element 
 """
 from typing import List, Dict, Any
 from .base_technical_rule import BaseTechnicalRule
+from .services.technical_config_service import TechnicalConfigServices, TechnicalContext
 import re
 
 try:
@@ -22,10 +23,17 @@ class UIElementsRule(BaseTechnicalRule):
     - Consistency in UI documentation terminology
     
     Features:
+    - YAML-based configuration for maintainable pattern management
     - Surgical zero false positive guards for UI contexts
     - Dynamic base evidence scoring based on UI element specificity
     - Evidence-aware messaging for user interface documentation
     """
+    
+    def __init__(self):
+        """Initialize with YAML configuration service."""
+        super().__init__()
+        self.config_service = TechnicalConfigServices.ui_elements()
+    
     def _get_rule_type(self) -> str:
         return 'technical_ui_elements'
 
@@ -69,77 +77,23 @@ class UIElementsRule(BaseTechnicalRule):
         return errors
     
     def _find_potential_ui_issues(self, doc, text: str, context: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Find potential UI element verb issues for evidence assessment."""
+        """Find potential UI element verb issues for evidence assessment using YAML configuration."""
         issues = []
         
-        # UI element verb mapping with base evidence scores
-        ui_verb_map = {
-            # High specificity UI elements
-            "checkbox": {
-                "approved": {"select", "check", "clear", "uncheck", "toggle"},
-                "incorrect": {"click", "press", "push", "hit", "tap"},
-                "base_evidence": 0.85
-            },
-            "radio button": {
-                "approved": {"select", "choose"},
-                "incorrect": {"click", "press", "push", "hit", "tap", "check"},
-                "base_evidence": 0.85
-            },
-            "toggle": {
-                "approved": {"toggle", "switch", "turn on", "turn off"},
-                "incorrect": {"click", "press", "select", "check"},
-                "base_evidence": 0.8
-            },
-            "switch": {
-                "approved": {"toggle", "switch", "turn on", "turn off"},
-                "incorrect": {"click", "press", "select", "check"},
-                "base_evidence": 0.8
-            },
-            
-            # Medium specificity UI elements
-            "field": {
-                "approved": {"type", "enter", "specify", "input", "fill"},
-                "incorrect": {"click", "select", "press", "choose"},
-                "base_evidence": 0.75
-            },
-            "text field": {
-                "approved": {"type", "enter", "specify", "input", "fill"},
-                "incorrect": {"click", "select", "press", "choose"},
-                "base_evidence": 0.75
-            },
-            "dropdown": {
-                "approved": {"select", "choose", "open"},
-                "incorrect": {"type", "enter", "press", "push"},
-                "base_evidence": 0.8
-            },
-            "list": {
-                "approved": {"select", "choose"},
-                "incorrect": {"type", "enter", "press", "push"},
-                "base_evidence": 0.7
-            },
-            
-            # Lower specificity UI elements (more context dependent)
-            "button": {
-                "approved": {"click", "press", "select"},
-                "incorrect": {"type", "enter", "fill"},
-                "base_evidence": 0.6
-            },
-            "link": {
-                "approved": {"click", "select", "follow"},
-                "incorrect": {"type", "enter", "fill", "press"},
-                "base_evidence": 0.6
-            },
-            "menu": {
-                "approved": {"open", "access", "navigate"},
-                "incorrect": {"type", "enter", "fill"},
-                "base_evidence": 0.65
-            },
-            "icon": {
-                "approved": {"click", "select"},
-                "incorrect": {"type", "enter", "fill"},
-                "base_evidence": 0.6
-            }
-        }
+        # Load UI element patterns from YAML configuration
+        all_patterns = self.config_service.get_patterns()
+        ui_verb_map = {}
+        
+        for pattern_id, pattern_config in all_patterns.items():
+            if hasattr(pattern_config, 'pattern'):
+                # This is a UI element pattern
+                element = pattern_config.pattern
+                ui_verb_map[element] = {
+                    "approved": set(pattern_config.approved_verbs) if hasattr(pattern_config, 'approved_verbs') else set(),
+                    "incorrect": set(pattern_config.incorrect_verbs) if hasattr(pattern_config, 'incorrect_verbs') else set(),
+                    "base_evidence": pattern_config.evidence if hasattr(pattern_config, 'evidence') else 0.7,
+                    "pattern_config": pattern_config
+                }
         
         for i, sent in enumerate(doc.sents):
             sent_text = sent.text
@@ -227,12 +181,24 @@ class UIElementsRule(BaseTechnicalRule):
         if self._is_quoted_ui_example(sentence_obj, context):
             return 0.0  # Quoted examples may preserve original language
             
-        # Apply common technical guards
-        if self._apply_surgical_zero_false_positive_guards_technical(token, context):
-            return 0.0
+        # Apply selective technical guards (skip technical context guard for UI elements)
+        # UI element violations should be flagged even in technical contexts
+        
+        # Only check code blocks and entities
+        block_type = context.get('block_type', 'paragraph')
+        if block_type in ['code_block', 'literal_block', 'inline_code']:
+            return 0.0  # Code blocks have their own formatting rules
+            
+        # Check entities
+        if hasattr(token, 'ent_type_') and token.ent_type_:
+            if token.ent_type_ in ['ORG', 'PRODUCT', 'GPE', 'PERSON']:
+                return 0.0  # Company names, product names, etc.
         
         # === DYNAMIC BASE EVIDENCE ASSESSMENT ===
         evidence_score = issue.get('base_evidence', 0.7)
+        
+        # === CONTEXT ADJUSTMENTS FROM YAML ===
+        evidence_score = self.config_service.calculate_context_evidence(evidence_score, context or {})
         
         # === LINGUISTIC CLUES ===
         evidence_score = self._apply_ui_linguistic_clues(evidence_score, issue, sentence_obj)

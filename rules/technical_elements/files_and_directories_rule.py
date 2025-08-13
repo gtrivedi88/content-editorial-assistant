@@ -5,6 +5,7 @@ Evidence-based analysis with surgical zero false positive guards for file and di
 """
 from typing import List, Dict, Any
 from .base_technical_rule import BaseTechnicalRule
+from .services.technical_config_service import TechnicalConfigServices, TechnicalContext
 import re
 
 try:
@@ -23,10 +24,17 @@ class FilesAndDirectoriesRule(BaseTechnicalRule):
     - Missing file type specifications
     
     Features:
+    - YAML-based configuration for maintainable pattern management
     - Surgical zero false positive guards for file system contexts
     - Dynamic base evidence scoring based on file type specificity
     - Evidence-aware messaging for file system documentation
     """
+    
+    def __init__(self):
+        """Initialize with YAML configuration service."""
+        super().__init__()
+        self.config_service = TechnicalConfigServices.files_directories()
+    
     def _get_rule_type(self) -> str:
         return 'technical_files_directories'
 
@@ -80,44 +88,44 @@ class FilesAndDirectoriesRule(BaseTechnicalRule):
     def _find_potential_file_directory_issues(self, doc, text: str, context: Dict[str, Any]) -> List[Dict[str, Any]]:
         """
         Find potential file and directory issues for evidence assessment.
-        Detects file extensions and paths used inappropriately.
+        Detects file extensions and paths used inappropriately using YAML configuration.
         """
         issues = []
         
-        # File extensions with their base evidence scores based on specificity
-        file_extension_patterns = {
-            # High specificity extensions (clearly inappropriate as standalone nouns)
-            r'\b\.(exe|dll|sys|bin|so|dylib)\b': 0.9,  # Executable/system files
-            r'\b\.(zip|rar|tar|gz|7z|bz2)\b': 0.85,     # Archive files
-            r'\b\.(iso|img|dmg)\b': 0.85,               # Disk images
-            r'\b\.(log|tmp|cache|lock)\b': 0.8,         # System files
-            
-            # Medium specificity extensions
-            r'\b\.(pdf|doc|docx|xls|xlsx|ppt|pptx)\b': 0.75,  # Office documents
-            r'\b\.(txt|csv|json|xml|yaml|yml)\b': 0.7,         # Data files
-            r'\b\.(html|htm|css|js|php|asp)\b': 0.7,           # Web files
-            r'\b\.(sql|db|sqlite|mdb)\b': 0.75,                # Database files
-            
-            # Lower specificity extensions (more context dependent)
-            r'\b\.(png|jpg|jpeg|gif|bmp|svg|ico)\b': 0.6,      # Image files
-            r'\b\.(mp3|wav|flac|m4a|ogg)\b': 0.65,             # Audio files
-            r'\b\.(mp4|avi|mov|wmv|flv|mkv)\b': 0.65,          # Video files
-            r'\b\.(c|cpp|h|java|py|js|php|rb|go)\b': 0.8,      # Source code files
-        }
+        # Load patterns from YAML configuration
+        all_patterns = self.config_service.get_patterns()
+        
+        # Process file extensions from YAML
+        extension_patterns = {}
+        path_patterns = {}
+        
+        for pattern_id, pattern_config in all_patterns.items():
+            if pattern_id.startswith('ext_'):
+                # This is a file extension pattern
+                extension_patterns[pattern_config.pattern] = pattern_config.evidence
+            elif pattern_id.startswith('path_'):
+                # This is a path pattern
+                path_patterns[pattern_config.pattern] = pattern_config.evidence
         
         for i, sent in enumerate(doc.sents):
             sent_text = sent.text
             
-            # Check for each file extension pattern
-            for pattern, base_evidence in file_extension_patterns.items():
+            # Check for each file extension pattern from YAML
+            for pattern, base_evidence in extension_patterns.items():
                 for match in re.finditer(pattern, sent_text, re.IGNORECASE):
                     # Check if it's being used as a standalone noun
                     preceding_text = sent_text[:match.start()].strip()
                     following_text = sent_text[match.end():].strip()
                     
-                    # Look for article usage suggesting noun treatment
-                    if (preceding_text.endswith((' a', ' an', ' the')) or
-                        following_text.startswith((' is', ' was', ' are', ' were'))):
+                    # Enhanced article usage detection for noun treatment
+                    if self._is_extension_used_as_noun(match, sent_text, preceding_text, following_text):
+                        
+                        # Find corresponding pattern config for additional details
+                        pattern_config = None
+                        for pid, config in all_patterns.items():
+                            if pid.startswith('ext_') and config.pattern == pattern:
+                                pattern_config = config
+                                break
                         
                         issues.append({
                             'type': 'file_directory',
@@ -132,24 +140,25 @@ class FilesAndDirectoriesRule(BaseTechnicalRule):
                             'preceding_text': preceding_text,
                             'following_text': following_text,
                             'match_obj': match,
-                            'sentence_obj': sent
+                            'sentence_obj': sent,
+                            'pattern_config': pattern_config
                         })
         
-        # Check for directory path issues
-        directory_patterns = [
-            (r'\\[A-Za-z0-9_\\]+\\', 0.6),   # Windows paths
-            (r'/[a-zA-Z0-9_/]+/', 0.6),      # Unix paths
-            (r'C:\\[A-Za-z0-9_\\]+', 0.7),   # Absolute Windows paths
-            (r'/usr/[a-zA-Z0-9_/]+', 0.7),   # Unix system paths
-        ]
-        
+        # Check for directory path issues using YAML patterns
         for i, sent in enumerate(doc.sents):
             sent_text = sent.text
-            for pattern, base_evidence in directory_patterns:
+            for pattern, base_evidence in path_patterns.items():
                 for match in re.finditer(pattern, sent_text):
                     # Check if path is used without proper formatting
                     if ('`' not in sent_text[max(0, match.start()-5):match.end()+5] and
                         '"' not in sent_text[max(0, match.start()-5):match.end()+5]):
+                        
+                        # Find corresponding pattern config for additional details
+                        pattern_config = None
+                        for pid, config in all_patterns.items():
+                            if pid.startswith('path_') and config.pattern == pattern:
+                                pattern_config = config
+                                break
                         
                         issues.append({
                             'type': 'file_directory',
@@ -162,7 +171,8 @@ class FilesAndDirectoriesRule(BaseTechnicalRule):
                             'base_evidence': base_evidence,
                             'flagged_text': match.group(0),
                             'match_obj': match,
-                            'sentence_obj': sent
+                            'sentence_obj': sent,
+                            'pattern_config': pattern_config
                         })
         
         return issues
@@ -198,27 +208,41 @@ class FilesAndDirectoriesRule(BaseTechnicalRule):
         if self._is_legitimate_file_mention(flagged_text, sentence_obj, context):
             return 0.0  # Legitimate file reference
             
-        # === GUARD 3: TECHNICAL DOCUMENTATION CONTEXT ===
-        # Don't flag file references in code examples or technical lists
-        if self._is_technical_documentation_context(sentence_obj, context):
-            return 0.0  # Technical documentation allows file references
+        # === GUARD 3: CODE EXAMPLES AND FORMATTED CONTEXTS ===
+        # Don't flag file references in code blocks or properly formatted contexts
+        block_type = context.get('block_type', 'paragraph')
+        if block_type in ['code_block', 'literal_block', 'inline_code']:
+            return 0.0  # Code blocks have their own formatting rules
+            
+        # Skip the overly broad technical documentation guard for file paths
+        # File paths SHOULD be flagged in technical docs when unformatted
             
         # === GUARD 4: FILE LISTING OR DIRECTORY CONTENT ===
         # Don't flag files in directory listings or file inventories
         if self._is_file_listing_context(sentence_obj, context):
             return 0.0  # File listings are not style violations
             
-        # Apply common technical guards (code blocks, entities, etc.)
+        # Apply selective technical guards (skip technical context guard for file paths)
+        # File paths should be flagged even in technical contexts when unformatted
+        
+        # Check entities only (not technical context)
         mock_token = type('MockToken', (), {
             'text': flagged_text, 
             'idx': issue.get('span', [0, 0])[0],
-            'sent': sentence_obj
+            'sent': sentence_obj,
+            'ent_type_': None  # Mock basic entity type check
         })
-        if self._apply_surgical_zero_false_positive_guards_technical(mock_token, context):
-            return 0.0
+        
+        # Only check for entities, not technical context
+        if hasattr(mock_token, 'ent_type_') and mock_token.ent_type_:
+            if mock_token.ent_type_ in ['ORG', 'PRODUCT', 'GPE', 'PERSON']:
+                return 0.0  # Company names, product names, etc.
         
         # === DYNAMIC BASE EVIDENCE ASSESSMENT ===
         evidence_score = issue.get('base_evidence', 0.7)  # File-specific base score
+        
+        # === CONTEXT ADJUSTMENTS FROM YAML ===
+        evidence_score = self.config_service.calculate_context_evidence(evidence_score, context or {})
         
         # === LINGUISTIC CLUES (FILE-SPECIFIC) ===
         evidence_score = self._apply_file_directory_linguistic_clues(evidence_score, issue, sentence_obj)
@@ -347,22 +371,22 @@ class FilesAndDirectoriesRule(BaseTechnicalRule):
     def _is_file_listing_context(self, sentence_obj, context: Dict[str, Any]) -> bool:
         """
         Surgical check: Is this in a file listing or directory content context?
-        Only returns True for genuine file listing contexts.
+        Uses YAML configuration for listing indicators and thresholds.
         """
         sent_text = sentence_obj.text.lower()
         
-        # File listing indicators
-        listing_indicators = [
-            'directory contains', 'folder contains', 'files include',
-            'directory listing', 'file list', 'contents include',
-            'archive contains', 'package includes', 'bundle contains'
-        ]
+        # Get guard patterns from YAML configuration
+        guard_config = self.config_service.get_config('guard_patterns', {})
         
-        if any(indicator in sent_text for indicator in listing_indicators):
+        # Check for legitimate contexts from YAML
+        legitimate_contexts = guard_config.get('legitimate_contexts', [])
+        if any(context_phrase in sent_text for context_phrase in legitimate_contexts):
             return True
         
-        # Check for list-like structure
-        if sent_text.count('.') > 2:  # Multiple file extensions suggest listing
+        # Check for file listing using dot count threshold from YAML
+        file_listing_config = guard_config.get('file_listing_indicators', {})
+        dot_threshold = file_listing_config.get('dot_count_threshold', 5)
+        if sent_text.count('.') > dot_threshold:
             return True
             
         # Check for comma-separated file references
@@ -424,3 +448,58 @@ class FilesAndDirectoriesRule(BaseTechnicalRule):
             evidence_score += 0.15  # General audiences need clear file references
         
         return evidence_score
+    
+    def _is_extension_used_as_noun(self, match, sent_text: str, preceding_text: str, following_text: str) -> bool:
+        """
+        PRODUCTION-GRADE: Enhanced detection for file extensions used as nouns.
+        
+        Covers multiple linguistic patterns:
+        - Traditional article patterns: "a .pdf", "the .txt" 
+        - Start-of-sentence patterns: "The .txt contains"
+        - Preposition patterns: "as .csv", "to .json"
+        - Verb patterns: "export .xlsx", "generate .xml"
+        """
+        
+        # EXCLUSION FIRST: Filename patterns (should NOT be flagged)
+        # Check for filename.extension patterns like "file.pdf", "document.txt"
+        context_window = sent_text[max(0, match.start()-10):match.end()+5]
+        if re.search(r'\w+\.\w+', context_window):
+            # This looks like a filename, not a standalone extension
+            return False
+        
+        # Original patterns: immediate article context
+        if (preceding_text.endswith((' a', ' an', ' the')) or
+            following_text.startswith((' is', ' was', ' are', ' were'))):
+            return True
+        
+        # Start-of-sentence article patterns (for cases like "The .txt contains")
+        if sent_text.strip().startswith(('The ', 'A ', 'An ')):
+            # Check if extension comes early in sentence (within first 15 characters)
+            if match.start() <= 15:
+                return True
+        
+        # Preposition patterns: "as .ext", "to .ext", "into .ext"
+        # Check for prepositions at word boundaries (handles both " as " and "data as")
+        prep_patterns = [r'\bas\b', r'\bto\b', r'\binto\b', r'\bfrom\b']
+        for prep_pattern in prep_patterns:
+            if re.search(prep_pattern, preceding_text[-15:]):
+                return True
+        
+        # Verb + extension patterns: "export .csv", "generate .pdf", "create .xml"
+        action_verbs = [
+            'export', 'generate', 'create', 'produce', 'output', 'save',
+            'convert', 'transform', 'change', 'make', 'turn'
+        ]
+        for verb in action_verbs:
+            if f' {verb} ' in preceding_text[-20:] or preceding_text.endswith(f' {verb}'):
+                return True
+        
+        # Possessive patterns: "file's .ext", "document's .ext"  
+        if preceding_text.endswith(("'s", "'s")):
+            return True
+        
+        # Demonstrative patterns: "this .ext", "that .ext"
+        if any(demo in preceding_text[-10:] for demo in [' this ', ' that ', ' these ', ' those ']):
+            return True
+        
+        return False

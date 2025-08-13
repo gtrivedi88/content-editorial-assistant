@@ -1,0 +1,104 @@
+# Mouse Buttons Rule Configuration
+# Production-grade YAML configuration for mouse action patterns
+# Evidence-based scoring with context adjustments
+
+# Mouse Action Violations - Informal mouse actions and unnecessary prepositions
+mouse_actions:
+  preposition_violations:
+    - action: "click on"
+      evidence: 0.85
+      category: "unnecessary_preposition"
+      description: "Use 'click' instead of 'click on' for UI elements"
+      correct_usage: "click the button, click Save"
+      
+    - action: "double-click on"
+      evidence: 0.85
+      category: "unnecessary_preposition" 
+      description: "Use 'double-click' instead of 'double-click on'"
+      correct_usage: "double-click the file, double-click to open"
+      
+    - action: "right-click on"
+      evidence: 0.85
+      category: "unnecessary_preposition"
+      description: "Use 'right-click' instead of 'right-click on'"
+      correct_usage: "right-click the item, right-click to show menu"
+      
+    - action: "select on"
+      evidence: 0.8
+      category: "unnecessary_preposition"
+      description: "Use 'select' instead of 'select on'"
+      correct_usage: "select the option, select from list"
+      
+    - action: "choose on"
+      evidence: 0.75
+      category: "unnecessary_preposition"
+      description: "Use 'choose' instead of 'choose on'"
+      correct_usage: "choose the option, choose from menu"
+      
+    - action: "tap on"
+      evidence: 0.7
+      category: "unnecessary_preposition"
+      description: "Use 'tap' instead of 'tap on' for mobile interfaces"
+      correct_usage: "tap the button, tap to select"
+      
+    - action: "press on"
+      evidence: 0.6
+      category: "unnecessary_preposition"
+      description: "Use 'press' instead of 'press on' (context dependent)"
+      correct_usage: "press the key, press Enter"
+
+  informal_actions:
+    - action: "right click"
+      evidence: 0.9
+      category: "informal_mouse_action"
+      description: "Informal mouse action should use proper terminology"
+      correct_usage: "right-click, use the right mouse button"
+      
+    - action: "left click"
+      evidence: 0.85
+      category: "informal_mouse_action"
+      description: "Informal mouse action should use proper terminology"
+      correct_usage: "click, use the left mouse button"
+      
+    - action: "double click"
+      evidence: 0.8
+      category: "informal_mouse_action"
+      description: "Informal mouse action should use proper terminology"
+      correct_usage: "double-click"
+      
+    - action: "middle click"
+      evidence: 0.85
+      category: "informal_mouse_action"
+      description: "Informal mouse action should use proper terminology"
+      correct_usage: "middle-click, use the middle mouse button"
+
+# Context Adjustments
+context_adjustments:
+  content_type:
+    tutorial: -0.1
+    technical: 0.0
+    user_guide: -0.05
+    
+  audience:
+    general: 0.1
+    beginner: 0.05
+    expert: 0.0
+
+# Thresholds and Messages
+thresholds:
+  detection_threshold: 0.1
+  high_confidence: 0.8
+
+messages:
+  high_confidence:
+    template: "Mouse action '{flagged_text}' should use proper terminology: {correct_usage}"
+
+suggestions:
+  high_confidence:
+    - "Use proper mouse terminology: {correct_usage}"
+    - "Consider hyphenated form for compound mouse actions"
+
+guard_patterns:
+  code_blocks: true
+  inline_code: true
+  literal_blocks: true

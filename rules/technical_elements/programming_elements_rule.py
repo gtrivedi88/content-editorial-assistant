@@ -5,6 +5,7 @@ Evidence-based analysis with surgical zero false positive guards for programming
 """
 from typing import List, Dict, Any
 from .base_technical_rule import BaseTechnicalRule
+from .services.technical_config_service import TechnicalConfigServices, TechnicalContext
 import re
 
 try:
@@ -16,16 +17,18 @@ class ProgrammingElementsRule(BaseTechnicalRule):
     """
     PRODUCTION-GRADE: Checks for the incorrect use of programming keywords as verbs.
     
-    Implements rule-specific evidence calculation for:
-    - Programming keywords used as verbs instead of proper command syntax
-    - SQL keywords, programming language keywords, and API terms
-    - Context-aware detection of genuine programming misuse vs. legitimate usage
-    
     Features:
+    - YAML-based configuration for maintainable pattern management
     - Surgical zero false positive guards for programming contexts
     - Dynamic base evidence scoring based on keyword specificity
     - Evidence-aware messaging for technical documentation
     """
+    
+    def __init__(self):
+        """Initialize with YAML configuration service."""
+        super().__init__()
+        self.config_service = TechnicalConfigServices.programming()
+    
     def _get_rule_type(self) -> str:
         return 'technical_programming_elements'
 
@@ -69,27 +72,18 @@ class ProgrammingElementsRule(BaseTechnicalRule):
         return errors
     
     def _find_potential_programming_issues(self, doc, text: str, context: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Find potential programming keyword issues for evidence assessment."""
+        """Find potential programming keyword issues for evidence assessment using YAML configuration."""
         issues = []
         
-        # Programming keywords with their base evidence scores based on specificity
-        programming_keywords = {
-            # SQL keywords (high specificity)
-            "select": 0.85, "insert": 0.85, "update": 0.85, "delete": 0.85,
-            "drop": 0.9, "create": 0.8, "alter": 0.85, "truncate": 0.9,
-            
-            # Programming language keywords (medium-high specificity)
-            "import": 0.8, "export": 0.8, "return": 0.7, "throw": 0.75,
-            "catch": 0.7, "switch": 0.6, "break": 0.5, "continue": 0.7,
-            
-            # API/System keywords (medium specificity)
-            "execute": 0.6, "invoke": 0.7, "call": 0.4, "run": 0.3,
-            "compile": 0.8, "build": 0.5, "deploy": 0.75, "install": 0.7,
-            
-            # Lower specificity (context dependent)
-            "push": 0.5, "pull": 0.5, "merge": 0.6, "commit": 0.6,
-            "clone": 0.7, "fork": 0.6, "branch": 0.5, "tag": 0.5
-        }
+        # Load programming keywords from YAML configuration
+        all_patterns = self.config_service.get_patterns()
+        programming_keywords = {}
+        
+        for pattern_id, pattern_config in all_patterns.items():
+            if hasattr(pattern_config, 'pattern'):
+                # This is a programming keyword pattern
+                keyword = pattern_config.pattern
+                programming_keywords[keyword] = pattern_config.evidence
         
         for i, sent in enumerate(doc.sents):
             for token in sent:
@@ -98,6 +92,13 @@ class ProgrammingElementsRule(BaseTechnicalRule):
                 # Check if this is a programming keyword used as a verb
                 if (keyword in programming_keywords and 
                     hasattr(token, 'pos_') and token.pos_ == 'VERB'):
+                    
+                    # Find corresponding pattern config for additional details
+                    pattern_config = None
+                    for pid, config in all_patterns.items():
+                        if hasattr(config, 'pattern') and config.pattern == keyword:
+                            pattern_config = config
+                            break
                     
                     issues.append({
                         'type': 'programming',
@@ -110,7 +111,8 @@ class ProgrammingElementsRule(BaseTechnicalRule):
                         'base_evidence': programming_keywords[keyword],
                         'flagged_text': token.text,
                         'token': token,
-                        'sentence_obj': sent
+                        'sentence_obj': sent,
+                        'pattern_config': pattern_config
                     })
         
         return issues
@@ -142,12 +144,24 @@ class ProgrammingElementsRule(BaseTechnicalRule):
         if self._is_code_documentation_context(keyword, sentence_obj, context):
             return 0.0  # Code documentation allows flexible language
             
-        # Apply common technical guards
-        if self._apply_surgical_zero_false_positive_guards_technical(token, context):
-            return 0.0
+        # Apply selective technical guards (skip technical context guard for programming elements)
+        # Programming element violations should be flagged even in technical contexts
+        
+        # Only check code blocks and entities
+        block_type = context.get('block_type', 'paragraph')
+        if block_type in ['code_block', 'literal_block', 'inline_code']:
+            return 0.0  # Code blocks have their own formatting rules
+            
+        # Check entities
+        if hasattr(token, 'ent_type_') and token.ent_type_:
+            if token.ent_type_ in ['ORG', 'PRODUCT', 'GPE', 'PERSON']:
+                return 0.0  # Company names, product names, etc.
         
         # === DYNAMIC BASE EVIDENCE ASSESSMENT ===
         evidence_score = issue.get('base_evidence', 0.7)
+        
+        # === CONTEXT ADJUSTMENTS FROM YAML ===
+        evidence_score = self.config_service.calculate_context_evidence(evidence_score, context or {})
         
         # === LINGUISTIC CLUES ===
         evidence_score = self._apply_programming_linguistic_clues(evidence_score, issue, sentence_obj)
@@ -161,56 +175,24 @@ class ProgrammingElementsRule(BaseTechnicalRule):
         return max(0.0, min(1.0, evidence_score))
     
     def _is_legitimate_verb_usage_programming(self, keyword: str, token, sentence_obj, context: Dict[str, Any]) -> bool:
-        """Check if programming keyword is being used as a legitimate verb."""
+        """Check if programming keyword is being used as a legitimate verb using YAML configuration."""
         sent_text = sentence_obj.text.lower()
         
-        # Legitimate verb usages for programming keywords
-        legitimate_patterns = {
-            'select': [
-                'select a file', 'select an option', 'select from menu', 'select items',
-                'select all', 'select multiple', 'select text', 'select users'
-            ],
-            'insert': [
-                'insert a disk', 'insert content', 'insert text', 'insert image',
-                'insert manually', 'insert here', 'insert between'
-            ],
-            'update': [
-                'update information', 'update status', 'update progress', 'update settings',
-                'keep updated', 'stay updated', 'regularly update'
-            ],
-            'delete': [
-                'delete files', 'delete content', 'delete manually', 'delete permanently',
-                'delete selected', 'delete all'
-            ],
-            'create': [
-                'create content', 'create manually', 'create new', 'create custom',
-                'create original', 'create together'
-            ],
-            'drop': [
-                'drop files', 'drop items', 'drop here', 'drag and drop',
-                'drop down', 'drop off', 'drop out'
-            ],
-            'return': [
-                'return home', 'return items', 'return value', 'return call',
-                'return later', 'return policy'
-            ],
-            'call': [
-                'call support', 'call function', 'call meeting', 'phone call',
-                'call back', 'call now'
-            ],
-            'run': [
-                'run business', 'run program', 'run test', 'run quickly',
-                'run away', 'run out', 'run smoothly'
-            ],
-            'build': [
-                'build house', 'build team', 'build relationship', 'build manually',
-                'build together', 'build strong'
-            ]
-        }
+        # Get legitimate patterns from YAML configuration
+        all_patterns = self.config_service.get_patterns()
+        legitimate_patterns = []
+        
+        # Find the pattern configuration for this keyword
+        for pattern_id, pattern_config in all_patterns.items():
+            if (hasattr(pattern_config, 'pattern') and 
+                pattern_config.pattern == keyword and
+                hasattr(pattern_config, 'legitimate_patterns')):
+                legitimate_patterns = pattern_config.legitimate_patterns
+                break
         
         # Check for legitimate patterns
-        if keyword in legitimate_patterns:
-            for pattern in legitimate_patterns[keyword]:
+        if legitimate_patterns:
+            for pattern in legitimate_patterns:
                 if pattern in sent_text:
                     return True
         

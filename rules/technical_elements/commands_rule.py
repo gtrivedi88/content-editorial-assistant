@@ -2,9 +2,11 @@
 Commands Rule (Production-Grade)
 Based on IBM Style Guide topic: "Commands"
 Evidence-based analysis with surgical zero false positive guards for command usage.
+Uses YAML-based configuration for maintainable pattern management.
 """
 from typing import List, Dict, Any
 from .base_technical_rule import BaseTechnicalRule
+from .services.technical_config_service import TechnicalConfigServices, TechnicalContext
 import re
 
 try:
@@ -22,10 +24,17 @@ class CommandsRule(BaseTechnicalRule):
     - Technical domain appropriateness checking
     
     Features:
+    - YAML-based configuration for maintainable pattern management
     - Surgical zero false positive guards for command contexts
     - Dynamic base evidence scoring based on command specificity
     - Evidence-aware messaging and suggestions for command formatting
     """
+    
+    def __init__(self):
+        """Initialize with YAML configuration service."""
+        super().__init__()
+        self.config_service = TechnicalConfigServices.commands()
+    
     def _get_rule_type(self) -> str:
         return 'technical_commands'
 
@@ -80,33 +89,18 @@ class CommandsRule(BaseTechnicalRule):
         """
         Find potential command misuse for evidence assessment.
         Detects command words used as verbs in inappropriate contexts.
+        Uses YAML-based configuration for maintainable pattern management.
         """
         issues = []
         
-        # Command words with their base evidence scores based on specificity
-        command_words = {
-            # High specificity command words (clearly technical commands)
-            "import": 0.85,  # Very specific programming/database command
-            "export": 0.85,  # Very specific data export command
-            "install": 0.8,   # Specific software installation command
-            "uninstall": 0.85, # Very specific software removal command
-            "configure": 0.75, # Configuration command
-            "deploy": 0.8,     # Deployment command
-            
-            # Medium specificity command words (can be legitimate verbs)
-            "load": 0.6,      # Can be legitimate verb (load the truck)
-            "save": 0.5,      # Common verb with legitimate uses
-            "run": 0.4,       # Very common verb
-            "stop": 0.4,      # Very common verb
-            "start": 0.4,     # Very common verb
-            
-            # Lower specificity command words (need more context)
-            "backup": 0.65,   # Can be noun/verb
-            "restore": 0.6,   # Can be legitimate verb
-            "update": 0.5,    # Common verb
-            "delete": 0.6,    # Somewhat technical
-            "remove": 0.5,    # Common verb
-        }
+        # Load command patterns from YAML configuration
+        command_patterns = self.config_service.get_patterns()
+        
+        # Build command words dictionary from YAML patterns
+        command_words = {}
+        for pattern_id, pattern_config in command_patterns.items():
+            command_word = pattern_config.pattern
+            command_words[command_word] = pattern_config.evidence
         
         for i, sent in enumerate(doc.sents):
             for token in sent:
@@ -115,6 +109,13 @@ class CommandsRule(BaseTechnicalRule):
                 # Check if this is a known command word used as a verb
                 if (command_word in command_words and 
                     hasattr(token, 'pos_') and token.pos_ == 'VERB'):
+                    
+                    # Find the pattern config for this command
+                    pattern_config = None
+                    for pid, pconfig in command_patterns.items():
+                        if pconfig.pattern == command_word:
+                            pattern_config = pconfig
+                            break
                     
                     issues.append({
                         'type': 'command',
@@ -126,7 +127,8 @@ class CommandsRule(BaseTechnicalRule):
                         'span': [token.idx, token.idx + len(token.text)],
                         'base_evidence': command_words[command_word],
                         'token': token,
-                        'sentence_obj': sent
+                        'sentence_obj': sent,
+                        'pattern_config': pattern_config  # Include pattern config for legitimate patterns
                     })
         
         return issues
@@ -172,9 +174,18 @@ class CommandsRule(BaseTechnicalRule):
         if self._is_non_technical_verb_context(command_word, sentence_obj, context):
             return 0.0  # Non-technical usage is acceptable
             
-        # Apply common technical guards (code blocks, entities, etc.)
-        if self._apply_surgical_zero_false_positive_guards_technical(token, context):
-            return 0.0
+        # Apply selective technical guards (skip technical context guard for commands)
+        # Commands are violations even in technical contexts when used as verbs
+        
+        # Check code blocks and literal blocks
+        block_type = context.get('block_type', 'paragraph')
+        if block_type in ['code_block', 'literal_block', 'inline_code']:
+            return 0.0  # Code has its own formatting rules
+            
+        # Check entities (but not technical context)
+        if hasattr(token, 'ent_type_') and token.ent_type_:
+            if token.ent_type_ in ['ORG', 'PRODUCT', 'GPE', 'PERSON']:
+                return 0.0  # Company names, product names, etc.
         
         # === DYNAMIC BASE EVIDENCE ASSESSMENT ===
         evidence_score = issue.get('base_evidence', 0.7)  # Command-specific base score
@@ -196,72 +207,45 @@ class CommandsRule(BaseTechnicalRule):
         """
         Surgical check: Is this command word being used as a legitimate verb?
         Only returns True for genuine verb usage, not command misuse.
+        Uses YAML-based configuration for legitimate patterns.
         """
         sent_text = sentence_obj.text.lower()
         
-        # Common legitimate verb usages that should not be flagged
-        legitimate_patterns = {
-            'load': [
-                'load the truck', 'load the car', 'load the dishwasher', 'load cargo',
-                'load passengers', 'load freight', 'load materials', 'load equipment'
-            ],
-            'save': [
-                'save money', 'save time', 'save energy', 'save lives', 'save the day',
-                'save for retirement', 'save face', 'save space', 'save effort'
-            ],
-            'run': [
-                'run a business', 'run a marathon', 'run for office', 'run errands',
-                'run out of', 'run late', 'run fast', 'run smoothly', 'run efficiently'
-            ],
-            'stop': [
-                'stop the car', 'stop talking', 'stop working', 'stop the bleeding',
-                'stop sign', 'stop and think', 'stop by', 'stop over'
-            ],
-            'start': [
-                'start the car', 'start a business', 'start over', 'start fresh',
-                'start early', 'start late', 'start again', 'start now'
-            ],
-            'update': [
-                'update the record', 'update information', 'update status',
-                'update progress', 'keep you updated', 'stay updated'
-            ],
-            'remove': [
-                'remove stains', 'remove obstacles', 'remove from office',
-                'remove the lid', 'remove carefully', 'remove completely'
-            ],
-            'restore': [
-                'restore health', 'restore peace', 'restore order', 'restore balance',
-                'restore confidence', 'restore faith', 'restore trust'
-            ]
-        }
+        # Get pattern config for this command word
+        command_patterns = self.config_service.get_patterns()
+        pattern_config = None
+        for pattern_id, pconfig in command_patterns.items():
+            if pconfig.pattern == command_word:
+                pattern_config = pconfig
+                break
         
-        # Check if this matches a legitimate verb pattern
-        if command_word in legitimate_patterns:
-            for pattern in legitimate_patterns[command_word]:
-                if pattern in sent_text:
+        if not pattern_config:
+            return False  # Unknown command, conservative approach
+        
+        # Check against legitimate patterns from YAML
+        if pattern_config.legitimate_patterns:
+            for legitimate_pattern in pattern_config.legitimate_patterns:
+                if legitimate_pattern.lower() in sent_text:
                     return True
         
-        # Check for general legitimate verb indicators
-        legitimate_indicators = [
-            'to ' + command_word,  # Infinitive usage
-            'will ' + command_word,  # Future tense
-            'would ' + command_word,  # Conditional
-            'should ' + command_word,  # Modal
-            'can ' + command_word,  # Modal
-            'must ' + command_word,  # Modal
-        ]
+        # Use YAML-based context analysis for evidence adjustment
+        tech_context = TechnicalContext(
+            content_type=context.get('content_type', ''),
+            audience=context.get('audience', ''),
+            domain=context.get('domain', ''),
+            block_type=context.get('block_type', '')
+        )
         
-        for indicator in legitimate_indicators:
-            if indicator in sent_text:
-                # Check if this is followed by non-technical objects
-                non_technical_objects = [
-                    'money', 'time', 'energy', 'life', 'day', 'business', 'office',
-                    'car', 'truck', 'house', 'door', 'window', 'person', 'people'
-                ]
-                if any(obj in sent_text for obj in non_technical_objects):
-                    return True
+        # Calculate context-adjusted evidence
+        adjusted_evidence = self.config_service.calculate_context_evidence(
+            pattern_config.evidence, tech_context
+        )
         
-        return False
+        # If context adjustments significantly reduce evidence, likely legitimate usage
+        if adjusted_evidence < 0.3:
+            return True
+        
+        return False  # Conservative: flag if uncertain
     
     def _is_in_quoted_command_example(self, token, sentence_obj, context: Dict[str, Any]) -> bool:
         """
@@ -315,10 +299,10 @@ class CommandsRule(BaseTechnicalRule):
             if pattern in sent_text:
                 return True
         
-        # Check for command syntax indicators
+        # Check for command syntax indicators (only if they relate to this specific command)
         command_syntax_indicators = [
-            'command line', 'terminal', 'shell', 'prompt', 'execute',
-            'run command', 'command syntax', 'command usage'
+            f'run {command_word}', f'execute {command_word}', f'use {command_word}',
+            'command line', 'command syntax', 'command usage'
         ]
         
         if any(indicator in sent_text for indicator in command_syntax_indicators):

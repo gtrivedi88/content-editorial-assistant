@@ -1,0 +1,304 @@
+# Files and Directories Rule Configuration
+# Production-grade YAML configuration for file path and directory formatting patterns
+# Evidence-based scoring with context adjustments
+
+# File Path Violations - Unformatted file paths in prose
+file_paths:
+  absolute_paths:
+    - pattern: "[A-Z]:\\\\[A-Za-z0-9_\\\\\\s]+"
+      evidence: 0.8
+      category: "windows_absolute_path"
+      description: "Windows absolute paths should be formatted"
+      format_suggestion: "Use code formatting or backticks for file paths"
+      
+    - pattern: "/[a-zA-Z0-9_./-]+\\.[a-zA-Z0-9]+"
+      evidence: 0.8
+      category: "unix_absolute_path"
+      description: "Unix absolute paths should be formatted"
+      format_suggestion: "Use code formatting or backticks for file paths"
+      
+    - pattern: "/[a-zA-Z0-9_./\\s-]+/[a-zA-Z0-9_./\\s-]+"
+      evidence: 0.75
+      category: "unix_directory_path"
+      description: "Unix directory paths should be formatted"
+      format_suggestion: "Use code formatting or backticks for directory paths"
+
+  relative_paths:
+    - pattern: "\\./[a-zA-Z0-9_./-]+"
+      evidence: 0.7
+      category: "relative_path"
+      description: "Relative paths should be formatted"
+      format_suggestion: "Use code formatting for relative paths"
+      
+    - pattern: "\\.\\./[a-zA-Z0-9_./-]+"
+      evidence: 0.75
+      category: "parent_directory_path"
+      description: "Parent directory paths should be formatted"
+      format_suggestion: "Use code formatting for directory navigation paths"
+
+  mixed_separators:
+    - pattern: "[a-zA-Z0-9_]+/[a-zA-Z0-9_]+\\\\[a-zA-Z0-9_]+"
+      evidence: 0.9
+      category: "mixed_path_separators"
+      description: "Mixed path separators should be consistent"
+      format_suggestion: "Use consistent path separators and code formatting"
+
+# File Extensions - File extensions used as nouns
+file_extensions:
+  document_extensions:
+    - extension: "pdf"
+      evidence: 0.75
+      category: "document_extension"
+      description: "File extensions should not be used as standalone nouns"
+      correct_usage: "PDF file, PDF document"
+      
+    - extension: "doc"
+      evidence: 0.75
+      category: "document_extension"
+      description: "File extensions should not be used as standalone nouns"
+      correct_usage: "Word document, DOC file"
+      
+    - extension: "docx"
+      evidence: 0.75
+      category: "document_extension"
+      description: "File extensions should not be used as standalone nouns"
+      correct_usage: "Word document, DOCX file"
+      
+    - extension: "xls"
+      evidence: 0.75
+      category: "spreadsheet_extension"
+      description: "File extensions should not be used as standalone nouns"
+      correct_usage: "Excel spreadsheet, XLS file"
+      
+    - extension: "xlsx"
+      evidence: 0.75
+      category: "spreadsheet_extension"
+      description: "File extensions should not be used as standalone nouns"
+      correct_usage: "Excel spreadsheet, XLSX file"
+      
+    - extension: "ppt"
+      evidence: 0.75
+      category: "presentation_extension"
+      description: "File extensions should not be used as standalone nouns"
+      correct_usage: "PowerPoint presentation, PPT file"
+      
+    - extension: "pptx"
+      evidence: 0.75
+      category: "presentation_extension"
+      description: "File extensions should not be used as standalone nouns"
+      correct_usage: "PowerPoint presentation, PPTX file"
+
+  code_extensions:
+    - extension: "py"
+      evidence: 0.7
+      category: "code_extension"
+      description: "Code file extensions should be used with 'file' noun"
+      correct_usage: "Python file, .py file"
+      
+    - extension: "js"
+      evidence: 0.7
+      category: "code_extension"
+      description: "Code file extensions should be used with 'file' noun"
+      correct_usage: "JavaScript file, .js file"
+      
+    - extension: "html"
+      evidence: 0.65
+      category: "web_extension"
+      description: "Web file extensions should be used with 'file' noun"
+      correct_usage: "HTML file, .html file"
+      
+    - extension: "css"
+      evidence: 0.7
+      category: "web_extension"
+      description: "Web file extensions should be used with 'file' noun"
+      correct_usage: "CSS file, .css file"
+      
+    - extension: "json"
+      evidence: 0.7
+      category: "data_extension"
+      description: "Data file extensions should be used with 'file' noun"
+      correct_usage: "JSON file, .json file"
+      
+    - extension: "xml"
+      evidence: 0.7
+      category: "data_extension"
+      description: "Data file extensions should be used with 'file' noun"
+      correct_usage: "XML file, .xml file"
+      
+    - extension: "txt"
+      evidence: 0.7
+      category: "data_extension"
+      description: "Text file extensions should be used with 'file' noun"
+      correct_usage: "text file, .txt file"
+      
+    - extension: "csv"
+      evidence: 0.75
+      category: "data_extension"
+      description: "CSV file extensions should be used with 'file' noun"
+      correct_usage: "CSV file, .csv file"
+      
+    - extension: "log"
+      evidence: 0.7
+      category: "data_extension"
+      description: "Log file extensions should be used with 'file' noun"
+      correct_usage: "log file, .log file"
+      
+    - extension: "yaml"
+      evidence: 0.7
+      category: "data_extension"
+      description: "YAML file extensions should be used with 'file' noun"
+      correct_usage: "YAML file, .yaml file"
+      
+    - extension: "yml"
+      evidence: 0.7
+      category: "data_extension"
+      description: "YAML file extensions should be used with 'file' noun"
+      correct_usage: "YAML file, .yml file"
+
+  archive_extensions:
+    - extension: "zip"
+      evidence: 0.8
+      category: "archive_extension"
+      description: "Archive extensions should be used with 'file' or 'archive'"
+      correct_usage: "ZIP archive, ZIP file"
+      
+    - extension: "tar"
+      evidence: 0.8
+      category: "archive_extension"
+      description: "Archive extensions should be used with 'file' or 'archive'"
+      correct_usage: "TAR archive, TAR file"
+      
+    - extension: "gz"
+      evidence: 0.75
+      category: "compression_extension"
+      description: "Compression extensions should be used with 'file'"
+      correct_usage: "gzipped file, .gz file"
+
+# Directory Names - Special directory naming patterns
+directory_patterns:
+  system_directories:
+    - pattern: "/usr/[a-zA-Z0-9_/-]+"
+      evidence: 0.7
+      category: "unix_system_directory"
+      description: "System directories should be formatted"
+      format_suggestion: "Use code formatting for system directories"
+      
+    - pattern: "/etc/[a-zA-Z0-9_/-]*"
+      evidence: 0.75
+      category: "unix_config_directory"
+      description: "Configuration directories should be formatted"
+      format_suggestion: "Use code formatting for configuration paths"
+      
+    - pattern: "/var/[a-zA-Z0-9_/-]+"
+      evidence: 0.7
+      category: "unix_var_directory"
+      description: "Variable data directories should be formatted"
+      format_suggestion: "Use code formatting for system paths"
+
+  user_directories:
+    - pattern: "~/[a-zA-Z0-9_./-]+"
+      evidence: 0.7
+      category: "home_directory_path"
+      description: "Home directory paths should be formatted"
+      format_suggestion: "Use code formatting for user directory paths"
+      
+    - pattern: "\\$HOME/[a-zA-Z0-9_./-]+"
+      evidence: 0.75
+      category: "home_variable_path"
+      description: "Home variable paths should be formatted"
+      format_suggestion: "Use code formatting for environment variable paths"
+
+# Context Adjustments
+context_adjustments:
+  content_type:
+    tutorial: -0.1
+    technical: 0.0
+    api: 0.0
+    developer: 0.0
+    guide: -0.05
+    installation: -0.05    # Installation guides may need specific paths
+    
+  audience:
+    developer: 0.0
+    engineer: 0.0
+    expert: 0.0
+    general: 0.15
+    beginner: 0.1
+    
+  domain:
+    software: 0.0
+    programming: 0.0
+    system_admin: -0.05    # Sys admin docs need specific paths
+    devops: -0.05         # DevOps docs need specific paths
+    general: 0.15
+
+# Evidence Thresholds
+thresholds:
+  detection_threshold: 0.1
+  high_confidence: 0.8
+  medium_confidence: 0.6
+
+# Message Templates
+messages:
+  high_confidence:
+    template: "File path or extension '{flagged_text}' should be formatted for technical documentation"
+    examples:
+      - "Use code formatting: `{flagged_text}`"
+      - "Consider: '{correct_usage}' instead of standalone '{flagged_text}'"
+      
+  medium_confidence:
+    template: "Consider formatting '{flagged_text}' for better technical documentation clarity"
+    examples:
+      - "File paths benefit from code formatting in technical writing"
+      
+  low_confidence:
+    template: "'{flagged_text}' formatting is acceptable but could be enhanced"
+    examples:
+      - "This is a minor formatting suggestion for consistency"
+
+# Suggestions
+suggestions:
+  high_confidence:
+    - "Format file paths with backticks: `{flagged_text}`"
+    - "Use proper file terminology: {correct_usage}"
+    - "Consider code formatting for technical paths"
+    
+  medium_confidence:
+    - "File paths benefit from code formatting in technical documentation"
+    - "Consider using proper file terminology for clarity"
+    
+  low_confidence:
+    - "Optional: Use code formatting for file paths"
+    - "This follows technical documentation conventions"
+
+# Guard Patterns
+guard_patterns:
+  code_blocks: true
+  inline_code: true
+  literal_blocks: true
+  
+  legitimate_contexts:
+    - "file path"
+    - "directory path"
+    - "file name"
+    - "file system"
+    - "folder structure"
+    - "directory structure"
+    - "path to file"
+    - "located in"
+    - "stored in"
+    
+  file_listing_indicators:
+    # Contexts that suggest file listings (reduce evidence)
+    dot_count_threshold: 5    # If sentence has >5 dots, likely a file listing
+    
+  non_file_contexts:
+    - "at the end"
+    - "end of line"
+    - "end user"
+    - "zip code"
+    - "zip through"
+    - "home page"
+    - "home directory"
+    - "return home"
+    - "close to home"

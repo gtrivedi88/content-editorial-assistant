@@ -1,0 +1,80 @@
+# Web Addresses Rule Configuration
+# Production-grade YAML configuration for web address formatting patterns
+# Evidence-based scoring with context adjustments
+
+# URL Formatting Violations
+url_patterns:
+  trailing_slash:
+    - pattern: "https?://[^\\s/]+/[^\\s]*?/(?=\\s|$|[.!?])"
+      evidence: 0.8
+      category: "trailing_slash"
+      description: "URLs should not have unnecessary trailing slashes"
+      format_suggestion: "Remove trailing slash from URL"
+      
+  missing_protocol:
+    - pattern: "(?<![:/])www\\.[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}(?:[/\\w.-]*)??"
+      evidence: 0.6
+      category: "missing_protocol"
+      description: "URLs should include protocol specification"
+      format_suggestion: "Add https:// or http:// protocol"
+      
+  mixed_protocols:
+    - pattern: "(?:http://.*?)(?=\\s+https://)|(?:https://.*?)(?=\\s+http://)"
+      evidence: 0.7
+      category: "mixed_protocols"
+      description: "Inconsistent HTTP/HTTPS protocols in same context"
+      format_suggestion: "Use consistent protocol throughout document"
+
+# Email Address Patterns
+email_patterns:
+  basic_email:
+    - pattern: "\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b"
+      evidence: 0.5
+      category: "email_format"
+      description: "Email address formatting check"
+      format_suggestion: "Consider code formatting for email addresses"
+
+# Context Adjustments
+context_adjustments:
+  content_type:
+    technical: 0.0
+    api: 0.0
+    tutorial: -0.05
+    
+  audience:
+    developer: 0.0
+    general: 0.1
+
+# Thresholds and Messages
+thresholds:
+  detection_threshold: 0.1
+  high_confidence: 0.8
+
+messages:
+  high_confidence:
+    template: "Web address '{flagged_text}' has formatting issues: {description}"
+
+suggestions:
+  high_confidence:
+    - "{format_suggestion}"
+    - "Consistent URL formatting improves documentation quality"
+
+# Guard Patterns
+guard_patterns:
+  code_blocks: true
+  inline_code: true
+  literal_blocks: true
+  
+  # Selective placeholder protection (not all example.com URLs)
+  localhost_protection: true
+  placeholder_patterns:
+    - "localhost"
+    - "127.0.0.1"
+    - "placeholder"
+    
+  legitimate_contexts:
+    - "web address"
+    - "url"
+    - "website"
+    - "link"
+    - "hyperlink"
