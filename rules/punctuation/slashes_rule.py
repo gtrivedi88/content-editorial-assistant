@@ -3,9 +3,11 @@ Slashes Rule
 Based on IBM Style Guide topic: "Slashes"
 
 **UPDATED** with evidence-based scoring for nuanced slash usage analysis.
+**YAML Configuration Support** for maintainable pattern management.
 """
 from typing import List, Dict, Any, Optional
 from .base_punctuation_rule import BasePunctuationRule
+from .services.punctuation_config_service import get_punctuation_config
 
 try:
     from spacy.tokens import Doc, Token, Span
@@ -18,7 +20,14 @@ class SlashesRule(BasePunctuationRule):
     """
     Checks for the ambiguous use of slashes to mean "and/or" using evidence-based analysis,
     with Part-of-Speech tagging to identify the grammatical context.
+    Uses YAML configuration for maintainable pattern management.
     """
+    
+    def __init__(self):
+        """Initialize the rule with configuration service."""
+        super().__init__()
+        self.config = get_punctuation_config()
+    
     def _get_rule_type(self) -> str:
         """Returns the unique identifier for this rule."""
         return 'slashes'
@@ -219,6 +228,16 @@ class SlashesRule(BasePunctuationRule):
         # === STEP 5: FEEDBACK PATTERNS (LEARNING CLUES) ===
         evidence_score = self._apply_feedback_clues_slash(evidence_score, slash_token, context)
         
+        # === STEP 6: YAML CONFIGURATION CONTEXT ADJUSTMENTS ===
+        context_adjustment = self.config.get_context_evidence_adjustment(
+            'slashes_rule',
+            content_type=context.get('content_type'),
+            domain=context.get('domain'),
+            block_type=context.get('block_type'),
+            audience=context.get('audience')
+        )
+        evidence_score += context_adjustment
+        
         return max(0.0, min(1.0, evidence_score))
 
     def _is_ambiguous_slash_pattern(self, slash_token: 'Token', sent: 'Span') -> bool:
@@ -256,11 +275,17 @@ class SlashesRule(BasePunctuationRule):
         """Check if this slash is part of a file path or directory."""
         sent_text = sent.text.lower()
         
-        # Common file path indicators
-        path_indicators = [
-            '/usr/', '/bin/', '/etc/', '/var/', '/home/', '/opt/', '/tmp/',
-            'directory', 'folder', 'path', 'file', 'config', 'system'
-        ]
+        # Get file path indicators from YAML configuration
+        file_path_indicators = self.config.get_file_path_indicators()
+        path_indicators = []
+        
+        # Collect system directories
+        system_dirs = file_path_indicators.get('system_directories', [])
+        path_indicators.extend([f'/{dir}/' for dir in system_dirs])
+        
+        # Collect filesystem terms
+        filesystem_terms = file_path_indicators.get('filesystem_terms', [])
+        path_indicators.extend(filesystem_terms)
         
         if any(indicator in sent_text for indicator in path_indicators):
             return True
@@ -331,15 +356,14 @@ class SlashesRule(BasePunctuationRule):
         prev_token = sent[token_sent_idx - 1]
         next_token = sent[token_sent_idx + 1]
         
-        # Common measurement units
-        units = {
-            'km', 'mile', 'meter', 'yard', 'foot', 'inch',
-            'hour', 'minute', 'second', 'day', 'week', 'month', 'year',
-            'gallon', 'liter', 'litre', 'ounce', 'cup', 'pint', 'quart',
-            'pound', 'kg', 'gram', 'ton', 'oz', 'lb',
-            'mph', 'kph', 'rpm', 'bpm', 'fps', 'psi',
-            'h', 'm', 's', 'g', 'l'
-        }
+        # Get measurement units from YAML configuration
+        measurement_units = self.config.get_measurement_units()
+        units = set()
+        
+        # Collect all measurement units
+        for category in measurement_units.values():
+            if isinstance(category, list):
+                units.update(unit.lower() for unit in category)
         
         prev_text = prev_token.text.lower()
         next_text = next_token.text.lower()
@@ -356,12 +380,14 @@ class SlashesRule(BasePunctuationRule):
         prev_token = sent[token_sent_idx - 1]
         next_token = sent[token_sent_idx + 1]
         
-        # Academic notation patterns
-        academic_terms = {
-            'vol', 'volume', 'issue', 'page', 'line', 'chapter', 'section',
-            'p', 'pp', 'ch', 'sec', 'fig', 'figure', 'table', 'ref',
-            'ed', 'edition', 'rev', 'revision'
-        }
+        # Get academic notation from YAML configuration
+        academic_notation = self.config.get_academic_notation()
+        academic_terms = set()
+        for category in academic_notation.values():
+            if isinstance(category, list):
+                for term in category:
+                    if isinstance(term, str):
+                        academic_terms.add(term.lower())
         
         prev_text = prev_token.text.lower()
         next_text = next_token.text.lower()
@@ -369,13 +395,25 @@ class SlashesRule(BasePunctuationRule):
         if prev_text in academic_terms or next_text in academic_terms:
             return True
         
-        # Common abbreviations with slashes
-        common_abbrevs = {
-            'w/o', 'c/o', 'a/c', 'n/a', 'tbd', 'tbh', 'w/', 'w/out',
-            'i/o', 'input/output', 'http/https', 'tcp/ip', 'ssl/tls'
-        }
-        combined = f"{prev_text}/{next_text}"
+        # Get technical abbreviations from YAML configuration
+        technical_abbrevs = self.config.get_technical_abbreviations()
+        common_abbrevs = set()
         
+        # Collect all technical abbreviations
+        for category in technical_abbrevs.values():
+            if isinstance(category, list):
+                for abbrev_data in category:
+                    if isinstance(abbrev_data, dict):
+                        phrase = abbrev_data.get('phrase', '').lower()
+                        if phrase:
+                            common_abbrevs.add(phrase)
+                        # Add variants
+                        variants = abbrev_data.get('variants', [])
+                        for variant in variants:
+                            if isinstance(variant, str):
+                                common_abbrevs.add(variant.lower())
+        
+        combined = f"{prev_text}/{next_text}"
         return combined in common_abbrevs
 
     def _apply_linguistic_clues_slash(self, evidence_score: float, slash_token: 'Token', sent: 'Span') -> float:
@@ -390,21 +428,19 @@ class SlashesRule(BasePunctuationRule):
         
         # === CHECK FOR INCREASED AMBIGUITY ===
         
-        # Common ambiguous patterns that should be flagged
-        ambiguous_pairs = {
-            ('he', 'she'), ('his', 'her'), ('him', 'her'),
-            ('true', 'false'), ('yes', 'no'), ('on', 'off'),
-            ('input', 'output'), ('read', 'write'), ('send', 'receive'),
-            ('option', 'choice'), ('laptop', 'tablet'), ('user', 'administrator'),
-            ('equipment', 'software'), ('client', 'server'), ('desktop', 'mobile'),
-            ('cat', 'dog'), ('clear', 'unambiguous')
-        }
+        # Get ambiguous patterns from YAML configuration
+        ambiguous_patterns = self.config.get_ambiguous_slash_patterns()
         
         prev_word = prev_token.text.lower()
         next_word = next_token.text.lower()
         
-        if (prev_word, next_word) in ambiguous_pairs or (next_word, prev_word) in ambiguous_pairs:
-            evidence_score += 0.3  # These are often ambiguous
+        # Check if this word pair is in any ambiguous pattern category
+        is_ambiguous, pattern_evidence, category = self.config.is_ambiguous_pattern(
+            prev_word, next_word, 'slash'
+        )
+        
+        if is_ambiguous:
+            evidence_score += pattern_evidence - 0.6  # Adjust to base evidence level
         
         # Plural nouns often indicate choice between options
         if prev_token.tag_ in ['NNS', 'NNPS'] or next_token.tag_ in ['NNS', 'NNPS']:

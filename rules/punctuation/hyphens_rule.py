@@ -6,6 +6,7 @@ Based on IBM Style Guide topics: "Hyphens" and "Prefixes"
 """
 from typing import List, Dict, Any, Optional
 from .base_punctuation_rule import BasePunctuationRule
+from .services.punctuation_config_service import get_punctuation_config
 
 try:
     from spacy.tokens import Doc, Token, Span
@@ -19,6 +20,11 @@ class HyphensRule(BasePunctuationRule):
     Checks for incorrect hyphenation using evidence-based analysis,
     with context awareness for legitimate hyphenation scenarios.
     """
+    def __init__(self):
+        """Initialize the rule with configuration service."""
+        super().__init__()
+        self.config = get_punctuation_config()
+    
     def _get_rule_type(self) -> str:
         """Returns the unique identifier for this rule."""
         return 'hyphens'
@@ -140,17 +146,19 @@ class HyphensRule(BasePunctuationRule):
             prefix_lemma = prefix_token.lemma_.lower()
             word_lemma = word_token.lemma_.lower()
             
-            # Well-established software terms (using lemmatized forms)
-            technical_compounds = {
-                'multi': ['thread', 'process', 'processor', 'core', 'user', 'tenant', 'layer', 'stage'],
-                'pre': ['processor', 'compile', 'build', 'configure', 'load', 'define'],
-                'post': ['process', 'processor', 'build', 'deployment', 'installation'],
-                'inter': ['process', 'thread', 'service', 'module', 'component'],
-                'intra': ['process', 'service', 'cluster', 'node']
-            }
+            # Get well-established software terms from YAML configuration
+            technical_compounds = self.config.get_technical_compounds()
+            software_compounds = technical_compounds.get('technical_software', {})
+            engineering_compounds = technical_compounds.get('engineering', {})
             
-            if prefix_lemma in technical_compounds:
-                if word_lemma in technical_compounds[prefix_lemma]:
+            # Check software compounds
+            if prefix_lemma in software_compounds:
+                if word_lemma in software_compounds[prefix_lemma]:
+                    return 0.0  # Established technical term
+            
+            # Check engineering compounds  
+            if prefix_lemma in engineering_compounds:
+                if word_lemma in engineering_compounds[prefix_lemma]:
                     return 0.0  # Established technical term
         
         evidence_score = 0.0

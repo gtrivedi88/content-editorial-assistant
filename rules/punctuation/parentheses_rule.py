@@ -6,6 +6,7 @@ Based on IBM Style Guide topic: "Parentheses"
 """
 from typing import List, Dict, Any, Optional
 from .base_punctuation_rule import BasePunctuationRule
+from .services.punctuation_config_service import get_punctuation_config
 
 try:
     from spacy.tokens import Doc, Token, Span
@@ -19,6 +20,11 @@ class ParenthesesRule(BasePunctuationRule):
     Checks for incorrect punctuation within or around parentheses using evidence-based analysis,
     with dependency parsing to determine if parenthetical content is a complete sentence.
     """
+    def __init__(self):
+        """Initialize the rule with configuration service."""
+        super().__init__()
+        self.config = get_punctuation_config()
+    
     def _get_rule_type(self) -> str:
         """Returns the unique identifier for this rule."""
         return 'parentheses'
@@ -215,9 +221,15 @@ class ParenthesesRule(BasePunctuationRule):
         
         # Check for specific linguistic patterns
         
-        # Abbreviations or acronyms (e.g., etc., i.e., e.g.)
-        abbreviation_patterns = {'etc', 'i.e', 'e.g', 'cf', 'vs', 'et', 'al'}
-        if any(token.text.lower().rstrip('.') in abbreviation_patterns for token in paren_content):
+        # Abbreviations or acronyms (e.g., etc., i.e., e.g.) - from YAML configuration
+        academic_abbrevs = self.config.get_academic_abbreviations()
+        all_abbreviations = set()
+        for category in academic_abbrevs.values():
+            if isinstance(category, list):
+                for item in category:
+                    if isinstance(item, str):
+                        all_abbreviations.add(item.lower().rstrip('.'))
+        if any(token.text.lower().rstrip('.') in all_abbreviations for token in paren_content):
             evidence_score -= 0.4  # Abbreviations legitimately end with periods
         
         # Citations or references

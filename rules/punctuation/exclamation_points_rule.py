@@ -6,6 +6,7 @@ Based on IBM Style Guide topic: "Exclamation points"
 """
 from typing import List, Dict, Any, Optional
 from .base_punctuation_rule import BasePunctuationRule
+from .services.punctuation_config_service import get_punctuation_config
 import re
 
 try:
@@ -20,6 +21,11 @@ class ExclamationPointsRule(BasePunctuationRule):
     Checks for exclamation points using evidence-based analysis,
     with context awareness for legitimate usage scenarios.
     """
+    def __init__(self):
+        """Initialize the rule with configuration service."""
+        super().__init__()
+        self.config = get_punctuation_config()
+    
     def _get_rule_type(self) -> str:
         """Returns the unique identifier for this rule."""
         return 'exclamation_points'
@@ -52,10 +58,14 @@ class ExclamationPointsRule(BasePunctuationRule):
                     continue
                 
                 for match in re.finditer(r'!', sentence):
-                    # Check for warning words in the sentence
+                    # Check for warning words in the sentence (from YAML configuration)
                     sentence_lower = sentence.lower()
-                    warning_words = ['warning', 'caution', 'danger', 'important', 'note', 'alert', 'attention', 'stop']
-                    if any(word in sentence_lower for word in warning_words):
+                    warning_indicators = self.config.get_warning_indicators()
+                    all_warning_words = []
+                    for category in warning_indicators.values():
+                        if isinstance(category, list):
+                            all_warning_words.extend(category)
+                    if any(word in sentence_lower for word in all_warning_words):
                         continue  # Skip warnings
                     
                     errors.append(self._create_error(
@@ -148,10 +158,14 @@ class ExclamationPointsRule(BasePunctuationRule):
         if block_type in ['heading', 'title']:
             return 0.0
         
-        # Check for warning/command words in the sentence
+        # Check for warning/command words in the sentence (from YAML configuration)
         sent_text = sent.text.lower()
-        warning_words = {'warning', 'caution', 'danger', 'important', 'note', 'alert', 'attention', 'stop'}
-        if any(word in sent_text for word in warning_words):
+        warning_indicators = self.config.get_warning_indicators()
+        all_warning_words = []
+        for category in warning_indicators.values():
+            if isinstance(category, list):
+                all_warning_words.extend(category)
+        if any(word in sent_text for word in all_warning_words):
             return 0.0
         
         # Check for imperative commands which may legitimately use exclamations
@@ -207,10 +221,14 @@ class ExclamationPointsRule(BasePunctuationRule):
                 if not has_explicit_subject:
                     evidence_score -= 0.3  # Commands may use exclamations
             
-            # Check for warning/alert words
-            warning_words = {'warning', 'caution', 'danger', 'important', 'note', 'alert', 'attention'}
+            # Check for warning/alert words (from YAML configuration)
+            warning_indicators = self.config.get_warning_indicators()
+            all_warning_words = set()
+            for category in warning_indicators.values():
+                if isinstance(category, list):
+                    all_warning_words.update(word.lower() for word in category)
             for token in sent:
-                if token.text.lower() in warning_words:
+                if token.text.lower() in all_warning_words:
                     evidence_score -= 0.4  # Warnings may justify exclamations
                     break
             

@@ -1,0 +1,416 @@
+# Technical Compounds Configuration
+# Manages compound words and hyphenation patterns in technical writing
+# Used by hyphens_rule.py and other rules dealing with compound terms
+
+# Technical compound words that are legitimately hyphenated
+technical_compounds:
+  # Prefix-based compounds organized by prefix
+  multi_compounds:
+    # Multi- prefix compounds (generally acceptable with hyphens)
+    thread:
+      evidence_reduction: 0.8
+      context: "programming"
+      examples: ["multi-threaded", "multi-threading"]
+    
+    process:
+      evidence_reduction: 0.8
+      context: "system_administration"
+      examples: ["multi-process", "multi-processing"]
+    
+    user:
+      evidence_reduction: 0.7
+      context: "system_design"
+      examples: ["multi-user", "multi-user-system"]
+    
+    platform:
+      evidence_reduction: 0.8
+      context: "software_development"
+      examples: ["multi-platform", "multi-platform-support"]
+    
+    dimensional:
+      evidence_reduction: 0.9
+      context: "mathematics"
+      examples: ["multi-dimensional", "multi-dimensional-array"]
+    
+    level:
+      evidence_reduction: 0.7
+      context: "architecture"
+      examples: ["multi-level", "multi-level-hierarchy"]
+    
+    stage:
+      evidence_reduction: 0.7
+      context: "process_design"
+      examples: ["multi-stage", "multi-stage-pipeline"]
+    
+    step:
+      evidence_reduction: 0.7
+      context: "workflow"
+      examples: ["multi-step", "multi-step-process"]
+    
+    purpose:
+      evidence_reduction: 0.6
+      context: "design"
+      examples: ["multi-purpose", "multi-purpose-tool"]
+    
+    function:
+      evidence_reduction: 0.8
+      context: "programming"
+      examples: ["multi-function", "multi-functional"]
+
+  # Sub- prefix compounds
+  sub_compounds:
+    directory:
+      evidence_reduction: 0.9
+      context: "file_systems"
+      examples: ["sub-directory", "sub-directories"]
+    
+    folder:
+      evidence_reduction: 0.9
+      context: "file_systems"
+      examples: ["sub-folder", "sub-folders"]
+    
+    process:
+      evidence_reduction: 0.8
+      context: "system_administration"
+      examples: ["sub-process", "sub-processes"]
+    
+    system:
+      evidence_reduction: 0.8
+      context: "system_architecture"
+      examples: ["sub-system", "sub-systems"]
+    
+    component:
+      evidence_reduction: 0.8
+      context: "software_engineering"
+      examples: ["sub-component", "sub-components"]
+    
+    module:
+      evidence_reduction: 0.8
+      context: "software_architecture"
+      examples: ["sub-module", "sub-modules"]
+    
+    routine:
+      evidence_reduction: 0.8
+      context: "programming"
+      examples: ["sub-routine", "sub-routines"]
+    
+    function:
+      evidence_reduction: 0.8
+      context: "programming"
+      examples: ["sub-function", "sub-functions"]
+    
+    menu:
+      evidence_reduction: 0.9
+      context: "user_interface"
+      examples: ["sub-menu", "sub-menus"]
+
+  # Pre- prefix compounds
+  pre_compounds:
+    process:
+      evidence_reduction: 0.7
+      context: "workflow"
+      examples: ["pre-process", "pre-processing"]
+    
+    configure:
+      evidence_reduction: 0.8
+      context: "system_setup"
+      examples: ["pre-configure", "pre-configured"]
+    
+    defined:
+      evidence_reduction: 0.8
+      context: "programming"
+      examples: ["pre-defined", "pre-definition"]
+    
+    existing:
+      evidence_reduction: 0.6
+      context: "general_technical"
+      examples: ["pre-existing", "pre-existing-conditions"]
+    
+    selected:
+      evidence_reduction: 0.7
+      context: "user_interface"
+      examples: ["pre-selected", "pre-selection"]
+    
+    installed:
+      evidence_reduction: 0.8
+      context: "software_installation"
+      examples: ["pre-installed", "pre-installation"]
+    
+    built:
+      evidence_reduction: 0.8
+      context: "software_development"
+      examples: ["pre-built", "pre-building"]
+    
+    compiled:
+      evidence_reduction: 0.9
+      context: "software_compilation"
+      examples: ["pre-compiled", "pre-compilation"]
+
+  # Post- prefix compounds
+  post_compounds:
+    process:
+      evidence_reduction: 0.7
+      context: "workflow"
+      examples: ["post-process", "post-processing"]
+    
+    installation:
+      evidence_reduction: 0.8
+      context: "software_installation"
+      examples: ["post-installation", "post-install"]
+    
+    configuration:
+      evidence_reduction: 0.8
+      context: "system_setup"
+      examples: ["post-configuration", "post-config"]
+    
+    deployment:
+      evidence_reduction: 0.8
+      context: "software_deployment"
+      examples: ["post-deployment", "post-deploy"]
+    
+    build:
+      evidence_reduction: 0.8
+      context: "software_development"
+      examples: ["post-build", "post-building"]
+
+  # Cross- prefix compounds
+  cross_compounds:
+    platform:
+      evidence_reduction: 0.9
+      context: "software_development"
+      examples: ["cross-platform", "cross-platform-compatibility"]
+    
+    reference:
+      evidence_reduction: 0.8
+      context: "documentation"
+      examples: ["cross-reference", "cross-referencing"]
+    
+    functional:
+      evidence_reduction: 0.7
+      context: "business_analysis"
+      examples: ["cross-functional", "cross-functional-team"]
+    
+    site:
+      evidence_reduction: 0.8
+      context: "web_development"
+      examples: ["cross-site", "cross-site-scripting"]
+
+# Domain-specific compound patterns
+domain_specific_compounds:
+  # Software development compounds
+  software_development:
+    legitimate_hyphens:
+      - "object-oriented"
+      - "event-driven"
+      - "data-driven"
+      - "test-driven"
+      - "domain-driven"
+      - "behavior-driven"
+      - "feature-driven"
+      - "user-defined"
+      - "system-defined"
+      - "auto-generated"
+      - "hand-coded"
+      - "hard-coded"
+      - "soft-coded"
+      - "re-usable"
+      - "re-entrant"
+      - "thread-safe"
+      - "type-safe"
+      - "memory-safe"
+      - "null-safe"
+    
+    evidence_reduction: 0.8
+    context: "programming_methodologies"
+
+  # System administration compounds
+  system_administration:
+    legitimate_hyphens:
+      - "load-balanced"
+      - "fault-tolerant"
+      - "high-availability"
+      - "low-latency"
+      - "real-time"
+      - "near-real-time"
+      - "mission-critical"
+      - "business-critical"
+      - "time-sensitive"
+      - "resource-intensive"
+      - "memory-intensive"
+      - "cpu-intensive"
+      - "disk-intensive"
+      - "network-intensive"
+      - "bandwidth-intensive"
+    
+    evidence_reduction: 0.8
+    context: "system_properties"
+
+  # User interface compounds
+  user_interface:
+    legitimate_hyphens:
+      - "user-friendly"
+      - "user-centric"
+      - "mobile-friendly"
+      - "touch-enabled"
+      - "voice-activated"
+      - "gesture-based"
+      - "context-aware"
+      - "location-aware"
+      - "device-agnostic"
+      - "browser-agnostic"
+      - "platform-agnostic"
+      - "responsive-design"
+      - "adaptive-design"
+    
+    evidence_reduction: 0.7
+    context: "interface_design"
+
+  # Network and security compounds
+  network_security:
+    legitimate_hyphens:
+      - "end-to-end"
+      - "point-to-point"
+      - "peer-to-peer"
+      - "client-server"
+      - "server-side"
+      - "client-side"
+      - "browser-based"
+      - "cloud-based"
+      - "web-based"
+      - "service-oriented"
+      - "micro-services"
+      - "service-mesh"
+      - "zero-trust"
+      - "multi-factor"
+      - "two-factor"
+      - "single-sign-on"
+      - "role-based"
+      - "attribute-based"
+    
+    evidence_reduction: 0.9
+    context: "architecture_patterns"
+
+# Hyphenation rules by context
+hyphenation_rules:
+  # When hyphens are generally acceptable
+  acceptable_contexts:
+    compound_adjectives:
+      - "before_noun"  # "well-known author"
+      - "predicate_position"  # "the author is well-known"
+    
+    technical_specifications:
+      - "measurement_units"
+      - "version_numbers"
+      - "model_identifiers"
+    
+    programming_terms:
+      - "variable_names"
+      - "function_names"
+      - "class_names"
+      - "method_names"
+
+  # When hyphens should be avoided
+  discouraged_contexts:
+    simple_prefixes:
+      prefixes: ["anti", "co", "de", "pre", "pro", "re", "un"]
+      exceptions: ["co-worker", "re-enter", "pre-existing"]
+    
+    adverb_adjective:
+      pattern: "adverb_ly + adjective"
+      examples: 
+        incorrect: "highly-effective"
+        correct: "highly effective"
+
+# Evidence scoring guidelines
+evidence_scoring:
+  # Base evidence scores for different hyphen patterns
+  prefix_patterns:
+    multi: 0.2   # Usually acceptable
+    sub: 0.3     # Often acceptable
+    pre: 0.4     # Sometimes acceptable
+    post: 0.4    # Sometimes acceptable
+    cross: 0.3   # Often acceptable
+    anti: 0.6    # Usually not needed
+    co: 0.6      # Usually not needed
+    re: 0.6      # Usually not needed
+    un: 0.7      # Usually not needed
+
+  # Context-based adjustments
+  context_adjustments:
+    technical_documentation: -0.3  # More permissive
+    user_manuals: -0.2            # Somewhat permissive
+    general_prose: 0.0            # Standard rules
+    formal_writing: 0.2           # More strict
+
+# Industry-specific patterns
+industry_patterns:
+  # Software industry commonly hyphenated terms
+  software:
+    - "open-source"
+    - "closed-source"
+    - "full-stack"
+    - "back-end"
+    - "front-end"
+    - "server-side"
+    - "client-side"
+    - "real-time"
+    - "near-real-time"
+    - "state-of-the-art"
+    - "cutting-edge"
+    - "next-generation"
+    - "enterprise-grade"
+    - "production-ready"
+    - "battle-tested"
+
+  # Engineering commonly hyphenated terms
+  engineering:
+    - "high-performance"
+    - "low-power"
+    - "energy-efficient"
+    - "cost-effective"
+    - "time-critical"
+    - "safety-critical"
+    - "mission-critical"
+    - "fail-safe"
+    - "fault-tolerant"
+    - "load-bearing"
+    - "weather-resistant"
+    - "corrosion-resistant"
+
+# Feedback patterns for learning
+feedback_patterns:
+  # Compounds users commonly accept
+  user_accepted:
+    - "multi-threaded"
+    - "cross-platform"
+    - "real-time"
+    - "user-friendly"
+    - "state-of-the-art"
+    - "end-to-end"
+
+  # Compounds users commonly flag
+  user_flagged:
+    - "co-worker" # Users prefer "coworker"
+    - "re-enter"  # Users prefer "reenter"
+    - "pre-existing" # Users prefer "preexisting"
+
+# Exception patterns
+exceptions:
+  # Words that always require hyphens
+  always_hyphenated:
+    - "twenty-one" # Numbers 21-99
+    - "mother-in-law" # Family relationships
+    - "commander-in-chief" # Military titles
+    - "editor-in-chief" # Professional titles
+    - "state-of-the-art" # Established compounds
+    - "up-to-date" # Time-related compounds
+
+  # Words that should never be hyphenated
+  never_hyphenated:
+    - "online" # Not "on-line"
+    - "email" # Not "e-mail"
+    - "website" # Not "web-site"
+    - "database" # Not "data-base"
+    - "filename" # Not "file-name"
+    - "username" # Not "user-name"
+    - "password" # Not "pass-word"

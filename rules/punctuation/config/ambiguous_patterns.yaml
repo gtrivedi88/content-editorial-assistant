@@ -1,0 +1,326 @@
+# Ambiguous Patterns Configuration
+# Manages patterns that create ambiguity in technical writing
+# Used by slashes_rule.py, punctuation_and_symbols_rule.py, and related rules
+
+# Ambiguous slash patterns that should be flagged
+ambiguous_slash_patterns:
+  # Binary choice patterns - these create "and/or" ambiguity
+  binary_choices:
+    - pattern: ["he", "she"]
+      evidence: 0.95
+      category: "pronoun_ambiguity"
+      suggestion: "Use gender-neutral pronouns like 'they' or rephrase"
+      examples:
+        incorrect: "The user can update his/her profile"
+        correct: "Users can update their profiles"
+    
+    - pattern: ["his", "her"]
+      evidence: 0.95
+      category: "pronoun_ambiguity"
+      suggestion: "Use gender-neutral pronouns like 'their' or rephrase"
+      examples:
+        incorrect: "Check his/her credentials"
+        correct: "Check their credentials"
+    
+    - pattern: ["him", "her"]
+      evidence: 0.95
+      category: "pronoun_ambiguity"
+      suggestion: "Use gender-neutral pronouns like 'them' or rephrase"
+      examples:
+        incorrect: "Send him/her a notification"
+        correct: "Send them a notification"
+  
+  # Boolean and state patterns
+  boolean_states:
+    - pattern: ["true", "false"]
+      evidence: 0.90
+      category: "boolean_ambiguity"
+      suggestion: "Clarify which condition applies or use 'true or false'"
+      examples:
+        incorrect: "Set the true/false flag"
+        correct: "Set the flag to true or false"
+    
+    - pattern: ["yes", "no"]
+      evidence: 0.85
+      category: "boolean_ambiguity"
+      suggestion: "Use 'yes or no' for clarity"
+      examples:
+        incorrect: "Choose yes/no option"
+        correct: "Choose the yes or no option"
+    
+    - pattern: ["on", "off"]
+      evidence: 0.85
+      category: "state_ambiguity"
+      suggestion: "Use 'on or off' for clarity"
+      examples:
+        incorrect: "Toggle the on/off switch"
+        correct: "Toggle the switch on or off"
+  
+  # Technical operation patterns
+  technical_operations:
+    - pattern: ["input", "output"]
+      evidence: 0.70
+      category: "process_ambiguity"
+      suggestion: "Clarify the relationship: 'input and output' or 'input or output'"
+      examples:
+        incorrect: "Configure input/output settings"
+        correct: "Configure input and output settings"
+    
+    - pattern: ["read", "write"]
+      evidence: 0.75
+      category: "operation_ambiguity"
+      suggestion: "Specify which operations are supported"
+      examples:
+        incorrect: "File has read/write permissions"
+        correct: "File has read and write permissions"
+    
+    - pattern: ["send", "receive"]
+      evidence: 0.75
+      category: "communication_ambiguity"
+      suggestion: "Clarify the communication direction"
+      examples:
+        incorrect: "Protocol can send/receive data"
+        correct: "Protocol can send and receive data"
+  
+  # User choice patterns
+  user_choices:
+    - pattern: ["option", "choice"]
+      evidence: 0.80
+      category: "selection_ambiguity"
+      suggestion: "Use 'option or choice' for clarity"
+      examples:
+        incorrect: "Select the appropriate option/choice"
+        correct: "Select the appropriate option"
+    
+    - pattern: ["laptop", "tablet"]
+      evidence: 0.85
+      category: "device_ambiguity"
+      suggestion: "Specify which devices are supported"
+      examples:
+        incorrect: "Bring your laptop/tablet"
+        correct: "Bring your laptop or tablet"
+    
+    - pattern: ["user", "administrator"]
+      evidence: 0.80
+      category: "role_ambiguity"
+      suggestion: "Clarify which user roles apply"
+      examples:
+        incorrect: "The user/administrator can access"
+        correct: "Users and administrators can access"
+    
+    - pattern: ["client", "server"]
+      evidence: 0.75
+      category: "architecture_ambiguity"
+      suggestion: "Specify the architectural relationship"
+      examples:
+        incorrect: "Configure client/server settings"
+        correct: "Configure client and server settings"
+  
+  # Product and equipment patterns
+  product_choices:
+    - pattern: ["equipment", "software"]
+      evidence: 0.80
+      category: "resource_ambiguity"
+      suggestion: "Clarify what types of resources are included"
+      examples:
+        incorrect: "The contract covers equipment/software"
+        correct: "The contract covers equipment and software"
+    
+    - pattern: ["desktop", "mobile"]
+      evidence: 0.80
+      category: "platform_ambiguity"
+      suggestion: "Specify which platforms are supported"
+      examples:
+        incorrect: "Available on desktop/mobile"
+        correct: "Available on desktop and mobile platforms"
+    
+    - pattern: ["cat", "dog"]
+      evidence: 0.90
+      category: "choice_ambiguity"
+      suggestion: "Use 'cat or dog' for clear alternatives"
+      examples:
+        incorrect: "Choose the cat/dog option"
+        correct: "Choose either the cat or dog option"
+
+# Mathematical expression patterns (should NOT be flagged)
+mathematical_expressions:
+  # Arithmetic operations
+  basic_operations:
+    - pattern: "division"
+      indicators: ["divided by", "÷", "ratio", "per", "rate"]
+      evidence_reduction: 1.0
+      examples: ["2/3", "x/y", "numerator/denominator"]
+    
+    - pattern: "fraction"
+      indicators: ["fraction", "ratio", "proportion", "percentage"]
+      evidence_reduction: 1.0
+      examples: ["1/2", "3/4", "5/8"]
+  
+  # Mathematical keywords that indicate legitimate usage
+  mathematical_keywords:
+    - equation
+    - formula
+    - calculation
+    - ratio
+    - percentage
+    - proportion
+    - fraction
+    - quotient
+    - division
+    - dividend
+    - divisor
+    - numerator
+    - denominator
+    - plus
+    - minus
+    - times
+    - divided
+    - equals
+    - result
+
+# Company name and proper noun patterns (should NOT be flagged)
+company_patterns:
+  # Business entity indicators
+  business_entities:
+    - pattern: "company_conjunction"
+      indicators: ["& co", "& company", "& associates", "& partners", "& sons", "& daughters"]
+      evidence_reduction: 1.0
+      examples: ["Johnson & Johnson", "Procter & Gamble"]
+    
+    - pattern: "business_abbreviation"
+      indicators: ["inc", "inc.", "llc", "ltd", "ltd.", "corp", "corp."]
+      evidence_reduction: 1.0
+      examples: ["Smith & Associates Inc.", "Johnson & Co. LLC"]
+  
+  # Legal and formal name patterns
+  legal_entities:
+    - "& associates"
+    - "& partners"
+    - "& company"
+    - "& co"
+    - "& sons"
+    - "& brothers"
+    - "& sisters"
+    - "& family"
+
+# Symbol ambiguity patterns for punctuation_and_symbols_rule.py
+symbol_ambiguity:
+  # Ampersand usage patterns
+  ampersand_patterns:
+    - context: "general_text"
+      evidence: 0.80
+      suggestion: "Use 'and' instead of '&' in general text"
+      examples:
+        incorrect: "The cat & dog played together"
+        correct: "The cat and dog played together"
+    
+    - context: "list_conjunction"
+      evidence: 0.75
+      suggestion: "Use 'and' for list items in prose"
+      examples:
+        incorrect: "Apples, oranges, & bananas"
+        correct: "Apples, oranges, and bananas"
+  
+  # Plus sign usage patterns
+  plus_patterns:
+    - context: "general_text"
+      evidence: 0.70
+      suggestion: "Use 'and' or 'plus' instead of '+' in text"
+      examples:
+        incorrect: "Features include A + B functionality"
+        correct: "Features include A and B functionality"
+
+# Context-specific evidence modifiers
+context_modifiers:
+  # Content type adjustments
+  content_types:
+    legal:
+      evidence_multiplier: 1.2  # Legal writing requires precision
+      rationale: "Legal documents must be unambiguous"
+    
+    academic:
+      evidence_multiplier: 0.8  # Academic writing more flexible
+      rationale: "Academic writing allows some stylistic variation"
+    
+    technical:
+      evidence_multiplier: 0.9  # Technical writing needs clarity
+      rationale: "Technical documentation should be clear but may use established patterns"
+    
+    creative:
+      evidence_multiplier: 0.3  # Creative writing very flexible
+      rationale: "Creative writing allows stylistic choices"
+    
+    business:
+      evidence_multiplier: 1.0  # Standard business clarity
+      rationale: "Business writing should be clear and professional"
+    
+    marketing:
+      evidence_multiplier: 0.6  # Marketing allows some creativity
+      rationale: "Marketing materials may use stylistic elements"
+
+# Domain-specific appropriateness
+domain_appropriateness:
+  # Technology domains where certain patterns are acceptable
+  software:
+    acceptable_patterns:
+      - "client/server"  # Architectural pattern
+      - "read/write"     # File permissions
+      - "input/output"   # I/O operations
+    evidence_reduction: 0.3
+  
+  gaming:
+    acceptable_patterns:
+      - "win/lose"
+      - "player/character"
+      - "level/stage"
+    evidence_reduction: 0.4
+  
+  finance:
+    acceptable_patterns:
+      - "buy/sell"
+      - "profit/loss"
+      - "credit/debit"
+    evidence_reduction: 0.2
+
+# Feedback learning patterns
+feedback_patterns:
+  # Patterns consistently flagged by users
+  user_flagged:
+    high_priority:
+      - "and/or"
+      - "he/she"
+      - "his/her"
+      - "him/her"
+    
+    medium_priority:
+      - "option/choice"
+      - "user/admin"
+      - "true/false"
+  
+  # Patterns users commonly accept
+  user_accepted:
+    mathematical:
+      - "x/y"
+      - "a/b"
+      - "numerator/denominator"
+    
+    technical:
+      - "I/O"
+      - "TCP/IP"
+      - "HTTP/HTTPS"
+    
+    temporal:
+      - "24/7"
+      - "AM/PM"
+
+# Advanced pattern detection
+advanced_patterns:
+  # Patterns that require context analysis
+  context_dependent:
+    - pattern: "input/output"
+      acceptable_contexts: ["technical_documentation", "system_specifications"]
+      flagged_contexts: ["user_instructions", "general_prose"]
+    
+    - pattern: "read/write"
+      acceptable_contexts: ["permission_discussions", "file_operations"]
+      flagged_contexts: ["general_instructions", "user_guidance"]

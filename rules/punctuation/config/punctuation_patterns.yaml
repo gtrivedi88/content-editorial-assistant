@@ -1,0 +1,312 @@
+# Punctuation Patterns Configuration
+# Common patterns used across multiple punctuation rules
+# Updates can be made without code changes for zero false positives
+
+# Warning and Alert Indicators
+# Used by exclamation_points_rule.py and other rules that need to identify warning contexts
+warning_indicators:
+  # Words that indicate warnings, cautions, or important information
+  primary_warnings:
+    - warning
+    - caution
+    - danger
+    - important
+    - note
+    - alert
+    - attention
+    - stop
+    - critical
+    - urgent
+    - notice
+  
+  # Command/imperative indicators
+  command_words:
+    - must
+    - should
+    - required
+    - mandatory
+    - ensure
+    - verify
+    - check
+    - confirm
+    - avoid
+    - do not
+    - never
+
+# Academic and Reference Notation
+# Used by slashes_rule.py, semicolons_rule.py, and periods_rule.py
+academic_notation:
+  # Academic reference terms
+  reference_terms:
+    - vol
+    - volume
+    - issue
+    - page
+    - line
+    - chapter
+    - section
+    - part
+    - appendix
+    - fig
+    - figure
+    - table
+    - ref
+    - reference
+    - see also
+    - cf
+    - ibid
+    - op cit
+  
+  # Academic abbreviations
+  abbreviations:
+    - p
+    - pp
+    - ch
+    - sec
+    - para
+    - ed
+    - edition
+    - rev
+    - revision
+    - "no"
+    - vol
+    - pt
+    - art
+    - vs
+    - v
+
+# List and Hierarchical Indicators
+# Used by semicolons_rule.py and commas_rule.py for complex list detection
+list_indicators:
+  # Professional titles and roles
+  professional_titles:
+    - ceo
+    - cto
+    - cfo
+    - coo
+    - president
+    - director
+    - manager
+    - supervisor
+    - coordinator
+    - administrator
+    - analyst
+    - specialist
+    - consultant
+    - engineer
+    - developer
+    - architect
+    - designer
+  
+  # Academic and formal titles
+  formal_titles:
+    - dr
+    - prof
+    - professor
+    - mr
+    - mrs
+    - ms
+    - miss
+    - sir
+    - madam
+    - hon
+    - honorable
+    - rev
+    - reverend
+  
+  # Organizational indicators
+  organizational_terms:
+    - department
+    - division
+    - unit
+    - team
+    - group
+    - committee
+    - board
+    - council
+    - association
+    - organization
+    - institution
+    - corporation
+    - company
+    - firm
+
+# Measurement and Unit Patterns
+# Used by slashes_rule.py and other rules dealing with numeric expressions
+measurement_units:
+  # Distance and length
+  distance:
+    - km
+    - mile
+    - meter
+    - metre
+    - yard
+    - foot
+    - feet
+    - inch
+    - inches
+    - cm
+    - mm
+    - m
+  
+  # Time units
+  time:
+    - hour
+    - hours
+    - minute
+    - minutes
+    - second
+    - seconds
+    - day
+    - days
+    - week
+    - weeks
+    - month
+    - months
+    - year
+    - years
+    - h
+    - min
+    - sec
+    - hr
+    - hrs
+  
+  # Volume and capacity
+  volume:
+    - gallon
+    - gallons
+    - liter
+    - litre
+    - litres
+    - liters
+    - ounce
+    - ounces
+    - cup
+    - cups
+    - pint
+    - pints
+    - quart
+    - quarts
+    - ml
+    - l
+    - oz
+    - gal
+  
+  # Weight and mass
+  weight:
+    - pound
+    - pounds
+    - kg
+    - kilogram
+    - kilograms
+    - gram
+    - grams
+    - ton
+    - tons
+    - tonne
+    - tonnes
+    - lb
+    - lbs
+    - g
+  
+  # Speed and rates
+  speed:
+    - mph
+    - kph
+    - kmh
+    - rpm
+    - bpm
+    - fps
+    - psi
+    - knots
+    - mach
+
+# File and Path Indicators
+# Used by slashes_rule.py and other rules for detecting file paths
+file_path_indicators:
+  # Common directory names
+  system_directories:
+    - usr
+    - bin
+    - etc
+    - var
+    - home
+    - opt
+    - tmp
+    - lib
+    - sbin
+    - local
+    - root
+    - boot
+    - dev
+    - proc
+    - sys
+    - mnt
+    - media
+  
+  # File system terms
+  filesystem_terms:
+    - directory
+    - folder
+    - path
+    - file
+    - config
+    - configuration
+    - system
+    - application
+    - program
+    - executable
+    - script
+    - document
+    - data
+    - backup
+    - archive
+  
+  # File extensions (without dots)
+  common_extensions:
+    - txt
+    - doc
+    - pdf
+    - html
+    - xml
+    - json
+    - csv
+    - xlsx
+    - ppt
+    - jpg
+    - png
+    - gif
+    - mp3
+    - mp4
+    - zip
+    - tar
+    - gz
+    - exe
+    - dll
+    - so
+    - app
+
+# Evidence Scoring Guidelines
+# Base evidence scores for different pattern types
+evidence_scoring:
+  warning_context: -0.3  # Reduce evidence when in warning context
+  academic_context: -0.2  # Reduce evidence for academic notation
+  measurement_context: -0.4  # Strong reduction for measurements
+  file_path_context: -0.6  # Very strong reduction for file paths
+  professional_title_context: -0.2  # Reduce for professional contexts
+
+# Feedback Learning Patterns
+# Patterns learned from user feedback (can be updated based on usage)
+feedback_patterns:
+  commonly_accepted:
+    - "24/7"
+    - "365/24/7"
+    - "TCP/IP"
+    - "HTTP/HTTPS"
+    - "I/O"
+    - "input/output"
+  
+  commonly_flagged:
+    - "and/or" # Users consistently want this flagged
+    - "he/she" # Users prefer gender-neutral alternatives
+    - "his/her" # Users prefer inclusive language

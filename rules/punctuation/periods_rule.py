@@ -6,6 +6,7 @@ Based on IBM Style Guide topic: "Periods"
 """
 from typing import List, Dict, Any, Optional
 from .base_punctuation_rule import BasePunctuationRule
+from .services.punctuation_config_service import get_punctuation_config
 
 try:
     from spacy.tokens import Doc, Token, Span
@@ -21,6 +22,11 @@ class PeriodsRule(BasePunctuationRule):
     - Other period usage violations
     Enhanced with dependency parsing and contextual awareness.
     """
+    def __init__(self):
+        """Initialize the rule with configuration service."""
+        super().__init__()
+        self.config = get_punctuation_config()
+    
     def _get_rule_type(self) -> str:
         """Returns the unique identifier for this rule."""
         return 'periods'
@@ -172,9 +178,8 @@ class PeriodsRule(BasePunctuationRule):
         """
         Check if this abbreviation period usage is legitimate in this context.
         """
-        # Check for common legitimate abbreviations that should keep periods
-        legitimate_abbrevs = ['P.M.', 'A.M.', 'P.O.', 'U.K.', 'U.S.', 'Dr.', 'Mr.', 'Mrs.', 'Ms.', 'Prof.']
-        if abbrev_token.text in legitimate_abbrevs:
+        # Check for legitimate abbreviations that should keep periods (from YAML configuration)
+        if self.config.is_legitimate_abbreviation(abbrev_token.text)[0]:
             return True
         
         return False
