@@ -1342,6 +1342,12 @@ class BaseRule(ABC):
             print(f"Warning: Validation pipeline failed: {e}")
             enhanced_fields['validation_pipeline_error'] = str(e)
         
+        # Preserve Level 2 Enhanced Validation fields
+        if text is not None:
+            enhanced_fields['text'] = text
+        if context is not None:
+            enhanced_fields['context'] = context
+        
         return enhanced_fields
         
     def _make_serializable(self, data: Any) -> Any:

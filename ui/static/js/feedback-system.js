@@ -44,13 +44,26 @@ const FeedbackTracker = {
      * @returns {string} - Unique identifier for the error
      */
     generateErrorId(error) {
+        // Use more comprehensive error fingerprinting
         const components = [
             error.type || 'unknown',
-            error.message ? error.message.substring(0, 50) : 'nomessage',
+            error.message || 'nomessage',
             error.line_number || 'noline',
-            error.text_segment ? error.text_segment.substring(0, 20) : 'notext'
+            error.sentence_index !== undefined ? error.sentence_index : 'nosentence',
+            error.text_segment || 'notext'
         ];
-        return btoa(components.join('|')).replace(/[^a-zA-Z0-9]/g, '').substring(0, 16);
+        
+        // Create a more stable hash
+        const rawId = components.join('|');
+        let hash = 0;
+        for (let i = 0; i < rawId.length; i++) {
+            const char = rawId.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash; // Convert to 32-bit integer
+        }
+        
+        // Convert to positive base36 string
+        return Math.abs(hash).toString(36).padStart(8, '0');
     },
     
     /**
@@ -71,7 +84,16 @@ const FeedbackTracker = {
             reason: reason,
             timestamp: Date.now(),
             error_type: error.type,
-            confidence_score: confidenceScore
+            confidence_score: confidenceScore,
+            // Store the complete error object for reconstruction
+            original_error: {
+                type: error.type,
+                message: error.message,
+                line_number: error.line_number,
+                sentence_index: error.sentence_index,
+                text_segment: error.text_segment,
+                confidence_score: error.confidence_score
+            }
         };
         this.saveToSession();
         return errorId;
@@ -189,6 +211,28 @@ function createFeedbackPrompt(errorId, error) {
  * @param {string} encodedError - Base64 encoded error object
  */
 function submitFeedback(errorId, feedbackType, encodedError) {
+    // Prevent multiple submissions
+    const feedbackSection = document.querySelector(`[data-error-id="${errorId}"]`);
+    if (!feedbackSection) {
+        console.warn(`Feedback section not found for error ID: ${errorId}`);
+        return;
+    }
+    
+    // Check if already processing
+    if (feedbackSection.dataset.processing === 'true') {
+        return;
+    }
+    
+    // Mark as processing
+    feedbackSection.dataset.processing = 'true';
+    
+    // Disable feedback buttons
+    const buttons = feedbackSection.querySelectorAll('.feedback-btn');
+    buttons.forEach(btn => {
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+    });
+    
     try {
         const safeDecode = window.ConfidenceSystem ? 
             window.ConfidenceSystem.safeBase64Decode : 
@@ -206,7 +250,16 @@ function submitFeedback(errorId, feedbackType, encodedError) {
         }
     } catch (e) {
         console.error('Failed to process feedback:', e);
-        // Error is logged to console - no toast message needed
+        
+        // Re-enable buttons on error
+        buttons.forEach(btn => {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+        });
+        feedbackSection.dataset.processing = 'false';
+        
+        // Show user-friendly error message
+        showFeedbackError(feedbackSection, 'Failed to submit feedback. Please try again.');
     }
 }
 
@@ -218,16 +271,38 @@ function submitFeedback(errorId, feedbackType, encodedError) {
  * @param {Object|null} reason - Reason object
  */
 function processFeedbackSubmission(errorId, feedbackType, error, reason) {
-    // Record feedback
-    FeedbackTracker.recordFeedback(error, feedbackType, reason);
-    
-    // Update UI to show feedback confirmation
-    const feedbackSection = document.querySelector(`[data-error-id="${errorId}"]`);
-    if (feedbackSection) {
-        feedbackSection.innerHTML = createFeedbackButtons(error);
+    try {
+        // Record feedback
+        FeedbackTracker.recordFeedback(error, feedbackType, reason);
+        
+        // Update UI to show feedback confirmation
+        const feedbackSection = document.querySelector(`[data-error-id="${errorId}"]`);
+        if (feedbackSection) {
+            // Remove processing state
+            feedbackSection.dataset.processing = 'false';
+            
+            // Update with confirmation
+            const newHtml = createFeedbackButtons(error);
+            feedbackSection.innerHTML = newHtml;
+            
+            // Add success animation
+            feedbackSection.style.transition = 'all 0.3s ease';
+            feedbackSection.style.transform = 'scale(1.05)';
+            setTimeout(() => {
+                feedbackSection.style.transform = 'scale(1)';
+            }, 200);
+            
+            // Submit to backend if available
+            submitFeedbackToBackend(errorId, feedbackType, error, reason);
+        }
+    } catch (e) {
+        console.error('Error processing feedback submission:', e);
+        const feedbackSection = document.querySelector(`[data-error-id="${errorId}"]`);
+        if (feedbackSection) {
+            feedbackSection.dataset.processing = 'false';
+            showFeedbackError(feedbackSection, 'Failed to save feedback. Please try again.');
+        }
     }
-    
-    // No confirmation message needed - UI state change is sufficient
 }
 
 /**
@@ -236,20 +311,54 @@ function processFeedbackSubmission(errorId, feedbackType, error, reason) {
  */
 function changeFeedback(errorId) {
     const feedbackSection = document.querySelector(`[data-error-id="${errorId}"]`);
-    if (!feedbackSection) return;
+    if (!feedbackSection) {
+        console.warn(`Feedback section not found for error ID: ${errorId}`);
+        return;
+    }
     
-    // Find the error data to reconstruct the feedback buttons
-    const existingFeedback = Object.values(FeedbackTracker.feedback).find(f => 
-        FeedbackTracker.generateErrorId({type: f.error_type}) === errorId
-    );
+    // Get existing feedback data
+    const existingFeedback = FeedbackTracker.feedback[errorId];
+    if (!existingFeedback) {
+        console.warn(`No existing feedback found for error ID: ${errorId}`);
+        return;
+    }
     
-    if (existingFeedback) {
+    // Disable change button to prevent multiple clicks
+    const changeBtn = feedbackSection.querySelector('.feedback-change-btn');
+    if (changeBtn) {
+        changeBtn.disabled = true;
+        changeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Changing...';
+    }
+    
+    try {
         // Remove existing feedback
         delete FeedbackTracker.feedback[errorId];
         FeedbackTracker.saveToSession();
         
-        // Show fresh feedback buttons
-        feedbackSection.innerHTML = createFeedbackPrompt(errorId, {type: existingFeedback.error_type});
+        // Reconstruct error object from stored data
+        const reconstructedError = existingFeedback.original_error || {
+            type: existingFeedback.error_type,
+            confidence_score: existingFeedback.confidence_score
+        };
+        
+        // Show fresh feedback buttons with animation
+        const newHtml = createFeedbackPrompt(errorId, reconstructedError);
+        feedbackSection.innerHTML = newHtml;
+        
+        // Add fade-in animation
+        feedbackSection.style.opacity = '0';
+        requestAnimationFrame(() => {
+            feedbackSection.style.transition = 'opacity 0.3s ease';
+            feedbackSection.style.opacity = '1';
+        });
+        
+    } catch (error) {
+        console.error('Error changing feedback:', error);
+        // Restore the change button if there was an error
+        if (changeBtn) {
+            changeBtn.disabled = false;
+            changeBtn.innerHTML = '<i class="fas fa-edit"></i> Change';
+        }
     }
 }
 
@@ -315,8 +424,22 @@ function showFeedbackReasonModal(errorId, feedbackType, error) {
         if (e.target === modal) closeFeedbackReasonModal();
     };
     
+    // Handle Escape key to close modal
+    const handleEscape = (e) => {
+        if (e.key === 'Escape') {
+            closeFeedbackReasonModal();
+        }
+    };
+    document.addEventListener('keydown', handleEscape);
+    
+    // Store the escape handler for cleanup
+    modal.escapeHandler = handleEscape;
+    
     document.body.appendChild(modal);
     window.currentFeedbackModal = modal;
+    
+    // Store error ID for cleanup when modal is closed
+    modal.setAttribute('data-error-id', errorId);
 }
 
 /**
@@ -427,17 +550,33 @@ function createFeedbackReasonForm() {
 function submitFeedbackWithReason(errorId, feedbackType, encodedError) {
     try {
         const form = document.getElementById('feedback-reason-form');
+        if (!form) {
+            console.error('Feedback reason form not found');
+            return;
+        }
+        
         const selectedReason = form.querySelector('input[name="feedback-reason"]:checked');
         const comment = form.querySelector('#feedback-comment').value.trim();
         
         if (!selectedReason) {
             // Highlight the fieldset to show error
             const fieldset = form.querySelector('fieldset');
-            fieldset.style.border = '2px solid var(--app-danger-color)';
-            setTimeout(() => {
-                fieldset.style.border = '';
-            }, 3000);
+            if (fieldset) {
+                fieldset.style.border = '2px solid var(--app-danger-color)';
+                fieldset.style.borderRadius = '4px';
+                setTimeout(() => {
+                    fieldset.style.border = '';
+                    fieldset.style.borderRadius = '';
+                }, 3000);
+            }
             return;
+        }
+        
+        // Disable submit button to prevent double submission
+        const submitBtn = form.closest('.feedback-reason-modal').querySelector('.pf-v5-c-button.pf-m-primary');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
         }
         
         const safeDecode = window.ConfidenceSystem ? 
@@ -452,7 +591,7 @@ function submitFeedbackWithReason(errorId, feedbackType, encodedError) {
             comment: comment || null
         };
         
-        // Close modal first
+        // Close modal first (this will also reset processing state)
         closeFeedbackReasonModal();
         
         // Process feedback
@@ -460,7 +599,33 @@ function submitFeedbackWithReason(errorId, feedbackType, encodedError) {
         
     } catch (e) {
         console.error('Failed to submit feedback with reason:', e);
-        // Error is logged to console - no toast message needed
+        
+        // Re-enable submit button if there was an error
+        const submitBtn = document.querySelector('.feedback-reason-modal .pf-v5-c-button.pf-m-primary');
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Submit Feedback';
+        }
+        
+        // Show error in modal if it's still open
+        const modal = document.querySelector('.feedback-reason-modal-backdrop');
+        if (modal) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'pf-v5-c-alert pf-m-danger pf-m-inline';
+            errorDiv.innerHTML = `
+                <div class="pf-v5-c-alert__icon">
+                    <i class="fas fa-exclamation-circle"></i>
+                </div>
+                <div class="pf-v5-c-alert__title">
+                    Failed to submit feedback. Please try again.
+                </div>
+            `;
+            
+            const modalBody = modal.querySelector('.pf-v5-c-modal-box__body');
+            if (modalBody) {
+                modalBody.insertBefore(errorDiv, modalBody.firstChild);
+            }
+        }
     }
 }
 
@@ -469,6 +634,29 @@ function submitFeedbackWithReason(errorId, feedbackType, encodedError) {
  */
 function closeFeedbackReasonModal() {
     if (window.currentFeedbackModal) {
+        // Get the error ID from the modal to reset processing state
+        const errorId = window.currentFeedbackModal.getAttribute('data-error-id');
+        
+        // Reset processing state for the feedback section
+        if (errorId) {
+            const feedbackSection = document.querySelector(`[data-error-id="${errorId}"]`);
+            if (feedbackSection) {
+                feedbackSection.dataset.processing = 'false';
+                
+                // Re-enable feedback buttons
+                const buttons = feedbackSection.querySelectorAll('.feedback-btn');
+                buttons.forEach(btn => {
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                });
+            }
+        }
+        
+        // Clean up escape key listener
+        if (window.currentFeedbackModal.escapeHandler) {
+            document.removeEventListener('keydown', window.currentFeedbackModal.escapeHandler);
+        }
+        
         window.currentFeedbackModal.remove();
         window.currentFeedbackModal = null;
     }
@@ -577,6 +765,78 @@ function generateFeedbackStyles() {
     `;
 }
 
+/**
+ * Submit feedback to backend API
+ * @param {string} errorId - Error ID
+ * @param {string} feedbackType - Feedback type
+ * @param {Object} error - Error object
+ * @param {Object|null} reason - Reason object
+ */
+function submitFeedbackToBackend(errorId, feedbackType, error, reason) {
+    // Generate session ID if not available
+    const sessionId = window.currentSessionId || generateSessionId();
+    
+    const feedbackData = {
+        session_id: sessionId,
+        error_id: errorId,
+        error_type: error.type,
+        error_message: error.message,
+        feedback_type: feedbackType === 'helpful' ? 'correct' : 'incorrect',
+        confidence_score: error.confidence_score || 0.5,
+        user_reason: reason ? JSON.stringify(reason) : null
+    };
+    
+    fetch('/api/feedback', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(feedbackData)
+    }).catch(error => {
+        console.warn('Failed to submit feedback to backend:', error);
+        // Don't fail the UI operation for backend errors
+    });
+}
+
+/**
+ * Generate a session ID if one doesn't exist
+ * @returns {string} - Session ID
+ */
+function generateSessionId() {
+    if (!window.currentSessionId) {
+        window.currentSessionId = 'sess_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    }
+    return window.currentSessionId;
+}
+
+/**
+ * Show feedback error message
+ * @param {Element} feedbackSection - Feedback section element
+ * @param {string} message - Error message
+ */
+function showFeedbackError(feedbackSection, message) {
+    const errorHtml = `
+        <div class="pf-v5-c-alert pf-m-danger pf-m-inline" style="margin-top: 0.5rem;">
+            <div class="pf-v5-c-alert__icon">
+                <i class="fas fa-exclamation-circle"></i>
+            </div>
+            <div class="pf-v5-c-alert__title">
+                ${message}
+            </div>
+        </div>
+    `;
+    
+    feedbackSection.insertAdjacentHTML('afterend', errorHtml);
+    
+    // Remove error message after 5 seconds
+    setTimeout(() => {
+        const errorAlert = feedbackSection.nextElementSibling;
+        if (errorAlert && errorAlert.classList.contains('pf-v5-c-alert')) {
+            errorAlert.remove();
+        }
+    }, 5000);
+}
+
 // Export functions for use in other modules
 if (typeof window !== 'undefined') {
     window.FeedbackSystem = {
@@ -592,6 +852,9 @@ if (typeof window !== 'undefined') {
         createFeedbackReasonForm,
         submitFeedbackWithReason,
         closeFeedbackReasonModal,
-        generateFeedbackStyles
+        generateFeedbackStyles,
+        submitFeedbackToBackend,
+        generateSessionId,
+        showFeedbackError
     };
 }

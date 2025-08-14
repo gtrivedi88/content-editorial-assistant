@@ -1,256 +1,475 @@
 """
-Commas Rule (Corrected and Finalized)
+Commas Rule - Evidence-Based Analysis
 Based on IBM Style Guide topic: "Commas"
+
 """
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from .base_punctuation_rule import BasePunctuationRule
 
 try:
     from spacy.tokens.doc import Doc
     from spacy.tokens.token import Token
+    from spacy.tokens import Span
 except ImportError:
     Doc = None
     Token = None
+    Span = None
 
 class CommasRule(BasePunctuationRule):
     """
-    Checks for a variety of comma-related style issues, including serial commas,
-    comma splices, and missing commas after introductory clauses. This version
-    is updated to be compatible with the new error consolidation system and to
-    prevent false positives on compound predicates.
+    Checks for a variety of comma-related style issues using evidence-based analysis:
+    - Serial (Oxford) comma requirements
+    - Comma splice detection  
+    - Missing commas after introductory clauses
+    Enhanced with dependency parsing and contextual awareness.
     """
     def _get_rule_type(self) -> str:
         """Returns the unique identifier for this rule."""
         return 'commas'
 
-    def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
+    def analyze(self, text: str, sentences: List[str], nlp=None, context: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
         """
-        Analyzes sentences for various comma usage violations.
+        Evidence-based analysis for comma usage violations:
+        - Serial comma requirements with contextual awareness
+        - Comma splice detection with structural analysis
+        - Missing commas after introductory clauses
         """
-        errors = []
+        errors: List[Dict[str, Any]] = []
+        context = context or {}
         if not nlp:
             return errors
 
-        doc = nlp(text)
-
-        for i, sent in enumerate(doc.sents):
-            errors.extend(self._check_serial_comma(sent, i, text, context))
-            errors.extend(self._check_comma_splice(sent, i, text, context))
-            errors.extend(self._check_introductory_clause(sent, i, text, context))
-            
+        try:
+            doc = nlp(text)
+            for i, sent in enumerate(doc.sents):
+                # Check for serial comma issues
+                serial_comma_errors = self._analyze_serial_comma_evidence(sent, i, text, context)
+                errors.extend(serial_comma_errors)
+                
+                # Check for comma splice issues
+                comma_splice_errors = self._analyze_comma_splice_evidence(sent, i, text, context)
+                errors.extend(comma_splice_errors)
+                
+                # Check for missing commas after introductory clauses
+                intro_comma_errors = self._analyze_introductory_comma_evidence(sent, i, text, context)
+                errors.extend(intro_comma_errors)
+                
+        except Exception as e:
+            # Graceful degradation for SpaCy errors
+            errors.append(self._create_error(
+                sentence=text,
+                sentence_index=0,
+                message=f"Comma analysis failed: {str(e)}",
+                suggestions=["Please check the text for obvious comma issues manually."],
+                severity='low',
+                text=text,
+                context=context,
+                evidence_score=0.0  # No evidence when analysis fails
+            ))
+        
         return errors
 
-    def _check_serial_comma(self, sent: Doc, sentence_index: int, text: str = None, context: Dict[str, Any] = None) -> List[Dict[str, Any]]:
+    # === EVIDENCE-BASED ANALYSIS METHODS ===
+
+    def _analyze_serial_comma_evidence(self, sent: 'Span', sentence_index: int, text: str, context: Dict[str, Any]) -> List[Dict[str, Any]]:
         """
-        Checks for the required serial (Oxford) comma in lists of three or more.
-        **ENHANCED** to distinguish between noun lists and verb phrases.
+        Evidence-based analysis for serial comma requirements.
         """
         errors = []
         conjunctions = {'and', 'or'}
 
         for token in sent:
-            # Linguistic Anchor: Find a coordinating conjunction ('cc')
             if token.lemma_ in conjunctions and token.dep_ == 'cc':
-                
-                # Find all items potentially in the list by traversing the dependency tree
                 list_items = self._get_list_items(token)
                 
-                # **PRODUCTION-GRADE FIX: This is the core of the fix.**
-                # Before proceeding, analyze the nature of the list items.
-                if list_items and len(list_items) < 3:
-                    # Check the Part-of-Speech of the identified list items.
-                    pos_tags = [item.pos_ for item in list_items]
-                    is_verb_phrase = pos_tags.count('VERB') >= 1
-
-                    # If it's a compound predicate with only two verbs (e.g., "do this and do that"),
-                    # it is NOT a serial comma error. This prevents the false positive.
-                    if is_verb_phrase:
-                        continue # Skip to the next token in the sentence.
-
-                # Now, proceed with the original logic only if it's a list of 3+ items.
+                # Only proceed if we have 3+ items (potential serial comma situation)
                 if len(list_items) >= 3:
-                    # Check if the token before the conjunction is NOT a comma.
+                    # Check if comma is missing before conjunction
                     if token.i > sent.start and sent.doc[token.i - 1].text != ',':
-                        flagged_token = sent.doc[token.i - 1]
+                        evidence_score = self._calculate_serial_comma_evidence(token, list_items, sent, text, context)
+                        
+                        if evidence_score > 0.1:
+                            # Safe token access to avoid span index errors
+                            if token.i > sent.start:
+                                flagged_token = sent.doc[token.i - 1]
+                                span = (flagged_token.idx + len(flagged_token.text), token.idx + len(token.text))
+                            else:
+                                flagged_token = token
+                                span = (token.idx, token.idx + len(token.text))
+                                
+                            errors.append(self._create_error(
+                                sentence=sent.text,
+                                sentence_index=sentence_index,
+                                message=self._get_contextual_serial_comma_message(evidence_score),
+                                suggestions=self._generate_smart_serial_comma_suggestions(token, evidence_score, context),
+                                severity='high' if evidence_score > 0.7 else 'medium',
+                                text=text,
+                                context=context,
+                                evidence_score=evidence_score,
+                                span=span,
+                                flagged_text=token.text
+                            ))
+        return errors
+
+    def _analyze_comma_splice_evidence(self, sent: 'Span', sentence_index: int, text: str, context: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """
+        Evidence-based analysis for comma splice detection.
+        """
+        errors = []
+        
+        for token in sent:
+            if token.text == ',' and token.dep_ == 'punct':
+                evidence_score = self._calculate_comma_splice_evidence(token, sent, text, context)
+                
+                if evidence_score > 0.1:
+                    word_before_comma = sent.doc[token.i - 1].text if token.i > sent.start else ""
+                    errors.append(self._create_error(
+                        sentence=sent.text,
+                        sentence_index=sentence_index,
+                        message=self._get_contextual_comma_splice_message(evidence_score),
+                        suggestions=self._generate_smart_comma_splice_suggestions(word_before_comma, evidence_score, context),
+                        severity='medium' if evidence_score > 0.6 else 'low',
+                        text=text,
+                        context=context,
+                        evidence_score=evidence_score,
+                        span=(token.idx, token.idx + len(token.text)),
+                        flagged_text=token.text
+                    ))
+        return errors
+
+    def _analyze_introductory_comma_evidence(self, sent: 'Span', sentence_index: int, text: str, context: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """
+        Evidence-based analysis for missing commas after introductory clauses.
+        """
+        errors = []
+        
+        if len(sent) < 4:
+            return errors
+
+        # Find main verb and subject
+        main_verb = next((tok for tok in sent if tok.dep_ == 'ROOT'), None)
+        if not main_verb:
+            return errors
+        
+        main_subject = next((child for child in main_verb.children if child.dep_ in ('nsubj', 'nsubjpass')), None)
+        if not main_subject:
+            return errors
+
+        # Check for introductory elements
+        main_clause_start_token = main_subject
+        for child in main_verb.children:
+            if child.dep_ in ('aux', 'auxpass') and child.i < main_clause_start_token.i:
+                main_clause_start_token = child
+
+        if main_clause_start_token.i > sent.start:
+            intro_element_length = main_clause_start_token.i - sent.start
+            
+            if intro_element_length > 2:
+                evidence_score = self._calculate_introductory_comma_evidence(
+                    main_clause_start_token, sent, text, context, intro_element_length
+                )
+                
+                if evidence_score > 0.1:
+                    # Find the last meaningful token in the introductory clause
+                    last_intro_token = None
+                    for token in sent:
+                        if sent.start <= token.i < main_clause_start_token.i:
+                            last_intro_token = token
+                    
+                    if last_intro_token:
                         errors.append(self._create_error(
                             sentence=sent.text,
                             sentence_index=sentence_index,
-                            message="Missing serial (Oxford) comma before conjunction in a list.",
-                            suggestions=[f"Add a comma before '{token.text}'."],
-                            severity='high',
-                            text=text,  # Enhanced: Pass full text for better confidence analysis
-                            context=context,  # Enhanced: Pass context for domain-specific validation
-                            span=(flagged_token.idx + len(flagged_token.text), flagged_token.idx + len(flagged_token.text)),
-                            flagged_text=token.text
+                            message=self._get_contextual_introductory_comma_message(evidence_score),
+                            suggestions=self._generate_smart_introductory_comma_suggestions(last_intro_token, evidence_score, context),
+                            severity='medium' if evidence_score > 0.6 else 'low',
+                            text=text,
+                            context=context,
+                            evidence_score=evidence_score,
+                            span=(last_intro_token.idx + len(last_intro_token.text), last_intro_token.idx + len(last_intro_token.text)),
+                            flagged_text=last_intro_token.text
                         ))
         return errors
 
-    def _get_list_items(self, conjunction: Token) -> List[Token]:
+    # === EVIDENCE CALCULATION METHODS ===
+
+    def _calculate_serial_comma_evidence(self, conjunction: 'Token', list_items: List['Token'], sent: 'Span', text: str, context: Dict[str, Any]) -> float:
         """
-        Traverses the dependency tree from a conjunction to find all items
-        in a potential list.
+        Calculate evidence (0.0-1.0) that a serial comma is required.
+        """
+        # Apply zero false positive guards
+        if self._apply_zero_false_positive_guards_punctuation(conjunction, context):
+            return 0.0
+        
+        # Base evidence for missing serial comma in 3+ item list
+        evidence_score = 0.8
+        
+        # Check if it's a compound predicate (verbs) vs noun list
+        pos_tags = [item.pos_ for item in list_items]
+        is_verb_phrase = pos_tags.count('VERB') >= 1
+        
+        # Compound predicates with only 2 verbs don't need serial comma
+        if is_verb_phrase and len(list_items) == 2:
+            return 0.0
+        
+        # Apply linguistic clues
+        evidence_score = self._apply_common_linguistic_clues_punctuation(evidence_score, conjunction, sent)
+        
+        # Apply structural clues
+        evidence_score = self._apply_common_structural_clues_punctuation(evidence_score, conjunction, context)
+        
+        # Apply semantic clues  
+        evidence_score = self._apply_common_semantic_clues_punctuation(evidence_score, conjunction, context)
+        
+        # Adjust for list characteristics
+        if len(list_items) >= 4:
+            evidence_score += 0.1  # Longer lists more likely need serial comma
+        
+        # Check for ambiguity potential
+        if self._has_potential_ambiguity(list_items):
+            evidence_score += 0.2
+        
+        return max(0.0, min(1.0, evidence_score))
+
+    def _calculate_comma_splice_evidence(self, comma: 'Token', sent: 'Span', text: str, context: Dict[str, Any]) -> float:
+        """
+        Calculate evidence (0.0-1.0) that a comma splice exists.
+        """
+        # Apply zero false positive guards
+        if self._apply_zero_false_positive_guards_punctuation(comma, context):
+            return 0.0
+        
+        # Check if this is actually a comma splice
+        if not self._is_potential_comma_splice(comma, sent):
+            return 0.0
+        
+        # Base evidence for comma splice
+        evidence_score = 0.7
+        
+        # Apply linguistic clues
+        evidence_score = self._apply_common_linguistic_clues_punctuation(evidence_score, comma, sent)
+        
+        # Apply structural clues
+        evidence_score = self._apply_common_structural_clues_punctuation(evidence_score, comma, context)
+        
+        # Apply semantic clues
+        evidence_score = self._apply_common_semantic_clues_punctuation(evidence_score, comma, context)
+        
+        # Check for legitimate dependent clause structure
+        if self._is_legitimate_dependent_clause(sent, comma):
+            evidence_score -= 0.5
+        
+        return max(0.0, min(1.0, evidence_score))
+
+    def _calculate_introductory_comma_evidence(self, main_clause_start: 'Token', sent: 'Span', text: str, context: Dict[str, Any], intro_length: int) -> float:
+        """
+        Calculate evidence (0.0-1.0) that a comma is needed after introductory clause.
+        """
+        # Apply zero false positive guards
+        if self._apply_zero_false_positive_guards_punctuation(main_clause_start, context):
+            return 0.0
+        
+        # Check if comma already exists in introductory clause
+        has_comma_in_intro = any(
+            token.text == ',' 
+            for token in sent if sent.start <= token.i < main_clause_start.i
+        )
+        
+        if has_comma_in_intro:
+            return 0.0
+        
+        # Base evidence based on introductory element length
+        if intro_length > 5:
+            evidence_score = 0.8
+        elif intro_length > 3:
+            evidence_score = 0.6
+        else:
+            evidence_score = 0.4
+        
+        # Apply linguistic clues
+        evidence_score = self._apply_common_linguistic_clues_punctuation(evidence_score, main_clause_start, sent)
+        
+        # Apply structural clues
+        evidence_score = self._apply_common_structural_clues_punctuation(evidence_score, main_clause_start, context)
+        
+        # Apply semantic clues
+        evidence_score = self._apply_common_semantic_clues_punctuation(evidence_score, main_clause_start, context)
+        
+        # Check for subordinating conjunctions at start
+        subordinating_conjunctions = {'after', 'although', 'as', 'because', 'before', 'if', 'since', 'unless', 'until', 'when', 'while'}
+        if sent[sent.start].lemma_.lower() in subordinating_conjunctions:
+            evidence_score += 0.2
+        
+        return max(0.0, min(1.0, evidence_score))
+
+    # === HELPER METHODS ===
+
+    def _get_list_items(self, conjunction: 'Token') -> List['Token']:
+        """
+        Traverses the dependency tree from a conjunction to find all items in a potential list.
         """
         list_items = set()
         
-        # The head of the conjunction is the item right before it.
+        # The head of the conjunction is the item right before it
         head = conjunction.head
         list_items.add(head)
 
-        # Add direct conjuncts of the head.
+        # Add direct conjuncts of the head
         for child in head.children:
             if child.dep_ == 'conj':
                 list_items.add(child)
 
-        # Traverse up the tree to find the root of the list and its conjuncts.
-        # This handles cases like "A, B, C and D" where C is the head of 'and'.
+        # Traverse up the tree to find the root of the list and its conjuncts
         current = head
         while current.dep_ == 'conj' and current.head != current:
             current = current.head
             list_items.add(current)
-            # Also add siblings of the parent item.
             for child in current.children:
                 if child.dep_ == 'conj':
                     list_items.add(child)
         
-        # Final check for conjuncts of the root item.
+        # Final check for conjuncts of the root item
         for child in current.children:
             if child.dep_ == 'conj':
                 list_items.add(child)
                 
         return sorted(list(list_items), key=lambda x: x.i)
 
-
-    def _check_comma_splice(self, sent: Doc, sentence_index: int, text: str = None, context: Dict[str, Any] = None) -> List[Dict[str, Any]]:
+    def _has_potential_ambiguity(self, list_items: List['Token']) -> bool:
         """
-        Checks for comma splices, where two independent clauses are joined only by a comma.
+        Check if the list items could be ambiguous without a serial comma.
         """
-        errors = []
-        # Find commas that might be joining two independent clauses.
-        for token in sent:
-            if token.text == ',' and token.dep_ == 'punct':
-                # Check if what follows the comma looks like a new independent clause.
-                # An independent clause must have a subject.
-                is_splice = False
-                if token.i < sent.end - 1:
-                    next_token = sent.doc[token.i + 1]
-                    # Find potential verb of the second clause.
-                    second_clause_verb = None
-                    for t in sent[token.i + 1:]:
-                        if t.pos_ == 'VERB' and t.dep_ != 'amod':
-                            second_clause_verb = t
-                            break
-                    
-                    if second_clause_verb:
-                        # Check if this verb has its own subject.
-                        has_subject = any(c.dep_ in ('nsubj', 'nsubjpass') for c in second_clause_verb.children)
-                        # Check if the first clause is also independent.
-                        has_first_subject = any(c.dep_ in ('nsubj', 'nsubjpass') for c in token.head.children)
+        if len(list_items) < 3:
+            return False
+        
+        # Check if any items are compound or complex
+        for item in list_items:
+            if any(child.dep_ == 'conj' for child in item.children):
+                return True
+        
+        return False
 
-                        if has_subject and has_first_subject:
-                            # It's a potential splice. Verify it's not a legitimate structure.
-                             if not self._is_legitimate_dependent_clause(sent, token):
-                                is_splice = True
-
-                if is_splice:
-                    word_before_comma = sent.doc[token.i - 1].text
-                    errors.append(self._create_error(
-                        sentence=sent.text,
-                        sentence_index=sentence_index,
-                        message="Potential comma splice: two independent clauses joined by only a comma.",
-                        suggestions=[
-                            f"Replace the comma after '{word_before_comma}' with a semicolon.",
-                            f"Add a coordinating conjunction (like 'and' or 'but') after the comma.",
-                            "Split into two separate sentences."
-                        ],
-                        severity='medium',
-                        text=text,  # Enhanced: Pass full text for better confidence analysis
-                        context=context,  # Enhanced: Pass context for domain-specific validation
-                        span=(token.idx, token.idx + len(token.text)),
-                        flagged_text=token.text
-                    ))
-        return errors
-
-    def _is_legitimate_dependent_clause(self, sent: Doc, comma: Token) -> bool:
+    def _is_potential_comma_splice(self, comma: 'Token', sent: 'Span') -> bool:
         """
-        Checks if the clause before the comma is a valid introductory dependent clause.
+        Check if a comma potentially creates a comma splice.
         """
-        # If the sentence starts with a subordinating conjunction, it's likely a valid structure.
+        if comma.i >= sent.end - 1:
+            return False
+        
+        # Look for independent clause after comma
+        second_clause_verb = None
+        for t in sent[comma.i + 1:]:
+            if t.pos_ == 'VERB' and t.dep_ != 'amod':
+                second_clause_verb = t
+                break
+        
+        if not second_clause_verb:
+            return False
+        
+        # Check if this verb has its own subject
+        has_subject = any(c.dep_ in ('nsubj', 'nsubjpass') for c in second_clause_verb.children)
+        
+        # Check if the first clause is also independent
+        has_first_subject = any(c.dep_ in ('nsubj', 'nsubjpass') for c in comma.head.children)
+        
+        return has_subject and has_first_subject
+
+    def _is_legitimate_dependent_clause(self, sent: 'Span', comma: 'Token') -> bool:
+        """
+        Check if the clause before the comma is a valid introductory dependent clause.
+        """
         subordinating_conjunctions = {'after', 'although', 'as', 'because', 'before', 'if', 'since', 'unless', 'until', 'when', 'while'}
         if sent[sent.start].lemma_.lower() in subordinating_conjunctions:
             return True
 
-        # Check for adverbial clause modifiers before the comma.
+        # Check for adverbial clause modifiers before the comma
         for token in sent[:comma.i]:
             if token.dep_ == 'advcl':
                 return True
         return False
 
 
-    def _check_introductory_clause(self, sent: Doc, sentence_index: int, text: str = None, context: Dict[str, Any] = None) -> List[Dict[str, Any]]:
-        """
-        A robust check for a missing comma after an introductory clause.
-        """
-        errors = []
-        if len(sent) < 4:
-            return errors
+    # === SMART MESSAGING AND SUGGESTIONS ===
 
-        # Linguistic Anchor: An introductory clause is often an adverbial clause ('advcl')
-        # or prepositional phrase ('prep') that appears before the main clause's subject.
+    def _get_contextual_serial_comma_message(self, evidence_score: float) -> str:
+        """Generate context-aware error message for serial comma issues."""
+        if evidence_score > 0.8:
+            return "Missing serial (Oxford) comma before conjunction in a list."
+        elif evidence_score > 0.6:
+            return "Consider adding a serial comma before the conjunction for clarity."
+        else:
+            return "A serial comma before the conjunction may improve readability."
+
+    def _generate_smart_serial_comma_suggestions(self, conjunction: 'Token', evidence_score: float, context: Dict[str, Any]) -> List[str]:
+        """Generate context-aware suggestions for serial comma issues."""
+        suggestions = []
         
-        # Find the main verb and its subject
-        main_verb = next((tok for tok in sent if tok.dep_ == 'ROOT'), None)
-        if not main_verb: return errors
+        if evidence_score > 0.7:
+            suggestions.append(f"Add a comma before '{conjunction.text}' to follow standard style guidelines.")
+            suggestions.append("Use the serial (Oxford) comma for consistency and clarity.")
+        else:
+            suggestions.append(f"Consider adding a comma before '{conjunction.text}' for clarity.")
+            suggestions.append("The serial comma can help prevent ambiguity in complex lists.")
         
-        main_subject = next((child for child in main_verb.children if child.dep_ in ('nsubj', 'nsubjpass')), None)
-        if not main_subject: return errors
+        # Context-specific guidance
+        content_type = context.get('content_type', 'general')
+        if content_type == 'academic':
+            suggestions.append("Academic writing typically requires the serial comma.")
+        elif content_type == 'technical':
+            suggestions.append("Technical documentation benefits from consistent comma usage.")
+        
+        return suggestions[:3]
 
-        # Find the first token of the main clause (usually the subject, but could be an aux verb)
-        main_clause_start_token = main_subject
-        for child in main_verb.children:
-            if child.dep_ in ('aux', 'auxpass') and child.i < main_clause_start_token.i:
-                main_clause_start_token = child
+    def _get_contextual_comma_splice_message(self, evidence_score: float) -> str:
+        """Generate context-aware error message for comma splice issues."""
+        if evidence_score > 0.8:
+            return "Comma splice detected: two independent clauses joined by only a comma."
+        elif evidence_score > 0.6:
+            return "Potential comma splice: consider revising the comma usage."
+        else:
+            return "Review comma usage between these clauses for grammatical correctness."
 
-        # If the main clause doesn't start the sentence, we have an introductory element.
-        if main_clause_start_token.i > sent.start:
-            # The introductory element must be longer than a few words to require a comma.
-            intro_element_length = main_clause_start_token.i - sent.start
-            
-            if intro_element_length > 2:
-                # FIXED: Check if there's already a comma anywhere in the introductory clause
-                # instead of just checking the token immediately before the main clause
-                has_comma_in_intro = any(
-                    token.text == ',' 
-                    for token in sent if sent.start <= token.i < main_clause_start_token.i
-                )
-                
-                if not has_comma_in_intro:
-                    # Find the last meaningful token in the introductory clause for suggestion
-                    last_intro_token = None
-                    # Find the last token in the introductory clause
-                    for token in sent:
-                        if sent.start <= token.i < main_clause_start_token.i:
-                            last_intro_token = token
-                    
-                    if last_intro_token is None:
-                        return errors  # Safety check
-                        
-                    # Try to find a better suggestion point by avoiding function words
-                    for token in reversed(list(sent)):
-                        if (sent.start <= token.i < main_clause_start_token.i and 
-                            token.pos_ not in ('DET', 'ADP') and 
-                            token.text not in ('the', 'a', 'an')):
-                            last_intro_token = token
-                            break
-                    
-                    errors.append(self._create_error(
-                        sentence=sent.text,
-                        sentence_index=sentence_index,
-                        message="Missing comma after an introductory clause or phrase.",
-                        suggestions=[f"Add a comma after '{last_intro_token.text}'."],
-                        severity='medium',
-                        text=text,  # Enhanced: Pass full text for better confidence analysis
-                        context=context,  # Enhanced: Pass context for domain-specific validation
-                        span=(last_intro_token.idx + len(last_intro_token.text), last_intro_token.idx + len(last_intro_token.text)),
-                        flagged_text=last_intro_token.text
-                    ))
-        return errors
+    def _generate_smart_comma_splice_suggestions(self, word_before_comma: str, evidence_score: float, context: Dict[str, Any]) -> List[str]:
+        """Generate context-aware suggestions for comma splice issues."""
+        suggestions = []
+        
+        if evidence_score > 0.7:
+            suggestions.append(f"Replace the comma after '{word_before_comma}' with a semicolon.")
+            suggestions.append("Add a coordinating conjunction (like 'and' or 'but') after the comma.")
+            suggestions.append("Split into two separate sentences.")
+        else:
+            suggestions.append("Consider using a semicolon if both clauses are independent.")
+            suggestions.append("Add a conjunction to properly connect the clauses.")
+        
+        # Context-specific guidance
+        if context.get('content_type') == 'technical':
+            suggestions.append("Technical writing benefits from clear sentence boundaries.")
+        
+        return suggestions[:3]
+
+    def _get_contextual_introductory_comma_message(self, evidence_score: float) -> str:
+        """Generate context-aware error message for introductory comma issues."""
+        if evidence_score > 0.8:
+            return "Missing comma after an introductory clause or phrase."
+        elif evidence_score > 0.6:
+            return "Consider adding a comma after the introductory element."
+        else:
+            return "A comma after the introductory phrase may improve clarity."
+
+    def _generate_smart_introductory_comma_suggestions(self, last_intro_token: 'Token', evidence_score: float, context: Dict[str, Any]) -> List[str]:
+        """Generate context-aware suggestions for introductory comma issues."""
+        suggestions = []
+        
+        if evidence_score > 0.7:
+            suggestions.append(f"Add a comma after '{last_intro_token.text}' to separate the introductory element.")
+            suggestions.append("Use a comma to clearly separate introductory clauses from the main clause.")
+        else:
+            suggestions.append(f"Consider adding a comma after '{last_intro_token.text}' for clarity.")
+            suggestions.append("A comma can help readers identify where the main clause begins.")
+        
+        # Context-specific guidance
+        block_type = context.get('block_type', 'paragraph')
+        if block_type in ['procedure', 'instruction']:
+            suggestions.append("Clear comma usage helps readers follow procedural steps.")
+        
+        return suggestions[:3]

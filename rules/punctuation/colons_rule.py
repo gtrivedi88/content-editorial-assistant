@@ -2,7 +2,6 @@
 Colons Rule
 Based on IBM Style Guide topic: "Colons"
 
-**UPDATED** with evidence-based scoring for nuanced colon usage analysis.
 """
 from typing import List, Dict, Any, Optional
 from .base_punctuation_rule import BasePunctuationRule
@@ -67,7 +66,8 @@ class ColonsRule(BasePunctuationRule):
                 suggestions=["This may be a bug in the rule. Please report it."],
                 severity='low',
                 text=text,
-                context=context
+                context=context,
+                evidence_score=0.0  # No evidence when analysis fails
             ))
         return errors
 
@@ -102,7 +102,7 @@ class ColonsRule(BasePunctuationRule):
     def _is_preceded_by_complete_clause(self, colon_token: 'Token', sent: 'Span') -> bool:
         """
         Checks if tokens before the colon form a complete independent clause.
-        This version uses safe, sentence-relative indexing.
+        Enhanced to properly handle prepositions and passive voice.
         """
         if colon_token.i <= sent.start:
             return False
@@ -114,13 +114,29 @@ class ColonsRule(BasePunctuationRule):
         has_subject = any(t.dep_ in ('nsubj', 'nsubjpass') for t in clause_doc)
         has_root_verb = any(t.dep_ == 'ROOT' for t in clause_doc)
         
-        # Check if a verb directly precedes the colon
+        # Check what directly precedes the colon
         token_sent_idx = colon_token.i - sent.start
-        verb_before_colon = False
         if token_sent_idx > 0:
-            verb_before_colon = sent[token_sent_idx - 1].pos_ == "VERB"
+            prev_token = sent[token_sent_idx - 1]
+            
+            # Prepositions before colon indicate incomplete clause
+            if prev_token.pos_ == 'ADP':  # Preposition like "with:", "for:", "to:"
+                return False
+            
+            # Articles before colon indicate incomplete clause
+            if prev_token.pos_ == 'DET':  # "the:", "a:", "an:"
+                return False
+            
+            # Conjunctions before colon indicate incomplete clause
+            if prev_token.pos_ in ['CCONJ', 'SCONJ']:  # "and:", "but:", "if:"
+                return False
+            
+            # Verbs directly before colon are usually incomplete
+            if prev_token.pos_ == 'VERB' and prev_token.dep_ != 'ROOT':
+                return False
 
-        return has_subject and has_root_verb and not verb_before_colon
+        # Must have both subject and verb for complete clause
+        return has_subject and has_root_verb
 
     def _is_legitimate_context_aware(self, colon_token: 'Token', sent: 'Span', context: Optional[Dict[str, Any]]) -> bool:
         """
