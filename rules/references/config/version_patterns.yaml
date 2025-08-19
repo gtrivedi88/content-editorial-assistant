@@ -1,0 +1,339 @@
+# Product Version Patterns Configuration
+# Based on IBM Style Guide rules for product versions
+
+# Version prefix patterns and validation
+version_prefixes:
+  problematic_prefixes:
+    - prefix: "V."
+      evidence: 0.9
+      severity: "high"
+      message: "Avoid 'V.' prefix. Use only the version number."
+      alternatives: ["2.0", "3.1.4"]
+    
+    - prefix: "Version."
+      evidence: 0.9
+      severity: "high"
+      message: "Avoid 'Version.' prefix. Use only the version number."
+      alternatives: ["2.0", "3.1.4"]
+    
+    - prefix: "Release."
+      evidence: 0.9
+      severity: "high"
+      message: "Avoid 'Release.' prefix. Use only the version number."
+      alternatives: ["2.0", "3.1.4"]
+    
+    - prefix: "R."
+      evidence: 0.9
+      severity: "high"
+      message: "Avoid 'R.' prefix. Use only the version number."
+      alternatives: ["2.0", "3.1.4"]
+
+  moderate_violations:
+    - prefix: "V"
+      evidence: 0.7
+      severity: "medium"
+      message: "Consider removing 'V' prefix and using only the number."
+      alternatives: ["2.0", "3.1.4"]
+      context_acceptable: ["technical_documentation"]
+    
+    - prefix: "R"
+      evidence: 0.7
+      severity: "medium"
+      message: "Consider removing 'R' prefix and using only the number."
+      alternatives: ["2.0", "3.1.4"]
+      context_acceptable: ["technical_documentation"]
+    
+    - prefix: "Version"
+      evidence: 0.6
+      severity: "medium"
+      message: "Consider simplifying to just the version number."
+      alternatives: ["2.0", "3.1.4"]
+      context_acceptable: ["marketing", "documentation"]
+    
+    - prefix: "Release"
+      evidence: 0.6
+      severity: "medium"
+      message: "Consider simplifying to just the version number."
+      alternatives: ["2.0", "3.1.4"]
+      context_acceptable: ["marketing", "documentation"]
+
+  acceptable_prefixes:
+    - prefix: "Rev"
+      evidence: 0.3
+      severity: "low"
+      message: "Revision prefix is generally acceptable."
+      context: "technical_documentation"
+    
+    - prefix: "Build"
+      evidence: 0.2
+      severity: "low" 
+      message: "Build prefix is acceptable in technical contexts."
+      context: "software_development"
+    
+    - prefix: "Update"
+      evidence: 0.1
+      severity: "low"
+      message: "Update prefix is acceptable for software updates."
+      context: "software_updates"
+    
+    - prefix: "Patch"
+      evidence: 0.1
+      severity: "low"
+      message: "Patch prefix is acceptable for software patches."
+      context: "software_development"
+
+# Version number patterns and validation
+version_patterns:
+  valid_patterns:
+    - pattern: "semantic_version"
+      regex: "\\d+\\.\\d+\\.\\d+"
+      examples: ["1.0.0", "2.1.3", "10.5.2"]
+      description: "Major.Minor.Patch format"
+    
+    - pattern: "major_minor"
+      regex: "\\d+\\.\\d+"
+      examples: ["1.0", "2.1", "10.5"]
+      description: "Major.Minor format"
+    
+    - pattern: "single_version"
+      regex: "\\d+"
+      examples: ["1", "2", "10"]
+      description: "Single version number"
+
+  problematic_patterns:
+    - pattern: "wildcard_version"
+      regex: "\\d+\\.\\d+\\.x"
+      evidence: 0.8
+      message: "Replace '.x' wildcard with specific version number"
+      examples: ["2.1.x", "3.0.x"]
+      alternatives: ["2.1.0", "3.0.1"]
+    
+    - pattern: "incomplete_version"
+      regex: "\\d+\\."
+      evidence: 0.7
+      message: "Incomplete version number format"
+      examples: ["2.", "3.1."]
+      alternatives: ["2.0", "3.1.0"]
+
+# Technical documentation contexts (more lenient)
+technical_contexts:
+  documentation_types:
+    - "api documentation"
+    - "technical specification"
+    - "developer guide"
+    - "installation guide"
+    - "configuration guide"
+    - "user manual"
+    - "system documentation"
+    - "software documentation"
+
+  technical_indicators:
+    - "api"
+    - "sdk"
+    - "documentation"
+    - "specification"
+    - "protocol"
+    - "framework"
+    - "library"
+    - "package"
+    - "module"
+    - "component"
+    - "changelog"
+    - "release notes"
+    - "git"
+    - "commit"
+    - "branch"
+    - "tag"
+    - "repository"
+    - "dockerfile"
+    - "makefile"
+    - "npm"
+    - "pip"
+    - "maven"
+
+  acceptable_version_formats:
+    - "v1.0"      # Common in software versioning
+    - "v2.1.3"    # Common in git tags
+    - "version 1.0"  # Common in documentation
+    - "release 2.0"  # Common in release notes
+
+# Citation contexts (where version rules may not apply)
+citation_contexts:
+  reference_indicators:
+    - "published"
+    - "source:"
+    - "reference:"
+    - "cited in"
+    - "according to"
+    - "doi:"
+    - "isbn:"
+    - "url:"
+    - "retrieved from"
+    - "available at"
+    - "documentation:"
+    - "manual:"
+    - "guide:"
+    - "specification:"
+    - "see also"
+    - "refer to"
+    - "as described in"
+
+  software_documentation_patterns:
+    - "readme"
+    - "changelog"
+    - "license"
+    - "copyright"
+    - "installation"
+    - "configuration"
+
+# Feedback patterns for version formatting
+feedback_patterns:
+  # Version formats users consistently accept
+  accepted_version_formats:
+    - "v1"
+    - "v2"
+    - "v3"
+    - "build"
+    - "update"
+    - "patch"
+
+  # Formats users don't want flagged
+  rejected_suggestions: []
+
+  # Version format acceptance rates
+  version_format_acceptance:
+    "v.": 0.1            # Almost always should be simplified
+    "version.": 0.1      # Almost always should be simplified
+    "release.": 0.1      # Almost always should be simplified
+    "r.": 0.1            # Almost always should be simplified
+    "v": 0.2             # Should usually be simplified
+    "r": 0.2             # Should usually be simplified
+    "version": 0.3       # Should usually be simplified
+    "release": 0.3       # Should usually be simplified
+    "rev": 0.6           # Often acceptable abbreviation
+    "build": 0.7         # Often acceptable in software contexts
+    "update": 0.8        # Very acceptable in update contexts
+    "patch": 0.8         # Very acceptable in patch contexts
+
+  # Content type specific acceptance
+  technical_version_acceptance:
+    "v": 0.7             # More acceptable in technical writing
+    "r": 0.6             # Acceptable in technical writing
+    "version": 0.4       # Less preferred in technical writing
+    "release": 0.4       # Less preferred in technical writing
+    "build": 0.9         # Very acceptable in technical writing
+    "rev": 0.8           # Very acceptable in technical writing
+    "patch": 0.9         # Very acceptable in technical writing
+    "update": 0.9        # Very acceptable in technical writing
+
+  marketing_version_acceptance:
+    "v.": 0.05           # Should almost never be used in marketing
+    "version.": 0.05     # Should almost never be used in marketing
+    "v": 0.2             # Sometimes acceptable in marketing
+    "version": 0.6       # Often acceptable in marketing
+    "release": 0.7       # Often acceptable in marketing
+    "edition": 0.9       # Very acceptable in marketing
+    "update": 0.8        # Very acceptable in marketing
+
+  documentation_version_acceptance:
+    "v": 0.5             # Moderately acceptable in documentation
+    "version": 0.7       # Often acceptable in documentation
+    "release": 0.7       # Often acceptable in documentation
+    "r": 0.4             # Sometimes acceptable in documentation
+    "build": 0.8         # Very acceptable in documentation
+    "update": 0.8        # Very acceptable in documentation
+    "patch": 0.8         # Very acceptable in documentation
+
+  # Frequency tracking
+  version_format_frequencies:
+    "v": 200             # Very common abbreviation
+    "version": 150       # Common full word
+    "release": 100       # Common in release contexts
+    "r": 80              # Common abbreviation
+    "build": 120         # Common in software contexts
+    "update": 90         # Common in update contexts
+    "patch": 70          # Common in patch contexts
+    "rev": 60            # Common abbreviation
+
+  # Complex version handling
+  complex_version_acceptance:
+    "v": 0.6             # More acceptable with complex versions
+    "version": 0.7       # More acceptable with complex versions
+    "release": 0.7       # More acceptable with complex versions
+    "build": 0.8         # Very acceptable with complex versions
+    "patch": 0.9         # Very acceptable with complex versions
+    "update": 0.8        # Very acceptable with complex versions
+
+  # Context patterns
+  context_patterns:
+    paragraph:
+      accepted: ["v", "version", "release"]
+      flagged: ["v.", "version.", "release."]
+    
+    heading:
+      accepted: ["v", "version", "release", "update"]  # More acceptable in headings
+      flagged: ["v.", "version."]
+    
+    list:
+      accepted: ["v", "r", "build", "patch"]  # Abbreviations common in lists
+      flagged: ["v.", "version.", "release."]
+
+# Content type adjustments
+content_type_appropriateness:
+  technical:
+    evidence_reduction: 0.2
+    acceptable_formats:
+      - "v1.0"
+      - "build 123"
+      - "patch 1.2.3"
+      - "rev 456"
+  
+  marketing:
+    evidence_increase: 0.1   # Stricter in marketing content
+    preferred_formats:
+      - "Version 2.0"  # Full words acceptable
+      - "Release 3.1"  # Full words acceptable
+  
+  documentation:
+    evidence_adjustment: 0.0
+    format_flexibility: "moderate"
+
+# Block type specific handling
+block_type_adjustments:
+  code_block:
+    skip_analysis: true
+  
+  inline_code:
+    skip_analysis: true
+  
+  table_cell:
+    evidence_reduction: 0.1
+  
+  heading:
+    evidence_reduction: 0.1  # More lenient in headings
+
+# Quote context handling
+quote_contexts:
+  quoted_examples:
+    skip_analysis: true
+
+# Special version patterns
+special_patterns:
+  pre_release_versions:
+    - "alpha"
+    - "beta"
+    - "rc"      # Release candidate
+    - "dev"     # Development
+    - "snapshot"
+
+  version_modifiers:
+    - "LTS"     # Long term support
+    - "stable"
+    - "latest"
+    - "current"
+
+# Regex patterns for detection
+detection_patterns:
+  version_prefix_pattern: "\\b(V|R|Version|Release)\\.?\\s*(\\d+(\\d+)*)"
+  version_number_pattern: "\\d+(\\d+)*"
+  wildcard_pattern: "\\d+\\.\\d+\\.x"

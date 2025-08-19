@@ -1,0 +1,234 @@
+# Geographic Location Patterns Configuration
+# Based on IBM Style Guide rules for geographic locations
+
+# Geographic entity types and their patterns
+geographic_entities:
+  ner_labels:
+    - "GPE"   # Geopolitical entities (countries, cities, states)
+    - "LOC"   # Locations (mountains, rivers, etc.)
+    - "FAC"   # Facilities (airports, bridges, etc.)
+
+  preposition_patterns:
+    - "in"
+    - "at" 
+    - "from"
+    - "to"
+    - "near"
+    - "around"
+    - "within"
+    - "outside"
+
+  geographic_indicators:
+    - "city"
+    - "state"
+    - "country" 
+    - "region"
+    - "area"
+    - "province"
+    - "territory"
+    - "district"
+    - "county"
+    - "municipality"
+
+# Common location patterns and their capitalization rules
+location_capitalization:
+  always_capitalize:
+    - type: "proper_names"
+      examples: ["New York", "San Francisco", "Los Angeles", "United States"]
+      evidence: 0.9
+    
+    - type: "country_names"
+      examples: ["United States", "United Kingdom", "New Zealand"]
+      evidence: 0.9
+    
+    - type: "state_names"
+      examples: ["California", "New York", "Texas", "Florida"]
+      evidence: 0.9
+    
+    - type: "city_names"
+      examples: ["New York City", "San Francisco", "Los Angeles"]
+      evidence: 0.9
+
+  sometimes_acceptable_lowercase:
+    - type: "common_abbreviations"
+      examples: ["usa", "uk", "eu", "us"]
+      evidence: 0.3
+      context: "informal or technical writing"
+    
+    - type: "directional_regions"
+      examples: ["north america", "south america", "middle east"]
+      evidence: 0.4
+      context: "when used as general geographic concepts"
+
+# Brand and company context patterns
+brand_context_indicators:
+  corporate_suffixes:
+    - "corp"
+    - "inc" 
+    - "ltd"
+    - "company"
+    - "enterprises"
+    - "solutions"
+    - "group"
+    - "systems"
+    - "technologies"
+
+  # Locations that are commonly part of company names
+  company_location_patterns:
+    - "New York" # "New York Life Insurance"
+    - "California" # "California Pizza Kitchen"
+    - "Texas" # "Texas Instruments"
+    - "Boston" # "Boston Scientific"
+
+# Feedback patterns for geographic locations
+feedback_patterns:
+  # Locations users consistently accept in lowercase
+  accepted_locations:
+    - "usa"
+    - "uk" 
+    - "eu"
+    - "api"  # Not a location, technical term
+    - "sql"  # Not a location, technical term
+
+  # Locations users don't want flagged
+  rejected_suggestions: []
+
+  # Location acceptance rates by name
+  location_name_acceptance:
+    "new york": 0.1      # Almost always should be capitalized
+    "san francisco": 0.1  # Almost always should be capitalized
+    "los angeles": 0.1    # Almost always should be capitalized
+    "united states": 0.2  # Usually should be capitalized
+    "north america": 0.3  # Sometimes acceptable lowercase
+    "usa": 0.7           # Often acceptable as abbreviation
+    "uk": 0.8            # Often acceptable as abbreviation
+    "eu": 0.8            # Often acceptable as abbreviation
+
+  # Content type specific acceptance
+  technical_location_acceptance:
+    "usa": 0.9           # Very acceptable in technical writing
+    "uk": 0.9            # Very acceptable in technical writing
+    "eu": 0.9            # Very acceptable in technical writing
+    "api": 0.0           # Not a location, technical term
+    "sql": 0.0           # Not a location, technical term
+
+  marketing_location_acceptance:
+    "new york": 0.05     # Should almost always be capitalized
+    "san francisco": 0.05 # Should almost always be capitalized
+    "usa": 0.5           # Sometimes acceptable in marketing
+    "america": 0.3       # Sometimes acceptable but usually capitalized
+
+  documentation_location_acceptance:
+    "new york": 0.1      # Should usually be capitalized
+    "usa": 0.6           # More acceptable in documentation
+    "api": 0.0           # Not a location
+    "server locations": 0.4  # Technical context may allow variations
+
+  # Frequency and acceptance tracking
+  location_term_frequencies:
+    "new york": 100      # Very common location
+    "san francisco": 80   # Common location
+    "usa": 150           # Very common abbreviation
+    "uk": 120            # Common abbreviation
+    "california": 90     # Common state name
+
+  location_term_acceptance:
+    "new york": 0.05     # Almost never acceptable lowercase
+    "san francisco": 0.05 # Almost never acceptable lowercase
+    "usa": 0.7           # Often acceptable
+    "uk": 0.8            # Often acceptable
+    "california": 0.1    # Rarely acceptable lowercase
+
+  # Multi-word location handling
+  multiword_location_acceptance:
+    "new york city": 0.05     # Should be capitalized
+    "san francisco bay": 0.1   # Should be capitalized
+    "los angeles county": 0.1  # Should be capitalized
+    "north america": 0.3       # Sometimes acceptable
+    "south america": 0.3       # Sometimes acceptable
+
+  # Context-specific patterns
+  context_patterns:
+    paragraph:
+      accepted: ["usa", "uk", "eu"]
+      flagged: ["new york", "california"]
+    
+    heading:
+      accepted: ["usa", "uk", "api"]  # Abbreviations more acceptable
+      flagged: ["new york", "san francisco"]
+    
+    list:
+      accepted: ["usa", "uk", "ca", "ny"]  # Abbreviations common in lists
+      flagged: ["new york", "california"]
+
+# Content type adjustments
+content_type_appropriateness:
+  technical:
+    evidence_reduction: 0.2
+    acceptable_abbreviations:
+      - "usa"
+      - "uk"
+      - "eu"
+      - "ca"  # Canada
+      - "au"  # Australia
+  
+  marketing:
+    evidence_increase: 0.1   # Stricter capitalization in marketing
+    prefer_full_names: true
+  
+  documentation:
+    abbreviation_tolerance: 0.3
+    evidence_adjustment: 0.0
+
+# Block type specific handling
+block_type_adjustments:
+  code_block:
+    skip_analysis: true
+  
+  inline_code:
+    skip_analysis: true
+  
+  table_cell:
+    evidence_reduction: 0.1  # More lenient in tables
+    
+  heading:
+    evidence_reduction: 0.1  # Slightly more lenient in headings
+
+# Quote context handling
+quote_contexts:
+  quoted_examples:
+    skip_analysis: true
+    patterns:
+      - '"*"'  # Double quotes
+      - "'*'"  # Single quotes  
+      - "`*`"  # Backticks
+
+# Capitalization pattern detection
+capitalization_patterns:
+  violation_types:
+    - type: "all_lowercase"
+      evidence: 0.9
+      description: "All words in location are lowercase"
+      
+    - type: "partial_lowercase" 
+      evidence: 0.7
+      description: "Some words in location are not capitalized"
+      
+    - type: "all_uppercase"
+      evidence: 0.5
+      description: "All words are uppercase (may be acceptable)"
+      
+    - type: "mixed_case_within_word"
+      evidence: 0.8  
+      description: "Inconsistent capitalization within individual words"
+
+  acceptable_patterns:
+    - type: "title_case"
+      description: "Each significant word capitalized"
+      
+    - type: "standard_abbreviations"
+      examples: ["USA", "UK", "EU", "NYC", "LA", "SF"]
+      
+    - type: "all_caps_abbreviations"
+      max_length: 5
+      description: "Short all-caps abbreviations are acceptable"

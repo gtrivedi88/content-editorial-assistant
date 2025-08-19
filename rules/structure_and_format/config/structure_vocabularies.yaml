@@ -1,0 +1,416 @@
+# Structure & Format Rules - Vocabulary Configuration
+# YAML-based vocabulary management for maintainable, updateable patterns
+# Following evidence-based rule development standards
+
+# === MESSAGES RULE VOCABULARIES ===
+exaggerated_language:
+  high_severity:
+    - phrase: "catastrophic"
+      evidence: 0.95
+      category: "disaster_language"
+      alternatives: ["significant", "major", "serious"]
+      context_adjustments:
+        legal: -0.2  # Legal contexts might need stronger language
+        security: -0.2
+        technical: -0.1
+    
+    - phrase: "fatal"
+      evidence: 0.9
+      category: "severity_language"
+      alternatives: ["critical", "severe", "blocked"]
+      context_adjustments:
+        programming: -0.3  # "Fatal error" is legitimate programming term
+        api: -0.3
+        technical: -0.2
+    
+    - phrase: "illegal"
+      evidence: 0.85
+      category: "legality_language"
+      alternatives: ["invalid", "not allowed", "not supported", "unauthorized"]
+      context_adjustments:
+        legal: -0.4  # Legal contexts need this term
+        compliance: -0.4
+        security: -0.2
+  
+  medium_severity:
+    - phrase: "devastating"
+      evidence: 0.8
+      category: "disaster_language"
+      alternatives: ["significant", "substantial", "considerable"]
+    
+    - phrase: "disastrous"
+      evidence: 0.8
+      category: "disaster_language"
+      alternatives: ["problematic", "concerning", "significant"]
+    
+    - phrase: "terrible"
+      evidence: 0.75
+      category: "quality_language"
+      alternatives: ["poor", "suboptimal", "problematic"]
+    
+    - phrase: "horrible"
+      evidence: 0.75
+      category: "quality_language"
+      alternatives: ["poor", "unacceptable", "problematic"]
+
+# Detection patterns for technical contexts
+technical_context_indicators:
+  programming: ["error", "exception", "crash", "abort", "terminate", "function", "method", "API"]
+  legal: ["law", "legal", "compliance", "regulation", "policy", "contract"]
+  security: ["security", "breach", "vulnerability", "threat", "attack", "unauthorized"]
+
+# === NOTES RULE VOCABULARIES ===
+note_labels:
+  approved_labels:
+    - label: "note"
+      evidence: 0.9
+      category: "informational"
+      description: "General informational note"
+    
+    - label: "exception"
+      evidence: 0.9
+      category: "conditional"
+      description: "Exception to a rule or process"
+    
+    - label: "fast path"
+      evidence: 0.9
+      category: "procedural"
+      description: "Quick alternative method"
+    
+    - label: "important"
+      evidence: 0.95
+      category: "emphasis"
+      description: "Critical information"
+    
+    - label: "remember"
+      evidence: 0.9
+      category: "reminder"
+      description: "Key point to remember"
+    
+    - label: "requirement"
+      evidence: 0.95
+      category: "mandatory"
+      description: "Mandatory requirement"
+    
+    - label: "restriction"
+      evidence: 0.95
+      category: "limitation"
+      description: "Limitation or constraint"
+    
+    - label: "tip"
+      evidence: 0.9
+      category: "helpful"
+      description: "Helpful suggestion"
+    
+    - label: "attention"
+      evidence: 0.95
+      category: "alert"
+      description: "Requires attention"
+    
+    - label: "caution"
+      evidence: 0.95
+      category: "warning"
+      description: "Proceed with caution"
+    
+    - label: "danger"
+      evidence: 0.98
+      category: "critical"
+      description: "Dangerous operation"
+    
+    - label: "warning"
+      evidence: 0.95
+      category: "warning"
+      description: "Warning message"
+
+# List formatting indicators
+list_indicators:
+  bullet_points: ["-", "*", "•", "◦", "▪", "▫"]
+  numbered_lists: ["1.", "2.", "3.", "4.", "5.", "a)", "b)", "c)", "i)", "ii)", "iii)"]
+  alpha_lists: ["a.", "b.", "c.", "A.", "B.", "C."]
+
+# === ADMONITIONS RULE VOCABULARIES ===
+admonition_labels:
+  approved_labels:
+    - label: "NOTE"
+      evidence: 0.9
+      category: "informational"
+      severity: "low"
+      description: "General information"
+    
+    - label: "IMPORTANT"
+      evidence: 0.95
+      category: "emphasis"
+      severity: "medium"
+      description: "Important information"
+    
+    - label: "RESTRICTION"
+      evidence: 0.95
+      category: "limitation"
+      severity: "medium"
+      description: "System or process restriction"
+    
+    - label: "TIP"
+      evidence: 0.9
+      category: "helpful"
+      severity: "low"
+      description: "Helpful suggestion"
+    
+    - label: "ATTENTION"
+      evidence: 0.95
+      category: "alert"
+      severity: "medium"
+      description: "Requires user attention"
+    
+    - label: "CAUTION"
+      evidence: 0.95
+      category: "warning"
+      severity: "high"
+      description: "Proceed carefully"
+    
+    - label: "DANGER"
+      evidence: 0.98
+      category: "critical"
+      severity: "high"
+      description: "Dangerous operation"
+    
+    - label: "REQUIREMENT"
+      evidence: 0.95
+      category: "mandatory"
+      severity: "medium"
+      description: "Mandatory requirement"
+    
+    - label: "EXCEPTION"
+      evidence: 0.9
+      category: "conditional"
+      severity: "low"
+      description: "Exception to rule"
+    
+    - label: "FAST PATH"
+      evidence: 0.9
+      category: "procedural"
+      severity: "low"
+      description: "Quick alternative"
+    
+    - label: "REMEMBER"
+      evidence: 0.9
+      category: "reminder"
+      severity: "low"
+      description: "Key reminder"
+  
+  # Common invalid labels to suggest corrections for
+  invalid_suggestions:
+    "CRITICAL": ["IMPORTANT", "CAUTION"]
+    "URGENT": ["IMPORTANT", "ATTENTION"]
+    "INFO": ["NOTE", "TIP"]
+    "ALERT": ["ATTENTION", "CAUTION"]
+
+# === PROCEDURES RULE VOCABULARIES ===
+procedural_indicators:
+  optional_indicators:
+    - phrase: "optional"
+      evidence_reduction: 0.5
+    - phrase: "optionally"
+      evidence_reduction: 0.5
+    - phrase: "if needed"
+      evidence_reduction: 0.4
+    - phrase: "if desired"
+      evidence_reduction: 0.4
+    - phrase: "as needed"
+      evidence_reduction: 0.4
+    - phrase: "when necessary"
+      evidence_reduction: 0.3
+  
+  conditional_indicators:
+    - phrase: "if"
+      evidence_reduction: 0.3
+    - phrase: "when"
+      evidence_reduction: 0.3
+    - phrase: "unless"
+      evidence_reduction: 0.3
+    - phrase: "should"
+      evidence_reduction: 0.2
+  
+  explanatory_indicators:
+    - phrase: "this will"
+      evidence_reduction: 0.4
+    - phrase: "this should"
+      evidence_reduction: 0.4
+    - phrase: "you will see"
+      evidence_reduction: 0.4
+    - phrase: "the system will"
+      evidence_reduction: 0.4
+    - phrase: "note that"
+      evidence_reduction: 0.3
+  
+  result_indicators:
+    - phrase: "result:"
+      evidence_reduction: 0.5
+    - phrase: "outcome:"
+      evidence_reduction: 0.5
+    - phrase: "expected:"
+      evidence_reduction: 0.4
+    - phrase: "you should see"
+      evidence_reduction: 0.4
+  
+  reference_indicators:
+    - phrase: "see also"
+      evidence_reduction: 0.5
+    - phrase: "refer to"
+      evidence_reduction: 0.5
+    - phrase: "for more information"
+      evidence_reduction: 0.4
+    - phrase: "additional details"
+      evidence_reduction: 0.4
+  
+  navigation_indicators:
+    - phrase: "go to"
+      evidence_reduction: 0.3
+    - phrase: "navigate to"
+      evidence_reduction: 0.3
+    - phrase: "return to"
+      evidence_reduction: 0.3
+
+# === HIGHLIGHTING RULE VOCABULARIES ===
+ui_elements:
+  high_confidence_elements:
+    - element: "button"
+      evidence: 0.9
+      category: "interactive"
+    - element: "menu"
+      evidence: 0.9
+      category: "navigation"
+    - element: "dialog"
+      evidence: 0.9
+      category: "window"
+    - element: "window"
+      evidence: 0.9
+      category: "window"
+    - element: "tab"
+      evidence: 0.9
+      category: "navigation"
+    - element: "checkbox"
+      evidence: 0.9
+      category: "control"
+    - element: "radio button"
+      evidence: 0.9
+      category: "control"
+    - element: "dropdown"
+      evidence: 0.9
+      category: "control"
+  
+  medium_confidence_elements:
+    - element: "field"
+      evidence: 0.7
+      category: "input"
+    - element: "text box"
+      evidence: 0.7
+      category: "input"
+    - element: "panel"
+      evidence: 0.7
+      category: "container"
+    - element: "toolbar"
+      evidence: 0.7
+      category: "container"
+  
+  generic_terms:
+    - "the button"
+    - "a button"
+    - "the menu"
+    - "a menu" 
+    - "the window"
+    - "a window"
+    - "the field"
+    - "a field"
+
+imperative_verbs:
+  ui_actions:
+    - "click"
+    - "select"
+    - "choose"
+    - "press"
+    - "tap"
+    - "open"
+    - "close"
+    - "drag"
+    - "drop"
+    - "scroll"
+    - "expand"
+    - "collapse"
+
+# Code context indicators
+code_context_indicators:
+  inline_indicators: ["```", "`", "code", "example", "sample", "snippet"]
+  block_types: ["code_block", "inline_code", "example", "literal_block"]
+
+# === PARAGRAPHS RULE VOCABULARIES ===
+formatting_context:
+  code_indicators:
+    - "```"
+    - "`"
+    - "function"
+    - "class"
+    - "def "
+    - "var "
+    - "const "
+    - "let "
+    - "import"
+    - "export"
+  
+  quote_indicators:
+    chars: ['"', "'", '"', '"', "'", "'", '`']
+    block_types: ["block_quote", "quote", "citation"]
+  
+  address_indicators:
+    - "street"
+    - "avenue"
+    - "road"
+    - "city"
+    - "state"
+    - "zip"
+    - "phone"
+    - "email"
+    - "address"
+
+# === HEADINGS RULE VOCABULARIES ===
+heading_patterns:
+  abbreviation_endings:
+    - "etc."
+    - "Inc."
+    - "Corp."
+    - "Ltd."
+    - "Ph.D."
+    - "M.D."
+    - "B.A."
+    - "M.A."
+    - "CEO"
+    - "CTO"
+    - "API"
+    - "SDK"
+    - "URL"
+  
+  title_case_exceptions:
+    articles: ["a", "an", "the"]
+    prepositions: ["in", "on", "at", "by", "for", "with", "to", "of", "and", "or", "but"]
+    conjunctions: ["and", "or", "but", "nor", "for", "so", "yet"]
+
+# === CONTENT TYPE ADJUSTMENTS ===
+content_type_modifiers:
+  formal_content: ["formal", "documentation", "legal", "compliance"]
+  technical_content: ["technical", "api", "programming", "reference"]
+  user_facing_content: ["user_guide", "tutorial", "help", "instructions"]
+  creative_content: ["creative", "narrative", "marketing", "blog"]
+
+# === EVIDENCE CALCULATION SETTINGS ===
+evidence_thresholds:
+  high_confidence: 0.8
+  medium_confidence: 0.6
+  low_confidence: 0.4
+  minimal_threshold: 0.1
+
+# Base evidence scores for different violation types
+base_evidence_scores:
+  format_violation: 0.8      # Clear formatting rule violations
+  style_preference: 0.6      # Style preferences, context-dependent
+  completeness_issue: 0.7    # Incomplete sentences, missing elements
+  consistency_issue: 0.75    # Inconsistent patterns
+  accessibility_issue: 0.85  # Issues affecting accessibility

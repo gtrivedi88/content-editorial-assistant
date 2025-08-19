@@ -1,0 +1,328 @@
+# Product and Service Names Configuration
+# Based on IBM Style Guide rules for product naming
+
+# IBM product identification patterns
+ibm_products:
+  well_known_products:
+    - name: "Watson"
+      evidence: 0.9
+      requires_ibm_prefix: true
+      category: "ai_platform"
+      variants: ["watson", "Watson AI", "Watson Assistant"]
+    
+    - name: "Cloud"
+      evidence: 0.7
+      requires_ibm_prefix: true  
+      category: "cloud_platform"
+      variants: ["cloud", "IBM Cloud", "Cloud Platform"]
+    
+    - name: "DB2"
+      evidence: 0.9
+      requires_ibm_prefix: true
+      category: "database"
+      variants: ["db2", "DB2", "Db2"]
+    
+    - name: "Mainframe"
+      evidence: 0.6
+      requires_ibm_prefix: true
+      category: "hardware"
+      variants: ["mainframe", "Mainframe", "z/OS"]
+    
+    - name: "Spectrum"
+      evidence: 0.8
+      requires_ibm_prefix: true
+      category: "storage"
+      variants: ["spectrum", "Spectrum Storage", "Spectrum Scale"]
+    
+    - name: "Tivoli"
+      evidence: 0.9
+      requires_ibm_prefix: true
+      category: "management_software"
+      variants: ["tivoli", "Tivoli Storage Manager"]
+    
+    - name: "WebSphere"
+      evidence: 0.9
+      requires_ibm_prefix: true
+      category: "application_server"
+      variants: ["websphere", "WebSphere Application Server"]
+    
+    - name: "Rational"
+      evidence: 0.8
+      requires_ibm_prefix: true
+      category: "development_tools"
+      variants: ["rational", "Rational Developer"]
+    
+    - name: "Cognos"
+      evidence: 0.9
+      requires_ibm_prefix: true
+      category: "analytics"
+      variants: ["cognos", "Cognos Analytics"]
+    
+    - name: "SPSS"
+      evidence: 0.8
+      requires_ibm_prefix: true
+      category: "statistics"
+      variants: ["spss", "SPSS Statistics"]
+    
+    - name: "QRadar"
+      evidence: 0.9
+      requires_ibm_prefix: true
+      category: "security"
+      variants: ["qradar", "QRadar SIEM"]
+
+  product_indicators:
+    suffixes:
+      - "Platform"
+      - "Service" 
+      - "Suite"
+      - "System"
+      - "Solution"
+      - "Analytics"
+      - "Intelligence"
+      - "Security"
+      - "Database"
+      - "Server"
+      - "Enterprise"
+      - "Professional"
+
+    prefixes:
+      - "IBM"  # Should be present on first mention
+      - "Red Hat"  # IBM subsidiary
+      - "Lotus"   # Legacy IBM brand
+
+# Non-IBM companies and products (should not be flagged)
+competitor_companies:
+  major_competitors:
+    - "Microsoft"
+    - "Google" 
+    - "Amazon"
+    - "Oracle"
+    - "SAP"
+    - "Salesforce"
+    - "Apple"
+    - "Adobe"
+    - "VMware"
+    - "Cisco"
+    - "Dell"
+    - "HP"
+    - "Intel"
+    - "NVIDIA"
+
+  competitor_products:
+    # These should not be flagged for missing IBM prefix
+    - "Azure"      # Microsoft
+    - "AWS"        # Amazon
+    - "GCP"        # Google
+    - "Office 365" # Microsoft
+    - "Salesforce CRM"
+    - "Oracle Database"
+    - "SAP HANA"
+
+# UI elements and technical terms (not products)
+ui_elements:
+  interface_terms:
+    - "button"
+    - "menu"
+    - "dialog"
+    - "window"
+    - "field"
+    - "tab"
+    - "panel"
+    - "toolbar"
+    - "sidebar"
+
+  action_verbs:
+    - "click"
+    - "press" 
+    - "tap"
+    - "select"
+    - "choose"
+    - "enable"
+    - "disable"
+
+  technical_terms:
+    - "API"
+    - "SDK"
+    - "UI"
+    - "URL"
+    - "HTTP"
+    - "REST"
+    - "JSON"
+    - "XML"
+
+# Product naming patterns and detection
+product_detection:
+  naming_patterns:
+    brand_product:
+      pattern: "[Brand] [Product]"
+      examples: ["IBM Watson", "Microsoft Azure", "Google Cloud"]
+    
+    product_suffix:
+      pattern: "[Name] [Platform|Service|Suite|System]"
+      examples: ["Analytics Platform", "Security Service"]
+    
+    compound_product:
+      pattern: "[Product][Platform|Suite|Enterprise]"
+      examples: ["CloudPlatform", "SecuritySuite"]
+
+  manual_detection_keywords:
+    - "platform"
+    - "service"
+    - "suite" 
+    - "system"
+    - "solution"
+    - "cloud"
+    - "analytics"
+    - "intelligence"
+    - "security"
+    - "database"
+    - "server"
+
+# Feedback patterns for product names
+feedback_patterns:
+  # Products users consistently accept without IBM prefix
+  accepted_products:
+    - "API"
+    - "UI" 
+    - "SDK"
+    - "URL"
+
+  # Products users don't want flagged
+  rejected_suggestions: []
+
+  # Product type acceptance rates
+  product_type_acceptance:
+    "watson": 0.1          # Should almost always have IBM prefix
+    "cloud": 0.3           # Sometimes acceptable without prefix
+    "platform": 0.4        # Often acceptable without prefix
+    "server": 0.6          # Often acceptable without prefix
+    "system": 0.7          # Often acceptable without prefix
+    "service": 0.7         # Often acceptable without prefix
+    "api": 0.8             # Very acceptable without prefix
+    "sdk": 0.8             # Very acceptable without prefix
+    "ui": 0.9              # Almost always acceptable without prefix
+    "software": 0.5        # Moderately acceptable without prefix
+    "application": 0.6     # Often acceptable without prefix
+
+  # Content type specific acceptance
+  technical_product_acceptance:
+    "api": 0.9             # Very acceptable in technical writing
+    "sdk": 0.9             # Very acceptable in technical writing
+    "platform": 0.7        # Acceptable in technical writing
+    "service": 0.8         # Very acceptable in technical writing
+    "system": 0.7          # Acceptable in technical writing
+    "cloud": 0.6           # Moderately acceptable in technical writing
+    "watson": 0.2          # Should usually have IBM prefix even in technical
+
+  marketing_product_acceptance:
+    "watson": 0.05         # Should almost always have IBM prefix in marketing
+    "cloud": 0.2           # Should usually have IBM prefix in marketing
+    "platform": 0.3        # Sometimes acceptable in marketing
+    "solution": 0.4        # Often acceptable in marketing
+    "service": 0.5         # Often acceptable in marketing
+    "system": 0.4          # Sometimes acceptable in marketing
+
+  documentation_product_acceptance:
+    "api": 0.8             # Often acceptable in documentation
+    "sdk": 0.8             # Often acceptable in documentation
+    "platform": 0.6        # Moderately acceptable in documentation
+    "service": 0.7         # Acceptable in documentation
+    "watson": 0.3          # Should usually have IBM prefix in docs
+    "cloud": 0.4           # Sometimes acceptable in documentation
+
+  # Frequency tracking
+  product_term_frequencies:
+    "cloud": 300           # Very common product term
+    "platform": 250        # Common product term
+    "service": 280         # Very common product term
+    "watson": 150          # Common IBM product
+    "api": 400             # Very common technical term
+    "sdk": 200             # Common technical term
+    "system": 180          # Common product term
+    "server": 160          # Common product term
+
+  # IBM vs non-IBM product handling
+  ibm_product_acceptance:
+    "watson": 0.1          # Low acceptance without IBM prefix
+    "cloud": 0.2           # Low acceptance without IBM prefix
+    "spectrum": 0.1        # Low acceptance without IBM prefix
+    "db2": 0.1             # Low acceptance without IBM prefix
+    "mainframe": 0.3       # Sometimes acceptable without prefix
+    "tivoli": 0.1          # Low acceptance without IBM prefix
+    "websphere": 0.1       # Low acceptance without IBM prefix
+    "rational": 0.2        # Low acceptance without IBM prefix
+    "cognos": 0.1          # Low acceptance without IBM prefix
+
+  # Context patterns
+  context_patterns:
+    paragraph:
+      accepted: ["api", "sdk", "ui"]
+      flagged: ["watson", "cloud", "db2"]
+    
+    heading:
+      accepted: ["platform", "service", "api"]  # More acceptable in headings
+      flagged: ["watson", "cognos"]
+    
+    list:
+      accepted: ["api", "sdk", "ui", "service"]  # Technical terms common in lists
+      flagged: ["watson", "db2"]
+
+# Citation and reference contexts (where IBM prefix rules may not apply)
+citation_contexts:
+  academic_indicators:
+    - "published by"
+    - "source:"
+    - "reference:"
+    - "cited in"
+    - "according to"
+    - "doi:"
+    - "isbn:"
+    - "whitepaper:"
+    - "report:"
+    - "study by"
+    - "research from"
+
+  industry_report_indicators:
+    - "gartner"
+    - "forrester" 
+    - "idc"
+    - "analyst"
+    - "market research"
+    - "industry report"
+
+# Content type adjustments
+content_type_appropriateness:
+  technical:
+    evidence_reduction: 0.2  # More lenient in technical content
+    acceptable_without_prefix:
+      - "API"
+      - "SDK"
+      - "platform"
+      - "service"
+  
+  marketing:
+    evidence_increase: 0.1   # Stricter in marketing content
+    require_ibm_prefix:
+      - "Watson"
+      - "Cloud"
+      - "DB2"
+  
+  documentation:
+    evidence_adjustment: 0.0
+    first_mention_emphasis: true
+
+# Block type specific handling
+block_type_adjustments:
+  code_block:
+    skip_analysis: true
+  
+  inline_code:
+    skip_analysis: true
+  
+  table_cell:
+    evidence_reduction: 0.1
+
+# Quote context handling
+quote_contexts:
+  quoted_examples:
+    skip_analysis: true

@@ -1,0 +1,212 @@
+# Citation and Reference Patterns Configuration
+# Based on IBM Style Guide rules for citations and linking
+
+# Problematic link text patterns that should be avoided
+problematic_link_patterns:
+  exact_violations:
+    - phrase: "click here"
+      evidence: 0.9
+      severity: "high"
+      message: "Avoid using generic link text like 'click here'. The link text should be meaningful."
+      alternatives: ["see the documentation", "view the guide", "read more about"]
+    
+    - phrase: "see here"
+      evidence: 0.8
+      severity: "high"
+      message: "Link text 'see here' is not descriptive. Use meaningful link text."
+      alternatives: ["see the installation guide", "view the examples", "refer to the documentation"]
+    
+    - phrase: "go here"
+      evidence: 0.8
+      severity: "high"
+      message: "Avoid 'go here' as link text. Describe the destination instead."
+      alternatives: ["visit the project page", "access the portal", "view the dashboard"]
+    
+    - phrase: "this link"
+      evidence: 0.7
+      severity: "medium"
+      message: "Replace 'this link' with descriptive text about the destination."
+      alternatives: ["the user guide", "the API reference", "the tutorial"]
+
+  pattern_violations:
+    imperative_patterns:
+      - "click"
+      - "see" 
+      - "go"
+      - "visit"
+      - "check"
+    
+    demonstrative_patterns:
+      - "this"
+      - "that"
+      - "here"
+      - "there"
+    
+    # These are acceptable when combined with descriptive context
+    acceptable_contexts:
+      - "documentation"
+      - "manual"
+      - "guide"
+      - "section"
+      - "chapter"
+      - "tutorial"
+      - "reference"
+
+# Reference capitalization patterns
+reference_capitalization:
+  document_parts:
+    - phrase: "chapter"
+      should_be_lowercase: true
+      context: "cross_reference"
+      evidence: 0.8
+      example: "see chapter 5" # not "see Chapter 5"
+    
+    - phrase: "section"
+      should_be_lowercase: true
+      context: "cross_reference"
+      evidence: 0.8
+      example: "refer to section 3.1"
+    
+    - phrase: "appendix"
+      should_be_lowercase: true
+      context: "cross_reference"
+      evidence: 0.8
+      example: "listed in appendix A"
+    
+    - phrase: "figure"
+      should_be_lowercase: true
+      context: "cross_reference"
+      evidence: 0.7
+      example: "shown in figure 2"
+    
+    - phrase: "table"
+      should_be_lowercase: true
+      context: "cross_reference"
+      evidence: 0.7
+      example: "see table 1"
+    
+    - phrase: "page"
+      should_be_lowercase: true
+      context: "cross_reference"
+      evidence: 0.6
+      example: "on page 15"
+
+  # Indicators that suggest this is a cross-reference context
+  reference_indicators:
+    - "see"
+    - "refer to"
+    - "shown in"
+    - "described in"
+    - "listed in"
+    - "found in"
+    - "detailed in"
+    - "covered in"
+
+# Citation context indicators (where different rules may apply)
+citation_contexts:
+  academic_indicators:
+    - "published by"
+    - "source:"
+    - "reference:"
+    - "cited in"
+    - "according to"
+    - "doi:"
+    - "isbn:"
+    - "retrieved from"
+    - "available at"
+    - "et al."
+    - "proceedings of"
+    - "journal of"
+    - "conference on"
+
+  technical_indicators:
+    - "api documentation"
+    - "technical specification"
+    - "user manual"
+    - "installation guide"
+    - "configuration guide"
+    - "developer guide"
+    - "readme"
+    - "changelog"
+
+# Feedback patterns for learning from user interactions
+feedback_patterns:
+  # Terms users consistently accept
+  accepted_terms:
+    - "see"
+    - "refer"
+    - "check"
+    - "visit"
+  
+  # Terms users don't want flagged
+  rejected_suggestions: []
+  
+  # Acceptance rates for different link phrases
+  link_phrase_acceptance:
+    "click here": 0.1    # Almost always problematic
+    "see here": 0.2      # Usually problematic
+    "this link": 0.3     # Often problematic
+    "more info": 0.6     # Sometimes acceptable
+    "learn more": 0.8    # Often acceptable
+    "read more": 0.7     # Often acceptable
+    "view details": 0.9  # Usually acceptable
+
+  # Reference term acceptance in different content types
+  documentation_reference_acceptance:
+    "chapter": 0.2   # Usually should be lowercase in docs
+    "section": 0.3   # Usually should be lowercase in docs
+    "figure": 0.4    # Sometimes acceptable depending on style
+    "table": 0.4     # Sometimes acceptable depending on style
+
+  technical_reference_acceptance:
+    "chapter": 0.6   # More acceptable in technical writing
+    "section": 0.7   # More acceptable in technical writing
+    "figure": 0.8    # Often acceptable in technical contexts
+    "table": 0.8     # Often acceptable in technical contexts
+
+  # Context-specific patterns
+  context_patterns:
+    paragraph:
+      accepted: ["see", "refer", "visit"]
+      flagged: ["click here", "go here"]
+    
+    heading:
+      accepted: ["chapter", "section"]  # More acceptable in headings
+      flagged: ["click here", "this link"]
+    
+    list:
+      accepted: ["see", "visit", "chapter"]
+      flagged: ["click here", "here"]
+
+# Content type adjustments
+content_type_appropriateness:
+  technical:
+    evidence_reduction: 0.2  # More lenient in technical content
+    acceptable_patterns:
+      - "api reference"
+      - "technical documentation" 
+      - "developer guide"
+  
+  marketing:
+    evidence_increase: 0.1   # Stricter in marketing content
+    avoid_patterns:
+      - "click here"
+      - "this link"
+  
+  documentation:
+    reference_style: "lowercase"  # Prefer lowercase references
+    evidence_adjustment: 0.0      # Standard strictness
+
+# Block type specific handling
+block_type_adjustments:
+  code_block:
+    skip_analysis: true
+  
+  inline_code:
+    skip_analysis: true
+  
+  quote_block:
+    evidence_reduction: 0.3  # More lenient in quotes
+  
+  table_cell:
+    evidence_reduction: 0.1  # Slightly more lenient in tables

@@ -1,0 +1,416 @@
+# Professional Titles and Names Configuration
+# Based on IBM Style Guide rules for names and titles
+
+# Professional titles by category and level
+professional_titles:
+  executive_titles:
+    - title: "CEO"
+      full_form: "Chief Executive Officer"
+      evidence: 0.9
+      capitalization_rules:
+        with_name: "capitalize"    # "CEO Smith"
+        standalone: "lowercase"    # "the ceo"
+      priority: "high"
+    
+    - title: "President"
+      full_form: "President"
+      evidence: 0.9
+      capitalization_rules:
+        with_name: "capitalize"
+        standalone: "lowercase"
+      priority: "high"
+    
+    - title: "CTO"
+      full_form: "Chief Technology Officer"
+      evidence: 0.9
+      capitalization_rules:
+        with_name: "capitalize"
+        standalone: "lowercase"
+      priority: "high"
+    
+    - title: "CFO"
+      full_form: "Chief Financial Officer"
+      evidence: 0.9
+      capitalization_rules:
+        with_name: "capitalize"
+        standalone: "lowercase"
+      priority: "high"
+    
+    - title: "Vice President"
+      full_form: "Vice President"
+      evidence: 0.8
+      capitalization_rules:
+        with_name: "capitalize"
+        standalone: "lowercase"
+      priority: "high"
+      variants: ["VP", "V.P."]
+
+  management_titles:
+    - title: "Director"
+      full_form: "Director"
+      evidence: 0.8
+      capitalization_rules:
+        with_name: "capitalize"
+        standalone: "lowercase"
+      priority: "medium"
+    
+    - title: "Manager"
+      full_form: "Manager"
+      evidence: 0.7
+      capitalization_rules:
+        with_name: "capitalize"
+        standalone: "lowercase"
+      priority: "medium"
+    
+    - title: "Supervisor"
+      full_form: "Supervisor"
+      evidence: 0.6
+      capitalization_rules:
+        with_name: "capitalize"
+        standalone: "lowercase"
+      priority: "medium"
+    
+    - title: "Lead"
+      full_form: "Lead"
+      evidence: 0.5  # Lower evidence as "lead" can be verb
+      capitalization_rules:
+        with_name: "capitalize"
+        standalone: "lowercase"
+      priority: "low"
+    
+    - title: "Head"
+      full_form: "Head"
+      evidence: 0.6
+      capitalization_rules:
+        with_name: "capitalize"
+        standalone: "lowercase"
+      priority: "medium"
+
+  technical_titles:
+    - title: "Engineer"
+      full_form: "Engineer"
+      evidence: 0.6
+      capitalization_rules:
+        with_name: "capitalize"
+        standalone: "lowercase"
+      priority: "medium"
+    
+    - title: "Developer"
+      full_form: "Developer"
+      evidence: 0.6
+      capitalization_rules:
+        with_name: "capitalize"
+        standalone: "lowercase"
+      priority: "medium"
+    
+    - title: "Architect"
+      full_form: "Architect"
+      evidence: 0.7
+      capitalization_rules:
+        with_name: "capitalize"
+        standalone: "lowercase"
+      priority: "medium"
+    
+    - title: "Analyst"
+      full_form: "Analyst"
+      evidence: 0.6
+      capitalization_rules:
+        with_name: "capitalize"
+        standalone: "lowercase"
+      priority: "medium"
+    
+    - title: "Specialist"
+      full_form: "Specialist"
+      evidence: 0.5
+      capitalization_rules:
+        with_name: "capitalize"
+        standalone: "lowercase"
+      priority: "low"
+
+  academic_titles:
+    - title: "Professor"
+      full_form: "Professor"
+      evidence: 0.8
+      capitalization_rules:
+        with_name: "capitalize"
+        standalone: "lowercase"
+      priority: "high"
+      variants: ["Prof", "Prof."]
+    
+    - title: "Doctor"
+      full_form: "Doctor"
+      evidence: 0.8
+      capitalization_rules:
+        with_name: "capitalize"
+        standalone: "lowercase"
+      priority: "high"
+      variants: ["Dr", "Dr."]
+    
+    - title: "PhD"
+      full_form: "Doctor of Philosophy"
+      evidence: 0.7
+      capitalization_rules:
+        with_name: "capitalize"
+        standalone: "lowercase"
+      priority: "high"
+
+# Name prefixes and honorifics
+name_prefixes:
+  common_prefixes:
+    - "Mr."
+    - "Ms."
+    - "Mrs."
+    - "Dr."
+    - "Prof."
+    - "Sir"
+    - "Madam"
+
+  formal_indicators:
+    - "The Honorable"
+    - "The Right Honorable"
+    - "His/Her Excellency"
+
+# Context detection patterns
+context_detection:
+  with_name_indicators:
+    dependency_relations:
+      - "appos"     # Appositional modifier
+      - "nmod"      # Nominal modifier
+      - "compound"  # Compound
+
+    proximity_patterns:
+      max_distance: 3  # tokens
+      ner_types: ["PERSON"]
+
+    name_patterns:
+      - pattern: "Title FirstName LastName"
+        example: "Director John Smith"
+      - pattern: "FirstName LastName, Title"
+        example: "John Smith, Director"
+
+  standalone_indicators:
+    determiners:
+      - "the"
+      - "a"
+      - "an"
+      - "our"
+      - "your"
+      - "their"
+      - "each"
+      - "every"
+      - "this"
+      - "that"
+
+    context_phrases:
+      - "the manager"
+      - "a director"
+      - "our ceo"
+      - "their president"
+
+# Brand context indicators (where titles may be part of company names)
+brand_context:
+  corporate_indicators:
+    - "corp"
+    - "inc"
+    - "ltd"
+    - "company"
+    - "enterprises"
+    - "solutions"
+    - "group"
+    - "systems"
+    - "technologies"
+
+  title_company_combinations:
+    # Common cases where titles are part of company names
+    - "Director of [Company]"
+    - "[Title] [Company] [Suffix]"
+
+# Citation contexts (where different rules may apply)
+citation_contexts:
+  academic_indicators:
+    - "published by"
+    - "author:"
+    - "title:"
+    - "journal:"
+    - "vol."
+    - "pp."
+    - "doi:"
+    - "isbn:"
+    - "edited by"
+    - "et al."
+
+  reference_patterns:
+    - "according to"
+    - "cited by"
+    - "research by"
+    - "study by"
+
+# Feedback patterns for titles
+feedback_patterns:
+  # Titles users consistently accept (often acceptable in different contexts)
+  accepted_titles:
+    - "PM"    # Project Manager abbreviation
+    - "QA"    # Quality Assurance abbreviation  
+    - "HR"    # Human Resources abbreviation
+    - "admin" # Administrator abbreviation
+
+  # Titles users don't want flagged
+  rejected_suggestions: []
+
+  # Title type acceptance rates
+  title_type_acceptance:
+    "ceo": 0.1           # Almost always should be handled correctly
+    "president": 0.15    # Almost always should be handled correctly
+    "director": 0.2      # Usually should be handled correctly
+    "manager": 0.4       # More flexible, context-dependent
+    "engineer": 0.5      # Often acceptable in different contexts
+    "analyst": 0.5       # Often acceptable in different contexts
+    "coordinator": 0.6   # Often acceptable in various contexts
+    "specialist": 0.6    # Often acceptable in various contexts
+    "lead": 0.7          # Often acceptable as either title or verb
+    "admin": 0.8         # Often acceptable abbreviation
+    "support": 0.8       # Often acceptable in different contexts
+
+  # Issue-specific acceptance rates
+  title_with_name_uncapitalized_acceptance:
+    "ceo": 0.05          # Should almost always be capitalized with names
+    "president": 0.05    # Should almost always be capitalized with names
+    "director": 0.1      # Should usually be capitalized with names
+    "manager": 0.2       # Usually capitalized with names
+    "engineer": 0.3      # Sometimes acceptable depending on context
+    "lead": 0.4          # Often acceptable as regular word
+
+  standalone_title_capitalized_acceptance:
+    "ceo": 0.2           # Sometimes acceptable when standalone
+    "president": 0.3     # Sometimes acceptable when standalone
+    "director": 0.4      # Often acceptable when standalone
+    "manager": 0.5       # Often acceptable when standalone
+    "engineer": 0.6      # Often acceptable when standalone
+    "lead": 0.8          # Very acceptable when standalone
+
+  # Content type specific acceptance
+  technical_title_acceptance:
+    "engineer": 0.8      # Very acceptable in technical writing
+    "developer": 0.8     # Very acceptable in technical writing
+    "analyst": 0.7       # Acceptable in technical writing
+    "architect": 0.7     # Acceptable in technical writing
+    "admin": 0.9         # Very acceptable in technical writing
+    "support": 0.9       # Very acceptable in technical writing
+    "lead": 0.9          # Very acceptable in technical writing
+
+  business_title_acceptance:
+    "ceo": 0.1           # Should usually be handled correctly in business
+    "president": 0.15    # Should usually be handled correctly in business
+    "director": 0.2      # Should usually be handled correctly in business
+    "manager": 0.3       # Moderately acceptable in business
+    "officer": 0.2       # Should usually be handled correctly in business
+    "coordinator": 0.4   # More acceptable in business contexts
+
+  marketing_title_acceptance:
+    "director": 0.3      # Sometimes acceptable in marketing
+    "manager": 0.4       # Sometimes acceptable in marketing
+    "specialist": 0.6    # Often acceptable in marketing
+    "coordinator": 0.7   # Often acceptable in marketing
+    "lead": 0.8          # Very acceptable in marketing
+    "support": 0.8       # Very acceptable in marketing
+
+  documentation_title_acceptance:
+    "engineer": 0.7      # Often acceptable in documentation
+    "developer": 0.7     # Often acceptable in documentation
+    "admin": 0.8         # Very acceptable in documentation
+    "support": 0.8       # Very acceptable in documentation
+    "lead": 0.9          # Very acceptable in documentation
+    "manager": 0.4       # Moderately acceptable in documentation
+
+  # Frequency tracking
+  title_term_frequencies:
+    "manager": 200       # Very common title
+    "director": 150      # Common title
+    "engineer": 180      # Very common title
+    "ceo": 80            # Common executive title
+    "president": 90      # Common executive title
+    "lead": 120          # Common title/word
+    "support": 100       # Common title/word
+    "admin": 110         # Common title/abbreviation
+
+  title_term_acceptance:
+    "manager": 0.3       # Usually needs correct capitalization
+    "director": 0.2      # Usually needs correct capitalization
+    "engineer": 0.5      # More flexible
+    "ceo": 0.1           # Almost always needs correct capitalization
+    "president": 0.15    # Almost always needs correct capitalization
+    "lead": 0.7          # Often acceptable as regular word
+    "support": 0.8       # Often acceptable as regular word
+    "admin": 0.7         # Often acceptable abbreviation
+
+  # Executive vs common title handling
+  executive_title_acceptance:
+    "ceo": 0.1           # Low acceptance for incorrect executive titles
+    "president": 0.2     # Low acceptance for incorrect executive titles
+    "cfo": 0.1           # Low acceptance for incorrect executive titles
+    "cto": 0.1           # Low acceptance for incorrect executive titles
+    "vp": 0.3            # Slightly more acceptable abbreviation
+    "director": 0.2      # Low acceptance for incorrect executive titles
+
+  # Context patterns
+  context_patterns:
+    paragraph:
+      accepted: ["lead", "support", "admin"]
+      flagged: ["ceo", "president"]
+    
+    heading:
+      accepted: ["manager", "director", "lead"]  # More acceptable in headings
+      flagged: ["ceo", "president"]
+    
+    list:
+      accepted: ["pm", "qa", "hr", "admin"]  # Abbreviations common in lists
+      flagged: ["ceo", "president"]
+
+# Content type adjustments
+content_type_appropriateness:
+  technical:
+    evidence_reduction: 0.2
+    flexible_titles: ["engineer", "developer", "admin", "support"]
+  
+  business:
+    evidence_increase: 0.1   # Stricter in business content
+    formal_titles: ["ceo", "president", "director"]
+  
+  marketing:
+    evidence_adjustment: 0.0
+    title_emphasis: true
+
+# Block type specific handling
+block_type_adjustments:
+  code_block:
+    skip_analysis: true
+  
+  inline_code:
+    skip_analysis: true
+  
+  table_cell:
+    evidence_reduction: 0.1
+  
+  heading:
+    evidence_reduction: 0.1  # Slightly more lenient in headings
+
+# Quote context handling
+quote_contexts:
+  quoted_examples:
+    skip_analysis: true
+
+# Ambiguity detection
+ambiguity_patterns:
+  mixed_signals:
+    # When both name and standalone indicators are present
+    check_for:
+      - name_indicators: true
+      - standalone_indicators: true
+    
+  context_conflicts:
+    # When multiple contextual clues conflict
+    priority_order:
+      - "direct_ner_detection"      # PERSON entity nearby
+      - "dependency_parsing"        # Syntactic relationships
+      - "proximity_analysis"        # Distance-based detection
+      - "determiner_analysis"       # Article usage

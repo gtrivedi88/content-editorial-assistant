@@ -139,6 +139,39 @@ class BaseReferencesRule(BaseRule):
         """
         raise NotImplementedError("Subclasses must implement the analyze method.")
     
+    def _apply_zero_false_positive_guards_references(self, token, context: Dict[str, Any] = None) -> bool:
+        """
+        Apply surgical zero false positive guards specific to references.
+        Returns True if this token should be ignored (no evidence).
+        """
+        if not token or not hasattr(token, 'text'):
+            return True
+        
+        # Guard 1: Code blocks and technical contexts
+        if context and context.get('block_type') in ['code_block', 'inline_code', 'literal_block']:
+            return True
+        
+        # Guard 2: URLs and file paths
+        if hasattr(token, 'like_url') and token.like_url:
+            return True
+        if hasattr(token, 'text') and ('/' in token.text or '\\' in token.text):
+            return True
+        
+        # Guard 3: Recognized entities that shouldn't be flagged
+        if hasattr(token, 'ent_type_') and token.ent_type_ in ['PERSON', 'ORG', 'PRODUCT', 'EVENT', 'GPE']:
+            # But allow specific reference rule logic to override this
+            pass
+        
+        # Guard 4: Technical identifiers and version numbers
+        if hasattr(token, 'text'):
+            text = token.text
+            if re.match(r'^[A-Z0-9_]+$', text) and len(text) <= 10:  # All caps technical identifier
+                return True
+            if re.match(r'^\d+\.\d+', text):  # Version numbers are handled by specific rules
+                pass
+        
+        return False
+    
     def _analyze_entity_capitalization(self, doc, sentence: str, sentence_index: int, entity_types: List[str] = None, text: str = None, context: Dict[str, Any] = None) -> List[Dict[str, Any]]:
         """
         Analyze entity capitalization using advanced morphological analysis.
@@ -666,8 +699,136 @@ class BaseReferencesRule(BaseRule):
         else:
             return 'custom_version'
     
-    # Additional helper methods would be implemented here...
-    # (The implementation continues with more specific analysis methods)
+    def _get_reference_base_evidence_score(self, token, sentence, context: Dict[str, Any] = None) -> float:
+        """
+        Get base evidence score for reference violations.
+        More specific violations get higher base scores.
+        """
+        if not self._meets_basic_criteria_references(token):
+            return 0.0
+        
+        # Higher scores for specific reference patterns
+        if hasattr(token, 'text'):
+            text = token.text.lower()
+            
+            # Specific problematic patterns get high scores
+            if text in ['click here', 'see here', 'go here']:
+                return 0.9  # Very specific violation
+            
+            # Professional titles in wrong context
+            if text in ['ceo', 'director', 'manager', 'president']:
+                return 0.7  # Clear pattern but needs context
+            
+            # Version prefixes
+            if text in ['v.', 'ver.', 'version']:
+                return 0.8  # Specific formatting violation
+        
+        return 0.6  # Default moderate evidence
+    
+    def _meets_basic_criteria_references(self, token) -> bool:
+        """
+        Check if token meets basic criteria for reference analysis.
+        """
+        if not token or not hasattr(token, 'text'):
+            return False
+        
+        text = token.text.strip()
+        if not text or len(text) < 2:
+            return False
+        
+        return True
+    
+    def _apply_linguistic_clues_references(self, evidence_score: float, token, sentence) -> float:
+        """
+        Apply reference-specific linguistic clues.
+        """
+        if not token:
+            return evidence_score
+        
+        # POS-based adjustments
+        if hasattr(token, 'pos_'):
+            if token.pos_ == 'PROPN':
+                # Proper nouns need careful handling in references
+                evidence_score += 0.1
+            elif token.pos_ == 'NOUN':
+                # Regular nouns less likely to be reference errors
+                evidence_score -= 0.1
+        
+        # Dependency-based adjustments
+        if hasattr(token, 'dep_'):
+            if token.dep_ == 'appos':  # Appositional modifier (like titles with names)
+                evidence_score += 0.2
+            elif token.dep_ in ['nsubj', 'dobj']:
+                # Subject/object usage patterns
+                evidence_score -= 0.1
+        
+        # Named entity context
+        if hasattr(token, 'ent_type_') and token.ent_type_:
+            if token.ent_type_ in ['PERSON', 'ORG']:
+                evidence_score += 0.1  # Names need proper handling
+            elif token.ent_type_ in ['GPE', 'LOC']:
+                evidence_score += 0.15  # Geographic locations need capitalization
+        
+        return evidence_score
+    
+    def _apply_structural_clues_references(self, evidence_score: float, token, context: Dict[str, Any] = None) -> float:
+        """
+        Apply reference-specific structural clues.
+        """
+        if not context:
+            return evidence_score
+        
+        block_type = context.get('block_type', 'paragraph')
+        
+        # Heading context - names and titles more important
+        if block_type == 'heading':
+            evidence_score += 0.2
+        
+        # List context - product names and versions common
+        elif block_type in ['ordered_list_item', 'unordered_list_item']:
+            evidence_score += 0.1
+        
+        # Table context - structured data, references important
+        elif block_type in ['table_cell', 'table_header']:
+            evidence_score += 0.15
+        
+        # Link context - citation rules very important
+        elif 'link' in block_type or context.get('has_links', False):
+            evidence_score += 0.3
+        
+        return evidence_score
+    
+    def _apply_semantic_clues_references(self, evidence_score: float, token, text: str, context: Dict[str, Any] = None) -> float:
+        """
+        Apply reference-specific semantic clues.
+        """
+        if not context:
+            return evidence_score
+        
+        content_type = context.get('content_type', 'general')
+        
+        # Technical content - product names and versions critical
+        if content_type == 'technical':
+            evidence_score += 0.2
+        
+        # Marketing content - product names very important
+        elif content_type == 'marketing':
+            evidence_score += 0.25
+        
+        # Legal content - names and titles crucial
+        elif content_type == 'legal':
+            evidence_score += 0.3
+        
+        # Documentation - citations and references critical
+        elif content_type in ['documentation', 'manual']:
+            evidence_score += 0.2
+        
+        # Domain-specific adjustments
+        domain = context.get('domain', 'general')
+        if domain in ['software', 'technology']:
+            evidence_score += 0.1  # Product names and versions important
+        
+        return evidence_score
     
     def _analyze_product_entity(self, entity, doc) -> Dict[str, Any]:
         """Analyze if an entity represents a product."""
