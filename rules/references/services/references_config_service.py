@@ -268,21 +268,21 @@ class ReferencesConfigService:
     # Citation patterns methods
     def get_citation_pattern(self, phrase: str) -> Optional[CitationPattern]:
         """Get citation pattern for a phrase."""
-        if self.config_name != 'citation_patterns':
+        if self.config_name != 'citation_patterns' or not phrase:
             return None
         return self._citation_patterns.get(phrase.lower())
     
     def is_problematic_link_text(self, text: str) -> bool:
         """Check if text is problematic link text."""
-        if self.config_name != 'citation_patterns':
+        if self.config_name != 'citation_patterns' or not text:
             return False
         return text.lower() in self._citation_patterns
     
     def is_reference_term(self, term: str) -> bool:
         """Check if term is a reference term (chapter, section, etc.)."""
-        if self.config_name != 'citation_patterns':
+        if self.config_name != 'citation_patterns' or not term:
             return False
-        return term.lower() in self._reference_terms
+        return term.lower().strip() in self._reference_terms
     
     def get_reference_indicators(self) -> List[str]:
         """Get list of reference indicators."""

@@ -45,8 +45,8 @@ class ProductNamesRule(BaseReferencesRule):
                 if self._is_ui_element_or_false_positive_config(ent, doc):
                     continue
                 
-                # Skip competitor products
-                if self.config_service.is_competitor_company(product_name):
+                # Skip competitor products - check both full name and individual words
+                if self._is_competitor_product(product_name):
                     continue
                 
                 # Rule: First reference must be preceded by "IBM".
@@ -235,6 +235,34 @@ class ProductNamesRule(BaseReferencesRule):
         Legacy method - delegates to configuration-based method.
         """
         return self._is_ui_element_or_false_positive_config(entity, doc)
+    
+    def _is_competitor_product(self, product_name: str) -> bool:
+        """Check if product is from a competitor company using configuration."""
+        if not product_name:
+            return False
+        
+        product_lower = product_name.lower()
+        
+        # Check if full name is a competitor
+        if self.config_service.is_competitor_company(product_lower):
+            return True
+        
+        # Check if any word in the product name is a competitor
+        words = product_lower.split()
+        for word in words:
+            if self.config_service.is_competitor_company(word):
+                return True
+        
+        # Check for known competitor product patterns
+        competitor_patterns = [
+            'microsoft', 'google', 'amazon', 'oracle', 'azure', 'aws', 'gcp'
+        ]
+        
+        for pattern in competitor_patterns:
+            if pattern in product_lower:
+                return True
+        
+        return False
     
     def _is_product_in_actual_quotes(self, entity, sentence, context: Dict[str, Any] = None) -> bool:
         """
