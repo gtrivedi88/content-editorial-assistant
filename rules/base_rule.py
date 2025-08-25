@@ -1277,27 +1277,25 @@ class BaseRule(ABC):
         
         # 1. Calculate normalized confidence score (replaces legacy confidence calculation)
         try:
-            # Use the new normalized confidence calculation
-            normalized_confidence = self._confidence_calculator.calculate_normalized_confidence(
+            # Use the new normalized confidence calculation with provenance
+            normalized_confidence, confidence_breakdown = self._confidence_calculator.calculate_normalized_confidence(
                 text=analysis_text,
                 error_position=error_position,
                 rule_type=self.rule_type,
                 content_type=content_type,
                 rule_reliability=self._get_rule_reliability_coefficient(),
                 base_confidence=0.5,
-                evidence_score=extra_data.get('evidence_score')
+                evidence_score=extra_data.get('evidence_score'),
+                return_breakdown=True
             )
             
             enhanced_fields['confidence_score'] = normalized_confidence
             
+            # Include provenance for explainability (Upgrade 3)
+            if hasattr(confidence_breakdown, 'confidence_provenance'):
+                enhanced_fields['confidence_provenance'] = self._make_serializable(confidence_breakdown.confidence_provenance)
+            
             # Also provide detailed breakdown for debugging/analysis
-            confidence_breakdown = self._confidence_calculator.calculate_confidence(
-                text=analysis_text,
-                error_position=error_position,
-                rule_type=self.rule_type,
-                content_type=content_type,
-                base_confidence=0.5
-            )
             enhanced_fields['confidence_breakdown'] = self._make_serializable(confidence_breakdown)
             
         except Exception as e:

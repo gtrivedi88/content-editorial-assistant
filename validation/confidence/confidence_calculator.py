@@ -215,7 +215,8 @@ class ConfidenceCalculator:
                                       content_type: Optional[str] = None,
                                        rule_reliability: Optional[float] = None,
                                        base_confidence: float = 0.5,
-                                       evidence_score: Optional[float] = None) -> float:
+                                       evidence_score: Optional[float] = None,
+                                       return_breakdown: bool = False) -> Union[float, Tuple[float, 'ConfidenceBreakdown']]:
         """
         Calculate normalized confidence that's comparable across all rules.
         
@@ -230,9 +231,11 @@ class ConfidenceCalculator:
             rule_reliability: Rule reliability coefficient (auto-calculated if not provided)
             base_confidence: Starting confidence level (0-1)
             evidence_score: Optional rule-level evidence score (0-1) to blend into final confidence
+            return_breakdown: If True, return tuple of (confidence, breakdown) with provenance
             
         Returns:
-            Normalized confidence score in range [0.0, 1.0]
+            If return_breakdown=False: Normalized confidence score in range [0.0, 1.0]
+            If return_breakdown=True: Tuple of (confidence, ConfidenceBreakdown with provenance)
         """
         # Auto-detect content type if not provided
         if content_type is None:
@@ -260,6 +263,11 @@ class ConfidenceCalculator:
         content_modifier = self._get_content_type_modifier(content_type, rule_type)
         normalized_confidence *= content_modifier
         
+        # Initialize provenance tracking
+        evidence_weight = 0.0
+        model_weight = 1.0
+        floor_guard_triggered = False
+        
         # Blend in rule-provided evidence score when available
         # Dynamic weighting favors stronger evidence while maintaining stability
         if evidence_score is not None:
@@ -277,14 +285,39 @@ class ConfidenceCalculator:
         if evidence_score is not None:
             try:
                 if evidence_score >= 0.85 and rule_reliability >= 0.85:
+                    original_confidence = normalized_confidence
                     normalized_confidence = max(normalized_confidence, 0.75)
+                    floor_guard_triggered = (normalized_confidence > original_confidence)
             except Exception:
                 pass
 
         # Ensure final range [0.0, 1.0]
         final_confidence = max(0.0, min(1.0, normalized_confidence))
         
-        return final_confidence
+        # Create provenance data for explainability
+        provenance = {
+            'evidence_weight': evidence_weight,
+            'model_weight': model_weight,
+            'rule_reliability': rule_reliability,
+            'content_modifier': content_modifier,
+            'floor_guard_triggered': floor_guard_triggered,
+            'raw_confidence': raw_confidence,
+            'evidence_score': evidence_score,
+            'final_confidence': final_confidence
+        }
+        
+        # Store provenance in the confidence breakdown
+        confidence_breakdown.metadata = getattr(confidence_breakdown, 'metadata', {})
+        confidence_breakdown.metadata['provenance'] = provenance
+        
+        # For backward compatibility, also store as a separate attribute
+        confidence_breakdown.confidence_provenance = provenance
+        
+        # Return based on requested format
+        if return_breakdown:
+            return final_confidence, confidence_breakdown
+        else:
+            return final_confidence
     
     def _get_content_type_modifier(self, content_type: str, rule_type: str) -> float:
         """

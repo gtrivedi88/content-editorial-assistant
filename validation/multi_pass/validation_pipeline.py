@@ -18,6 +18,13 @@ from .pass_validators import (
     MorphologicalValidator, ContextValidator, DomainValidator, CrossRuleValidator
 )
 
+# Import monitoring capabilities
+try:
+    from ..monitoring.metrics import record_pipeline_execution, record_validation_duration, get_metrics
+    MONITORING_AVAILABLE = True
+except ImportError:
+    MONITORING_AVAILABLE = False
+
 
 class PipelineStage(Enum):
     """Pipeline execution stages."""
@@ -296,6 +303,10 @@ class ValidationPipeline:
             # Stage 1: Initialization
             audit_trail.stages_executed.append(PipelineStage.INITIALIZATION)
             
+            # Record pipeline execution start
+            if MONITORING_AVAILABLE:
+                record_pipeline_execution('initialization', 'started')
+            
             # Stage 2-5: Execute validators
             validator_executions = self._execute_validators(context, audit_trail)
             
@@ -304,8 +315,16 @@ class ValidationPipeline:
             
             # Stage 6: Build consensus
             audit_trail.stages_executed.append(PipelineStage.CONSENSUS_BUILDING)
+            consensus_start_time = time.time()
             consensus_analysis = self._build_consensus(validator_executions, context)
             audit_trail.consensus_analysis = consensus_analysis
+            
+            # Record consensus building duration
+            if MONITORING_AVAILABLE:
+                consensus_duration = time.time() - consensus_start_time
+                rule_type = context.additional_context.get('rule_type', 'unknown')
+                record_validation_duration('consensus_building', rule_type, consensus_duration)
+                record_pipeline_execution('consensus_building', 'completed')
             
             # Create final result
             final_result = self._create_final_result(consensus_analysis, validator_executions, context)

@@ -770,6 +770,199 @@ class TestNormalizationIntegration:
             print(f"  {rule_type}: {confidence:.3f} {meets}")
 
 
+class TestConfidenceProvenance:
+    """Test the provenance-aware confidence blending (Upgrade 3)."""
+    
+    @pytest.fixture
+    def calculator(self):
+        """Create ConfidenceCalculator instance for testing."""
+        return ConfidenceCalculator(cache_results=True)
+    
+    def test_provenance_presence(self, calculator):
+        """Test that provenance is always present when evidence is supplied."""
+        text = "This is a test sentence with some technical commands like curl."
+        error_position = 30
+        
+        # Test with evidence score
+        confidence, breakdown = calculator.calculate_normalized_confidence(
+            text=text,
+            error_position=error_position,
+            rule_type="technical_commands",
+            evidence_score=0.85,
+            return_breakdown=True
+        )
+        
+        # Provenance should be present
+        assert hasattr(breakdown, 'confidence_provenance'), "Provenance should be attached to breakdown"
+        assert 'provenance' in breakdown.metadata, "Provenance should be in breakdown metadata"
+        
+        provenance = breakdown.confidence_provenance
+        
+        # Check all required provenance fields
+        required_fields = [
+            'evidence_weight', 'model_weight', 'rule_reliability', 
+            'content_modifier', 'floor_guard_triggered', 'raw_confidence',
+            'evidence_score', 'final_confidence'
+        ]
+        
+        for field in required_fields:
+            assert field in provenance, f"Provenance should contain {field}"
+        
+        # Test without evidence score
+        confidence2, breakdown2 = calculator.calculate_normalized_confidence(
+            text=text,
+            error_position=error_position,
+            rule_type="technical_commands",
+            return_breakdown=True
+        )
+        
+        # Provenance should still be present but with zero evidence weight
+        provenance2 = breakdown2.confidence_provenance
+        assert provenance2['evidence_weight'] == 0.0
+        assert provenance2['model_weight'] == 1.0
+        assert provenance2['evidence_score'] is None
+    
+    def test_provenance_value_ranges(self, calculator):
+        """Test that provenance values are in valid ranges."""
+        text = "Test sentence for validation with technical elements."
+        error_position = 15
+        
+        # Test with different evidence scores
+        evidence_scores = [0.1, 0.5, 0.85, 0.95]
+        
+        for evidence_score in evidence_scores:
+            confidence, breakdown = calculator.calculate_normalized_confidence(
+                text=text,
+                error_position=error_position,
+                rule_type="grammar",
+                evidence_score=evidence_score,
+                return_breakdown=True
+            )
+            
+            provenance = breakdown.confidence_provenance
+            
+            # Test ranges
+            assert 0.0 <= provenance['evidence_weight'] <= 1.0, f"Evidence weight out of range: {provenance['evidence_weight']}"
+            assert 0.0 <= provenance['model_weight'] <= 1.0, f"Model weight out of range: {provenance['model_weight']}"
+            assert 0.0 <= provenance['rule_reliability'] <= 1.0, f"Rule reliability out of range: {provenance['rule_reliability']}"
+            assert 0.0 <= provenance['content_modifier'] <= 2.0, f"Content modifier out of range: {provenance['content_modifier']}"
+            assert 0.0 <= provenance['raw_confidence'] <= 1.0, f"Raw confidence out of range: {provenance['raw_confidence']}"
+            assert 0.0 <= provenance['final_confidence'] <= 1.0, f"Final confidence out of range: {provenance['final_confidence']}"
+            
+            # Evidence and model weights should sum to 1.0 (when evidence is present)
+            weight_sum = provenance['evidence_weight'] + provenance['model_weight']
+            assert abs(weight_sum - 1.0) < 0.001, f"Weights don't sum to 1.0: {weight_sum}"
+    
+    def test_floor_guard_behavior(self, calculator):
+        """Test that floor guard is correctly tracked in provenance."""
+        text = "High-quality technical documentation with clear examples."
+        error_position = 20
+        
+        # Test with high evidence and high reliability (should trigger guard)
+        confidence, breakdown = calculator.calculate_normalized_confidence(
+            text=text,
+            error_position=error_position,
+            rule_type="technical_commands",  # Usually has high reliability
+            evidence_score=0.90,  # High evidence
+            return_breakdown=True
+        )
+        
+        provenance = breakdown.confidence_provenance
+        
+        # Check if floor guard was triggered properly
+        if provenance['evidence_score'] >= 0.85 and provenance['rule_reliability'] >= 0.85:
+            # Guard should potentially trigger, check confidence is at least 0.75
+            if provenance['floor_guard_triggered']:
+                assert provenance['final_confidence'] >= 0.75, "Floor guard should ensure confidence >= 0.75"
+        
+        # Test with low evidence (should not trigger guard)
+        confidence2, breakdown2 = calculator.calculate_normalized_confidence(
+            text=text,
+            error_position=error_position,
+            rule_type="technical_commands",
+            evidence_score=0.50,  # Lower evidence
+            return_breakdown=True
+        )
+        
+        provenance2 = breakdown2.confidence_provenance
+        assert not provenance2['floor_guard_triggered'], "Floor guard should not trigger with low evidence"
+    
+    def test_evidence_weight_scaling(self, calculator):
+        """Test that evidence weight scales with evidence strength."""
+        text = "Technical documentation example for testing."
+        error_position = 10
+        
+        evidence_scores = [0.2, 0.5, 0.8, 0.95]
+        previous_weight = 0.0
+        
+        for evidence_score in evidence_scores:
+            confidence, breakdown = calculator.calculate_normalized_confidence(
+                text=text,
+                error_position=error_position,
+                rule_type="grammar",
+                evidence_score=evidence_score,
+                return_breakdown=True
+            )
+            
+            evidence_weight = breakdown.confidence_provenance['evidence_weight']
+            
+            # Evidence weight should increase with evidence score
+            assert evidence_weight > previous_weight, f"Evidence weight should increase: {evidence_weight} > {previous_weight}"
+            
+            # Weight should be in expected range (0.2 to 0.7)
+            assert 0.2 <= evidence_weight <= 0.7, f"Evidence weight out of expected range: {evidence_weight}"
+            
+            previous_weight = evidence_weight
+    
+    def test_provenance_backward_compatibility(self, calculator):
+        """Test that existing code still works without return_breakdown."""
+        text = "Test compatibility with existing confidence calculation."
+        error_position = 15
+        
+        # Old way should still work
+        confidence = calculator.calculate_normalized_confidence(
+            text=text,
+            error_position=error_position,
+            rule_type="grammar",
+            evidence_score=0.75
+        )
+        
+        assert isinstance(confidence, float), "Should return float when return_breakdown=False"
+        assert 0.0 <= confidence <= 1.0, "Confidence should be in valid range"
+    
+    def test_provenance_serialization(self, calculator):
+        """Test that provenance can be serialized (for UI/debug)."""
+        text = "Test sentence for serialization testing."
+        error_position = 10
+        
+        confidence, breakdown = calculator.calculate_normalized_confidence(
+            text=text,
+            error_position=error_position,
+            rule_type="grammar",
+            evidence_score=0.80,
+            return_breakdown=True
+        )
+        
+        provenance = breakdown.confidence_provenance
+        
+        # Test JSON serialization
+        import json
+        try:
+            json_str = json.dumps(provenance)
+            restored = json.loads(json_str)
+            
+            # Check that all values are preserved
+            for key, value in provenance.items():
+                assert key in restored, f"Key {key} missing after serialization"
+                if isinstance(value, float):
+                    assert abs(restored[key] - value) < 0.001, f"Value mismatch for {key}"
+                else:
+                    assert restored[key] == value, f"Value mismatch for {key}"
+                    
+        except (TypeError, ValueError) as e:
+            pytest.fail(f"Provenance should be serializable: {e}")
+
+
 if __name__ == "__main__":
     # Run tests with pytest
     pytest.main([__file__, "-v", "--tb=short"])

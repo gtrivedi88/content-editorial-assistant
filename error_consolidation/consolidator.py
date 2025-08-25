@@ -23,6 +23,13 @@ except ImportError:
     ENHANCED_VALIDATION_AVAILABLE = False
     get_rule_reliability_coefficient = None
 
+# Monitoring imports (with graceful fallbacks)
+try:
+    from validation.monitoring.metrics import record_consolidation_adjustment, record_confidence_floor_triggered
+    MONITORING_AVAILABLE = True
+except ImportError:
+    MONITORING_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 class ErrorConsolidator:
@@ -530,6 +537,12 @@ class ErrorConsolidator:
             # Update merged error with confidence data
             merged_error.update(merged_confidence_data)
             self.confidence_stats['confidence_adjustments'] += 1
+            
+            # Record consolidation adjustment for monitoring
+            if MONITORING_AVAILABLE:
+                primary_rule_type = primary_error.get('type', 'unknown')
+                adjustment_type = 'confidence_averaging'
+                record_consolidation_adjustment(adjustment_type, primary_rule_type)
         
         # Add metadata fields for consolidation info (for debugging/analytics only)
         merged_error['consolidated_from'] = sorted(list(all_rule_types))
@@ -737,6 +750,10 @@ class ErrorConsolidator:
                 filtered_errors.append(error)
             else:
                 self.confidence_stats['filtered_by_confidence'] += 1
+                # Record confidence floor triggering for monitoring
+                if MONITORING_AVAILABLE:
+                    error_type = error.get('type', 'unknown')
+                    record_confidence_floor_triggered(error_type, 'universal_threshold')
         
         # Update confidence distribution statistics
         self._update_confidence_distribution(confidence_values)

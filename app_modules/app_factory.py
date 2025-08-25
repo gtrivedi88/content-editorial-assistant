@@ -18,6 +18,13 @@ from .error_handlers import setup_error_handlers
 from .websocket_handlers import setup_websocket_handlers
 from .fallback_services import SimpleDocumentProcessor, SimpleStyleAnalyzer, SimpleAIRewriter
 
+# Initialize monitoring system
+try:
+    from validation.monitoring.metrics import get_metrics
+    MONITORING_AVAILABLE = True
+except ImportError:
+    MONITORING_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 
@@ -58,6 +65,18 @@ def create_app(config_class=Config):
     
     # Log initialization status
     log_initialization_status(services)
+    
+    # Initialize monitoring system if available
+    if MONITORING_AVAILABLE:
+        try:
+            metrics = get_metrics()
+            if metrics.prometheus_enabled:
+                logger.info("✅ Prometheus metrics enabled and server started")
+                logger.info("📊 Metrics available at: http://localhost:8000/metrics")
+            else:
+                logger.info("📊 Validation monitoring enabled (in-process counters only)")
+        except Exception as e:
+            logger.warning(f"⚠️ Failed to initialize monitoring: {e}")
     
     # Register cleanup handlers
     register_cleanup_handlers()
