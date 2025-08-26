@@ -403,3 +403,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 **Made with ❤️ for technical writers who value privacy and quality.** 
+
+## License
+
+This project is licensed under the [Apache License 2.0](License)
+
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](License)
