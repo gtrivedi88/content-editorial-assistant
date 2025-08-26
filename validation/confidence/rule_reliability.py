@@ -2,8 +2,13 @@
 Rule Reliability Coefficient System
 Formalized system for assigning reliability coefficients to different rule types.
 Based on existing ErrorConsolidator logic but centralized and extensible.
+
 """
 
+import os
+import yaml
+import json
+import logging
 from typing import Dict, Optional
 from functools import lru_cache
 
@@ -16,9 +21,16 @@ class RuleReliabilityCalculator:
     that provides consistent reliability coefficients across all rule types.
     """
     
-    def __init__(self):
-        """Initialize the rule reliability calculator."""
+    def __init__(self, override_path: Optional[str] = None):
+        """
+        Initialize the rule reliability calculator.
+        
+        Args:
+            override_path: Optional path to reliability overrides file (YAML/JSON)
+        """
+        self.logger = logging.getLogger(__name__)
         self._reliability_matrix = self._build_reliability_matrix()
+        self._load_overrides(override_path)
     
     def _build_reliability_matrix(self) -> Dict[str, float]:
         """
@@ -134,6 +146,68 @@ class RuleReliabilityCalculator:
             'unknown': 0.70
         }
     
+    def _load_overrides(self, override_path: Optional[str] = None):
+        """
+        Load reliability coefficient overrides from feedback-informed tuning.
+        
+        Args:
+            override_path: Path to override file, or None to use default location
+        """
+        if override_path is None:
+            # Default path for reliability overrides (Upgrade 6)
+            override_path = os.path.join(
+                os.path.dirname(__file__), 
+                '../config/reliability_overrides.yaml'
+            )
+        
+        if not os.path.exists(override_path):
+            return  # No overrides file, use defaults
+        
+        try:
+            with open(override_path, 'r') as f:
+                if override_path.endswith('.yaml') or override_path.endswith('.yml'):
+                    override_data = yaml.safe_load(f)
+                else:
+                    override_data = json.load(f)
+            
+            # Extract reliability overrides from the data structure
+            if isinstance(override_data, dict):
+                reliability_overrides = override_data.get('reliability_overrides', override_data)
+                
+                # Apply overrides to the reliability matrix
+                for rule_type, coefficient in reliability_overrides.items():
+                    if isinstance(coefficient, (int, float)) and 0.5 <= coefficient <= 1.0:
+                        self._reliability_matrix[rule_type] = float(coefficient)
+                        self.logger.debug(f"Applied reliability override for {rule_type}: {coefficient:.3f}")
+                    else:
+                        self.logger.warning(f"Invalid reliability coefficient for {rule_type}: {coefficient}")
+                
+                # Log metadata if available
+                metadata = override_data.get('metadata')
+                if metadata:
+                    generated_at = metadata.get('generated_at', 'unknown')
+                    self.logger.info(f"Loaded reliability overrides generated at {generated_at}")
+                
+                self.logger.info(f"Applied {len(reliability_overrides)} reliability overrides from {override_path}")
+            
+        except Exception as e:
+            self.logger.error(f"Failed to load reliability overrides from {override_path}: {e}")
+    
+    def reload_overrides(self, override_path: Optional[str] = None):
+        """
+        Reload reliability overrides (useful for updating coefficients without restart).
+        
+        Args:
+            override_path: Path to override file, or None to use default location
+        """
+        # Clear cache to ensure new values are used
+        if hasattr(self.get_rule_reliability_coefficient, 'cache_clear'):
+            self.get_rule_reliability_coefficient.cache_clear()
+        
+        # Rebuild base matrix and reload overrides
+        self._reliability_matrix = self._build_reliability_matrix()
+        self._load_overrides(override_path)
+    
     @lru_cache(maxsize=1000)
     def get_rule_reliability_coefficient(self, rule_type: str) -> float:
         """
@@ -229,21 +303,36 @@ class RuleReliabilityCalculator:
 _rule_reliability_calculator = None
 
 
-def get_rule_reliability_coefficient(rule_type: str) -> float:
+def get_rule_reliability_coefficient(rule_type: str, override_path: Optional[str] = None) -> float:
     """
     Get reliability coefficient for a rule type (global function interface).
     
     Args:
         rule_type: The rule type identifier
+        override_path: Optional path to reliability overrides (only used on first call)
         
     Returns:
         Reliability coefficient in range [0.5, 1.0]
     """
     global _rule_reliability_calculator
     if _rule_reliability_calculator is None:
-        _rule_reliability_calculator = RuleReliabilityCalculator()
+        _rule_reliability_calculator = RuleReliabilityCalculator(override_path)
     
     return _rule_reliability_calculator.get_rule_reliability_coefficient(rule_type)
+
+
+def reload_reliability_overrides(override_path: Optional[str] = None):
+    """
+    Reload reliability coefficient overrides (for feedback-informed tuning).
+    
+    Args:
+        override_path: Path to override file, or None to use default location
+    """
+    global _rule_reliability_calculator
+    if _rule_reliability_calculator is None:
+        _rule_reliability_calculator = RuleReliabilityCalculator(override_path)
+    else:
+        _rule_reliability_calculator.reload_overrides(override_path)
 
 
 def get_rule_category(rule_type: str) -> str:

@@ -1,0 +1,12 @@
+metadata:
+  description: Feedback-informed reliability coefficient overrides
+  generated_at: '2025-08-26 12:50:30'
+  tuner_config:
+    max_adjustment_per_run: 0.02
+    max_reliability: 0.98
+    min_feedback_threshold: 2
+    min_reliability: 0.7
+  version: '1.0'
+reliability_overrides:
+  headings: 0.78
+  prefixes: 0.8
