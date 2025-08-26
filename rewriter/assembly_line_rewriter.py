@@ -181,14 +181,30 @@ class AssemblyLineRewriter:
                 # Generate preview text for UI
                 preview_text = self._generate_station_preview(station, station_errors, current_content)
                 
-                # Emit completion for this station
+                # POST-REWRITE VALIDATION: Check for AI-introduced ambiguities (lightweight)
+                validation_concerns = []
+                if station in ['urgent', 'high']:  # Only validate critical fixes
+                    validation_concerns = self._validate_rewrite_quality(
+                        original_content=content, 
+                        rewritten_content=current_content,
+                        original_errors=station_errors
+                    )
+                
+                # Emit completion for this station (include validation status)
                 if session_id and block_id:
+                    # Add validation warning to preview if concerns found
+                    final_preview = preview_text
+                    if validation_concerns:
+                        final_preview += f" ⚠️ {len(validation_concerns)} validation concern(s)"
+                    
                     emit_station_progress_update(
                         session_id, block_id, station, 'complete',
-                        preview_text=preview_text
+                        preview_text=final_preview
                     )
                 
                 logger.info(f"✅ Station {station_name}: Complete ({station_result.get('errors_fixed', 0)} fixes)")
+                if validation_concerns:
+                    logger.warning(f"⚠️ Validation concerns for {station_name}: {validation_concerns}")
             
             return {
                 'rewritten_text': current_content,
@@ -247,6 +263,60 @@ class AssemblyLineRewriter:
             return f"Applied {len(errors)} style improvement(s)"
         
         return f"Processed {len(errors)} issue(s)"
+    
+    def _validate_rewrite_quality(self, original_content: str, rewritten_content: str, 
+                                original_errors: List[Dict[str, Any]]) -> List[str]:
+        """
+        Lightweight post-rewrite validation to catch AI-introduced problems.
+        
+        Focuses on:
+        - New ambiguities introduced by AI
+        - Vague actors ('system', 'application', 'software')
+        - Loss of critical meaning
+        - Performance cost: ~5ms (very fast rule-based checks)
+        """
+        concerns = []
+        
+        if not rewritten_content or rewritten_content == original_content:
+            return concerns
+        
+        # VALIDATION 1: Detect vague/ambiguous actors introduced by AI
+        vague_actors = ['the system', 'the application', 'the software', 'the program']
+        original_lower = original_content.lower()
+        rewritten_lower = rewritten_content.lower()
+        
+        for vague_actor in vague_actors:
+            if vague_actor not in original_lower and vague_actor in rewritten_lower:
+                concerns.append(f"Introduced vague actor: '{vague_actor}'")
+        
+        # VALIDATION 2: Check for new passive voice patterns 
+        new_passive_patterns = ['is clicked', 'was clicked', 'are processed', 'were processed']
+        for pattern in new_passive_patterns:
+            if pattern not in original_lower and pattern in rewritten_lower:
+                concerns.append(f"Introduced new passive voice: '{pattern}'")
+        
+        # VALIDATION 3: Generic pronoun proliferation
+        generic_pronouns = ['this is', 'that is', 'it is', 'these are']
+        for pronoun in generic_pronouns:
+            original_count = original_lower.count(pronoun)
+            rewritten_count = rewritten_lower.count(pronoun)
+            if rewritten_count > original_count:
+                concerns.append(f"Increased generic pronouns: '{pronoun}' ({original_count}→{rewritten_count})")
+        
+        # VALIDATION 4: Meaning preservation check (basic)
+        # Check if critical keywords were lost
+        if len(rewritten_content) < len(original_content) * 0.5:
+            concerns.append("Significant content reduction - possible meaning loss")
+        
+        # VALIDATION 5: Actor specification check for verbs errors
+        verb_errors = [e for e in original_errors if e.get('type') == 'verbs']
+        if verb_errors:
+            # For verb corrections, ensure we didn't just swap one ambiguity for another
+            if any(word in rewritten_lower for word in ['system', 'application', 'software']):
+                if not any(word in original_lower for word in ['system', 'application', 'software']):
+                    concerns.append("Verb correction introduced generic technical actor")
+        
+        return concerns
 
     def get_applicable_stations(self, block_errors: List[Dict[str, Any]]) -> List[str]:
         """Return only assembly line stations needed for this block's errors."""

@@ -141,7 +141,7 @@ instruction_templates:
   passive_voice: "Convert passive voice to active voice. Make no other changes."
   sentence_length: "Break long sentence into shorter sentences. Make no other changes."
   subjunctive_mood: "Convert subjunctive mood to imperative. Change 'It is important that X be done' to 'Important: Do X'. Make no other changes."
-  verbs: "Convert only clearly passive voice to active voice when it improves clarity. For subjunctive mood like 'It is important that X be done', convert to 'Important: Do X' or 'You must do X'. Preserve meaning and avoid creating ambiguous pronouns. Output ONLY the corrected sentence."
+  verbs: "Convert passive voice to active voice, but CRITICALLY: specify a CLEAR, LOGICAL actor. NEVER use vague actors like 'system', 'application', or 'software'. For UI text, use 'you' (user action) or specific component names. For instructions, use imperative mood ('Click the button' not 'The system clicks'). For technical docs, identify the actual responsible component. Preserve meaning and avoid ALL ambiguous actors. Output ONLY the corrected sentence."
   headings: "Fix heading capitalization and structure. Make no other changes."
   
   # ===== LANGUAGE & GRAMMAR (MEDIUM) =====

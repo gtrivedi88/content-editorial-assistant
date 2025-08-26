@@ -250,6 +250,34 @@ class ContextValidator(BasePassValidator):
             # Perform contextual analyses
             evidence = []
             
+            # VALIDATION UPGRADE STEP 2: Negative-evidence guards (first check)
+            negative_evidence = self._detect_negative_context_evidence(error_context, context)
+            if negative_evidence:
+                cumulative_negative_confidence = sum(ne.confidence for ne in negative_evidence)
+                if cumulative_negative_confidence >= 0.85:
+                    # Strong negative evidence triggers early REJECT to save time and prevent false positives
+                    return ValidationResult(
+                        validator_name=self.validator_name,
+                        decision=ValidationDecision.REJECT,
+                        confidence=ValidationConfidence.HIGH,
+                        confidence_score=cumulative_negative_confidence,
+                        evidence=negative_evidence,
+                        reasoning=f"Strong negative evidence detected: {[ne.description for ne in negative_evidence]}",
+                        error_text=context.error_text,
+                        error_position=context.error_position,
+                        rule_type=context.rule_type,
+                        rule_name=context.rule_name,
+                        validation_time=time.time() - start_time,
+                        metadata={
+                            "negative_evidence_triggered": True,
+                            "cumulative_negative_confidence": cumulative_negative_confidence,
+                            "negative_evidence_types": [ne.evidence_type for ne in negative_evidence]
+                        }
+                    )
+                else:
+                    # Add moderate negative evidence to consideration
+                    evidence.extend(negative_evidence)
+            
             # 1. Coreference validation
             if self.enable_coreference_analysis:
                 coreference_analysis = self._analyze_coreference(error_context, context)
@@ -299,6 +327,168 @@ class ContextValidator(BasePassValidator):
             
         except Exception as e:
             return self._create_error_result(context, str(e), time.time() - start_time)
+    
+    def _detect_negative_context_evidence(self, error_context: Dict[str, Any], validation_context: ValidationContext) -> List[ValidationEvidence]:
+        """
+        VALIDATION UPGRADE STEP 2: Detect negative context evidence that can veto shortcuts and reduce FPs.
+        
+        Scans for:
+        - Quotation context (balanced quotes around span)
+        - Legacy/migration markers: legacy, deprecated, migrating, previously called, historically
+        - Code indicators: inline backticks, code fences near error
+        
+        Args:
+            error_context: Context information around the error
+            validation_context: Full validation context
+            
+        Returns:
+            List of ValidationEvidence with negative_context type
+        """
+        negative_evidence = []
+        
+        # Get sentence around error position
+        error_sentence = validation_context.text
+        error_position = validation_context.error_position
+        error_text = validation_context.error_text
+        
+        # Extract context window around error
+        context_start = max(0, error_position - 100)  # 100 chars before
+        context_end = min(len(error_sentence), error_position + len(error_text) + 100)  # 100 chars after
+        context_window = error_sentence[context_start:context_end]
+        
+        # 1. QUOTATION CONTEXT DETECTION
+        quotes_evidence = self._detect_quotation_context(context_window, error_position - context_start, error_text)
+        if quotes_evidence:
+            negative_evidence.append(quotes_evidence)
+        
+        # 2. LEGACY/MIGRATION MARKERS DETECTION
+        legacy_evidence = self._detect_legacy_migration_markers(context_window, error_text)
+        if legacy_evidence:
+            negative_evidence.append(legacy_evidence)
+        
+        # 3. CODE INDICATORS DETECTION
+        code_evidence = self._detect_code_indicators(context_window, error_position - context_start, error_text)
+        if code_evidence:
+            negative_evidence.append(code_evidence)
+        
+        return negative_evidence
+    
+    def _detect_quotation_context(self, context_window: str, relative_error_pos: int, error_text: str) -> Optional[ValidationEvidence]:
+        """Detect if error is within quoted content."""
+        # Check for balanced quotes around error
+        quote_chars = ['"', "'", '`']
+        
+        for quote_char in quote_chars:
+            quote_positions = [i for i, char in enumerate(context_window) if char == quote_char]
+            
+            if len(quote_positions) >= 2:
+                # Find quotes that bracket the error
+                for i in range(0, len(quote_positions) - 1, 2):
+                    start_quote = quote_positions[i]
+                    end_quote = quote_positions[i + 1]
+                    
+                    if start_quote <= relative_error_pos <= end_quote:
+                        return ValidationEvidence(
+                            evidence_type="negative_context",
+                            confidence=0.9,  # High confidence for quoted content
+                            description=f"Error '{error_text}' appears within quoted content ({quote_char}...{quote_char})",
+                            metadata={
+                                "quote_type": quote_char,
+                                "quoted_content": context_window[start_quote:end_quote + 1],
+                                "negative_evidence_subtype": "quotation_context"
+                            }
+                        )
+        
+        return None
+    
+    def _detect_legacy_migration_markers(self, context_window: str, error_text: str) -> Optional[ValidationEvidence]:
+        """Detect legacy/migration disclaimer markers."""
+        legacy_markers = [
+            'legacy', 'deprecated', 'migrating', 'previously called', 'historically',
+            'obsolete', 'outdated', 'former', 'old version', 'superseded',
+            'replaced by', 'no longer', 'discontinued', 'phased out'
+        ]
+        
+        context_lower = context_window.lower()
+        
+        for marker in legacy_markers:
+            if marker in context_lower:
+                # Check proximity to error (within 50 characters)
+                marker_pos = context_lower.find(marker)
+                error_pos = context_lower.find(error_text.lower())
+                
+                if error_pos != -1 and abs(marker_pos - error_pos) <= 50:
+                    return ValidationEvidence(
+                        evidence_type="negative_context",
+                        confidence=0.8,  # High confidence for legacy markers
+                        description=f"Error '{error_text}' appears near legacy/migration marker: '{marker}'",
+                        metadata={
+                            "legacy_marker": marker,
+                            "marker_position": marker_pos,
+                            "proximity_to_error": abs(marker_pos - error_pos),
+                            "negative_evidence_subtype": "legacy_migration_markers"
+                        }
+                    )
+        
+        return None
+    
+    def _detect_code_indicators(self, context_window: str, relative_error_pos: int, error_text: str) -> Optional[ValidationEvidence]:
+        """Detect code indicators like inline backticks or code fences."""
+        # 1. INLINE CODE DETECTION (single backticks)
+        if '`' in context_window:
+            backtick_positions = [i for i, char in enumerate(context_window) if char == '`']
+            
+            # Check for balanced backticks around error
+            for i in range(0, len(backtick_positions) - 1, 2):
+                start_tick = backtick_positions[i]
+                end_tick = backtick_positions[i + 1]
+                
+                if start_tick <= relative_error_pos <= end_tick:
+                    return ValidationEvidence(
+                        evidence_type="negative_context",
+                        confidence=0.95,  # Very high confidence for inline code
+                        description=f"Error '{error_text}' appears within inline code (`...`)",
+                        metadata={
+                            "code_content": context_window[start_tick:end_tick + 1],
+                            "negative_evidence_subtype": "inline_code"
+                        }
+                    )
+        
+        # 2. CODE FENCE DETECTION (triple backticks)
+        if '```' in context_window:
+            fence_start = context_window.find('```')
+            fence_end = context_window.find('```', fence_start + 3)
+            
+            if fence_start != -1 and fence_end != -1 and fence_start <= relative_error_pos <= fence_end:
+                return ValidationEvidence(
+                    evidence_type="negative_context",
+                    confidence=1.0,  # Maximum confidence for code blocks
+                    description=f"Error '{error_text}' appears within code block (```...```)",
+                    metadata={
+                        "code_block": context_window[fence_start:fence_end + 3],
+                        "negative_evidence_subtype": "code_fence"
+                    }
+                )
+        
+        # 3. TECHNICAL SYNTAX INDICATORS
+        technical_indicators = ['</', '/>', '{{', '}}', '${', '}', 'function(', '=>', '==', '!=']
+        
+        for indicator in technical_indicators:
+            if indicator in context_window:
+                indicator_pos = context_window.find(indicator)
+                if abs(indicator_pos - relative_error_pos) <= 20:  # Very close proximity
+                    return ValidationEvidence(
+                        evidence_type="negative_context",
+                        confidence=0.7,  # Moderate confidence for technical syntax
+                        description=f"Error '{error_text}' appears near technical syntax: '{indicator}'",
+                        metadata={
+                            "technical_indicator": indicator,
+                            "proximity_to_error": abs(indicator_pos - relative_error_pos),
+                            "negative_evidence_subtype": "technical_syntax"
+                        }
+                    )
+        
+        return None
     
     def _analyze_text_with_context(self, text: str):
         """Analyze text with SpaCy, using cache if enabled."""

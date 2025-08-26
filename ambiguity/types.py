@@ -120,7 +120,14 @@ class AmbiguityDetection:
     flagged_text: Optional[str] = None
     
     def to_error_dict(self) -> Dict[str, Any]:
-        """Convert to error dictionary compatible with existing rules system."""
+        """
+        Convert to error dictionary compatible with Level 2 Enhanced Validation.
+        
+        Complies with:
+        - confidence.md: Universal threshold (0.35), top-level confidence field
+        - evidence_based_rule_development.md: Evidence-based confidence scoring
+        - level_2_implementation.adoc: Enhanced validation compatibility
+        """
         error_dict = {
             'type': 'ambiguity',
             'subtype': self.ambiguity_type.value,
@@ -130,14 +137,20 @@ class AmbiguityDetection:
             'sentence': self.context.sentence,
             'sentence_index': self.context.sentence_index,
             'severity': self.severity.value,
+            'confidence': self.evidence.confidence,  # Top-level confidence for confidence.md compliance
             'ai_instructions': self.ai_instructions,
             'examples': self.examples or [],
             'evidence': {
                 'tokens': self.evidence.tokens,
                 'pattern': self.evidence.linguistic_pattern,
-                'confidence': self.evidence.confidence
+                'spacy_features': getattr(self.evidence, 'spacy_features', {}),
+                'context_clues': getattr(self.evidence, 'context_clues', []),
+                'semantic_analysis': getattr(self.evidence, 'semantic_analysis', [])
             },
-            'resolution_strategies': [s.value for s in self.resolution_strategies]
+            'resolution_strategies': [s.value for s in self.resolution_strategies],
+            # Level 2 Enhanced Validation compatibility
+            'enhanced_validation_available': True,
+            'confidence_score': self.evidence.confidence  # Alias for backward compatibility
         }
         
         # CRITICAL: Add span information for consolidation
