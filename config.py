@@ -44,6 +44,21 @@ class Config:
     # SpaCy model settings (for linguistic analysis, not AI generation)
     SPACY_MODEL = os.environ.get('SPACY_MODEL', 'en_core_web_sm')
     
+    # Block Processing Configuration
+    BLOCK_PROCESSING_TIMEOUT = int(os.environ.get('BLOCK_PROCESSING_TIMEOUT', 30))  # seconds
+    BLOCK_PROCESSING_MAX_RETRIES = int(os.environ.get('BLOCK_PROCESSING_MAX_RETRIES', 2))
+    BLOCK_PROCESSING_BATCH_SIZE = int(os.environ.get('BLOCK_PROCESSING_BATCH_SIZE', 5))
+    
+    # Performance Monitoring Configuration
+    ENABLE_PERFORMANCE_MONITORING = os.environ.get('ENABLE_PERFORMANCE_MONITORING', 'true').lower() == 'true'
+    PERFORMANCE_METRICS_RETENTION_DAYS = int(os.environ.get('PERFORMANCE_METRICS_RETENTION_DAYS', 7))
+    WEBSOCKET_PING_INTERVAL = int(os.environ.get('WEBSOCKET_PING_INTERVAL', 25))  # seconds
+    WEBSOCKET_PING_TIMEOUT = int(os.environ.get('WEBSOCKET_PING_TIMEOUT', 60))  # seconds
+    
+    # Error Rate Monitoring
+    ERROR_RATE_THRESHOLD = float(os.environ.get('ERROR_RATE_THRESHOLD', 0.05))  # 5% error rate threshold
+    ERROR_RATE_WINDOW_MINUTES = int(os.environ.get('ERROR_RATE_WINDOW_MINUTES', 15))  # 15 minute window
+    
     @staticmethod
     def init_app(app):
         """Initialize application with this configuration."""
@@ -64,6 +79,27 @@ class Config:
             'spacy_model': cls.SPACY_MODEL,
             'max_sentence_length': cls.MAX_SENTENCE_LENGTH,
             'min_readability_score': cls.MIN_READABILITY_SCORE
+        }
+    
+    @classmethod
+    def get_block_processing_config(cls) -> Dict[str, Any]:
+        """Get block processing configuration."""
+        return {
+            'timeout': cls.BLOCK_PROCESSING_TIMEOUT,
+            'max_retries': cls.BLOCK_PROCESSING_MAX_RETRIES,
+            'batch_size': cls.BLOCK_PROCESSING_BATCH_SIZE
+        }
+    
+    @classmethod
+    def get_performance_monitoring_config(cls) -> Dict[str, Any]:
+        """Get performance monitoring configuration."""
+        return {
+            'enabled': cls.ENABLE_PERFORMANCE_MONITORING,
+            'retention_days': cls.PERFORMANCE_METRICS_RETENTION_DAYS,
+            'websocket_ping_interval': cls.WEBSOCKET_PING_INTERVAL,
+            'websocket_ping_timeout': cls.WEBSOCKET_PING_TIMEOUT,
+            'error_rate_threshold': cls.ERROR_RATE_THRESHOLD,
+            'error_rate_window_minutes': cls.ERROR_RATE_WINDOW_MINUTES
         }
 
 class DevelopmentConfig(Config):

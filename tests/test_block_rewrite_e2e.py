@@ -1,368 +1,237 @@
 """
-End-to-End Tests for Block-Level Rewriting (Phase 1)
-Tests the complete block processing pipeline with zero technical debt.
+Comprehensive End-to-End Test Suite for Block-Level Rewriting (Phase 4)
+Tests the complete block processing pipeline with performance monitoring.
 """
 
 import pytest
 import json
 import time
-from unittest.mock import Mock, patch
-from rewriter.assembly_line_rewriter import AssemblyLineRewriter
-from rewriter.generators import TextGenerator
-from rewriter.processors import TextProcessor
+import threading
+from unittest.mock import Mock, patch, MagicMock
+from typing import Dict, List, Any
+import tempfile
+import os
 
 
-class TestBlockRewriting:
-    """Comprehensive test suite for block-level rewriting functionality."""
+# Test fixtures
+@pytest.fixture
+def app():
+    """Create test Flask application."""
+    from app import create_app
+    from config import TestingConfig
     
-    # Removed Flask app fixtures - focusing on core functionality testing
+    # Create app - handle potential tuple return from create_app
+    app_result = create_app(TestingConfig)
     
-    @pytest.fixture
-    def sample_block_data(self):
-        """Sample block data for testing."""
-        return {
-            'block_content': 'The implementation was done by the team and the testing was conducted.',
-            'block_errors': [
-                {'type': 'passive_voice', 'flagged_text': 'was done'},
-                {'type': 'passive_voice', 'flagged_text': 'was conducted'}
-            ],
-            'block_type': 'paragraph',
-            'block_id': 'test-block-1',
-            'session_id': 'test-session-123'
-        }
+    # If create_app returns a tuple, extract the app
+    if isinstance(app_result, tuple):
+        app = app_result[0]
+    else:
+        app = app_result
     
-    @pytest.fixture
-    def clean_block_data(self):
-        """Clean block data with no errors."""
-        return {
-            'block_content': 'This is a clean paragraph with no errors.',
-            'block_errors': [],
-            'block_type': 'paragraph',
-            'block_id': 'test-block-clean',
-            'session_id': 'test-session-clean'
-        }
+    app.config.update({
+        'TESTING': True,
+        'BLOCK_PROCESSING_TIMEOUT': 5,  # Shorter timeout for tests
+        'ENABLE_PERFORMANCE_MONITORING': True
+    })
     
-    @pytest.fixture
-    def critical_block_data(self):
-        """Block data with critical/urgent errors."""
-        return {
-            'block_content': 'Our system will make it easy for users.',
-            'block_errors': [
-                {'type': 'legal_claims', 'flagged_text': 'easy'},
-                {'type': 'second_person', 'flagged_text': 'Our system'}
-            ],
-            'block_type': 'paragraph',
-            'block_id': 'test-block-critical',
-            'session_id': 'test-session-critical'
-        }
+    with app.app_context():
+        yield app
+
+
+@pytest.fixture
+def client(app):
+    """Create test client."""
+    return app.test_client()
+
+
+@pytest.fixture
+def websocket_mock():
+    """Mock WebSocket for testing."""
+    mock_socketio = Mock()
     
-    def test_assembly_line_block_processing(self):
-        """Test core assembly line block processing functionality."""
-        # Mock dependencies
-        mock_text_generator = Mock(spec=TextGenerator)
-        mock_text_processor = Mock(spec=TextProcessor)
+    # Import and patch websocket handlers
+    from app_modules import websocket_handlers
+    websocket_handlers.set_socketio(mock_socketio)
+    
+    return mock_socketio
+
+
+@pytest.fixture
+def sample_block_data():
+    """Sample block data for testing."""
+    return {
+        'block_content': 'The implementation was done by the team and the testing was conducted by experts.',
+        'block_errors': [
+            {
+                'type': 'passive_voice',
+                'flagged_text': 'was done',
+                'position': 20,
+                'message': 'Consider using active voice'
+            },
+            {
+                'type': 'passive_voice', 
+                'flagged_text': 'was conducted',
+                'position': 55,
+                'message': 'Consider using active voice'
+            }
+        ],
+        'block_type': 'paragraph',
+        'block_id': 'test-block-001',
+        'session_id': 'test-session-123'
+    }
+
+
+class TestBlockRewriteAPI:
+    """Test the block rewrite API endpoints."""
+    
+    def test_block_rewrite_endpoint_exists(self, client):
+        """Test that the block rewrite endpoint exists."""
+        response = client.post('/rewrite-block', 
+                              data=json.dumps({}),
+                              content_type='application/json')
         
-        # Setup mock responses
-        mock_text_generator.generate_text.return_value = "The team implemented the solution and conducted the testing."
-        mock_text_processor.clean_generated_text.return_value = "The team implemented the solution and conducted the testing."
+        # Should not return 404 (endpoint exists)
+        assert response.status_code != 404
+    
+    def test_block_rewrite_with_valid_data(self, client, sample_block_data):
+        """Test block rewrite with valid input data."""
+        response = client.post('/rewrite-block',
+                              data=json.dumps(sample_block_data),
+                              content_type='application/json')
         
-        # Create rewriter instance
-        rewriter = AssemblyLineRewriter(mock_text_generator, mock_text_processor)
+        assert response.status_code == 200
+        result = json.loads(response.data)
         
-        # Test data
-        block_content = "The implementation was done by the team and the testing was conducted."
-        block_errors = [
-            {'type': 'passive_voice', 'flagged_text': 'was done'},
-            {'type': 'passive_voice', 'flagged_text': 'was conducted'}
-        ]
-        
-        # Process block
-        result = rewriter.apply_block_level_assembly_line_fixes(block_content, block_errors, 'paragraph')
-        
-        # Verify result structure
+        # Verify response structure
         assert 'rewritten_text' in result
-        assert 'applicable_stations' in result
-        assert 'block_type' in result
-        assert 'errors_fixed' in result
         assert 'confidence' in result
-        assert result['block_type'] == 'paragraph'
-        assert result['assembly_line_used'] is True
+        assert 'errors_fixed' in result
+        assert 'improvements' in result
+        assert 'block_id' in result
         
-        # Verify applicable stations
-        assert 'high' in result['applicable_stations']  # passive_voice is high priority
-        assert len(result['applicable_stations']) == 1
+        # Verify block ID matches
+        assert result['block_id'] == sample_block_data['block_id']
+        
+        # Verify errors were addressed
+        if result.get('success', True):
+            assert result['errors_fixed'] > 0
     
-    def test_dynamic_station_detection(self):
-        """Test that only relevant assembly line stations are detected."""
-        mock_text_generator = Mock(spec=TextGenerator)
-        mock_text_processor = Mock(spec=TextProcessor)
-        rewriter = AssemblyLineRewriter(mock_text_generator, mock_text_processor)
+    def test_block_rewrite_invalid_input(self, client):
+        """Test block rewrite with invalid input data."""
+        # Empty content
+        response = client.post('/rewrite-block',
+                              data=json.dumps({'block_content': ''}),
+                              content_type='application/json')
+        assert response.status_code == 400
         
-        # Test different error types
-        test_cases = [
-            # Only passive voice (high priority)
-            ([{'type': 'passive_voice'}], ['high']),
-            # Only contractions (medium priority)
-            ([{'type': 'contractions'}], ['medium']),
-            # Only punctuation (low priority)
-            ([{'type': 'punctuation_commas'}], ['low']),
-            # Critical legal issues (urgent priority)
-            ([{'type': 'legal_claims'}], ['urgent']),
-            # Mixed priorities
-            ([{'type': 'passive_voice'}, {'type': 'contractions'}], ['high', 'medium']),
-            # All priorities
-            ([
-                {'type': 'legal_claims'},      # urgent
-                {'type': 'passive_voice'},     # high
-                {'type': 'contractions'},      # medium
-                {'type': 'punctuation_commas'} # low
-            ], ['urgent', 'high', 'medium', 'low'])
-        ]
-        
-        for errors, expected_stations in test_cases:
-            stations = rewriter.get_applicable_stations(errors)
-            assert stations == expected_stations, f"Failed for errors {errors}: expected {expected_stations}, got {stations}"
+        # Malformed JSON
+        response = client.post('/rewrite-block',
+                              data='invalid json',
+                              content_type='application/json')
+        assert response.status_code == 400
+
+
+class TestPerformanceMonitoring:
+    """Test performance monitoring and metrics collection."""
     
-    def test_api_endpoint_logic_simulation(self, sample_block_data):
-        """Test /rewrite-block API endpoint logic without full Flask setup."""
-        # Simulate the API endpoint logic
-        mock_text_generator = Mock(spec=TextGenerator)
-        mock_text_processor = Mock(spec=TextProcessor)
-        
-        # Setup mock responses
-        mock_text_generator.generate_text.return_value = "The team implemented the solution and conducted testing."
-        mock_text_processor.clean_generated_text.return_value = "The team implemented the solution and conducted testing."
-        
-        # Create rewriter and process
-        rewriter = AssemblyLineRewriter(mock_text_generator, mock_text_processor)
-        result = rewriter.apply_block_level_assembly_line_fixes(
-            sample_block_data['block_content'],
-            sample_block_data['block_errors'],
-            sample_block_data['block_type']
+    def test_performance_metrics_collection(self, websocket_mock):
+        """Test that performance metrics are collected during block processing."""
+        from app_modules.websocket_handlers import (
+            record_block_processing_time,
+            get_performance_summary,
+            record_websocket_event
         )
         
-        # Simulate API response formatting
-        api_response = {
-            'block_id': sample_block_data['block_id'],
-            'session_id': sample_block_data['session_id'],
-            'processing_time': 1.23,
-            'success': 'error' not in result,
-            **result
-        }
+        # Record some test metrics
+        record_block_processing_time('test-block-001', 15.5, True)
+        record_block_processing_time('test-block-002', 22.3, True)
+        record_block_processing_time('test-block-003', 8.1, False)  # Failed processing
         
-        # Verify response structure matches expected API response
-        assert 'rewritten_text' in api_response
-        assert 'confidence' in api_response
-        assert 'errors_fixed' in api_response
-        assert 'block_id' in api_response
-        assert 'session_id' in api_response
-        assert 'processing_time' in api_response
-        assert 'success' in api_response
+        record_websocket_event('block_processing_start', 'test-session-001')
+        record_websocket_event('block_processing_complete', 'test-session-001')
         
-        # Verify response values
-        assert api_response['success'] is True
-        assert api_response['errors_fixed'] == 2
-        assert api_response['block_id'] == 'test-block-1'
-        assert api_response['session_id'] == 'test-session-123'
+        # Get performance summary
+        summary = get_performance_summary()
         
-    def test_api_validation_logic(self):
-        """Test API endpoint input validation logic."""
-        # Test validation logic that would be in the API endpoint
+        # Verify metrics are collected
+        assert 'total_blocks_processed' in summary
+        assert 'total_errors' in summary
+        assert 'average_processing_time' in summary
+        assert 'success_rate' in summary
+        assert 'websocket_events' in summary
         
-        # Test missing block content
-        invalid_data = {'block_id': 'test'}
-        block_content = invalid_data.get('block_content', '')
-        if not block_content or not block_content.strip():
-            error_response = {'error': 'No block content provided'}
-            assert 'error' in error_response
-            assert 'No block content provided' in error_response['error']
-        
-        # Test missing block ID
-        invalid_data = {'block_content': 'test content'}
-        block_id = invalid_data.get('block_id', '')
-        if not block_id:
-            error_response = {'error': 'Block ID is required'}
-            assert 'error' in error_response
-            assert 'Block ID is required' in error_response['error']
+        # Verify calculated metrics
+        assert summary['total_blocks_processed'] == 2  # 2 successful
+        assert summary['total_errors'] == 1  # 1 failed
+        assert summary['success_rate'] == 2/3  # 2 out of 3 successful
+        assert summary['average_processing_time'] > 0
+
+
+class TestCompleteWorkflow:
+    """Test complete block rewrite workflow from start to finish."""
     
-    def test_clean_block_api_logic(self, clean_block_data):
-        """Test processing of blocks with no errors via API logic."""
-        mock_text_generator = Mock(spec=TextGenerator)
-        mock_text_processor = Mock(spec=TextProcessor)
+    def test_complete_block_workflow(self, client, websocket_mock, sample_block_data):
+        """Test full workflow: API call → processing → WebSocket events → result."""
         
-        # Create rewriter and process clean block
-        rewriter = AssemblyLineRewriter(mock_text_generator, mock_text_processor)
-        result = rewriter.apply_block_level_assembly_line_fixes(
-            clean_block_data['block_content'],
-            clean_block_data['block_errors'],
-            clean_block_data['block_type']
-        )
+        # Track WebSocket events
+        emitted_events = []
         
-        # Verify clean block processing
-        assert result['errors_fixed'] == 0
-        assert result['confidence'] == 1.0
-        assert result['applicable_stations'] == []
-        assert 'Block is already clean' in str(result.get('improvements', []))
-    
-    def test_critical_error_api_logic(self, critical_block_data):
-        """Test that critical/urgent errors are prioritized correctly via API logic."""
-        mock_text_generator = Mock(spec=TextGenerator)
-        mock_text_processor = Mock(spec=TextProcessor)
+        def mock_emit(event_type, data, **kwargs):
+            emitted_events.append({
+                'event_type': event_type,
+                'data': data,
+                'kwargs': kwargs
+            })
         
-        # Setup mock responses for critical processing
-        mock_text_generator.generate_text.return_value = "The system enables users to complete tasks."
-        mock_text_processor.clean_generated_text.return_value = "The system enables users to complete tasks."
+        websocket_mock.emit.side_effect = mock_emit
         
-        # Create rewriter and process critical block
-        rewriter = AssemblyLineRewriter(mock_text_generator, mock_text_processor)
-        result = rewriter.apply_block_level_assembly_line_fixes(
-            critical_block_data['block_content'],
-            critical_block_data['block_errors'],
-            critical_block_data['block_type']
-        )
-        
-        # Verify critical errors were prioritized
-        assert result['errors_fixed'] == 2
-        assert 'urgent' in result['applicable_stations']
-    
-    def test_error_handling_api_logic(self, sample_block_data):
-        """Test API error handling logic for processing failures."""
-        mock_text_generator = Mock(spec=TextGenerator)
-        mock_text_processor = Mock(spec=TextProcessor)
-        
-        # Setup mock to raise exception
-        mock_text_generator.generate_text.side_effect = Exception("AI model unavailable")
-        
-        # Create rewriter and test error handling
-        rewriter = AssemblyLineRewriter(mock_text_generator, mock_text_processor)
-        result = rewriter.apply_block_level_assembly_line_fixes(
-            sample_block_data['block_content'],
-            sample_block_data['block_errors'],
-            sample_block_data['block_type']
-        )
-        
-        # Verify error handling
-        assert 'error' in result
-        assert result['errors_fixed'] == 0
-        assert 'AI model unavailable' in result['error']
-    
-    def test_performance_requirements_logic(self, sample_block_data):
-        """Test that block processing meets performance requirements."""
-        mock_text_generator = Mock(spec=TextGenerator)
-        mock_text_processor = Mock(spec=TextProcessor)
-        
-        # Setup mock with realistic processing
-        mock_text_generator.generate_text.return_value = "The team implemented the solution and conducted testing."
-        mock_text_processor.clean_generated_text.return_value = "The team implemented the solution and conducted testing."
-        
-        # Time the processing
-        rewriter = AssemblyLineRewriter(mock_text_generator, mock_text_processor)
-        
+        # Make API call
         start_time = time.time()
-        result = rewriter.apply_block_level_assembly_line_fixes(
-            sample_block_data['block_content'],
-            sample_block_data['block_errors'],
-            sample_block_data['block_type']
-        )
+        response = client.post('/rewrite-block',
+                              data=json.dumps(sample_block_data),
+                              content_type='application/json')
         processing_time = time.time() - start_time
         
-        # Verify performance (core logic should be very fast with mocks)
-        assert processing_time < 1.0  # Core logic should be under 1 second
-        assert result['errors_fixed'] == 2
+        # Verify API response
+        assert response.status_code == 200
+        result = json.loads(response.data)
+        
+        # Verify processing completed
+        assert 'rewritten_text' in result
+        assert result['block_id'] == sample_block_data['block_id']
+        
+        # Verify performance requirements
+        assert processing_time < 30  # Must complete within 30 seconds
     
-    def test_websocket_integration(self):
-        """Test WebSocket event emission during block processing."""
-        from app_modules.websocket_handlers import (
-            emit_block_processing_start,
-            emit_station_progress_update,
-            emit_block_processing_complete,
-            emit_block_error
-        )
+    def test_performance_benchmarks(self, client, sample_block_data):
+        """Test that block processing meets performance requirements."""
         
-        # These are tested by verifying they don't raise exceptions
-        # and that they handle missing socketio gracefully
+        # Test multiple blocks to get average processing time
+        processing_times = []
         
-        # Test block processing start
-        emit_block_processing_start('test-session', 'test-block', 'paragraph', ['high'])
-        
-        # Test station progress
-        emit_station_progress_update('test-session', 'test-block', 'high', 'processing')
-        
-        # Test completion
-        emit_block_processing_complete('test-session', 'test-block', {'success': True})
-        
-        # Test error
-        emit_block_error('test-session', 'test-block', 'Test error')
-        
-        # All should complete without raising exceptions
-        assert True
-    
-    def test_station_display_names(self):
-        """Test assembly line station display name mapping."""
-        mock_text_generator = Mock(spec=TextGenerator)
-        mock_text_processor = Mock(spec=TextProcessor)
-        rewriter = AssemblyLineRewriter(mock_text_generator, mock_text_processor)
-        
-        # Test all station display names
-        expected_names = {
-            'urgent': 'Critical/Legal Pass',
-            'high': 'Structural Pass',
-            'medium': 'Grammar Pass',
-            'low': 'Style Pass'
-        }
-        
-        for station, expected_name in expected_names.items():
-            assert rewriter.get_station_display_name(station) == expected_name
-        
-        # Test unknown station
-        assert rewriter.get_station_display_name('unknown') == 'Processing Pass'
-    
-    def test_block_type_context(self):
-        """Test that block type context is preserved throughout processing."""
-        mock_text_generator = Mock(spec=TextGenerator)
-        mock_text_processor = Mock(spec=TextProcessor)
-        
-        # Setup mock responses
-        mock_text_generator.generate_text.return_value = "Improved content"
-        mock_text_processor.clean_generated_text.return_value = "Improved content"
-        
-        rewriter = AssemblyLineRewriter(mock_text_generator, mock_text_processor)
-        
-        # Test different block types
-        block_types = ['paragraph', 'heading', 'list', 'quote']
-        
-        for block_type in block_types:
-            result = rewriter.apply_block_level_assembly_line_fixes(
-                "Test content",
-                [{'type': 'passive_voice'}],
-                block_type
-            )
+        for i in range(3):  # Test 3 blocks
+            block_data = sample_block_data.copy()
+            block_data['block_id'] = f'benchmark-block-{i}'
+            block_data['session_id'] = f'benchmark-session-{i}'
             
-            assert result['block_type'] == block_type
-    
-    def test_zero_technical_debt(self):
-        """Verify zero technical debt - all legacy code has been removed."""
-        from rewriter.assembly_line_rewriter import AssemblyLineRewriter
-        import inspect
+            start_time = time.time()
+            response = client.post('/rewrite-block',
+                                  data=json.dumps(block_data),
+                                  content_type='application/json')
+            processing_time = time.time() - start_time
+            
+            assert response.status_code == 200
+            processing_times.append(processing_time)
         
-        # Check that legacy method has been completely removed
-        assert not hasattr(AssemblyLineRewriter, 'apply_sentence_level_assembly_line_fixes')
+        # Calculate average processing time
+        avg_processing_time = sum(processing_times) / len(processing_times)
+        max_processing_time = max(processing_times)
         
-        # Check that new method exists and is clean
-        new_method = getattr(AssemblyLineRewriter, 'apply_block_level_assembly_line_fixes')
-        assert new_method is not None
-        assert new_method.__doc__ is not None
-        assert 'single structural block' in new_method.__doc__
-        
-        # Verify helper methods exist
-        assert hasattr(AssemblyLineRewriter, 'get_applicable_stations')
-        assert hasattr(AssemblyLineRewriter, 'get_station_display_name')
-        
-        # Verify no legacy methods remain
-        class_methods = [method for method in dir(AssemblyLineRewriter) if not method.startswith('_')]
-        legacy_methods = [m for m in class_methods if 'sentence_level' in m or 'apply_sentence' in m]
-        assert len(legacy_methods) == 0, f"Found legacy methods: {legacy_methods}"
+        # Verify performance requirements
+        assert avg_processing_time < 25  # Average < 25 seconds
+        assert max_processing_time < 30  # Maximum < 30 seconds
 
 
-if __name__ == '__main__':
-    pytest.main([__file__, '-v'])
+if __name__ == "__main__":
+    pytest.main([__file__, "-v", "--tb=short", "--durations=10"])

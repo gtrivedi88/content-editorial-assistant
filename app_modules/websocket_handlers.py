@@ -8,7 +8,10 @@ import logging
 import uuid
 import time
 from typing import Optional, Dict, Any, List
-from datetime import datetime
+from datetime import datetime, timedelta
+from collections import defaultdict, deque
+from threading import Lock
+import threading
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +21,27 @@ active_sessions = set()
 # Store socketio instance for use in emit functions
 _socketio = None
 
+# Performance monitoring data structures
+_performance_metrics = {
+    'block_processing_times': deque(maxlen=1000),  # Last 1000 processing times
+    'error_rates': defaultdict(lambda: deque(maxlen=100)),  # Error rates by type
+    'websocket_events': defaultdict(int),  # Event counts
+    'session_metrics': defaultdict(dict),  # Per-session metrics
+    'total_blocks_processed': 0,
+    'total_errors': 0,
+    'uptime_start': datetime.now()
+}
+
+# Thread-safe lock for metrics
+_metrics_lock = Lock()
+
+# Error rate tracking
+_error_tracking = {
+    'recent_errors': deque(maxlen=1000),  # Recent errors with timestamps
+    'error_window_minutes': 15,  # Default error rate window
+    'error_threshold': 0.05  # 5% error rate threshold
+}
+
 
 def set_socketio(socketio):
     """Set the SocketIO instance for use in emit functions."""
@@ -25,11 +49,229 @@ def set_socketio(socketio):
     _socketio = socketio
 
 
+# Performance Monitoring Functions
+
+def record_block_processing_time(block_id: str, processing_time: float, success: bool):
+    """Record block processing time and outcome for performance metrics."""
+    with _metrics_lock:
+        _performance_metrics['block_processing_times'].append({
+            'block_id': block_id,
+            'processing_time': processing_time,
+            'success': success,
+            'timestamp': datetime.now()
+        })
+        
+        if success:
+            _performance_metrics['total_blocks_processed'] += 1
+        else:
+            _performance_metrics['total_errors'] += 1
+            
+        logger.debug(f"Recorded block processing: {block_id}, {processing_time:.2f}s, success={success}")
+
+
+def record_websocket_event(event_type: str, session_id: Optional[str] = None):
+    """Record WebSocket event for monitoring."""
+    with _metrics_lock:
+        _performance_metrics['websocket_events'][event_type] += 1
+        
+        if session_id:
+            if session_id not in _performance_metrics['session_metrics']:
+                _performance_metrics['session_metrics'][session_id] = {
+                    'events': defaultdict(int),
+                    'first_seen': datetime.now(),
+                    'last_activity': datetime.now()
+                }
+            
+            _performance_metrics['session_metrics'][session_id]['events'][event_type] += 1
+            _performance_metrics['session_metrics'][session_id]['last_activity'] = datetime.now()
+
+
+def record_error(error_type: str, error_message: str, session_id: Optional[str] = None):
+    """Record error for error rate monitoring."""
+    with _metrics_lock:
+        error_entry = {
+            'error_type': error_type,
+            'error_message': error_message,
+            'session_id': session_id,
+            'timestamp': datetime.now()
+        }
+        
+        _error_tracking['recent_errors'].append(error_entry)
+        _performance_metrics['error_rates'][error_type].append(datetime.now())
+        
+        logger.warning(f"Recorded error: {error_type} - {error_message}")
+
+
+def get_error_rate(error_type: Optional[str] = None, window_minutes: int = None) -> float:
+    """Calculate error rate within specified time window."""
+    if window_minutes is None:
+        window_minutes = _error_tracking['error_window_minutes']
+    
+    cutoff_time = datetime.now() - timedelta(minutes=window_minutes)
+    
+    with _metrics_lock:
+        if error_type:
+            # Get error rate for specific error type
+            recent_errors = [
+                err for err in _performance_metrics['error_rates'][error_type]
+                if err >= cutoff_time
+            ]
+            total_operations = len([
+                pt for pt in _performance_metrics['block_processing_times']
+                if pt['timestamp'] >= cutoff_time
+            ])
+        else:
+            # Get overall error rate
+            recent_errors = [
+                err for err in _error_tracking['recent_errors']
+                if err['timestamp'] >= cutoff_time
+            ]
+            total_operations = len([
+                pt for pt in _performance_metrics['block_processing_times']
+                if pt['timestamp'] >= cutoff_time
+            ])
+    
+    if total_operations == 0:
+        return 0.0
+    
+    return len(recent_errors) / total_operations
+
+
+def check_error_rate_threshold() -> Dict[str, Any]:
+    """Check if error rate exceeds threshold and return alert data."""
+    current_error_rate = get_error_rate()
+    threshold = _error_tracking['error_threshold']
+    
+    alert_data = {
+        'error_rate_exceeded': current_error_rate > threshold,
+        'current_rate': current_error_rate,
+        'threshold': threshold,
+        'window_minutes': _error_tracking['error_window_minutes'],
+        'timestamp': datetime.now().isoformat()
+    }
+    
+    if alert_data['error_rate_exceeded']:
+        logger.warning(f"Error rate threshold exceeded: {current_error_rate:.2%} > {threshold:.2%}")
+    
+    return alert_data
+
+
+def get_performance_summary() -> Dict[str, Any]:
+    """Get comprehensive performance summary."""
+    with _metrics_lock:
+        current_time = datetime.now()
+        uptime = current_time - _performance_metrics['uptime_start']
+        
+        # Calculate average processing time
+        processing_times = [pt['processing_time'] for pt in _performance_metrics['block_processing_times']]
+        avg_processing_time = sum(processing_times) / len(processing_times) if processing_times else 0
+        
+        # Calculate success rate
+        successful_blocks = sum(1 for pt in _performance_metrics['block_processing_times'] if pt['success'])
+        total_attempts = len(_performance_metrics['block_processing_times'])
+        success_rate = successful_blocks / total_attempts if total_attempts > 0 else 1.0
+        
+        # Get active sessions info
+        active_session_count = len(active_sessions)
+        
+        # Calculate error rate within the same lock to avoid deadlock
+        cutoff_time = current_time - timedelta(minutes=_error_tracking['error_window_minutes'])
+        recent_errors = [
+            err for err in _error_tracking['recent_errors']
+            if err['timestamp'] >= cutoff_time
+        ]
+        total_operations = len([
+            pt for pt in _performance_metrics['block_processing_times']
+            if pt['timestamp'] >= cutoff_time
+        ])
+        current_error_rate = len(recent_errors) / total_operations if total_operations > 0 else 0.0
+        
+        # Check error rate threshold within the same lock
+        threshold = _error_tracking['error_threshold']
+        error_rate_exceeded = current_error_rate > threshold
+        
+        return {
+            'uptime_seconds': uptime.total_seconds(),
+            'uptime_formatted': str(uptime),
+            'total_blocks_processed': _performance_metrics['total_blocks_processed'],
+            'total_errors': _performance_metrics['total_errors'],
+            'average_processing_time': avg_processing_time,
+            'success_rate': success_rate,
+            'current_error_rate': current_error_rate,
+            'active_sessions': active_session_count,
+            'websocket_events': dict(_performance_metrics['websocket_events']),
+            'error_rate_status': {
+                'error_rate_exceeded': error_rate_exceeded,
+                'current_rate': current_error_rate,
+                'threshold': threshold,
+                'window_minutes': _error_tracking['error_window_minutes'],
+                'timestamp': current_time.isoformat()
+            },
+            'timestamp': current_time.isoformat()
+        }
+
+
+def cleanup_old_metrics(retention_hours: int = 24):
+    """Clean up old performance metrics to prevent memory issues."""
+    cutoff_time = datetime.now() - timedelta(hours=retention_hours)
+    
+    with _metrics_lock:
+        # Clean up block processing times
+        _performance_metrics['block_processing_times'] = deque([
+            pt for pt in _performance_metrics['block_processing_times']
+            if pt['timestamp'] >= cutoff_time
+        ], maxlen=1000)
+        
+        # Clean up error tracking
+        _error_tracking['recent_errors'] = deque([
+            err for err in _error_tracking['recent_errors']
+            if err['timestamp'] >= cutoff_time
+        ], maxlen=1000)
+        
+        # Clean up error rates
+        for error_type in _performance_metrics['error_rates']:
+            _performance_metrics['error_rates'][error_type] = deque([
+                err_time for err_time in _performance_metrics['error_rates'][error_type]
+                if err_time >= cutoff_time
+            ], maxlen=100)
+        
+        # Clean up inactive session metrics
+        inactive_sessions = []
+        for session_id, metrics in _performance_metrics['session_metrics'].items():
+            if metrics['last_activity'] < cutoff_time:
+                inactive_sessions.append(session_id)
+        
+        for session_id in inactive_sessions:
+            del _performance_metrics['session_metrics'][session_id]
+        
+        logger.info(f"Cleaned up metrics older than {retention_hours} hours")
+
+
+# Start background cleanup thread
+def start_metrics_cleanup_thread():
+    """Start background thread for metrics cleanup."""
+    def cleanup_worker():
+        while True:
+            try:
+                time.sleep(3600)  # Run every hour
+                cleanup_old_metrics()
+            except Exception as e:
+                logger.error(f"Error in metrics cleanup thread: {e}")
+    
+    cleanup_thread = threading.Thread(target=cleanup_worker, daemon=True)
+    cleanup_thread.start()
+    logger.info("Started metrics cleanup background thread")
+
+
 def emit_progress(session_id: str, step: str, status: str, detail: str, progress_percent: Optional[int] = None):
     """Emit progress update to specific session."""
     try:
+        # Record websocket event
+        record_websocket_event('progress_update', session_id)
+        
         if not _socketio:
             logger.warning("SocketIO not initialized, cannot emit progress")
+            record_error('websocket_not_initialized', 'SocketIO not initialized for progress update', session_id)
             return
             
         if session_id and session_id.strip():
@@ -66,6 +308,7 @@ def emit_progress(session_id: str, step: str, status: str, detail: str, progress
             logger.debug(f"Progress broadcast to all clients: {step} - {status}")
     except Exception as e:
         logger.error(f"Error emitting progress: {e}")
+        record_error('emit_progress_failed', str(e), session_id)
 
 
 def emit_completion(session_id: str, event_type: str, data: Optional[dict] = None, error: Optional[str] = None):
@@ -595,8 +838,12 @@ def emit_session_feedback_summary(session_id: str, feedback_summary: Dict[str, A
 def emit_block_processing_start(session_id: str, block_id: str, block_type: str, applicable_stations: List[str]):
     """Emit block processing start event."""
     try:
+        # Record websocket event
+        record_websocket_event('block_processing_start', session_id)
+        
         if not _socketio:
             logger.warning("SocketIO not initialized, cannot emit block processing start")
+            record_error('websocket_not_initialized', 'SocketIO not initialized for block processing start', session_id)
             return
             
         event_data = {
@@ -618,6 +865,7 @@ def emit_block_processing_start(session_id: str, block_id: str, block_type: str,
             logger.debug(f"Block processing start broadcast: {block_id}")
     except Exception as e:
         logger.error(f"Error emitting block processing start: {e}")
+        record_error('emit_block_start_failed', str(e), session_id)
 
 
 def emit_station_progress_update(session_id: str, block_id: str, station: str, status: str, preview_text: Optional[str] = None):
@@ -651,11 +899,20 @@ def emit_station_progress_update(session_id: str, block_id: str, station: str, s
         logger.error(f"Error emitting station progress: {e}")
 
 
-def emit_block_processing_complete(session_id: str, block_id: str, result: Dict[str, Any]):
+def emit_block_processing_complete(session_id: str, block_id: str, result: Dict[str, Any], processing_time: Optional[float] = None):
     """Emit block processing completion event."""
     try:
+        # Record websocket event
+        record_websocket_event('block_processing_complete', session_id)
+        
+        # Record processing metrics if time provided
+        if processing_time is not None:
+            success = result.get('success', True) and not result.get('error')
+            record_block_processing_time(block_id, processing_time, success)
+        
         if not _socketio:
             logger.warning("SocketIO not initialized, cannot emit block processing complete")
+            record_error('websocket_not_initialized', 'SocketIO not initialized for block processing complete', session_id)
             return
             
         event_data = {
@@ -664,6 +921,9 @@ def emit_block_processing_complete(session_id: str, block_id: str, result: Dict[
             'session_id': session_id,
             'timestamp': datetime.now().isoformat()
         }
+        
+        if processing_time is not None:
+            event_data['processing_time'] = processing_time
         
         if session_id and session_id.strip():
             if session_id not in active_sessions:
@@ -676,6 +936,7 @@ def emit_block_processing_complete(session_id: str, block_id: str, result: Dict[
             logger.debug(f"Block processing complete broadcast: {block_id}")
     except Exception as e:
         logger.error(f"Error emitting block processing complete: {e}")
+        record_error('emit_block_complete_failed', str(e), session_id)
 
 
 def emit_block_error(session_id: str, block_id: str, error_message: str):
@@ -706,17 +967,26 @@ def emit_block_error(session_id: str, block_id: str, error_message: str):
 
 
 def get_websocket_performance_metrics() -> Dict[str, Any]:
-    """Get WebSocket performance metrics."""
+    """Get comprehensive WebSocket performance metrics."""
     try:
+        performance_summary = get_performance_summary()
+        websocket_health = validate_websocket_health()
+        
         return {
-            'active_sessions_count': len(active_sessions),
-            'active_sessions': list(active_sessions),
-            'websocket_initialized': _socketio is not None,
+            'websocket_health': websocket_health,
+            'performance_summary': performance_summary,
+            'detailed_metrics': {
+                'active_sessions_count': len(active_sessions),
+                'active_sessions': list(active_sessions),
+                'websocket_initialized': _socketio is not None,
+                'recent_error_rate': get_error_rate(),
+                'error_rate_status': check_error_rate_threshold()
+            },
             'timestamp': datetime.now().isoformat()
         }
     except Exception as e:
         logger.error(f"Error getting WebSocket performance metrics: {e}")
-        return {'error': str(e)}
+        return {'error': str(e), 'timestamp': datetime.now().isoformat()}
 
 
 def validate_websocket_health() -> Dict[str, Any]:
