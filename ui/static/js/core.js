@@ -184,7 +184,7 @@ function rewriteBlock(blockId, blockType) {
         console.warn('Block not found or has no errors:', blockId);
         return;
     }
-    
+
     // Update block state to processing
     updateBlockCardToProcessing(blockId);
     
@@ -195,7 +195,7 @@ function rewriteBlock(blockId, blockType) {
     fetch('/rewrite-block', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: JSON.stringify({ 
             block_content: block.content,
             block_errors: block.errors,
             block_type: blockType,

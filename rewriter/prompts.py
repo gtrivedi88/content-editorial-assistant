@@ -2,12 +2,29 @@
 Prompt Generation Module for the AI Rewriter
 """
 from typing import List, Dict, Any
+import yaml
+import os
 
 class PromptGenerator:
     """
     Generates precise, structured JSON prompts for the AI model to ensure
     surgical, multi-level corrections with clean output.
     """
+    
+    def __init__(self):
+        """Initialize with assembly line configuration."""
+        self.instruction_templates = self._load_assembly_line_config()
+    
+    def _load_assembly_line_config(self) -> Dict[str, str]:
+        """Load instruction templates from assembly_line_config.yaml."""
+        try:
+            config_path = os.path.join(os.path.dirname(__file__), 'assembly_line_config.yaml')
+            with open(config_path, 'r') as f:
+                config = yaml.safe_load(f)
+                return config.get('instruction_templates', {})
+        except (FileNotFoundError, yaml.YAMLError) as e:
+            print(f"Warning: Could not load assembly line config: {e}")
+            return {}
 
     def create_assembly_line_prompt(self, original_text: str, errors: List[Dict[str, Any]], pass_number: int = 1) -> str:
         """
@@ -135,10 +152,17 @@ Respond in this EXACT format with no other text before or after:
             error_message = error.get('message', 'Unknown error')
             flagged_text = error.get('flagged_text', '')
             suggestions = error.get('suggestions', [])
+            error_type = error.get('type', '')
             
             error_entry = f"{i + 1}. **Error:** {error_message}\n   **Text:** `{flagged_text}`"
             
-            if suggestions:
+            # Use assembly line config instruction templates for known error types
+            # This overrides potentially problematic SpaCy suggestions with curated prompts
+            config_instruction = self.instruction_templates.get(error_type)
+            if config_instruction:
+                error_entry += f"\n   **Fix:** {config_instruction}"
+            elif suggestions:
+                # Fallback to SpaCy suggestions for error types not in config
                 if isinstance(suggestions, list) and suggestions:
                     error_entry += f"\n   **Fix:** {suggestions[0]}"
                 elif isinstance(suggestions, str):

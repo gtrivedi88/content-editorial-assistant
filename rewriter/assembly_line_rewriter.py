@@ -228,13 +228,13 @@ class AssemblyLineRewriter:
             # Check if this error belongs to this station
             if station == 'urgent' and error_type in ['legal_claims', 'legal_company_names', 'legal_personal_information', 'inclusive_language', 'second_person']:
                 station_errors.append(error)
-            elif station == 'high' and error_type in ['passive_voice', 'sentence_length', 'subjunctive_mood', 'verbs', 'headings']:
+            elif station == 'high' and error_type in ['passive_voice', 'sentence_length', 'subjunctive_mood', 'verbs', 'headings', 'ambiguity']:
                 station_errors.append(error)
             elif station == 'medium' and (error_type.startswith('word_usage_') or error_type.startswith('technical_') or
                   error_type in ['contractions', 'spelling', 'terminology', 'anthropomorphism', 'capitalization', 'prefixes', 'plurals', 'abbreviations']):
                 station_errors.append(error)
             elif station == 'low' and (error_type.startswith('punctuation_') or error_type.startswith('references_') or
-                  error_type in ['tone', 'citations', 'ambiguity', 'currency']):
+                  error_type in ['tone', 'citations', 'currency']):
                 station_errors.append(error)
         
         return station_errors
@@ -329,13 +329,13 @@ class AssemblyLineRewriter:
             # Map error types to assembly line stations based on assembly_line_config.yaml
             if error_type in ['legal_claims', 'legal_company_names', 'legal_personal_information', 'inclusive_language', 'second_person']:
                 stations_needed.add('urgent')
-            elif error_type in ['passive_voice', 'sentence_length', 'subjunctive_mood', 'verbs', 'headings']:
+            elif error_type in ['passive_voice', 'sentence_length', 'subjunctive_mood', 'verbs', 'headings', 'ambiguity']:
                 stations_needed.add('high')
             elif (error_type.startswith('word_usage_') or error_type.startswith('technical_') or
                   error_type in ['contractions', 'spelling', 'terminology', 'anthropomorphism', 'capitalization', 'prefixes', 'plurals', 'abbreviations']):
                 stations_needed.add('medium')
             elif (error_type.startswith('punctuation_') or error_type.startswith('references_') or
-                  error_type in ['tone', 'citations', 'ambiguity', 'currency']):
+                  error_type in ['tone', 'citations', 'currency']):
                 stations_needed.add('low')
         
         # Return in priority order

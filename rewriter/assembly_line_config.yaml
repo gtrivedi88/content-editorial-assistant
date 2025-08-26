@@ -27,13 +27,14 @@ processing_passes:
     priority_level: 2
     color: "orange"
     icon: "fas fa-building"
-    categories: ["passive_voice", "sentence_length", "subjunctive_mood", "verbs", "headings"]
+    categories: ["passive_voice", "sentence_length", "subjunctive_mood", "verbs", "headings", "ambiguity"]
     error_types:
       - "passive_voice"
       - "sentence_length"
       - "subjunctive_mood"
       - "verbs"
       - "headings"
+      - "ambiguity"
   
   medium:
     name: "Grammar Pass"
@@ -93,12 +94,11 @@ processing_passes:
     priority_level: 4
     color: "blue"
     icon: "fas fa-paint-brush"
-    categories: ["citations", "currency", "pronouns", "ambiguity", "punctuation", "tone"]
+    categories: ["citations", "currency", "pronouns", "punctuation", "tone"]
     error_types:
       - "citations"
       - "currency"
       - "pronouns"
-      - "ambiguity"
       - "punctuation_commas"
       - "punctuation_periods"
       - "punctuation_semicolons"
@@ -244,7 +244,7 @@ instruction_templates:
   structure_format_notes: "Fix note and admonition formatting. Make no other changes."
   
   # ===== GENERAL RULES =====
-  ambiguity: "Replace unclear pronouns like 'This', 'It', 'That' with specific nouns. Example: 'This is easy' → 'The process is easy'. Output ONLY the corrected sentence with NO explanations."
+  ambiguity: "Fix ambiguous actors in passive voice sentences. Specify WHO or WHAT performs the action. NEVER use vague terms like 'system', 'application', or 'software'. For UI text, use 'you' (user action) or specific component names. Example: 'This is clicked' → 'You click this' or 'The button is clicked' → 'You click the button'. Output ONLY the corrected sentence with NO explanations."
   
   # ===== PATTERN MATCHERS (Fallbacks) =====
   word_usage_*: "Fix word usage issues. Replace incorrect terms with preferred alternatives. Return ONLY the corrected sentence with NO explanations."
