@@ -316,12 +316,7 @@ function generateStatisticsCard(analysis) {
                         <div class="pf-v5-c-card pf-m-plain">
                             <div class="pf-v5-c-card__body">
                                 <div class="pf-v5-l-flex pf-m-space-items-sm pf-m-justify-content-center">
-                                    <div class="pf-v5-l-flex__item">
-                                        <button class="pf-v5-c-button pf-m-primary" type="button" onclick="rewriteContent()">
-                                            <i class="fas fa-magic pf-v5-u-mr-sm"></i>
-                                            AI Rewrite
-                                        </button>
-                                    </div>
+
                                     <div class="pf-v5-l-flex__item">
                                         <button class="pf-v5-c-button pf-m-secondary" type="button" onclick="generateReport()">
                                             <i class="fas fa-file-alt pf-v5-u-mr-sm"></i>

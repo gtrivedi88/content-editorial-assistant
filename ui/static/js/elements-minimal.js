@@ -602,13 +602,7 @@ function createStructuralBlock(block, displayIndex, allBlocks = []) {
                     </div>`
                 }
                 
-                ${errorSummary ? `
-                <div class="error-summary pf-v5-u-mt-md">
-                    <strong>Issues found:</strong> ${errorSummary}
-                </div>
-                ` : ''}
-                
-                ${rewriteButton}
+
             </div>
             ${block.errors && block.errors.length > 0 ? `
             <div class="pf-v5-c-card__footer">
@@ -616,6 +610,9 @@ function createStructuralBlock(block, displayIndex, allBlocks = []) {
                     <h3 class="pf-v5-c-title pf-m-md">Issues:</h3>
                     <div class="pf-v5-l-stack pf-m-gutter">
                         ${block.errors.map(error => createInlineError(error)).join('')}
+                    </div>
+                    <div class="pf-v5-u-mt-md">
+                        ${rewriteButton}
                     </div>
                 </div>
             </div>` : ''}
@@ -799,7 +796,6 @@ function generateBlockRewriteButton(block, displayIndex, priority) {
         ? `🚨 Fix ${errorCount} Critical Issue${errorCount > 1 ? 's' : ''}`
         : `🤖 Improve ${errorCount} Issue${errorCount > 1 ? 's' : ''}`;
     
-    const estimatedTime = estimateBlockProcessingTime(block.errors);
     const buttonClass = priority === 'red' ? 'pf-m-danger' : 'pf-m-primary';
     
     return `
@@ -810,9 +806,6 @@ function generateBlockRewriteButton(block, displayIndex, priority) {
                     data-block-type="${block.block_type}">
                 ${buttonText}
             </button>
-            <small class="pf-v5-u-ml-sm pf-v5-u-color-400">
-                ⏱️ ~${estimatedTime} seconds
-            </small>
         </div>
     `;
 }
