@@ -18,7 +18,6 @@ class DocumentRewriter:
         # Use existing components - no duplication
         from .core import AIRewriter
         from style_analyzer.core_analyzer import StyleAnalyzer
-        from reconstructors import get_reconstructor
         
         self.ai_rewriter = AIRewriter(
             use_ollama=use_ollama, 
@@ -26,7 +25,6 @@ class DocumentRewriter:
             progress_callback=progress_callback
         )
         self.style_analyzer = StyleAnalyzer()
-        self.get_reconstructor = get_reconstructor
         
         logger.info("DocumentRewriter initialized - Assembly Line ONLY")
     

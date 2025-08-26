@@ -274,9 +274,25 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter):
                             f'Processing block {block_id}', 0)
             
             # Process single block through assembly line
-            result = ai_rewriter.assembly_line.apply_block_level_assembly_line_fixes(
-                block_content, block_errors, block_type
-            )
+            if hasattr(ai_rewriter, 'ai_rewriter') and hasattr(ai_rewriter.ai_rewriter, 'assembly_line'):
+                # Full DocumentRewriter with assembly line support - PASS session_id and block_id for live updates
+                result = ai_rewriter.ai_rewriter.assembly_line.apply_block_level_assembly_line_fixes(
+                    block_content, block_errors, block_type, session_id=session_id, block_id=block_id
+                )
+            elif hasattr(ai_rewriter, 'assembly_line'):
+                # Direct AIRewriter with assembly line support - PASS session_id and block_id for live updates
+                result = ai_rewriter.assembly_line.apply_block_level_assembly_line_fixes(
+                    block_content, block_errors, block_type, session_id=session_id, block_id=block_id
+                )
+            else:
+                # Fallback SimpleAIRewriter - use basic rewrite method
+                result = ai_rewriter.rewrite(block_content, block_errors, block_type)
+                # Add missing fields for consistency
+                result.update({
+                    'applicable_stations': ['fallback'],
+                    'block_type': block_type,
+                    'assembly_line_used': False
+                })
             
             # Add request metadata
             processing_time = time.time() - start_time
@@ -304,48 +320,7 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter):
             }
             return jsonify(error_result), 500
 
-    @app.route('/rewrite', methods=['POST'])
-    def rewrite_content():
-        """
-        LEGACY ENDPOINT - AI-powered content rewriting with assembly line support.
-        NOTE: This endpoint is deprecated and will be removed in Phase 3.
-        Use /rewrite-block for new implementations.
-        """
-        start_time = time.time()
-        try:
-            data = request.get_json()
-            content = data.get('content', '')
-            errors = data.get('errors', [])
-            session_id = data.get('session_id', '')
-            use_assembly_line = data.get('use_assembly_line', True)
-            
-            if not content:
-                return jsonify({'error': 'No content provided'}), 400
-            
-            logger.warning(f"Using LEGACY /rewrite endpoint for session {session_id} - migrate to /rewrite-block")
-            
-            if use_assembly_line:
-                # Use legacy assembly line rewriter
-                result = ai_rewriter.assembly_line.apply_sentence_level_assembly_line_fixes(
-                    content, errors, "document"
-                )
-            else:
-                # Use fallback simple rewriter
-                from app_modules.fallback_services import SimpleAIRewriter
-                simple_rewriter = SimpleAIRewriter()
-                result = simple_rewriter.rewrite(content, errors)
-            
-            processing_time = time.time() - start_time
-            result['processing_time'] = processing_time
-            result['assembly_line_used'] = use_assembly_line
-            result['legacy_endpoint'] = True
-            
-            logger.info(f"Legacy rewrite completed in {processing_time:.2f}s")
-            return jsonify(result)
-            
-        except Exception as e:
-            logger.error(f"Legacy rewrite error: {str(e)}")
-            return jsonify({'error': f'Rewrite failed: {str(e)}'}), 500
+
     
     @app.route('/refine', methods=['POST'])
     def refine_content():

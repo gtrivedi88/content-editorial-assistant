@@ -257,8 +257,68 @@ function handleStationProgressUpdate(data) {
     // Update specific station status in the assembly line UI
     updateStationStatus(block_id, station, status, preview_text);
     
+    // Calculate overall progress based on completed stations
+    const progressPercentage = calculateStationProgress(block_id, station, status);
+    const statusText = generateProgressStatusText(station, status, preview_text);
+    
     // Update overall assembly line progress
-    updateBlockAssemblyLineProgress(block_id, data.overall_progress || 50, data.status_text || 'Processing...');
+    updateBlockAssemblyLineProgress(block_id, progressPercentage, statusText);
+}
+
+/**
+ * Calculate progress percentage based on station completion
+ */
+function calculateStationProgress(blockId, currentStation, status) {
+    const assemblyLineElement = document.querySelector(`[data-block-id="${blockId}"] .assembly-line-stations`);
+    if (!assemblyLineElement) return 0;
+    
+    const allStations = assemblyLineElement.querySelectorAll('[data-station]');
+    const totalStations = allStations.length;
+    
+    if (totalStations === 0) return 100;
+    
+    let completedStations = 0;
+    let currentStationProgress = 0;
+    
+    allStations.forEach(stationEl => {
+        const stationName = stationEl.getAttribute('data-station');
+        if (stationEl.classList.contains('station-complete')) {
+            completedStations++;
+        } else if (stationName === currentStation && status === 'processing') {
+            currentStationProgress = 0.5; // 50% for current processing station
+        }
+    });
+    
+    // If current station just completed, count it
+    if (status === 'complete') {
+        completedStations++;
+        currentStationProgress = 0;
+    }
+    
+    const progress = ((completedStations + currentStationProgress) / totalStations) * 100;
+    return Math.min(100, Math.max(0, progress));
+}
+
+/**
+ * Generate status text for progress updates
+ */
+function generateProgressStatusText(station, status, previewText) {
+    const stationNames = {
+        'urgent': 'Critical/Legal Pass',
+        'high': 'Structural Pass',
+        'medium': 'Grammar Pass',
+        'low': 'Style Pass'
+    };
+    
+    const stationName = stationNames[station] || 'Processing Pass';
+    
+    if (status === 'processing') {
+        return `🔄 ${stationName}: ${previewText || 'Processing...'}`;
+    } else if (status === 'complete') {
+        return `✅ ${stationName}: ${previewText || 'Complete'}`;
+    }
+    
+    return `⏳ ${stationName}: Waiting...`;
 }
 
 /**

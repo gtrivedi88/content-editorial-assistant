@@ -80,6 +80,9 @@ function displayAnalysisResults(analysis, content, structuralBlocks = null) {
 function displayStructuralBlocks(blocks) {
     if (!blocks || blocks.length === 0) return displayEmptyStructure();
 
+    // Store blocks globally for rewriteBlock function access
+    window.currentStructuralBlocks = blocks;
+
     // Work directly with blocks - no need for complex attribute placeholders
     let displayIndex = 0;
     const blocksHtml = blocks.map(block => {
@@ -167,10 +170,14 @@ function displayFlatContent(content, errors) {
                 <div class="pf-v5-c-card__footer">
                     <div class="pf-v5-l-flex pf-m-space-items-sm pf-m-justify-content-center">
                         <div class="pf-v5-l-flex__item">
-                            <button class="pf-v5-c-button pf-m-primary" type="button" onclick="rewriteContent()">
-                                <i class="fas fa-magic pf-v5-u-mr-sm"></i>
-                                AI Rewrite
-                            </button>
+                            <div class="pf-v5-c-alert pf-m-info pf-m-inline">
+                                <div class="pf-v5-c-alert__icon">
+                                    <i class="fas fa-info-circle"></i>
+                                </div>
+                                <div class="pf-v5-c-alert__title">
+                                    Use Structural Analysis for block-level rewriting
+                                </div>
+                            </div>
                         </div>
                         <div class="pf-v5-l-flex__item">
                             <button class="pf-v5-c-button pf-m-secondary" type="button" onclick="scrollToErrorSummary()">

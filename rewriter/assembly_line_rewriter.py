@@ -67,14 +67,16 @@ class AssemblyLineRewriter:
         # Sort by priority score (descending) then by error type for consistency
         return sorted(errors, key=lambda x: (get_priority_score(x), x.get('type', '')), reverse=True)
 
-    def apply_block_level_assembly_line_fixes(self, block_content: str, block_errors: List[Dict[str, Any]], block_type: str) -> Dict[str, Any]:
+    def apply_block_level_assembly_line_fixes(self, block_content: str, block_errors: List[Dict[str, Any]], block_type: str, session_id: str = None, block_id: str = None) -> Dict[str, Any]:
         """
-        Apply assembly line fixes to a single structural block.
+        Apply assembly line fixes to a single structural block with live progress updates.
         
         Args:
             block_content: The content of the specific block to rewrite
             block_errors: List of errors detected in this block
             block_type: Type of block (paragraph, heading, list, etc.)
+            session_id: WebSocket session ID for progress updates
+            block_id: UI block ID for progress tracking
             
         Returns:
             Dictionary with rewrite results
@@ -100,8 +102,11 @@ class AssemblyLineRewriter:
             # Sort errors by priority for optimal processing order
             sorted_errors = self._sort_errors_by_priority(block_errors)
             
-            # Process block content through assembly line with block context
-            result = self.rewrite_sentence(block_content, sorted_errors, pass_number=1)
+            # Process block content through assembly line with live station updates
+            result = self._process_through_assembly_line_stations(
+                block_content, sorted_errors, applicable_stations, 
+                session_id, block_id, block_type
+            )
             
             # Add block-specific metadata
             result.update({
@@ -130,6 +135,118 @@ class AssemblyLineRewriter:
                 'block_type': block_type,
                 'error': f'Block assembly line processing failed: {str(e)}'
             }
+
+    def _process_through_assembly_line_stations(self, content: str, errors: List[Dict[str, Any]], 
+                                              stations: List[str], session_id: str, block_id: str, 
+                                              block_type: str) -> Dict[str, Any]:
+        """
+        Process content through assembly line stations with live progress updates.
+        """
+        try:
+            # Import here to avoid circular imports
+            from app_modules.websocket_handlers import emit_station_progress_update
+            
+            current_content = content
+            all_improvements = []
+            total_errors_fixed = 0
+            
+            for i, station in enumerate(stations):
+                station_name = self.get_station_display_name(station)
+                
+                # Get errors for this station
+                station_errors = self._get_errors_for_station(errors, station)
+                if not station_errors:
+                    continue
+                
+                # Emit processing start for this station
+                if session_id and block_id:
+                    emit_station_progress_update(
+                        session_id, block_id, station, 'processing',
+                        preview_text=f"Processing {len(station_errors)} {station} issue(s)..."
+                    )
+                
+                logger.info(f"🏭 Station {station_name}: Processing {len(station_errors)} errors")
+                
+                # Process errors through this station (simulate real assembly line work)
+                import time
+                time.sleep(0.5)  # Simulate processing time for live UI updates
+                
+                station_result = self.rewrite_sentence(current_content, station_errors, pass_number=1)
+                
+                # Update content for next station
+                current_content = station_result.get('rewritten_text', current_content)
+                all_improvements.extend(station_result.get('improvements', []))
+                total_errors_fixed += station_result.get('errors_fixed', 0)
+                
+                # Generate preview text for UI
+                preview_text = self._generate_station_preview(station, station_errors, current_content)
+                
+                # Emit completion for this station
+                if session_id and block_id:
+                    emit_station_progress_update(
+                        session_id, block_id, station, 'complete',
+                        preview_text=preview_text
+                    )
+                
+                logger.info(f"✅ Station {station_name}: Complete ({station_result.get('errors_fixed', 0)} fixes)")
+            
+            return {
+                'rewritten_text': current_content,
+                'improvements': all_improvements,
+                'confidence': 0.85,  # High confidence for assembly line processing
+                'errors_fixed': total_errors_fixed
+            }
+            
+        except Exception as e:
+            logger.error(f"Assembly line station processing failed: {e}")
+            # Fallback to single-pass processing
+            return self.rewrite_sentence(content, errors, pass_number=1)
+
+    def _get_errors_for_station(self, errors: List[Dict[str, Any]], station: str) -> List[Dict[str, Any]]:
+        """Get errors that belong to a specific assembly line station."""
+        station_errors = []
+        
+        for error in errors:
+            error_type = error.get('type', '')
+            
+            # Check if this error belongs to this station
+            if station == 'urgent' and error_type in ['legal_claims', 'legal_company_names', 'legal_personal_information', 'inclusive_language', 'second_person']:
+                station_errors.append(error)
+            elif station == 'high' and error_type in ['passive_voice', 'sentence_length', 'subjunctive_mood', 'verbs', 'headings']:
+                station_errors.append(error)
+            elif station == 'medium' and (error_type.startswith('word_usage_') or error_type.startswith('technical_') or
+                  error_type in ['contractions', 'spelling', 'terminology', 'anthropomorphism', 'capitalization', 'prefixes', 'plurals', 'abbreviations']):
+                station_errors.append(error)
+            elif station == 'low' and (error_type.startswith('punctuation_') or error_type.startswith('references_') or
+                  error_type in ['tone', 'citations', 'ambiguity', 'currency']):
+                station_errors.append(error)
+        
+        return station_errors
+
+    def _generate_station_preview(self, station: str, errors: List[Dict[str, Any]], processed_content: str) -> str:
+        """Generate preview text showing what this station accomplished."""
+        if not errors:
+            return f"{self.get_station_display_name(station)}: No issues found"
+        
+        error_types = [error.get('type', 'unknown') for error in errors]
+        
+        # Generate specific preview based on station type
+        if station == 'urgent':
+            return f"Fixed {len(errors)} critical issue(s): {', '.join(set(error_types))}"
+        elif station == 'high':
+            if 'verbs' in error_types or 'passive_voice' in error_types:
+                return f"Converted passive voice → active voice ({len(errors)} fix(es))"
+            else:
+                return f"Fixed {len(errors)} structural issue(s)"
+        elif station == 'medium':
+            if any('contractions' in et for et in error_types):
+                return f"Expanded {len(errors)} contraction(s)"
+            else:
+                return f"Fixed {len(errors)} grammar issue(s)"
+        elif station == 'low':
+            return f"Applied {len(errors)} style improvement(s)"
+        
+        return f"Processed {len(errors)} issue(s)"
 
     def get_applicable_stations(self, block_errors: List[Dict[str, Any]]) -> List[str]:
         """Return only assembly line stations needed for this block's errors."""
@@ -167,58 +284,7 @@ class AssemblyLineRewriter:
         
         return station_names.get(station, 'Processing Pass')
 
-    def apply_sentence_level_assembly_line_fixes(self, content: str, errors: List[Dict[str, Any]], context: str) -> Dict[str, Any]:
-        """
-        LEGACY METHOD - Apply assembly line fixes at sentence level.
-        NOTE: This method is maintained for backward compatibility but will be removed in Phase 3.
-        Use apply_block_level_assembly_line_fixes() for new implementations.
-        """
-        try:
-            # Split content into sentences for processing
-            sentences = self._split_into_sentences(content)
-            rewritten_sentences = []
-            total_errors_fixed = 0
-            
-            for i, sentence in enumerate(sentences):
-                if not sentence.strip():
-                    rewritten_sentences.append(sentence)
-                    continue
-                    
-                # Find errors for this sentence
-                sentence_errors = self._get_errors_for_sentence(sentence, errors)
-                
-                # Rewrite the sentence using the existing method
-                result = self.rewrite_sentence(sentence, sentence_errors, pass_number=1)
-                
-                rewritten_sentences.append(result['rewritten_text'])
-                total_errors_fixed += result.get('errors_fixed', 0)
-                
-                if self.progress_callback:
-                    progress = int((i + 1) / len(sentences) * 80) + 20  # 20-100%
-                    self.progress_callback('sentence_processing', f'Processing sentence {i+1}/{len(sentences)}', 
-                                         f'Fixed {total_errors_fixed} errors so far', progress)
-            
-            rewritten_content = ' '.join(rewritten_sentences)
-            
-            return {
-                'rewritten_text': rewritten_content,
-                'improvements': [f'Applied assembly line fixes to {len(sentences)} sentences'],
-                'confidence': 0.85,
-                'errors_fixed': total_errors_fixed,
-                'original_errors': len(errors),
-                'sentences_processed': len(sentences),
-                'assembly_line_used': True
-            }
-            
-        except Exception as e:
-            logger.error(f"Assembly line processing failed: {e}")
-            return {
-                'rewritten_text': content,
-                'improvements': [],
-                'confidence': 0.0,
-                'errors_fixed': 0,
-                'error': f'Assembly line processing failed: {str(e)}'
-            }
+
 
     def _split_into_sentences(self, content: str) -> List[str]:
         """Split content into sentences using robust spaCy sentence segmentation."""

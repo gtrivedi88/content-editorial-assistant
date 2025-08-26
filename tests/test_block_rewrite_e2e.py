@@ -341,20 +341,27 @@ class TestBlockRewriting:
             assert result['block_type'] == block_type
     
     def test_zero_technical_debt(self):
-        """Verify zero technical debt - all legacy patterns are properly marked."""
+        """Verify zero technical debt - all legacy code has been removed."""
         from rewriter.assembly_line_rewriter import AssemblyLineRewriter
         import inspect
         
-        # Check that legacy method is properly marked
-        source = inspect.getsource(AssemblyLineRewriter.apply_sentence_level_assembly_line_fixes)
-        assert 'LEGACY METHOD' in source
-        assert 'Use apply_block_level_assembly_line_fixes' in source
+        # Check that legacy method has been completely removed
+        assert not hasattr(AssemblyLineRewriter, 'apply_sentence_level_assembly_line_fixes')
         
-        # Check that new method exists and is documented
+        # Check that new method exists and is clean
         new_method = getattr(AssemblyLineRewriter, 'apply_block_level_assembly_line_fixes')
         assert new_method is not None
         assert new_method.__doc__ is not None
         assert 'single structural block' in new_method.__doc__
+        
+        # Verify helper methods exist
+        assert hasattr(AssemblyLineRewriter, 'get_applicable_stations')
+        assert hasattr(AssemblyLineRewriter, 'get_station_display_name')
+        
+        # Verify no legacy methods remain
+        class_methods = [method for method in dir(AssemblyLineRewriter) if not method.startswith('_')]
+        legacy_methods = [m for m in class_methods if 'sentence_level' in m or 'apply_sentence' in m]
+        assert len(legacy_methods) == 0, f"Found legacy methods: {legacy_methods}"
 
 
 if __name__ == '__main__':

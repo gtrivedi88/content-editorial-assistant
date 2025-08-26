@@ -2,23 +2,131 @@
 # Automatically generates specialized instructions for ALL error types
 # Based on comprehensive analysis of /rules directory
 
-# Processing passes in priority order
+# Dynamic Assembly Line Processing - Block-Level Configuration
+# Stations are created dynamically based on actual errors present in each block
 processing_passes:
   urgent:
     name: "Critical/Legal Pass"
+    display_name: "Critical/Legal Pass"
+    description: "Legal compliance and critical content issues"
+    priority_level: 1
+    color: "red"
+    icon: "fas fa-exclamation-triangle"
     categories: ["legal", "inclusive_language", "second_person", "claims"]
+    error_types:
+      - "legal_claims"
+      - "legal_company_names" 
+      - "legal_personal_information"
+      - "inclusive_language"
+      - "second_person"
   
   high:
-    name: "Structural Pass" 
+    name: "Structural Pass"
+    display_name: "Structural Pass"
+    description: "Document structure and organization improvements"
+    priority_level: 2
+    color: "orange"
+    icon: "fas fa-building"
     categories: ["passive_voice", "sentence_length", "subjunctive_mood", "verbs", "headings"]
+    error_types:
+      - "passive_voice"
+      - "sentence_length"
+      - "subjunctive_mood"
+      - "verbs"
+      - "headings"
   
   medium:
     name: "Grammar Pass"
+    display_name: "Grammar Pass"
+    description: "Grammar, word usage, and language improvements"
+    priority_level: 3
+    color: "gold"
+    icon: "fas fa-spell-check"
     categories: ["word_usage", "anthropomorphism", "capitalization", "contractions", "prefixes", "plurals", "spelling", "terminology", "abbreviations"]
+    error_types:
+      - "word_usage_a"
+      - "word_usage_b"
+      - "word_usage_c"
+      - "word_usage_d"
+      - "word_usage_e"
+      - "word_usage_f"
+      - "word_usage_g"
+      - "word_usage_h"
+      - "word_usage_i"
+      - "word_usage_j"
+      - "word_usage_k"
+      - "word_usage_l"
+      - "word_usage_m"
+      - "word_usage_n"
+      - "word_usage_o"
+      - "word_usage_p"
+      - "word_usage_q"
+      - "word_usage_r"
+      - "word_usage_s"
+      - "word_usage_t"
+      - "word_usage_u"
+      - "word_usage_v"
+      - "word_usage_w"
+      - "word_usage_x"
+      - "word_usage_y"
+      - "word_usage_z"
+      - "anthropomorphism"
+      - "capitalization"
+      - "contractions"
+      - "prefixes"
+      - "plurals"
+      - "spelling"
+      - "terminology"
+      - "abbreviations"
+      - "technical_commands"
+      - "technical_files_directories"
+      - "technical_keyboard_keys"
+      - "technical_mouse_buttons"
+      - "technical_programming_elements"
+      - "technical_ui_elements"
+      - "technical_web_addresses"
   
   low:
     name: "Style Pass"
+    display_name: "Style Pass"
+    description: "Style refinements and polish"
+    priority_level: 4
+    color: "blue"
+    icon: "fas fa-paint-brush"
     categories: ["citations", "currency", "pronouns", "ambiguity", "punctuation", "tone"]
+    error_types:
+      - "citations"
+      - "currency"
+      - "pronouns"
+      - "ambiguity"
+      - "punctuation_commas"
+      - "punctuation_periods"
+      - "punctuation_semicolons"
+      - "punctuation_colons"
+      - "punctuation_quotation_marks"
+      - "punctuation_apostrophes"
+      - "punctuation_hyphens"
+      - "punctuation_dashes"
+      - "punctuation_parentheses"
+      - "punctuation_brackets"
+      - "punctuation_ellipses"
+      - "punctuation_slashes"
+      - "punctuation_and_symbols"
+      - "tone"
+      - "references_citations"
+      - "references_geographic_locations"
+      - "references_names_titles"
+      - "references_product_names"
+      - "references_product_versions"
+
+# Dynamic Station Configuration
+# Stations are only shown when relevant errors are present
+dynamic_stations:
+  enabled: true
+  show_empty_stations: false
+  contextual_descriptions: true
+  estimated_time_per_error: 3
+  base_processing_time: 15
 
 # Comprehensive instruction templates covering ALL rule types
 instruction_templates:
