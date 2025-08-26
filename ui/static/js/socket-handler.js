@@ -19,6 +19,23 @@ function initializeSocket() {
         handleProcessComplete(data);
     });
     
+    // BLOCK-LEVEL REWRITING WEBSOCKET HANDLERS
+    socket.on('block_processing_start', function(data) {
+        handleBlockProcessingStart(data);
+    });
+    
+    socket.on('station_progress_update', function(data) {
+        handleStationProgressUpdate(data);
+    });
+    
+    socket.on('block_processing_complete', function(data) {
+        handleBlockProcessingComplete(data);
+    });
+    
+    socket.on('block_processing_error', function(data) {
+        handleBlockProcessingError(data);
+    });
+    
     socket.on('disconnect', function() {
         console.log('Disconnected from server');
     });
@@ -208,4 +225,210 @@ function showStatusUpdate(message, type = 'info') {
             setTimeout(() => alert.remove(), 300);
         }
     }, 3000);
+}
+
+// BLOCK-LEVEL REWRITING WEBSOCKET HANDLERS
+
+/**
+ * Handle block processing start event
+ */
+function handleBlockProcessingStart(data) {
+    console.log('🚀 Block processing started:', data);
+    
+    const { block_id, block_type, applicable_stations } = data;
+    
+    // Initialize assembly line progress for this block
+    initializeBlockAssemblyLineProgress(block_id, applicable_stations);
+    
+    // Update any global state if needed
+    if (window.blockRewriteState) {
+        window.blockRewriteState.currentlyProcessingBlock = block_id;
+    }
+}
+
+/**
+ * Handle station progress update
+ */
+function handleStationProgressUpdate(data) {
+    console.log('🏭 Station progress update:', data);
+    
+    const { block_id, station, status, preview_text } = data;
+    
+    // Update specific station status in the assembly line UI
+    updateStationStatus(block_id, station, status, preview_text);
+    
+    // Update overall assembly line progress
+    updateBlockAssemblyLineProgress(block_id, data.overall_progress || 50, data.status_text || 'Processing...');
+}
+
+/**
+ * Handle block processing completion
+ */
+function handleBlockProcessingComplete(data) {
+    console.log('✅ Block processing completed:', data);
+    
+    const { block_id, result } = data;
+    
+    // Update global state
+    if (window.blockRewriteState) {
+        window.blockRewriteState.processedBlocks.add(block_id);
+        window.blockRewriteState.blockResults.set(block_id, result);
+        window.blockRewriteState.currentlyProcessingBlock = null;
+    }
+    
+    // Complete the assembly line UI
+    completeBlockAssemblyLine(block_id);
+    
+    // The actual results display is handled by the main processing flow
+    // This handler just manages the real-time progress UI
+}
+
+/**
+ * Handle block processing error
+ */
+function handleBlockProcessingError(data) {
+    console.error('❌ Block processing error:', data);
+    
+    const { block_id, error } = data;
+    
+    // Show error in assembly line UI
+    showAssemblyLineError(block_id, error);
+    
+    // Update global state
+    if (window.blockRewriteState) {
+        window.blockRewriteState.currentlyProcessingBlock = null;
+    }
+}
+
+/**
+ * Initialize assembly line progress for a specific block
+ */
+function initializeBlockAssemblyLineProgress(blockId, stations) {
+    const assemblyLineElement = document.querySelector(`[data-block-id="${blockId}"] .assembly-line-stations`);
+    if (!assemblyLineElement) return;
+    
+    // Reset all stations to waiting state
+    stations.forEach(station => {
+        const stationElement = assemblyLineElement.querySelector(`[data-station="${station}"]`);
+        if (stationElement) {
+            stationElement.classList.remove('station-processing', 'station-complete', 'station-error');
+            stationElement.classList.add('station-waiting');
+            
+            const statusIcon = stationElement.querySelector('.station-status-icon');
+            if (statusIcon) {
+                statusIcon.className = 'station-status-icon fas fa-clock';
+            }
+        }
+    });
+}
+
+/**
+ * Update status of a specific station
+ */
+function updateStationStatus(blockId, station, status, previewText = null) {
+    const assemblyLineElement = document.querySelector(`[data-block-id="${blockId}"] .assembly-line-stations`);
+    if (!assemblyLineElement) return;
+    
+    const stationElement = assemblyLineElement.querySelector(`[data-station="${station}"]`);
+    if (!stationElement) return;
+    
+    // Update station classes
+    stationElement.classList.remove('station-waiting', 'station-processing', 'station-complete', 'station-error');
+    
+    const statusIcon = stationElement.querySelector('.station-status-icon');
+    const statusText = stationElement.querySelector('.station-status-text');
+    
+    switch (status) {
+        case 'processing':
+            stationElement.classList.add('station-processing');
+            if (statusIcon) statusIcon.className = 'station-status-icon fas fa-spinner fa-spin';
+            if (statusText) statusText.textContent = 'Processing...';
+            break;
+        case 'complete':
+            stationElement.classList.add('station-complete');
+            if (statusIcon) statusIcon.className = 'station-status-icon fas fa-check-circle';
+            if (statusText) statusText.textContent = 'Complete';
+            break;
+        case 'error':
+            stationElement.classList.add('station-error');
+            if (statusIcon) statusIcon.className = 'station-status-icon fas fa-exclamation-triangle';
+            if (statusText) statusText.textContent = 'Error';
+            break;
+        default:
+            stationElement.classList.add('station-waiting');
+            if (statusIcon) statusIcon.className = 'station-status-icon fas fa-clock';
+            if (statusText) statusText.textContent = 'Waiting';
+    }
+    
+    // Update preview text if provided
+    if (previewText) {
+        const previewElement = stationElement.querySelector('.station-preview');
+        if (previewElement) {
+            previewElement.textContent = previewText;
+        }
+    }
+}
+
+/**
+ * Update overall assembly line progress
+ */
+function updateBlockAssemblyLineProgress(blockId, progressPercent, statusText) {
+    const assemblyLineElement = document.querySelector(`[data-block-id="${blockId}"] .block-assembly-line`);
+    if (!assemblyLineElement) return;
+    
+    // Update progress bar
+    const progressBar = assemblyLineElement.querySelector('.pf-v5-c-progress__bar');
+    if (progressBar) {
+        progressBar.style.width = `${progressPercent}%`;
+    }
+    
+    // Update progress text
+    const progressText = assemblyLineElement.querySelector('.assembly-line-status');
+    if (progressText) {
+        progressText.textContent = statusText;
+    }
+    
+    // Update progress percentage
+    const progressPercentElement = assemblyLineElement.querySelector('.progress-percent');
+    if (progressPercentElement) {
+        progressPercentElement.textContent = `${Math.round(progressPercent)}%`;
+    }
+}
+
+/**
+ * Complete assembly line processing
+ */
+function completeBlockAssemblyLine(blockId) {
+    updateBlockAssemblyLineProgress(blockId, 100, 'Processing complete');
+    
+    // Add completion animation
+    const assemblyLineElement = document.querySelector(`[data-block-id="${blockId}"] .block-assembly-line`);
+    if (assemblyLineElement) {
+        assemblyLineElement.classList.add('assembly-line-complete');
+        
+        // Auto-hide assembly line after showing completion
+        setTimeout(() => {
+            if (assemblyLineElement.parentNode) {
+                assemblyLineElement.style.opacity = '0.7';
+            }
+        }, 2000);
+    }
+}
+
+/**
+ * Show error in assembly line
+ */
+function showAssemblyLineError(blockId, errorMessage) {
+    const assemblyLineElement = document.querySelector(`[data-block-id="${blockId}"] .block-assembly-line`);
+    if (!assemblyLineElement) return;
+    
+    // Update status to error
+    const statusElement = assemblyLineElement.querySelector('.assembly-line-status');
+    if (statusElement) {
+        statusElement.textContent = `Error: ${errorMessage}`;
+        statusElement.classList.add('error-text');
+    }
+    
+    // Add error styling
+    assemblyLineElement.classList.add('assembly-line-error');
 } 

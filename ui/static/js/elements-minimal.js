@@ -562,16 +562,25 @@ function createStructuralBlock(block, displayIndex, allBlocks = []) {
     const icon = blockTypeIcons[block.block_type] || 'fas fa-file-alt';
     const blockTitle = getBlockTypeDisplayName(block.block_type, { level: block.level, admonition_type: block.admonition_type });
     const issueCount = block.errors ? block.errors.length : 0;
-    const status = block.should_skip_analysis ? 'grey' : issueCount > 0 ? 'red' : 'green';
+    
+    // Enhanced status calculation with priority levels
+    const priority = getBlockPriority(block.errors);
+    const status = block.should_skip_analysis ? 'grey' : priority === 'red' ? 'red' : priority === 'yellow' ? 'orange' : 'green';
     const statusText = block.should_skip_analysis ? 'Skipped' : issueCount > 0 ? `${issueCount} Issue(s)` : 'Clean';
+    const priorityIcon = getPriorityIcon(priority);
+    
+    // Generate error summary and rewrite button
+    const errorSummary = issueCount > 0 ? summarizeBlockErrors(block.errors) : '';
+    const rewriteButton = generateBlockRewriteButton(block, displayIndex, priority);
 
     return `
-        <div class="pf-v5-c-card pf-m-compact pf-m-bordered-top" id="block-${displayIndex}">
+        <div class="pf-v5-c-card pf-m-compact pf-m-bordered-top block-priority-${priority}" id="block-${displayIndex}">
             <div class="pf-v5-c-card__header">
                 <div class="pf-v5-c-card__header-main">
                     <i class="${icon} pf-v5-u-mr-sm"></i>
                     <span class="pf-v5-u-font-weight-bold">BLOCK ${displayIndex + 1}:</span>
                     <span class="pf-v5-u-ml-sm">${blockTitle}</span>
+                    ${priorityIcon}
                 </div>
                 <div class="pf-v5-c-card__actions">
                     <span class="pf-v5-c-label pf-m-outline pf-m-${status}">
@@ -592,6 +601,14 @@ function createStructuralBlock(block, displayIndex, allBlocks = []) {
                         ${escapeHtml(block.content)}
                     </div>`
                 }
+                
+                ${errorSummary ? `
+                <div class="error-summary pf-v5-u-mt-md">
+                    <strong>Issues found:</strong> ${errorSummary}
+                </div>
+                ` : ''}
+                
+                ${rewriteButton}
             </div>
             ${block.errors && block.errors.length > 0 ? `
             <div class="pf-v5-c-card__footer">
@@ -650,4 +667,166 @@ function createSectionBlockElement(block, displayIndex) {
             </div>
         </div>
     `;
+}
+
+// Block-Level Rewriting Helper Functions
+
+/**
+ * Determine block priority based on error types
+ */
+function getBlockPriority(errors) {
+    if (!errors || errors.length === 0) return 'green';
+    
+    // Map error types to priority levels
+    const priorities = errors.map(error => getErrorPriority(error.type));
+    
+    if (priorities.includes('urgent')) return 'red';
+    if (priorities.includes('high') || priorities.includes('medium')) return 'yellow';
+    return 'green';
+}
+
+/**
+ * Get error priority level for a specific error type
+ */
+function getErrorPriority(errorType) {
+    // Handle wildcard patterns
+    if (errorType.startsWith('word_usage_')) return 'medium';
+    if (errorType.startsWith('punctuation_')) return 'low';
+    if (errorType.startsWith('technical_')) return 'medium';
+    if (errorType.startsWith('references_')) return 'low';
+    
+    // Explicit mapping based on assembly line configuration
+    const priorityMap = {
+        // URGENT (Red priority)
+        'legal_claims': 'urgent',
+        'legal_company_names': 'urgent',
+        'legal_personal_information': 'urgent',
+        'inclusive_language': 'urgent',
+        'second_person': 'urgent',
+        
+        // HIGH (Yellow priority)
+        'passive_voice': 'high',
+        'sentence_length': 'high',
+        'subjunctive_mood': 'high',
+        'verbs': 'high',
+        'headings': 'high',
+        
+        // MEDIUM (Yellow priority)
+        'contractions': 'medium',
+        'spelling': 'medium',
+        'terminology': 'medium',
+        'anthropomorphism': 'medium',
+        'capitalization': 'medium',
+        'prefixes': 'medium',
+        'plurals': 'medium',
+        'abbreviations': 'medium',
+        
+        // LOW (Green priority)
+        'tone': 'low',
+        'citations': 'low',
+        'ambiguity': 'low',
+        'currency': 'low'
+    };
+    
+    return priorityMap[errorType] || 'medium';
+}
+
+/**
+ * Get priority icon for visual indicators
+ */
+function getPriorityIcon(priority) {
+    switch (priority) {
+        case 'red':
+            return '<i class="fas fa-exclamation-triangle pf-v5-u-ml-sm" style="color: #dc3545;" title="Critical issues"></i>';
+        case 'yellow':
+            return '<i class="fas fa-exclamation-circle pf-v5-u-ml-sm" style="color: #ffc107;" title="High/Medium priority issues"></i>';
+        case 'green':
+            return '<i class="fas fa-check-circle pf-v5-u-ml-sm" style="color: #28a745;" title="Clean or low priority"></i>';
+        default:
+            return '';
+    }
+}
+
+/**
+ * Create a summary of block errors for quick overview
+ */
+function summarizeBlockErrors(errors) {
+    if (!errors || errors.length === 0) return '';
+    
+    const errorCounts = {};
+    errors.forEach(error => {
+        const category = categorizeError(error.type);
+        errorCounts[category] = (errorCounts[category] || 0) + 1;
+    });
+    
+    const summaryParts = Object.entries(errorCounts).map(([category, count]) => 
+        `${count} ${category}${count > 1 ? ' issues' : ' issue'}`
+    );
+    
+    return summaryParts.join(', ');
+}
+
+/**
+ * Categorize error types for summary display
+ */
+function categorizeError(errorType) {
+    if (errorType.includes('legal') || errorType === 'second_person' || errorType === 'inclusive_language') {
+        return 'legal/critical';
+    }
+    if (errorType === 'passive_voice' || errorType === 'sentence_length' || errorType === 'verbs') {
+        return 'structural';
+    }
+    if (errorType.startsWith('word_usage_') || errorType === 'contractions' || errorType === 'spelling') {
+        return 'grammar';
+    }
+    if (errorType.startsWith('punctuation_') || errorType === 'tone') {
+        return 'style';
+    }
+    return 'other';
+}
+
+/**
+ * Generate contextual rewrite button for blocks with errors
+ */
+function generateBlockRewriteButton(block, displayIndex, priority) {
+    // Don't show button for blocks without errors or skipped blocks
+    if (!block.errors || block.errors.length === 0 || block.should_skip_analysis) {
+        return '';
+    }
+    
+    const errorCount = block.errors.length;
+    const buttonText = priority === 'red' 
+        ? `🚨 Fix ${errorCount} Critical Issue${errorCount > 1 ? 's' : ''}`
+        : `🤖 Improve ${errorCount} Issue${errorCount > 1 ? 's' : ''}`;
+    
+    const estimatedTime = estimateBlockProcessingTime(block.errors);
+    const buttonClass = priority === 'red' ? 'pf-m-danger' : 'pf-m-primary';
+    
+    return `
+        <div class="pf-v5-u-mt-md">
+            <button class="pf-v5-c-button ${buttonClass} block-rewrite-button" 
+                    onclick="rewriteBlock('block-${displayIndex}', '${block.block_type}')" 
+                    data-block-id="block-${displayIndex}"
+                    data-block-type="${block.block_type}">
+                ${buttonText}
+            </button>
+            <small class="pf-v5-u-ml-sm pf-v5-u-color-400">
+                ⏱️ ~${estimatedTime} seconds
+            </small>
+        </div>
+    `;
+}
+
+/**
+ * Estimate processing time based on error count and complexity
+ */
+function estimateBlockProcessingTime(errors) {
+    if (!errors || errors.length === 0) return 0;
+    
+    // Base time + additional time per error
+    const baseTime = 15;
+    const timePerError = 3;
+    const totalTime = baseTime + (errors.length * timePerError);
+    
+    return Math.min(totalTime, 30); // Cap at 30 seconds
 }

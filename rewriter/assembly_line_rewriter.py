@@ -144,10 +144,10 @@ class AssemblyLineRewriter:
                 stations_needed.add('urgent')
             elif error_type in ['passive_voice', 'sentence_length', 'subjunctive_mood', 'verbs', 'headings']:
                 stations_needed.add('high')
-            elif (error_type.startswith('word_usage_') or 
+            elif (error_type.startswith('word_usage_') or error_type.startswith('technical_') or
                   error_type in ['contractions', 'spelling', 'terminology', 'anthropomorphism', 'capitalization', 'prefixes', 'plurals', 'abbreviations']):
                 stations_needed.add('medium')
-            elif (error_type.startswith('punctuation_') or 
+            elif (error_type.startswith('punctuation_') or error_type.startswith('references_') or
                   error_type in ['tone', 'citations', 'ambiguity', 'currency']):
                 stations_needed.add('low')
         

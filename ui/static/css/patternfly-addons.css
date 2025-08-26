@@ -8656,3 +8656,295 @@
     font-weight: var(--pf-v5-global--FontWeight--bold);
     color: var(--pf-v5-global--primary-color--100);
 }
+
+/* Block-Level Rewriting UI Styles */
+
+/* Block priority indicators */
+.block-priority-red { 
+    border-left: 4px solid #dc3545; 
+}
+
+.block-priority-yellow { 
+    border-left: 4px solid #ffc107; 
+}
+
+.block-priority-green { 
+    border-left: 4px solid #28a745; 
+}
+
+/* Block rewrite button styles */
+.block-rewrite-button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 160px;
+}
+
+.block-rewrite-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.block-rewrite-button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.block-rewrite-button.pf-m-in-progress {
+    background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+}
+
+.block-rewrite-button.pf-m-success {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+}
+
+/* Block processing states */
+.block-processing {
+    opacity: 0.8;
+    position: relative;
+}
+
+.block-processing::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 10px,
+        rgba(102, 126, 234, 0.1) 10px,
+        rgba(102, 126, 234, 0.1) 20px
+    );
+    pointer-events: none;
+    animation: processing-shimmer 2s infinite;
+}
+
+@keyframes processing-shimmer {
+    0% { opacity: 0.3; }
+    50% { opacity: 0.6; }
+    100% { opacity: 0.3; }
+}
+
+.block-completed {
+    border-left-color: #28a745;
+    box-shadow: 0 0 0 1px rgba(40, 167, 69, 0.2);
+}
+
+.block-error {
+    border-left-color: #dc3545;
+    box-shadow: 0 0 0 1px rgba(220, 53, 69, 0.2);
+}
+
+/* Block assembly line styles */
+.block-assembly-line {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 16px 0;
+    border: 1px solid #e9ecef;
+    position: relative;
+}
+
+.block-assembly-line.assembly-line-complete {
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    border-color: #28a745;
+}
+
+.block-assembly-line.assembly-line-error {
+    background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+    border-color: #dc3545;
+}
+
+/* Assembly line station styles */
+.dynamic-station {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    background: white;
+    border: 1px solid #e9ecef;
+    margin-bottom: 8px;
+}
+
+.dynamic-station:last-child {
+    margin-bottom: 0;
+}
+
+.station-waiting {
+    background: #f8f9fa;
+    color: #6c757d;
+}
+
+.station-processing {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    color: #1976d2;
+    border-color: #2196f3;
+    box-shadow: 0 2px 8px rgba(33, 150, 243, 0.2);
+}
+
+.station-complete {
+    background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%);
+    color: #388e3c;
+    border-color: #4caf50;
+}
+
+.station-error {
+    background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+    color: #d32f2f;
+    border-color: #f44336;
+}
+
+/* Station status icons */
+.station-status-icon {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.station-processing .station-status-icon {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Block results card styles */
+.block-results-card {
+    background: white;
+    border: 2px solid #28a745;
+    border-radius: 8px;
+    margin: 16px 0;
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.15);
+    position: relative;
+}
+
+.block-results-card::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, #28a745, #20c997, #17a2b8, #28a745);
+    border-radius: 8px;
+    z-index: -1;
+    animation: gradient-border 3s ease infinite;
+}
+
+@keyframes gradient-border {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+
+/* Copy button styles */
+.copy-text-button {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    max-width: 300px;
+    margin: 16px auto;
+    display: block;
+    transition: all 0.2s ease;
+}
+
+.copy-text-button:hover {
+    background: #218838;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.copy-text-button.pf-m-success {
+    background: #17a2b8;
+}
+
+/* Block error card styles */
+.block-error-card {
+    margin: 16px 0;
+}
+
+/* Error summary styles */
+.error-summary {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-size: 14px;
+    color: #856404;
+}
+
+.error-summary strong {
+    color: #533f03;
+}
+
+/* Progress enhancements */
+.assembly-line-status {
+    font-weight: 500;
+    color: #495057;
+}
+
+.progress-percent {
+    font-weight: 600;
+    color: #667eea;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .block-rewrite-button {
+        width: 100%;
+        margin-top: 8px;
+    }
+    
+    .dynamic-station {
+        padding: 8px 12px;
+    }
+    
+    .block-assembly-line {
+        padding: 16px;
+        margin: 12px 0;
+    }
+}
+
+/* Animations */
+.fade-in {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-out {
+    animation: fadeOut 0.3s ease-out forwards;
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(-10px); }
+}
+
+/* Error text styling */
+.error-text {
+    color: #dc3545 !important;
+    font-weight: 500;
+}
