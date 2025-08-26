@@ -6,8 +6,7 @@ Transform your technical documentation with comprehensive style analysis, readab
 
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
 [![Cross-Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-green.svg)](https://github.com/yourusername/peer-review-platform)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](License)
 ---
 
 ## 🚀 Quick Setup (3 Steps Only!)
@@ -407,5 +406,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## License
 
 This project is licensed under the [Apache License 2.0](License)
-
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](License)
