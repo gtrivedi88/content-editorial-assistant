@@ -67,17 +67,111 @@ class AssemblyLineRewriter:
         # Sort by priority score (descending) then by error type for consistency
         return sorted(errors, key=lambda x: (get_priority_score(x), x.get('type', '')), reverse=True)
 
-    def apply_sentence_level_assembly_line_fixes(self, content: str, errors: List[Dict[str, Any]], context: str) -> Dict[str, Any]:
+    def apply_block_level_assembly_line_fixes(self, block_content: str, block_errors: List[Dict[str, Any]], block_type: str) -> Dict[str, Any]:
         """
-        Apply assembly line fixes at sentence level with comprehensive error processing.
+        Apply assembly line fixes to a single structural block.
         
         Args:
-            content: The content to rewrite
-            errors: List of errors detected
-            context: Context level ('sentence' or 'paragraph')
+            block_content: The content of the specific block to rewrite
+            block_errors: List of errors detected in this block
+            block_type: Type of block (paragraph, heading, list, etc.)
             
         Returns:
             Dictionary with rewrite results
+        """
+        try:
+            if not block_content or not block_content.strip():
+                return self._empty_result()
+            
+            if not block_errors:
+                logger.info("No errors found for block, skipping rewrite.")
+                return {
+                    'rewritten_text': block_content,
+                    'improvements': ['Block is already clean'],
+                    'confidence': 1.0,
+                    'errors_fixed': 0,
+                    'applicable_stations': [],
+                    'block_type': block_type
+                }
+            
+            # Get applicable stations for this block's errors
+            applicable_stations = self.get_applicable_stations(block_errors)
+            
+            # Sort errors by priority for optimal processing order
+            sorted_errors = self._sort_errors_by_priority(block_errors)
+            
+            # Process block content through assembly line with block context
+            result = self.rewrite_sentence(block_content, sorted_errors, pass_number=1)
+            
+            # Add block-specific metadata
+            result.update({
+                'applicable_stations': applicable_stations,
+                'block_type': block_type,
+                'original_errors': len(block_errors),
+                'assembly_line_used': True
+            })
+            
+            if self.progress_callback:
+                self.progress_callback('block_processing', f'Block rewrite complete', 
+                                     f'Fixed {result.get("errors_fixed", 0)} errors in {block_type}', 100)
+            
+            logger.info(f"✅ Block rewrite complete: {result.get('errors_fixed', 0)}/{len(block_errors)} errors fixed")
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Block assembly line processing failed: {e}")
+            return {
+                'rewritten_text': block_content,
+                'improvements': [],
+                'confidence': 0.0,
+                'errors_fixed': 0,
+                'applicable_stations': [],
+                'block_type': block_type,
+                'error': f'Block assembly line processing failed: {str(e)}'
+            }
+
+    def get_applicable_stations(self, block_errors: List[Dict[str, Any]]) -> List[str]:
+        """Return only assembly line stations needed for this block's errors."""
+        
+        stations_needed = set()
+        
+        for error in block_errors:
+            error_type = error.get('type', '')
+            
+            # Map error types to assembly line stations based on assembly_line_config.yaml
+            if error_type in ['legal_claims', 'legal_company_names', 'legal_personal_information', 'inclusive_language', 'second_person']:
+                stations_needed.add('urgent')
+            elif error_type in ['passive_voice', 'sentence_length', 'subjunctive_mood', 'verbs', 'headings']:
+                stations_needed.add('high')
+            elif (error_type.startswith('word_usage_') or 
+                  error_type in ['contractions', 'spelling', 'terminology', 'anthropomorphism', 'capitalization', 'prefixes', 'plurals', 'abbreviations']):
+                stations_needed.add('medium')
+            elif (error_type.startswith('punctuation_') or 
+                  error_type in ['tone', 'citations', 'ambiguity', 'currency']):
+                stations_needed.add('low')
+        
+        # Return in priority order
+        priority_order = ['urgent', 'high', 'medium', 'low']
+        return [station for station in priority_order if station in stations_needed]
+
+    def get_station_display_name(self, station: str) -> str:
+        """Get user-friendly display name for assembly line station."""
+        
+        station_names = {
+            'urgent': 'Critical/Legal Pass',
+            'high': 'Structural Pass', 
+            'medium': 'Grammar Pass',
+            'low': 'Style Pass'
+        }
+        
+        return station_names.get(station, 'Processing Pass')
+
+    def apply_sentence_level_assembly_line_fixes(self, content: str, errors: List[Dict[str, Any]], context: str) -> Dict[str, Any]:
+        """
+        LEGACY METHOD - Apply assembly line fixes at sentence level.
+        NOTE: This method is maintained for backward compatibility but will be removed in Phase 3.
+        Use apply_block_level_assembly_line_fixes() for new implementations.
         """
         try:
             # Split content into sentences for processing

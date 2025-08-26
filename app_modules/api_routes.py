@@ -246,9 +246,71 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter):
             logger.error(f"PDF generation error: {str(e)}")
             return jsonify({'error': f'PDF generation failed: {str(e)}'}), 500
     
+    @app.route('/rewrite-block', methods=['POST'])
+    def rewrite_block():
+        """AI-powered single block rewriting."""
+        start_time = time.time()
+        try:
+            data = request.get_json()
+            block_content = data.get('block_content', '')
+            block_errors = data.get('block_errors', [])
+            block_type = data.get('block_type', 'paragraph')
+            block_id = data.get('block_id', '')
+            session_id = data.get('session_id', '')
+            
+            # Validate required inputs
+            if not block_content or not block_content.strip():
+                return jsonify({'error': 'No block content provided'}), 400
+            
+            if not block_id:
+                return jsonify({'error': 'Block ID is required'}), 400
+            
+            logger.info(f"Starting block rewrite for session {session_id}, block {block_id}, type: {block_type}")
+            
+            # Emit progress start via WebSocket
+            if session_id:
+                emit_progress(session_id, 'block_processing_start', 
+                            f'Starting rewrite for {block_type}', 
+                            f'Processing block {block_id}', 0)
+            
+            # Process single block through assembly line
+            result = ai_rewriter.assembly_line.apply_block_level_assembly_line_fixes(
+                block_content, block_errors, block_type
+            )
+            
+            # Add request metadata
+            processing_time = time.time() - start_time
+            result.update({
+                'block_id': block_id,
+                'session_id': session_id,
+                'processing_time': processing_time,
+                'success': 'error' not in result
+            })
+            
+            # Emit completion via WebSocket
+            if session_id:
+                emit_completion(session_id, 'block_processing_complete', result)
+            
+            logger.info(f"Block rewrite completed in {processing_time:.2f}s - {result.get('errors_fixed', 0)} errors fixed")
+            return jsonify(result)
+            
+        except Exception as e:
+            logger.error(f"Block rewrite error: {str(e)}")
+            error_result = {
+                'error': f'Block rewrite failed: {str(e)}',
+                'success': False,
+                'block_id': data.get('block_id', '') if 'data' in locals() else '',
+                'session_id': data.get('session_id', '') if 'data' in locals() else ''
+            }
+            return jsonify(error_result), 500
+
     @app.route('/rewrite', methods=['POST'])
     def rewrite_content():
-        """AI-powered content rewriting with assembly line support."""
+        """
+        LEGACY ENDPOINT - AI-powered content rewriting with assembly line support.
+        NOTE: This endpoint is deprecated and will be removed in Phase 3.
+        Use /rewrite-block for new implementations.
+        """
         start_time = time.time()
         try:
             data = request.get_json()
@@ -260,26 +322,29 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter):
             if not content:
                 return jsonify({'error': 'No content provided'}), 400
             
-            logger.info(f"Starting rewrite for session {session_id} (assembly_line: {use_assembly_line})")
+            logger.warning(f"Using LEGACY /rewrite endpoint for session {session_id} - migrate to /rewrite-block")
             
             if use_assembly_line:
-                # Use assembly line rewriter
-                result = ai_rewriter.rewrite_content_assembly_line(
-                    content, errors, session_id
+                # Use legacy assembly line rewriter
+                result = ai_rewriter.assembly_line.apply_sentence_level_assembly_line_fixes(
+                    content, errors, "document"
                 )
             else:
-                # Use traditional rewriter
-                result = ai_rewriter.rewrite_content(content, errors)
+                # Use fallback simple rewriter
+                from app_modules.fallback_services import SimpleAIRewriter
+                simple_rewriter = SimpleAIRewriter()
+                result = simple_rewriter.rewrite(content, errors)
             
             processing_time = time.time() - start_time
             result['processing_time'] = processing_time
             result['assembly_line_used'] = use_assembly_line
+            result['legacy_endpoint'] = True
             
-            logger.info(f"Rewrite completed in {processing_time:.2f}s")
+            logger.info(f"Legacy rewrite completed in {processing_time:.2f}s")
             return jsonify(result)
             
         except Exception as e:
-            logger.error(f"Rewrite error: {str(e)}")
+            logger.error(f"Legacy rewrite error: {str(e)}")
             return jsonify({'error': f'Rewrite failed: {str(e)}'}), 500
     
     @app.route('/refine', methods=['POST'])

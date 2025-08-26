@@ -68,12 +68,23 @@ def emit_progress(session_id: str, step: str, status: str, detail: str, progress
         logger.error(f"Error emitting progress: {e}")
 
 
-def emit_completion(session_id: str, success: bool, data: Optional[dict] = None, error: Optional[str] = None):
-    """Emit completion notification to specific session."""
+def emit_completion(session_id: str, event_type: str, data: Optional[dict] = None, error: Optional[str] = None):
+    """
+    Emit completion notification to specific session.
+    
+    Args:
+        session_id: Session identifier
+        event_type: Type of completion event (e.g., 'block_processing_complete', 'operation_complete')
+        data: Optional completion data
+        error: Optional error message
+    """
     try:
         if not _socketio:
             logger.warning("SocketIO not initialized, cannot emit completion")
             return
+            
+        # Determine success based on error presence
+        success = error is None
             
         if session_id and session_id.strip():
             # Auto-add session if it doesn't exist (frontend might generate its own IDs)
@@ -83,30 +94,32 @@ def emit_completion(session_id: str, success: bool, data: Optional[dict] = None,
             
             completion_data = {
                 'success': success,
-                'session_id': session_id
+                'session_id': session_id,
+                'timestamp': datetime.now().isoformat()
             }
             
             if data:
-                completion_data['data'] = data
+                completion_data.update(data)
             if error:
                 completion_data['error'] = error
             
-            _socketio.emit('operation_complete', completion_data, to=session_id)
-            logger.debug(f"Completion emitted to {session_id}: success={success}")
+            _socketio.emit(event_type, completion_data, to=session_id)
+            logger.debug(f"Completion emitted to {session_id}: {event_type} success={success}")
         else:
             # If no session ID, emit to all connected clients
             completion_data = {
                 'success': success,
-                'session_id': 'broadcast'
+                'session_id': 'broadcast',
+                'timestamp': datetime.now().isoformat()
             }
             
             if data:
-                completion_data['data'] = data
+                completion_data.update(data)
             if error:
                 completion_data['error'] = error
             
-            _socketio.emit('operation_complete', completion_data, broadcast=True)
-            logger.debug(f"Completion broadcast to all clients: success={success}")
+            _socketio.emit(event_type, completion_data, broadcast=True)
+            logger.debug(f"Completion broadcast to all clients: {event_type} success={success}")
     except Exception as e:
         logger.error(f"Error emitting completion: {e}")
 
@@ -575,6 +588,121 @@ def emit_session_feedback_summary(session_id: str, feedback_summary: Dict[str, A
         logger.debug(f"Session feedback summary emitted to {session_id}")
     except Exception as e:
         logger.error(f"Error emitting session feedback summary: {e}")
+
+
+# Block-Level Rewriting WebSocket Events
+
+def emit_block_processing_start(session_id: str, block_id: str, block_type: str, applicable_stations: List[str]):
+    """Emit block processing start event."""
+    try:
+        if not _socketio:
+            logger.warning("SocketIO not initialized, cannot emit block processing start")
+            return
+            
+        event_data = {
+            'block_id': block_id,
+            'block_type': block_type,
+            'applicable_stations': applicable_stations,
+            'session_id': session_id,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        if session_id and session_id.strip():
+            if session_id not in active_sessions:
+                active_sessions.add(session_id)
+            
+            _socketio.emit('block_processing_start', event_data, to=session_id)
+            logger.debug(f"Block processing start emitted to {session_id}: {block_id}")
+        else:
+            _socketio.emit('block_processing_start', event_data, broadcast=True)
+            logger.debug(f"Block processing start broadcast: {block_id}")
+    except Exception as e:
+        logger.error(f"Error emitting block processing start: {e}")
+
+
+def emit_station_progress_update(session_id: str, block_id: str, station: str, status: str, preview_text: Optional[str] = None):
+    """Emit assembly line station progress update."""
+    try:
+        if not _socketio:
+            logger.warning("SocketIO not initialized, cannot emit station progress")
+            return
+            
+        event_data = {
+            'block_id': block_id,
+            'station': station,
+            'status': status,
+            'session_id': session_id,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        if preview_text:
+            event_data['preview_text'] = preview_text
+        
+        if session_id and session_id.strip():
+            if session_id not in active_sessions:
+                active_sessions.add(session_id)
+            
+            _socketio.emit('station_progress_update', event_data, to=session_id)
+            logger.debug(f"Station progress emitted to {session_id}: {block_id} - {station} - {status}")
+        else:
+            _socketio.emit('station_progress_update', event_data, broadcast=True)
+            logger.debug(f"Station progress broadcast: {block_id} - {station} - {status}")
+    except Exception as e:
+        logger.error(f"Error emitting station progress: {e}")
+
+
+def emit_block_processing_complete(session_id: str, block_id: str, result: Dict[str, Any]):
+    """Emit block processing completion event."""
+    try:
+        if not _socketio:
+            logger.warning("SocketIO not initialized, cannot emit block processing complete")
+            return
+            
+        event_data = {
+            'block_id': block_id,
+            'result': result,
+            'session_id': session_id,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        if session_id and session_id.strip():
+            if session_id not in active_sessions:
+                active_sessions.add(session_id)
+            
+            _socketio.emit('block_processing_complete', event_data, to=session_id)
+            logger.debug(f"Block processing complete emitted to {session_id}: {block_id}")
+        else:
+            _socketio.emit('block_processing_complete', event_data, broadcast=True)
+            logger.debug(f"Block processing complete broadcast: {block_id}")
+    except Exception as e:
+        logger.error(f"Error emitting block processing complete: {e}")
+
+
+def emit_block_error(session_id: str, block_id: str, error_message: str):
+    """Emit block processing error event."""
+    try:
+        if not _socketio:
+            logger.warning("SocketIO not initialized, cannot emit block error")
+            return
+            
+        event_data = {
+            'block_id': block_id,
+            'error': error_message,
+            'session_id': session_id,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        if session_id and session_id.strip():
+            if session_id not in active_sessions:
+                active_sessions.add(session_id)
+            
+            _socketio.emit('block_processing_error', event_data, to=session_id)
+            logger.debug(f"Block error emitted to {session_id}: {block_id}")
+        else:
+            _socketio.emit('block_processing_error', event_data, broadcast=True)
+            logger.debug(f"Block error broadcast: {block_id}")
+    except Exception as e:
+        logger.error(f"Error emitting block error: {e}")
 
 
 def get_websocket_performance_metrics() -> Dict[str, Any]:
