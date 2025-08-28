@@ -1,4 +1,4 @@
-# 🎯 Peer lens
+# 🎯 Content Editorial Assistant
 
 **AI-Powered Technical Writing Assistant with Local Ollama Integration**
 
