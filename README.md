@@ -1,4 +1,4 @@
-# 🎯 Content Editorial Assistant
+# 🎯 Content Editorial Assistant (CEA)
 
 **AI-Powered Technical Writing Assistant with Local Ollama Integration**
 

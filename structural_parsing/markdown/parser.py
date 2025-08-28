@@ -133,6 +133,7 @@ class MarkdownParser:
         document = MarkdownDocument()
         document.source_file = filename
         document.blocks = blocks
+        document.children = blocks  # Ensure children is kept in sync with blocks
         return document
     
     def _create_block_from_token(self, token: Token, content_lines: List[str]) -> Optional[MarkdownBlock]:
@@ -213,11 +214,7 @@ class MarkdownParser:
             content=content,
             raw_content=raw_content,
             start_line=start_line + 1,  # Convert to 1-based indexing
-            end_line=end_line,
-            start_pos=0,  # Would need more complex calculation
-            end_pos=len(raw_content),
-            level=self._get_heading_level(token),
-            children=[]
+            level=self._get_heading_level(token)
         )
         
         # Set token-specific attributes

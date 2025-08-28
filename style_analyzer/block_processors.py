@@ -10,6 +10,13 @@ from .analysis_modes import AnalysisModeExecutor
 # We need to import the types to reference them
 from structural_parsing.asciidoc.types import AsciiDocBlock, AsciiDocBlockType
 
+# Import Markdown types as well
+try:
+    from structural_parsing.markdown.types import MarkdownBlock, MarkdownBlockType
+    MARKDOWN_TYPES_AVAILABLE = True
+except ImportError:
+    MARKDOWN_TYPES_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 class BlockProcessor:
@@ -85,6 +92,9 @@ class BlockProcessor:
         if not block_type:
             return
             
+        # Get block type value, handling both AsciiDoc and Markdown types
+        block_type_value = getattr(block_type, 'value', str(block_type))
+            
         # FINAL FIX: Filter out paragraphs that are Asciidoctor warnings.
         # This is more robust than the previous regex and checks if the paragraph
         # content simply starts with the warning text.
@@ -98,14 +108,16 @@ class BlockProcessor:
             return
 
         # FIX 1: Prevent duplicate document title heading by finding the first *heading* block.
-        if block_type.value == 'document':
+        if block_type_value == 'document':
             if hasattr(block, 'title') and block.title:
                 # Find the first child that is a heading block.
                 first_heading_child = None
                 for child in block.children:
-                    if hasattr(child, 'block_type') and child.block_type.value == 'heading':
-                        first_heading_child = child
-                        break
+                    if hasattr(child, 'block_type'):
+                        child_type_value = getattr(child.block_type, 'value', str(child.block_type))
+                        if child_type_value == 'heading':
+                            first_heading_child = child
+                            break
 
                 if (first_heading_child and
                     hasattr(first_heading_child, 'title') and
@@ -128,14 +140,14 @@ class BlockProcessor:
             return
 
         # For preamble and table_row container types, process children only
-        if block_type.value in ['preamble', 'table_row']:
+        if block_type_value in ['preamble', 'table_row']:
             for child in block.children:
                 self._flatten_recursively(child)
             return
 
         # For sections, we create a synthetic 'heading' block for the UI, add it,
         # and then process the section's children.
-        if block_type.value == 'section':
+        if block_type_value == 'section':
             heading_block = self._create_heading_from_section(block)
             self.flat_blocks.append(heading_block)
             for child in block.children:
@@ -144,14 +156,14 @@ class BlockProcessor:
 
         # For heading blocks that have children (like from AsciiDoc document structure),
         # add the heading and process its children
-        if block_type.value == 'heading' and block.children:
+        if block_type_value == 'heading' and block.children:
             self.flat_blocks.append(block)
             for child in block.children:
                 self._flatten_recursively(child)
             return
 
         # For table blocks, add them and also process their children (rows and cells)
-        if block_type.value == 'table':
+        if block_type_value == 'table':
             self.flat_blocks.append(block)
             # Process table rows and cells
             for child in block.children:
@@ -159,7 +171,7 @@ class BlockProcessor:
             return
 
         # For table cells, add them to the flat list since they contain analyzable content
-        if block_type.value == 'table_cell':
+        if block_type_value == 'table_cell':
             self.flat_blocks.append(block)
             # Also process any children they might have
             for child in block.children:
@@ -170,7 +182,8 @@ class BlockProcessor:
         # we add them directly to the flat list. The UI will render their children
         # (like list items) from the block's .children property.
         # We explicitly exclude child-only types that are rendered by their parents.
-        if block_type.value not in ['list_item', 'description_list_item', 'table_row', 'table_cell', 'table']:
+        
+        if block_type_value not in ['list_item', 'description_list_item', 'table_row', 'table_cell', 'table']:
              self.flat_blocks.append(block)
 
     def _create_heading_from_section(self, section_block: Any) -> Any:
