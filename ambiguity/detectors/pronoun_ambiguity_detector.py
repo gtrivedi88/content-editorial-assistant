@@ -45,7 +45,7 @@ class PronounAmbiguityDetector(AmbiguityDetector):
         
         # Configuration for evidence-based analysis
         self.max_referent_distance = 2  # Sentences to look back
-        self.confidence_threshold = 0.70  # Universal threshold compliance (≥0.35)
+        self.confidence_threshold = 0.45  # Adjusted for evidence-based detection (universal ≥0.35)
         self.min_referents_for_ambiguity = 2  # Minimum competing referents
         
         # Discourse markers that affect ambiguity
@@ -102,7 +102,8 @@ class PronounAmbiguityDetector(AmbiguityDetector):
                     evidence_score = self._calculate_pronoun_evidence(token, doc, context, nlp)
                     if evidence_score >= self.confidence_threshold:
                         detection = self._create_pronoun_detection(token, evidence_score, context, nlp)
-                        detections.append(detection)
+                        if detection:  # Only add if detection was successfully created
+                            detections.append(detection)
                         
         except Exception as e:
             print(f"Error in pronoun ambiguity detection: {e}")
@@ -144,17 +145,30 @@ class PronounAmbiguityDetector(AmbiguityDetector):
         """
         # Get referent analysis for evidence calculation
         ambiguity_info = self._analyze_pronoun_ambiguity(pronoun_token, doc, context, nlp)
+        
+        # Handle case where analysis returns None or insufficient referents
         if not ambiguity_info:
+            # Still check for inherent ambiguity even without clear referents
+            if pronoun_token.lemma_.lower() in ['it', 'this', 'that'] and pronoun_token.i == 0:
+                # Sentence-initial pronouns are inherently ambiguous without clear antecedents
+                return 0.45  # Above threshold for inherent ambiguity
             return 0.0
         
         referents = ambiguity_info['referents']
         referent_count = len(referents)
         
         # Evidence-based base confidence (Level 2 enhancement)
-        if referent_count < 2:
-            return 0.0  # No ambiguity with fewer than 2 referents
-        
-        evidence_score = 0.45  # Starting point for potential ambiguity
+        if referent_count < 1:
+            # No referents found but pronoun detected - inherent ambiguity case
+            if pronoun_token.lemma_.lower() in ['it', 'this', 'that'] and pronoun_token.i == 0:
+                return 0.45  # Sentence-initial pronouns without referents are ambiguous
+            return 0.0
+        elif referent_count == 1:
+            # Single referent might still be ambiguous depending on context
+            evidence_score = 0.35  # Minimal evidence for single referent scenarios
+        else:
+            # Multiple referents - clear ambiguity
+            evidence_score = 0.45  # Starting point for multiple referents
         
         # EVIDENCE FACTOR 1: Referent Count Assessment (High Impact)
         if referent_count == 2:

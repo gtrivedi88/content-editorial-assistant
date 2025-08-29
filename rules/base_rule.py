@@ -1220,6 +1220,7 @@ class BaseRule(ABC):
                 # Add basic enhanced fields as fallback
                 error.update({
                     'confidence_score': 0.5,  # Default confidence
+                    'confidence': 0.5,  # Backward compatibility
                     'confidence_breakdown': None,
                     'validation_result': None,
                     'enhanced_validation_available': False,
@@ -1228,6 +1229,8 @@ class BaseRule(ABC):
         else:
             # Mark that enhanced validation is not available
             error['enhanced_validation_available'] = False
+            # Add basic confidence for backward compatibility
+            error['confidence'] = 0.5
         
         # Add extra data with safe serialization
         for key, value in extra_data.items():
@@ -1345,6 +1348,10 @@ class BaseRule(ABC):
             enhanced_fields['text'] = text
         if context is not None:
             enhanced_fields['context'] = context
+        
+        # Backward compatibility: Map confidence_score to confidence
+        if 'confidence_score' in enhanced_fields:
+            enhanced_fields['confidence'] = enhanced_fields['confidence_score']
         
         return enhanced_fields
         

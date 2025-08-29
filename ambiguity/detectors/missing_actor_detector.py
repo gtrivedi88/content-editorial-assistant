@@ -155,7 +155,7 @@ class MissingActorDetector(AmbiguityDetector):
         # Initialize self-contained lightweight passive voice analyzer for ambiguity detection
         self.passive_analyzer = LightweightPassiveAnalyzer()
             
-        self.confidence_threshold = 0.7
+        self.confidence_threshold = 0.55  # Adjusted for evidence-based detection
         
         # Clear actors that, when present, reduce ambiguity
         self.clear_actors = {

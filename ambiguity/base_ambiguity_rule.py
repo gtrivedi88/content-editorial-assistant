@@ -68,6 +68,15 @@ class BaseAmbiguityRule(BaseRule):
     def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
         """
         Analyze text for ambiguity by running all enabled detectors.
+        
+        Args:
+            text: Full text being analyzed
+            sentences: List of sentences (either strings or SpaCy Doc objects)
+            nlp: SpaCy nlp object for processing
+            context: Additional context information
+            
+        Returns:
+            List of error dictionaries for detected ambiguities
         """
         if not nlp:
             return []
@@ -76,11 +85,28 @@ class BaseAmbiguityRule(BaseRule):
         
         try:
             for i, sentence in enumerate(sentences):
-                if not sentence.strip():
+                # Handle both string and SpaCy Doc inputs for compatibility
+                if hasattr(sentence, 'text'):
+                    # SpaCy Doc object
+                    sentence_text = sentence.text
+                else:
+                    # String
+                    sentence_text = sentence
+                
+                # Skip empty sentences
+                if not sentence_text or not sentence_text.strip():
                     continue
                 
+                # Convert sentences to string format for context creation
+                sentences_text = []
+                for s in sentences:
+                    if hasattr(s, 'text'):
+                        sentences_text.append(s.text)
+                    else:
+                        sentences_text.append(str(s))
+                
                 sentence_context = self._create_sentence_context(
-                    sentence, i, sentences, text, context
+                    sentence_text, i, sentences_text, text, context
                 )
                 
                 for detector_type, detector in self.detectors.items():

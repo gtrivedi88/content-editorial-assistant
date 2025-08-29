@@ -1,6 +1,15 @@
 """
-Sentence Length Rule - Analyzes sentence complexity and suggests structural improvements.
-Uses pure SpaCy syntactic and morphological analysis with zero hardcoded patterns.
+Sentence Length Rule (Evidence-Based)
+Analyzes sentence complexity and suggests structural improvements using evidence-based rule development.
+
+This rule is fully compatible with Level 2 Enhanced Validation, Evidence-Based 
+Rule Development, and Universal Confidence Threshold architecture. It provides
+sophisticated 7-factor evidence scoring for sentence length violations.
+
+Architecture compliance:
+- confidence.md: Universal threshold (≥0.35), normalized confidence
+- evidence_based_rule_development.md: Multi-factor evidence assessment  
+- level_2_implementation.adoc: Enhanced validation integration
 """
 
 from typing import List, Dict, Any, Optional
@@ -52,65 +61,500 @@ except ImportError:
                         return error
 
 class SentenceLengthRule(BaseRule):
-    """Rule to analyze sentence complexity using pure SpaCy linguistic analysis."""
+    """
+    Evidence-based rule to analyze sentence complexity and length.
+    
+    This rule implements sophisticated evidence scoring that considers:
+    - Syntactic complexity and readability factors
+    - Cognitive load and processing difficulty  
+    - Document context and content type appropriateness
+    - Multi-factor linguistic analysis
+    - Surgical zero false positive guards
+    
+    Architecture compliance:
+    - Universal threshold (≥0.35) for all detections
+    - Multi-factor evidence assessment with 7 evidence factors
+    - Enhanced validation system integration
+    - Surgical zero false positive guards
+    """
     
     def __init__(self):
         super().__init__()
+        
+        # Evidence-based configuration
         self.max_words = 25  # Default maximum words per sentence
+        self.confidence_threshold = 0.45  # Above universal threshold (≥0.35)
+        
+        # Initialize evidence scoring components
+        self._initialize_evidence_patterns()
     
+    def _initialize_evidence_patterns(self):
+        """Initialize evidence-based patterns for sophisticated scoring."""
+        
+        # Complexity thresholds for evidence scoring
+        self.complexity_thresholds = {
+            'low_complexity': {'max_words': 15, 'max_depth': 2, 'max_cognitive_load': 0.2},
+            'medium_complexity': {'max_words': 25, 'max_depth': 3, 'max_cognitive_load': 0.4},
+            'high_complexity': {'max_words': 35, 'max_depth': 4, 'max_cognitive_load': 0.6},
+            'extreme_complexity': {'max_words': 50, 'max_depth': 5, 'max_cognitive_load': 0.8}
+        }
+        
+        # Context indicators that affect evidence scoring
+        self.appropriate_contexts = {
+            'technical_documentation': True,  # Technical docs may have longer sentences
+            'academic_writing': True,         # Academic writing may be more complex
+            'legal_documents': True,          # Legal docs may need precision
+            'marketing_copy': False,          # Marketing should be simple
+            'user_instructions': False       # Instructions should be clear
+        }
+        
+        # Document types where length rules should be more lenient
+        self.length_appropriate_contexts = {
+            'code_examples': True,           # Code examples may need detail
+            'technical_specifications': True, # Specs may be complex
+            'api_documentation': True,       # API docs may be detailed
+            'troubleshooting_guides': False  # Troubleshooting should be clear
+        }
+        
+        # Linguistic indicators that reduce evidence for violations
+        self.evidence_reducers = {
+            'list_structures': ['first', 'second', 'third', 'finally'],
+            'technical_terms': ['configure', 'implementation', 'specification', 'parameter'],
+            'logical_connectors': ['because', 'therefore', 'however', 'consequently']
+        }
+
     def _get_rule_type(self) -> str:
         return 'sentence_length'
     
     def analyze(self, text: str, sentences: List[str], nlp=None, context=None) -> List[Dict[str, Any]]:
-        """Analyze text for sentence length issues using advanced SpaCy syntactic analysis."""
-        errors = []
+        """
+        Analyze text for sentence length violations using evidence-based rule development.
         
+        Implements sophisticated evidence scoring with:
+        - Multi-factor evidence assessment (7 factors)
+        - Surgical zero false positive guards
+        - Context-aware domain validation
+        - Universal threshold compliance (≥0.35)
+        """
+        errors = []
+        if not nlp:
+            return errors
+
         for i, sentence in enumerate(sentences):
-            if nlp:
-                doc = nlp(sentence)
+            # Handle both string and SpaCy Doc inputs for compatibility
+            if hasattr(sentence, 'text'):
+                sent_text = sentence.text
+                sent_doc = sentence
+            else:
+                sent_text = sentence
+                sent_doc = nlp(sentence)
+            
+            if not sent_doc:
+                continue
+            
+            # Apply zero false positive guards first
+            if self._apply_zero_false_positive_guards(sent_text, context):
+                continue
+            
+            # Calculate word count for length assessment
+            word_count = len([token for token in sent_doc if not token.is_punct and not token.is_space])
+            
+            # Only analyze sentences that exceed reasonable length
+            if word_count > self.max_words:
+                # Calculate sophisticated complexity analysis
+                complexity_analysis = self._analyze_syntactic_complexity(sent_doc)
                 
-                # Advanced syntactic complexity analysis
-                complexity_analysis = self._analyze_syntactic_complexity(doc)
-                severity = self._determine_severity_advanced(doc, complexity_analysis)
+                # Calculate evidence score for this length violation
+                evidence_score = self._calculate_sentence_length_evidence(
+                    sent_doc, word_count, complexity_analysis, sent_text, text, context
+                )
                 
-                # NEW: Transition flow analysis for technical writers
-                if i == 0:  # First sentence - analyze entire document for flow
-                    full_doc = nlp(text)
-                    flow_issues = self._detect_transition_flow_issues(full_doc)
-                    for flow_issue in flow_issues:
-                        if flow_issue.get('needs_improvement'):
+                # Only create error if evidence suggests it's worth evaluating
+                if evidence_score >= self.confidence_threshold:
+                    error = self._create_error(
+                        sentence=sent_text,
+                        sentence_index=i,
+                        message=self._get_contextual_length_message(word_count, complexity_analysis, evidence_score),
+                        suggestions=self._generate_evidence_aware_suggestions(
+                            sent_doc, complexity_analysis, evidence_score, context
+                        ),
+                        severity=self._determine_evidence_based_severity(evidence_score, complexity_analysis),
+                        text=text,  # Level 2 ✅
+                        context=context,  # Level 2 ✅
+                        evidence_score=evidence_score,  # Evidence-based scoring
+                        flagged_text=sent_text,
+                        span=(0, len(sent_text)),
+                        complexity_analysis=complexity_analysis,
+                        word_count=word_count
+                    )
+                    errors.append(error)
+                    
+            # NEW: Transition flow analysis for technical writers (if first sentence)
+            if i == 0:  # First sentence - analyze entire document for flow
+                full_doc = nlp(text)
+                flow_issues = self._detect_transition_flow_issues(full_doc)
+                for flow_issue in flow_issues:
+                    if flow_issue.get('needs_improvement'):
+                        # Calculate evidence for flow issues
+                        flow_evidence = self._calculate_flow_evidence(flow_issue, text, context)
+                        
+                        if flow_evidence >= self.confidence_threshold:
                             flow_suggestions = self._generate_flow_suggestions(flow_issue)
                             errors.append(self._create_error(
-                                sentence=sentence,
+                                sentence=sent_text,
                                 sentence_index=i,
                                 message=f'Flow issue: {flow_issue.get("type", "unknown").replace("_", " ").title()}',
                                 suggestions=flow_suggestions,
                                 severity='medium',
-                                text=text,  # Enhanced: Pass full text for better confidence analysis
-                                context=context,  # Enhanced: Pass context for domain-specific validation
+                                text=text,  # Level 2 ✅
+                                context=context,  # Level 2 ✅
+                                evidence_score=flow_evidence,  # Evidence-based scoring
+                                flagged_text=sent_text,
+                                span=(flow_issue.get('position', 0), flow_issue.get('position', 0) + len(sent_text)),
                                 complexity_analysis=flow_issue
                             ))
-                
-                # Traditional sentence length analysis
-                suggestions = self._generate_advanced_suggestions(doc, complexity_analysis)
-            else:
-                # Fallback: Use basic word count
-                suggestions = self._generate_basic_suggestions(sentence)
-                severity = self._determine_severity_basic(sentence)
-            
-            if len(sentence.split()) > self.max_words:
-                errors.append(self._create_error(
-                    sentence=sentence,
-                    sentence_index=i,
-                    message=f'Sentence is {len(sentence.split())} words long. Consider breaking it into shorter sentences.',
-                    suggestions=suggestions,
-                    severity=severity,
-                    text=text,  # Enhanced: Pass full text for better confidence analysis
-                    context=context,  # Enhanced: Pass context for domain-specific validation
-                    complexity_analysis=complexity_analysis if nlp else None
-                ))
 
         return errors
+    
+    def _apply_zero_false_positive_guards(self, sentence_text: str, context: Optional[Dict[str, Any]]) -> bool:
+        """
+        Apply surgical zero false positive guards for sentence length rule.
+        
+        Returns True if the detection should be skipped (no length violation risk).
+        """
+        if not sentence_text:
+            return True
+        
+        document_context = context or {}
+        block_type = document_context.get('block_type', '').lower()
+        content_type = document_context.get('content_type', '').lower()
+        
+        # Guard 1: Code blocks and technical identifiers
+        if block_type in ['code_block', 'literal_block', 'inline_code']:
+            return True
+        
+        # Guard 2: List items that are naturally longer
+        sentence_lower = sentence_text.lower().strip()
+        if any(indicator in sentence_lower for indicator in ['first:', 'second:', 'third:', 'finally:']):
+            return True
+        
+        # Guard 3: Technical specifications that need precision
+        if content_type in ['technical_specifications', 'api_documentation']:
+            # Allow longer sentences in technical contexts
+            if len(sentence_text.split()) < 40:  # More lenient threshold
+                return True
+        
+        # Guard 4: Quotations and examples
+        if (sentence_text.startswith('"') and sentence_text.endswith('"')) or \
+           (sentence_text.startswith("'") and sentence_text.endswith("'")):
+            return True
+        
+        # Guard 5: Legal disclaimers and formal statements
+        legal_indicators = ['disclaimer:', 'notice:', 'copyright', 'trademark', 'legal']
+        if any(indicator in sentence_lower for indicator in legal_indicators):
+            return True
+        
+        return False
+    
+    def _calculate_sentence_length_evidence(self, doc, word_count: int, complexity_analysis: Dict[str, Any], 
+                                           sentence_text: str, text: str, context: Dict[str, Any]) -> float:
+        """
+        Enhanced Level 2 evidence calculation for sentence length violations.
+        
+        Implements evidence-based rule development with:
+        - Multi-factor evidence assessment
+        - Context-aware domain validation 
+        - Universal threshold compliance (≥0.35)
+        - Specific criteria for length vs readability balance
+        """
+        # Evidence-based base confidence (Level 2 enhancement)
+        evidence_score = 0.35  # Starting at universal threshold (≥0.35)
+        
+        # EVIDENCE FACTOR 1: Length Severity Assessment (High Impact)
+        length_factor = self._calculate_length_severity_factor(word_count)
+        evidence_score += length_factor
+        
+        # EVIDENCE FACTOR 2: Syntactic Complexity Analysis (Context Dependency)
+        complexity_factor = self._calculate_complexity_evidence_factor(complexity_analysis)
+        evidence_score += complexity_factor
+        
+        # EVIDENCE FACTOR 3: Document Context Assessment (Domain Knowledge)
+        domain_modifier = self._calculate_domain_evidence_modifier(context)
+        evidence_score += domain_modifier
+        
+        # EVIDENCE FACTOR 4: Readability Impact Analysis (User Experience)
+        readability_modifier = self._calculate_readability_evidence_modifier(doc, complexity_analysis)
+        evidence_score += readability_modifier
+        
+        # EVIDENCE FACTOR 5: Content Type Appropriateness (Communication Purpose)
+        content_modifier = self._calculate_content_type_evidence_modifier(sentence_text, context)
+        evidence_score += content_modifier
+        
+        # EVIDENCE FACTOR 6: Structural Quality Assessment (Sentence Architecture)
+        structural_modifier = self._calculate_structural_evidence_modifier(doc, complexity_analysis)
+        evidence_score += structural_modifier
+        
+        # EVIDENCE FACTOR 7: Breaking Difficulty Analysis (Practicality Assessment)
+        breaking_modifier = self._calculate_breaking_difficulty_modifier(doc, sentence_text)
+        evidence_score += breaking_modifier
+        
+        # UNIVERSAL THRESHOLD COMPLIANCE (≥0.35 minimum)
+        # Cap at 0.95 to leave room for uncertainty
+        return min(0.95, max(0.35, evidence_score))
+    
+    def _calculate_length_severity_factor(self, word_count: int) -> float:
+        """Calculate evidence factor based on length severity."""
+        if word_count <= 25:
+            return 0.0  # Within reasonable range
+        elif word_count <= 30:
+            return 0.10  # Slightly long
+        elif word_count <= 35:
+            return 0.20  # Moderately long
+        elif word_count <= 45:
+            return 0.30  # Long
+        elif word_count <= 60:
+            return 0.40  # Very long
+        else:
+            return 0.50  # Extremely long
+    
+    def _calculate_complexity_evidence_factor(self, complexity_analysis: Dict[str, Any]) -> float:
+        """Calculate evidence factor based on syntactic complexity."""
+        overall_complexity = complexity_analysis.get('overall_complexity', 0)
+        cognitive_load = complexity_analysis.get('cognitive_load_score', 0)
+        subordination_depth = complexity_analysis.get('subordination_depth', 0)
+        
+        complexity_factor = 0.0
+        
+        # High complexity increases evidence for breaking
+        if overall_complexity > 7:
+            complexity_factor += 0.15
+        elif overall_complexity > 5:
+            complexity_factor += 0.10
+        elif overall_complexity > 3:
+            complexity_factor += 0.05
+        
+        # High cognitive load increases evidence
+        if cognitive_load > 0.4:
+            complexity_factor += 0.10
+        elif cognitive_load > 0.3:
+            complexity_factor += 0.05
+        
+        # Deep subordination increases evidence
+        if subordination_depth > 3:
+            complexity_factor += 0.08
+        elif subordination_depth > 2:
+            complexity_factor += 0.05
+        
+        return min(0.25, complexity_factor)  # Cap at 0.25
+    
+    def _calculate_domain_evidence_modifier(self, context: Dict[str, Any]) -> float:
+        """Calculate evidence modifier based on domain context."""
+        if not context:
+            return 0.0
+        
+        content_type = context.get('content_type', '')
+        domain = context.get('domain', '')
+        
+        modifier = 0.0
+        
+        # Adjust based on content type
+        if content_type in ['user_guide', 'tutorial', 'instructions']:
+            modifier += 0.10  # User-facing content should be clear
+        elif content_type in ['technical_specifications', 'api_documentation']:
+            modifier -= 0.05  # Technical content may need precision
+        elif content_type == 'marketing':
+            modifier += 0.15  # Marketing should be simple
+        
+        # Adjust based on domain
+        if domain in ['software', 'engineering', 'technical']:
+            modifier -= 0.05  # Technical domains may need complexity
+        elif domain in ['general', 'consumer']:
+            modifier += 0.10  # General audience needs simplicity
+        
+        return max(-0.15, min(0.20, modifier))  # Cap between -0.15 and 0.20
+    
+    def _calculate_readability_evidence_modifier(self, doc, complexity_analysis: Dict[str, Any]) -> float:
+        """Calculate evidence modifier based on readability impact."""
+        information_density = complexity_analysis.get('information_density', 0)
+        morphological_complexity = complexity_analysis.get('morphological_complexity', 0)
+        
+        modifier = 0.0
+        
+        # High information density makes long sentences harder to read
+        if information_density > 0.7:
+            modifier += 0.10
+        elif information_density > 0.6:
+            modifier += 0.05
+        
+        # High morphological complexity adds cognitive burden
+        if morphological_complexity > 4:
+            modifier += 0.08
+        elif morphological_complexity > 3:
+            modifier += 0.04
+        
+        return min(0.15, modifier)  # Cap at 0.15
+    
+    def _calculate_content_type_evidence_modifier(self, sentence_text: str, context: Dict[str, Any]) -> float:
+        """Calculate evidence modifier based on specific content characteristics."""
+        modifier = 0.0
+        sentence_lower = sentence_text.lower()
+        
+        # Technical terms may justify longer sentences
+        technical_indicators = ['configuration', 'implementation', 'specification', 'parameter']
+        if any(term in sentence_lower for term in technical_indicators):
+            modifier -= 0.05
+        
+        # Instructional language should be simple
+        instruction_indicators = ['must', 'should', 'click', 'select', 'configure']
+        if any(term in sentence_lower for term in instruction_indicators):
+            modifier += 0.10
+        
+        # List-like content may be naturally longer
+        list_indicators = ['first', 'second', 'next', 'finally', 'include']
+        if any(term in sentence_lower for term in list_indicators):
+            modifier -= 0.08
+        
+        return max(-0.10, min(0.15, modifier))  # Cap between -0.10 and 0.15
+    
+    def _calculate_structural_evidence_modifier(self, doc, complexity_analysis: Dict[str, Any]) -> float:
+        """Calculate evidence modifier based on sentence structural quality."""
+        coordination_density = complexity_analysis.get('coordination_density', 0)
+        dependency_chain_length = complexity_analysis.get('dependency_chain_length', 0)
+        
+        modifier = 0.0
+        
+        # High coordination suggests the sentence could be broken at coordination points
+        if coordination_density > 0.3:
+            modifier += 0.12
+        elif coordination_density > 0.2:
+            modifier += 0.08
+        
+        # Long dependency chains suggest structural complexity
+        if dependency_chain_length > 4:
+            modifier += 0.08
+        elif dependency_chain_length > 3:
+            modifier += 0.04
+        
+        return min(0.15, modifier)  # Cap at 0.15
+    
+    def _calculate_breaking_difficulty_modifier(self, doc, sentence_text: str) -> float:
+        """Calculate evidence modifier based on how difficult the sentence would be to break."""
+        modifier = 0.0
+        
+        # Count natural breaking points
+        breaking_points = 0
+        for token in doc:
+            if token.dep_ == "cc" and token.pos_ == "CCONJ":  # Coordinating conjunctions
+                breaking_points += 1
+            elif token.pos_ == "PUNCT" and token.text in [',', ';']:  # Punctuation breaks
+                breaking_points += 1
+        
+        # More breaking points = easier to split = higher evidence for splitting
+        if breaking_points >= 3:
+            modifier += 0.12
+        elif breaking_points >= 2:
+            modifier += 0.08
+        elif breaking_points >= 1:
+            modifier += 0.04
+        else:
+            modifier -= 0.04  # Hard to break sentences might be acceptable
+        
+        return max(-0.08, min(0.15, modifier))  # Cap between -0.08 and 0.15
+    
+    def _calculate_flow_evidence(self, flow_issue: Dict[str, Any], text: str, context: Dict[str, Any]) -> float:
+        """Calculate evidence score for flow issues."""
+        # Base evidence for flow issues
+        evidence_score = 0.40
+        
+        issue_type = flow_issue.get('type', '')
+        transition_strength = flow_issue.get('transition_strength', 0)
+        
+        # Adjust based on issue severity
+        if issue_type == 'inter_sentence_transition':
+            if transition_strength < 0.2:
+                evidence_score += 0.20  # Weak transitions
+            elif transition_strength < 0.4:
+                evidence_score += 0.10  # Moderate transitions
+        elif issue_type == 'intra_sentence_coordination':
+            coordination_density = flow_issue.get('coordination_density', 0)
+            if coordination_density > 0.2:
+                evidence_score += 0.15  # High coordination density
+        
+        # Context adjustments
+        if context and context.get('content_type') in ['user_guide', 'tutorial']:
+            evidence_score += 0.10  # Flow is critical for instructional content
+        
+        return min(0.90, max(0.35, evidence_score))
+    
+    def _get_contextual_length_message(self, word_count: int, complexity_analysis: Dict[str, Any], evidence_score: float) -> str:
+        """Generate contextual message for sentence length violations."""
+        overall_complexity = complexity_analysis.get('overall_complexity', 0)
+        
+        if evidence_score > 0.85:
+            return f"This {word_count}-word sentence is too long and complex. Break it into shorter, clearer sentences."
+        elif evidence_score > 0.65:
+            if overall_complexity > 6:
+                return f"This {word_count}-word sentence has high complexity. Consider simplifying or breaking it up."
+            else:
+                return f"This {word_count}-word sentence is long. Consider breaking it into shorter sentences."
+        else:
+            return f"This {word_count}-word sentence could be shortened for better readability."
+    
+    def _generate_evidence_aware_suggestions(self, doc, complexity_analysis: Dict[str, Any], 
+                                           evidence_score: float, context: Dict[str, Any]) -> List[str]:
+        """Generate evidence-aware suggestions for sentence length violations."""
+        suggestions = []
+        coordination_density = complexity_analysis.get('coordination_density', 0)
+        subordination_depth = complexity_analysis.get('subordination_depth', 0)
+        cognitive_load = complexity_analysis.get('cognitive_load_score', 0)
+        
+        if evidence_score > 0.80:
+            # High confidence - specific, actionable suggestions
+            if coordination_density > 0.3:
+                suggestions.append("Break at coordinating conjunctions (and, but, or) to create separate sentences.")
+                suggestions.append("Convert coordinated clauses into a bulleted list for clarity.")
+            
+            if subordination_depth > 3:
+                suggestions.append("Extract nested subordinate clauses into separate sentences.")
+                suggestions.append("Move subordinate information to the beginning or end of sentences.")
+            
+            if cognitive_load > 0.4:
+                suggestions.append("Reduce cognitive load by eliminating center-embedded clauses.")
+                suggestions.append("Restructure to avoid long-distance dependencies.")
+            
+        elif evidence_score > 0.60:
+            # Medium confidence - balanced suggestions
+            suggestions.append("Consider breaking this sentence at natural pause points.")
+            suggestions.append("Identify the main idea and separate supporting details.")
+            
+            if coordination_density > 0.2:
+                suggestions.append("Look for coordinating conjunctions as potential break points.")
+        
+        else:
+            # Lower confidence - gentle suggestions
+            suggestions.append("This sentence could be shortened for improved readability.")
+            suggestions.append("Consider if any parts could be separated or simplified.")
+        
+        # Context-specific suggestions
+        if context and context.get('content_type') == 'user_guide':
+            suggestions.append("User instructions should be clear and concise.")
+        elif context and context.get('content_type') == 'marketing':
+            suggestions.append("Marketing copy benefits from short, impactful sentences.")
+        
+        return suggestions[:3]  # Limit to 3 suggestions
+    
+    def _determine_evidence_based_severity(self, evidence_score: float, complexity_analysis: Dict[str, Any]) -> str:
+        """Determine severity based on evidence score and complexity."""
+        overall_complexity = complexity_analysis.get('overall_complexity', 0)
+        
+        if evidence_score > 0.85 and overall_complexity > 7:
+            return 'high'
+        elif evidence_score > 0.70:
+            return 'medium'
+        elif evidence_score > 0.50:
+            return 'low'
+        else:
+            return 'info'
     
     def _calculate_advanced_syntactic_complexity(self, doc) -> Dict[str, Any]:
         """Calculate advanced syntactic complexity using enhanced SpaCy analysis for A+ grade assessment."""

@@ -71,7 +71,7 @@ class FabricationRiskDetector(AmbiguityDetector):
         ]
         
         # Universal threshold compliance (≥0.35)
-        self.confidence_threshold = 0.70  # Stricter for fabrication risks
+        self.confidence_threshold = 0.50  # Adjusted for evidence-based detection
         
         # Clear indicators that reduce fabrication risk
         self.specific_indicators = {
@@ -141,8 +141,8 @@ class FabricationRiskDetector(AmbiguityDetector):
         if len(context.sentence.split()) <= 3:
             return True
         
-        # Guard 4: Sentences with specific, concrete details
-        if self._has_specific_details(context.sentence):
+        # Guard 4: Sentences with comprehensive specific details that eliminate fabrication risk
+        if self._has_comprehensive_specific_details(context.sentence):
             return True
         
         return False
@@ -375,6 +375,44 @@ class FabricationRiskDetector(AmbiguityDetector):
         ]
         
         return any(re.search(pattern, sentence) for pattern in specific_patterns)
+    
+    def _has_comprehensive_specific_details(self, sentence: str) -> bool:
+        """
+        Check if sentence has comprehensive specific details that eliminate fabrication risk.
+        
+        This is more restrictive than _has_specific_details - requires multiple specific
+        indicators or very detailed technical specifications that leave no room for fabrication.
+        """
+        import re
+        
+        # Count different types of specific details
+        detail_count = 0
+        
+        # Specific quantities with units
+        if re.search(r'\b\d+\s*(?:MB|GB|TB|KB|bytes?|ms|seconds?|minutes?|hours?|%)\b', sentence):
+            detail_count += 1
+        
+        # URLs or file paths
+        if re.search(r'https?://|[a-zA-Z]:[/\\]|\.exe|\.dll|\.config', sentence):
+            detail_count += 1
+        
+        # Multiple proper nouns (3+)
+        proper_nouns = re.findall(r'\b[A-Z][a-z]+\b', sentence)
+        if len(proper_nouns) >= 3:
+            detail_count += 1
+        
+        # Specific API or technical terms with parameters
+        if re.search(r'\b\w+\(\)|[a-zA-Z]+://|[a-zA-Z]+\.[a-zA-Z]+\(\)', sentence):
+            detail_count += 1
+        
+        # Technical specifications (multiple technical terms)
+        tech_terms = ['API', 'HTTP', 'HTTPS', 'JSON', 'XML', 'REST', 'GraphQL', 'SQL', 'NoSQL']
+        tech_count = sum(1 for term in tech_terms if term in sentence)
+        if tech_count >= 2:
+            detail_count += 1
+        
+        # Requires at least 2 types of comprehensive details to eliminate fabrication risk
+        return detail_count >= 2
     
     def _has_specific_purpose_details(self, sentence: str) -> bool:
         """Check if purpose statement has specific details."""

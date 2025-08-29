@@ -339,11 +339,18 @@ class BaseWordUsageRule(BaseRule):
             return True  # Domain-specific language is acceptable
             
         # === GUARD 6: URLs, FILE PATHS, AND IDENTIFIERS ===
-        # Don't flag technical identifiers, URLs, file paths
+        # Don't flag technical identifiers, URLs, file paths (but allow abbreviations like "w/")
         if hasattr(token, 'like_url') and token.like_url:
             return True
-        if hasattr(token, 'text') and ('/' in token.text or '\\' in token.text or token.text.startswith('http')):
-            return True
+        if hasattr(token, 'text'):
+            text = token.text
+            # Filter URLs and file paths, but allow abbreviations like "w/"
+            if (text.startswith('http') or 
+                text.startswith('www.') or
+                text.startswith('ftp://') or
+                ('/' in text and len(text) > 3) or  # Paths longer than 3 chars with /
+                ('\\' in text and len(text) > 3)):  # Windows paths longer than 3 chars with \
+                return True
             
         # === GUARD 7: FOREIGN LANGUAGE AND TRANSLITERATIONS ===
         # Don't flag tokens identified as foreign language
