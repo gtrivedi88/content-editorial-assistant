@@ -84,9 +84,13 @@ class ProcedureModuleRule(BaseRule):
         """
         errors = []
         
-        # Only analyze if this is a procedure module
-        if context and context.get('content_type') != 'procedure':
-            return errors
+        # Analyze if this is explicitly a procedure module OR if it contains procedural elements
+        # This makes the rule more defensive and user-friendly
+        if context and context.get('content_type'):
+            content_type = context.get('content_type')
+            if content_type not in ['procedure', 'auto', 'unknown']:
+                # Skip analysis only if explicitly set to a different type
+                return errors
             
         # Parse module structure
         structure = self.parser.parse(text)
@@ -217,18 +221,34 @@ class ProcedureModuleRule(BaseRule):
         return issues
     
     def _find_subheading_issues(self, structure: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Check for improper subheadings."""
+        """Check for improper subheadings and singular/plural issues."""
         issues = []
         
         for section in structure.get('sections', []):
             section_title_lower = section['title'].lower()
             
-            # Skip the main title (level 1)
-            if section['level'] == 1:
+            # Skip the main title (level 0, document title)
+            # Level 1 are the main sections (==) that we want to check
+            if section['level'] == 0:
                 continue
             
+            # Check for singular vs plural heading issues
+            if self._is_singular_plural_issue(section['title']):
+                issues.append({
+                    'type': 'optional_improvement',
+                    'level': 'WARN',
+                    'message': f"Heading should be plural: \"{section['title']}\"",
+                    'flagged_text': section['title'],
+                    'line_number': section['line_number'],
+                    'span': section['span'],
+                    'suggestions': [
+                        f"Change '{section['title']}' to '{self._get_plural_form(section['title'])}'",
+                        "Use plural forms for section headings that typically contain multiple items"
+                    ]
+                })
+            
             # Check if subheading is approved
-            if not any(approved in section_title_lower for approved in self.approved_subheadings):
+            elif not any(approved in section_title_lower for approved in self.approved_subheadings):
                 # [WARN] Improper Subheadings
                 issues.append({
                     'type': 'optional_improvement',
@@ -294,7 +314,39 @@ class ProcedureModuleRule(BaseRule):
                         'suggestions': [
                             "Break this step into multiple, separate steps",
                             "Each step should have only one action",
-                            "Use connecting words like 'then' to indicate separate steps"
+                            "Remove connecting words like 'and immediately' that combine actions"
+                        ]
+                    })
+                
+                # Check for conceptual explanations within steps
+                if self._has_conceptual_explanation(item['text']):
+                    issues.append({
+                        'type': 'step_validation',
+                        'level': 'FAIL',
+                        'message': f"Step contains conceptual explanation instead of direct action: \"{item['text'][:50]}...\"",
+                        'flagged_text': item['text'],
+                        'line_number': item['line_number'],
+                        'span': item['span'],
+                        'suggestions': [
+                            "Remove explanatory content and focus on the specific action",
+                            "Move detailed explanations to a Concept module",
+                            "Keep steps concise and action-focused"
+                        ]
+                    })
+                
+                # Check for vague, non-action steps
+                if self._is_vague_step(item['text']):
+                    issues.append({
+                        'type': 'step_validation',
+                        'level': 'FAIL',
+                        'message': f"Step is too vague and not actionable: \"{item['text'][:50]}...\"",
+                        'flagged_text': item['text'],
+                        'line_number': item['line_number'],
+                        'span': item['span'],
+                        'suggestions': [
+                            "Make the step more specific and actionable",
+                            "Replace vague instructions with concrete commands",
+                            "Specify exactly what the user should do"
                         ]
                     })
         
@@ -382,19 +434,41 @@ class ProcedureModuleRule(BaseRule):
     
     def _has_multiple_actions(self, text: str) -> bool:
         """Check if step contains multiple actions."""
-        # Look for connecting words that suggest multiple actions
+        # Enhanced detection for connecting words that suggest multiple actions
         multiple_action_indicators = [
-            ' and then ', ' then ', ' and ', ' also ', ' next ',
-            ', and ', '; ', ' after ', ' before ', ' while '
+            ' and then ', ' then ', ' and immediately ', ' and ', ' also ', ' next ',
+            ', and ', '; ', ' after ', ' before ', ' while ', ' followed by ',
+            ' subsequently ', ' afterwards ', ' immediately '
         ]
         
         text_lower = text.lower()
         
-        # Count action verbs
+        # Count action verbs (enhanced detection)
         action_count = 0
+        found_verbs = []
         for verb in self.imperative_verbs:
-            if f' {verb} ' in f' {text_lower} ':
-                action_count += 1
+            # More precise verb detection with word boundaries
+            import re
+            pattern = r'\b' + re.escape(verb) + r'\b'
+            matches = re.findall(pattern, text_lower)
+            if matches:
+                action_count += len(matches)
+                found_verbs.extend(matches)
+        
+        # Enhanced compound sentence detection - specifically catch patterns like
+        # "Log in to the server and navigate to the directory"
+        compound_patterns = [
+            r'\b(\w+)\s+[^.;]+\s+and\s+(?:immediately\s+)?(\w+)',  # "verb ... and verb"
+            r'\b(\w+)\s+[^.;]+,\s*and\s+(\w+)',  # "verb ..., and verb"
+        ]
+        
+        for pattern in compound_patterns:
+            matches = re.findall(pattern, text_lower)
+            for match in matches:
+                # Check if both parts contain action verbs
+                if any(verb in match[0] for verb in self.imperative_verbs) and \
+                   any(verb in match[1] for verb in self.imperative_verbs):
+                    return True
         
         # If multiple action verbs or connecting words
         return (action_count > 1 or 
@@ -423,3 +497,121 @@ class ProcedureModuleRule(BaseRule):
             suggestions = [f"Optional: {s}" for s in suggestions]
         
         return suggestions[:3]
+    
+    def _has_conceptual_explanation(self, text: str) -> bool:
+        """Check if step contains conceptual explanations instead of direct actions."""
+        # Indicators of conceptual content in steps
+        conceptual_indicators = [
+            'this is important because', 'this is crucial because', 'this is necessary because',
+            'the reason for', 'this helps', 'this ensures', 'this provides', 'this allows',
+            'memory leaks are', 'the script uses', 'providing a comprehensive', 'helping to',
+            'over time', 'preemptively identify', 'commonly used for', 'typically used',
+            'it is important to', 'note that', 'keep in mind', 'remember that',
+            'this will', 'this can', 'this may', 'this might', 'because of', 'due to'
+        ]
+        
+        text_lower = text.lower()
+        
+        # Check for long explanatory sentences (likely conceptual)
+        if len(text.split()) > 30:  # Very long steps are likely explanatory
+            # Look for explanatory patterns
+            if any(indicator in text_lower for indicator in conceptual_indicators):
+                return True
+        
+        # Check for technical explanations
+        technical_explanation_patterns = [
+            r'\b(uses?|utilizes?)\s+the\s+\w+\s+(command|tool|script)',
+            r'\b(analyzes?|provides?|helps?|ensures?)\s+\w+',
+            r'\b(comprehensive|detailed|thorough)\s+(overview|analysis)',
+            r'\bpreemptively\s+identify\b',
+            r'\bcommonly?\s+(source|cause)\s+of\b'
+        ]
+        
+        import re
+        for pattern in technical_explanation_patterns:
+            if re.search(pattern, text_lower):
+                return True
+        
+        return False
+    
+    def _is_vague_step(self, text: str) -> bool:
+        """Check if step is too vague or non-actionable."""
+        text_lower = text.lower().strip()
+        
+        # Vague action words that don't specify concrete actions
+        vague_verbs = {
+            'observe', 'watch', 'monitor', 'review', 'examine', 'consider',
+            'think about', 'look at', 'see', 'notice', 'understand', 'realize',
+            'be aware', 'make sure', 'ensure', 'confirm'
+        }
+        
+        # Check if step starts with vague verbs
+        words = text_lower.split()
+        if words:
+            first_word = words[0].strip('.,!?:;')
+            if first_word in vague_verbs:
+                return True
+            
+            # Check for multi-word vague phrases at the start
+            if len(words) >= 2:
+                two_word_start = f"{words[0]} {words[1]}"
+                if two_word_start in vague_verbs:
+                    return True
+        
+        # Check for vague patterns
+        vague_patterns = [
+            r'^observe\s+the\s+\w+',
+            r'^watch\s+(for|the)',
+            r'^monitor\s+\w+',
+            r'^review\s+\w+',
+            r'^examine\s+\w+',
+            r'^check\s+(that|if)\s+\w+',  # "Check if" is vague vs "Check the log file"
+            r'^make\s+sure\s+(that|\w+)',
+            r'^ensure\s+(that|\w+)'
+        ]
+        
+        import re
+        for pattern in vague_patterns:
+            if re.match(pattern, text_lower):
+                return True
+        
+        return False
+    
+    def _is_singular_plural_issue(self, heading: str) -> bool:
+        """Check if heading should be plural but is singular."""
+        heading_lower = heading.lower().strip()
+        
+        # Known headings that should be plural
+        should_be_plural = {
+            'prerequisite': 'prerequisites',
+            'limitation': 'limitations',
+            'requirement': 'requirements',
+            'resource': 'resources',
+            'step': 'steps'
+        }
+        
+        for singular, plural in should_be_plural.items():
+            if singular in heading_lower and plural not in heading_lower:
+                return True
+        
+        return False
+    
+    def _get_plural_form(self, heading: str) -> str:
+        """Get the plural form of a heading."""
+        heading_lower = heading.lower()
+        
+        # Known singular to plural conversions
+        conversions = {
+            'prerequisite': 'Prerequisites',
+            'limitation': 'Limitations',
+            'requirement': 'Requirements',
+            'resource': 'Resources',
+            'step': 'Steps'
+        }
+        
+        for singular, plural in conversions.items():
+            if singular in heading_lower:
+                return heading.replace(singular.title(), plural)
+        
+        # Fallback: just add 's'
+        return heading + 's'

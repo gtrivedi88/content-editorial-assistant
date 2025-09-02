@@ -220,17 +220,17 @@ function createComplianceIssueCard(issue, index) {
                 <div class="pf-v5-c-alert__icon">
                     <i class="fas fa-${getIssueIconFromSeverity(severity)}"></i>
                 </div>
-                <h4 class="pf-v5-c-alert__title">
+                <h4 class="pf-v5-c-alert__title" style="word-wrap: break-word; overflow-wrap: break-word;">
                     ${escapeHtml(issue.message || 'Compliance issue')}${lineInfo}
                 </h4>
                 <div class="pf-v5-c-alert__description ${index < 3 ? '' : 'pf-m-hidden'}">
-                    <p class="pf-v5-u-mb-md">${escapeHtml(issue.description || 'No description available')}</p>
+                    <p class="pf-v5-u-mb-md" style="word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(issue.description || 'No description available')}</p>
                     ${issue.flagged_text ? `
                         <div class="pf-v5-u-mb-md">
                             <strong>Flagged content:</strong>
                             <div class="pf-v5-c-code-block pf-v5-u-mt-sm">
                                 <div class="pf-v5-c-code-block__content">
-                                    <pre class="pf-v5-c-code-block__code">${escapeHtml(issue.flagged_text)}</pre>
+                                    <pre class="pf-v5-c-code-block__pre" style="white-space: pre-wrap; word-wrap: break-word; max-height: 300px; overflow-y: auto;"><code class="pf-v5-c-code-block__code">${escapeHtml(issue.flagged_text)}</code></pre>
                                 </div>
                             </div>
                         </div>
@@ -238,8 +238,8 @@ function createComplianceIssueCard(issue, index) {
                     ${suggestions.length > 0 ? `
                         <div>
                             <strong>Suggestions:</strong>
-                            <ul class="pf-v5-c-list pf-v5-u-mt-sm">
-                                ${suggestions.map(s => `<li>${escapeHtml(s)}</li>`).join('')}
+                            <ul class="pf-v5-c-list pf-v5-u-mt-sm" style="word-wrap: break-word; overflow-wrap: break-word;">
+                                ${suggestions.map(s => `<li style="word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(s)}</li>`).join('')}
                             </ul>
                         </div>
                     ` : ''}
