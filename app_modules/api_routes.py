@@ -90,8 +90,9 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter):
             data = request.get_json()
             content = data.get('content', '')
             format_hint = data.get('format_hint', 'auto')
+            content_type = data.get('content_type', 'concept')  # NEW: Add content type
             session_id = data.get('session_id', '') if data else ''
-            
+        
             # Enhanced: Support confidence threshold parameter
             confidence_threshold = data.get('confidence_threshold', None)
             include_confidence_details = data.get('include_confidence_details', True)
@@ -99,13 +100,18 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter):
             if not content:
                 return jsonify({'error': 'No content provided'}), 400
             
+            # Validate content_type
+            valid_content_types = ['concept', 'procedure', 'reference']
+            if content_type not in valid_content_types:
+                return jsonify({'error': f'Invalid content_type. Must be one of: {valid_content_types}'}), 400
+                
             # If no session_id provided, generate one for this request
             if not session_id or not session_id.strip():
                 import uuid
                 session_id = str(uuid.uuid4())
             
             # Start analysis with progress updates
-            logger.info(f"Starting analysis for session {session_id} with confidence_threshold={confidence_threshold}")
+            logger.info(f"Starting analysis for session {session_id} with content_type={content_type} and confidence_threshold={confidence_threshold}")
             emit_progress(session_id, 'analysis_start', 'Initializing analysis...', 'Setting up analysis pipeline', 10)
             
             # Enhanced: Configure analyzer with confidence threshold if provided
@@ -115,10 +121,16 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter):
                 style_analyzer.structural_analyzer.confidence_threshold = confidence_threshold
                 style_analyzer.structural_analyzer.rules_registry.set_confidence_threshold(confidence_threshold)
             
-            # Analyze with structural blocks
-            analysis_result = style_analyzer.analyze_with_blocks(content, format_hint)
+            # Analyze with structural blocks AND modular compliance
+            emit_progress(session_id, 'style_analysis', 'Running style analysis...', 'Checking grammar and style rules', 40)
+            analysis_result = style_analyzer.analyze_with_blocks(content, format_hint, content_type=content_type)
             analysis = analysis_result.get('analysis', {})
             structural_blocks = analysis_result.get('structural_blocks', [])
+            
+            # Check if modular compliance was included in results
+            if 'modular_compliance' in analysis_result:
+                emit_progress(session_id, 'compliance_check', 'Modular compliance analyzed', f'Validated {content_type} module requirements', 70)
+                analysis['modular_compliance'] = analysis_result['modular_compliance']
             
             # Enhanced: Restore original threshold if it was modified
             if confidence_threshold is not None:
@@ -130,6 +142,7 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter):
             # Calculate processing time
             processing_time = time.time() - start_time
             analysis['processing_time'] = processing_time
+            analysis['content_type'] = content_type  # Include content type in results
             
             logger.info(f"Analysis completed in {processing_time:.2f}s for session {session_id}")
             
@@ -137,7 +150,8 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter):
             confidence_metadata = {
                 'confidence_threshold_used': confidence_threshold or analysis.get('confidence_threshold', 0.43),
                 'enhanced_validation_enabled': analysis.get('enhanced_validation_enabled', False),
-                'confidence_filtering_applied': confidence_threshold is not None
+                'confidence_filtering_applied': confidence_threshold is not None,
+                'content_type': content_type  # Include content type in metadata
             }
             
             # Enhanced: Add validation performance if available
@@ -148,12 +162,13 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter):
             if analysis.get('enhanced_error_stats'):
                 confidence_metadata['enhanced_error_stats'] = analysis.get('enhanced_error_stats')
             
-            # Return enhanced results with confidence data
+            # Return enhanced results with modular compliance data
             response_data = {
                 'success': True,
                 'analysis': analysis,
                 'processing_time': processing_time,
                 'session_id': session_id,
+                'content_type': content_type,  # Include content type in response
                 'confidence_metadata': confidence_metadata,
                 'api_version': '2.0'  # Indicate enhanced API version
             }

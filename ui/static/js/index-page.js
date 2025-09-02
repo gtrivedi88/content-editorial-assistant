@@ -343,11 +343,10 @@ function analyzeDirectText() {
 /**
  * Handle direct text analysis processing
  */
-function handleDirectTextAnalysis(text) {
-    // Call the analyze endpoint directly for text input
-    // This function exists in file-handler.js and calls /analyze endpoint
+function handleDirectTextAnalysis(text, contentType = 'concept') {
+    // Call the analyze endpoint directly for text input with content type
     if (typeof analyzeContent === 'function') {
-        analyzeContent(text, 'auto');
+        analyzeContent(text, 'auto', contentType);  // Pass contentType parameter
     } else {
         console.error('analyzeContent function not available');
         showNotification('Analysis function not available', 'error');

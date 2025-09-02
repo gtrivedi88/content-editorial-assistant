@@ -191,7 +191,7 @@ function showFileUploadProgress(elementId, file) {
 }
 
 // Enhanced content analysis with better progress tracking
-function analyzeContent(content, formatHint = 'auto') {
+function analyzeContent(content, formatHint = 'auto', contentType = 'concept') {
     const analysisStartTime = performance.now(); // Track client-side timing
     
     showLoading('analysis-results', 'Starting comprehensive analysis...');
@@ -204,6 +204,7 @@ function analyzeContent(content, formatHint = 'auto') {
         body: JSON.stringify({ 
             content: content,
             format_hint: formatHint,
+            content_type: contentType,  // Add content type
             session_id: sessionId 
         })
     })
@@ -216,9 +217,10 @@ function analyzeContent(content, formatHint = 'auto') {
             // Store analysis data globally
             currentAnalysis = data.analysis;
             
-            // Add timing information to currentAnalysis
+            // Add timing and content type information
             currentAnalysis.client_processing_time = clientProcessingTime;
             currentAnalysis.server_processing_time = data.processing_time || data.analysis.processing_time;
+            currentAnalysis.content_type = contentType;  // Store content type
             currentAnalysis.total_round_trip_time = clientProcessingTime;
             
             // Display results
@@ -229,6 +231,7 @@ function analyzeContent(content, formatHint = 'auto') {
             console.log('Analysis Performance:', {
                 server_time: currentAnalysis.server_processing_time,
                 client_time: clientProcessingTime,
+                content_type: contentType,
                 total_time: clientProcessingTime
             });
         } else {

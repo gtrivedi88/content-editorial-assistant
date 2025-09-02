@@ -4,10 +4,11 @@
 
 This guide provides a complete implementation plan for adding modular documentation compliance checking to the editorial assistant. The system will validate AsciiDoc content against Red Hat modular documentation standards for Concept, Procedure, and Reference modules.
 
-**🏗️ ARCHITECTURAL ALIGNMENT**: This implementation follows the established sophisticated architecture documented in:
-- **`confidence.md`**: Universal threshold (0.35), normalized confidence scoring, ConfidenceCalculator, ValidationPipeline, ErrorConsolidator
-- **`evidence_based_rule_development.md`**: Evidence-based scoring (0.0-1.0), surgical zero false positive guards, rule-specific evidence calculation
-- **`level_2_implementation.adoc`**: Level 2 enhanced validation with `text` and `context` parameters to `_create_error()`
+**🏗️ ARCHITECTURAL APPROACH**: This implementation uses a **simplified, direct compliance validation** approach that:
+- **Focuses on structural requirements**: Binary pass/fail for document structure and content organization
+- **Uses clear compliance levels**: FAIL (must fix), WARN (should address), INFO (nice to have)
+- **Integrates cleanly**: Works alongside existing style analysis without complex evidence scoring
+- **Maintains compatibility**: Uses BaseRule patterns while avoiding linguistic complexity inappropriate for structural validation
 
 ## Architecture Overview
 
@@ -325,7 +326,7 @@ class ModuleStructure:
 
 ### 2.2 Create Module Structure Parser
 
-**New File**: `style_analyzer/modular_structure_parser.py`
+**New File**: `rules/modular_compliance/modular_structure_bridge.py` (uses existing AsciiDoc parser - no duplication)
 
 ```python
 """
@@ -341,7 +342,7 @@ try:
 except ImportError:
     Doc = None
 
-class ModularStructureParser:
+class ModularStructureBridge:
     """Parses module content to extract structural elements"""
     
     def __init__(self):
@@ -575,7 +576,7 @@ Evidence-based validation for concept modules following established architectura
 import re
 from typing import List, Optional, Dict, Any
 from rules.base_rule import BaseRule
-from style_analyzer.modular_structure_parser import ModularStructureParser
+from .modular_structure_bridge import ModularStructureBridge
 
 class ConceptModuleRule(BaseRule):
     """Evidence-based concept module validator following established patterns"""
@@ -584,7 +585,7 @@ class ConceptModuleRule(BaseRule):
         super().__init__()
         self.rule_type = "modular_compliance"
         self.rule_subtype = "concept_module"
-        self.parser = ModularStructureParser()
+        self.parser = ModularStructureBridge()
         self.imperative_verbs = {
             'click', 'run', 'type', 'enter', 'execute', 'select', 'start', 'stop',
             'create', 'delete', 'install', 'configure', 'edit', 'open', 'save',
@@ -614,57 +615,25 @@ class ConceptModuleRule(BaseRule):
         # Content Recommendations
         potential_issues.extend(self._find_improvement_opportunities(structure))
         
-        # Apply evidence-based analysis to each potential issue
+        # Apply direct compliance validation - no complex evidence scoring needed
         for issue in potential_issues:
-            evidence_score = self._calculate_concept_evidence(issue, structure, text, context)
-            
-            # Only create error if evidence suggests it's worth evaluating
-            if evidence_score > 0.1:  # Low threshold - let enhanced validation decide
-                error = self._create_error(
-                    sentence=issue.get('sentence', ''),
-                    sentence_index=issue.get('line_number', 0),
-                    message=self._get_contextual_message(issue, evidence_score),
-                    suggestions=self._generate_smart_suggestions(issue, context, evidence_score),
-                    severity=self._map_compliance_level_to_severity(issue.get('level')),
-                    text=text,      # Level 2 ✅
-                    context=context, # Level 2 ✅
-                    evidence_score=evidence_score,  # Evidence-based ✅
-                    flagged_text=issue.get('flagged_text', ''),
-                    span=issue.get('span', (0, 0))
-                )
-                errors.append(error)
+            # Simple compliance check - either meets requirement or doesn't
+            error = self._create_error(
+                sentence=issue.get('sentence', ''),
+                sentence_index=issue.get('line_number', 0),
+                message=issue.get('message', ''),
+                suggestions=issue.get('suggestions', []),
+                severity=self._map_compliance_level_to_severity(issue.get('level')),
+                text=text,      # Level 2 ✅
+                context=context, # Level 2 ✅
+                flagged_text=issue.get('flagged_text', ''),
+                span=issue.get('span', (0, 0))
+            )
+            errors.append(error)
         
         return errors
     
-    def _calculate_concept_evidence(self, issue: Dict[str, Any], structure, text: str, context: Dict[str, Any] = None) -> float:
-        """Calculate evidence score following evidence_based_rule_development.md patterns"""
-        
-        # === SURGICAL ZERO FALSE POSITIVE GUARDS ===
-        if context and context.get('content_type') != 'concept':
-            return 0.0  # Not a concept module, skip validation
-        
-        if context and context.get('block_type') in ['code_block', 'inline_code', 'literal_block']:
-            return 0.0  # Code blocks have different rules
-            
-        # === DYNAMIC BASE EVIDENCE SCORING ===
-        issue_type = issue.get('type')
-        
-        if issue_type == 'critical_structural':
-            evidence_score = 0.9  # Missing introduction, no content
-        elif issue_type == 'prohibited_content':
-            evidence_score = 0.8  # Procedural steps in concept
-        elif issue_type == 'improvement_suggestion':
-            evidence_score = 0.3  # Missing visuals, structure suggestions
-        else:
-            evidence_score = 0.6  # Default moderate evidence
-            
-        # === APPLY CLUE CATEGORIES ===
-        evidence_score = self._apply_linguistic_clues(evidence_score, issue, structure)
-        evidence_score = self._apply_structural_clues(evidence_score, issue, context)  
-        evidence_score = self._apply_semantic_clues(evidence_score, issue, text, context)
-        evidence_score = self._apply_feedback_clues(evidence_score, issue, context)
-        
-        return max(0.0, min(1.0, evidence_score))  # Clamp to valid range
+    # Simplified approach - no complex evidence calculation needed
     
     def _map_compliance_level_to_severity(self, level: str) -> str:
         """Map compliance levels to standard severity levels"""
@@ -917,13 +886,13 @@ Validates procedure modules against Red Hat modular documentation standards.
 import re
 from typing import List, Optional
 from .modular_compliance_types import ComplianceIssue, ComplianceLevel, ModuleStructure
-from .modular_structure_parser import ModularStructureParser
+from .modular_structure_bridge import ModularStructureBridge
 
 class ProcedureModuleValidator:
     """Validates procedure modules according to Red Hat standards"""
     
     def __init__(self):
-        self.parser = ModularStructureParser()
+        self.parser = ModularStructureBridge()
         self.approved_subheadings = {
             'limitations', 'prerequisites', 'verification', 
             'troubleshooting', 'next steps', 'additional resources'
@@ -1278,13 +1247,13 @@ Validates reference modules against Red Hat modular documentation standards.
 import re
 from typing import List, Optional
 from .modular_compliance_types import ComplianceIssue, ComplianceLevel, ModuleStructure
-from .modular_structure_parser import ModularStructureParser
+from .modular_structure_bridge import ModularStructureBridge
 
 class ReferenceModuleValidator:
     """Validates reference modules according to Red Hat standards"""
     
     def __init__(self):
-        self.parser = ModularStructureParser()
+        self.parser = ModularStructureBridge()
         self.imperative_verbs = {
             'click', 'run', 'type', 'enter', 'execute', 'select', 'start', 'stop',
             'create', 'delete', 'install', 'configure', 'edit', 'open', 'save',

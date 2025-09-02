@@ -1,0 +1,112 @@
+# Modular Compliance Configuration
+
+# Module Types and Their Requirements
+module_types:
+  concept:
+    description: "Concept modules explain ideas and concepts"
+    required_elements:
+      - "Single introductory paragraph"
+      - "Descriptive body content"
+      - "Explanatory focus (not instructional)"
+    prohibited_elements:
+      - "Step-by-step instructions"
+      - "High density of imperative verbs"
+      - "Procedural content"
+    recommendations:
+      - "Include visuals for long content (>400 words)"
+      - "Use subheadings for long content (>500 words)"
+      - "Focus on explaining 'what' and 'why'"
+
+  procedure:
+    description: "Procedure modules provide step-by-step instructions"
+    required_elements:
+      - "Gerund title (ending in -ing)"
+      - "Brief introductory paragraph"
+      - "Procedure section with numbered steps"
+      - "Action-oriented steps (imperative verbs)"
+    optional_elements:
+      - "Prerequisites (plural)"
+      - "Limitations (plural)"
+      - "Verification"
+      - "Troubleshooting"
+      - "Next steps"
+      - "Additional resources"
+    style_rules:
+      - "Single action per step"
+      - "Use bullets (*) for single-step procedures"
+      - "Additional resources comes after Next steps"
+
+  reference:
+    description: "Reference modules contain lookup information"
+    required_elements:
+      - "Single introductory paragraph"
+      - "Structured data (tables, lists, definition lists)"
+    prohibited_elements:
+      - "Step-by-step instructions"
+      - "Long conceptual explanations"
+    recommendations:
+      - "Organize data logically (alphabetically, by category)"
+      - "Use subheadings for long content"
+      - "Focus on scannable, lookup-friendly format"
+
+# Evidence Scoring Patterns (following evidence_based_rule_development.md)
+evidence_scoring:
+  base_scores:
+    exact_violation_match: 0.9  # Very specific, clear violation
+    pattern_violation: 0.7      # Pattern-based, moderate specificity
+    generic_detection: 0.5      # Generic detection, needs more evidence
+    
+  zero_false_positive_guards:
+    - "code_block"
+    - "inline_code" 
+    - "literal_block"
+    - "quoted_content"
+    - "proper_nouns"
+    - "technical_identifiers"
+    - "urls"
+    - "file_paths"
+
+# Imperative Verbs for Compliance Analysis
+imperative_verbs:
+  - "click"
+  - "run"
+  - "type"
+  - "enter"
+  - "execute"
+  - "select"
+  - "start"
+  - "stop"
+  - "create"
+  - "delete"
+  - "install"
+  - "configure"
+  - "edit"
+  - "open"
+  - "save"
+  - "verify"
+  - "check"
+  - "test"
+  - "copy"
+  - "paste"
+  - "download"
+  - "upload"
+  - "navigate"
+  - "scroll"
+  - "press"
+  - "choose"
+  - "pick"
+  - "add"
+  - "remove"
+
+# Word Count Thresholds
+thresholds:
+  long_content_words: 400
+  very_long_content_words: 500
+  substantial_content_words: 100
+  minimal_content_words: 50
+
+# Validation Compliance Levels (mapped to standard severity)
+compliance_levels:
+  FAIL: "high"     # Critical issues that must be fixed
+  WARN: "medium"   # Important issues that should be addressed  
+  INFO: "low"      # Suggestions for improvement

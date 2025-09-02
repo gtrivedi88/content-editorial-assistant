@@ -167,16 +167,25 @@ class StyleAnalyzer:
                 modular_rules_available=RULES_AVAILABLE
             )
     
-    def analyze_with_blocks(self, text: str, format_hint: str = 'auto') -> Dict[str, Any]:
+    def analyze_with_blocks(self, text: str, format_hint: str = 'auto', content_type: str = 'concept') -> Dict[str, Any]:
         """Perform block-aware analysis returning structured results with errors per block."""
         try:
             # Determine analysis mode
             analysis_mode = self._determine_analysis_mode()
             
             # Use structural analyzer for block-aware analysis
-            return self.structural_analyzer.analyze_with_blocks(
+            analysis_result = self.structural_analyzer.analyze_with_blocks(
                 text, format_hint, analysis_mode
             )
+            
+            # Add modular compliance analysis to the analysis section
+            modular_compliance_result = self._analyze_modular_compliance(text, content_type)
+            if modular_compliance_result:
+                # Add to the analysis dictionary, not the top level
+                if 'analysis' in analysis_result:
+                    analysis_result['analysis']['modular_compliance'] = modular_compliance_result
+            
+            return analysis_result
             
         except Exception as e:
             logger.error(f"Block-aware analysis failed: {e}")
@@ -248,4 +257,78 @@ class StyleAnalyzer:
             
         except Exception as e:
             logger.error(f"Error calculating overall score: {e}")
-            return 50.0  # Safe default 
+            return 50.0  # Safe default
+    
+    def _analyze_modular_compliance(self, text: str, content_type: str) -> Dict[str, Any]:
+        """Analyze modular compliance based on content type."""
+        try:
+            # Import modular compliance rules
+            from rules.modular_compliance import ConceptModuleRule, ProcedureModuleRule, ReferenceModuleRule
+            
+            # Select appropriate rule based on content type
+            rule_map = {
+                'concept': ConceptModuleRule,
+                'procedure': ProcedureModuleRule, 
+                'reference': ReferenceModuleRule
+            }
+            
+            if content_type not in rule_map:
+                logger.warning(f"Unknown content type for modular compliance: {content_type}")
+                return None
+            
+            # Instantiate and run the appropriate rule
+            rule_class = rule_map[content_type]
+            rule = rule_class()
+            
+            # Create context for the rule
+            context = {
+                'content_type': content_type,
+                'block_type': 'document'
+            }
+            
+            # Analyze compliance
+            compliance_errors = rule.analyze(text, [], nlp=self.nlp, context=context)
+            
+            # Format results
+            result = {
+                'content_type': content_type,
+                'total_issues': len(compliance_errors),
+                'issues_by_severity': self._categorize_compliance_issues(compliance_errors),
+                'issues': compliance_errors,
+                'compliance_status': self._determine_compliance_status(compliance_errors)
+            }
+            
+            logger.info(f"Modular compliance analysis completed for {content_type}: {len(compliance_errors)} issues found")
+            return result
+            
+        except ImportError as e:
+            logger.warning(f"Modular compliance rules not available: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Modular compliance analysis failed: {e}")
+            return None
+    
+    def _categorize_compliance_issues(self, errors: List[Dict[str, Any]]) -> Dict[str, int]:
+        """Categorize compliance issues by severity."""
+        categories = {'high': 0, 'medium': 0, 'low': 0}
+        
+        for error in errors:
+            severity = error.get('severity', 'medium')
+            if severity in categories:
+                categories[severity] += 1
+        
+        return categories
+    
+    def _determine_compliance_status(self, errors: List[Dict[str, Any]]) -> str:
+        """Determine overall compliance status."""
+        if not errors:
+            return 'compliant'
+        
+        high_severity_count = sum(1 for error in errors if error.get('severity') == 'high')
+        
+        if high_severity_count > 0:
+            return 'non_compliant'
+        elif len(errors) > 3:
+            return 'needs_improvement'
+        else:
+            return 'mostly_compliant' 

@@ -15,7 +15,7 @@ function displayAnalysisResults(analysis, content, structuralBlocks = null) {
     // Use enhanced PatternFly Grid layout for better responsiveness
     resultsContainer.innerHTML = `
         <div class="pf-v5-l-grid pf-m-gutter">
-            <div class="pf-v5-l-grid__item pf-m-8-col-on-lg pf-m-12-col">
+            <div class="pf-v5-l-grid__item pf-m-8-col-on-md pf-m-12-col">
                 <div class="pf-v5-l-stack pf-m-gutter">
                     <!-- Analysis Header -->
                     <div class="pf-v5-l-stack__item">
@@ -60,10 +60,22 @@ function displayAnalysisResults(analysis, content, structuralBlocks = null) {
                             ${createErrorSummary(analysis.errors)}
                         </div>
                     ` : ''}
+
+                    <!-- Modular Compliance Section - NEW for Phase 4 -->
+                    ${analysis.modular_compliance ? `
+                        <div class="pf-v5-l-stack__item">
+                            ${generateModularComplianceSection(analysis.modular_compliance)}
+                        </div>
+                    ` : ''}
                 </div>
             </div>
-            <div class="pf-v5-l-grid__item pf-m-4-col-on-lg pf-m-12-col" id="statistics-column">
+            <div class="pf-v5-l-grid__item pf-m-4-col-on-md pf-m-12-col" id="statistics-column">
                 ${generateStatisticsCard(analysis)}
+                
+                <!-- Modular Compliance Statistics - NEW for Phase 4 -->
+                ${analysis.modular_compliance ? `
+                    ${generateModularComplianceStats(analysis.modular_compliance)}
+                ` : ''}
             </div>
         </div>
     `;
@@ -398,6 +410,324 @@ function scrollToStatistics() {
     if (statisticsColumn) {
         statisticsColumn.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
+}
+
+// NEW Phase 4: Modular Compliance Display Functions
+
+function generateModularComplianceSection(complianceData) {
+    const { content_type, total_issues, compliance_status, issues_by_severity, issues } = complianceData;
+    
+    // Map compliance status to PatternFly alert variants
+    const getStatusVariant = (status) => {
+        switch (status) {
+            case 'compliant': return 'success';
+            case 'mostly_compliant': return 'info';
+            case 'needs_improvement': return 'warning';
+            case 'non_compliant': return 'danger';
+            default: return 'info';
+        }
+    };
+    
+    // Get status icon
+    const getStatusIcon = (status) => {
+        switch (status) {
+            case 'compliant': return 'fa-check-circle';
+            case 'mostly_compliant': return 'fa-info-circle';
+            case 'needs_improvement': return 'fa-exclamation-triangle';
+            case 'non_compliant': return 'fa-times-circle';
+            default: return 'fa-question-circle';
+        }
+    };
+    
+    // Get human-readable status text
+    const getStatusText = (status) => {
+        switch (status) {
+            case 'compliant': return 'Fully Compliant';
+            case 'mostly_compliant': return 'Mostly Compliant';
+            case 'needs_improvement': return 'Needs Improvement';
+            case 'non_compliant': return 'Non-Compliant';
+            default: return 'Unknown';
+        }
+    };
+    
+    const statusVariant = getStatusVariant(compliance_status);
+    const statusIcon = getStatusIcon(compliance_status);
+    const statusText = getStatusText(compliance_status);
+    
+    return `
+        <div class="pf-v5-c-card modular-compliance-card">
+            <div class="pf-v5-c-card__header">
+                <div class="pf-v5-c-card__header-main">
+                    <h3 class="pf-v5-c-title pf-m-lg">
+                        <i class="fas fa-book-open pf-v5-u-mr-sm" style="color: var(--pf-v5-global--primary-color--100);"></i>
+                        Modular Documentation Compliance
+                    </h3>
+                </div>
+                <div class="pf-v5-c-card__actions">
+                    <span class="pf-v5-c-label pf-m-${statusVariant}">
+                        <span class="pf-v5-c-label__content">
+                            <i class="fas ${statusIcon} pf-v5-c-label__icon"></i>
+                            ${statusText}
+                        </span>
+                    </span>
+                </div>
+            </div>
+            <div class="pf-v5-c-card__body">
+                <!-- Module Type Info -->
+                <div class="pf-v5-u-mb-md">
+                    <div class="pf-v5-l-flex pf-m-space-items-sm pf-m-align-items-center">
+                        <div class="pf-v5-l-flex__item">
+                            <span class="pf-v5-c-label pf-m-blue pf-m-compact">
+                                <span class="pf-v5-c-label__content">
+                                    <i class="fas fa-tag pf-v5-c-label__icon"></i>
+                                    ${content_type.charAt(0).toUpperCase() + content_type.slice(1)} Module
+                                </span>
+                            </span>
+                        </div>
+                        <div class="pf-v5-l-flex__item">
+                            <button class="pf-v5-c-button pf-m-link pf-m-inline" onclick="showModuleGuide('${content_type}')">
+                                <i class="fas fa-info-circle pf-v5-u-mr-xs"></i>
+                                Module Guidelines
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Issues Summary -->
+                ${total_issues > 0 ? `
+                    <div class="pf-v5-u-mb-lg">
+                        <div class="pf-v5-l-grid pf-m-gutter">
+                            <div class="pf-v5-l-grid__item pf-m-4-col">
+                                <div class="compliance-stat-item ${issues_by_severity.high > 0 ? 'stat-danger' : ''}">
+                                    <div class="stat-number">${issues_by_severity.high || 0}</div>
+                                    <div class="stat-label">Must Fix (FAIL)</div>
+                                </div>
+                            </div>
+                            <div class="pf-v5-l-grid__item pf-m-4-col">
+                                <div class="compliance-stat-item ${issues_by_severity.medium > 0 ? 'stat-warning' : ''}">
+                                    <div class="stat-number">${issues_by_severity.medium || 0}</div>
+                                    <div class="stat-label">Should Address (WARN)</div>
+                                </div>
+                            </div>
+                            <div class="pf-v5-l-grid__item pf-m-4-col">
+                                <div class="compliance-stat-item ${issues_by_severity.low > 0 ? 'stat-info' : ''}">
+                                    <div class="stat-number">${issues_by_severity.low || 0}</div>
+                                    <div class="stat-label">Nice to Have (INFO)</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Issues List -->
+                    <div class="compliance-issues">
+                        <h4 class="pf-v5-c-title pf-m-md pf-v5-u-mb-sm">Compliance Issues</h4>
+                        <div class="pf-v5-l-stack pf-m-gutter-sm">
+                            ${issues.map(issue => generateComplianceIssueCard(issue)).join('')}
+                        </div>
+                    </div>
+                ` : `
+                    <div class="pf-v5-c-empty-state pf-m-sm">
+                        <div class="pf-v5-c-empty-state__content">
+                            <i class="fas fa-check-circle pf-v5-c-empty-state__icon" style="color: var(--pf-v5-global--success-color--100);"></i>
+                            <h4 class="pf-v5-c-title pf-m-lg">Excellent work!</h4>
+                            <div class="pf-v5-c-empty-state__body">
+                                Your ${content_type} module meets all Red Hat modular documentation standards.
+                            </div>
+                        </div>
+                    </div>
+                `}
+            </div>
+        </div>
+    `;
+}
+
+function generateComplianceIssueCard(issue) {
+    // Map severity to issue type labels
+    const getSeverityLabel = (severity) => {
+        switch (severity) {
+            case 'high': return 'FAIL';
+            case 'medium': return 'WARN';
+            case 'low': return 'INFO';
+            default: return 'INFO';
+        }
+    };
+    
+    const getSeverityVariant = (severity) => {
+        switch (severity) {
+            case 'high': return 'red';
+            case 'medium': return 'orange';
+            case 'low': return 'blue';
+            default: return 'blue';
+        }
+    };
+    
+    const severityLabel = getSeverityLabel(issue.severity);
+    const severityVariant = getSeverityVariant(issue.severity);
+    
+    return `
+        <div class="pf-v5-c-card pf-m-compact compliance-issue-card severity-${issue.severity}">
+            <div class="pf-v5-c-card__header">
+                <div class="pf-v5-c-card__header-main">
+                    <span class="pf-v5-c-label pf-m-${severityVariant} pf-m-compact">
+                        <span class="pf-v5-c-label__content">${severityLabel}</span>
+                    </span>
+                </div>
+            </div>
+            <div class="pf-v5-c-card__body">
+                <div class="compliance-issue-content">
+                    <p class="issue-message">${issue.message}</p>
+                    ${issue.suggestions && issue.suggestions.length > 0 ? `
+                        <div class="pf-v5-u-mt-sm">
+                            <details class="compliance-suggestions">
+                                <summary class="pf-v5-c-button pf-m-link pf-m-inline pf-m-small">
+                                    <i class="fas fa-lightbulb pf-v5-u-mr-xs"></i>
+                                    View Suggestions (${issue.suggestions.length})
+                                </summary>
+                                <div class="pf-v5-u-mt-sm">
+                                    <ul class="pf-v5-c-list">
+                                        ${issue.suggestions.map(suggestion => `<li>${suggestion}</li>`).join('')}
+                                    </ul>
+                                </div>
+                            </details>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function generateModularComplianceStats(complianceData) {
+    const { content_type, total_issues, compliance_status, issues_by_severity } = complianceData;
+    
+    // Calculate compliance percentage
+    const calculateComplianceScore = () => {
+        const criticalIssues = issues_by_severity.high || 0;
+        const warnings = issues_by_severity.medium || 0;
+        const info = issues_by_severity.low || 0;
+        
+        // Score based on issue severity (critical issues heavily penalized)
+        let score = 100;
+        score -= (criticalIssues * 30);  // Critical issues: -30 points each
+        score -= (warnings * 10);       // Warnings: -10 points each
+        score -= (info * 5);           // Info: -5 points each
+        
+        return Math.max(0, Math.min(100, score));
+    };
+    
+    const complianceScore = calculateComplianceScore();
+    const getScoreStatus = (score) => {
+        if (score >= 90) return 'success';
+        if (score >= 70) return 'warning';
+        return 'danger';
+    };
+    
+    return `
+        <div class="pf-v5-c-card pf-v5-u-mt-md" style="margin-top: 1rem;">
+            <div class="pf-v5-c-card__header">
+                <div class="pf-v5-c-card__header-main">
+                    <h3 class="pf-v5-c-title pf-m-lg">
+                        <i class="fas fa-clipboard-check pf-v5-u-mr-sm" style="color: var(--pf-v5-global--primary-color--100);"></i>
+                        Compliance Score
+                    </h3>
+                </div>
+            </div>
+            <div class="pf-v5-c-card__body">
+                <!-- Compliance Score Gauge -->
+                <div class="pf-v5-u-text-align-center pf-v5-u-mb-lg">
+                    <div class="compliance-score-circle">
+                        <div class="score-number">${complianceScore}</div>
+                        <div class="score-label">Compliance</div>
+                    </div>
+                </div>
+                
+                <!-- Progress Bar -->
+                <div class="pf-v5-u-mb-md">
+                    <div class="pf-v5-c-progress pf-m-${getScoreStatus(complianceScore)}">
+                        <div class="pf-v5-c-progress__description">Overall Compliance</div>
+                        <div class="pf-v5-c-progress__status">
+                            <span class="pf-v5-c-progress__measure">${complianceScore}%</span>
+                        </div>
+                        <div class="pf-v5-c-progress__bar">
+                            <div class="pf-v5-c-progress__indicator" style="width: ${complianceScore}%;">
+                                <span class="pf-v5-screen-reader">Progress value</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Module Info -->
+                <div class="pf-v5-l-stack pf-m-gutter-sm">
+                    <div class="pf-v5-l-stack__item">
+                        <div class="pf-v5-l-flex pf-m-space-items-sm pf-m-justify-content-space-between">
+                            <div class="pf-v5-l-flex__item">Module Type</div>
+                            <div class="pf-v5-l-flex__item">
+                                <strong>${content_type.charAt(0).toUpperCase() + content_type.slice(1)}</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pf-v5-l-stack__item">
+                        <div class="pf-v5-l-flex pf-m-space-items-sm pf-m-justify-content-space-between">
+                            <div class="pf-v5-l-flex__item">Total Issues</div>
+                            <div class="pf-v5-l-flex__item">
+                                <strong>${total_issues}</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pf-v5-l-stack__item">
+                        <div class="pf-v5-l-flex pf-m-space-items-sm pf-m-justify-content-space-between">
+                            <div class="pf-v5-l-flex__item">Status</div>
+                            <div class="pf-v5-l-flex__item">
+                                <strong>${compliance_status.replace('_', ' ')}</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Show module guidelines modal
+function showModuleGuide(moduleType) {
+    const guidelines = {
+        concept: {
+            title: "Concept Module Guidelines",
+            description: "Concept modules explain what something is or how it works.",
+            requirements: [
+                "Start with a clear introductory paragraph",
+                "Focus on explaining concepts, not procedures",
+                "Use descriptive content, avoid imperative verbs",
+                "Include examples and context where helpful"
+            ]
+        },
+        procedure: {
+            title: "Procedure Module Guidelines", 
+            description: "Procedure modules provide step-by-step instructions.",
+            requirements: [
+                "Title should be a gerund phrase (ending in -ing)",
+                "Include brief introduction explaining the purpose",
+                "Provide numbered steps with clear actions",
+                "Each step should contain a single action"
+            ]
+        },
+        reference: {
+            title: "Reference Module Guidelines",
+            description: "Reference modules provide quick lookup information.",
+            requirements: [
+                "Start with brief introduction explaining the reference data",
+                "Organize content in scannable format (tables, lists)",
+                "Avoid long paragraphs of explanatory text",
+                "Focus on factual, structured information"
+            ]
+        }
+    };
+    
+    const guide = guidelines[moduleType];
+    if (!guide) return;
+    
+    // Simple alert for now - could be enhanced to modal dialog
+    alert(`${guide.title}\n\n${guide.description}\n\nKey Requirements:\n• ${guide.requirements.join('\n• ')}`);
 }
 
 function scrollToErrorSummary() {
