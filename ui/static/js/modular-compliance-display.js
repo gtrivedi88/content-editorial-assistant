@@ -27,7 +27,7 @@ function displayModularComplianceResults(complianceData, content_type = 'concept
         if (mainGrid) {
             // Add as new grid item
             const complianceGridItem = document.createElement('div');
-            complianceGridItem.className = 'pf-v5-l-grid__item pf-m-12-col';
+            complianceGridItem.className = 'pf-v5-l-grid__item pf-m-8-col-on-lg pf-m-12-col';
             complianceGridItem.appendChild(complianceSection);
             mainGrid.appendChild(complianceGridItem);
         } else {
