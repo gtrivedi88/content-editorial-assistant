@@ -225,6 +225,9 @@ function generateStatisticsCard(analysis) {
                         </div>
                     </div>
 
+                    <!-- Modular Compliance Section -->
+                    ${analysis.modular_compliance ? generateModularComplianceSection(analysis.modular_compliance, statistics) : ''}
+
                     <!-- LLM Readiness Section -->
                     <div class="pf-v5-l-stack__item llm-readiness-section">
                         <h3 class="pf-v5-c-title pf-m-lg pf-v5-u-mb-sm analytics-section-title">AI & LLM Readiness</h3>
@@ -465,6 +468,117 @@ function generatePerformanceProgress(title, value, status, description) {
             </div>
         </div>
     `;
+}
+
+/**
+ * Generate modular compliance section using world-class algorithm
+ */
+function generateModularComplianceSection(complianceData, statistics) {
+    if (!complianceData || typeof calculateModularComplianceScore !== 'function') {
+        return ''; // Skip if compliance scoring not available
+    }
+
+    // Calculate sophisticated compliance score
+    const complianceScore = calculateModularComplianceScore(complianceData, statistics);
+    const { score, band, insights, recommendations } = complianceScore;
+    
+    const contentType = complianceData.content_type || 'concept';
+    const totalIssues = complianceData.total_issues || 0;
+    
+    // Calculate issue breakdown for display
+    const issues = complianceData.issues || [];
+    const criticalCount = issues.filter(issue => issue.severity === 'high').length;
+    const warningCount = issues.filter(issue => issue.severity === 'medium').length;
+    const infoCount = issues.filter(issue => issue.severity === 'low').length;
+
+    return `
+    <div class="pf-v5-l-stack__item modular-compliance-section">
+        <h3 class="pf-v5-c-title pf-m-lg pf-v5-u-mb-sm analytics-section-title">Modular Compliance</h3>
+        
+        <!-- Compliance Score Hero Card -->
+        <div class="pf-v5-c-card pf-m-plain pf-m-bordered compliance-hero-card" style="background: linear-gradient(135deg, rgba(${band.color === 'green' ? '40, 167, 69' : band.color === 'gold' ? '255, 193, 7' : '220, 53, 69'}, 0.05) 0%, rgba(${band.color === 'green' ? '25, 135, 84' : band.color === 'gold' ? '255, 143, 0' : '176, 42, 55'}, 0.08) 100%);">
+            <div class="pf-v5-c-card__body">
+                <div class="pf-v5-l-flex pf-m-align-items-center pf-m-justify-content-space-between">
+                    <div class="pf-v5-l-flex__item">
+                        <div class="pf-v5-l-flex pf-m-align-items-center pf-m-space-items-lg">
+                            <div class="pf-v5-l-flex__item">
+                                <div class="compliance-score-display" style="color: var(--app-${band.color === 'green' ? 'success' : band.color === 'gold' ? 'warning' : 'danger'}-color);">
+                                    <div class="pf-v5-c-title pf-m-4xl">${Math.round(score)}</div>
+                                    <div class="pf-v5-u-font-size-sm pf-v5-u-color-200">Compliance Score</div>
+                                </div>
+                            </div>
+                            <div class="pf-v5-l-flex__item">
+                                <div class="pf-v5-u-font-size-lg pf-v5-u-font-weight-bold">${band.label} Compliance</div>
+                                <div class="pf-v5-u-font-size-sm pf-v5-u-color-200 pf-v5-u-text-capitalize">${contentType} Module Standards</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pf-v5-l-flex__item">
+                        <span class="pf-v5-c-label pf-m-${band.color} pf-m-large">
+                            <span class="pf-v5-c-label__content">
+                                <i class="fas fa-${band.icon} pf-v5-c-label__icon"></i>
+                                ${totalIssues === 0 ? 'Compliant' : `${totalIssues} Issue${totalIssues === 1 ? '' : 's'}`}
+                            </span>
+                        </span>
+                    </div>
+                </div>
+                
+                ${insights.length > 0 ? `
+                    <div class="pf-v5-u-mt-md">
+                        <div class="pf-v5-u-font-size-sm pf-v5-u-color-200">Analysis:</div>
+                        <div class="pf-v5-u-font-size-sm pf-v5-u-mt-xs">${insights[0]}</div>
+                    </div>
+                ` : ''}
+            </div>
+        </div>
+
+        <!-- Issue Breakdown Grid (only if there are issues) -->
+        ${totalIssues > 0 ? `
+        <div class="pf-v5-u-mt-md">
+            <div class="pf-v5-l-grid pf-m-gutter compliance-breakdown-grid">
+                ${criticalCount > 0 ? `
+                <div class="pf-v5-l-grid__item pf-m-4-col">
+                    <div class="pf-v5-c-card pf-m-plain pf-m-bordered pf-v5-u-text-align-center">
+                        <div class="pf-v5-c-card__body">
+                            <div class="pf-v5-c-title pf-m-xl" style="color: var(--app-danger-color);">${criticalCount}</div>
+                            <div class="pf-v5-u-font-size-sm pf-v5-u-color-200">Critical</div>
+                        </div>
+                    </div>
+                </div>` : ''}
+                ${warningCount > 0 ? `
+                <div class="pf-v5-l-grid__item pf-m-4-col">
+                    <div class="pf-v5-c-card pf-m-plain pf-m-bordered pf-v5-u-text-align-center">
+                        <div class="pf-v5-c-card__body">
+                            <div class="pf-v5-c-title pf-m-xl" style="color: var(--app-warning-color);">${warningCount}</div>
+                            <div class="pf-v5-u-font-size-sm pf-v5-u-color-200">Warnings</div>
+                        </div>
+                    </div>
+                </div>` : ''}
+                ${infoCount > 0 ? `
+                <div class="pf-v5-l-grid__item pf-m-4-col">
+                    <div class="pf-v5-c-card pf-m-plain pf-m-bordered pf-v5-u-text-align-center">
+                        <div class="pf-v5-c-card__body">
+                            <div class="pf-v5-c-title pf-m-xl" style="color: var(--app-info-color);">${infoCount}</div>
+                            <div class="pf-v5-u-font-size-sm pf-v5-u-color-200">Info</div>
+                        </div>
+                    </div>
+                </div>` : ''}
+            </div>
+        </div>` : ''}
+
+        <!-- Recommendations (if available) -->
+        ${recommendations.length > 0 ? `
+        <div class="pf-v5-u-mt-md">
+            <div class="pf-v5-c-card pf-m-plain pf-m-bordered">
+                <div class="pf-v5-c-card__body">
+                    <div class="pf-v5-u-font-size-sm pf-v5-u-font-weight-bold pf-v5-u-mb-xs">Recommendations:</div>
+                    <ul class="pf-v5-c-list pf-v5-u-font-size-sm">
+                        ${recommendations.slice(0, 2).map(rec => `<li class="pf-v5-c-list__item">${rec}</li>`).join('')}
+                    </ul>
+                </div>
+            </div>
+        </div>` : ''}
+    </div>`;
 }
 
 // Export analysis function - now generates comprehensive PDF report
