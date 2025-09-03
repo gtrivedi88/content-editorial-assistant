@@ -26,6 +26,15 @@ if __name__ == '__main__':
         print(f"📱 Access the application at: http://{host}:{port}")
         print("📊 Real-time progress tracking enabled via WebSocket")
         print("🤖 AI rewriting with Ollama integration ready")
+        print("")
+        print("🔍 DEBUG MODE ENABLED:")
+        print("   📊 API Route /rewrite-block: Comprehensive debug logging")
+        print("   🏭 Assembly Line Rewriter: Debug output enabled")
+        print("   🎯 Progress Tracker: WorldClassProgressTracker debug")
+        print("   📡 WebSocket Handlers: Progress update tracking")
+        print("   🌐 Frontend Console: Real-time progress debug")
+        print("")
+        print("👀 When you click 'Improve Issue', watch for debug output here!")
         print("=" * 60)
         
         # Run with SocketIO support

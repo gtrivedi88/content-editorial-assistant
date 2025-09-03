@@ -4,12 +4,14 @@ Orchestrates the rewriting process using world-class AI multi-shot prompting.
 Simplified architecture with single AI-based processing pipeline.
 """
 import logging
+import time
 from typing import List, Dict, Any, Optional, Callable
 from .prompts import PromptGenerator
 from .generators import TextGenerator
 from .processors import TextProcessor
 from .evaluators import RewriteEvaluator
 from .station_mapper import ErrorStationMapper
+from .progress_tracker import WorldClassProgressTracker
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +84,7 @@ class AssemblyLineRewriter:
     def apply_block_level_assembly_line_fixes(self, block_content: str, block_errors: List[Dict[str, Any]], block_type: str, session_id: str = None, block_id: str = None) -> Dict[str, Any]:
         """
         Apply world-class AI fixes to a single structural block.
-        Simplified architecture with pure AI multi-shot prompting.
+        NOW WITH WORLD-CLASS REAL-TIME PROGRESS TRACKING!
         
         Args:
             block_content: The content of the specific block to rewrite
@@ -94,11 +96,23 @@ class AssemblyLineRewriter:
         Returns:
             Dictionary with rewrite results
         """
+        print(f"\n🔍 DEBUG ASSEMBLY LINE REWRITER:")
+        print(f"   📋 Method called with:")
+        print(f"      - block_content length: {len(block_content) if block_content else 0}")
+        print(f"      - block_errors count: {len(block_errors) if block_errors else 0}")
+        print(f"      - block_type: {block_type}")
+        print(f"      - session_id: {session_id}")
+        print(f"      - block_id: {block_id}")
+        print(f"      - progress_callback: {self.progress_callback}")
+        print(f"      - progress_callback type: {type(self.progress_callback)}")
+        
         try:
             if not block_content or not block_content.strip():
+                print(f"   ❌ Empty block content - returning empty result")
                 return self._empty_result()
             
             if not block_errors:
+                print(f"   ⚠️  No errors found - returning clean result")
                 logger.info("No errors found for block, skipping rewrite.")
                 return {
                     'rewritten_text': block_content,
@@ -113,39 +127,77 @@ class AssemblyLineRewriter:
             import time
             start_time = time.time()
             
-            logger.info(f"🚀 World-class AI processing: {block_content[:50]}... with {len(block_errors)} errors")
+            print(f"   🏭 Starting world-class assembly line processing")
+            logger.info(f"🏭 World-class assembly line processing: {block_content[:50]}... with {len(block_errors)} errors")
             
-            # Optional progress update for start
-            if self.progress_callback:
-                self.progress_callback('block_processing', 'AI Analysis Starting', 
-                                     f'Processing {len(block_errors)} errors in {block_type}', 10)
+            # Initialize world-class progress tracker
+            # Keep original session_id (even if None) for proper WebSocket routing
+            original_session_id = session_id
+            if not session_id:
+                print(f"   📋 No session_id provided - will broadcast to all sessions")
+            else:
+                print(f"   📋 Using provided session_id: {session_id}")
+                
+            if not block_id:
+                block_id = f"block_{int(time.time())}"
+                print(f"   📋 Generated block_id: {block_id}")
+            
+            print(f"   🎯 Creating WorldClassProgressTracker...")
+            progress_tracker = WorldClassProgressTracker(original_session_id, block_id, self.progress_callback)
+            print(f"   ✅ WorldClassProgressTracker created successfully")
             
             # Get applicable stations for multi-pass processing
             applicable_stations = self.get_applicable_stations(block_errors)
             
-            # Process through multi-pass assembly line with world-class AI
-            result = self._process_multipass_assembly_line(block_content, block_errors, applicable_stations, block_type)
+            if not applicable_stations:
+                logger.warning("⚠️ No applicable stations found for error types")
+                progress_tracker.handle_error(Exception("No applicable stations found"), "Station Discovery")
+                return {
+                    'rewritten_text': block_content,
+                    'improvements': ['No applicable stations found'],
+                    'confidence': 0.0,
+                    'errors_fixed': 0,
+                    'applicable_stations': [],
+                    'block_type': block_type,
+                    'processing_method': 'no_stations_applicable'
+                }
+            
+            # Initialize multi-pass processing with progress tracking
+            progress_tracker.initialize_multi_pass_processing(applicable_stations, total_passes=1)
+            
+            # Process through multi-pass assembly line with world-class AI and progress tracking
+            result = self._process_multipass_assembly_line(
+                block_content, 
+                block_errors, 
+                applicable_stations, 
+                block_type,
+                progress_tracker
+            )
             
             # Calculate processing time
             processing_time = int((time.time() - start_time) * 1000)
             self.processing_stats['total_processing_time_ms'] += processing_time
             
+            # Complete processing with performance summary
+            performance_summary = progress_tracker.complete_processing(
+                result.get('errors_fixed', 0),
+                result.get('improvements', [])
+            )
+            
             # Add block-specific metadata
             result.update({
-                'applicable_stations': self.get_applicable_stations(block_errors),
+                'applicable_stations': applicable_stations,
                 'block_type': block_type,
                 'original_errors': len(block_errors),
                 'processing_time_ms': processing_time,
-                'world_class_ai_used': True
+                'world_class_ai_used': True,
+                'progress_tracking': {
+                    'performance_summary': performance_summary,
+                    'metrics': progress_tracker.get_performance_metrics()
+                }
             })
             
-            # Optional progress update for completion
-            if self.progress_callback:
-                errors_fixed = result.get('errors_fixed', 0)
-                self.progress_callback('block_processing', 'AI Processing Complete', 
-                                     f'Fixed {errors_fixed}/{len(block_errors)} errors in {block_type}', 100)
-            
-            logger.info(f"✅ World-class AI processing complete: {result.get('errors_fixed', 0)}/{len(block_errors)} errors fixed in {processing_time}ms")
+            logger.info(f"🏆 World-class assembly line processing complete: {result.get('errors_fixed', 0)}/{len(block_errors)} errors fixed in {processing_time}ms")
             
             return result
             
@@ -337,16 +389,18 @@ class AssemblyLineRewriter:
         return ErrorStationMapper.get_station_display_name(station)
     
     def _process_multipass_assembly_line(self, text: str, all_errors: List[Dict[str, Any]], 
-                                       applicable_stations: List[str], block_type: str = "text") -> Dict[str, Any]:
+                                       applicable_stations: List[str], block_type: str = "text",
+                                       progress_tracker: WorldClassProgressTracker = None) -> Dict[str, Any]:
         """
         Process text through multi-pass assembly line with world-class AI at each station.
-        Each pass focuses on specific priority levels for better results.
+        NOW WITH WORLD-CLASS REAL-TIME PROGRESS TRACKING!
         
         Args:
             text: Original text to process
             all_errors: All detected errors
             applicable_stations: List of stations to process (in priority order)
             block_type: Type of content block
+            progress_tracker: World-class progress tracking system
             
         Returns:
             Dictionary with final results and per-pass statistics
@@ -368,6 +422,10 @@ class AssemblyLineRewriter:
         
         logger.info(f"🏭 Multi-pass assembly line: {len(applicable_stations)} stations for {len(all_errors)} errors")
         
+        # Start Pass 1 if progress tracker available
+        if progress_tracker:
+            progress_tracker.start_pass(1, "World-Class AI Processing")
+        
         # Process through each station in priority order
         for i, station in enumerate(applicable_stations, 1):
             station_errors = self._get_errors_for_station(all_errors, station)
@@ -375,14 +433,12 @@ class AssemblyLineRewriter:
             if not station_errors:
                 continue  # Skip stations with no errors
             
-            logger.info(f"🔧 Pass {i}/{len(applicable_stations)} - {station} station: {len(station_errors)} errors")
+            station_name = self.get_station_display_name(station)
+            logger.info(f"🔧 Pass {i}/{len(applicable_stations)} - {station_name}: {len(station_errors)} errors")
             
-            # Progress callback for each pass
-            if self.progress_callback:
-                station_name = self.get_station_display_name(station)
-                progress = int((i / len(applicable_stations)) * 90)  # 90% max, leaving 10% for final
-                self.progress_callback('station_processing', f'{station_name}', 
-                                     f'Processing {len(station_errors)} errors', progress)
+            # Start station processing with world-class progress tracking
+            if progress_tracker:
+                progress_tracker.start_station(station, station_name, len(station_errors))
             
             # Apply world-class AI for this station's errors
             station_result = self._apply_world_class_ai_fixes(current_text, station_errors, block_type, station)
@@ -396,51 +452,73 @@ class AssemblyLineRewriter:
                 # Determine input text (original text for first pass, previous output for others)
                 input_text = text if len(pass_results) == 0 else pass_results[-1]['output_text']
                 
+                improvements = station_result.get('improvements', [])
+                
                 pass_results.append({
                     'station': station,
-                    'station_name': self.get_station_display_name(station),
+                    'station_name': station_name,
                     'errors_processed': len(station_errors),
                     'errors_fixed': errors_fixed_this_pass,
                     'confidence': station_result.get('confidence', 0.8),
                     'input_text': input_text,
                     'output_text': current_text,
-                    'processing_method': station_result.get('processing_method', 'world_class_ai')
+                    'processing_method': station_result.get('processing_method', 'world_class_ai'),
+                    'improvements': improvements
                 })
+                
+                # Complete station with world-class progress tracking
+                if progress_tracker:
+                    progress_tracker.complete_station(station, station_name, errors_fixed_this_pass, improvements)
                 
                 # Update overall confidence (weighted average)
                 overall_confidence = (overall_confidence + station_result.get('confidence', 0.8)) / 2
                 
-                logger.info(f"✅ {station} pass: {errors_fixed_this_pass} errors fixed, confidence: {station_result.get('confidence', 0.8):.2f}")
+                logger.info(f"✅ {station_name}: {errors_fixed_this_pass} errors fixed, confidence: {station_result.get('confidence', 0.8):.2f}")
             else:
                 # No changes at this station
                 input_text = text if len(pass_results) == 0 else pass_results[-1]['output_text']
                 
                 pass_results.append({
                     'station': station,
-                    'station_name': self.get_station_display_name(station),
+                    'station_name': station_name,
                     'errors_processed': len(station_errors),
                     'errors_fixed': 0,
                     'confidence': 0.1,
                     'input_text': input_text,
                     'output_text': current_text,
-                    'processing_method': 'ai_no_changes'
+                    'processing_method': 'ai_no_changes',
+                    'improvements': []
                 })
                 
-                logger.warning(f"⚠️ {station} pass: No changes made")
+                # Complete station with no changes
+                if progress_tracker:
+                    progress_tracker.complete_station(station, station_name, 0, [])
+                
+                logger.warning(f"⚠️ {station_name}: No changes made")
+        
+        # Complete Pass 1 if progress tracker available
+        if progress_tracker:
+            progress_tracker.complete_pass(1)
         
         # Calculate final confidence and statistics
         passes_with_changes = [p for p in pass_results if p['errors_fixed'] > 0]
         final_confidence = sum(p['confidence'] for p in passes_with_changes) / len(passes_with_changes) if passes_with_changes else 0.5
+        
+        # Collect all improvements from all stations
+        all_improvements = []
+        for pass_result in pass_results:
+            all_improvements.extend(pass_result.get('improvements', []))
         
         return {
             'rewritten_text': current_text,
             'original_text': text,
             'errors_fixed': total_errors_fixed,
             'confidence': final_confidence,
-            'processing_method': 'multipass_assembly_line',
+            'processing_method': 'multipass_assembly_line_world_class',
             'passes_completed': len(applicable_stations),
             'passes_with_changes': len(passes_with_changes),
-            'pass_results': pass_results
+            'pass_results': pass_results,
+            'improvements': all_improvements
         }
 
     def _apply_world_class_ai_fixes(self, text: str, errors: List[Dict[str, Any]], 

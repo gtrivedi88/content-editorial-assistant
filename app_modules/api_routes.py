@@ -22,6 +22,18 @@ logger = logging.getLogger(__name__)
 def setup_routes(app, document_processor, style_analyzer, ai_rewriter):
     """Setup all API routes for the Flask application."""
     
+    # Add request logging middleware
+    @app.before_request
+    def log_request_info():
+        """Log all incoming requests for debugging."""
+        print(f"\n📥 INCOMING REQUEST: {request.method} {request.path}")
+        if request.method == 'POST':
+            print(f"   📋 Content-Type: {request.content_type}")
+            print(f"   📋 Content-Length: {request.content_length}")
+            if request.is_json:
+                print(f"   📋 JSON Data Keys: {list(request.json.keys()) if request.json else 'None'}")
+        print("")
+    
     @app.route('/')
     def index():
         """Main application page."""
@@ -273,33 +285,71 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter):
             block_id = data.get('block_id', '')
             session_id = data.get('session_id', '')
             
+            print(f"\n🔍 DEBUG API ROUTE: /rewrite-block")
+            print(f"   📋 Block ID: {block_id}")
+            print(f"   📋 Session ID: {session_id}")
+            print(f"   📋 Block Type: {block_type}")
+            print(f"   📋 Content Length: {len(block_content)}")
+            print(f"   📋 Errors Count: {len(block_errors)}")
+            print(f"   📋 Content Preview: {repr(block_content[:100])}")
+            
             # Validate required inputs
             if not block_content or not block_content.strip():
+                print(f"   ❌ No block content provided")
                 return jsonify({'error': 'No block content provided'}), 400
             
             if not block_id:
+                print(f"   ❌ Block ID is required")
                 return jsonify({'error': 'Block ID is required'}), 400
+            
+            if not block_errors:
+                print(f"   ⚠️  No errors provided - returning original content")
             
             logger.info(f"Starting block rewrite for session {session_id}, block {block_id}, type: {block_type}")
             
             # Emit progress start via WebSocket
+            print(f"   📡 Emitting initial progress update...")
             if session_id:
                 emit_progress(session_id, 'block_processing_start', 
                             f'Starting rewrite for {block_type}', 
                             f'Processing block {block_id}', 0)
+                print(f"   ✅ Initial progress update emitted to session: {session_id}")
+            else:
+                # If no session_id provided, broadcast to all connected clients
+                emit_progress('', 'block_processing_start', 
+                            f'Starting rewrite for {block_type}', 
+                            f'Processing block {block_id}', 0)
+                print(f"   ✅ Initial progress update broadcasted to all sessions")
+            
+            # Debug: Check ai_rewriter structure
+            print(f"   🔍 DEBUG AI Rewriter Structure:")
+            print(f"      ai_rewriter type: {type(ai_rewriter)}")
+            print(f"      hasattr(ai_rewriter, 'ai_rewriter'): {hasattr(ai_rewriter, 'ai_rewriter')}")
+            if hasattr(ai_rewriter, 'ai_rewriter'):
+                print(f"      ai_rewriter.ai_rewriter type: {type(ai_rewriter.ai_rewriter)}")
+                print(f"      hasattr(ai_rewriter.ai_rewriter, 'assembly_line'): {hasattr(ai_rewriter.ai_rewriter, 'assembly_line')}")
+                if hasattr(ai_rewriter.ai_rewriter, 'assembly_line'):
+                    print(f"      assembly_line type: {type(ai_rewriter.ai_rewriter.assembly_line)}")
+                    print(f"      assembly_line progress_callback: {getattr(ai_rewriter.ai_rewriter.assembly_line, 'progress_callback', 'NOT_FOUND')}")
+            print(f"      hasattr(ai_rewriter, 'assembly_line'): {hasattr(ai_rewriter, 'assembly_line')}")
             
             # Process single block through assembly line
             if hasattr(ai_rewriter, 'ai_rewriter') and hasattr(ai_rewriter.ai_rewriter, 'assembly_line'):
+                print(f"   🏭 Using DocumentRewriter -> AIRewriter -> AssemblyLine path")
                 # Full DocumentRewriter with assembly line support - PASS session_id and block_id for live updates
                 result = ai_rewriter.ai_rewriter.assembly_line.apply_block_level_assembly_line_fixes(
                     block_content, block_errors, block_type, session_id=session_id, block_id=block_id
                 )
+                print(f"   ✅ Assembly line processing completed")
             elif hasattr(ai_rewriter, 'assembly_line'):
+                print(f"   🏭 Using Direct AIRewriter -> AssemblyLine path")
                 # Direct AIRewriter with assembly line support - PASS session_id and block_id for live updates
                 result = ai_rewriter.assembly_line.apply_block_level_assembly_line_fixes(
                     block_content, block_errors, block_type, session_id=session_id, block_id=block_id
                 )
+                print(f"   ✅ Assembly line processing completed")
             else:
+                print(f"   ⚠️  Using fallback SimpleAIRewriter path")
                 # Fallback SimpleAIRewriter - use basic rewrite method
                 result = ai_rewriter.rewrite(block_content, block_errors, block_type)
                 # Add missing fields for consistency
@@ -308,6 +358,7 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter):
                     'block_type': block_type,
                     'assembly_line_used': False
                 })
+                print(f"   ✅ Fallback processing completed")
             
             # Add request metadata
             processing_time = time.time() - start_time

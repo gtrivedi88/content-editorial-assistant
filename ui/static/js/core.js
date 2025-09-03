@@ -185,6 +185,29 @@ function rewriteBlock(blockId, blockType) {
         return;
     }
 
+    // Ensure we have a session ID
+    if (!sessionId) {
+        sessionId = 'session_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+        console.log(`🔍 DEBUG: Generated frontend session ID: ${sessionId}`);
+        
+        // Join the session room in WebSocket to receive progress updates
+        if (window.joinSessionRoom) {
+            window.joinSessionRoom(sessionId);
+        } else {
+            console.warn('⚠️  joinSessionRoom function not available');
+        }
+    }
+    
+    console.log(`🔍 DEBUG: Using session ID: ${sessionId}`);
+
+    // Set the currently processing block for progress tracking
+    if (window.blockRewriteState) {
+        window.blockRewriteState.currentlyProcessingBlock = blockId;
+        console.log(`🔍 DEBUG: Set currently processing block: ${blockId}`);
+    } else {
+        console.warn('⚠️  blockRewriteState not initialized');
+    }
+
     // Update block state to processing
     updateBlockCardToProcessing(blockId);
     

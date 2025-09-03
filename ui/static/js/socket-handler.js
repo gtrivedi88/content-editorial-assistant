@@ -1,21 +1,39 @@
 // Initialize Socket.IO connection
 function initializeSocket() {
+    console.log('🔍 DEBUG: Initializing Socket.IO connection...');
     socket = io();
     
     socket.on('connect', function() {
-        console.log('Connected to server');
+        console.log('✅ Connected to server');
+        
+        // Check both global variables for session ID
+        const currentSessionId = window.sessionId || sessionId;
+        if (currentSessionId) {
+            console.log(`🔍 DEBUG: Joining session room: ${currentSessionId}`);
+            socket.emit('join_session', { session_id: currentSessionId });
+        }
     });
     
     socket.on('session_id', function(data) {
         sessionId = data.session_id;
-        console.log('Session ID received:', sessionId);
+        console.log('✅ Session ID received:', sessionId);
+    });
+    
+    socket.on('session_joined', function(data) {
+        console.log('✅ Joined session room:', data.session_id);
+    });
+    
+    socket.on('session_left', function(data) {
+        console.log('✅ Left session room:', data.session_id);
     });
     
     socket.on('progress_update', function(data) {
+        console.log('📡 WebSocket: progress_update event received');
         handleProgressUpdate(data);
     });
     
     socket.on('process_complete', function(data) {
+        console.log('📡 WebSocket: process_complete event received');
         handleProcessComplete(data);
     });
     
@@ -43,7 +61,13 @@ function initializeSocket() {
 
 // Handle real-time progress updates with PatternFly components
 function handleProgressUpdate(data) {
-    console.log('Progress update:', data);
+    console.log('\n🔍 DEBUG FRONTEND PROGRESS UPDATE:');
+    console.log('   📊 Received progress data:', data);
+    console.log('   📋 Data keys:', Object.keys(data));
+    console.log('   📋 Progress value:', data.progress);
+    console.log('   📋 Step value:', data.step);
+    console.log('   📋 Status value:', data.status);
+    console.log('   📋 Detail value:', data.detail);
     
     const statusElement = document.getElementById('current-status');
     const detailElement = document.getElementById('status-detail');
@@ -51,10 +75,34 @@ function handleProgressUpdate(data) {
     if (statusElement && detailElement) {
         statusElement.textContent = data.status;
         detailElement.textContent = data.detail;
+        console.log('   ✅ Updated status elements');
+    } else {
+        console.log('   ⚠️  Status elements not found');
     }
     
     // Update step indicators based on actual progress
+    console.log('   🔄 Updating step indicators...');
     updateStepIndicators(data.step, data.progress);
+    
+    // ENHANCED: Also update assembly line progress for block-level processing
+    // Check if this is a pass-related update that should update assembly line progress
+    if (data.step && (data.step.includes('Pass') || data.step.includes('station') || data.step.includes('Processing'))) {
+        console.log('   🏭 This looks like an assembly line update');
+        // Try to find the currently processing block and update its assembly line
+        const currentProcessingBlock = window.blockRewriteState?.currentlyProcessingBlock;
+        console.log('   📋 Current processing block:', currentProcessingBlock);
+        if (currentProcessingBlock && data.progress) {
+            const progressPercent = parseInt(data.progress) || 0;
+            console.log('   📊 Updating assembly line progress:', progressPercent + '%');
+            updateBlockAssemblyLineProgress(currentProcessingBlock, progressPercent, data.detail || data.status);
+            console.log(`   ✅ Updated assembly line progress for block ${currentProcessingBlock}: ${progressPercent}%`);
+        } else {
+            console.log('   ⚠️  No current processing block or progress value');
+        }
+    } else {
+        console.log('   ⚠️  This does not look like an assembly line update');
+    }
+    console.log('   ✅ Progress update handling complete\n');
 }
 
 // Update step indicators using PatternFly progress components
@@ -263,6 +311,7 @@ function handleStationProgressUpdate(data) {
     
     // Update overall assembly line progress
     updateBlockAssemblyLineProgress(block_id, progressPercentage, statusText);
+    console.log(`🎯 Assembly line progress updated: ${block_id} = ${progressPercentage}% (${statusText})`);
 }
 
 /**
@@ -433,25 +482,39 @@ function updateStationStatus(blockId, station, status, previewText = null) {
  * Update overall assembly line progress
  */
 function updateBlockAssemblyLineProgress(blockId, progressPercent, statusText) {
-    const assemblyLineElement = document.querySelector(`[data-block-id="${blockId}"] .block-assembly-line`);
-    if (!assemblyLineElement) return;
+    console.log(`🎯 Updating assembly line progress: ${blockId} → ${progressPercent}% → "${statusText}"`);
+    
+    const assemblyLineElement = document.querySelector(`[data-block-id="${blockId}"].block-assembly-line`);
+    if (!assemblyLineElement) {
+        console.warn(`⚠️  Assembly line element not found for block: ${blockId}`);
+        return;
+    }
+    
+    // Ensure progress is valid
+    const validProgress = Math.max(0, Math.min(100, progressPercent || 0));
     
     // Update progress bar
     const progressBar = assemblyLineElement.querySelector('.pf-v5-c-progress__bar');
     if (progressBar) {
-        progressBar.style.width = `${progressPercent}%`;
+        progressBar.style.width = `${validProgress}%`;
+        console.log(`📊 Progress bar updated to ${validProgress}%`);
+    } else {
+        console.warn(`⚠️  Progress bar element not found in assembly line for block: ${blockId}`);
     }
     
     // Update progress text
     const progressText = assemblyLineElement.querySelector('.assembly-line-status');
     if (progressText) {
-        progressText.textContent = statusText;
+        progressText.textContent = statusText || 'Processing...';
     }
     
-    // Update progress percentage
+    // Update progress percentage text
     const progressPercentElement = assemblyLineElement.querySelector('.progress-percent');
     if (progressPercentElement) {
-        progressPercentElement.textContent = `${Math.round(progressPercent)}%`;
+        progressPercentElement.textContent = `${Math.round(validProgress)}%`;
+        console.log(`🔢 Progress percentage updated to ${Math.round(validProgress)}%`);
+    } else {
+        console.warn(`⚠️  Progress percent element not found in assembly line for block: ${blockId}`);
     }
 }
 
@@ -462,7 +525,7 @@ function completeBlockAssemblyLine(blockId) {
     updateBlockAssemblyLineProgress(blockId, 100, 'Processing complete');
     
     // Add completion animation
-    const assemblyLineElement = document.querySelector(`[data-block-id="${blockId}"] .block-assembly-line`);
+    const assemblyLineElement = document.querySelector(`[data-block-id="${blockId}"].block-assembly-line`);
     if (assemblyLineElement) {
         assemblyLineElement.classList.add('assembly-line-complete');
         
@@ -479,7 +542,7 @@ function completeBlockAssemblyLine(blockId) {
  * Show error in assembly line
  */
 function showAssemblyLineError(blockId, errorMessage) {
-    const assemblyLineElement = document.querySelector(`[data-block-id="${blockId}"] .block-assembly-line`);
+    const assemblyLineElement = document.querySelector(`[data-block-id="${blockId}"].block-assembly-line`);
     if (!assemblyLineElement) return;
     
     // Update status to error
@@ -491,4 +554,23 @@ function showAssemblyLineError(blockId, errorMessage) {
     
     // Add error styling
     assemblyLineElement.classList.add('assembly-line-error');
+}
+
+/**
+ * Join session room dynamically
+ */
+function joinSessionRoom(sessionId) {
+    if (socket && socket.connected && sessionId) {
+        console.log(`🔍 DEBUG: Dynamically joining session room: ${sessionId}`);
+        socket.emit('join_session', { session_id: sessionId });
+        return true;
+    } else {
+        console.warn(`❌ Cannot join session room: socket=${!!socket}, connected=${socket?.connected}, sessionId=${sessionId}`);
+        return false;
+    }
+}
+
+// Export functions for global use
+if (typeof window !== 'undefined') {
+    window.joinSessionRoom = joinSessionRoom;
 } 

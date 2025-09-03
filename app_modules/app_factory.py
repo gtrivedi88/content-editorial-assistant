@@ -145,18 +145,32 @@ def initialize_services():
         services['style_analyzer_available'] = False
         logger.warning(f"⚠️ Style analyzer not available - {e}")
     
-    # Initialize AI Rewriter (use simple version to avoid complexity)
+    # Initialize AI Rewriter with progress callback support
     try:
         from rewriter import DocumentRewriter
         from models import ModelConfig
+        from .websocket_handlers import emit_progress
+        
+        # Create progress callback function for real-time updates
+        def progress_callback(session_id, step, status, detail, progress_percent):
+            """Progress callback that emits WebSocket updates for specific or all sessions."""
+            try:
+                # Use the provided session_id, or broadcast to all if empty
+                # Empty string or None means broadcast to all connected clients
+                target_session = session_id if session_id and session_id != 'None' else ''
+                emit_progress(target_session, step, status, detail, progress_percent)
+                print(f"🔍 DEBUG PROGRESS CALLBACK: Emitted to {'all sessions' if not target_session else target_session}")
+            except Exception as e:
+                logger.debug(f"Progress callback error: {e}")
+                print(f"❌ Progress callback error: {e}")
         
         # Get model configuration
         model_info = ModelConfig.get_model_info()
         
-        # Initialize with proper configuration
-        services['ai_rewriter'] = DocumentRewriter()
+        # Initialize with progress callback for world-class real-time updates
+        services['ai_rewriter'] = DocumentRewriter(progress_callback=progress_callback)
         services['ai_rewriter_available'] = True
-        logger.info("✅ DocumentRewriter imported successfully")
+        logger.info("✅ DocumentRewriter imported successfully with world-class progress tracking")
         logger.info(f"AI Model: {model_info.get('type', 'Unknown')} - {model_info.get('model', 'Unknown')}")
     except ImportError as e:
         services['ai_rewriter'] = SimpleAIRewriter()
