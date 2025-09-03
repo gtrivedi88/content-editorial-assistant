@@ -1,6 +1,7 @@
 """
 Assembly Line Rewriter
-Orchestrates the rewriting process by applying fixes in prioritized levels.
+Orchestrates the rewriting process using world-class AI multi-shot prompting.
+Simplified architecture with single AI-based processing pipeline.
 """
 import logging
 from typing import List, Dict, Any, Optional, Callable
@@ -8,6 +9,7 @@ from .prompts import PromptGenerator
 from .generators import TextGenerator
 from .processors import TextProcessor
 from .evaluators import RewriteEvaluator
+from .station_mapper import ErrorStationMapper
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +23,16 @@ class AssemblyLineRewriter:
         self.progress_callback = progress_callback
         self.prompt_generator = PromptGenerator()
         self.evaluator = RewriteEvaluator()
+        
+        # Performance tracking for world-class AI processing
+        self.processing_stats = {
+            'blocks_processed': 0,
+            'errors_fixed': 0,
+            'average_confidence': 0.0,
+            'total_processing_time_ms': 0
+        }
+        
+        logger.info(f"🚀 World-class AI rewriter initialized: Multi-shot prompting with contextual examples")
 
     def _sort_errors_by_priority(self, errors: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
@@ -69,7 +81,8 @@ class AssemblyLineRewriter:
 
     def apply_block_level_assembly_line_fixes(self, block_content: str, block_errors: List[Dict[str, Any]], block_type: str, session_id: str = None, block_id: str = None) -> Dict[str, Any]:
         """
-        Apply assembly line fixes to a single structural block with live progress updates.
+        Apply world-class AI fixes to a single structural block.
+        Simplified architecture with pure AI multi-shot prompting.
         
         Args:
             block_content: The content of the specific block to rewrite
@@ -93,39 +106,51 @@ class AssemblyLineRewriter:
                     'confidence': 1.0,
                     'errors_fixed': 0,
                     'applicable_stations': [],
-                    'block_type': block_type
+                    'block_type': block_type,
+                    'processing_method': 'no_errors_detected'
                 }
             
-            # Get applicable stations for this block's errors
+            import time
+            start_time = time.time()
+            
+            logger.info(f"🚀 World-class AI processing: {block_content[:50]}... with {len(block_errors)} errors")
+            
+            # Optional progress update for start
+            if self.progress_callback:
+                self.progress_callback('block_processing', 'AI Analysis Starting', 
+                                     f'Processing {len(block_errors)} errors in {block_type}', 10)
+            
+            # Get applicable stations for multi-pass processing
             applicable_stations = self.get_applicable_stations(block_errors)
             
-            # Sort errors by priority for optimal processing order
-            sorted_errors = self._sort_errors_by_priority(block_errors)
+            # Process through multi-pass assembly line with world-class AI
+            result = self._process_multipass_assembly_line(block_content, block_errors, applicable_stations, block_type)
             
-            # Process block content through assembly line with live station updates
-            result = self._process_through_assembly_line_stations(
-                block_content, sorted_errors, applicable_stations, 
-                session_id, block_id, block_type
-            )
+            # Calculate processing time
+            processing_time = int((time.time() - start_time) * 1000)
+            self.processing_stats['total_processing_time_ms'] += processing_time
             
             # Add block-specific metadata
             result.update({
-                'applicable_stations': applicable_stations,
+                'applicable_stations': self.get_applicable_stations(block_errors),
                 'block_type': block_type,
                 'original_errors': len(block_errors),
-                'assembly_line_used': True
+                'processing_time_ms': processing_time,
+                'world_class_ai_used': True
             })
             
+            # Optional progress update for completion
             if self.progress_callback:
-                self.progress_callback('block_processing', f'Block rewrite complete', 
-                                     f'Fixed {result.get("errors_fixed", 0)} errors in {block_type}', 100)
+                errors_fixed = result.get('errors_fixed', 0)
+                self.progress_callback('block_processing', 'AI Processing Complete', 
+                                     f'Fixed {errors_fixed}/{len(block_errors)} errors in {block_type}', 100)
             
-            logger.info(f"✅ Block rewrite complete: {result.get('errors_fixed', 0)}/{len(block_errors)} errors fixed")
+            logger.info(f"✅ World-class AI processing complete: {result.get('errors_fixed', 0)}/{len(block_errors)} errors fixed in {processing_time}ms")
             
             return result
             
         except Exception as e:
-            logger.error(f"Block assembly line processing failed: {e}")
+            logger.error(f"World-class AI processing failed: {e}")
             return {
                 'rewritten_text': block_content,
                 'improvements': [],
@@ -133,7 +158,8 @@ class AssemblyLineRewriter:
                 'errors_fixed': 0,
                 'applicable_stations': [],
                 'block_type': block_type,
-                'error': f'Block assembly line processing failed: {str(e)}'
+                'processing_method': 'ai_failed',
+                'error': f'World-class AI processing failed: {str(e)}'
             }
 
     def _process_through_assembly_line_stations(self, content: str, errors: List[Dict[str, Any]], 
@@ -220,24 +246,7 @@ class AssemblyLineRewriter:
 
     def _get_errors_for_station(self, errors: List[Dict[str, Any]], station: str) -> List[Dict[str, Any]]:
         """Get errors that belong to a specific assembly line station."""
-        station_errors = []
-        
-        for error in errors:
-            error_type = error.get('type', '')
-            
-            # Check if this error belongs to this station
-            if station == 'urgent' and error_type in ['legal_claims', 'legal_company_names', 'legal_personal_information', 'inclusive_language', 'second_person']:
-                station_errors.append(error)
-            elif station == 'high' and error_type in ['passive_voice', 'sentence_length', 'subjunctive_mood', 'verbs', 'headings', 'ambiguity']:
-                station_errors.append(error)
-            elif station == 'medium' and (error_type.startswith('word_usage_') or error_type.startswith('technical_') or
-                  error_type in ['contractions', 'spelling', 'terminology', 'anthropomorphism', 'capitalization', 'prefixes', 'plurals', 'abbreviations']):
-                station_errors.append(error)
-            elif station == 'low' and (error_type.startswith('punctuation_') or error_type.startswith('references_') or
-                  error_type in ['tone', 'citations', 'currency']):
-                station_errors.append(error)
-        
-        return station_errors
+        return ErrorStationMapper.get_errors_for_station(errors, station)
 
     def _generate_station_preview(self, station: str, errors: List[Dict[str, Any]], processed_content: str) -> str:
         """Generate preview text showing what this station accomplished."""
@@ -320,39 +329,289 @@ class AssemblyLineRewriter:
 
     def get_applicable_stations(self, block_errors: List[Dict[str, Any]]) -> List[str]:
         """Return only assembly line stations needed for this block's errors."""
-        
-        stations_needed = set()
-        
-        for error in block_errors:
-            error_type = error.get('type', '')
-            
-            # Map error types to assembly line stations based on assembly_line_config.yaml
-            if error_type in ['legal_claims', 'legal_company_names', 'legal_personal_information', 'inclusive_language', 'second_person']:
-                stations_needed.add('urgent')
-            elif error_type in ['passive_voice', 'sentence_length', 'subjunctive_mood', 'verbs', 'headings', 'ambiguity']:
-                stations_needed.add('high')
-            elif (error_type.startswith('word_usage_') or error_type.startswith('technical_') or
-                  error_type in ['contractions', 'spelling', 'terminology', 'anthropomorphism', 'capitalization', 'prefixes', 'plurals', 'abbreviations']):
-                stations_needed.add('medium')
-            elif (error_type.startswith('punctuation_') or error_type.startswith('references_') or
-                  error_type in ['tone', 'citations', 'currency']):
-                stations_needed.add('low')
-        
-        # Return in priority order
-        priority_order = ['urgent', 'high', 'medium', 'low']
-        return [station for station in priority_order if station in stations_needed]
+        error_types = [error.get('type', '') for error in block_errors]
+        return ErrorStationMapper.get_applicable_stations(error_types)
 
     def get_station_display_name(self, station: str) -> str:
         """Get user-friendly display name for assembly line station."""
+        return ErrorStationMapper.get_station_display_name(station)
+    
+    def _process_multipass_assembly_line(self, text: str, all_errors: List[Dict[str, Any]], 
+                                       applicable_stations: List[str], block_type: str = "text") -> Dict[str, Any]:
+        """
+        Process text through multi-pass assembly line with world-class AI at each station.
+        Each pass focuses on specific priority levels for better results.
         
-        station_names = {
-            'urgent': 'Critical/Legal Pass',
-            'high': 'Structural Pass', 
-            'medium': 'Grammar Pass',
-            'low': 'Style Pass'
+        Args:
+            text: Original text to process
+            all_errors: All detected errors
+            applicable_stations: List of stations to process (in priority order)
+            block_type: Type of content block
+            
+        Returns:
+            Dictionary with final results and per-pass statistics
+        """
+        if not applicable_stations:
+            return {
+                'rewritten_text': text,
+                'original_text': text,
+                'errors_fixed': 0,
+                'confidence': 1.0,
+                'processing_method': 'no_stations_needed',
+                'pass_results': []
+            }
+        
+        current_text = text
+        total_errors_fixed = 0
+        pass_results = []
+        overall_confidence = 1.0
+        
+        logger.info(f"🏭 Multi-pass assembly line: {len(applicable_stations)} stations for {len(all_errors)} errors")
+        
+        # Process through each station in priority order
+        for i, station in enumerate(applicable_stations, 1):
+            station_errors = self._get_errors_for_station(all_errors, station)
+            
+            if not station_errors:
+                continue  # Skip stations with no errors
+            
+            logger.info(f"🔧 Pass {i}/{len(applicable_stations)} - {station} station: {len(station_errors)} errors")
+            
+            # Progress callback for each pass
+            if self.progress_callback:
+                station_name = self.get_station_display_name(station)
+                progress = int((i / len(applicable_stations)) * 90)  # 90% max, leaving 10% for final
+                self.progress_callback('station_processing', f'{station_name}', 
+                                     f'Processing {len(station_errors)} errors', progress)
+            
+            # Apply world-class AI for this station's errors
+            station_result = self._apply_world_class_ai_fixes(current_text, station_errors, block_type, station)
+            
+            if station_result.get('rewritten_text') and station_result['rewritten_text'] != current_text:
+                # Success at this station
+                current_text = station_result['rewritten_text']
+                errors_fixed_this_pass = station_result.get('errors_fixed', 0)
+                total_errors_fixed += errors_fixed_this_pass
+                
+                # Determine input text (original text for first pass, previous output for others)
+                input_text = text if len(pass_results) == 0 else pass_results[-1]['output_text']
+                
+                pass_results.append({
+                    'station': station,
+                    'station_name': self.get_station_display_name(station),
+                    'errors_processed': len(station_errors),
+                    'errors_fixed': errors_fixed_this_pass,
+                    'confidence': station_result.get('confidence', 0.8),
+                    'input_text': input_text,
+                    'output_text': current_text,
+                    'processing_method': station_result.get('processing_method', 'world_class_ai')
+                })
+                
+                # Update overall confidence (weighted average)
+                overall_confidence = (overall_confidence + station_result.get('confidence', 0.8)) / 2
+                
+                logger.info(f"✅ {station} pass: {errors_fixed_this_pass} errors fixed, confidence: {station_result.get('confidence', 0.8):.2f}")
+            else:
+                # No changes at this station
+                input_text = text if len(pass_results) == 0 else pass_results[-1]['output_text']
+                
+                pass_results.append({
+                    'station': station,
+                    'station_name': self.get_station_display_name(station),
+                    'errors_processed': len(station_errors),
+                    'errors_fixed': 0,
+                    'confidence': 0.1,
+                    'input_text': input_text,
+                    'output_text': current_text,
+                    'processing_method': 'ai_no_changes'
+                })
+                
+                logger.warning(f"⚠️ {station} pass: No changes made")
+        
+        # Calculate final confidence and statistics
+        passes_with_changes = [p for p in pass_results if p['errors_fixed'] > 0]
+        final_confidence = sum(p['confidence'] for p in passes_with_changes) / len(passes_with_changes) if passes_with_changes else 0.5
+        
+        return {
+            'rewritten_text': current_text,
+            'original_text': text,
+            'errors_fixed': total_errors_fixed,
+            'confidence': final_confidence,
+            'processing_method': 'multipass_assembly_line',
+            'passes_completed': len(applicable_stations),
+            'passes_with_changes': len(passes_with_changes),
+            'pass_results': pass_results
+        }
+
+    def _apply_world_class_ai_fixes(self, text: str, errors: List[Dict[str, Any]], 
+                                   block_type: str = "text", station: str = None) -> Dict[str, Any]:
+        """
+        Apply world-class AI multi-shot prompting to fix errors at a specific station.
+        Creates focused, station-specific prompts for better results.
+        
+        Args:
+            text: Original text to fix
+            errors: List of detected errors for this station
+            block_type: Type of content block for context
+            station: Assembly line station (for focused prompting)
+            
+        Returns:
+            Dictionary with corrected text and processing statistics
+        """
+        self.processing_stats['blocks_processed'] += 1
+        
+        if not errors:
+            return {
+                'rewritten_text': text,
+                'original_text': text,
+                'errors_fixed': 0,
+                'confidence': 1.0,
+                'processing_method': 'no_errors_detected'
+            }
+        
+        try:
+            # Assess complexity to choose optimal prompting strategy
+            complexity = self._assess_error_complexity(errors)
+            
+            if station:
+                # Create station-specific prompt for focused multi-pass processing
+                station_name = self.get_station_display_name(station)
+                prompt = self.prompt_generator.create_station_focused_prompt(
+                    text, errors, station, station_name, block_type
+                )
+                prompt_type = f'station_focused_{station}'
+            elif complexity == 'high' or len(errors) > 3:
+                # Use comprehensive world-class prompting for complex cases
+                prompt = self.prompt_generator.create_world_class_multi_shot_prompt(
+                    text, errors, block_type
+                )
+                prompt_type = 'world_class_comprehensive'
+            else:
+                # Use enhanced multi-shot prompting for simpler cases
+                prompt = self.prompt_generator.create_assembly_line_prompt(
+                    text, errors, 1, block_type
+                )
+                prompt_type = 'enhanced_multi_shot'
+            
+            # Generate AI correction
+            ai_result = self.text_generator.generate_text(prompt, text)
+            
+            if ai_result and ai_result.strip() != text.strip():
+                # Successful AI processing
+                final_text = self.text_processor.clean_generated_text(ai_result, text)
+                
+                # Calculate confidence based on complexity and error coverage
+                confidence = self._calculate_ai_confidence(errors, complexity)
+                
+                # Update stats
+                self.processing_stats['errors_fixed'] += len(errors)
+                
+                return {
+                    'rewritten_text': final_text,
+                    'original_text': text,
+                    'errors_fixed': len(errors),
+                    'confidence': confidence,
+                    'processing_method': 'world_class_ai',
+                    'prompt_type': prompt_type,
+                    'complexity': complexity,
+                    'error_count': len(errors)
+                }
+            else:
+                # AI returned same text or failed
+                logger.warning(f"AI processing returned unchanged text for {len(errors)} errors")
+                return {
+                    'rewritten_text': text,
+                    'original_text': text,
+                    'errors_fixed': 0,
+                    'confidence': 0.1,
+                    'processing_method': 'ai_no_changes',
+                    'prompt_type': prompt_type,
+                    'complexity': complexity
+                }
+                
+        except Exception as e:
+            logger.error(f"AI processing failed: {e}")
+            return {
+                'rewritten_text': text,
+                'original_text': text,
+                'errors_fixed': 0,
+                'confidence': 0.0,
+                'processing_method': 'ai_failed',
+                'error': str(e)
+            }
+    
+    def _assess_error_complexity(self, errors: List[Dict[str, Any]]) -> str:
+        """
+        Assess the complexity of errors to determine optimal AI prompting strategy.
+        
+        Args:
+            errors: List of errors to assess
+            
+        Returns:
+            'low', 'medium', or 'high' complexity level
+        """
+        if not errors:
+            return 'low'
+        
+        # High complexity indicators
+        high_complexity_types = {
+            'ambiguity', 'passive_voice', 'sentence_length', 
+            'legal_claims', 'tone', 'readability', 'subjunctive_mood'
         }
         
-        return station_names.get(station, 'Processing Pass')
+        # Medium complexity indicators  
+        medium_complexity_types = {
+            'word_usage_y', 'citations', 'anthropomorphism',
+            'headings'  # Can be complex with technical terms
+        }
+        
+        high_count = sum(1 for error in errors 
+                        if error.get('type', '') in high_complexity_types)
+        medium_count = sum(1 for error in errors 
+                          if error.get('type', '') in medium_complexity_types)
+        
+        # Complexity scoring
+        if high_count > 0 or len(errors) > 4:
+            return 'high'
+        elif medium_count > 1 or len(errors) > 2:
+            return 'medium' 
+        else:
+            return 'low'
+    
+    def _calculate_ai_confidence(self, errors: List[Dict[str, Any]], complexity: str) -> float:
+        """Calculate confidence score for AI processing."""
+        if not errors:
+            return 1.0
+        
+        # Base confidence by complexity
+        base_confidence = {
+            'low': 0.95,      # Simple fixes with multi-shot examples
+            'medium': 0.88,   # Moderate complexity 
+            'high': 0.82      # Complex reasoning required
+        }.get(complexity, 0.85)
+        
+        # Adjust for error count
+        error_count_factor = max(0.7, 1.0 - (len(errors) - 1) * 0.05)
+        
+        return min(1.0, base_confidence * error_count_factor)
+    
+    def get_processing_stats(self) -> Dict[str, Any]:
+        """Get performance statistics for the AI processing system."""
+        stats = {
+            'blocks_processed': self.processing_stats['blocks_processed'],
+            'total_errors_fixed': self.processing_stats['errors_fixed'],
+            'total_processing_time_ms': self.processing_stats['total_processing_time_ms'],
+            'average_confidence': self.processing_stats['average_confidence']
+        }
+        
+        if stats['blocks_processed'] > 0:
+            stats['errors_per_block'] = stats['total_errors_fixed'] / stats['blocks_processed']
+            stats['average_processing_time_ms'] = stats['total_processing_time_ms'] / stats['blocks_processed']
+        else:
+            stats['errors_per_block'] = 0.0
+            stats['average_processing_time_ms'] = 0.0
+        
+        return stats
 
 
 

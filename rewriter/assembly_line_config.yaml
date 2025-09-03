@@ -1,126 +1,34 @@
-# Assembly Line Configuration - COMPLETE COVERAGE
-# Automatically generates specialized instructions for ALL error types
-# Based on comprehensive analysis of /rules directory
+# Assembly Line Configuration - Simplified
+# Error-to-station mapping now handled by ErrorStationMapper class
+# This file contains only instruction templates and UI configuration
 
-# Dynamic Assembly Line Processing - Block-Level Configuration
-# Stations are created dynamically based on actual errors present in each block
+# Processing configuration (UI display only - actual mapping in ErrorStationMapper)  
 processing_passes:
   urgent:
     name: "Critical/Legal Pass"
-    display_name: "Critical/Legal Pass"
     description: "Legal compliance and critical content issues"
-    priority_level: 1
     color: "red"
     icon: "fas fa-exclamation-triangle"
-    categories: ["legal", "inclusive_language", "second_person", "claims"]
-    error_types:
-      - "legal_claims"
-      - "legal_company_names" 
-      - "legal_personal_information"
-      - "inclusive_language"
-      - "second_person"
   
   high:
     name: "Structural Pass"
-    display_name: "Structural Pass"
     description: "Document structure and organization improvements"
-    priority_level: 2
-    color: "orange"
+    color: "orange"  
     icon: "fas fa-building"
-    categories: ["passive_voice", "sentence_length", "subjunctive_mood", "verbs", "headings", "ambiguity"]
-    error_types:
-      - "passive_voice"
-      - "sentence_length"
-      - "subjunctive_mood"
-      - "verbs"
-      - "headings"
-      - "ambiguity"
   
   medium:
     name: "Grammar Pass"
-    display_name: "Grammar Pass"
     description: "Grammar, word usage, and language improvements"
-    priority_level: 3
     color: "gold"
     icon: "fas fa-spell-check"
-    categories: ["word_usage", "anthropomorphism", "capitalization", "contractions", "prefixes", "plurals", "spelling", "terminology", "abbreviations"]
-    error_types:
-      - "word_usage_a"
-      - "word_usage_b"
-      - "word_usage_c"
-      - "word_usage_d"
-      - "word_usage_e"
-      - "word_usage_f"
-      - "word_usage_g"
-      - "word_usage_h"
-      - "word_usage_i"
-      - "word_usage_j"
-      - "word_usage_k"
-      - "word_usage_l"
-      - "word_usage_m"
-      - "word_usage_n"
-      - "word_usage_o"
-      - "word_usage_p"
-      - "word_usage_q"
-      - "word_usage_r"
-      - "word_usage_s"
-      - "word_usage_t"
-      - "word_usage_u"
-      - "word_usage_v"
-      - "word_usage_w"
-      - "word_usage_x"
-      - "word_usage_y"
-      - "word_usage_z"
-      - "anthropomorphism"
-      - "capitalization"
-      - "contractions"
-      - "prefixes"
-      - "plurals"
-      - "spelling"
-      - "terminology"
-      - "abbreviations"
-      - "technical_commands"
-      - "technical_files_directories"
-      - "technical_keyboard_keys"
-      - "technical_mouse_buttons"
-      - "technical_programming_elements"
-      - "technical_ui_elements"
-      - "technical_web_addresses"
   
   low:
     name: "Style Pass"
-    display_name: "Style Pass"
     description: "Style refinements and polish"
-    priority_level: 4
     color: "blue"
     icon: "fas fa-paint-brush"
-    categories: ["citations", "currency", "pronouns", "punctuation", "tone"]
-    error_types:
-      - "citations"
-      - "currency"
-      - "pronouns"
-      - "punctuation_commas"
-      - "punctuation_periods"
-      - "punctuation_semicolons"
-      - "punctuation_colons"
-      - "punctuation_quotation_marks"
-      - "punctuation_apostrophes"
-      - "punctuation_hyphens"
-      - "punctuation_dashes"
-      - "punctuation_parentheses"
-      - "punctuation_brackets"
-      - "punctuation_ellipses"
-      - "punctuation_slashes"
-      - "punctuation_and_symbols"
-      - "tone"
-      - "references_citations"
-      - "references_geographic_locations"
-      - "references_names_titles"
-      - "references_product_names"
-      - "references_product_versions"
 
 # Dynamic Station Configuration
-# Stations are only shown when relevant errors are present
 dynamic_stations:
   enabled: true
   show_empty_stations: false
@@ -137,12 +45,23 @@ instruction_templates:
   inclusive_language: "Replace non-inclusive terms with inclusive alternatives. Common fixes: 'guys' → 'everyone', 'man-hours' → 'person-hours'. Output ONLY the corrected text."
   second_person: "Remove first-person 'we/our' and use second person 'you' for user actions. Change 'We will' → 'You can', 'Our system' → 'The system'. Output ONLY the corrected text."
   
+  # Additional legal/critical rules
+  claims: "Replace subjective claims with objective statements. Common fixes: 'easy' → 'straightforward', 'simple' → 'direct', 'great' → 'useful'. Output ONLY the corrected text."
+  company_names: "Fix company name formatting according to legal requirements. Use proper trademark symbols where required. Output ONLY the corrected text."
+  personal_information: "Replace specific personal information terms with generic equivalents while preserving meaning. 'first name and last name' → 'given name and surname', 'your name' → 'a name'. Keep the functional requirement. Output ONLY the corrected text."
+  
   # ===== STRUCTURAL (HIGH) =====
   passive_voice: "Convert passive voice to active voice. Make no other changes."
   sentence_length: "Break long sentence into shorter sentences. Make no other changes."
   subjunctive_mood: "Convert subjunctive mood to imperative. Change 'It is important that X be done' to 'Important: Do X'. Make no other changes."
   verbs: "Convert passive voice to active voice, but CRITICALLY: specify a CLEAR, LOGICAL actor. NEVER use vague actors like 'system', 'application', or 'software'. For UI text, use 'you' (user action) or specific component names. For instructions, use imperative mood ('Click the button' not 'The system clicks'). For technical docs, identify the actual responsible component. Preserve meaning and avoid ALL ambiguous actors. Output ONLY the corrected sentence."
   headings: "Fix heading capitalization and structure. Make no other changes."
+  
+  # Additional structural rules
+  admonitions: "Fix admonition formatting and structure. Ensure proper note, tip, warning, and caution formatting with appropriate icons and emphasis. Output ONLY the corrected text."
+  concept_module: "Fix concept module structure and organization. Ensure proper conceptual content organization, clear definitions, and logical flow. Output ONLY the corrected text."  
+  procedure_module: "Fix procedure module structure and formatting. Ensure proper step numbering, clear instructions, and logical task flow. Output ONLY the corrected text."
+  reference_module: "Fix reference module structure and cross-references. Ensure proper reference formatting, accurate links, and complete citation information. Output ONLY the corrected text."
   
   # ===== LANGUAGE & GRAMMAR (MEDIUM) =====
   abbreviations: "Fix abbreviation formatting and usage according to style guide. Replace Latin abbreviations like 'etc.' with English equivalents like 'and so on'. Ensure abbreviations are defined on first use. Make no other changes."
@@ -191,19 +110,33 @@ instruction_templates:
   word_usage_z: "Replace problematic words as specified. Common fixes: 'zip' → 'compress', 'zero out' → 'clear'. Output ONLY the corrected text."
   word_usage_special: "Fix usage of special characters and symbols as specified. Output ONLY the corrected text."
   
-  # ===== PUNCTUATION =====
-  colons: "Fix colon usage and placement according to style guide. Make no other changes."
-  commas: "Fix comma usage and placement according to style guide. Make no other changes."
-  dashes: "Fix dash usage (em dash, en dash) according to style guide. Make no other changes."
-  ellipses: "Fix ellipsis usage and formatting. Make no other changes."
-  exclamation_points: "Remove exclamation points from technical writing. Replace with periods. 'Save it!' → 'Save it.' Output ONLY the corrected text."
-  hyphens: "Fix hyphen usage in compound words and modifiers. Make no other changes."
-  parentheses: "Fix parentheses usage and placement. Make no other changes."
-  periods: "Fix period usage and placement. Make no other changes."
-  punctuation_and_symbols: "Fix general punctuation and symbol usage. Make no other changes."
-  quotation_marks: "Fix quotation mark usage and placement. Make no other changes."
-  semicolons: "Fix semicolon usage and placement. Make no other changes."
-  slashes: "Fix slash usage and formatting. Make no other changes."
+    # ===== PUNCTUATION =====
+  punctuation_apostrophes: "Fix apostrophe usage in possessives and contractions. Examples: 'its' vs 'it's', 'employees' vs 'employee's'. Make no other changes."
+  punctuation_brackets: "Fix bracket usage and placement. Ensure proper opening/closing pairs and spacing. Make no other changes."
+  punctuation_colons: "Fix colon usage after introductions, in lists, and time formatting. Examples: 'Note: Important info', 'Time: 10:30'. Make no other changes."
+  punctuation_commas: "Fix comma usage in lists, before conjunctions, and after introductory phrases. Examples: 'First, second, and third', 'Before you begin, read this'. Make no other changes."
+  punctuation_dashes: "Fix em dash (—) and en dash (–) usage. Em dash for breaks in thought, en dash for ranges. Examples: 'Pages 10–20', 'The system—which is complex—works'. Make no other changes."
+  punctuation_ellipses: "Fix ellipsis usage for omitted text or trailing thoughts. Use three periods with proper spacing. Examples: 'And so on...' → 'And so on...'. Make no other changes."
+  punctuation_hyphens: "Fix hyphen usage in compound words and line breaks. Examples: 'well-known', 'twenty-one', 'state-of-the-art'. Make no other changes."
+  punctuation_parentheses: "Fix parentheses usage for additional information and references. Ensure proper spacing and closing. Examples: 'See (Figure 1)', 'Use caution (always)'. Make no other changes."
+  punctuation_periods: "Fix period usage at sentence ends, abbreviations, and decimal numbers. Examples: 'etc.' → 'and so on', '3.14'. Make no other changes."
+  punctuation_quotation_marks: "Fix quotation mark usage for direct quotes, technical terms, and titles. Use proper nesting and placement with punctuation. Examples: 'The \"submit\" button', 'He said, \"Press OK.\"'. Make no other changes."
+  punctuation_semicolons: "Fix semicolon usage between independent clauses and in complex lists. Examples: 'First item; second item; third item'. Make no other changes."
+  punctuation_slashes: "Fix slash usage in URLs, fractions, and alternatives. Examples: 'and/or' → 'or', proper URL formatting. Make no other changes."
+  
+  # Individual punctuation rules (non-prefixed versions)
+  colons: "Fix colon usage after introductions, in lists, and time formatting. Examples: 'Note: Important info', 'Time: 10:30'. Make no other changes."
+  commas: "Fix comma usage in lists, before conjunctions, and after introductory phrases. Examples: 'First, second, and third', 'Before you begin, read this'. Make no other changes."  
+  dashes: "Fix em dash (—) and en dash (–) usage. Em dash for breaks in thought, en dash for ranges. Examples: 'Pages 10–20', 'The system—which is complex—works'. Make no other changes."
+  ellipses: "Fix ellipsis usage for omitted text or trailing thoughts. Use three periods with proper spacing. Examples: 'And so on...' → 'And so on...'. Make no other changes."
+  exclamation_points: "Fix exclamation point usage. Remove inappropriate exclamation points in technical writing. Use sparingly and only for genuine emphasis. Make no other changes."
+  hyphens: "Fix hyphen usage in compound words and line breaks. Examples: 'well-known', 'twenty-one', 'state-of-the-art'. Make no other changes."
+  parentheses: "Fix parentheses usage for additional information and references. Ensure proper spacing and closing. Examples: 'See (Figure 1)', 'Use caution (always)'. Make no other changes."
+  periods: "Fix period usage at sentence ends, abbreviations, and decimal numbers. Examples: 'etc.' → 'and so on', '3.14'. Make no other changes."
+  punctuation_and_symbols: "Fix punctuation and symbol usage according to style guide. Ensure proper formatting and spacing. Make no other changes."
+  quotation_marks: "Fix quotation mark usage for direct quotes, technical terms, and titles. Use proper nesting and placement with punctuation. Examples: 'The \"submit\" button', 'He said, \"Press OK.\"'. Make no other changes."
+  semicolons: "Fix semicolon usage between independent clauses and in complex lists. Examples: 'First item; second item; third item'. Make no other changes."
+  slashes: "Fix slash usage in URLs, fractions, and alternatives. Examples: 'and/or' → 'or', proper URL formatting. Make no other changes."
   
   # ===== NUMBERS & MEASUREMENT =====
   numbers_currency: "Replace currency symbols with ISO codes. Change '$' → 'USD', '€' → 'EUR', '£' → 'GBP'. Output ONLY the corrected text."
@@ -211,6 +144,9 @@ instruction_templates:
   numbers_general: "Fix number formatting and usage according to style guide. Make no other changes."
   numerals_vs_words: "Fix when to use numerals vs spelled-out numbers. Make no other changes."
   units_of_measurement: "Fix unit of measurement formatting and abbreviations. Make no other changes."
+  
+  # ===== CURRENCY =====
+  currency: "Replace currency symbols with internationally recognized formats. Examples: '$100' → 'USD 100' or '100 dollars', '€50' → 'EUR 50' or '50 euros', '£25' → 'GBP 25' or '25 pounds'. Output ONLY the corrected text."
   
   # ===== AUDIENCE & MEDIUM =====
   conversational_style: "Adjust tone to be appropriately conversational but professional. Make no other changes."
@@ -234,6 +170,9 @@ instruction_templates:
   references_product_names: "Fix product name formatting and capitalization. Make no other changes."
   references_product_versions: "Fix product version formatting and notation. Make no other changes."
   
+  # ===== REFERENCE =====
+  citations: "Replace vague link text with descriptive text that explains the destination. Examples: 'click here for help' → 'see the troubleshooting guide', 'more info' → 'detailed configuration instructions'. Output ONLY the corrected sentence."
+  
   # ===== STRUCTURE & FORMAT =====
   examples: "Fix example formatting and presentation. Make no other changes."
   glossaries: "Fix glossary term formatting and definitions. Make no other changes."
@@ -242,6 +181,11 @@ instruction_templates:
   procedures: "Fix procedure step formatting and numbering. Make no other changes."
   notes: "Fix note and admonition formatting. Make no other changes."
   structure_format_notes: "Fix note and admonition formatting. Make no other changes."
+  
+  # ===== STRUCTURAL =====
+  messages: "Fix message formatting, tone, and clarity. Ensure messages are clear, actionable, and appropriately formatted. Examples: 'Error occurred' → 'Configuration error: Check your settings', 'Success!' → 'Configuration saved successfully'. Output ONLY the corrected text."
+  paragraphs: "Fix paragraph structure, length, and flow. Break overly long paragraphs, ensure topic coherence, and improve transitions. Make each paragraph focus on a single concept. Make no other changes."
+  modular_compliance: "Fix modular document structure and cross-references. Ensure proper section organization, consistent formatting, and accurate internal links. Examples: 'See above' → 'See Section 2.1', 'As mentioned' → 'As described in the Prerequisites section'. Output ONLY the corrected text."
   
   # ===== GENERAL RULES =====
   ambiguity: "Fix ambiguous actors in passive voice sentences. Specify WHO or WHAT performs the action. NEVER use vague terms like 'system', 'application', or 'software'. For UI text, use 'you' (user action) or specific component names. Example: 'This is clicked' → 'You click this' or 'The button is clicked' → 'You click the button'. Output ONLY the corrected sentence with NO explanations."

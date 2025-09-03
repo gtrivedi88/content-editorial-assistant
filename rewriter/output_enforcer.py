@@ -145,8 +145,9 @@ CORRECTED TEXT:"""
         if not text or len(text.strip()) < 2:
             return original_text
             
-        # If unchanged, return original
-        if text.lower().strip() == original_text.lower().strip():
+        # FIXED: Don't revert case changes - case differences are valid corrections!
+        # Only revert if text is EXACTLY the same (preserving intentional case fixes)
+        if text.strip() == original_text.strip():
             return original_text
         
         return text.strip()

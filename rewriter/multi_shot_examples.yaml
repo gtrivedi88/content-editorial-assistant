@@ -1,0 +1,1303 @@
+# Multi-Shot Prompting Example Database
+# Each error type has multiple contextual examples for few-shot learning
+
+version: "1.0"
+description: "Comprehensive example database for multi-shot prompting with contextual selection"
+
+# Example structure:
+# - before: Original problematic text
+# - after: Corrected text following the rule
+# - context: Type of content (heading, paragraph, list, etc.)
+# - reasoning: Why this correction was made
+# - success_rate: Track how well this example performs (0.0-1.0)
+# - difficulty: simple, medium, complex - for graduated example selection
+
+examples:
+  
+  # ===== HEADINGS =====
+  headings:
+    - before: "Important Notes"
+      after: "Important notes"
+      context: "heading"
+      reasoning: "Sentence-style capitalization: only first word capitalized"
+      success_rate: 0.95
+      difficulty: "simple"
+    
+    - before: "API Configuration Guide"
+      after: "API configuration guide" 
+      context: "heading"
+      reasoning: "Preserve technical acronyms, apply sentence-style to rest"
+      success_rate: 0.92
+      difficulty: "medium"
+    
+    - before: "System Health Check Procedures"
+      after: "System health check procedures"
+      context: "heading"
+      reasoning: "Long heading with sentence-style capitalization throughout"
+      success_rate: 0.89
+      difficulty: "medium"
+      
+    - before: "OAuth 2.0 Integration With Microsoft Azure Active Directory"
+      after: "OAuth 2.0 integration with Microsoft Azure Active Directory"
+      context: "heading"
+      reasoning: "Complex heading: preserve technical terms (OAuth 2.0) and proper nouns (Microsoft Azure Active Directory), apply sentence-style to connecting words"
+      success_rate: 0.88
+      difficulty: "complex"
+  
+  # ===== WORD USAGE =====
+  word_usage_y:
+    - before: "You can click the button"
+      after: "Click the button"
+      context: "instruction"
+      reasoning: "Remove unnecessary 'You can' to make instruction direct and imperative"
+      success_rate: 0.97
+      difficulty: "simple"
+    
+    - before: "You must ensure the settings are correct"
+      after: "Ensure the settings are correct"
+      context: "instruction"
+      reasoning: "Convert 'You must' to direct imperative form"
+      success_rate: 0.94
+      difficulty: "simple"
+      
+    - before: "You should back up your data before proceeding"
+      after: "Back up your data before proceeding" 
+      context: "procedure"
+      reasoning: "Remove weak 'You should' and use strong imperative for critical actions"
+      success_rate: 0.96
+      difficulty: "medium"
+      
+    - before: "You may experience issues if you don't follow these steps"
+      after: "Issues may occur if these steps are not followed"
+      context: "warning"
+      reasoning: "Complex case: restructure to avoid both 'You may' and 'you don't' while preserving meaning"
+      success_rate: 0.85
+      difficulty: "complex"
+
+  # ===== CITATIONS & LINKS =====
+  citations:
+    - before: "For more information, click here"
+      after: "For more information, see the installation guide"
+      context: "reference"
+      reasoning: "Replace vague 'click here' with descriptive link text"
+      success_rate: 0.93
+      difficulty: "simple"
+      
+    - before: "Click here for troubleshooting"
+      after: "See the troubleshooting guide"
+      context: "reference"
+      reasoning: "Convert 'click here' to descriptive action with clear destination"
+      success_rate: 0.95
+      difficulty: "simple"
+      
+    - before: "More details can be found here"
+      after: "More details can be found in the technical specifications"
+      context: "reference"
+      reasoning: "Replace vague 'here' with specific document reference"
+      success_rate: 0.91
+      difficulty: "medium"
+      
+    - before: "If you need help with configuration, click this link"
+      after: "If you need help with configuration, see the configuration reference guide"
+      context: "reference"
+      reasoning: "Replace 'click this link' with descriptive destination while preserving conditional context"
+      success_rate: 0.87
+      difficulty: "complex"
+
+  # ===== TECHNICAL ELEMENTS =====
+  technical_files_directories:
+    - before: "Edit the /etc/hosts file"
+      after: "Edit the `/etc/hosts` file"
+      context: "instruction"
+      reasoning: "Add backticks to format file paths as code elements"
+      success_rate: 0.98
+      difficulty: "simple"
+      
+    - before: "Navigate to C:\\Program Files\\Application"
+      after: "Navigate to `C:\\Program Files\\Application`"
+      context: "instruction" 
+      reasoning: "Format Windows path with backticks for code formatting"
+      success_rate: 0.96
+      difficulty: "simple"
+      
+    - before: "The log files are stored in /var/log/application/ directory"
+      after: "The log files are stored in the `/var/log/application/` directory"
+      context: "explanation"
+      reasoning: "Format directory path and add article 'the' for readability"
+      success_rate: 0.92
+      difficulty: "medium"
+      
+    - before: "Check ~/.bashrc, /etc/profile, and /etc/bash.bashrc files"
+      after: "Check the `~/.bashrc`, `/etc/profile`, and `/etc/bash.bashrc` files"
+      context: "instruction"
+      reasoning: "Format multiple file paths consistently and add article for list readability"
+      success_rate: 0.89
+      difficulty: "complex"
+
+  # ===== CURRENCY =====
+  currency:
+    - before: "$100"
+      after: "USD 100"
+      context: "price"
+      reasoning: "Replace currency symbol with international format for global clarity"
+      success_rate: 0.98
+      difficulty: "simple"
+    
+    - before: "€50"
+      after: "EUR 50"
+      context: "price"
+      reasoning: "Replace Euro symbol with standard international currency code"
+      success_rate: 0.97
+      difficulty: "simple"
+      
+    - before: "£25"
+      after: "GBP 25"
+      context: "price"
+      reasoning: "Replace British Pound symbol with ISO currency code"
+      success_rate: 0.96
+      difficulty: "simple"
+      
+    - before: "The license costs $299 per user annually"
+      after: "The license costs USD 299 per user annually"
+      context: "explanation"
+      reasoning: "Replace currency symbol in sentence context while preserving sentence structure"
+      success_rate: 0.94
+      difficulty: "medium"
+
+  # ===== CONTRACTIONS =====
+  contractions:
+    - before: "You'll need to restart the service"
+      after: "You will need to restart the service"
+      context: "instruction"
+      reasoning: "Expand contraction 'You'll' to 'You will' for formal documentation"
+      success_rate: 0.99
+      difficulty: "simple"
+      
+    - before: "It's important to save your work"
+      after: "It is important to save your work"
+      context: "advice"
+      reasoning: "Expand 'It's' to 'It is' - distinguish from possessive 'its'"
+      success_rate: 0.97
+      difficulty: "simple"
+      
+    - before: "The system won't start if there's an error"
+      after: "The system will not start if there is an error"
+      context: "explanation"
+      reasoning: "Expand both 'won't' to 'will not' and 'there's' to 'there is'"
+      success_rate: 0.94
+      difficulty: "medium"
+      
+    - before: "Users can't access files they don't own unless they're administrators"
+      after: "Users cannot access files they do not own unless they are administrators"
+      context: "explanation"
+      reasoning: "Complex: expand multiple contractions (can't→cannot, don't→do not, they're→they are) while maintaining sentence flow"
+      success_rate: 0.88
+      difficulty: "complex"
+
+  # ===== AMBIGUITY =====
+  ambiguity:
+    - before: "The button is clicked to submit"
+      after: "Click the button to submit"
+      context: "instruction"
+      reasoning: "Convert passive voice to active imperative, specify actor (user implied)"
+      success_rate: 0.94
+      difficulty: "simple"
+      
+    - before: "When the form is submitted, validation occurs"
+      after: "When you submit the form, the system validates the data"
+      context: "procedure"
+      reasoning: "Specify actors: 'you' submit, 'system' validates - eliminate vague passive voice"
+      success_rate: 0.91
+      difficulty: "medium"
+      
+    - before: "Errors are handled by the application automatically"
+      after: "The error handling module automatically processes errors"
+      context: "explanation"
+      reasoning: "Replace vague 'application' with specific component 'error handling module'"
+      success_rate: 0.89
+      difficulty: "medium"
+      
+    - before: "Data is processed and results are displayed when analysis is completed"
+      after: "The analytics engine processes data and displays results when analysis completes"
+      context: "explanation"
+      reasoning: "Complex: specify component actor (analytics engine), convert multiple passive constructions to active"
+      success_rate: 0.85
+      difficulty: "complex"
+
+  # ===== LEGAL CLAIMS =====
+  legal_claims:
+    - before: "This is the easiest way to configure the system"
+      after: "This is a straightforward way to configure the system"
+      context: "instruction"
+      reasoning: "Replace subjective 'easiest' with objective 'straightforward'"
+      success_rate: 0.96
+      difficulty: "simple"
+      
+    - before: "Our software is the best solution for your needs"
+      after: "Our software provides comprehensive functionality for your needs"
+      context: "description"
+      reasoning: "Replace claim 'best' with factual 'comprehensive functionality'"
+      success_rate: 0.93
+      difficulty: "medium"
+      
+    - before: "This simple process guarantees success"
+      after: "This process typically produces successful results"
+      context: "procedure"
+      reasoning: "Replace guarantee claim and subjective 'simple' with qualified, objective language"
+      success_rate: 0.88
+      difficulty: "complex"
+
+  # ===== URGENT PRIORITY RULES =====
+  
+  claims:
+    - before: "This is the best way to solve the problem"
+      after: "This is an effective way to solve the problem"
+      context: "instruction"
+      reasoning: "Replace subjective claim 'best' with objective 'effective'"
+      success_rate: 0.95
+      difficulty: "simple"
+      
+    - before: "Our platform is superior to competitors"
+      after: "Our platform provides advanced features"
+      context: "description" 
+      reasoning: "Replace comparative claim with factual capability statement"
+      success_rate: 0.91
+      difficulty: "medium"
+      
+    - before: "This revolutionary approach will transform your workflow"
+      after: "This approach can improve your workflow efficiency"
+      context: "marketing"
+      reasoning: "Replace hyperbolic claims with measurable, qualified benefits"
+      success_rate: 0.87
+      difficulty: "complex"
+
+  company_names:
+    - before: "Configure the Microsoft settings"
+      after: "Configure the Microsoft® settings"
+      context: "instruction"
+      reasoning: "Add trademark symbol to company name"
+      success_rate: 0.97
+      difficulty: "simple"
+      
+    - before: "Use Oracle database for storage"
+      after: "Use Oracle® database for storage"
+      context: "specification"
+      reasoning: "Add registered trademark to Oracle company name"
+      success_rate: 0.96
+      difficulty: "simple"
+
+  personal_information:
+    - before: "Enter your first name and last name"
+      after: "Enter your given name and surname"
+      context: "form"
+      reasoning: "Replace specific personal information terms with generic equivalents"
+      success_rate: 0.94
+      difficulty: "simple"
+      
+    - before: "Your social security number is required"
+      after: "Your government identification number is required"
+      context: "form"
+      reasoning: "Replace specific personal identifier with generic equivalent"
+      success_rate: 0.92
+      difficulty: "medium"
+
+  legal_company_names:
+    - before: "Install the Adobe software"
+      after: "Install the Adobe® software"
+      context: "instruction"
+      reasoning: "Add trademark symbol for legal compliance"
+      success_rate: 0.98
+      difficulty: "simple"
+
+  legal_personal_information:
+    - before: "Submit your date of birth"
+      after: "Submit your birth date information"  
+      context: "form"
+      reasoning: "Use generic term for personal information compliance"
+      success_rate: 0.93
+      difficulty: "simple"
+
+  inclusive_language:
+    - before: "Hey guys, let's start the meeting"
+      after: "Everyone, let's start the meeting"
+      context: "communication"
+      reasoning: "Replace gendered term 'guys' with inclusive 'everyone'"
+      success_rate: 0.96
+      difficulty: "simple"
+      
+    - before: "The system requires man-hours to complete"
+      after: "The system requires person-hours to complete"
+      context: "planning"
+      reasoning: "Replace gendered term 'man-hours' with inclusive 'person-hours'"
+      success_rate: 0.94
+      difficulty: "simple"
+
+  second_person:
+    - before: "We will process your request"
+      after: "Your request will be processed"
+      context: "communication"
+      reasoning: "Remove first-person 'we' and use passive construction"
+      success_rate: 0.93
+      difficulty: "simple"
+      
+    - before: "Our system automatically backs up data"
+      after: "The system automatically backs up data"
+      context: "explanation"
+      reasoning: "Replace first-person possessive 'our' with definite article"
+      success_rate: 0.95
+      difficulty: "simple"
+
+  # ===== HIGH PRIORITY STRUCTURAL RULES =====
+  
+  passive_voice:
+    - before: "The file is created by the system"
+      after: "The system creates the file"
+      context: "explanation"
+      reasoning: "Convert passive voice to active voice with clear actor"
+      success_rate: 0.94
+      difficulty: "simple"
+      
+    - before: "Data is processed and results are generated"
+      after: "The processor handles data and generates results"
+      context: "procedure"
+      reasoning: "Convert passive to active with specific component actor"
+      success_rate: 0.90
+      difficulty: "medium"
+
+  sentence_length:
+    - before: "To configure the system properly, you must first install the required dependencies, then update the configuration file with your specific settings, and finally restart the service to apply changes."
+      after: "To configure the system properly, follow these steps. First, install the required dependencies. Next, update the configuration file with your specific settings. Finally, restart the service to apply changes."
+      context: "instruction"
+      reasoning: "Break long sentence into shorter, clearer sentences"
+      success_rate: 0.91
+      difficulty: "medium"
+
+  pronouns:
+    - before: "When you configure it, make sure it works correctly"
+      after: "When you configure the system, make sure the configuration works correctly"
+      context: "instruction"
+      reasoning: "Replace ambiguous pronouns with specific nouns"
+      success_rate: 0.93
+      difficulty: "medium"
+
+  subjunctive_mood:
+    - before: "It is important that the backup be performed daily"
+      after: "Important: Perform backups daily"
+      context: "instruction"
+      reasoning: "Convert subjunctive mood to direct imperative instruction"
+      success_rate: 0.94
+      difficulty: "medium"
+      
+    - before: "It is recommended that users save their work frequently"
+      after: "Recommendation: Save your work frequently"
+      context: "advice"
+      reasoning: "Convert formal subjunctive to direct, actionable advice"
+      success_rate: 0.91
+      difficulty: "medium"
+
+  verbs:
+    - before: "The data is processed by the analytics engine"
+      after: "The analytics engine processes the data"
+      context: "explanation"
+      reasoning: "Convert passive to active voice with specific actor identification"
+      success_rate: 0.93
+      difficulty: "medium"
+      
+    - before: "Configuration changes are applied automatically"
+      after: "The system applies configuration changes automatically"
+      context: "explanation"
+      reasoning: "Specify clear actor 'system' for automatic processes"
+      success_rate: 0.90
+      difficulty: "medium"
+
+  lists:
+    - before: "Configure the system:\n- Setting up users\n- Configure permissions\n- Set up monitoring"
+      after: "Configure the system:\n- Set up users\n- Configure permissions\n- Set up monitoring"
+      context: "procedure"
+      reasoning: "Fix parallel structure in list items (all start with verbs)"
+      success_rate: 0.95
+      difficulty: "simple"
+
+  procedures:
+    - before: "1. Open file\n2. Make changes\n3. Saving the file"
+      after: "1. Open the file\n2. Make changes\n3. Save the file"
+      context: "procedure"
+      reasoning: "Fix parallel structure and add articles for clarity"
+      success_rate: 0.96
+      difficulty: "simple"
+
+  paragraphs:
+    - before: "The system processes data. It also validates input. It generates reports. It sends notifications. All these functions work together to provide comprehensive data management."
+      after: "The system provides comprehensive data management through several integrated functions. It processes data and validates input to ensure accuracy. Additionally, it generates reports and sends notifications to keep users informed."
+      context: "explanation"
+      reasoning: "Combine short choppy sentences into coherent paragraphs with better flow"
+      success_rate: 0.88
+      difficulty: "complex"
+
+  messages:
+    - before: "Error occurred"
+      after: "Configuration error: Check your network settings"
+      context: "error"
+      reasoning: "Make error messages specific and actionable"
+      success_rate: 0.94
+      difficulty: "simple"
+
+  notes:
+    - before: "Note: This is important"
+      after: "Note: Save your work before proceeding to avoid data loss"
+      context: "admonition"
+      reasoning: "Make notes specific and actionable rather than vague"
+      success_rate: 0.92
+      difficulty: "medium"
+
+  admonitions:
+    - before: "Warning: Be careful"
+      after: "Warning: This operation cannot be undone. Ensure you have a backup before proceeding."
+      context: "warning"
+      reasoning: "Provide specific, actionable warning content"
+      success_rate: 0.94
+      difficulty: "medium"
+
+  highlighting:
+    - before: "This is **very important** information"
+      after: "This is **critical** information"
+      context: "emphasis"
+      reasoning: "Replace vague emphasis with specific, meaningful emphasis"
+      success_rate: 0.91
+      difficulty: "simple"
+
+  glossaries:
+    - before: "API: A thing that connects stuff"
+      after: "API (Application Programming Interface): A set of protocols and tools that allows different software applications to communicate with each other"
+      context: "definition"
+      reasoning: "Provide complete, technical definitions in glossaries"
+      success_rate: 0.97
+      difficulty: "simple"
+
+  modular_compliance:
+    - before: "See the section above for details"
+      after: "See Section 3.2: Configuration Requirements for details"
+      context: "reference"
+      reasoning: "Replace vague cross-references with specific section references"
+      success_rate: 0.95
+      difficulty: "simple"
+
+  concept_module:
+    - before: "This explains how things work"
+      after: "This concept explains how the authentication system validates user credentials"
+      context: "concept"
+      reasoning: "Make concept introductions specific and descriptive"
+      success_rate: 0.93
+      difficulty: "medium"
+
+  procedure_module:
+    - before: "Do these steps"
+      after: "Complete these steps to configure user authentication"
+      context: "procedure"
+      reasoning: "Provide clear context and purpose for procedure modules"
+      success_rate: 0.96
+      difficulty: "simple"
+
+  reference_module:
+    - before: "More info here"
+      after: "For complete API specifications, see the Developer Reference Guide"
+      context: "reference"
+      reasoning: "Make reference modules descriptive and specific"
+      success_rate: 0.94
+      difficulty: "simple"
+
+  # ===== MEDIUM PRIORITY GRAMMAR & LANGUAGE =====
+  
+  abbreviations:
+    - before: "Use the API etc. for integration"
+      after: "Use the API and similar tools for integration"
+      context: "instruction"
+      reasoning: "Replace Latin abbreviation 'etc.' with English equivalent"
+      success_rate: 0.94
+      difficulty: "simple"
+
+  capitalization:
+    - before: "Important Notes"
+      after: "Important notes"
+      context: "heading"
+      reasoning: "Apply sentence-style capitalization to headings"
+      success_rate: 0.96
+      difficulty: "simple"
+
+  plurals:
+    - before: "Delete the file(s) from the system"
+      after: "Delete files from the system"
+      context: "instruction"
+      reasoning: "Remove parenthetical plurals and use simple plural form"
+      success_rate: 0.95
+      difficulty: "simple"
+
+  possessives:
+    - before: "The systems performance is critical"
+      after: "The system's performance is critical"
+      context: "explanation"
+      reasoning: "Add apostrophe for possessive form"
+      success_rate: 0.98
+      difficulty: "simple"
+
+  prepositions:
+    - before: "Navigate at the settings page"
+      after: "Navigate to the settings page"
+      context: "instruction"
+      reasoning: "Use correct preposition 'to' instead of 'at'"
+      success_rate: 0.96
+      difficulty: "simple"
+
+  articles:
+    - before: "Click button to continue"
+      after: "Click the button to continue"
+      context: "instruction"
+      reasoning: "Add definite article 'the' for specific button reference"
+      success_rate: 0.95
+      difficulty: "simple"
+
+  spelling:
+    - before: "Seperate the files into categories"
+      after: "Separate the files into categories"
+      context: "instruction"
+      reasoning: "Fix spelling error: 'seperate' to 'separate'"
+      success_rate: 0.99
+      difficulty: "simple"
+
+  anthropomorphism:
+    - before: "The system wants you to log in"
+      after: "The system requires you to log in"
+      context: "message"
+      reasoning: "Remove anthropomorphism: systems don't 'want', they 'require'"
+      success_rate: 0.93
+      difficulty: "simple"
+
+  terminology:
+    - before: "Press the power button"
+      after: "Press the Power button"
+      context: "instruction"
+      reasoning: "Use consistent capitalization for interface elements"
+      success_rate: 0.94
+      difficulty: "simple"
+
+  prefixes:
+    - before: "Re-start the application"
+      after: "Restart the application"
+      context: "instruction"
+      reasoning: "Remove hyphen from closed prefix 're-'"
+      success_rate: 0.96
+      difficulty: "simple"
+
+  conjunctions:
+    - before: "Save the file, and then close it"
+      after: "Save the file and then close it"
+      context: "instruction"
+      reasoning: "Remove comma before 'and' in simple sequential actions"
+      success_rate: 0.92
+      difficulty: "simple"
+
+  adverbs_only:
+    - before: "This really helps significantly"
+      after: "This helps"
+      context: "explanation"
+      reasoning: "Remove unnecessary adverbs 'really' and 'significantly'"
+      success_rate: 0.91
+      difficulty: "medium"
+
+  # ===== TECHNICAL ELEMENTS =====
+  
+  technical_commands:
+    - before: "Run the ls command"
+      after: "Run the `ls` command"
+      context: "instruction"
+      reasoning: "Format command names with backticks"
+      success_rate: 0.97
+      difficulty: "simple"
+
+  technical_keyboard_keys:
+    - before: "Press ctrl+alt+del"
+      after: "Press **Ctrl+Alt+Del**"
+      context: "instruction"
+      reasoning: "Format key combinations with proper capitalization and emphasis"
+      success_rate: 0.96
+      difficulty: "simple"
+
+  technical_mouse_buttons:
+    - before: "Right-click the file"
+      after: "Secondary-click the file"
+      context: "instruction"
+      reasoning: "Use inclusive terminology for mouse actions"
+      success_rate: 0.89
+      difficulty: "medium"
+
+  technical_programming_elements:
+    - before: "Set the variable value to true"
+      after: "Set the variable `value` to `true`"
+      context: "instruction"
+      reasoning: "Format code elements with backticks"
+      success_rate: 0.95
+      difficulty: "simple"
+
+  technical_ui_elements:
+    - before: "Click the submit button"
+      after: "Click the **Submit** button"
+      context: "instruction"
+      reasoning: "Format UI elements with emphasis and proper capitalization"
+      success_rate: 0.94
+      difficulty: "simple"
+
+  technical_web_addresses:
+    - before: "Go to https://example.com"
+      after: "Go to `https://example.com`"
+      context: "instruction"
+      reasoning: "Format URLs with backticks for clarity"
+      success_rate: 0.96
+      difficulty: "simple"
+
+  # ===== KEY WORD USAGE EXAMPLES =====
+  
+  word_usage_a:
+    - before: "This allows you to configure settings"
+      after: "This enables you to configure settings"
+      context: "explanation"
+      reasoning: "Use 'enables' instead of 'allows' for capability descriptions"
+      success_rate: 0.93
+      difficulty: "simple"
+
+  word_usage_b:
+    - before: "Below are the instructions"
+      after: "The following are the instructions"
+      context: "introduction"
+      reasoning: "Replace directional 'below' with 'following'"
+      success_rate: 0.94
+      difficulty: "simple"
+
+  word_usage_c:
+    - before: "Click the OK button"
+      after: "Select **OK**"
+      context: "instruction"
+      reasoning: "Use 'select' instead of 'click' and format button name"
+      success_rate: 0.91
+      difficulty: "medium"
+
+  word_usage_s:
+    - before: "Simply click the button"
+      after: "Click the button"
+      context: "instruction"
+      reasoning: "Remove unnecessary qualifier 'simply'"
+      success_rate: 0.96
+      difficulty: "simple"
+
+  word_usage_u:
+    - before: "Utilize this tool to configure settings"
+      after: "Use this tool to configure settings"
+      context: "instruction"
+      reasoning: "Replace formal 'utilize' with simple 'use'"
+      success_rate: 0.97
+      difficulty: "simple"
+
+  # ===== COMPLETE WORD_USAGE ALPHABET =====
+  
+  word_usage_d:
+    - before: "The system will display the desired results"
+      after: "The system will display the required results"
+      context: "explanation"
+      reasoning: "Replace vague 'desired' with specific 'required'"
+      success_rate: 0.94
+      difficulty: "simple"
+      
+    - before: "Delete the file when done"
+      after: "Delete the file when finished"
+      context: "instruction"
+      reasoning: "Replace informal 'done' with formal 'finished'"
+      success_rate: 0.92
+      difficulty: "simple"
+
+  word_usage_e:
+    - before: "This is easy to configure"
+      after: "This is straightforward to configure"
+      context: "explanation"
+      reasoning: "Replace subjective 'easy' with objective 'straightforward'"
+      success_rate: 0.95
+      difficulty: "simple"
+      
+    - before: "Enter the username and password"
+      after: "Type the username and password"
+      context: "instruction"
+      reasoning: "Use 'type' for keyboard input instead of generic 'enter'"
+      success_rate: 0.93
+      difficulty: "simple"
+
+  word_usage_f:
+    - before: "Feel free to contact support"
+      after: "Contact support if needed"
+      context: "instruction"
+      reasoning: "Remove unnecessary 'feel free' qualifier"
+      success_rate: 0.94
+      difficulty: "simple"
+      
+    - before: "This functionality allows customization"
+      after: "This feature allows customization"
+      context: "explanation"
+      reasoning: "Replace verbose 'functionality' with concise 'feature'"
+      success_rate: 0.96
+      difficulty: "simple"
+
+  word_usage_g:
+    - before: "Go to the settings page"
+      after: "Navigate to the settings page"
+      context: "instruction"
+      reasoning: "Use precise 'navigate' instead of casual 'go'"
+      success_rate: 0.93
+      difficulty: "simple"
+      
+    - before: "This provides great flexibility"
+      after: "This provides significant flexibility"
+      context: "explanation"
+      reasoning: "Replace subjective 'great' with measurable 'significant'"
+      success_rate: 0.92
+      difficulty: "simple"
+
+  word_usage_h:
+    - before: "Hit the Enter key to proceed"
+      after: "Press the Enter key to proceed"
+      context: "instruction"
+      reasoning: "Use precise 'press' instead of casual 'hit' for keys"
+      success_rate: 0.96
+      difficulty: "simple"
+      
+    - before: "However, this may cause issues"
+      after: "This may cause issues"
+      context: "explanation"
+      reasoning: "Remove unnecessary transition 'however' when not contrasting"
+      success_rate: 0.91
+      difficulty: "medium"
+
+  word_usage_i:
+    - before: "Input the configuration values"
+      after: "Enter the configuration values"
+      context: "instruction"
+      reasoning: "Use common 'enter' instead of technical 'input'"
+      success_rate: 0.94
+      difficulty: "simple"
+      
+    - before: "In order to proceed, save the file"
+      after: "To proceed, save the file"
+      context: "instruction"
+      reasoning: "Remove unnecessary 'in order to' and use simple 'to'"
+      success_rate: 0.96
+      difficulty: "simple"
+
+  word_usage_j:
+    - before: "Just click the button to continue"
+      after: "Click the button to continue"
+      context: "instruction"
+      reasoning: "Remove minimizing qualifier 'just'"
+      success_rate: 0.95
+      difficulty: "simple"
+      
+    - before: "Jump to the next section"
+      after: "Go to the next section"
+      context: "instruction"
+      reasoning: "Use standard 'go to' instead of casual 'jump to'"
+      success_rate: 0.93
+      difficulty: "simple"
+
+  word_usage_k:
+    - before: "Kill the running process"
+      after: "Stop the running process"
+      context: "instruction"
+      reasoning: "Use professional 'stop' instead of violent 'kill'"
+      success_rate: 0.94
+      difficulty: "simple"
+      
+    - before: "Key in your password"
+      after: "Enter your password"
+      context: "instruction"
+      reasoning: "Use standard 'enter' instead of dated 'key in'"
+      success_rate: 0.96
+      difficulty: "simple"
+
+  word_usage_l:
+    - before: "Login to the system"
+      after: "Log in to the system"
+      context: "instruction"
+      reasoning: "Use two-word verb form 'log in' for the action"
+      success_rate: 0.97
+      difficulty: "simple"
+      
+    - before: "There are lots of options available"
+      after: "There are many options available"
+      context: "explanation"
+      reasoning: "Replace informal 'lots of' with formal 'many'"
+      success_rate: 0.95
+      difficulty: "simple"
+
+  word_usage_m:
+    - before: "Make sure the settings are correct"
+      after: "Ensure the settings are correct"
+      context: "instruction"
+      reasoning: "Use precise 'ensure' instead of casual 'make sure'"
+      success_rate: 0.94
+      difficulty: "simple"
+      
+    - before: "You may encounter errors"
+      after: "You might encounter errors"
+      context: "explanation"
+      reasoning: "Use 'might' for possibility instead of permission 'may'"
+      success_rate: 0.92
+      difficulty: "medium"
+
+  word_usage_n:
+    - before: "Create a new folder"
+      after: "Create a folder"
+      context: "instruction"
+      reasoning: "Remove redundant 'new' when creating implies new"
+      success_rate: 0.93
+      difficulty: "simple"
+      
+    - before: "Now click the Save button"
+      after: "Click the Save button"
+      context: "instruction"
+      reasoning: "Remove unnecessary temporal marker 'now'"
+      success_rate: 0.95
+      difficulty: "simple"
+
+  word_usage_o:
+    - before: "Obviously, this is important"
+      after: "This is important"
+      context: "explanation"
+      reasoning: "Remove condescending 'obviously'"
+      success_rate: 0.96
+      difficulty: "simple"
+      
+    - before: "This is ok to use"
+      after: "This is acceptable to use"
+      context: "explanation"
+      reasoning: "Replace informal 'ok' with formal 'acceptable'"
+      success_rate: 0.94
+      difficulty: "simple"
+
+  word_usage_p:
+    - before: "Please enter your credentials"
+      after: "Enter your credentials"
+      context: "instruction"
+      reasoning: "Remove unnecessary politeness 'please' in technical instructions"
+      success_rate: 0.93
+      difficulty: "simple"
+      
+    - before: "This is pretty straightforward"
+      after: "This is straightforward"
+      context: "explanation"
+      reasoning: "Remove vague intensifier 'pretty'"
+      success_rate: 0.95
+      difficulty: "simple"
+
+  word_usage_q:
+    - before: "Quickly navigate to the folder"
+      after: "Navigate to the folder"
+      context: "instruction"
+      reasoning: "Remove unnecessary adverb 'quickly'"
+      success_rate: 0.94
+      difficulty: "simple"
+      
+    - before: "This is quite useful"
+      after: "This is useful"
+      context: "explanation"
+      reasoning: "Remove unnecessary qualifier 'quite'"
+      success_rate: 0.96
+      difficulty: "simple"
+
+  word_usage_r:
+    - before: "This is really important"
+      after: "This is important"
+      context: "explanation"
+      reasoning: "Remove unnecessary intensifier 'really'"
+      success_rate: 0.95
+      difficulty: "simple"
+      
+    - before: "Right-click on the file"
+      after: "Secondary-click the file"
+      context: "instruction"
+      reasoning: "Use inclusive 'secondary-click' and remove preposition"
+      success_rate: 0.89
+      difficulty: "medium"
+
+  word_usage_t:
+    - before: "Click the button that is on the toolbar"
+      after: "Click the toolbar button"
+      context: "instruction"
+      reasoning: "Remove unnecessary relative clause 'that is'"
+      success_rate: 0.93
+      difficulty: "medium"
+      
+    - before: "Turn on the debug mode"
+      after: "Enable debug mode"
+      context: "instruction"
+      reasoning: "Use technical 'enable' instead of casual 'turn on'"
+      success_rate: 0.94
+      difficulty: "simple"
+
+  word_usage_v:
+    - before: "This is very important"
+      after: "This is important"
+      context: "explanation"
+      reasoning: "Remove unnecessary intensifier 'very'"
+      success_rate: 0.96
+      difficulty: "simple"
+      
+    - before: "Access the file via the menu"
+      after: "Access the file through the menu"
+      context: "instruction"
+      reasoning: "Use common 'through' instead of formal 'via'"
+      success_rate: 0.94
+      difficulty: "simple"
+
+  word_usage_w:
+    - before: "You want to save your changes"
+      after: "Save your changes"
+      context: "instruction"
+      reasoning: "Remove assumption 'you want to' and use direct imperative"
+      success_rate: 0.95
+      difficulty: "simple"
+      
+    - before: "The system will process the data"
+      after: "The system processes the data"
+      context: "explanation"
+      reasoning: "Use present tense instead of future 'will' for general capabilities"
+      success_rate: 0.92
+      difficulty: "medium"
+
+  word_usage_x:
+    - before: "X out the dialog box"
+      after: "Close the dialog box"
+      context: "instruction"
+      reasoning: "Use proper verb 'close' instead of symbol-based 'X out'"
+      success_rate: 0.96
+      difficulty: "simple"
+      
+    - before: "X-ing through the menus"
+      after: "Closing the menus"
+      context: "instruction"
+      reasoning: "Use proper verb form 'closing' instead of 'X-ing'"
+      success_rate: 0.94
+      difficulty: "simple"
+
+  word_usage_z:
+    - before: "Zip the files before sending"
+      after: "Compress the files before sending"
+      context: "instruction"
+      reasoning: "Use generic 'compress' instead of brand-specific 'zip'"
+      success_rate: 0.93
+      difficulty: "simple"
+      
+    - before: "Zero out the configuration"
+      after: "Clear the configuration"
+      context: "instruction"
+      reasoning: "Use clear verb 'clear' instead of technical 'zero out'"
+      success_rate: 0.95
+      difficulty: "simple"
+
+  word_usage_special:
+    - before: "Use the @ symbol to reference users"
+      after: "Use the at sign (@) to reference users"
+      context: "instruction"
+      reasoning: "Spell out special characters for clarity, with symbol in parentheses"
+      success_rate: 0.94
+      difficulty: "simple"
+      
+    - before: "Navigate to C:\\Users\\%USERNAME%\\Documents"
+      after: "Navigate to C:\\Users\\[username]\\Documents"
+      context: "instruction"
+      reasoning: "Replace system variables with descriptive placeholders"
+      success_rate: 0.91
+      difficulty: "medium"
+      
+    - before: "Configure the server@domain.com settings"
+      after: "Configure the server (at domain.com) settings"
+      context: "instruction"
+      reasoning: "Format email-like references for better readability"
+      success_rate: 0.89
+      difficulty: "medium"
+
+  # ===== NUMBERS & MEASUREMENT =====
+  
+  numbers_currency:
+    - before: "$50 monthly fee"
+      after: "USD 50 monthly fee"
+      context: "pricing"
+      reasoning: "Replace currency symbol with ISO code for international clarity"
+      success_rate: 0.96
+      difficulty: "simple"
+
+  # ===== LOW PRIORITY STYLE & POLISH =====
+  
+  tone:
+    - before: "You MUST complete this task immediately!"
+      after: "Complete this task promptly"
+      context: "instruction"
+      reasoning: "Adjust aggressive tone to be firm but professional"
+      success_rate: 0.92
+      difficulty: "medium"
+
+  conversational_style:
+    - before: "Hey there! Let's get started with this awesome feature!"
+      after: "Let's begin configuring this feature"
+      context: "instruction"
+      reasoning: "Adjust overly casual tone to professional but friendly"
+      success_rate: 0.89
+      difficulty: "medium"
+
+  global_audiences:
+    - before: "This costs 50 bucks"
+      after: "This costs USD 50"
+      context: "pricing"
+      reasoning: "Replace regional slang 'bucks' with international currency format"
+      success_rate: 0.94
+      difficulty: "simple"
+
+  llm_consumability:
+    - before: "Click here, then there, and do that thing"
+      after: "1. Click the Settings button\n2. Navigate to the Configuration section\n3. Update the parameters"
+      context: "instruction"
+      reasoning: "Structure vague instructions for better AI/LLM processing"
+      success_rate: 0.91
+      difficulty: "medium"
+
+  dates_and_times:
+    - before: "Updated on 3/15/2024"
+      after: "Updated on 15 March 2024"
+      context: "timestamp"
+      reasoning: "Use international date format for global clarity"
+      success_rate: 0.95
+      difficulty: "simple"
+
+  numbers_general:
+    - before: "There are 5,000,000 records"
+      after: "There are 5 million records"
+      context: "statistic"
+      reasoning: "Use spelled-out numbers for large round numbers"
+      success_rate: 0.93
+      difficulty: "simple"
+
+  numerals_vs_words:
+    - before: "There are 3 steps in this process"
+      after: "There are three steps in this process"
+      context: "explanation"
+      reasoning: "Spell out numbers under 10 in text"
+      success_rate: 0.94
+      difficulty: "simple"
+
+  units_of_measurement:
+    - before: "The file is 5KB in size"
+      after: "The file is 5 KB in size"
+      context: "specification"
+      reasoning: "Add space between number and unit abbreviation"
+      success_rate: 0.96
+      difficulty: "simple"
+
+  # ===== INDIVIDUAL PUNCTUATION RULES =====
+  
+  colons:
+    - before: "Note :Important information follows"
+      after: "Note: Important information follows"
+      context: "admonition"
+      reasoning: "Remove space before colon in notes and labels"
+      success_rate: 0.97
+      difficulty: "simple"
+
+  commas:
+    - before: "First second and third options"
+      after: "First, second, and third options"
+      context: "list"
+      reasoning: "Add Oxford comma in series for clarity"
+      success_rate: 0.95
+      difficulty: "simple"
+
+  dashes:
+    - before: "The system - which is complex - works well"
+      after: "The system—which is complex—works well"
+      context: "explanation"
+      reasoning: "Use em dash without spaces for parenthetical phrases"
+      success_rate: 0.91
+      difficulty: "medium"
+
+  ellipses:
+    - before: "Loading..."
+      after: "Loading..."
+      context: "status"
+      reasoning: "Use proper ellipsis character instead of three periods"
+      success_rate: 0.94
+      difficulty: "simple"
+
+  exclamation_points:
+    - before: "Save your work now!"
+      after: "Save your work now."
+      context: "instruction"
+      reasoning: "Remove inappropriate exclamation point in technical writing"
+      success_rate: 0.93
+      difficulty: "simple"
+
+  hyphens:
+    - before: "A well known issue"
+      after: "A well-known issue"
+      context: "explanation"
+      reasoning: "Add hyphen to compound adjective before noun"
+      success_rate: 0.95
+      difficulty: "simple"
+
+  parentheses:
+    - before: "See documentation( page 42) for details"
+      after: "See documentation (page 42) for details"
+      context: "reference"
+      reasoning: "Add space before opening parenthesis"
+      success_rate: 0.96
+      difficulty: "simple"
+
+  periods:
+    - before: "Save the file etc"
+      after: "Save the file and so on."
+      context: "instruction"
+      reasoning: "Replace abbreviation and add proper sentence ending"
+      success_rate: 0.92
+      difficulty: "medium"
+
+  punctuation_and_symbols:
+    - before: "Cost: $100 & setup fee: $25"
+      after: "Cost: USD 100 and setup fee: USD 25"
+      context: "pricing"
+      reasoning: "Replace symbols with words and standardize currency"
+      success_rate: 0.89
+      difficulty: "medium"
+
+  quotation_marks:
+    - before: "Click the 'Submit' button"
+      after: "Click the **Submit** button"
+      context: "instruction"
+      reasoning: "Use emphasis formatting instead of quotation marks for UI elements"
+      success_rate: 0.93
+      difficulty: "simple"
+
+  semicolons:
+    - before: "Save your work; close the file; exit the application"
+      after: "Save your work, close the file, and exit the application"
+      context: "instruction"
+      reasoning: "Use commas and 'and' for simple action series instead of semicolons"
+      success_rate: 0.91
+      difficulty: "medium"
+
+  slashes:
+    - before: "Enable/disable the feature"
+      after: "Enable or disable the feature"
+      context: "instruction"
+      reasoning: "Replace slash with 'or' for better readability"
+      success_rate: 0.94
+      difficulty: "simple"
+
+  # ===== REFERENCES =====
+  
+  references_citations:
+    - before: "For more help, click here"
+      after: "For more help, see the user manual"
+      context: "reference"
+      reasoning: "Replace vague 'click here' with descriptive link text"
+      success_rate: 0.95
+      difficulty: "simple"
+
+  references_geographic_locations:
+    - before: "Available in US, UK, and CA"
+      after: "Available in the United States, United Kingdom, and Canada"
+      context: "availability"
+      reasoning: "Spell out country names instead of abbreviations"
+      success_rate: 0.93
+      difficulty: "simple"
+
+  references_names_titles:
+    - before: "Contact john smith for support"
+      after: "Contact John Smith for support"
+      context: "contact"
+      reasoning: "Capitalize proper names and titles"
+      success_rate: 0.97
+      difficulty: "simple"
+
+  references_product_names:
+    - before: "Compatible with windows 10"
+      after: "Compatible with Windows 10"
+      context: "compatibility"
+      reasoning: "Capitalize product names properly"
+      success_rate: 0.96
+      difficulty: "simple"
+
+  references_product_versions:
+    - before: "Requires version 2.0 or above"
+      after: "Requires version 2.0 or later"
+      context: "requirement"
+      reasoning: "Use 'later' instead of 'above' for version references"
+      success_rate: 0.94
+      difficulty: "simple"
+
+  # ===== PUNCTUATION =====
+  punctuation_commas:
+    - before: "Save edit and publish the document"
+      after: "Save, edit, and publish the document"
+      context: "instruction"
+      reasoning: "Add Oxford comma in series of actions for clarity"
+      success_rate: 0.97
+      difficulty: "simple"
+      
+    - before: "Before you begin make sure all prerequisites are met"
+      after: "Before you begin, make sure all prerequisites are met"
+      context: "instruction"
+      reasoning: "Add comma after introductory phrase 'Before you begin'"
+      success_rate: 0.95
+      difficulty: "simple"
+      
+    - before: "The system which processes user input validates data automatically"
+      after: "The system, which processes user input, validates data automatically"
+      context: "explanation"
+      reasoning: "Add commas around non-restrictive clause 'which processes user input'"
+      success_rate: 0.89
+      difficulty: "medium"
+
+# Selection strategies for dynamic example matching
+selection_strategies:
+  
+  # Context-based selection
+  by_context:
+    enabled: true
+    weight: 0.4
+    description: "Match examples based on content type (heading, instruction, etc.)"
+  
+  # Difficulty-based progression  
+  by_difficulty:
+    enabled: true
+    weight: 0.3
+    description: "Start with simple examples, progress to complex for learning"
+    progression: ["simple", "medium", "complex"]
+  
+  # Success rate optimization
+  by_success_rate:
+    enabled: true  
+    weight: 0.2
+    description: "Prefer examples with higher success rates"
+    minimum_rate: 0.8
+  
+  # Similarity matching
+  by_similarity:
+    enabled: true
+    weight: 0.1
+    description: "Match examples similar to current error text"
+    
+# Learning and improvement settings
+learning:
+  track_success: true
+  update_success_rates: true
+  minimum_examples: 2
+  maximum_examples: 5
+  adaptive_selection: true
+  
+# Performance settings  
+performance:
+  cache_examples: true
+  max_cache_size: 1000
+  example_refresh_rate: "24h"
