@@ -1,0 +1,192 @@
+# Inter-Module Analysis Configuration
+# Configuration for analyzing relationships between modular documentation modules
+
+# Core analysis features
+detect_missing_connections: true
+suggest_module_relationships: true
+validate_dependency_chains: true
+check_circular_dependencies: true
+max_dependency_depth: 5
+
+# Confidence thresholds for different analysis types
+confidence_thresholds:
+  missing_concept_link: 0.6
+  missing_procedure_link: 0.7
+  circular_dependency: 0.8
+  incomplete_coverage: 0.5
+  suggested_relationship: 0.3
+  content_type_mismatch: 0.6
+  excessive_dependencies: 0.4
+
+# Content analysis patterns
+content_patterns:
+  procedural_indicators:
+    - 'install'
+    - 'configure'
+    - 'setup'
+    - 'deploy'
+    - 'create'
+    - 'run'
+    - 'execute'
+    - 'click'
+    - 'select'
+    - 'do'
+    
+  conceptual_indicators:
+    - 'is'
+    - 'are'
+    - 'means'
+    - 'represents'
+    - 'consists of'
+    - 'includes'
+    - 'understand'
+    - 'concept'
+    - 'overview'
+    
+  reference_indicators:
+    - 'parameter'
+    - 'option'
+    - 'field'
+    - 'returns'
+    - 'syntax'
+    - 'api'
+    - 'property'
+    - 'attribute'
+
+# Module relationship rules
+relationship_rules:
+  # What modules should typically reference
+  concept:
+    should_reference:
+      - 'related concepts'
+      - 'background information'
+    should_be_referenced_by:
+      - 'procedures'
+      - 'references'
+    discouraged_content:
+      - 'step-by-step instructions'
+      - 'specific procedures'
+      - 'detailed parameters'
+      
+  procedure:
+    should_reference:
+      - 'prerequisite concepts'
+      - 'related procedures'
+      - 'troubleshooting guides'
+    should_be_referenced_by:
+      - 'related procedures'
+      - 'concept modules'
+    required_content:
+      - 'prerequisites'
+      - 'numbered steps'
+      
+  reference:
+    should_reference:
+      - 'usage examples'
+      - 'related references'
+    should_be_referenced_by:
+      - 'procedures'
+      - 'concepts'
+    preferred_structure:
+      - 'tables'
+      - 'lists'
+      - 'code examples'
+
+# Dependency analysis
+dependency_analysis:
+  # Maximum number of direct dependencies
+  max_direct_dependencies: 10
+  
+  # Warning thresholds
+  warning_thresholds:
+    many_dependencies: 7
+    deep_nesting: 3
+    circular_refs: 1
+    
+  # Dependency types
+  dependency_types:
+    strong: # Required for understanding
+      - 'prerequisites'
+      - 'core concepts'
+    weak: # Helpful but not required
+      - 'related topics'
+      - 'additional resources'
+    circular: # Should be avoided
+      - 'mutual references'
+      - 'bidirectional dependencies'
+
+# Content distribution analysis
+content_distribution:
+  # Acceptable ratios of different content types within modules
+  concept:
+    max_procedural_content: 0.3  # 30%
+    min_explanatory_content: 0.6  # 60%
+    max_reference_content: 0.4   # 40%
+    
+  procedure:
+    min_procedural_content: 0.5   # 50%
+    max_conceptual_content: 0.4   # 40%
+    max_reference_content: 0.3    # 30%
+    
+  reference:
+    min_reference_content: 0.6    # 60%
+    max_procedural_content: 0.2   # 20%
+    max_conceptual_content: 0.3   # 30%
+
+# Suggestion generation
+suggestions:
+  # When to suggest new modules
+  suggest_new_modules: true
+  max_suggestions_per_analysis: 3
+  
+  # Types of suggestions
+  suggestion_types:
+    missing_concept: "Consider creating a concept module for background information"
+    missing_procedure: "Consider creating a procedure module for step-by-step instructions"
+    missing_reference: "Consider creating a reference module for detailed parameters"
+    split_module: "Consider splitting this module into smaller, focused modules"
+    merge_modules: "Consider merging with related module for better organization"
+    
+  # Suggestion triggers
+  triggers:
+    content_mismatch: 0.4  # When content doesn't match module type
+    missing_references: 2   # When 2+ obvious references are missing
+    excessive_length: 1000  # When module exceeds word count
+    shallow_coverage: 0.3   # When coverage seems insufficient
+
+# Quality metrics
+quality_metrics:
+  # Completeness indicators
+  completeness:
+    has_introduction: 1.0
+    has_examples: 0.8
+    has_references: 0.6
+    has_next_steps: 0.4
+    
+  # Relationship health
+  relationship_health:
+    appropriate_references: 1.0
+    no_circular_deps: 1.0
+    balanced_content: 0.8
+    clear_dependencies: 0.6
+    
+  # Architecture quality
+  architecture_quality:
+    proper_separation: 1.0
+    logical_flow: 0.8
+    reusability: 0.6
+    maintainability: 0.4
+
+# Advanced features
+advanced_analysis:
+  # Cross-module consistency checking
+  consistency_checking: true
+  
+  # Architecture pattern recognition
+  pattern_recognition: true
+  
+  # Automated relationship discovery
+  auto_relationship_discovery: true
+  
+  # Module health scoring
+  health_scoring: true

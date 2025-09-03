@@ -260,52 +260,81 @@ class StyleAnalyzer:
             return 50.0  # Safe default
     
     def _analyze_modular_compliance(self, text: str, content_type: str) -> Dict[str, Any]:
-        """Analyze modular compliance based on content type."""
+        """Analyze modular compliance with Phase 5 advanced features."""
         try:
-            # Import modular compliance rules
-            from rules.modular_compliance import ConceptModuleRule, ProcedureModuleRule, ReferenceModuleRule
+            # Import Phase 5 advanced modular analyzer
+            from rules.modular_compliance.advanced_modular_analyzer import AdvancedModularAnalyzer
             
-            # Select appropriate rule based on content type
-            rule_map = {
-                'concept': ConceptModuleRule,
-                'procedure': ProcedureModuleRule, 
-                'reference': ReferenceModuleRule
-            }
-            
-            if content_type not in rule_map:
+            if content_type not in ['concept', 'procedure', 'reference']:
                 logger.warning(f"Unknown content type for modular compliance: {content_type}")
                 return None
             
-            # Instantiate and run the appropriate rule
-            rule_class = rule_map[content_type]
-            rule = rule_class()
+            # Initialize advanced analyzer
+            analyzer = AdvancedModularAnalyzer()
             
-            # Create context for the rule
+            # Create enhanced context
             context = {
                 'content_type': content_type,
-                'block_type': 'document'
+                'block_type': 'document',
+                'nlp': self.nlp if hasattr(self, 'nlp') else None
             }
             
-            # Analyze compliance
-            compliance_errors = rule.analyze(text, [], nlp=self.nlp, context=context)
+            # Use backward-compatible analysis that includes Phase 5 enhancements
+            compliance_errors = analyzer.analyze_basic_with_advanced_hints(text, context)
             
-            # Format results
+            # Format results with Phase 5 enhancements
             result = {
                 'content_type': content_type,
                 'total_issues': len(compliance_errors),
                 'issues_by_severity': self._categorize_compliance_issues(compliance_errors),
                 'issues': compliance_errors,
-                'compliance_status': self._determine_compliance_status(compliance_errors)
+                'compliance_status': self._determine_compliance_status(compliance_errors),
+                # Phase 5 enhancements
+                'advanced_features_enabled': True,
+                'phase5_capabilities': {
+                    'cross_reference_validation': True,
+                    'template_compliance': True,
+                    'inter_module_analysis': True
+                }
             }
             
-            logger.info(f"Modular compliance analysis completed for {content_type}: {len(compliance_errors)} issues found")
+            logger.info(f"Advanced modular compliance analysis completed for {content_type}: {len(compliance_errors)} issues found")
             return result
             
         except ImportError as e:
-            logger.warning(f"Modular compliance rules not available: {e}")
-            return None
+            logger.warning(f"Advanced modular compliance analyzer not available, falling back to basic: {e}")
+            # Fallback to basic analysis
+            try:
+                from rules.modular_compliance import ConceptModuleRule, ProcedureModuleRule, ReferenceModuleRule
+                
+                rule_map = {
+                    'concept': ConceptModuleRule,
+                    'procedure': ProcedureModuleRule, 
+                    'reference': ReferenceModuleRule
+                }
+                
+                rule_class = rule_map[content_type]
+                rule = rule_class()
+                
+                context = {
+                    'content_type': content_type,
+                    'block_type': 'document'
+                }
+                
+                compliance_errors = rule.analyze(text, context)
+                
+                return {
+                    'content_type': content_type,
+                    'total_issues': len(compliance_errors),
+                    'issues_by_severity': self._categorize_compliance_issues(compliance_errors),
+                    'issues': compliance_errors,
+                    'compliance_status': self._determine_compliance_status(compliance_errors),
+                    'advanced_features_enabled': False
+                }
+            except ImportError:
+                return None
         except Exception as e:
-            logger.error(f"Modular compliance analysis failed: {e}")
+            logger.error(f"Advanced modular compliance analysis failed: {e}")
             return None
     
     def _categorize_compliance_issues(self, errors: List[Dict[str, Any]]) -> Dict[str, int]:

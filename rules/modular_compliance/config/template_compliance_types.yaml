@@ -1,0 +1,173 @@
+# Template Compliance Configuration
+# Configuration for modular documentation template validation
+
+# General template settings
+strict_mode: false
+suggest_improvements: true
+check_title_patterns: true
+validate_section_order: true
+
+# Confidence thresholds for different validation types
+confidence_thresholds:
+  missing_required_section: 0.8
+  prohibited_section: 0.9
+  title_pattern_mismatch: 0.6
+  structure_suggestion: 0.4
+  content_guideline_violation: 0.5
+  template_recommendation: 0.3
+
+# Template validation rules
+template_rules:
+  # Title validation
+  title_validation:
+    enforce_patterns: true
+    suggest_alternatives: true
+    max_title_length: 80
+    
+  # Section validation
+  section_validation:
+    check_required: true
+    check_prohibited: true
+    suggest_optional: true
+    max_suggestions: 3
+    
+  # Content validation
+  content_validation:
+    check_imperatives: true
+    check_structure: true
+    validate_lists: true
+    check_examples: true
+
+# Module-specific template settings
+module_templates:
+  concept:
+    title_patterns:
+      - '^= Understanding (.+)$'
+      - '^= About (.+)$'
+      - '^= What (?:is|are) (.+)$'
+      - '^= Overview of (.+)$'
+      - '^= (.+) Overview$'
+    
+    content_focus: 'explanatory'
+    allow_imperatives: false
+    require_introduction: true
+    
+    typical_sections:
+      - 'Introduction'
+      - 'Key Features'
+      - 'Benefits'
+      - 'Architecture'
+      - 'Components'
+      - 'Use Cases'
+      - 'Additional Resources'
+    
+    discouraged_content:
+      - 'step-by-step instructions'
+      - 'installation procedures'
+      - 'configuration steps'
+      - 'troubleshooting procedures'
+      
+  procedure:
+    title_patterns:
+      - '^= How to (.+)$'
+      - '^= Installing (.+)$'
+      - '^= Configuring (.+)$'
+      - '^= Setting up (.+)$'
+      - '^= Creating (.+)$'
+      - '^= Deploying (.+)$'
+      - '^= Managing (.+)$'
+    
+    content_focus: 'action-oriented'
+    require_imperatives: true
+    require_steps: true
+    
+    required_sections:
+      - 'Prerequisites'
+      - 'Procedure'
+    
+    optional_sections:
+      - 'Before you begin'
+      - 'Verification'
+      - 'Troubleshooting'
+      - 'Next steps'
+      - 'Additional resources'
+    
+    step_requirements:
+      ordered_lists: true
+      imperative_voice: true
+      concrete_actions: true
+      
+  reference:
+    title_patterns:
+      - '^= (.+) Reference$'
+      - '^= (.+) API$'
+      - '^= (.+) Parameters$'
+      - '^= (.+) Options$'
+      - '^= (.+) Configuration$'
+      - '^= (.+) Settings$'
+    
+    content_focus: 'factual'
+    prefer_structured_data: true
+    minimize_narrative: true
+    
+    typical_sections:
+      - 'Overview'
+      - 'Parameters'
+      - 'Options'
+      - 'Fields'
+      - 'Examples'
+      - 'Return values'
+      - 'See also'
+    
+    preferred_formats:
+      - 'tables'
+      - 'definition_lists'
+      - 'code_blocks'
+      - 'parameter_lists'
+
+# Template suggestions
+suggestions:
+  # When to suggest template improvements
+  improvement_triggers:
+    missing_sections: 2  # Suggest when 2+ recommended sections missing
+    weak_structure: true  # Suggest when structure is unclear
+    content_mismatch: true  # Suggest when content doesn't match type
+    
+  # How to present suggestions
+  suggestion_format:
+    max_suggestions: 3
+    priority_order: ['required', 'recommended', 'optional']
+    include_examples: true
+    provide_templates: true
+
+# Quality metrics
+quality_metrics:
+  # Minimum requirements for each module type
+  concept:
+    min_sections: 2
+    min_paragraphs: 3
+    max_procedure_content: 20  # percentage
+    
+  procedure:
+    min_sections: 2
+    min_steps: 1
+    max_conceptual_content: 30  # percentage
+    
+  reference:
+    min_sections: 1
+    prefer_structured_content: 60  # percentage
+    max_narrative_content: 40  # percentage
+
+# Advanced features
+advanced_features:
+  # Cross-module relationship validation
+  cross_module_validation: true
+  
+  # Template generation
+  auto_template_generation: true
+  
+  # Content analysis
+  content_type_detection: true
+  
+  # Style consistency
+  style_consistency_checks: true

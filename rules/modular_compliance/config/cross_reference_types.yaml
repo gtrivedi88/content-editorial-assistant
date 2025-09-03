@@ -1,0 +1,91 @@
+# Cross-Reference Validation Configuration
+# Configuration for advanced cross-reference compliance checking
+
+# Valid file extensions for cross-references
+valid_file_extensions:
+  - '.adoc'
+  - '.asciidoc'
+
+# Anchor naming convention (regex pattern)
+# Must start with lowercase letter, contain only lowercase, numbers, hyphens, underscores
+# Must end with alphanumeric character
+required_anchor_naming: '^[a-z][a-z0-9_-]*[a-z0-9]$'
+
+# Maximum depth for cross-reference chains
+max_xref_depth: 3
+
+# Cross-reference best practices
+cross_reference_rules:
+  # External references should have labels
+  require_external_labels: true
+  
+  # Prefer internal links for same-document references
+  prefer_internal_for_same_doc: true
+  
+  # Check for broken reference patterns
+  detect_broken_patterns:
+    - 'http://' # Should use link: macro
+    - 'https://' # Should use link: macro
+    - '.html' # Should use .adoc
+    
+# Module-specific reference guidelines
+module_specific_rules:
+  concept:
+    # Concept modules should avoid procedural references
+    discouraged_targets:
+      - 'install'
+      - 'configure'
+      - 'setup'
+      - 'deploy'
+      - 'troubleshoot'
+    confidence_penalty: 0.4
+    
+  procedure:
+    # Procedure modules can reference concepts and other procedures
+    allowed_targets: all
+    
+  reference:
+    # Reference modules should focus on data references
+    preferred_targets:
+      - 'api'
+      - 'config'
+      - 'parameter'
+      - 'option'
+      - 'field'
+
+# Anchor validation rules
+anchor_rules:
+  # Minimum length for anchor names
+  min_length: 3
+  
+  # Maximum length for anchor names
+  max_length: 50
+  
+  # Reserved words that shouldn't be used as anchors
+  reserved_words:
+    - 'abstract'
+    - 'anchor'
+    - 'appendix'
+    - 'article'
+    - 'book'
+    - 'chapter'
+    - 'document'
+    - 'header'
+    - 'footer'
+    - 'index'
+    - 'introduction'
+    - 'part'
+    - 'preamble'
+    - 'preface'
+    - 'section'
+    - 'title'
+    
+# Link validation thresholds
+validation_thresholds:
+  # Confidence levels for different violation types
+  broken_link: 0.9
+  invalid_format: 0.8
+  missing_label: 0.6
+  naming_violation: 0.7
+  circular_reference: 0.8
+  context_mismatch: 0.4
