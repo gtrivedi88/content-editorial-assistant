@@ -219,13 +219,19 @@ class UnsupportedClaimsDetector(AmbiguityDetector):
         elif self._is_specification_context(context):
             doc_type_modifier += 0.08  # Specifications should be precise
         
+        # EVIDENCE FACTOR 8
+        instruction_modifier = 0.0
+        if token.lemma_.lower() == 'ensure' and self._is_ensure_instruction(token, doc):
+            instruction_modifier -= 0.6  # Dramatically reduce evidence for instructions
+        
         # EVIDENCE AGGREGATION (Level 2 Multi-Factor Assessment)
         final_evidence = (evidence_score + 
                          domain_modifier + 
                          linguistic_modifier + 
                          position_modifier + 
                          scope_modifier + 
-                         doc_type_modifier)
+                         doc_type_modifier + 
+                         instruction_modifier)
         
         # UNIVERSAL THRESHOLD COMPLIANCE (≥0.35 minimum)
         # Cap at 0.95 to leave room for uncertainty
@@ -318,6 +324,40 @@ class UnsupportedClaimsDetector(AmbiguityDetector):
         # Check for specification indicators
         spec_indicators = ['specification', 'requirement', 'standard', 'protocol']
         return any(word in context.sentence.lower() for word in spec_indicators)
+    
+    def _is_ensure_instruction(self, token, doc) -> bool:
+        """
+        Check if 'ensure' is used in an instructional context using dependency parsing.
+        
+        Returns True if:
+        1. 'ensure' is the root of a clause AND
+        2. The subject is 'you' (indicating user instruction)
+        
+        This dramatically reduces false positives for technical instructions.
+        """
+        # Check if ensure is the root or main verb of the sentence
+        if token.dep_ != 'ROOT':
+            return False
+        
+        # Look for subject dependency pointing to "you"
+        for child in token.children:
+            if child.dep_ == 'nsubj' and child.lemma_.lower() == 'you':
+                return True
+        
+        # Additional patterns: imperative mood where subject is implicit "you"
+        # Check if ensure is at sentence start (imperative construction)
+        if token.is_sent_start:
+            # In imperative sentences, "you" is often implicit
+            # Look for typical instruction patterns
+            sentence_text = token.sent.text.lower()
+            instruction_patterns = [
+                'ensure you', 'ensure that you', 'make sure you', 'be sure to', 
+                'verify that you', 'confirm that you'
+            ]
+            if any(pattern in sentence_text for pattern in instruction_patterns):
+                return True
+        
+        return False
     
     # Legacy compatibility methods (refactored for evidence-based approach)
     def _is_excepted(self, text: str) -> bool:

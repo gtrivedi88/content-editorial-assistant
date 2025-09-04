@@ -185,17 +185,25 @@ class PluralsRule(BaseLanguageRule):
         if token.pos_ != 'NOUN':
             return False
         
-        # Load incorrect plurals from YAML vocabulary
+        # Load corrections from YAML vocabulary
         corrections = self.vocabulary_service.get_plurals_corrections()
-        incorrect_plurals = corrections.get('incorrect_plurals', {})
         
-        # Check all categories of incorrect plurals
+        token_lower = token.text.lower()
+        
+        # PRIORITY 1: Check uncountable technical nouns (special handling)
+        uncountable_technical = corrections.get('uncountable_technical_nouns', {})
+        for technical_noun, config in uncountable_technical.items():
+            incorrect_forms = config.get('incorrect_forms', [])
+            if token_lower in [form.lower() for form in incorrect_forms]:
+                return True
+        
+        # PRIORITY 2: Check traditional incorrect plurals
+        incorrect_plurals = corrections.get('incorrect_plurals', {})
         all_incorrect = set()
         for category in incorrect_plurals.values():
             if isinstance(category, dict):
                 all_incorrect.update(category.keys())
         
-        token_lower = token.text.lower()
         return token_lower in all_incorrect
 
     def _is_functioning_as_verb(self, token, doc) -> bool:
@@ -1045,9 +1053,19 @@ class PluralsRule(BaseLanguageRule):
         
         # Load corrections from YAML vocabulary
         corrections = self.vocabulary_service.get_plurals_corrections()
-        incorrect_plurals = corrections.get('incorrect_plurals', {})
-        
         token_lower = token.text.lower()
+        
+        # PRIORITY 1: Check uncountable technical nouns first
+        uncountable_technical = corrections.get('uncountable_technical_nouns', {})
+        for technical_noun, config in uncountable_technical.items():
+            incorrect_forms = config.get('incorrect_forms', [])
+            if token_lower in [form.lower() for form in incorrect_forms]:
+                correct_form = config.get('correct_plural_form', technical_noun)
+                explanation = config.get('explanation', '')
+                return f"'{token.text}' is incorrect. Use '{correct_form}' instead. {explanation}"
+        
+        # PRIORITY 2: Check traditional incorrect plurals
+        incorrect_plurals = corrections.get('incorrect_plurals', {})
         correct_form = 'correct form'
         
         # Find the correct form from all categories
@@ -1063,9 +1081,36 @@ class PluralsRule(BaseLanguageRule):
         
         # Load corrections from YAML vocabulary
         corrections = self.vocabulary_service.get_plurals_corrections()
-        incorrect_plurals = corrections.get('incorrect_plurals', {})
-        
         token_lower = token.text.lower()
+        suggestions = []
+        
+        # PRIORITY 1: Check uncountable technical nouns first
+        uncountable_technical = corrections.get('uncountable_technical_nouns', {})
+        for technical_noun, config in uncountable_technical.items():
+            incorrect_forms = config.get('incorrect_forms', [])
+            if token_lower in [form.lower() for form in incorrect_forms]:
+                correct_form = config.get('correct_plural_form', technical_noun)
+                never_suggest = config.get('never_suggest', [])
+                
+                # Preserve original capitalization
+                if token.text[0].isupper():
+                    correct_form_cap = correct_form.capitalize()
+                    suggestions.append(correct_form_cap)
+                else:
+                    suggestions.append(correct_form)
+                
+                # Add technical noun specific explanation
+                suggestions.append(f"'{correct_form}' is uncountable in technical contexts")
+                
+                # Add warning about archaic forms if applicable
+                if never_suggest:
+                    archaic_forms = ', '.join([f"'{form}'" for form in never_suggest])
+                    suggestions.append(f"Never use archaic forms: {archaic_forms}")
+                
+                return suggestions[:3]
+        
+        # PRIORITY 2: Check traditional incorrect plurals
+        incorrect_plurals = corrections.get('incorrect_plurals', {})
         correct_form = None
         correction_info = None
         
@@ -1076,7 +1121,6 @@ class PluralsRule(BaseLanguageRule):
                 correct_form = correction_info['correct_form']
                 break
         
-        suggestions = []
         if correct_form and correction_info:
             # Preserve original capitalization
             if token.text[0].isupper():

@@ -18,6 +18,7 @@ from .periods_rule import PeriodsRule
 from .quotation_marks_rule import QuotationMarksRule
 from .semicolons_rule import SemicolonsRule
 from .slashes_rule import SlashesRule
+from .spacing_rule import SpacingRule
 
 __all__ = [
     'PunctuationAndSymbolsRule',
@@ -31,5 +32,6 @@ __all__ = [
     'PeriodsRule',
     'QuotationMarksRule',
     'SemicolonsRule',
-    'SlashesRule'
+    'SlashesRule',
+    'SpacingRule'
 ]

@@ -212,6 +212,16 @@ class HyphensRule(BasePunctuationRule):
             if next_token.pos_ == 'NOUN':
                 evidence_score -= 0.3  # May be compound adjective
         
+        # Exception 6: Compound adjective participles (SQL-based, data-driven, etc.)
+        participle_patterns = {
+            'based', 'driven', 'oriented', 'focused', 'related', 'enabled',
+            'aware', 'specific', 'ready', 'friendly', 'compatible', 'centric',
+            'powered', 'enhanced', 'optimized', 'managed', 'controlled', 'defined'
+        }
+        if word_lemma in participle_patterns:
+            # This is almost certainly a compound adjective, not a mathematical expression
+            evidence_score -= 0.8  # Strong evidence this is legitimate compound adjective
+        
         # === MORPHOLOGICAL PATTERNS ===
         
         # Check if the combination creates an ambiguous reading

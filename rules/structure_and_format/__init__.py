@@ -9,6 +9,7 @@ discovered and loaded by the main application's rule engine.
 from .headings_rule import HeadingsRule
 from .highlighting_rule import HighlightingRule
 from .lists_rule import ListsRule
+from .list_punctuation_rule import ListPunctuationRule
 from .messages_rule import MessagesRule
 from .notes_rule import NotesRule
 from .paragraphs_rule import ParagraphsRule
@@ -24,6 +25,7 @@ __all__ = [
     'HeadingsRule',
     'HighlightingRule',
     'ListsRule',
+    'ListPunctuationRule',
     'MessagesRule',
     'NotesRule',
     'ParagraphsRule',

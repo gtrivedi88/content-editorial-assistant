@@ -11,6 +11,7 @@ rule_priorities:
     - spelling
     - capitalization
     - punctuation_and_symbols
+    - spacing
     
   # High priority language rules
   high:
@@ -21,6 +22,7 @@ rule_priorities:
     - pronouns
     - verbs
     - sentence_length
+    - list_punctuation  # Add to high priority rules
     
   # Medium priority content rules  
   medium:
@@ -112,6 +114,7 @@ block_type_rules:
     - quotation_marks
     - semicolons
     - slashes
+    - spacing  # Add spacing rule to punctuation sections
     
     # Content quality rules
     - second_person
@@ -173,6 +176,7 @@ block_type_rules:
     - quotation_marks
     - semicolons
     - slashes
+    - spacing
     
     # AUDIENCE AND MEDIUM RULES
     - conversational_style
@@ -311,6 +315,7 @@ block_type_rules:
   list_item:
     # Structure-specific rules
     - lists
+    - list_punctuation
     - procedures
     - capitalization
     - punctuation_and_symbols
@@ -347,6 +352,7 @@ block_type_rules:
     - quotation_marks
     - semicolons
     - slashes
+    - spacing
     
     # Content quality
     - global_audiences
@@ -391,6 +397,7 @@ block_type_rules:
   # Ordered list items - Additional procedure focus
   list_item_ordered:
     - lists
+    - list_punctuation
     - procedures
     - capitalization
     - punctuation_and_symbols
@@ -412,6 +419,7 @@ block_type_rules:
   # Unordered list items - Focus on parallel structure
   list_item_unordered:
     - lists
+    - list_punctuation
     - capitalization
     - punctuation_and_symbols
     - abbreviations
@@ -461,6 +469,7 @@ block_type_rules:
 
   unordered_list:
     - lists
+    - list_punctuation
     # LINGUISTIC ANCHOR: Punctuation rules for list content
     - colons
     - commas
@@ -473,9 +482,11 @@ block_type_rules:
     - quotation_marks
     - semicolons
     - slashes
+    - spacing
 
   ordered_list:
     - lists
+    - list_punctuation
     - procedures
     # LINGUISTIC ANCHOR: Punctuation rules for list content
     - colons
@@ -489,6 +500,7 @@ block_type_rules:
     - quotation_marks
     - semicolons
     - slashes
+    - spacing
 
   # Description lists (legacy mapping)
   description_list:
@@ -503,6 +515,7 @@ block_type_rules:
   dlist:
     # Structure-specific rules
     - lists
+    - list_punctuation
     - capitalization
     - punctuation_and_symbols
     
@@ -538,6 +551,7 @@ block_type_rules:
     - quotation_marks
     - semicolons
     - slashes
+    - spacing
     
     # Content quality
     - conversational_style
@@ -918,6 +932,9 @@ validation:
     - abbreviations  # Enhanced with etc. support
     - word_usage_b  # Enhanced backup analysis
     - contractions  # Enhanced regex patterns
+    - spacing  # Phase 1: New spacing rule
+    - list_punctuation  # Phase 1: New list punctuation rule
+    - periods  # Phase 1: Enhanced periods rule
   
   # Block types that must have comprehensive rule coverage
   comprehensive_coverage_blocks:

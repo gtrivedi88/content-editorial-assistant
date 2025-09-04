@@ -275,8 +275,7 @@ class StyleAnalyzer:
             # Create enhanced context
             context = {
                 'content_type': content_type,
-                'block_type': 'document',
-                'nlp': self.nlp if hasattr(self, 'nlp') else None
+                'block_type': 'document'
             }
             
             # Use backward-compatible analysis that includes Phase 5 enhancements

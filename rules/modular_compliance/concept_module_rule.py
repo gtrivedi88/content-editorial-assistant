@@ -81,7 +81,7 @@ class ConceptModuleRule(BaseRule):
             }
         }
     
-    def analyze(self, text: str, sentences, nlp=None, context: Dict[str, Any] = None) -> List[Dict[str, Any]]:
+    def analyze(self, text: str, context: Dict[str, Any] = None) -> List[Dict[str, Any]]:
         """
         Analyze concept module compliance using direct compliance validation.
         

@@ -1,0 +1,227 @@
+# List Punctuation Rule Configuration
+# Comprehensive settings for list punctuation analysis with evidence-based scoring
+
+list_punctuation_rules:
+  
+  # === ORDERED LISTS ===
+  ordered_lists:
+    sentences_need_periods: true
+    fragments_optional_periods: true
+    consistency_required: true
+    evidence_weight: 0.7
+    description: "Ordered lists often contain procedural steps"
+    
+    # Context-specific rules
+    procedural_steps:
+      sentences_need_periods: true
+      fragments_need_periods: false
+      evidence_adjustment: 0.2
+      
+    numbered_features:
+      sentences_need_periods: false
+      fragments_need_periods: false
+      evidence_adjustment: -0.1
+      
+  # === UNORDERED LISTS ===  
+  unordered_lists:
+    sentences_need_periods: true
+    fragments_no_periods: true
+    consistency_required: true
+    evidence_weight: 0.6
+    description: "Unordered lists often contain brief items or features"
+    
+    # Context-specific rules
+    feature_lists:
+      sentences_need_periods: false
+      fragments_need_periods: false
+      evidence_adjustment: -0.3
+      
+    bullet_summaries:
+      sentences_need_periods: true
+      fragments_need_periods: false
+      evidence_adjustment: 0.1
+      
+  # === DEFINITION LISTS ===
+  definition_lists:
+    terms_no_periods: true
+    definitions_need_periods: true
+    consistency_per_section: true
+    evidence_weight: 0.5
+
+# === CLASSIFICATION SETTINGS ===
+# Rules for classifying list items as sentences, fragments, or mixed
+
+item_classification:
+  
+  sentence_indicators:
+    # Grammatical features that indicate complete sentences
+    has_subject_verb: 1.0
+    has_main_clause: 0.9
+    contains_auxiliary_verbs: 0.8
+    word_count_threshold: 6  # 6+ words more likely to be sentences
+    
+  fragment_indicators:
+    # Features that indicate sentence fragments
+    noun_phrase_only: 0.9
+    no_main_verb: 0.8
+    short_length: 0.7
+    word_count_threshold: 3  # 3 or fewer words likely fragments
+    
+  ambiguous_cases:
+    # Handle borderline cases
+    medium_length_range: [4, 5]  # 4-5 words are ambiguous
+    depends_on_context: true
+    use_surrounding_items: true
+
+# === CONTEXT ADJUSTMENTS ===
+# Fine-tune evidence scoring based on specific conditions
+
+context_adjustments:
+  
+  # Content type adjustments
+  procedural_steps: 0.2     # More strict for procedures
+  feature_lists: -0.3       # More permissive for feature lists  
+  summary_bullets: 0.1      # Slightly more strict for summaries
+  navigation_menus: -0.4    # Very permissive for navigation
+  
+  # Document type adjustments
+  technical_documentation: 0.1    # Technical docs prefer consistency
+  user_guides: 0.0               # User guides are neutral
+  reference_material: -0.1       # Reference material more flexible
+  marketing_content: -0.2        # Marketing content more creative
+  
+  # List depth adjustments
+  top_level_list: 0.1       # Top-level lists more visible
+  nested_list_level1: 0.0   # First level nesting neutral
+  nested_list_level2: -0.1  # Deeper nesting more permissive
+  deeply_nested: -0.2       # Very deep nesting very permissive
+
+# === CONSISTENCY REQUIREMENTS ===
+# Rules for ensuring consistency within lists
+
+consistency_rules:
+  
+  same_level_items:
+    require_matching_punctuation: true
+    evidence_penalty: 0.3  # Penalty for inconsistency
+    allow_mixed_if_different_types: true
+    
+  cross_list_consistency:
+    check_similar_lists: false  # Don't enforce across different lists
+    suggest_consistency: true
+    evidence_weight: 0.1
+    
+  progressive_disclosure:
+    allow_different_levels: true  # Different nesting levels can differ
+    maintain_level_consistency: true
+
+# === EVIDENCE THRESHOLDS ===
+# Map evidence scores to appropriate actions
+
+evidence_thresholds:
+  
+  high_confidence: 0.8      # Clear violations requiring action
+  medium_confidence: 0.6    # Likely violations suggesting review
+  low_confidence: 0.3       # Possible issues worth noting
+  
+  # Violation-specific thresholds
+  missing_period_sentence: 0.7
+  unnecessary_period_fragment: 0.6
+  inconsistent_punctuation: 0.5
+  ambiguous_classification: 0.3
+
+# === SUGGESTION TEMPLATES ===
+# Context-aware suggestion templates
+
+suggestions:
+  
+  sentence_missing_period:
+    high_confidence:
+      - "Add a period to complete this sentence"
+      - "Complete sentences in lists should end with periods"
+      - "This appears to be a full sentence requiring punctuation"
+    medium_confidence:
+      - "Consider adding a period if this is a complete sentence"
+      - "Review whether this item forms a complete thought"
+    low_confidence:
+      - "Check if this item needs a period for consistency"
+      
+  fragment_unnecessary_period:
+    high_confidence:
+      - "Remove the period from this list item"
+      - "Short phrases and fragments don't need periods"  
+      - "This appears to be a fragment that doesn't require punctuation"
+    medium_confidence:
+      - "Consider removing the period for conciseness"
+      - "Brief list items typically don't need periods"
+    low_confidence:
+      - "Review whether this period is necessary"
+      
+  inconsistent_punctuation:
+    high_confidence:
+      - "Use consistent punctuation across all list items"
+      - "Either use periods for all items or omit them for all items"
+      - "This inconsistency significantly impacts readability"
+    medium_confidence:
+      - "Consider standardizing punctuation across list items"
+      - "Review list punctuation for consistency"
+    low_confidence:
+      - "Check punctuation consistency within this list"
+
+# === LIST TYPE DETECTION ===
+# Patterns and rules for detecting different list types
+
+list_type_detection:
+  
+  procedural_lists:
+    indicators:
+      - "step"
+      - "first"
+      - "next" 
+      - "then"
+      - "finally"
+    ordered_preference: true
+    sentence_preference: true
+    
+  feature_lists:
+    indicators:
+      - "feature"
+      - "benefit"
+      - "advantage"
+      - "capability"
+    unordered_preference: true
+    fragment_preference: true
+    
+  requirement_lists:
+    indicators:
+      - "must"
+      - "required"
+      - "mandatory"
+      - "essential"
+    mixed_preference: true
+    consistency_critical: true
+
+# === PERFORMANCE SETTINGS ===
+performance:
+  
+  max_list_items_analyzed: 20   # Limit analysis for very long lists
+  enable_cross_item_analysis: true
+  cache_classification_results: true
+  
+  # Skip analysis conditions
+  skip_very_short_lists: false   # Still analyze 1-2 item lists
+  skip_code_examples: true      # Skip lists in code blocks
+  skip_quoted_lists: true       # Skip lists in quotes/citations
+
+# === QUALITY ASSURANCE ===
+quality_assurance:
+  
+  false_positive_prevention:
+    creative_content_permissive: true
+    preserve_intentional_style: true
+    respect_established_patterns: true
+    
+  evidence_validation:
+    require_minimum_confidence: 0.2
+    validate_classification_logic: true
+    cross_check_with_context: true

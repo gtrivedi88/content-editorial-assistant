@@ -75,7 +75,7 @@ class ProcedureModuleRule(BaseRule):
             }
         }
     
-    def analyze(self, text: str, sentences, nlp=None, context: Dict[str, Any] = None) -> List[Dict[str, Any]]:
+    def analyze(self, text: str, context: Dict[str, Any] = None) -> List[Dict[str, Any]]:
         """
         Analyze procedure module compliance using direct compliance validation.
         

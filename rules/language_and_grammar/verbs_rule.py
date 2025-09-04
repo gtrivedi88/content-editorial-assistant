@@ -1063,6 +1063,11 @@ class VerbsRule(BaseLanguageRule):
         if evidence_score == 0.0:
             return 0.0  # No evidence, skip this construction
         
+        # === STEP 1.5: TECHNICAL COMPOUND NOUN CLUE ===
+        # Check if this token is part of a known technical compound noun
+        if self._is_technical_compound_noun(root_verb, doc):
+            return 0.0  # This is a legitimate compound noun, not an incorrect verb form
+        
         # === STEP 2: LINGUISTIC CLUES (MICRO-LEVEL) ===
         evidence_score = self._apply_linguistic_clues_past_tense(evidence_score, root_verb, doc, sentence)
         
@@ -1514,6 +1519,53 @@ class VerbsRule(BaseLanguageRule):
             suggestions.append("Use present tense for current behavior and instructions.")
         
         return suggestions[:3]
+
+    def _is_technical_compound_noun(self, token: Token, doc: Doc) -> bool:
+        """
+        Check if token is part of a known technical compound noun.
+        
+        Uses YAML configuration to identify compound nouns like "read access",
+        "write permissions", etc. where the first word might be mistaken for
+        an incorrect verb form.
+        
+        Args:
+            token: The token potentially part of a compound noun
+            doc: The document containing the token
+            
+        Returns:
+            bool: True if this is part of a technical compound noun
+        """
+        # Load technical compound nouns from YAML configuration
+        corrections = self.vocabulary_service.get_verbs_corrections()
+        compound_nouns = corrections.get('technical_compound_nouns', {})
+        
+        # Get all compound noun heads (the second part of compound nouns)
+        all_compound_heads = []
+        for category, heads in compound_nouns.items():
+            all_compound_heads.extend(heads)
+        
+        # Check if this token has a head that matches compound noun patterns
+        if hasattr(token, 'head') and token.head:
+            head_text = token.head.text.lower()
+            
+            # Special case: direct check for "access" as mentioned by user
+            if head_text == 'access':
+                return True
+            
+            # General check against all compound noun heads
+            if head_text in all_compound_heads:
+                return True
+        
+        # Also check if the next token forms a compound noun
+        if token.i < len(doc) - 1:
+            next_token = doc[token.i + 1]
+            next_text = next_token.text.lower()
+            
+            # Check direct pattern match
+            if next_text in all_compound_heads:
+                return True
+        
+        return False
 
     # === HELPER METHODS FOR SEMANTIC ANALYSIS ===
 

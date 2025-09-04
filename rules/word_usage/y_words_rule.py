@@ -222,6 +222,11 @@ class YWordsRule(BaseWordUsageRule):
         
         # === SECOND PERSON CLUES ===
         if word_lower in ['you', 'your']:
+            # CONTEXTUAL CLUE: Check for consistent second-person tone
+            # If other second-person pronouns are used, lower evidence score
+            if self._has_consistent_second_person_tone(sentence, word_lower):
+                ev -= 0.4  # Consistent second-person tone suggests this usage is intentional
+            
             # Direct instruction context
             if any(indicator in sent_text for indicator in ['can', 'should', 'must', 'need to', 'have to']):
                 ev += 0.2  # Direct instruction benefits from objective language
@@ -363,3 +368,39 @@ class YWordsRule(BaseWordUsageRule):
                 'accepted': {'you', 'your', 'year', 'yellow', 'young'}  # Common Y words acceptable
             }
         }
+
+    def _has_consistent_second_person_tone(self, sentence, current_word: str) -> bool:
+        """
+        CONTEXTUAL CLUE: Check if text contains other second-person pronouns.
+        
+        This simple but powerful clue detects when a consistent second-person tone
+        is being used throughout the text. If other second-person pronouns are present,
+        it suggests that the current usage of "your" is intentional and part of a 
+        consistent writing style.
+        
+        Args:
+            sentence: The sentence being analyzed
+            current_word: The current word being flagged ("you" or "your")
+            
+        Returns:
+            bool: True if consistent second-person tone is detected
+        """
+        
+        # Get the full document text from the sentence's document
+        doc = sentence.doc
+        full_text = doc.text.lower()
+        
+        # Second-person pronouns to look for (excluding the current word)
+        second_person_pronouns = ['you', 'your', 'yours', 'yourself', 'yourselves']
+        target_pronouns = [pronoun for pronoun in second_person_pronouns 
+                          if pronoun != current_word.lower()]
+        
+        # Check if any other second-person pronouns appear in the text
+        for pronoun in target_pronouns:
+            # Use word boundaries to avoid partial matches
+            import re
+            pattern = rf'\b{re.escape(pronoun)}\b'
+            if re.search(pattern, full_text, re.IGNORECASE):
+                return True  # Found other second-person pronouns
+        
+        return False  # No other second-person pronouns found

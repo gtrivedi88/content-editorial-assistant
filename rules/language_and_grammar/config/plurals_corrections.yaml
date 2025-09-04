@@ -2,18 +2,28 @@
 # Manages incorrect plural forms and their corrections
 # Used by PluralsRule for detecting and correcting improper pluralization
 
-# Incorrect plural forms and their correct alternatives
+# Special category: Uncountable technical nouns that require careful handling
+uncountable_technical_nouns:
+  # These nouns are inherently uncountable in modern technical usage
+  # The rule should NEVER suggest archaic singular forms
+  data:
+    correct_plural_form: "data"  # data is already the correct form
+    incorrect_forms: ["datas"]   # flag these as errors
+    never_suggest: ["datum"]     # never suggest this archaic singular
+    explanation: "data is uncountable in technical contexts; never use 'datum' or 'datas'"
+    usage_examples:
+      correct: 
+        - "The data shows a clear trend"
+        - "This data is accurate"
+        - "All data has been processed"
+      incorrect:
+        - "These datas show..."  # flag this
+        - "The datum indicates..." # don't suggest this
+
+# Traditional incorrect plural forms and their correct alternatives
 incorrect_plurals:
-  # Uncountable nouns that don't take plural forms
+  # Regular uncountable nouns
   uncountable_nouns:
-    datas:
-      correct_form: "data"
-      type: "uncountable"
-      explanation: "data is already plural; datum is singular"
-      examples:
-        incorrect: "These datas show..."
-        correct: "This data shows..." 
-    
     informations:
       correct_form: "information"
       type: "uncountable"

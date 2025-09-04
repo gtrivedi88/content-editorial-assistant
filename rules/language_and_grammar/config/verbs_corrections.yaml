@@ -156,6 +156,31 @@ past_tense_guidance:
     - "occurred"
     - "happened"
 
+# Technical compound nouns where first word may look like incorrect verb form
+technical_compound_nouns:
+  access_compounds:
+    - "access"  # read access, write access, admin access
+    - "permissions"  # read permissions, write permissions
+    - "rights"  # read rights, write rights
+    - "privileges"  # read privileges, write privileges
+    - "control"  # read control, write control
+  
+  operation_compounds:
+    - "operation"  # read operation, write operation
+    - "operations"  # read operations, write operations
+    - "mode"  # read mode, write mode
+    - "transaction"  # read transaction, write transaction
+    - "request"  # read request, write request
+    - "command"  # read command, write command
+  
+  data_compounds:
+    - "data"  # read data, write data
+    - "buffer"  # read buffer, write buffer
+    - "cache"  # read cache, write cache
+    - "stream"  # read stream, write stream
+    - "lock"  # read lock, write lock
+    - "timeout"  # read timeout, write timeout
+
 # Evidence scoring for different violation types
 evidence_levels:
   noun_as_verb: 0.8      # High evidence - clear style violation
