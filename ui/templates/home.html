@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Content Editorial Platform - Write with Confidence{% endblock %}
+
+{% block content %}
+<div class="home-container">
+    <!-- Hero Section -->
+    <div class="hero-section">
+        <h1 class="main-question">
+            What do you want to <span class="main-question-emphasis">do?</span>
+        </h1>
+        <p class="hero-subtitle">
+            Choose from our powerful tools to perfect your content with AI-powered assistance
+        </p>
+    </div>
+
+    <!-- Main Options Grid -->
+    <div class="options-grid">
+        <!-- Review Product Content -->
+        <a href="{{ url_for('analyze_page') }}" class="option-card">
+            <div class="card-icon product-icon">
+                <i class="fas fa-search" aria-hidden="true"></i>
+            </div>
+            <h2 class="card-title">Review Product Content</h2>
+            <p class="card-description">
+                Analyze your documentation, technical content, and product materials for style, clarity, and compliance with industry standards.
+            </p>
+            <div class="card-action">
+                <span>Start Analysis</span>
+                <i class="fas fa-arrow-right" aria-hidden="true"></i>
+            </div>
+        </a>
+
+        <!-- Review Blog -->
+        <a href="{{ url_for('create_blogs') }}" class="option-card">
+            <div class="card-icon blog-icon">
+                <i class="fas fa-pen-fancy" aria-hidden="true"></i>
+            </div>
+            <h2 class="card-title">Review Blog</h2>
+            <p class="card-description">
+                Create engaging blog posts with AI assistance. Transform your ideas into compelling content that resonates with your audience.
+            </p>
+            <div class="card-action">
+                <span>Create Blog</span>
+                <i class="fas fa-arrow-right" aria-hidden="true"></i>
+            </div>
+        </a>
+
+        <!-- Review Marketing Announcement - Coming Soon -->
+        <div class="option-card coming-soon">
+            <div class="coming-soon-badge">Coming Soon</div>
+            <div class="card-icon marketing-icon">
+                <i class="fas fa-bullhorn" aria-hidden="true"></i>
+            </div>
+            <h2 class="card-title">Review Marketing Announcement</h2>
+            <p class="card-description">
+                Craft impactful marketing announcements and communications that capture attention and drive engagement.
+            </p>
+            <div class="card-action">
+                <span>Coming Soon</span>
+                <i class="fas fa-clock" aria-hidden="true"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="home-footer">
+        <p>AI-powered content analysis with the IBM and Red Hat style guides built in</p>
+    </div>
+</div>
+
+<!-- Add subtle interaction feedback -->
+<script src="{{ url_for('static', filename='js/home.js') }}"></script>
+
+{% endblock %}

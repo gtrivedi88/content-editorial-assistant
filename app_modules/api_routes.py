@@ -36,16 +36,29 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter):
     
     @app.route('/')
     def index():
-        """Main application page."""
+        """Home page - What do you want to do?"""
+        try:
+            return render_template('home.html')
+        except Exception as e:
+            logger.error(f"Error rendering home page: {e}")
+            try:
+                return render_template('error.html', error_message="Failed to load home page"), 500
+            except Exception as e2:
+                logger.error(f"Error rendering error page: {e2}")
+                return f"<h1>Application Error</h1><p>Failed to load home page: {e}</p><p>Template error: {e2}</p>", 500
+    
+    @app.route('/analyze')
+    def analyze_page():
+        """Analyze content page - text analysis and style checking."""
         try:
             return render_template('index.html')
         except Exception as e:
-            logger.error(f"Error rendering index page: {e}")
+            logger.error(f"Error rendering analyze content page: {e}")
             try:
-                return render_template('error.html', error_message="Failed to load application"), 500
+                return render_template('error.html', error_message="Failed to load analyze content page"), 500
             except Exception as e2:
                 logger.error(f"Error rendering error page: {e2}")
-                return f"<h1>Application Error</h1><p>Failed to load application: {e}</p><p>Template error: {e2}</p>", 500
+                return f"<h1>Application Error</h1><p>Failed to load analyze content page: {e}</p><p>Template error: {e2}</p>", 500
     
     @app.route('/upload', methods=['POST'])
     def upload_file():

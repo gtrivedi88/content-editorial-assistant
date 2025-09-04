@@ -1,0 +1,294 @@
+.home-container {
+    min-height: calc(100vh - 64px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background: 
+        radial-gradient(circle at 20% 80%, rgba(0, 122, 255, 0.03) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(88, 86, 214, 0.02) 0%, transparent 50%),
+        linear-gradient(180deg, rgba(249, 250, 251, 0.8) 0%, rgba(255, 255, 255, 0.9) 100%);
+    background-attachment: fixed;
+}
+
+/* Hero Section - Jobs style emphasis on the key question */
+.hero-section {
+    text-align: center;
+    max-width: 800px;
+    margin-bottom: 4rem;
+    animation: fadeInUp 0.8s ease-out;
+}
+
+.main-question {
+    font-size: 3.5rem;
+    font-weight: 300;
+    color: var(--app-neutral-900);
+    margin-bottom: 1.5rem;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+}
+
+.main-question-emphasis {
+    font-weight: 600;
+    background: linear-gradient(135deg, var(--app-primary-color), var(--app-secondary-color));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.hero-subtitle {
+    font-size: 1.375rem;
+    color: var(--app-neutral-600);
+    font-weight: 400;
+    line-height: 1.5;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* Option Cards - Elegant, minimal, Jobs-style simplicity */
+.options-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 2rem;
+    max-width: 1200px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+.option-card {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 24px;
+    padding: 3rem 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.06),
+        0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.option-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.1) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.option-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 
+        0 20px 40px rgba(0, 0, 0, 0.1),
+        0 8px 32px rgba(0, 0, 0, 0.06);
+    border-color: rgba(0, 122, 255, 0.2);
+}
+
+.option-card:hover::before {
+    opacity: 1;
+}
+
+.option-card:active {
+    transform: translateY(-4px);
+}
+
+/* Card Icons - Beautiful, consistent */
+.card-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    font-size: 2rem;
+    background: linear-gradient(135deg, var(--app-primary-color), var(--app-secondary-color));
+    color: white;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 24px rgba(0, 122, 255, 0.2);
+}
+
+.option-card:hover .card-icon {
+    transform: scale(1.05) rotate(2deg);
+    box-shadow: 0 12px 32px rgba(0, 122, 255, 0.3);
+}
+
+/* Specialized icons for each card */
+.card-icon.product-icon {
+    background: linear-gradient(135deg, #007AFF, #5856D6);
+}
+
+.card-icon.blog-icon {
+    background: linear-gradient(135deg, #34C759, #30D158);
+}
+
+.card-icon.marketing-icon {
+    background: linear-gradient(135deg, #FF9500, #FF6B35);
+    opacity: 0.7;
+    transform: scale(0.95);
+}
+
+.option-card.coming-soon:hover .card-icon.marketing-icon {
+    opacity: 0.8;
+    transform: scale(1.0);
+}
+
+/* Card Content */
+.card-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--app-neutral-900);
+    margin-bottom: 0.75rem;
+    line-height: 1.2;
+}
+
+.card-description {
+    font-size: 1rem;
+    color: var(--app-neutral-600);
+    line-height: 1.5;
+    margin-bottom: 1.5rem;
+}
+
+.card-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--app-primary-color);
+    transition: all 0.2s ease;
+}
+
+.option-card:hover .card-action {
+    transform: translateX(4px);
+}
+
+/* Coming Soon state */
+.option-card.coming-soon {
+    opacity: 0.8;
+    cursor: default;
+}
+
+.option-card.coming-soon:hover {
+    transform: translateY(-4px);
+}
+
+.option-card.coming-soon .card-title {
+    color: var(--app-neutral-700);
+}
+
+.option-card.coming-soon .card-description {
+    color: var(--app-neutral-500);
+}
+
+.option-card.coming-soon .card-action {
+    color: var(--app-neutral-500);
+}
+
+.coming-soon-badge {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: var(--app-warning-color);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Animations */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.option-card {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+.option-card:nth-child(1) { animation-delay: 0.1s; }
+.option-card:nth-child(2) { animation-delay: 0.2s; }
+.option-card:nth-child(3) { animation-delay: 0.3s; }
+
+/* Footer section - subtle, elegant */
+.home-footer {
+    margin-top: 4rem;
+    text-align: center;
+    color: var(--app-neutral-500);
+    font-size: 0.875rem;
+    animation: fadeInUp 1s ease-out 0.4s both;
+}
+
+/* Responsive design - maintain Jobs' clean aesthetic */
+@media (max-width: 768px) {
+    .home-container {
+        padding: 1rem;
+    }
+
+    .main-question {
+        font-size: 2.5rem;
+    }
+
+    .hero-subtitle {
+        font-size: 1.125rem;
+    }
+
+    .options-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .option-card {
+        padding: 2.5rem 1.5rem;
+    }
+
+    .card-icon {
+        width: 70px;
+        height: 70px;
+        font-size: 1.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .main-question {
+        font-size: 2rem;
+    }
+
+    .option-card {
+        padding: 2rem 1.25rem;
+    }
+}
+
+/* Accessibility and reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+
+    .option-card:hover {
+        transform: none;
+    }
+}
