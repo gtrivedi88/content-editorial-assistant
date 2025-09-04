@@ -234,6 +234,27 @@ class ContractionsRule(BaseLanguageRule):
         if "'" not in token.text:
             return False
         
+        # LINGUISTIC POLISH: Strong possessive filtering (EARLY EXIT)
+        # Prevent possessive 's from being considered as contractions with near-100% certainty
+        if "'s" in token.text.lower():
+            # A token with 's that has dependency tag of "case" is always possessive, not contraction
+            if hasattr(token, 'dep_') and token.dep_ == 'case':
+                return False  # This is definitely a possessive, not a contraction
+            
+            # Additional possessive checks using part-of-speech analysis
+            # Possessive 's tokens often have POS tag indicating possession
+            if hasattr(token, 'tag_') and token.tag_ == 'POS':
+                return False  # This is definitely a possessive marker, not a contraction
+            
+            # Check if the head word indicates possessive relationship
+            if hasattr(token, 'head') and hasattr(token.head, 'pos_'):
+                head_pos = token.head.pos_
+                # If 's follows a noun, proper noun, or pronoun, it's likely possessive
+                if head_pos in ['NOUN', 'PROPN', 'PRON'] and hasattr(token, 'dep_'):
+                    # Common possessive dependency patterns
+                    if token.dep_ in ['case', 'poss']:  # Direct possessive markers
+                        return False  # Definitely possessive, not a contraction
+        
         # Get comprehensive morphological features
         morph_features = self._get_morphological_features(token)
         
@@ -375,9 +396,28 @@ class ContractionsRule(BaseLanguageRule):
         pos = morph_features.get('pos', '')
         token_text = token.text.lower()  # Get token text directly from token
         
-        # More specific contraction detection
+        # More specific contraction detection with enhanced possessive distinction
         if "'s" in token_text or "'s" in token_text:
-            # Determine if 's is "is" or possessive
+            # LINGUISTIC POLISH: Strong possessive detection using dependency parsing
+            # A token with 's that has dependency tag of "case" is always possessive, not contraction
+            if hasattr(token, 'dep_') and token.dep_ == 'case':
+                return None  # This is definitely a possessive, don't flag as contraction
+            
+            # Additional possessive checks using part-of-speech analysis
+            # Possessive 's tokens often have POS tag indicating possession
+            if hasattr(token, 'tag_') and token.tag_ == 'POS':
+                return None  # This is definitely a possessive marker, don't flag as contraction
+            
+            # Check if the head word indicates possessive relationship
+            if hasattr(token, 'head') and hasattr(token.head, 'pos_'):
+                head_pos = token.head.pos_
+                # If 's follows a noun, proper noun, or pronoun, it's likely possessive
+                if head_pos in ['NOUN', 'PROPN', 'PRON'] and hasattr(token, 'dep_'):
+                    # Common possessive dependency patterns
+                    if token.dep_ in ['case', 'poss']:  # Direct possessive markers
+                        return None  # Definitely possessive, don't flag
+            
+            # Determine if remaining 's is "is" or possessive using existing logic
             if lemma == 'be' or pos in ['AUX', 'VERB']:
                 return {
                     'type': "auxiliary verb contraction ('s = is)",
@@ -584,17 +624,33 @@ class ContractionsRule(BaseLanguageRule):
         """
         contraction_lower = contraction_text.lower()
         
-        # PATTERN-BASED ANALYSIS: Common contraction patterns
+        # PATTERN-BASED ANALYSIS: Common contraction patterns with enhanced possessive detection
         if "'s" in contraction_lower:
+            # LINGUISTIC POLISH: Strong possessive detection using dependency parsing
+            if token:
+                # A token with 's that has dependency tag of "case" is always possessive, not contraction
+                if hasattr(token, 'dep_') and token.dep_ == 'case':
+                    return None  # This is definitely a possessive, don't flag as contraction
+                
+                # Additional possessive checks using part-of-speech analysis
+                # Possessive 's tokens often have POS tag indicating possession
+                if hasattr(token, 'tag_') and token.tag_ == 'POS':
+                    return None  # This is definitely a possessive marker, don't flag as contraction
+                
+                # Check if the head word indicates possessive relationship
+                if hasattr(token, 'head') and hasattr(token.head, 'pos_'):
+                    head_pos = token.head.pos_
+                    # If 's follows a noun, proper noun, or pronoun, it's likely possessive
+                    if head_pos in ['NOUN', 'PROPN', 'PRON'] and hasattr(token, 'dep_'):
+                        # Common possessive dependency patterns
+                        if token.dep_ in ['case', 'poss']:  # Direct possessive markers
+                            return None  # Definitely possessive, don't flag
+            
+            # After possessive filtering, check for verb contractions
             if token and hasattr(token, 'pos_') and token.pos_ == 'VERB':
                 return {
                     'type': "auxiliary verb contraction ('s = is)",
                     'suggestion': "use 'is' instead of the contraction"
-                }
-            elif token and hasattr(token, 'tag_') and token.tag_ == 'POS':
-                return {
-                    'type': "possessive contraction",
-                    'suggestion': "consider rephrasing to avoid possessive contractions"
                 }
             else:
                 return {
@@ -692,6 +748,13 @@ class ContractionsRule(BaseLanguageRule):
         if evidence_score == 0.0:
             return 0.0  # No evidence, skip this contraction
         
+        # === NARRATIVE/BLOG CONTENT CLUE (RELAX FORMAL RULES) ===
+        # Detect narrative/blog writing style and significantly reduce evidence
+        if self._is_narrative_or_blog_content(text, context):
+            evidence_score -= 0.5  # Major reduction for narrative/blog content
+            # In narrative/blog content, contractions ("we're", "it's", "wasn't") are not only 
+            # acceptable but enhance conversational tone and readability
+        
         # === STEP 2: LINGUISTIC CLUES (MICRO-LEVEL) ===
         evidence_score = self._apply_linguistic_clues_contraction(evidence_score, potential_issue, doc)
         
@@ -705,6 +768,82 @@ class ContractionsRule(BaseLanguageRule):
         evidence_score = self._apply_feedback_clues_contraction(evidence_score, potential_issue, context)
         
         return max(0.0, min(1.0, evidence_score))  # Clamp to valid range
+
+    def _is_narrative_or_blog_content(self, text: str, context: Dict[str, Any]) -> bool:
+        """
+        Detect if content is narrative/blog style using enhanced ContextAnalyzer.
+        
+        Looks for blog/narrative indicators like:
+        - Frequent first-person pronouns ("we", "our", "I")  
+        - Contractions ("we're", "it's", "wasn't")
+        - Rhetorical questions
+        - Informal sentence structure
+        - Blog-specific phrases ("Why we switched", "Our journey")
+        
+        Args:
+            text: The document text to analyze
+            context: Document context information
+            
+        Returns:
+            bool: True if content appears to be narrative/blog style
+        """
+        if not text:
+            return False
+            
+        # Import ContextAnalyzer to leverage enhanced narrative detection
+        try:
+            from validation.confidence.context_analyzer import ContextAnalyzer
+            analyzer = ContextAnalyzer()
+            
+            # Use enhanced content type detection  
+            content_result = analyzer.detect_content_type(text, context)
+            
+            # Check if identified as narrative with reasonable confidence
+            if (content_result.content_type.value == 'narrative' and 
+                content_result.confidence > 0.4):
+                return True
+            
+            # Additional check for blog-specific patterns even if not classified as narrative
+            # Look for strong blog indicators in the text
+            text_lower = text.lower()
+            blog_strong_indicators = [
+                'why we', 'how we', 'what we', 'when we', 'we switched', 
+                'we decided', 'our journey', 'our experience', 'our story',
+                'we learned', 'we discovered', 'we realized'
+            ]
+            
+            strong_indicator_count = sum(1 for indicator in blog_strong_indicators 
+                                       if indicator in text_lower)
+            
+            if strong_indicator_count >= 2:  # Multiple strong blog indicators
+                return True
+                
+            # Check for high contraction density (blog/informal characteristic)
+            contractions = ["i'm", "we're", "we've", "it's", "that's", "wasn't", "weren't", "didn't"]
+            contraction_count = sum(1 for contraction in contractions 
+                                  if contraction in text_lower)
+            
+            # Check for high first-person pronoun density (blog characteristic)
+            words = text_lower.split()
+            if len(words) > 20:  # Only for substantial text
+                first_person_count = sum(1 for word in words 
+                                       if word in ['i', 'we', 'my', 'our', 'me', 'us'])
+                first_person_ratio = first_person_count / len(words)
+                
+                # More than 3% first-person pronouns suggests blog/narrative
+                if first_person_ratio > 0.03:
+                    return True
+                    
+        except ImportError:
+            # Fallback to simple pattern matching if ContextAnalyzer unavailable
+            text_lower = text.lower()
+            
+            # Simple blog indicators
+            simple_indicators = ['why we', 'we switched', 'our journey', 'we decided']
+            if any(indicator in text_lower for indicator in simple_indicators):
+                return True
+        
+        return False
 
     def _calculate_regex_contraction_evidence(self, contraction_text: str, token_analysis, sentence, text: str, context: dict, suggestion_info: dict) -> float:
         """
@@ -750,11 +889,21 @@ class ContractionsRule(BaseLanguageRule):
         
         if issue_type == 'morphological_contraction':
             contraction_info = potential_issue['contraction_info']
+            
+            # Handle possessive filtering - if contraction_info is None, this was filtered out as possessive
+            if contraction_info is None:
+                return 0.0  # No evidence - this is a possessive, not a contraction
+            
             token = potential_issue['token']
             contraction_type = contraction_info.get('type', '').lower()
             pattern = contraction_info.get('pattern', '')
         elif issue_type == 'regex_contraction':
             suggestion_info = potential_issue['suggestion_info']
+            
+            # Handle possessive filtering - if suggestion_info is None, this was filtered out as possessive
+            if suggestion_info is None:
+                return 0.0  # No evidence - this is a possessive, not a contraction
+            
             contraction_text = potential_issue['contraction_text']
             contraction_type = suggestion_info.get('type', '').lower()
             pattern = 'regex_detected'
@@ -803,6 +952,10 @@ class ContractionsRule(BaseLanguageRule):
     def _get_base_regex_contraction_evidence(self, contraction_text: str, suggestion_info: dict) -> float:
         """Get base evidence score for regex-detected contractions."""
         
+        # Handle possessive filtering - if suggestion_info is None, this was filtered out as possessive
+        if suggestion_info is None:
+            return 0.0  # No evidence - this is a possessive, not a contraction
+        
         contraction_type = suggestion_info.get('type', '').lower()
         contraction_lower = contraction_text.lower()
         
@@ -846,6 +999,10 @@ class ContractionsRule(BaseLanguageRule):
             sentence = potential_issue['sentence']
             
             # === CONTRACTION MORPHOLOGY ANALYSIS ===
+            # Handle possessive filtering - if contraction_info is None, this was filtered out as possessive
+            if contraction_info is None:
+                return evidence_score  # Don't modify evidence, this is a possessive
+            
             pattern = contraction_info.get('pattern', '')
             
             # High-certainty morphological patterns
@@ -1058,9 +1215,15 @@ class ContractionsRule(BaseLanguageRule):
         issue_type = potential_issue.get('type', '')
         if issue_type == 'morphological_contraction':
             contraction_info = potential_issue['contraction_info']
+            # Handle possessive filtering
+            if contraction_info is None:
+                return evidence_score  # Don't modify evidence, this is a possessive
             contraction_type = contraction_info.get('type', '').lower()
         elif issue_type == 'regex_contraction':
             suggestion_info = potential_issue['suggestion_info']
+            # Handle possessive filtering
+            if suggestion_info is None:
+                return evidence_score  # Don't modify evidence, this is a possessive
             contraction_type = suggestion_info.get('type', '').lower()
         else:
             contraction_type = ''
@@ -1090,6 +1253,10 @@ class ContractionsRule(BaseLanguageRule):
         
         if not context:
             return evidence_score
+        
+        # Handle possessive filtering
+        if suggestion_info is None:
+            return evidence_score  # Don't modify evidence, this is a possessive
         
         content_type = context.get('content_type', 'general')
         contraction_type = suggestion_info.get('type', '').lower()
@@ -1168,11 +1335,17 @@ class ContractionsRule(BaseLanguageRule):
         if issue_type == 'morphological_contraction':
             token = potential_issue['token']
             contraction_info = potential_issue['contraction_info']
+            # Handle possessive filtering
+            if contraction_info is None:
+                return evidence_score  # Don't modify evidence, this is a possessive
             contraction_text = token.text.lower() if token else ''
             contraction_type = contraction_info.get('type', '').lower()
         elif issue_type == 'regex_contraction':
             contraction_text = potential_issue['contraction_text'].lower()
             suggestion_info = potential_issue['suggestion_info']
+            # Handle possessive filtering
+            if suggestion_info is None:
+                return evidence_score  # Don't modify evidence, this is a possessive
             contraction_type = suggestion_info.get('type', '').lower()
         else:
             contraction_text = ''
@@ -1235,6 +1408,10 @@ class ContractionsRule(BaseLanguageRule):
 
     def _apply_feedback_clues_regex_contraction(self, evidence_score: float, contraction_text: str, suggestion_info: dict, context: dict) -> float:
         """Apply feedback patterns for regex-detected contractions."""
+        
+        # Handle possessive filtering
+        if suggestion_info is None:
+            return evidence_score  # Don't modify evidence, this is a possessive
         
         # Load cached feedback patterns
         feedback_patterns = self._get_cached_feedback_patterns('contractions')
@@ -1476,6 +1653,10 @@ class ContractionsRule(BaseLanguageRule):
     def _get_contextual_message(self, token, contraction_info: dict, evidence_score: float) -> str:
         """Generate context-aware error messages for contractions."""
         
+        # Handle possessive filtering
+        if contraction_info is None:
+            return f"Possessive form: '{token.text}' is correctly used."
+        
         contraction_type = contraction_info.get('type', 'contraction')
         
         if evidence_score > 0.8:
@@ -1488,6 +1669,10 @@ class ContractionsRule(BaseLanguageRule):
     def _get_contextual_message_regex(self, contraction_text: str, suggestion_info: dict, evidence_score: float) -> str:
         """Generate context-aware error messages for regex-detected contractions."""
         
+        # Handle possessive filtering
+        if suggestion_info is None:
+            return f"Possessive form: '{contraction_text}' is correctly used."
+        
         contraction_type = suggestion_info.get('type', 'contraction')
         
         if evidence_score > 0.8:
@@ -1499,6 +1684,10 @@ class ContractionsRule(BaseLanguageRule):
 
     def _generate_smart_suggestions(self, token, contraction_info: dict, evidence_score: float, context: dict) -> List[str]:
         """Generate context-aware suggestions for contractions."""
+        
+        # Handle possessive filtering
+        if contraction_info is None:
+            return [f"'{token.text}' is correctly used as a possessive form."]
         
         suggestions = []
         base_suggestion = contraction_info.get('suggestion', 'expand the contraction')
@@ -1530,6 +1719,10 @@ class ContractionsRule(BaseLanguageRule):
 
     def _generate_smart_suggestions_regex(self, contraction_text: str, suggestion_info: dict, evidence_score: float, context: dict) -> List[str]:
         """Generate context-aware suggestions for regex-detected contractions."""
+        
+        # Handle possessive filtering
+        if suggestion_info is None:
+            return [f"'{contraction_text}' is correctly used as a possessive form."]
         
         suggestions = []
         base_suggestion = suggestion_info.get('suggestion', 'expand the contraction')

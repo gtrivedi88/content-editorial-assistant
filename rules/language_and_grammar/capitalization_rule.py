@@ -392,12 +392,12 @@ class CapitalizationRule(BaseLanguageRule):
             return evidence_score
         
         block_type = context.get('block_type', 'paragraph')
-        block_level = context.get('block_level', None)
+        block_level = context.get('level', context.get('block_level', None))  # Support both 'level' and 'block_level' keys
         
         # === MAIN TITLE CLUE ===
         # Main titles (level 0 headings) have different capitalization conventions
         # Significantly reduce evidence for title-case-related flags
-        if block_type == 'HEADING' and block_level == 0:
+        if block_type == 'heading' and block_level == 0:
             evidence_score -= 0.6  # Main titles often use different capitalization conventions
         
         # === FORMAL WRITING CONTEXTS ===

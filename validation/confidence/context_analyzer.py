@@ -203,11 +203,15 @@ class ContextAnalyzer:
                 'numbered_lists': [r'\d+\.', r'\d+\)', r'step \d+', r'stage \d+']
             },
             'narrative': {
-                'story_verbs': ['told', 'happened', 'discovered', 'realized', 'remembered', 'experienced'],
-                'time_references': ['once upon', 'yesterday', 'last week', 'in the past', 'previously', 'earlier'],
-                'descriptive_adj': ['beautiful', 'amazing', 'incredible', 'wonderful', 'fantastic', 'excellent'],
-                'emotional_words': ['excited', 'surprised', 'disappointed', 'thrilled', 'worried', 'confident'],
-                'personal_pronouns': ['i', 'we', 'my', 'our', 'me', 'us']
+                'story_verbs': ['told', 'happened', 'discovered', 'realized', 'remembered', 'experienced', 'started', 'began', 'decided', 'learned', 'found', 'noticed', 'thought', 'felt'],
+                'time_references': ['once upon', 'yesterday', 'last week', 'in the past', 'previously', 'earlier', 'recently', 'when we', 'back then', 'at first', 'initially'],
+                'descriptive_adj': ['beautiful', 'amazing', 'incredible', 'wonderful', 'fantastic', 'excellent', 'interesting', 'surprising', 'challenging', 'exciting'],
+                'emotional_words': ['excited', 'surprised', 'disappointed', 'thrilled', 'worried', 'confident', 'frustrated', 'happy', 'proud', 'nervous'],
+                'personal_pronouns': ['i', 'we', 'my', 'our', 'me', 'us', 'myself', 'ourselves', 'mine', 'ours'],
+                'contractions': ["i'm", "we're", "we've", "we'll", "i've", "i'll", "we'd", "i'd", "that's", "it's", "there's", "here's", "let's", "what's", "how's", "why'd", "wasn't", "weren't", "didn't", "couldn't", "shouldn't", "wouldn't"],
+                'blog_indicators': ['why we', 'how we', 'what we', 'when we', 'our journey', 'our experience', 'our story', 'our team', 'we switched', 'we decided', 'we learned', 'we discovered', 'we realized'],
+                'informal_markers': ['honestly', 'frankly', 'basically', 'actually', 'really', 'pretty much', 'sort of', 'kind of', 'you know', 'i mean', 'well'],
+                'conversational_transitions': ['so', 'anyway', 'meanwhile', 'by the way', 'speaking of', 'on the other hand', 'that said', 'in fact', 'to be honest']
             },
             'legal': {
                 'legal_verbs': ['shall', 'must', 'may not', 'is required', 'is prohibited', 'hereby'],
@@ -490,7 +494,7 @@ class ContextAnalyzer:
         return min(1.0, score)
     
     def _analyze_narrative_indicators(self, doc) -> float:
-        """Detect narrative/storytelling content."""
+        """Enhanced detection of narrative/blog content with contractions, first-person pronouns, and informal structure."""
         score = 0.0
         text_lower = doc.text.lower()
         
@@ -504,17 +508,25 @@ class ContextAnalyzer:
                 else:
                     pattern_counts[category] += text_lower.count(pattern)
         
-        # Score based on pattern density
+        # Score based on pattern density with enhanced weights for blog/narrative indicators
         total_words = len([t for t in doc if t.is_alpha])
         if total_words > 0:
             for category, count in pattern_counts.items():
                 density = count / total_words
                 if category == 'personal_pronouns':
-                    score += density * 2.5  # Personal pronouns are strong indicators
+                    score += density * 4.0  # ENHANCED: First-person pronouns are strongest indicators
+                elif category == 'contractions':
+                    score += density * 3.5  # ENHANCED: Contractions are strong blog/narrative indicators
+                elif category == 'blog_indicators':
+                    score += density * 4.5  # ENHANCED: Blog-specific phrases are very strong
                 elif category == 'story_verbs':
                     score += density * 3.0
                 elif category == 'time_references':
                     score += density * 2.5
+                elif category == 'informal_markers':
+                    score += density * 3.0  # NEW: Informal language markers
+                elif category == 'conversational_transitions':
+                    score += density * 2.5  # NEW: Conversational flow indicators
                 elif category == 'descriptive_adj':
                     score += density * 2.0
                 elif category == 'emotional_words':
@@ -522,12 +534,91 @@ class ContextAnalyzer:
                 else:
                     score += density * 1.0
         
-        # Check for past tense narrative
+        # ENHANCED: Check for rhetorical questions
+        rhetorical_question_score = self._detect_rhetorical_questions(doc)
+        score += rhetorical_question_score * 0.4
+        
+        # ENHANCED: Analyze sentence structure for informality
+        informal_structure_score = self._analyze_informal_sentence_structure(doc)
+        score += informal_structure_score * 0.3
+        
+        # Check for past tense narrative (storytelling)
         past_tense_count = len([t for t in doc if t.tag_ in ['VBD', 'VBN']])
         if total_words > 0:
             past_tense_ratio = past_tense_count / total_words
-            score += past_tense_ratio * 0.3
+            score += past_tense_ratio * 0.4  # Slightly higher weight for narrative past tense
         
+        # ENHANCED: Check for first-person pronoun frequency (key blog indicator)
+        first_person_count = len([t for t in doc if t.text.lower() in ['i', 'we', 'my', 'our', 'me', 'us', 'myself', 'ourselves']])
+        if total_words > 0:
+            first_person_ratio = first_person_count / total_words
+            if first_person_ratio > 0.02:  # More than 2% first-person pronouns suggests blog/narrative
+                score += first_person_ratio * 2.0
+        
+        return min(1.0, score)
+    
+    def _detect_rhetorical_questions(self, doc) -> float:
+        """Detect rhetorical questions in the text."""
+        score = 0.0
+        question_count = 0
+        rhetorical_patterns = [
+            r'\bwhy\s+[^?]*\?',      # "Why do we..."
+            r'\bhow\s+[^?]*\?',      # "How can we..."
+            r'\bwhat\s+if\s+[^?]*\?', # "What if we..."
+            r'\bisn\'t\s+[^?]*\?',   # "Isn't it..."
+            r'\bdon\'t\s+you\s+[^?]*\?', # "Don't you think..."
+            r'\bwouldn\'t\s+[^?]*\?', # "Wouldn't it be..."
+        ]
+        
+        import re
+        text = doc.text
+        for pattern in rhetorical_patterns:
+            matches = re.findall(pattern, text, re.IGNORECASE)
+            question_count += len(matches)
+        
+        # General question mark count
+        total_questions = text.count('?')
+        if total_questions > 0:
+            rhetorical_ratio = question_count / total_questions
+            score = rhetorical_ratio * 0.5 + (total_questions / len(list(doc.sents))) * 0.3
+        
+        return min(1.0, score)
+    
+    def _analyze_informal_sentence_structure(self, doc) -> float:
+        """Analyze sentence structure for informality indicators."""
+        score = 0.0
+        sentences = list(doc.sents)
+        if not sentences:
+            return 0.0
+        
+        informal_indicators = 0
+        total_sentences = len(sentences)
+        
+        for sent in sentences:
+            sent_score = 0
+            
+            # Check for sentence fragments (informal)
+            if len(sent) < 5:  # Very short sentences
+                sent_score += 0.2
+            
+            # Check for sentences starting with coordinating conjunctions (informal)
+            first_token = sent[0] if sent else None
+            if first_token and first_token.text.lower() in ['so', 'and', 'but', 'or', 'yet', 'because']:
+                sent_score += 0.3
+            
+            # Check for exclamation sentences
+            if sent.text.strip().endswith('!'):
+                sent_score += 0.2
+            
+            # Check for contractions in sentence
+            contractions_in_sent = [t for t in sent if "'" in t.text]
+            if contractions_in_sent:
+                sent_score += len(contractions_in_sent) * 0.1
+            
+            informal_indicators += sent_score
+        
+        # Average informality per sentence
+        score = informal_indicators / total_sentences if total_sentences > 0 else 0
         return min(1.0, score)
     
     def _analyze_legal_indicators(self, doc) -> float:

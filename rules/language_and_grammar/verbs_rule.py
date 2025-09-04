@@ -916,6 +916,16 @@ class VerbsRule(BaseLanguageRule):
         if self._is_planning_documentation(text):
             evidence_score -= 0.3  # Planning docs may use future tense
         
+        # === SEMANTIC POLISH: CONSEQUENCE/CONDITIONAL DETECTION ===
+        # Detect if/then and cause/effect structures where future tense is appropriate
+        if self._is_consequence_or_conditional_context(will_token, text):
+            evidence_score -= 0.5  # Major reduction for legitimate conditional/consequence usage
+            # Examples where future tense is correct:
+            # "Failure to configure SSL will result in security issues"
+            # "If you don't update the settings, the system will malfunction"
+            # "When the server restarts, it will load the new configuration"
+            # "Should the connection fail, the application will retry automatically"
+        
         # === DOCUMENT LENGTH CONTEXT ===
         doc_length = len(text.split())
         if doc_length < 100:  # Short documents
@@ -924,6 +934,141 @@ class VerbsRule(BaseLanguageRule):
             evidence_score += 0.02  # Consistency important in long docs
         
         return evidence_score
+
+    def _is_consequence_or_conditional_context(self, will_token: Token, text: str) -> bool:
+        """
+        Detect if 'will' appears in a consequence or conditional context where future tense is appropriate.
+        
+        Analyzes the linguistic context around 'will' to identify:
+        1. Conditional structures: "If X, then Y will happen"
+        2. Failure/error consequences: "Failure to X will result in Y"  
+        3. Causal relationships: "When X occurs, Y will happen"
+        4. Logical consequences: "Should X fail, Y will activate"
+        
+        Args:
+            will_token: The 'will' modal token to analyze
+            text: Full document text for broader context analysis
+            
+        Returns:
+            bool: True if 'will' appears in legitimate conditional/consequence context
+        """
+        if not will_token or not hasattr(will_token, 'doc') or not hasattr(will_token, 'i'):
+            return False
+        
+        doc = will_token.doc
+        will_index = will_token.i
+        sentence = will_token.sent
+        
+        # === CONDITIONAL INDICATORS ===
+        # Look for conditional words that precede the 'will' clause
+        conditional_indicators = {
+            # Direct conditionals
+            'if', 'unless', 'when', 'whenever', 'should', 'would',
+            # Temporal conditionals  
+            'after', 'before', 'once', 'until', 'while', 'during',
+            # Circumstantial conditionals
+            'in case', 'provided', 'assuming', 'suppose', 'supposing'
+        }
+        
+        # === CONSEQUENCE/FAILURE INDICATORS ===
+        # Look for noun phrases indicating conditions or failures that lead to consequences
+        failure_indicators = {
+            # Direct failure terms
+            'failure', 'error', 'issue', 'problem', 'fault', 'malfunction',
+            'mistake', 'oversight', 'omission', 'neglect', 'breach',
+            # Negative conditions
+            'inability', 'lack', 'absence', 'shortage', 'deficiency',
+            'misconfiguration', 'corruption', 'damage', 'loss'
+        }
+        
+        # === CAUSAL INDICATORS ===
+        # Look for words that indicate cause/effect relationships
+        causal_indicators = {
+            # Direct causation
+            'because', 'since', 'due to', 'owing to', 'thanks to',
+            'as a result', 'consequently', 'therefore', 'thus', 'hence',
+            # Logical flow
+            'then', 'so', 'accordingly', 'subsequently', 'thereafter'
+        }
+        
+        # === ANALYZE PRECEDING CONTEXT ===
+        # Look in the sentence and preceding sentences for indicators
+        
+        # Get text before the 'will' token (within the sentence)
+        sentence_start = sentence.start
+        tokens_before_will = doc[sentence_start:will_index]
+        text_before_will = ' '.join([token.text.lower() for token in tokens_before_will])
+        
+        # Check for conditional indicators in the current sentence
+        for indicator in conditional_indicators:
+            if indicator in text_before_will:
+                return True
+        
+        # Check for failure indicators in the current sentence
+        for indicator in failure_indicators:
+            if indicator in text_before_will:
+                return True
+        
+        # Check for causal indicators in the current sentence  
+        for indicator in causal_indicators:
+            if indicator in text_before_will:
+                return True
+        
+        # === ANALYZE BROADER CONTEXT ===
+        # Look at the previous sentence for conditional setup
+        sentences = list(doc.sents)
+        current_sent_index = None
+        
+        for i, sent in enumerate(sentences):
+            if sent == sentence:
+                current_sent_index = i
+                break
+        
+        if current_sent_index is not None and current_sent_index > 0:
+            previous_sentence = sentences[current_sent_index - 1]
+            prev_sent_text = previous_sentence.text.lower()
+            
+            # Check for conditional setup in previous sentence
+            for indicator in conditional_indicators:
+                if indicator in prev_sent_text:
+                    return True
+            
+            # Check for failure/consequence setup in previous sentence
+            for indicator in failure_indicators:
+                if indicator in prev_sent_text:
+                    return True
+        
+        # === SPECIFIC PATTERN DETECTION ===
+        # Look for common conditional/consequence patterns
+        sentence_text = sentence.text.lower()
+        
+        # Pattern: "Failure to X will Y"
+        if 'failure to' in sentence_text and 'will' in sentence_text:
+            return True
+        
+        # Pattern: "If you don't/do not X, Y will Z"
+        if ('if' in sentence_text and 
+            ('don\'t' in sentence_text or 'do not' in sentence_text) and 
+            'will' in sentence_text):
+            return True
+        
+        # Pattern: "Should X fail/error, Y will Z"  
+        if ('should' in sentence_text and 
+            ('fail' in sentence_text or 'error' in sentence_text) and
+            'will' in sentence_text):
+            return True
+        
+        # Pattern: "When X happens/occurs, Y will Z"
+        if ('when' in sentence_text and 
+            ('happens' in sentence_text or 'occurs' in sentence_text or 'restarts' in sentence_text) and
+            'will' in sentence_text):
+            return True
+        
+        # Pattern: "In case of X, Y will Z"
+        if 'in case' in sentence_text and 'will' in sentence_text:
+            return True
+        
+        return False
 
     def _apply_feedback_clues_future_tense(self, evidence_score: float, will_token: Token, head_verb: Token, context: Dict[str, Any]) -> float:
         """
@@ -1063,6 +1208,13 @@ class VerbsRule(BaseLanguageRule):
         if evidence_score == 0.0:
             return 0.0  # No evidence, skip this construction
         
+        # === NARRATIVE/BLOG CONTENT CLUE (RELAX FORMAL RULES) ===
+        # Detect narrative/blog writing style and significantly reduce evidence
+        if self._is_narrative_or_blog_content(text, context):
+            evidence_score -= 0.4  # Major reduction for narrative/blog content
+            # In narrative/blog content, past tense verbs ("started", "discovered", "learned") are 
+            # not only acceptable but necessary for storytelling and sharing experiences
+        
         # === STEP 1.5: TECHNICAL COMPOUND NOUN CLUE ===
         # Check if this token is part of a known technical compound noun
         if self._is_technical_compound_noun(root_verb, doc):
@@ -1081,6 +1233,83 @@ class VerbsRule(BaseLanguageRule):
         evidence_score = self._apply_feedback_clues_past_tense(evidence_score, root_verb, context)
         
         return max(0.0, min(1.0, evidence_score))  # Clamp to valid range
+
+    def _is_narrative_or_blog_content(self, text: str, context: Dict[str, Any]) -> bool:
+        """
+        Detect if content is narrative/blog style using enhanced ContextAnalyzer.
+        
+        Looks for blog/narrative indicators like:
+        - Frequent first-person pronouns ("we", "our", "I")  
+        - Contractions ("we're", "it's", "wasn't")
+        - Rhetorical questions
+        - Informal sentence structure
+        - Blog-specific phrases ("Why we switched", "Our journey")
+        - Past tense storytelling verbs
+        
+        Args:
+            text: The document text to analyze
+            context: Document context information
+            
+        Returns:
+            bool: True if content appears to be narrative/blog style
+        """
+        if not text:
+            return False
+            
+        # Import ContextAnalyzer to leverage enhanced narrative detection
+        try:
+            from validation.confidence.context_analyzer import ContextAnalyzer
+            analyzer = ContextAnalyzer()
+            
+            # Use enhanced content type detection  
+            content_result = analyzer.detect_content_type(text, context)
+            
+            # Check if identified as narrative with reasonable confidence
+            if (content_result.content_type.value == 'narrative' and 
+                content_result.confidence > 0.4):
+                return True
+            
+            # Additional check for blog-specific patterns even if not classified as narrative
+            # Look for strong blog indicators in the text
+            text_lower = text.lower()
+            blog_strong_indicators = [
+                'why we', 'how we', 'what we', 'when we', 'we switched', 
+                'we decided', 'our journey', 'our experience', 'our story',
+                'we learned', 'we discovered', 'we realized', 'we started'
+            ]
+            
+            strong_indicator_count = sum(1 for indicator in blog_strong_indicators 
+                                       if indicator in text_lower)
+            
+            if strong_indicator_count >= 2:  # Multiple strong blog indicators
+                return True
+                
+            # Check for narrative past tense verbs (storytelling characteristic)
+            narrative_verbs = ['started', 'began', 'decided', 'learned', 'discovered', 'realized', 'found', 'tried', 'built', 'created']
+            narrative_verb_count = sum(1 for verb in narrative_verbs 
+                                     if verb in text_lower)
+            
+            # Check for high first-person pronoun density (blog characteristic)
+            words = text_lower.split()
+            if len(words) > 20:  # Only for substantial text
+                first_person_count = sum(1 for word in words 
+                                       if word in ['i', 'we', 'my', 'our', 'me', 'us'])
+                first_person_ratio = first_person_count / len(words)
+                
+                # More than 3% first-person pronouns + narrative verbs suggests blog/narrative
+                if first_person_ratio > 0.03 and narrative_verb_count > 0:
+                    return True
+                    
+        except ImportError:
+            # Fallback to simple pattern matching if ContextAnalyzer unavailable
+            text_lower = text.lower()
+            
+            # Simple blog indicators with past tense context
+            simple_indicators = ['why we', 'we switched', 'our journey', 'we decided', 'we started']
+            if any(indicator in text_lower for indicator in simple_indicators):
+                return True
+        
+        return False
 
     # === PAST TENSE EVIDENCE METHODS ===
 

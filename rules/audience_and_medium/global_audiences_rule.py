@@ -106,6 +106,13 @@ class GlobalAudiencesRule(BaseAudienceRule):
     def _calculate_negative_construction_evidence(self, neg_token, head, sentence, text: str, context: Dict[str, Any]) -> float:
         evidence: float = 0.55  # base for presence of explicit negation
 
+        # === NARRATIVE/BLOG CONTENT CLUE (RELAX FORMAL RULES) ===
+        # Detect narrative/blog writing style and significantly reduce evidence
+        if self._is_narrative_or_blog_content(text, context):
+            evidence -= 0.35  # Major reduction for narrative/blog content
+            # In narrative/blog content, negative constructions ("wasn't", "didn't") are 
+            # natural and appropriate for conversational storytelling tone
+
         sent_lower = sentence.text.lower()
 
         # Linguistic: problematic complements and patterns
@@ -138,6 +145,77 @@ class GlobalAudiencesRule(BaseAudienceRule):
         evidence = self._apply_feedback_clues_global(evidence, sentence, context)
 
         return max(0.0, min(1.0, evidence))
+
+    def _is_narrative_or_blog_content(self, text: str, context: Dict[str, Any]) -> bool:
+        """
+        Detect if content is narrative/blog style using enhanced ContextAnalyzer.
+        
+        Looks for blog/narrative indicators like:
+        - Frequent first-person pronouns ("we", "our", "I")  
+        - Contractions ("we're", "it's", "wasn't")
+        - Rhetorical questions
+        - Informal sentence structure
+        - Blog-specific phrases ("Why we switched", "Our journey")
+        
+        Args:
+            text: The document text to analyze
+            context: Document context information
+            
+        Returns:
+            bool: True if content appears to be narrative/blog style
+        """
+        if not text:
+            return False
+            
+        # Import ContextAnalyzer to leverage enhanced narrative detection
+        try:
+            from validation.confidence.context_analyzer import ContextAnalyzer
+            analyzer = ContextAnalyzer()
+            
+            # Use enhanced content type detection  
+            content_result = analyzer.detect_content_type(text, context)
+            
+            # Check if identified as narrative with reasonable confidence
+            if (content_result.content_type.value == 'narrative' and 
+                content_result.confidence > 0.4):
+                return True
+            
+            # Additional check for blog-specific patterns even if not classified as narrative
+            # Look for strong blog indicators in the text
+            text_lower = text.lower()
+            blog_strong_indicators = [
+                'why we', 'how we', 'what we', 'when we', 'we switched', 
+                'we decided', 'our journey', 'our experience', 'our story',
+                'we learned', 'we discovered', 'we realized'
+            ]
+            
+            strong_indicator_count = sum(1 for indicator in blog_strong_indicators 
+                                       if indicator in text_lower)
+            
+            if strong_indicator_count >= 2:  # Multiple strong blog indicators
+                return True
+                
+            # Check for high first-person pronoun density (blog characteristic)
+            words = text_lower.split()
+            if len(words) > 20:  # Only for substantial text
+                first_person_count = sum(1 for word in words 
+                                       if word in ['i', 'we', 'my', 'our', 'me', 'us'])
+                first_person_ratio = first_person_count / len(words)
+                
+                # More than 3% first-person pronouns suggests blog/narrative
+                if first_person_ratio > 0.03:
+                    return True
+                    
+        except ImportError:
+            # Fallback to simple pattern matching if ContextAnalyzer unavailable
+            text_lower = text.lower()
+            
+            # Simple blog indicators
+            simple_indicators = ['why we', 'we switched', 'our journey', 'we decided']
+            if any(indicator in text_lower for indicator in simple_indicators):
+                return True
+        
+        return False
 
     # === Evidence calculation: Sentence length ===
 

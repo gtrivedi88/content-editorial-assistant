@@ -237,6 +237,12 @@ class SpecialCharsRule(BaseWordUsageRule):
         """
         pattern_lower = pattern.lower()
         
+        # === ZERO FALSE POSITIVE GUARD: COMPOUND WORDS ===
+        # Filter out hyphens that are part of compound words/adjectives (letter-hyphen-letter pattern)
+        if pattern_lower == '-':
+            if self._is_compound_word_hyphen(token):
+                return True  # Filter out - this is a legitimate compound word
+        
         # Override file path filtering for known time format patterns
         if pattern_lower in ['24/7', '7x24', '24x7x365']:
             # Apply all guards except file path filtering
@@ -282,6 +288,46 @@ class SpecialCharsRule(BaseWordUsageRule):
             return True
             
         return False  # No guards triggered - process this character
+    
+    def _is_compound_word_hyphen(self, token) -> bool:
+        """
+        Check if hyphen is part of a compound word/adjective (letter-hyphen-letter pattern).
+        Uses regex pattern /([a-zA-Z])-([a-zA-Z])/ as specified by user.
+        
+        Args:
+            token: SpaCy token object for the hyphen
+            
+        Returns:
+            bool: True if hyphen is part of a compound word, False otherwise
+        """
+        if not hasattr(token, 'doc') or not hasattr(token, 'i'):
+            return False
+            
+        doc = token.doc
+        token_index = token.i
+        
+        # Check if we have tokens before and after the hyphen
+        if token_index == 0 or token_index >= len(doc) - 1:
+            return False
+            
+        prev_token = doc[token_index - 1]
+        next_token = doc[token_index + 1]
+        
+        # Check for letter-hyphen-letter pattern with no spaces
+        # Pattern: ([a-zA-Z])-([a-zA-Z])
+        if (hasattr(prev_token, 'text') and hasattr(next_token, 'text') and
+            len(prev_token.text) > 0 and len(next_token.text) > 0):
+            
+            # Check if previous token ends with a letter
+            if prev_token.text[-1].isalpha():
+                # Check if next token starts with a letter  
+                if next_token.text[0].isalpha():
+                    # Check that there's no whitespace between tokens (they're adjacent)
+                    if (prev_token.idx + len(prev_token.text) == token.idx and
+                        token.idx + len(token.text) == next_token.idx):
+                        return True
+        
+        return False
     
     def _apply_surgical_guards_except_entities(self, token, context: Dict[str, Any]) -> bool:
         """

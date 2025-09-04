@@ -477,9 +477,27 @@ class PluralsRule(BaseLanguageRule):
 
     def _detect_potential_plural_modifier(self, token) -> bool:
         """Detect tokens that could potentially be plural noun modifiers."""
-        return (token.tag_ == 'NNS' and 
+        
+        # Early exit if basic conditions aren't met
+        if not (token.tag_ == 'NNS' and 
                 token.dep_ in ('compound', 'nsubj', 'amod') and
-                token.lemma_ != token.lower_)
+                token.lemma_ != token.lower_):
+            return False
+        
+        # ZERO FALSE POSITIVE GUARD: Check uncountable technical nouns exemption list
+        # Consult exemption list before flagging plural adjectives
+        if self._is_uncountable_technical_noun(token.text.lower()):
+            return False  # Don't flag uncountable technical nouns like 'data'
+        
+        return True
+    
+    def _is_uncountable_technical_noun(self, word: str) -> bool:
+        """Check if word is in the uncountable technical nouns exemption list."""
+        corrections = self.vocabulary_service.get_plurals_corrections()
+        uncountable_technical = corrections.get('uncountable_technical_nouns', {})
+        
+        # Check both exact word match and lemmatized forms
+        return word in uncountable_technical
 
     def _apply_linguistic_clues_plurals(self, evidence_score: float, potential_issue: Dict[str, Any], doc) -> float:
         """

@@ -447,6 +447,25 @@ class ArticlesRule(BaseLanguageRule):
         # Start with moderate evidence for missing article candidate
         evidence_score = 0.6  # Start with moderate evidence
         
+        # === INLINE LIST CLUE (EARLY EXIT FOR LIST ITEMS) ===
+        # Detect inline lists where articles are commonly and correctly omitted
+        if self._is_inline_list_item(noun_token, sentence, text, context):
+            evidence_score -= 0.5  # Major reduction for inline list items
+            # In list items, articles are often correctly omitted for brevity:
+            # "- Configuration options" (not "- The configuration options")
+            # "1. User authentication" (not "1. The user authentication")
+            # "* Database connections" (not "* The database connections")
+        
+        # === STYLE POLISH: FORMAL VERB + ABSTRACT NOUN CLUE ===
+        # Detect formal constructions where abstract nouns as direct objects appropriately omit articles
+        if self._is_formal_verb_abstract_noun_construction(noun_token, sentence):
+            evidence_score -= 0.4  # Significant reduction for formal linguistic constructions
+            # Examples of appropriate article omission in formal contexts:
+            # "This constitutes failure" (not "This constitutes a failure")
+            # "The system requires access" (not "The system requires an access")
+            # "The process involves risk" (not "The process involves a risk")
+            # "This introduces compliance" (not "This introduces a compliance")
+        
         # === STEP 2: LINGUISTIC CLUES (MICRO-LEVEL) ===
         evidence_score = self._apply_linguistic_clues_missing(evidence_score, noun_token, sentence)
         
@@ -460,6 +479,205 @@ class ArticlesRule(BaseLanguageRule):
         evidence_score = self._apply_feedback_clues_missing(evidence_score, noun_token, context)
         
         return max(0.0, min(1.0, evidence_score))  # Clamp to valid range
+
+    def _is_inline_list_item(self, noun_token, sentence, text: str, context: dict) -> bool:
+        """
+        Detect if a noun is the first word after an inline list marker.
+        
+        Uses regex to detect lines starting with:
+        - Hyphen/bullet: "- Configuration options"
+        - Asterisk: "* Database connections" 
+        - Numbers: "1. User authentication", "2) Setup process"
+        
+        Args:
+            noun_token: The noun token to check
+            sentence: Sentence containing the noun
+            text: Full document text
+            context: Document context
+            
+        Returns:
+            bool: True if noun follows an inline list marker
+        """
+        import re
+        
+        # Only check in paragraph blocks where inline lists commonly appear
+        block_type = context.get('block_type', 'paragraph') if context else 'paragraph'
+        if block_type not in ['paragraph', 'section', 'admonition']:
+            return False
+        
+        # Get the sentence text and find the noun's position within it
+        sentence_text = sentence.text
+        noun_start_in_sentence = noun_token.idx - sentence.start_char
+        
+        if noun_start_in_sentence < 0:
+            return False
+        
+        # Look at the text before the noun in the sentence
+        text_before_noun = sentence_text[:noun_start_in_sentence].strip()
+        
+        # Regex patterns for inline list markers
+        inline_list_patterns = [
+            r'^-\s+',           # "- Configuration"
+            r'^\*\s+',          # "* Database"
+            r'^\d+\.\s+',       # "1. User", "2. Admin"
+            r'^\d+\)\s+',       # "1) Setup", "2) Config"
+            r'^[a-zA-Z]\.\s+',  # "a. First", "A. Primary"
+            r'^[a-zA-Z]\)\s+',  # "a) Setup", "b) Config"
+            r'^[ivxlcdm]+\.\s+', # "i. First", "ii. Second" (roman numerals)
+            r'^[IVXLCDM]+\.\s+', # "I. Primary", "II. Secondary"
+        ]
+        
+        # Check if any pattern matches the beginning of the text before the noun
+        for pattern in inline_list_patterns:
+            if re.match(pattern, text_before_noun, re.IGNORECASE):
+                # Additional check: ensure the noun is reasonably close to the list marker
+                # (within first few words after the marker)
+                remaining_text = re.sub(pattern, '', text_before_noun, count=1, flags=re.IGNORECASE).strip()
+                
+                # If there are no words or only 1-2 words between marker and noun, it's likely a list item
+                word_count_between = len(remaining_text.split()) if remaining_text else 0
+                
+                if word_count_between <= 2:  # Allow some words like "the new configuration"
+                    return True
+        
+        # ENHANCED: Check the original text line containing this sentence
+        # spaCy may not include list markers in sentence.text, so we need to check the original line
+        sentence_start = sentence.start_char
+        sentence_end = sentence.start_char + len(sentence_text)
+        
+        # Find the line containing this sentence in the original text
+        lines_before_sentence = text[:sentence_start].split('\n')
+        current_line_start = sentence_start - len(lines_before_sentence[-1]) if len(lines_before_sentence) > 1 else 0
+        
+        # Find the end of the current line
+        remaining_text = text[sentence_start:]
+        next_newline = remaining_text.find('\n')
+        current_line_end = sentence_start + (next_newline if next_newline != -1 else len(remaining_text))
+        
+        # Extract the full line containing the sentence
+        full_line = text[current_line_start:current_line_end].strip()
+        
+        # Check if this full line starts with a list marker
+        for pattern in inline_list_patterns:
+            if re.match(pattern, full_line, re.IGNORECASE):
+                # Check if noun appears early in the line after the marker
+                marker_match = re.match(pattern, full_line, re.IGNORECASE)
+                if marker_match:
+                    text_after_marker = full_line[marker_match.end():].strip()
+                    words_after_marker = text_after_marker.split()
+                    
+                    # If noun is one of the first few words after the marker
+                    noun_text = noun_token.text.lower()
+                    if len(words_after_marker) > 0 and words_after_marker[0].lower() == noun_text:
+                        return True
+                    elif len(words_after_marker) > 1 and words_after_marker[1].lower() == noun_text:
+                        return True  # Allow for one word like "new" before the noun
+                    elif len(words_after_marker) > 2 and words_after_marker[2].lower() == noun_text:
+                        return True  # Allow for two words like "new technical" before the noun
+        
+        return False
+
+    def _is_formal_verb_abstract_noun_construction(self, noun_token, sentence) -> bool:
+        """
+        Detect formal verb + abstract noun constructions where articles are appropriately omitted.
+        
+        Analyzes the syntactic relationship between formal verbs and abstract nouns to identify
+        constructions where article omission is stylistically appropriate in formal writing.
+        
+        Examples of legitimate omission:
+        - "This constitutes failure" (formal legal/business language)
+        - "The system requires access" (technical specification)
+        - "The process involves risk" (formal assessment)
+        - "This introduces compliance" (regulatory language)
+        
+        Args:
+            noun_token: The noun token potentially missing an article
+            sentence: Sentence containing the noun
+            
+        Returns:
+            bool: True if noun is direct object of formal verb in abstract construction
+        """
+        if not noun_token or not hasattr(noun_token, 'head') or not hasattr(noun_token, 'dep_'):
+            return False
+        
+        # === FORMAL VERB PATTERNS ===
+        # List of formal verbs that often take abstract nouns without articles
+        formal_verbs = {
+            # Core formal verbs specified by user
+            'constitute', 'constitutes', 'constituting', 'constituted',
+            'introduce', 'introduces', 'introducing', 'introduced', 
+            'require', 'requires', 'requiring', 'required',
+            'involve', 'involves', 'involving', 'involved',
+            
+            # Extended formal verbs for broader coverage
+            'represent', 'represents', 'representing', 'represented',
+            'establish', 'establishes', 'establishing', 'established',
+            'demonstrate', 'demonstrates', 'demonstrating', 'demonstrated',
+            'ensure', 'ensures', 'ensuring', 'ensured',
+            'provide', 'provides', 'providing', 'provided',
+            'maintain', 'maintains', 'maintaining', 'maintained',
+            'achieve', 'achieves', 'achieving', 'achieved',
+            'facilitate', 'facilitates', 'facilitating', 'facilitated'
+        }
+        
+        # === ABSTRACT NOUN PATTERNS ===
+        # List of abstract nouns that often appear without articles in formal contexts
+        abstract_nouns = {
+            # Core abstract nouns specified by user
+            'failure', 'agreement', 'risk', 'access', 'compliance',
+            
+            # Extended abstract nouns for broader coverage
+            'success', 'progress', 'development', 'improvement', 'enhancement',
+            'security', 'stability', 'reliability', 'availability', 'performance',
+            'control', 'management', 'oversight', 'governance', 'supervision',
+            'consistency', 'compatibility', 'integration', 'implementation', 'deployment',
+            'validation', 'verification', 'authentication', 'authorization', 'approval',
+            'transparency', 'accountability', 'responsibility', 'liability', 'coverage',
+            'efficiency', 'effectiveness', 'productivity', 'scalability', 'flexibility',
+            'maintainability', 'sustainability', 'viability', 'functionality', 'capability'
+        }
+        
+        # === DEPENDENCY ANALYSIS ===
+        # Check if the noun is a direct object (dobj) of a formal verb
+        
+        noun_text = noun_token.text.lower()
+        
+        # First check if the noun is in our abstract noun list
+        if noun_text not in abstract_nouns:
+            return False
+        
+        # Check if noun is direct object
+        if noun_token.dep_ != 'dobj':
+            return False
+        
+        # Get the head verb (the verb this noun is a direct object of)
+        head_token = noun_token.head
+        
+        if not hasattr(head_token, 'lemma_') or not hasattr(head_token, 'pos_'):
+            return False
+        
+        # Check if head is a verb
+        if head_token.pos_ not in ['VERB', 'AUX']:
+            return False
+        
+        # Check if the head verb is in our formal verb list
+        head_lemma = head_token.lemma_.lower()
+        head_text = head_token.text.lower()
+        
+        if head_lemma in formal_verbs or head_text in formal_verbs:
+            return True
+        
+        # === ADDITIONAL PATTERN CHECKS ===
+        # Check for passive constructions: "is required by", "was established through"
+        if (head_token.dep_ == 'auxpass' or head_token.dep_ == 'nsubjpass'):
+            # Look for formal verb patterns in passive voice
+            for token in sentence:
+                if (hasattr(token, 'lemma_') and 
+                    token.lemma_.lower() in formal_verbs and
+                    token.pos_ in ['VERB', 'AUX']):
+                    return True
+        
+        return False
 
     # === LINGUISTIC CLUES FOR INCORRECT A/AN USAGE ===
 
