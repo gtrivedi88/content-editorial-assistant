@@ -689,4 +689,65 @@
         background: var(--app-neutral-200);
         border-color: var(--app-neutral-400);
     }
+}
+
+/* Additional responsive improvements for very small screens */
+@media (max-width: 575.98px) {
+    .modern-editor-section {
+        padding: 0;
+    }
+
+    .editor-container {
+        padding: 0.75rem;
+        max-width: 100%;
+    }
+
+    .content-editor-wrapper {
+        padding: 0;
+    }
+
+    .editor-card {
+        border-radius: 12px;
+        margin: 0;
+    }
+
+    .editor-header {
+        padding: 1.5rem 1rem;
+    }
+
+    .editor-title {
+        font-size: 1.25rem;
+    }
+
+    .editor-subtitle {
+        font-size: 0.9rem;
+        margin-top: 0.5rem;
+    }
+
+    .editor-body {
+        padding: 1.5rem 1rem;
+    }
+
+    .content-input,
+    .content-textarea {
+        font-size: 1rem;
+        padding: 0.875rem;
+    }
+
+    .content-textarea {
+        min-height: 200px;
+    }
+
+    .action-buttons {
+        padding: 1rem;
+        gap: 0.75rem;
+        flex-direction: column;
+    }
+
+    .btn-primary,
+    .btn-secondary {
+        width: 100%;
+        padding: 1rem;
+        font-size: 1rem;
+    }
 } 

@@ -27,32 +27,50 @@
 </head>
 <body class="pf-v5-c-body">
     <div class="pf-v5-c-page" id="page-layout-primary-nav">
-        <!-- Enhanced Masthead (Header) -->
-        <header class="pf-v5-c-masthead" id="page-masthead">
-            <span class="pf-v5-c-masthead__toggle">
-                <button class="pf-v5-c-button pf-m-plain" type="button" id="page-sidebar-toggle" aria-label="Toggle navigation" aria-expanded="true" aria-controls="page-sidebar">
-                    <i class="fas fa-bars" aria-hidden="true"></i>
+        <!-- World-Class Modern Header -->
+        <header class="modern-header" id="page-masthead">
+            <div class="header-left">
+                <!-- Navigation Toggle Button - Next to Brand -->
+                <button class="nav-toggle-btn" type="button" id="page-sidebar-toggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="page-sidebar">
+                    <div class="nav-toggle-icon">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
                 </button>
-            </span>
-            <div class="pf-v5-c-masthead__main">
-                <a class="pf-v5-c-masthead__brand" href="{{ url_for('index') }}">
-                    <h1 class="app-logo">
-                        <i class="fas fa-magic app-logo-icon" aria-hidden="true"></i>
-                        Content Editorial Assistant
-                    </h1>
+                
+                <!-- Brand Logo -->
+                <a class="brand-logo" href="{{ url_for('index') }}">
+                    <div class="logo-icon">
+                        <i class="fas fa-magic" aria-hidden="true"></i>
+                    </div>
+                    <div class="brand-text">
+                        <div class="brand-name">Content Editorial Platform</div>
+                        <div class="brand-subtitle">AI-Powered Writing Analysis</div>
+                    </div>
                 </a>
             </div>
-            <div class="pf-v5-c-masthead__content">
+            
+            <div class="header-right">
                 <div class="header-actions">
-                    <button class="header-action-btn" title="System Health" data-href="{{ url_for('health_check') }}">
+                    <button class="action-btn health-btn" title="System Health" data-href="{{ url_for('health_check') }}">
                         <i class="fas fa-heartbeat" aria-hidden="true"></i>
+                        <span class="action-label">Health</span>
                     </button>
-                    <button class="header-action-btn" title="Notifications">
+                    <button class="action-btn notifications-btn" title="Notifications">
                         <i class="fas fa-bell" aria-hidden="true"></i>
+                        <span class="action-label">Alerts</span>
+                        <span class="notification-badge">3</span>
                     </button>
-                    <button class="header-action-btn user-avatar" title="User Account">
-                        <i class="fas fa-user" aria-hidden="true"></i>
-                    </button>
+                    <div class="user-menu">
+                        <button class="action-btn user-btn" title="User Account">
+                            <div class="user-avatar">
+                                <i class="fas fa-user" aria-hidden="true"></i>
+                            </div>
+                            <span class="action-label">Account</span>
+                            <i class="fas fa-chevron-down dropdown-icon" aria-hidden="true"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </header>
@@ -186,8 +204,11 @@
      <script src="{{ url_for('static', filename='js/modular-compliance-display.js') }}"></script>
      <script src="{{ url_for('static', filename='js/modular-compliance-scoring.js') }}"></script>
      <script src="{{ url_for('static', filename='js/block-assembly.js') }}"></script>
-     <script src="{{ url_for('static', filename='js/core.js') }}"></script>
+         <script src="{{ url_for('static', filename='js/core.js') }}"></script>
     
+    <!-- World-class responsive navigation -->
+    <script src="{{ url_for('static', filename='js/navigation.js') }}"></script>
+   
     <!-- Minimal AsciiDoc Elements (Lists & Tables Only) -->
     <script src="{{ url_for('static', filename='js/elements-minimal.js') }}"></script>
     <script src="{{ url_for('static', filename='js/index-page.js') }}"></script>

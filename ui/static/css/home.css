@@ -240,14 +240,94 @@
     animation: fadeInUp 1s ease-out 0.4s both;
 }
 
-/* Responsive design - maintain Jobs' clean aesthetic */
-@media (max-width: 768px) {
+/* Enhanced Responsive design - mobile-first approach */
+
+/* Extra small devices (phones, less than 576px) */
+@media (max-width: 575.98px) {
+    .home-container {
+        padding: 0.75rem;
+        min-height: calc(100vh - 56px); /* Adjust for smaller header on mobile */
+    }
+
+    .hero-section {
+        margin-bottom: 2.5rem;
+        padding: 0 0.5rem;
+    }
+
+    .main-question {
+        font-size: 1.75rem;
+        margin-bottom: 1rem;
+        line-height: 1.2;
+    }
+
+    .hero-subtitle {
+        font-size: 1rem;
+        line-height: 1.4;
+        padding: 0 0.5rem;
+    }
+
+    .options-grid {
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+        max-width: 100%;
+        padding: 0;
+    }
+
+    .option-card {
+        padding: 1.75rem 1rem;
+        border-radius: 16px;
+        margin: 0;
+    }
+
+    .card-icon {
+        width: 60px;
+        height: 60px;
+        font-size: 1.5rem;
+        border-radius: 15px;
+        margin-bottom: 1rem;
+    }
+
+    .card-title {
+        font-size: 1.25rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .card-description {
+        font-size: 0.9rem;
+        margin-bottom: 1.25rem;
+        line-height: 1.4;
+    }
+
+    .card-action {
+        font-size: 0.875rem;
+    }
+
+    .home-footer {
+        margin-top: 2.5rem;
+        font-size: 0.8rem;
+        padding: 0 1rem;
+    }
+
+    .coming-soon-badge {
+        font-size: 0.65rem;
+        padding: 0.2rem 0.6rem;
+        top: 0.75rem;
+        right: 0.75rem;
+    }
+}
+
+/* Small devices (landscape phones, 576px and up) */
+@media (min-width: 576px) and (max-width: 767.98px) {
     .home-container {
         padding: 1rem;
     }
 
+    .hero-section {
+        margin-bottom: 3rem;
+    }
+
     .main-question {
-        font-size: 2.5rem;
+        font-size: 2.25rem;
     }
 
     .hero-subtitle {
@@ -260,7 +340,38 @@
     }
 
     .option-card {
-        padding: 2.5rem 1.5rem;
+        padding: 2.25rem 1.5rem;
+        border-radius: 20px;
+    }
+
+    .card-icon {
+        width: 65px;
+        height: 65px;
+        font-size: 1.6rem;
+    }
+}
+
+/* Medium devices (tablets, 768px and up) */
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .home-container {
+        padding: 1.5rem;
+    }
+
+    .main-question {
+        font-size: 2.75rem;
+    }
+
+    .hero-subtitle {
+        font-size: 1.25rem;
+    }
+
+    .options-grid {
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.75rem;
+    }
+
+    .option-card {
+        padding: 2.5rem 1.75rem;
     }
 
     .card-icon {
@@ -270,13 +381,12 @@
     }
 }
 
-@media (max-width: 480px) {
-    .main-question {
-        font-size: 2rem;
-    }
-
-    .option-card {
-        padding: 2rem 1.25rem;
+/* Large devices (desktops, 992px and up) */
+@media (min-width: 992px) and (max-width: 1199.98px) {
+    .options-grid {
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 2rem;
+        max-width: 1000px;
     }
 }
 

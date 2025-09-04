@@ -1024,4 +1024,112 @@
     background: var(--app-neutral-200);
     transform: translateY(-1px);
     box-shadow: var(--app-shadow-sm);
-} 
+}
+
+/* Enhanced Responsive Design for Blog Creation Page */
+
+/* Extra small devices (phones, less than 576px) */
+@media (max-width: 575.98px) {
+    .blog-form-section {
+        padding: 1.5rem 1rem;
+        border-radius: 12px;
+    }
+
+    .section-title {
+        font-size: 1.25rem;
+    }
+
+    .section-description {
+        font-size: 0.9rem;
+    }
+
+    .form-control,
+    .form-textarea {
+        font-size: 1rem;
+        padding: 0.875rem;
+    }
+
+    .form-textarea {
+        min-height: 100px;
+    }
+
+    .radio-group,
+    .checkbox-group {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+
+    .radio-option,
+    .checkbox-option {
+        padding: 0.875rem;
+        border-radius: 8px;
+    }
+
+    .radio-content {
+        font-size: 0.9rem;
+    }
+
+    .form-actions {
+        flex-direction: column;
+        gap: 0.75rem;
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+    }
+
+    .btn-primary,
+    .btn-secondary {
+        width: 100%;
+        padding: 1rem;
+        font-size: 1rem;
+    }
+
+    .url-input-group {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+    }
+
+    .btn-add-url,
+    .btn-remove-url {
+        width: 100%;
+        height: 48px;
+        max-width: 200px;
+        align-self: center;
+    }
+}
+
+/* Small devices (landscape phones, 576px and up) */
+@media (min-width: 576px) and (max-width: 767.98px) {
+    .blog-form-section {
+        padding: 2rem 1.5rem;
+    }
+
+    .radio-group,
+    .checkbox-group {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .form-actions {
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .btn-primary,
+    .btn-secondary {
+        width: 100%;
+        max-width: 300px;
+    }
+}
+
+/* Medium devices (tablets, 768px and up) */
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .radio-group {
+        grid-template-columns: 1fr;
+    }
+
+    .checkbox-group {
+        grid-template-columns: 1fr;
+    }
+}
