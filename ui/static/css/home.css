@@ -1,15 +1,10 @@
 .home-container {
-    min-height: calc(100vh - 64px);
+    /* REMOVED: min-height to prevent double scroll - parent handles height */
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: 2rem;
-    background: 
-        radial-gradient(circle at 20% 80%, rgba(0, 122, 255, 0.03) 0%, transparent 50%),
-        radial-gradient(circle at 80% 20%, rgba(88, 86, 214, 0.02) 0%, transparent 50%),
-        linear-gradient(180deg, rgba(249, 250, 251, 0.8) 0%, rgba(255, 255, 255, 0.9) 100%);
-    background-attachment: fixed;
 }
 
 /* Hero Section - Jobs style emphasis on the key question */
@@ -246,7 +241,7 @@
 @media (max-width: 575.98px) {
     .home-container {
         padding: 0.75rem;
-        min-height: calc(100vh - 56px); /* Adjust for smaller header on mobile */
+        /* REMOVED: min-height to prevent double scroll - parent handles height */
     }
 
     .hero-section {

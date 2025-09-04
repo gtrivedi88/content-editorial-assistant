@@ -509,6 +509,24 @@
     display: none;
 }
 
+/* FIX: Prevent double scroll bars - control page overflow behavior */
+.pf-v5-c-page {
+    height: 100vh !important;
+    height: 100dvh !important;
+    overflow: hidden !important; /* Prevent page-level scrolling */
+}
+
+.pf-v5-c-page__main {
+    overflow: hidden !important; /* Prevent main container scrolling */
+    height: 100% !important;
+}
+
+.pf-v5-c-page__main-section {
+    overflow: auto;
+    height: 100%;
+    max-height: calc(100vh - 80px);
+}
+
 /* Page Header Styling */
 .page-hero {
     background: linear-gradient(135deg, 
@@ -692,6 +710,11 @@
         justify-content: center;
     }
 
+    /* FIX: Adjust content height for tablet header */
+    .pf-v5-c-page__main-section {
+        max-height: calc(100vh - 72px);
+    }
+
     .pf-v5-c-page__sidebar {
         position: fixed;
         top: 72px; /* Match tablet header height */
@@ -741,6 +764,11 @@
     .modern-header {
         height: 64px;
         padding: 0 1rem;
+    }
+
+    /* FIX: Adjust content height for mobile header */
+    .pf-v5-c-page__main-section {
+        max-height: calc(100vh - 64px);
     }
 
     .pf-v5-c-page__sidebar {
@@ -818,6 +846,11 @@
     .modern-header {
         height: 60px;
         padding: 0 0.75rem;
+    }
+
+    /* FIX: Adjust content height for extra small mobile header */
+    .pf-v5-c-page__main-section {
+        max-height: calc(100vh - 60px);
     }
 
     .pf-v5-c-page__sidebar {
