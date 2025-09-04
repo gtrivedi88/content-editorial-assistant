@@ -396,6 +396,22 @@ class PrefixesRule(BaseLanguageRule):
         
         primary_token = tokens[0]
         
+        # Extract the base word after the prefix for analysis
+        base_word = full_word.split('-')[1] if '-' in full_word else full_word[len(prefix):]
+        
+        # === READABILITY CLUES FOR STYLISTIC CHOICES ===
+        # Fine-tuning: Reduce evidence for closing prefix when word following prefix is:
+        # 1. A known technical term, OR 2. Starts with a capital letter
+        # This accounts for stylistic choices made for readability
+        
+        # Check if base word is a known technical term
+        if self._is_known_technical_term(base_word.lower(), primary_token):
+            evidence_score -= 0.3  # Reduce evidence for closing to preserve technical readability
+        
+        # Check if base word starts with capital letter (proper nouns, acronyms, etc.)
+        if base_word and base_word[0].isupper():
+            evidence_score -= 0.25  # Reduce evidence for closing to preserve readability with capitalized terms
+        
         # === PENN TREEBANK TAG ANALYSIS ===
         # Detailed grammatical analysis using Penn Treebank tags
         if hasattr(primary_token, 'tag_'):
@@ -486,6 +502,89 @@ class PrefixesRule(BaseLanguageRule):
             evidence_score -= 0.2  # Difficult combinations may need hyphens
         
         return max(0.0, min(1.0, evidence_score))  # Clamp to valid range
+
+    def _is_known_technical_term(self, word_lemma: str, word_token: 'Token') -> bool:
+        """
+        Check if a word is a known technical term that may benefit from hyphenation for readability.
+        
+        Args:
+            word_lemma: The lemmatized form of the word
+            word_token: The SpaCy token for additional analysis
+            
+        Returns:
+            bool: True if the word is a known technical term
+        """
+        # Common technical terms that often appear after prefixes and may benefit from hyphenation
+        technical_terms = {
+            # Programming and software development
+            'threaded', 'processing', 'processor', 'user', 'platform', 'core', 
+            'function', 'functional', 'purpose', 'stage', 'step', 'level', 'dimensional', 'process',
+            'tenant', 'cloud', 'region', 'zone', 'service', 'tier', 'layer', 'component', 'module',
+            'agent', 'client', 'server', 'node', 'cluster', 'instance', 'container', 'runtime',
+            'framework', 'library', 'plugin', 'extension', 'compiler', 'debugger', 'profiler',
+            'parser', 'generator', 'validator', 'transformer', 'converter', 'renderer', 'engine',
+            
+            # System and infrastructure
+            'domain', 'network', 'protocol', 'interface', 'endpoint', 'gateway', 'proxy', 'balancer',
+            'monitor', 'logger', 'tracer', 'analyzer', 'scanner', 'detector', 'collector', 'aggregator',
+            'synchronizer', 'scheduler', 'dispatcher', 'handler', 'controller', 'manager', 'driver',
+            'adapter', 'wrapper', 'bridge', 'router', 'switch', 'firewall', 'guard', 'filter',
+            
+            # Data and storage
+            'database', 'storage', 'repository', 'cache', 'buffer', 'queue', 'stack', 'heap',
+            'index', 'table', 'schema', 'model', 'entity', 'record', 'field', 'attribute',
+            'property', 'parameter', 'argument', 'variable', 'constant', 'literal', 'expression',
+            
+            # Security and authentication
+            'authentication', 'authorization', 'encryption', 'decryption', 'hashing', 'signing',
+            'validation', 'verification', 'certificate', 'credential', 'token', 'session', 'cookie',
+            'permission', 'privilege', 'access', 'control', 'policy', 'rule', 'filter', 'barrier',
+            
+            # Business and enterprise terms
+            'organization', 'workspace', 'environment', 'deployment', 'release', 'version',
+            'configuration', 'setting', 'preference', 'profile', 'template', 'pattern', 'strategy',
+            'workflow', 'pipeline', 'procedure', 'operation', 'transaction', 'batch',
+            
+            # Technical concepts
+            'algorithm', 'optimization', 'performance', 'scalability', 'reliability', 'availability',
+            'consistency', 'integrity', 'redundancy', 'fault', 'error', 'exception', 'warning',
+            'message', 'notification', 'alert', 'event', 'signal', 'trigger', 'callback', 'hook',
+            
+            # API and web development
+            'request', 'response', 'header', 'body', 'payload', 'metadata', 'resource', 'representation',
+            'content', 'media', 'format', 'encoding', 'compression', 'serialization', 'deserialization'
+        }
+        
+        # Check if the word lemma is in our technical terms list
+        if word_lemma in technical_terms:
+            return True
+        
+        # Check using existing established technical hyphenation detection
+        if self._is_established_technical_hyphenation(f"{word_lemma}"):
+            return True
+        
+        # Check if the word is a named entity (often technical terms)
+        if hasattr(word_token, 'ent_type_') and word_token.ent_type_:
+            entity_type = word_token.ent_type_
+            # These entity types often indicate technical terms
+            if entity_type in ['PRODUCT', 'ORG', 'FAC', 'LANGUAGE', 'EVENT']:
+                return True
+        
+        # Check if the word has technical morphological characteristics
+        if hasattr(word_token, 'pos_') and word_token.pos_ in ['NOUN', 'PROPN']:
+            # Technical terms are often nouns or proper nouns
+            # Check for common technical suffixes
+            technical_suffixes = {
+                'tion', 'sion', 'ment', 'ness', 'ity', 'ty', 'ism', 'ist', 'er', 'or', 'ar',
+                'ing', 'ed', 'able', 'ible', 'ful', 'less', 'ous', 'ious', 'eous', 'ic', 'al'
+            }
+            
+            for suffix in technical_suffixes:
+                if word_lemma.endswith(suffix) and len(word_lemma) > len(suffix) + 2:
+                    # Long words with technical suffixes are often technical terms
+                    return True
+        
+        return False
 
     def _apply_structural_clues_prefix(self, evidence_score: float, prefix: str, full_word: str, context: dict) -> float:
         """

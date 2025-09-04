@@ -133,6 +133,12 @@ class CapitalizationRule(BaseLanguageRule):
         if evidence_score == 0.0:
             return 0.0  # No evidence, skip this token
         
+        # === ZERO FALSE POSITIVE GUARD FOR TECHNICAL NOUNS ===
+        # Perfect opportunity to use a zero false positive guard for common technical nouns
+        # that should never be flagged as needing capitalization, even if NER model misclassifies them
+        if self._is_common_technical_noun_never_capitalize(token):
+            return 0.0  # This will prevent this category of error from ever appearing again
+        
         # === STEP 2: LINGUISTIC CLUES (MICRO-LEVEL) ===
         evidence_score = self._apply_linguistic_clues_capitalization(evidence_score, token, sentence)
         
@@ -535,6 +541,161 @@ class CapitalizationRule(BaseLanguageRule):
                 evidence_score += 0.2
         
         return evidence_score
+
+    # === ZERO FALSE POSITIVE GUARD METHOD ===
+    
+    def _is_common_technical_noun_never_capitalize(self, token) -> bool:
+        """
+        Zero false positive guard for common technical nouns that should never be flagged
+        for capitalization, even if the NER model misclassifies them as proper nouns.
+        
+        This prevents a entire category of false positives from appearing.
+        
+        Args:
+            token: The SpaCy token to check
+            
+        Returns:
+            bool: True if this is a common technical noun that should never be capitalized
+        """
+        
+        # Get both the original text and lemmatized form for comprehensive checking
+        word_text = token.text.lower()
+        word_lemma = getattr(token, 'lemma_', word_text).lower()
+        
+        # Comprehensive list of common technical nouns that should never be flagged
+        # for capitalization, even if NER misclassifies them
+        technical_nouns_never_capitalize = {
+            # Core infrastructure and systems
+            'database', 'server', 'system', 'application', 'service', 'client', 
+            'network', 'protocol', 'interface', 'endpoint', 'gateway', 'proxy',
+            'router', 'switch', 'firewall', 'load', 'balancer', 'cache', 'buffer',
+            'storage', 'repository', 'backup', 'recovery', 'disaster', 'failover',
+            
+            # Software development terms
+            'framework', 'library', 'module', 'component', 'plugin', 'extension',
+            'compiler', 'interpreter', 'runtime', 'engine', 'parser', 'generator',
+            'validator', 'transformer', 'converter', 'renderer', 'processor',
+            'handler', 'controller', 'manager', 'driver', 'adapter', 'wrapper',
+            'bridge', 'factory', 'builder', 'observer', 'singleton', 'facade',
+            
+            # Data and information
+            'data', 'information', 'content', 'metadata', 'schema', 'model',
+            'entity', 'object', 'record', 'field', 'attribute', 'property',
+            'parameter', 'argument', 'variable', 'constant', 'value', 'reference',
+            'pointer', 'index', 'key', 'identifier', 'token', 'session', 'cookie',
+            
+            # API and web development
+            'api', 'rest', 'soap', 'json', 'xml', 'html', 'css', 'javascript',
+            'http', 'https', 'url', 'uri', 'endpoint', 'request', 'response',
+            'header', 'body', 'payload', 'query', 'path', 'route', 'middleware',
+            'webhook', 'callback', 'promise', 'async', 'sync', 'thread', 'process',
+            
+            # Security and authentication  
+            'security', 'authentication', 'authorization', 'encryption', 'decryption',
+            'certificate', 'credential', 'password', 'username', 'permission',
+            'privilege', 'role', 'policy', 'rule', 'access', 'control', 'audit',
+            'compliance', 'vulnerability', 'threat', 'attack', 'malware', 'virus',
+            
+            # DevOps and deployment
+            'deployment', 'container', 'docker', 'kubernetes', 'cluster', 'node',
+            'pod', 'service', 'ingress', 'namespace', 'resource', 'limit', 'quota',
+            'scaling', 'monitoring', 'logging', 'alerting', 'dashboard', 'metric',
+            'pipeline', 'workflow', 'automation', 'orchestration', 'provisioning',
+            
+            # Database and storage
+            'table', 'column', 'row', 'query', 'transaction', 'commit', 'rollback',
+            'join', 'union', 'select', 'insert', 'update', 'delete', 'create',
+            'alter', 'drop', 'constraint', 'foreign', 'primary', 'unique', 'null',
+            'view', 'procedure', 'function', 'trigger', 'cursor', 'batch',
+            
+            # Cloud and virtualization
+            'cloud', 'virtual', 'instance', 'machine', 'volume', 'snapshot',
+            'image', 'template', 'region', 'zone', 'availability', 'redundancy',
+            'elasticity', 'scalability', 'reliability', 'availability', 'durability',
+            'consistency', 'partition', 'replication', 'synchronization', 'backup',
+            
+            # Performance and optimization
+            'performance', 'optimization', 'efficiency', 'latency', 'throughput',
+            'bandwidth', 'capacity', 'utilization', 'bottleneck', 'profiling',
+            'benchmark', 'stress', 'load', 'concurrency', 'parallelism', 'async',
+            'queue', 'stack', 'heap', 'garbage', 'collection', 'memory', 'cpu',
+            
+            # Testing and quality
+            'testing', 'test', 'unit', 'integration', 'functional', 'performance',
+            'regression', 'acceptance', 'validation', 'verification', 'mock',
+            'stub', 'fixture', 'assertion', 'coverage', 'quality', 'assurance',
+            'defect', 'bug', 'issue', 'incident', 'problem', 'resolution',
+            
+            # Project and process management
+            'project', 'task', 'milestone', 'deliverable', 'requirement', 'specification',
+            'design', 'architecture', 'pattern', 'practice', 'methodology', 'process',
+            'procedure', 'workflow', 'lifecycle', 'phase', 'stage', 'iteration',
+            'sprint', 'release', 'version', 'build', 'deployment', 'rollback',
+            
+            # Business and domain terms
+            'business', 'domain', 'model', 'logic', 'rule', 'constraint', 'validation',
+            'transformation', 'mapping', 'integration', 'migration', 'import', 'export',
+            'synchronization', 'replication', 'aggregation', 'calculation', 'report',
+            'dashboard', 'analytics', 'insight', 'intelligence', 'decision', 'support',
+            
+            # Common technical adjectives that get noun-ified
+            'technical', 'digital', 'electronic', 'automated', 'manual', 'dynamic',
+            'static', 'active', 'passive', 'public', 'private', 'internal', 'external',
+            'local', 'remote', 'distributed', 'centralized', 'decentralized', 'hybrid',
+            
+            # File and format types
+            'file', 'document', 'format', 'extension', 'type', 'binary', 'text',
+            'configuration', 'settings', 'preferences', 'options', 'parameters',
+            'properties', 'attributes', 'tags', 'labels', 'annotations', 'comments'
+        }
+        
+        # Check both the original word and its lemma
+        if word_text in technical_nouns_never_capitalize:
+            return True
+        if word_lemma in technical_nouns_never_capitalize:
+            return True
+        
+        # Additional pattern-based checks for technical terms
+        # Check for common technical compound patterns
+        if self._is_technical_compound_pattern(word_text):
+            return True
+        
+        # Check for file extensions and technical acronyms
+        if self._is_technical_file_or_acronym(word_text):
+            return True
+        
+        return False
+    
+    def _is_technical_compound_pattern(self, word: str) -> bool:
+        """Check if word follows technical compound patterns that shouldn't be capitalized."""
+        # Common technical compound patterns
+        technical_patterns = [
+            # Underscore patterns (snake_case)
+            lambda w: '_' in w and w.islower(),
+            # Hyphenated technical terms
+            lambda w: '-' in w and w.islower() and len(w) > 4,
+            # Contains numbers (version numbers, IDs, etc.)
+            lambda w: any(c.isdigit() for c in w) and w.islower(),
+            # Common technical suffixes
+            lambda w: any(w.endswith(suffix) for suffix in ['ing', 'er', 'ed', 'ly', 'tion', 'sion']),
+            # All lowercase technical terms longer than 3 characters
+            lambda w: w.islower() and len(w) > 3 and any(c.isalpha() for c in w)
+        ]
+        
+        return any(pattern(word) for pattern in technical_patterns)
+    
+    def _is_technical_file_or_acronym(self, word: str) -> bool:
+        """Check if word is a file extension or technical acronym that shouldn't be capitalized."""
+        # Common technical file extensions and acronyms that are often lowercase
+        technical_extensions_acronyms = {
+            'html', 'css', 'js', 'json', 'xml', 'yaml', 'yml', 'toml', 'ini',
+            'sql', 'csv', 'tsv', 'log', 'txt', 'md', 'pdf', 'doc', 'docx',
+            'http', 'https', 'ftp', 'ssh', 'ssl', 'tls', 'tcp', 'udp', 'ip',
+            'dns', 'dhcp', 'smtp', 'imap', 'pop', 'oauth', 'jwt', 'api', 'sdk',
+            'ide', 'gui', 'cli', 'orm', 'mvc', 'mvp', 'crud', 'rest', 'soap'
+        }
+        
+        return word in technical_extensions_acronyms
 
     # === HELPER METHODS ===
 
