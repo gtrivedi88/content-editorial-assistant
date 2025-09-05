@@ -21403,12 +21403,6 @@ label.pf-v5-c-menu__item:where(:not([disabled], .pf-m-disabled, .pf-m-aria-disab
   max-height: 100%;
   background-color: var(--pf-v5-c-page--BackgroundColor);
 }
-@media (min-width: 1200px) {
-  .pf-v5-c-page {
-    grid-template-areas: "header header" "nav main";
-    grid-template-columns: max-content 1fr;
-  }
-}
 
 .pf-v5-c-page__header,
 .pf-v5-c-page > .pf-v5-c-masthead {

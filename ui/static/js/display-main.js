@@ -73,8 +73,8 @@ function displayAnalysisResults(analysis, content, structuralBlocks = null) {
         displayModularComplianceResults(analysis.modular_compliance, analysis.content_type);
     }
     
-    // Add smooth scroll behavior
-    resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // Add smooth scroll behavior with offset to account for sticky header
+    resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
     
     // Initialize expandable sections and other interactive elements
     initializeExpandableSections();
@@ -312,7 +312,7 @@ function displayRewriteResults(data) {
         </div>
     `;
 
-    rewriteContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    rewriteContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 // Helper function to copy rewritten content
@@ -394,7 +394,7 @@ function displayRefinementResults(data) {
         </div>
     `;
 
-    rewriteContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    rewriteContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 // Utility functions for enhanced functionality
@@ -408,7 +408,7 @@ function scrollToStatistics() {
 function scrollToErrorSummary() {
     const errorSummary = document.querySelector('[data-error-summary]');
     if (errorSummary) {
-        errorSummary.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        errorSummary.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 }
 

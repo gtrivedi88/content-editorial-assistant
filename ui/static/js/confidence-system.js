@@ -87,13 +87,13 @@ function safeBase64Decode(encodedStr) {
  */
 function getSeverityInfo(percentage) {
     if (percentage >= 85) {
-        return { keyword: 'Critical', class: 'pf-m-danger', icon: 'fas fa-exclamation-triangle' };
+        return { keyword: 'Critical' };
     } else if (percentage >= 70) {
-        return { keyword: 'Error', class: 'pf-m-danger', icon: 'fas fa-times-circle' };
+        return { keyword: 'Error' };
     } else if (percentage >= 50) {
-        return { keyword: 'Warning', class: 'pf-m-warning', icon: 'fas fa-exclamation-circle' };
+        return { keyword: 'Warning' };
     } else {
-        return { keyword: 'Suggestion', class: 'pf-m-info', icon: 'fas fa-lightbulb' };
+        return { keyword: 'Suggestion' };
     }
 }
 

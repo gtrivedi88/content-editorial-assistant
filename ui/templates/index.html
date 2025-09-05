@@ -151,18 +151,8 @@ Our AI will analyze your writing for style, grammar, readability, and structure.
 {% block extra_js %}
 <!-- Index page JavaScript is loaded via index-page.js -->
 <script>
-// Enhanced mobile navigation toggle
-document.addEventListener('DOMContentLoaded', function() {
-    const sidebarToggle = document.getElementById('page-sidebar-toggle');
-    const sidebar = document.getElementById('page-sidebar');
-    
-    if (sidebarToggle && sidebar) {
-        sidebarToggle.addEventListener('click', function() {
-            sidebar.classList.toggle('pf-m-expanded');
-            const isExpanded = sidebar.classList.contains('pf-m-expanded');
-            sidebarToggle.setAttribute('aria-expanded', isExpanded);
-        });
-    }
+// Mobile navigation is handled by the main ResponsiveNavigation class in navigation.js
+// This ensures consistent behavior across all pages and prevents conflicts
 
     // Enhanced input method tabs
     const inputTabs = document.querySelectorAll('.input-tab');
