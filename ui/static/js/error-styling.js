@@ -211,14 +211,6 @@ function createInlineError(error) {
                 <span class="pf-v5-u-font-weight-bold">${formatRuleType(error.type || error.error_type)}</span>
                 <div class="confidence-indicators">
                     ${confidenceBadge}
-                    ${error.enhanced_validation_available ? `
-                        <span class="pf-v5-c-label pf-m-compact pf-m-blue pf-v5-u-ml-xs">
-                            <span class="pf-v5-c-label__content">
-                                <i class="fas fa-robot pf-v5-u-mr-xs"></i>
-                                Enhanced
-                            </span>
-                        </span>
-                    ` : ''}
                 </div>
             </div>
             <div class="pf-v5-c-alert__description">

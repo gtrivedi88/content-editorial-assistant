@@ -81,7 +81,24 @@ function safeBase64Decode(encodedStr) {
 }
 
 /**
- * Create confidence indicator badge with tooltip
+ * Get severity keyword and styling based on percentage
+ * @param {number} percentage - Error percentage (0-100)
+ * @returns {Object} - Object containing keyword, class, and icon
+ */
+function getSeverityInfo(percentage) {
+    if (percentage >= 85) {
+        return { keyword: 'Critical', class: 'pf-m-danger', icon: 'fas fa-exclamation-triangle' };
+    } else if (percentage >= 70) {
+        return { keyword: 'Error', class: 'pf-m-danger', icon: 'fas fa-times-circle' };
+    } else if (percentage >= 50) {
+        return { keyword: 'Warning', class: 'pf-m-warning', icon: 'fas fa-exclamation-circle' };
+    } else {
+        return { keyword: 'Suggestion', class: 'pf-m-info', icon: 'fas fa-lightbulb' };
+    }
+}
+
+/**
+ * Create confidence indicator badge with tooltip and severity keyword
  * @param {number} confidenceScore - Confidence score between 0 and 1
  * @param {boolean} showTooltip - Whether to include tooltip
  * @returns {string} - HTML string for confidence badge
@@ -91,6 +108,9 @@ function createConfidenceBadge(confidenceScore, showTooltip = true) {
     const config = CONFIDENCE_LEVELS[level];
     const percentage = Math.round(confidenceScore * 100);
     
+    // Get severity information based on percentage
+    const severityInfo = getSeverityInfo(percentage);
+    
     const tooltipId = `confidence-tooltip-${Math.random().toString(36).substr(2, 9)}`;
     
     return `
@@ -98,6 +118,12 @@ function createConfidenceBadge(confidenceScore, showTooltip = true) {
             <span class="pf-v5-c-label__content">
                 <i class="${config.icon} pf-v5-u-mr-xs"></i>
                 ${percentage}%
+            </span>
+        </span>
+        <span class="pf-v5-c-label pf-m-compact ${severityInfo.class} pf-v5-u-ml-xs">
+            <span class="pf-v5-c-label__content">
+                <i class="${severityInfo.icon} pf-v5-u-mr-xs"></i>
+                ${severityInfo.keyword}
             </span>
         </span>
     `;
@@ -205,20 +231,8 @@ function createUserFriendlyConfidenceContent(error, confidenceScore, level, conf
         }
     }
     
-    // Add enhanced validation badge if available
+    // Enhanced validation badge removed per user request
     let enhancedBadge = '';
-    if (error.enhanced_validation_available) {
-        enhancedBadge = `
-            <div class="pf-v5-u-mb-md">
-                <span class="pf-v5-c-label pf-m-compact pf-m-blue">
-                    <span class="pf-v5-c-label__content">
-                        <i class="fas fa-robot pf-v5-u-mr-xs"></i>
-                        Enhanced AI Validation
-                    </span>
-                </span>
-            </div>
-        `;
-    }
     
     return `
         ${enhancedBadge}
@@ -412,6 +426,7 @@ if (typeof window !== 'undefined') {
         extractConfidenceScore,
         safeBase64Encode,
         safeBase64Decode,
+        getSeverityInfo,
         createConfidenceBadge,
         createConfidenceTooltip,
         createUserFriendlyConfidenceContent,
