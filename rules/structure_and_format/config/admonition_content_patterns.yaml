@@ -1,0 +1,343 @@
+# Admonition Content Rule Configuration
+# Comprehensive patterns for admonition content validation with evidence-based scoring
+
+prohibited_content_patterns:
+  
+  # === CODE BLOCKS AND INLINE CODE ===
+  code_blocks:
+    pattern: "```[\\s\\S]*?```|`[^`\\n]+`"
+    evidence: 0.9
+    severity: "high"
+    message: "Code blocks should not be placed inside admonitions"
+    description: "Code examples belong in dedicated code blocks or procedure sections"
+    
+  # === PROCEDURAL STEPS ===
+  procedure_steps:
+    pattern: "^\\s*\\d+\\.\\s+.+"
+    evidence: 0.8
+    severity: "medium"
+    message: "Procedural steps belong in procedure sections, not admonitions"
+    description: "Step-by-step instructions should be in dedicated procedure blocks"
+    
+  # === COMPLEX TABLES ===
+  complex_tables:
+    pattern: "\\|.*\\|.*\\|"
+    evidence: 0.7
+    severity: "medium"
+    message: "Complex tables should not be in admonitions"
+    description: "Tables are too complex for brief admonition content"
+    
+  # === COMMAND BLOCKS ===
+  command_blocks:
+    pattern: "\\$\\s+\\w+.*(?:\\n\\s*\\$\\s+\\w+.*)*"
+    evidence: 0.8
+    severity: "medium"
+    message: "Command examples should be in code blocks, not admonitions"
+    description: "Commands belong in dedicated example or code sections"
+    
+  # === FILE PATH REFERENCES ===
+  file_paths:
+    pattern: "/[\\w\\-./]+|[A-Z]:\\\\[\\w\\-\\\\/.]+|\\w+\\.\\w+"
+    evidence: 0.5
+    severity: "low"
+    message: "Complex file references may be better as examples"
+    description: "Simple file references are OK, complex paths should be examples"
+    
+  # === COMPLEX FORMATTING ===
+  complex_formatting:
+    pattern: "[*_~`]{2,}|[<>{}\\[\\]]+"
+    evidence: 0.6
+    severity: "low"
+    message: "Complex formatting reduces admonition readability"
+    description: "Keep admonition formatting simple and clean"
+    
+  # === LONG URLS ===
+  long_urls:
+    pattern: "https?://[^\\s]{50,}"
+    evidence: 0.4
+    severity: "low"
+    message: "Very long URLs should be shortened or moved"
+    description: "Long URLs can break admonition formatting"
+
+# === ADMONITION TYPE DEFINITIONS ===
+# Define appropriate content for each admonition type
+
+admonition_types:
+  
+  note:
+    keywords: ["note", "info", "information"]
+    appropriate_content:
+      - "explanations"
+      - "clarifications" 
+      - "additional_information"
+      - "context"
+    inappropriate_content:
+      - "warnings"
+      - "procedures"
+      - "code_examples"
+      - "complex_instructions"
+    max_word_count: 80
+    max_sentences: 3
+    tone: "informational"
+    
+  important:
+    keywords: ["important", "attention", "key"]
+    appropriate_content:
+      - "key_points"
+      - "critical_information"
+      - "emphasis"
+      - "requirements"
+    inappropriate_content:
+      - "code_examples"
+      - "detailed_procedures"
+      - "long_explanations"
+    max_word_count: 60
+    max_sentences: 2
+    tone: "emphatic"
+    
+  warning:
+    keywords: ["warning", "caution", "danger", "alert"]
+    appropriate_content:
+      - "risks"
+      - "precautions"
+      - "consequences"
+      - "safety_information"
+    inappropriate_content:
+      - "code_examples"
+      - "procedures"
+      - "explanations"
+      - "feature_descriptions"
+    max_word_count: 70
+    max_sentences: 3
+    tone: "cautionary"
+    
+  tip:
+    keywords: ["tip", "hint", "suggestion", "pro-tip"]
+    appropriate_content:
+      - "helpful_advice"
+      - "shortcuts"
+      - "best_practices"
+      - "optimization_hints"
+    inappropriate_content:
+      - "warnings"
+      - "complex_procedures"
+      - "detailed_explanations"
+    max_word_count: 90
+    max_sentences: 3
+    tone: "helpful"
+    
+  caution:
+    keywords: ["caution", "careful", "attention"]
+    appropriate_content:
+      - "mild_warnings"
+      - "precautions"
+      - "careful_considerations"
+    inappropriate_content:
+      - "code_examples"
+      - "procedures"
+      - "feature_explanations"
+    max_word_count: 65
+    max_sentences: 2
+    tone: "cautionary"
+
+# === CONTENT LENGTH THRESHOLDS ===
+# Define maximum lengths for different aspects of admonition content
+
+length_thresholds:
+  
+  # Word count limits
+  word_count:
+    absolute_maximum: 150       # Never exceed this
+    recommended_maximum: 100    # Preferred limit
+    optimal_range: [20, 80]     # Best range for readability
+    
+  # Line count limits  
+  line_count:
+    absolute_maximum: 15        # Never exceed this
+    recommended_maximum: 10     # Preferred limit
+    optimal_range: [2, 6]       # Best range for scannability
+    
+  # Character count limits
+  character_count:
+    absolute_maximum: 1200      # Never exceed this
+    recommended_maximum: 800    # Preferred limit
+    optimal_range: [100, 600]   # Best range for readability
+    
+  # Sentence count limits
+  sentence_count:
+    absolute_maximum: 8         # Never exceed this
+    recommended_maximum: 5      # Preferred limit
+    optimal_range: [1, 3]       # Best range for focus
+
+# === CONTENT ANALYSIS SETTINGS ===
+# Configure how content is analyzed for appropriateness
+
+content_analysis:
+  
+  # Linguistic analysis
+  linguistic_indicators:
+    warning_words: ["danger", "risk", "warning", "caution", "avoid", "prevent"]
+    instruction_words: ["install", "configure", "run", "execute", "download", "setup"]
+    explanation_words: ["because", "therefore", "however", "although", "moreover"]
+    code_indicators: ["function", "class", "method", "variable", "parameter"]
+    
+  # Structural analysis
+  structural_indicators:
+    multiple_paragraphs: 0.3    # Evidence of excessive complexity
+    multiple_sentences: 0.1     # Natural for most admonitions
+    bullet_points: -0.1         # Acceptable in admonitions
+    numbered_lists: 0.4         # Suggests procedural content
+    
+  # Content type detection
+  content_classification:
+    procedural_threshold: 0.6   # Threshold for flagging as procedural
+    explanatory_threshold: 0.7  # Threshold for flagging as explanatory
+    warning_threshold: 0.8      # Threshold for flagging as warning content
+
+# === EVIDENCE ADJUSTMENTS ===
+# Fine-tune evidence scoring based on context and content
+
+evidence_adjustments:
+  
+  # Admonition type specific adjustments
+  by_admonition_type:
+    note:
+      code_content: 0.2         # Notes can reference code briefly
+      explanatory_content: -0.2 # Notes are meant to explain
+      
+    warning:
+      code_content: 0.3         # Warnings should avoid code
+      procedural_content: 0.2   # Warnings should avoid procedures
+      
+    tip:
+      code_content: -0.1        # Tips might reference code briefly
+      practical_examples: -0.2  # Tips can include brief examples
+      
+    important:
+      lengthy_content: 0.2      # Important admonitions should be concise
+      complex_formatting: 0.1   # Keep formatting simple for emphasis
+  
+  # Context adjustments
+  by_context:
+    technical_documentation: 0.1    # Technical docs should be precise
+    user_guides: 0.0               # User guides neutral
+    reference_material: -0.1       # Reference material more flexible
+    tutorial_content: -0.1         # Tutorials may need more examples
+    
+  # Document structure adjustments
+  by_position:
+    document_introduction: 0.1     # Introduction admonitions more visible
+    section_headers: 0.1           # Header admonitions more visible  
+    deep_nested_content: -0.1      # Nested content more permissive
+    
+  # Content density adjustments
+  by_density:
+    high_admonition_density: 0.2   # Many admonitions need to be concise
+    low_admonition_density: -0.1   # Few admonitions can be more detailed
+    single_admonition: -0.1        # Single admonitions more permissive
+
+# === SUGGESTION TEMPLATES ===
+# Context-aware suggestions for different violations
+
+suggestion_templates:
+  
+  code_blocks:
+    high_confidence:
+      - "Move code examples to a separate code block or procedure section"
+      - "Use admonitions for brief warnings or notes, not code demonstrations"
+      - "Consider creating an example section for code"
+    medium_confidence:
+      - "Consider moving code content to a dedicated section"
+      - "Admonitions work best with brief text, not code"
+    low_confidence:
+      - "Review whether code content belongs in this admonition"
+      
+  procedure_steps:
+    high_confidence:
+      - "Move step-by-step instructions to a dedicated procedure section"
+      - "Use admonitions for brief warnings or tips about procedures"
+      - "Create a numbered procedure block for these steps"
+    medium_confidence:
+      - "Consider moving procedural content to a procedure section"
+      - "Admonitions should supplement procedures, not contain them"
+    low_confidence:
+      - "Review whether these steps belong in the main content"
+      
+  excessive_length:
+    high_confidence:
+      - "Break this content into smaller, focused admonitions"
+      - "Move detailed explanations to main content sections"
+      - "Keep admonitions brief and focused on key points"
+    medium_confidence:
+      - "Consider shortening this admonition for better impact"
+      - "Long admonitions lose their effectiveness"
+    low_confidence:
+      - "This admonition may be longer than optimal"
+      
+  inappropriate_content:
+    by_admonition_type:
+      note: "Notes should provide brief explanations or clarifications"
+      warning: "Warnings should focus on risks, precautions, and consequences"
+      important: "Important admonitions should highlight critical information"
+      tip: "Tips should offer helpful advice, shortcuts, or best practices"
+      
+  content_complexity:
+    high_confidence:
+      - "Simplify admonition content for better readability"
+      - "Complex content belongs in main documentation sections"
+      - "Admonitions work best with simple, direct statements"
+    medium_confidence:
+      - "Consider simplifying this admonition"
+      - "Complex admonitions can overwhelm readers"
+    low_confidence:
+      - "This admonition content may be too complex"
+
+# === VALIDATION RULES ===
+# Rules for validating admonition structure and content
+
+validation_rules:
+  
+  # Structural validation
+  structure:
+    require_admonition_type: true     # Must identify admonition type
+    allow_nested_admonitions: false   # Don't nest admonitions
+    require_content: true             # Empty admonitions not allowed
+    
+  # Content validation
+  content:
+    check_type_appropriateness: true  # Validate content matches type
+    enforce_length_limits: true       # Enforce length thresholds
+    validate_formatting: true        # Check formatting complexity
+    
+  # Quality validation
+  quality:
+    check_clarity: true              # Ensure content is clear
+    check_necessity: true            # Ensure admonition is necessary
+    check_placement: true            # Validate admonition placement
+
+# === PERFORMANCE SETTINGS ===
+performance:
+  max_admonitions_per_document: 20   # Reasonable limit for analysis
+  enable_cross_admonition_analysis: true
+  cache_content_analysis: true
+  
+  # Analysis depth
+  full_content_analysis: true        # Analyze complete content
+  pattern_only_analysis: false       # Don't rely only on patterns
+  
+  # Skip conditions
+  skip_very_short_admonitions: false # Analyze even short ones
+  skip_simple_admonitions: false     # Analyze all admonitions
+
+# === QUALITY ASSURANCE ===
+quality_assurance:
+  
+  false_positive_prevention:
+    allow_necessary_references: true    # Some technical refs are OK
+    respect_domain_conventions: true    # Follow domain-specific practices
+    consider_audience_level: true       # Adjust for audience expertise
+    
+  content_assessment:
+    validate_against_type: true        # Check type appropriateness
+    assess_reader_benefit: true        # Ensure admonition adds value
+    check_alternative_locations: true  # Suggest better locations
