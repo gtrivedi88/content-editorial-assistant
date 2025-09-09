@@ -8,7 +8,7 @@ import os
 import time
 import logging
 from datetime import datetime
-from flask import render_template, request, jsonify, flash, redirect, url_for, send_file
+from flask import render_template, request, jsonify, flash, redirect, url_for, send_file, session
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import RequestEntityTooLarge
 from io import BytesIO
@@ -19,19 +19,32 @@ from .websocket_handlers import emit_progress, emit_completion
 logger = logging.getLogger(__name__)
 
 
-def setup_routes(app, document_processor, style_analyzer, ai_rewriter):
-    """Setup all API routes for the Flask application."""
+def setup_routes(app, document_processor, style_analyzer, ai_rewriter, database_service=None):
+    """Setup all API routes for the Flask application with database integration."""
     
-    # Add request logging middleware
+    # Add request logging and session management middleware
     @app.before_request
     def log_request_info():
-        """Log all incoming requests for debugging."""
+        """Log all incoming requests and ensure database session exists."""
         print(f"\n📥 INCOMING REQUEST: {request.method} {request.path}")
         if request.method == 'POST':
             print(f"   📋 Content-Type: {request.content_type}")
             print(f"   📋 Content-Length: {request.content_length}")
             if request.is_json:
                 print(f"   📋 JSON Data Keys: {list(request.json.keys()) if request.json else 'None'}")
+        
+        # Ensure database session exists for data persistence
+        if database_service and 'db_session_id' not in session:
+            try:
+                db_session_id = database_service.create_user_session(
+                    user_agent=request.headers.get('User-Agent'),
+                    ip_address=request.remote_addr
+                )
+                session['db_session_id'] = db_session_id
+                print(f"   🔐 Created database session: {db_session_id}")
+            except Exception as e:
+                logger.warning(f"Failed to create database session: {e}")
+        
         print("")
     
     @app.route('/')
@@ -62,7 +75,7 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter):
     
     @app.route('/upload', methods=['POST'])
     def upload_file():
-        """Handle file upload and text extraction."""
+        """Handle file upload and text extraction with database storage."""
         try:
             if 'file' not in request.files:
                 return jsonify({'error': 'No file selected'}), 400
@@ -74,28 +87,45 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter):
             if file and document_processor.allowed_file(file.filename):
                 filename = secure_filename(file.filename)
                 
-                # Ensure upload directory exists
-                upload_folder = app.config['UPLOAD_FOLDER']
-                os.makedirs(upload_folder, exist_ok=True)
-                
-                filepath = os.path.join(upload_folder, filename)
-                file.save(filepath)
-                
-                # Extract text
-                content = document_processor.extract_text(filepath)
-                
-                # Clean up file
-                try:
-                    os.remove(filepath)
-                except:
-                    pass  # Don't fail if cleanup fails
+                # Extract text without saving to disk (more secure)
+                content = document_processor.extract_text_from_upload(file)
                 
                 if content:
-                    return jsonify({
+                    result = {
                         'success': True,
                         'content': content,
                         'filename': filename
-                    })
+                    }
+                    
+                    # Store in database if available
+                    if database_service:
+                        try:
+                            db_session_id = session.get('db_session_id')
+                            if db_session_id:
+                                # Detect document format from filename
+                                doc_format = filename.split('.')[-1].lower() if '.' in filename else 'txt'
+                                
+                                document_id, analysis_id = database_service.process_document_upload(
+                                    session_id=db_session_id,
+                                    content=content,
+                                    filename=filename,
+                                    document_format=doc_format,
+                                    content_type='unknown',  # Will be determined during analysis
+                                    file_size=len(content.encode('utf-8'))
+                                )
+                                
+                                result.update({
+                                    'document_id': document_id,
+                                    'analysis_id': analysis_id,
+                                    'db_session_id': db_session_id
+                                })
+                                
+                                logger.info(f"📄 Document stored in database: {document_id}")
+                        except Exception as e:
+                            logger.warning(f"⚠️ Failed to store document in database: {e}")
+                            # Continue without database storage
+                    
+                    return jsonify(result)
                 else:
                     return jsonify({'error': 'Failed to extract text from file'}), 400
             else:
@@ -117,6 +147,11 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter):
             format_hint = data.get('format_hint', 'auto')
             content_type = data.get('content_type', 'concept')  # NEW: Add content type
             session_id = data.get('session_id', '') if data else ''
+            
+            # Database integration: Get document and analysis IDs from request or create new ones
+            document_id = data.get('document_id') if data else None
+            analysis_id = data.get('analysis_id') if data else None
+            db_session_id = session.get('db_session_id')
         
             # Enhanced: Support confidence threshold parameter
             confidence_threshold = data.get('confidence_threshold', None)
@@ -134,6 +169,27 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter):
             if not session_id or not session_id.strip():
                 import uuid
                 session_id = str(uuid.uuid4())
+            
+            # Database integration: Create document and analysis if not provided
+            if database_service and db_session_id and not (document_id and analysis_id):
+                try:
+                    document_id, analysis_id = database_service.process_document_upload(
+                        session_id=db_session_id,
+                        content=content,
+                        filename="direct_input.txt",
+                        document_format=format_hint,
+                        content_type=content_type
+                    )
+                    logger.info(f"📄 Created database document: {document_id}, analysis: {analysis_id}")
+                except Exception as e:
+                    logger.warning(f"⚠️ Failed to create database document: {e}")
+            
+            # Start analysis in database
+            if database_service and analysis_id:
+                try:
+                    database_service.start_analysis(analysis_id, analysis_mode="comprehensive", format_hint=format_hint)
+                except Exception as e:
+                    logger.warning(f"⚠️ Failed to update analysis status: {e}")
             
             # Start analysis with progress updates
             logger.info(f"Starting analysis for session {session_id} with content_type={content_type} and confidence_threshold={confidence_threshold}")
@@ -169,6 +225,42 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter):
             analysis['processing_time'] = processing_time
             analysis['content_type'] = content_type  # Include content type in results
             
+            # Database integration: Store analysis results
+            if database_service and analysis_id and document_id:
+                try:
+                    # Convert errors to database format
+                    violations = []
+                    errors = analysis.get('errors', [])
+                    for error in errors:
+                        violations.append({
+                            'rule_id': error.get('rule_id', 'unknown'),
+                            'error_text': error.get('text', ''),
+                            'error_message': error.get('message', ''),
+                            'error_position': error.get('start', 0),
+                            'end_position': error.get('end'),
+                            'line_number': error.get('line'),
+                            'column_number': error.get('column'),
+                            'severity': error.get('severity', 'medium'),
+                            'confidence_score': error.get('confidence', 0.5),
+                            'suggestion': error.get('suggestion'),
+                            'context_before': error.get('context_before'),
+                            'context_after': error.get('context_after'),
+                            'metadata': error.get('metadata', {})
+                        })
+                    
+                    # Store results in database
+                    database_service.store_analysis_results(
+                        analysis_id=analysis_id,
+                        document_id=document_id,
+                        violations=violations,
+                        processing_time=processing_time,
+                        total_blocks_analyzed=len(structural_blocks)
+                    )
+                    
+                    logger.info(f"📊 Stored {len(violations)} violations in database")
+                except Exception as e:
+                    logger.warning(f"⚠️ Failed to store analysis results: {e}")
+            
             logger.info(f"Analysis completed in {processing_time:.2f}s for session {session_id}")
             
             # Enhanced: Prepare confidence metadata
@@ -187,7 +279,7 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter):
             if analysis.get('enhanced_error_stats'):
                 confidence_metadata['enhanced_error_stats'] = analysis.get('enhanced_error_stats')
             
-            # Return enhanced results with modular compliance data
+            # Return enhanced results with modular compliance data and database IDs
             response_data = {
                 'success': True,
                 'analysis': analysis,
@@ -197,6 +289,14 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter):
                 'confidence_metadata': confidence_metadata,
                 'api_version': '2.0'  # Indicate enhanced API version
             }
+            
+            # Include database IDs if available
+            if database_service and db_session_id:
+                response_data.update({
+                    'db_session_id': db_session_id,
+                    'document_id': document_id,
+                    'analysis_id': analysis_id
+                })
             
             # Include detailed confidence information if requested
             if include_confidence_details:
@@ -443,35 +543,81 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter):
     
     @app.route('/api/feedback', methods=['POST'])
     def submit_feedback():
-        """Submit user feedback on error accuracy."""
+        """Submit user feedback on error accuracy with database storage."""
         try:
-            from .feedback_storage import feedback_storage
-            
             data = request.get_json()
             if not data:
                 return jsonify({'error': 'No JSON data provided'}), 400
             
+            # Validate required fields
+            required_fields = ['violation_id', 'error_type', 'error_message', 'feedback_type']
+            for field in required_fields:
+                if field not in data:
+                    return jsonify({'error': f'Missing required field: {field}'}), 400
+            
             # Extract request metadata
             user_agent = request.headers.get('User-Agent')
             ip_address = request.remote_addr
+            db_session_id = session.get('db_session_id')
             
-            # Store feedback
-            success, message, feedback_id = feedback_storage.store_feedback(
-                data, user_agent=user_agent, ip_address=ip_address
-            )
+            # Try database storage first
+            if database_service and db_session_id:
+                try:
+                    success, feedback_id = database_service.store_user_feedback(
+                        session_id=db_session_id,
+                        violation_id=data['violation_id'],
+                        feedback_data={
+                            'error_type': data['error_type'],
+                            'error_message': data['error_message'],
+                            'feedback_type': data['feedback_type'],
+                            'confidence_score': data.get('confidence_score', 0.5),
+                            'user_reason': data.get('user_reason')
+                        },
+                        user_agent=user_agent,
+                        ip_address=ip_address
+                    )
+                    
+                    if success:
+                        response_data = {
+                            'success': True,
+                            'message': 'Feedback stored successfully in database',
+                            'feedback_id': feedback_id,
+                            'timestamp': datetime.now().isoformat(),
+                            'storage_type': 'database'
+                        }
+                        
+                        logger.info(f"📊 Database feedback submitted: {feedback_id}")
+                        return jsonify(response_data), 201
+                    else:
+                        logger.warning(f"⚠️ Database feedback storage failed: {feedback_id}")
+                except Exception as e:
+                    logger.warning(f"⚠️ Database feedback error: {e}")
             
-            if success:
-                response_data = {
-                    'success': True,
-                    'message': message,
-                    'feedback_id': feedback_id,
-                    'timestamp': datetime.now().isoformat()
-                }
+            # Fallback to file-based storage
+            try:
+                from .feedback_storage import feedback_storage
                 
-                logger.info(f"Feedback submitted successfully: {feedback_id}")
-                return jsonify(response_data), 201
-            else:
-                return jsonify({'error': message}), 400
+                success, message, feedback_id = feedback_storage.store_feedback(
+                    data, user_agent=user_agent, ip_address=ip_address
+                )
+                
+                if success:
+                    response_data = {
+                        'success': True,
+                        'message': message,
+                        'feedback_id': feedback_id,
+                        'timestamp': datetime.now().isoformat(),
+                        'storage_type': 'file'
+                    }
+                    
+                    logger.info(f"📁 File-based feedback submitted: {feedback_id}")
+                    return jsonify(response_data), 201
+                else:
+                    return jsonify({'error': message}), 400
+                    
+            except Exception as e:
+                logger.error(f"❌ All feedback storage methods failed: {e}")
+                return jsonify({'error': f'Feedback submission failed: {str(e)}'}), 500
                 
         except Exception as e:
             logger.error(f"Feedback submission error: {str(e)}")
@@ -535,19 +681,103 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter):
             logger.error(f"Feedback insights error: {str(e)}")
             return jsonify({'error': f'Failed to retrieve feedback insights: {str(e)}'}), 500
     
+    # Database-powered analytics endpoints
+    @app.route('/api/analytics/session', methods=['GET'])
+    def get_session_analytics():
+        """Get analytics for current user session."""
+        try:
+            if not database_service:
+                return jsonify({'error': 'Database service not available'}), 503
+            
+            db_session_id = session.get('db_session_id')
+            if not db_session_id:
+                return jsonify({'error': 'No database session found'}), 400
+            
+            analytics = database_service.get_session_analytics(db_session_id)
+            return jsonify(analytics)
+            
+        except Exception as e:
+            logger.error(f"Session analytics error: {str(e)}")
+            return jsonify({'error': f'Failed to retrieve analytics: {str(e)}'}), 500
+    
+    @app.route('/api/analytics/rules', methods=['GET'])
+    def get_rule_analytics():
+        """Get rule performance analytics."""
+        try:
+            if not database_service:
+                return jsonify({'error': 'Database service not available'}), 503
+            
+            rule_id = request.args.get('rule_id')
+            days_back = request.args.get('days_back', default=30, type=int)
+            
+            if rule_id:
+                performance = database_service.get_rule_performance(rule_id, days_back)
+            else:
+                performance = database_service.get_rule_performance(days_back=days_back)
+            
+            return jsonify(performance)
+            
+        except Exception as e:
+            logger.error(f"Rule analytics error: {str(e)}")
+            return jsonify({'error': f'Failed to retrieve rule analytics: {str(e)}'}), 500
+    
+    @app.route('/api/analytics/model-usage', methods=['GET'])
+    def get_model_usage_analytics():
+        """Get AI model usage statistics."""
+        try:
+            if not database_service:
+                return jsonify({'error': 'Database service not available'}), 503
+            
+            db_session_id = session.get('db_session_id')
+            operation_type = request.args.get('operation_type')
+            days_back = request.args.get('days_back', default=30, type=int)
+            
+            stats = database_service.get_model_usage_stats(
+                session_id=db_session_id,
+                operation_type=operation_type,
+                days_back=days_back
+            )
+            
+            return jsonify(stats)
+            
+        except Exception as e:
+            logger.error(f"Model usage analytics error: {str(e)}")
+            return jsonify({'error': f'Failed to retrieve model usage: {str(e)}'}), 500
+    
     @app.route('/health')
     def health_check():
-        """Health check endpoint."""
-        return jsonify({
-            'status': 'healthy',
-            'timestamp': datetime.now().isoformat(),
-            'services': {
-                'document_processor': document_processor is not None,
-                'style_analyzer': style_analyzer is not None,
-                'ai_rewriter': ai_rewriter is not None,
-                'feedback_storage': True  # Feedback storage is always available
+        """Health check endpoint with database status."""
+        try:
+            health_status = {
+                'status': 'healthy',
+                'timestamp': datetime.now().isoformat(),
+                'services': {
+                    'document_processor': document_processor is not None,
+                    'style_analyzer': style_analyzer is not None,
+                    'ai_rewriter': ai_rewriter is not None,
+                    'feedback_storage': True,  # File-based fallback always available
+                    'database': database_service is not None
+                }
             }
-        })
+            
+            # Add database health check
+            if database_service:
+                try:
+                    db_health = database_service.get_system_health()
+                    health_status['database_health'] = db_health
+                except Exception as e:
+                    health_status['database_health'] = {'status': 'unhealthy', 'error': str(e)}
+                    health_status['status'] = 'degraded'
+            
+            return jsonify(health_status)
+            
+        except Exception as e:
+            logger.error(f"Health check error: {str(e)}")
+            return jsonify({
+                'status': 'unhealthy',
+                'error': str(e),
+                'timestamp': datetime.now().isoformat()
+            }), 500
     
     @app.errorhandler(404)
     def not_found_error(error):

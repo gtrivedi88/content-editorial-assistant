@@ -18,6 +18,10 @@ from .error_handlers import setup_error_handlers
 from .websocket_handlers import setup_websocket_handlers
 from .fallback_services import SimpleDocumentProcessor, SimpleStyleAnalyzer, SimpleAIRewriter
 
+# Import database components
+from database import init_db, db
+from database.services import database_service
+
 # Initialize monitoring system
 try:
     from validation.monitoring.metrics import get_metrics
@@ -51,11 +55,18 @@ def create_app(config_class=Config):
     CORS(app)
     socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
     
+    # Initialize database
+    database_initialized = initialize_database(app)
+    
     # Initialize services with fallbacks
     services = initialize_services()
     
+    # Add database service to services
+    services['database_service'] = database_service
+    services['database_available'] = database_initialized
+    
     # Setup application components
-    setup_routes(app, services['document_processor'], services['style_analyzer'], services['ai_rewriter'])
+    setup_routes(app, services['document_processor'], services['style_analyzer'], services['ai_rewriter'], services['database_service'])
     setup_error_handlers(app)
     setup_websocket_handlers(socketio)
     
@@ -111,6 +122,34 @@ def setup_logging(app):
     except Exception as e:
         print(f"Warning: Could not configure logging: {e}")
 
+
+def initialize_database(app):
+    """Initialize database with the Flask application."""
+    try:
+        # Initialize database
+        init_db(app)
+        
+        # Create tables if they don't exist (for development)
+        with app.app_context():
+            db.create_all()
+            
+            # Initialize default rules if needed
+            try:
+                rules_created = database_service.initialize_default_rules()
+                if rules_created > 0:
+                    logger.info(f"✅ Initialized {rules_created} default style rules")
+                else:
+                    logger.info("✅ Database already contains default style rules")
+            except Exception as e:
+                logger.warning(f"⚠️ Could not initialize default rules: {e}")
+        
+        logger.info("✅ Database initialized successfully")
+        return True
+        
+    except Exception as e:
+        logger.error(f"❌ Database initialization failed: {e}")
+        logger.warning("⚠️ Application will run without database persistence")
+        return False
 
 def initialize_services():
     """Initialize all services with fallback mechanisms."""
@@ -188,12 +227,17 @@ def log_initialization_status(services):
         status_map = {
             'document_processor': 'Document Processor',
             'style_analyzer': 'Style Analyzer',
-            'ai_rewriter': 'AI Rewriter'
+            'ai_rewriter': 'AI Rewriter',
+            'database_service': 'Database Service'
         }
         
         for service_key, display_name in status_map.items():
             available_key = f"{service_key}_available"
-            status = "✅ Ready" if services.get(available_key, False) else "⚠️ Fallback"
+            if service_key == 'database_service':
+                # Special handling for database service
+                status = "✅ Ready" if services.get('database_available', False) else "⚠️ Unavailable"
+            else:
+                status = "✅ Ready" if services.get(available_key, False) else "⚠️ Fallback"
             logger.info(f"{display_name}: {status}")
         
         # Log AI configuration with status
@@ -295,8 +339,15 @@ def health_check_services(services):
             health_status['services']['ai_rewriter'] = 'fallback'
             health_status['warnings'].append('AI rewriter using fallback implementation')
         
+        # Check database service
+        if services.get('database_available', False):
+            health_status['services']['database'] = 'ready'
+        else:
+            health_status['services']['database'] = 'unavailable'
+            health_status['warnings'].append('Database service unavailable - no data persistence')
+        
         # Overall health assessment
-        if len(health_status['warnings']) > 2:
+        if len(health_status['warnings']) > 3:
             health_status['overall'] = 'degraded'
         
     except Exception as e:

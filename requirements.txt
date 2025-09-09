@@ -19,6 +19,7 @@ itsdangerous==2.2.0
 # ================================
 SQLAlchemy==2.0.41
 alembic==1.16.2
+psycopg2-binary==2.9.9  # PostgreSQL adapter
 greenlet==3.2.3
 Mako==1.3.10
 

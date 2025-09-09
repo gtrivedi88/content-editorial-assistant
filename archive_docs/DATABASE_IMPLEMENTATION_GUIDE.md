@@ -210,8 +210,8 @@ class AnalysisSession(db.Model):
     status = Column(ENUM(ProcessingStatus), default=ProcessingStatus.PENDING)
     started_at = Column(DateTime, default=datetime.utcnow)
     completed_at = Column(DateTime)
-    total_processing_time = Column(Float)
-    total_errors_found = Column(Integer, default=0)
+    total_processing_time = Column(Float)  # Stored for performance (could be calculated)
+    total_errors_found = Column(Integer, default=0)  # Stored for performance
     total_blocks_analyzed = Column(Integer, default=0)
     configuration = Column(JSON)
     
@@ -382,6 +382,25 @@ class ModelConfiguration(db.Model):
     performance_metrics = Column(JSON)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class ModelUsageLog(db.Model):
+    __tablename__ = 'model_usage_logs'
+    
+    id = Column(Integer, primary_key=True)
+    log_id = Column(String(255), unique=True, nullable=False, index=True)
+    session_id = Column(String(255), ForeignKey('user_sessions.session_id'))
+    operation_type = Column(String(50), nullable=False)  # 'analysis', 'rewrite', 'validation'
+    model_provider = Column(String(100))
+    model_name = Column(String(100))
+    tokens_used = Column(Integer)
+    processing_time_ms = Column(Integer)
+    cost_estimate = Column(Float)  # Estimated cost in USD
+    success = Column(Boolean, default=True)
+    error_message = Column(Text)
+    timestamp = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    session = relationship("UserSession")
 ```
 
 ## Data Access Layer
