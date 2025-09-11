@@ -344,7 +344,8 @@ class RulesRegistry:
                 attr = getattr(module, attr_name)
                 if (isinstance(attr, type) and 
                     self._is_rule_class(attr) and 
-                    attr.__name__ != 'BaseRule'):
+                    attr.__name__ != 'BaseRule' and
+                    attr.__module__ == module.__name__):  # Only classes defined in this module, not imported
                     
                     try:
                         # Instantiate the rule

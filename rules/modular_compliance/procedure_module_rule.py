@@ -19,7 +19,7 @@ class ProcedureModuleRule(BaseRule):
     
     def __init__(self):
         super().__init__()
-        self.rule_type = "modular_compliance"
+        self.rule_type = "procedure_module"
         self.rule_subtype = "procedure_module"
         self.parser = ModularStructureBridge()
         

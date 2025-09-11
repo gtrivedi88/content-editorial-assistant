@@ -233,7 +233,7 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter, database_
                     errors = analysis.get('errors', [])
                     for error in errors:
                         violations.append({
-                            'rule_id': error.get('rule_id', 'unknown'),
+                            'rule_id': error.get('type', 'unknown'),
                             'error_text': error.get('text', ''),
                             'error_message': error.get('message', ''),
                             'error_position': error.get('start', 0),

@@ -19,7 +19,7 @@ class ReferenceModuleRule(BaseRule):
     
     def __init__(self):
         super().__init__()
-        self.rule_type = "modular_compliance"
+        self.rule_type = "reference_module"
         self.rule_subtype = "reference_module"
         self.parser = ModularStructureBridge()
         

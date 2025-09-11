@@ -19,7 +19,7 @@ class ConceptModuleRule(BaseRule):
     
     def __init__(self):
         super().__init__()
-        self.rule_type = "modular_compliance"
+        self.rule_type = "concept_module"
         self.rule_subtype = "concept_module"
         self.parser = ModularStructureBridge()
         

@@ -51,7 +51,7 @@ class CompanyRegistry:
     
     def _get_default_config_path(self) -> str:
         """Get default configuration file path"""
-        current_dir = Path(__file__).parent
+        current_dir = Path(__file__).parent.parent  # Go up from services/ to legal_information/
         return str(current_dir / "config" / "companies.yaml")
     
     def _load_configuration(self) -> None:
