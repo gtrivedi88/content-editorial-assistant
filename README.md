@@ -9,10 +9,10 @@ Transform your technical documentation with comprehensive style analysis, readab
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](License)
 ---
 
-## 🚀 Quick Setup (3 Steps Only!)
+## 🚀 Super Simple Setup (Just 3 Steps!)
 
 ### 📋 Prerequisites
-- **Python 3.12** ([Download here](https://www.python.org/downloads/)) - **Required Version**
+- **Python 3.12+** ([Download here](https://www.python.org/downloads/))
 
 ### 🔧 Step 1: Create Virtual Environment
 
@@ -58,41 +58,23 @@ source venv/bin/activate
 # Upgrade pip first
 pip install --upgrade pip
 
-# IMPORTANT: Before running this command, ensure to remove the line 
-# "secure-filename>=1.0.0 ; platform_system != "Windows"" 
-# from the requirements.txt file
-
-# Install all Python packages
+# Install all Python packages (conflict-free!)
 pip install -r requirements.txt
-
-# Install PyMuPDF separately
-pip install PyMuPDF
 ```
 
-**⚠️ Important Note:** Before installing requirements, you must edit `requirements.txt` and remove this line:
-```
-secure-filename>=1.0.0 ; platform_system != "Windows"
-```
-
-### ⚙️ Step 3: Complete Setup
+### 🎯 Step 3: Start the Application
 ```bash
-# Run the comprehensive setup script
-python setup.py
-```
-
-This automatically handles:
-- ✅ SpaCy language models
-- ✅ NLTK data downloads  
-- ✅ Directory creation
-- ✅ Ollama detection & setup instructions
-- ✅ Installation testing
-
-### 🎯 Step 4: Start the Application
-```bash
-python app.py
+python main.py
 ```
 
 **Then visit:** [http://localhost:5000](http://localhost:5000) 🌐
+
+**✨ That's it!** The application will auto-setup everything on first run:
+- ✅ SpaCy language models
+- ✅ NLTK data downloads  
+- ✅ Directory creation
+- ✅ Dependency verification
+- ✅ Ollama detection & guidance
 
 ---
 
@@ -104,14 +86,14 @@ python app.py
 ```batch
 cd C:\path\to\style-guide-ai
 venv\Scripts\activate
-python app.py
+python main.py
 ```
 
 **Linux/macOS:**
 ```bash
 cd ~/path/to/style-guide-ai
 source venv/bin/activate
-python app.py
+python main.py
 ```
 
 ---
@@ -202,7 +184,7 @@ ollama pull your-chosen-model
 
 **Step 3: Restart the Application**
 ```bash
-python app.py
+python main.py
 ```
 
 **Popular Alternative Models:**
@@ -359,9 +341,8 @@ curl http://localhost:11434/api/tags
 
 ```
 style-guide-ai/
-├── app.py                 # Main Flask application
-├── setup.py              # Complete setup script
-├── requirements.txt      # All dependencies
+├── main.py               # Main Flask application (auto-setup included!)
+├── requirements.txt      # Clean, conflict-free dependencies
 ├── config.py             # Main application configuration
 ├── style_analyzer/       # Analysis modules
 ├── rewriter/             # AI rewriting components

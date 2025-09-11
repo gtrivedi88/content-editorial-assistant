@@ -45,7 +45,7 @@ def init_database():
             print(f"❌ Database setup verification failed: {health.get('error', 'Unknown error')}")
         
         print("\n🎉 Database initialization complete!")
-        print("   You can now start the application with: python app.py")
+        print("   You can now start the application with: python main.py")
 
 def drop_database():
     """Drop all database tables (DANGEROUS - use with caution)."""
