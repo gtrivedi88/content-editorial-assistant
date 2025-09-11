@@ -9,11 +9,12 @@ import hashlib
 from typing import Dict, List, Any, Optional, Tuple
 from datetime import datetime, timedelta
 
+from database import db
 from database.dao import (
     SessionDAO, DocumentDAO, BlockDAO, AnalysisDAO, StyleRuleDAO,
-    ViolationDAO, FeedbackDAO, RewriteDAO, PerformanceDAO, ModelUsageDAO
+    ViolationDAO, FeedbackDAO, RewriteDAO, PerformanceDAO
 )
-from database.models import ProcessingStatus, SessionStatus, FeedbackType
+from database.models import ProcessingStatus, RewriteSession
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +31,6 @@ class DatabaseService:
         self.feedback_dao = FeedbackDAO()
         self.rewrite_dao = RewriteDAO()
         self.performance_dao = PerformanceDAO()
-        self.model_usage_dao = ModelUsageDAO()
     
     def create_user_session(self, user_agent: str = None, ip_address: str = None) -> str:
         """Create a new user session and return session ID."""
@@ -294,29 +294,15 @@ class DatabaseService:
         self,
         session_id: str,
         document_id: str,
-        rewrite_type: str = "full_document",
-        rewrite_mode: str = "comprehensive",
-        model_provider: str = None,
-        model_name: str = None,
+        block_id: str,
         configuration: Dict[str, Any] = None
     ) -> str:
-        """Start a new rewrite session."""
+        """Start a new block-level rewrite session."""
         rewrite_session = self.rewrite_dao.create_rewrite_session(
             session_id=session_id,
             document_id=document_id,
-            rewrite_type=rewrite_type,
-            rewrite_mode=rewrite_mode,
-            model_provider=model_provider,
-            model_name=model_name,
+            block_id=block_id,
             configuration=configuration
-        )
-        
-        # Log model usage start
-        self.model_usage_dao.log_model_usage(
-            session_id=session_id,
-            operation_type="rewrite",
-            model_provider=model_provider,
-            model_name=model_name
         )
         
         return rewrite_session.rewrite_id
@@ -346,10 +332,11 @@ class DatabaseService:
                 )
             
             # Update rewrite session
+            processing_time_ms = int(total_processing_time * 1000) if total_processing_time else None
             success = self.rewrite_dao.update_rewrite_session(
                 rewrite_id=rewrite_id,
                 status=ProcessingStatus.COMPLETED,
-                processing_time=total_processing_time,
+                processing_time_ms=processing_time_ms,
                 tokens_used=total_tokens_used
             )
             
@@ -375,12 +362,35 @@ class DatabaseService:
         operation_type: str = None, 
         days_back: int = 30
     ) -> Dict[str, Any]:
-        """Get model usage statistics."""
-        return self.model_usage_dao.get_usage_stats(
-            session_id=session_id,
-            operation_type=operation_type,
-            days_back=days_back
+        """Get model usage statistics (from rewrite sessions)."""
+        # Get recent rewrite sessions as replacement for model usage logs
+        cutoff_time = datetime.utcnow() - timedelta(days=days_back)
+        query = db.session.query(RewriteSession).filter(
+            RewriteSession.completed_at >= cutoff_time
         )
+        
+        if session_id:
+            query = query.filter_by(session_id=session_id)
+            
+        rewrite_sessions = query.all()
+        
+        if not rewrite_sessions:
+            return {'total_operations': 0, 'total_tokens': 0, 'avg_processing_time_ms': 0.0, 'success_rate': 1.0}
+        
+        total_operations = len(rewrite_sessions)
+        total_tokens = sum(session.tokens_used or 0 for session in rewrite_sessions)
+        total_processing_time = sum(session.processing_time_ms or 0 for session in rewrite_sessions)
+        avg_processing_time = total_processing_time / total_operations if total_operations > 0 else 0.0
+        
+        # All rewrite sessions that completed are considered successful
+        success_rate = 1.0
+        
+        return {
+            'total_operations': total_operations,
+            'total_tokens': total_tokens,
+            'avg_processing_time_ms': avg_processing_time,
+            'success_rate': success_rate
+        }
     
     def cleanup_expired_sessions(self, hours_old: int = 24) -> Dict[str, int]:
         """Clean up old sessions and related data."""
@@ -493,11 +503,19 @@ class DatabaseService:
             # Get recent metrics
             recent_metrics = self.performance_dao.get_metrics(hours_back=1, limit=100)
             active_sessions = self.session_dao.get_active_sessions(limit=10)
-            model_stats = self.get_model_usage_stats(days_back=1)
             
             # Calculate averages
             analysis_times = [m.metric_value for m in recent_metrics if m.metric_name == 'total_analysis_time']
             avg_analysis_time = sum(analysis_times) / len(analysis_times) if analysis_times else 0.0
+            
+            # Get recent rewrite sessions for usage stats (replacing model_usage_stats)
+            rewrite_sessions = db.session.query(RewriteSession).filter(
+                RewriteSession.completed_at >= datetime.utcnow() - timedelta(days=1)
+            ).all()
+            
+            total_tokens = sum(session.tokens_used or 0 for session in rewrite_sessions)
+            avg_processing_time = sum(session.processing_time_ms or 0 for session in rewrite_sessions)
+            avg_processing_time = avg_processing_time / len(rewrite_sessions) if rewrite_sessions else 0
             
             return {
                 'status': 'healthy',
@@ -505,7 +523,11 @@ class DatabaseService:
                 'active_sessions': len(active_sessions),
                 'recent_metrics_count': len(recent_metrics),
                 'average_analysis_time': avg_analysis_time,
-                'model_usage': model_stats,
+                'rewrite_stats': {
+                    'recent_rewrites': len(rewrite_sessions),
+                    'total_tokens_used': total_tokens,
+                    'avg_processing_time_ms': avg_processing_time
+                },
                 'database_connection': True  # If we got this far, DB is working
             }
         except Exception as e:

@@ -8,8 +8,7 @@ from datetime import datetime
 from enum import Enum
 from sqlalchemy import Column, Integer, String, Text, Float, Boolean, DateTime, JSON, ForeignKey
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import ENUM, UUID
-from sqlalchemy.sql import func
+from sqlalchemy.dialects.postgresql import ENUM
 from database import db
 
 # Enums for better type safety
@@ -60,23 +59,6 @@ class BlockType(Enum):
     QUOTE = "quote"
     OTHER = "other"
 
-class RewriteType(Enum):
-    FULL_DOCUMENT = "full_document"
-    BLOCK_LEVEL = "block_level"
-    PARAGRAPH = "paragraph"
-    SENTENCE = "sentence"
-
-class RewriteMode(Enum):
-    COMPREHENSIVE = "comprehensive"
-    GRAMMAR_ONLY = "grammar_only"
-    STYLE_ONLY = "style_only"
-    READABILITY = "readability"
-
-class OperationType(Enum):
-    ANALYSIS = "analysis"
-    REWRITE = "rewrite"
-    VALIDATION = "validation"
-
 # Core Models
 class UserSession(db.Model):
     """Records individual user sessions to track usage and associate related data."""
@@ -96,7 +78,6 @@ class UserSession(db.Model):
     analysis_sessions = relationship("AnalysisSession", back_populates="session")
     rewrite_sessions = relationship("RewriteSession", back_populates="session")
     feedback_entries = relationship("UserFeedback", back_populates="session")
-    model_usage_logs = relationship("ModelUsageLog", back_populates="session")
     performance_metrics = relationship("PerformanceMetric", back_populates="session")
     
     def __repr__(self):
@@ -150,6 +131,7 @@ class DocumentBlock(db.Model):
     document = relationship("Document", back_populates="blocks")
     violations = relationship("RuleViolation", back_populates="block")
     rewrite_results = relationship("RewriteResult", back_populates="block")
+    rewrite_sessions = relationship("RewriteSession", back_populates="block")
     
     def __repr__(self):
         return f'<DocumentBlock {self.block_id}>'
@@ -169,7 +151,6 @@ class AnalysisSession(db.Model):
     status = Column(ENUM(ProcessingStatus), default=ProcessingStatus.PENDING)
     started_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     completed_at = Column(DateTime)
-    total_processing_time = Column(Float)  # Stored for performance (could be calculated)
     total_errors_found = Column(Integer, default=0)  # Stored for performance
     total_blocks_analyzed = Column(Integer, default=0)
     configuration = Column(JSON)
@@ -289,28 +270,25 @@ class AmbiguityDetection(db.Model):
 
 # AI Rewriting Models
 class RewriteSession(db.Model):
-    """Records AI-powered rewriting operations performed on documents or content blocks."""
+    """Records AI-powered block-level rewriting operations using assembly line approach."""
     __tablename__ = 'rewrite_sessions'
     
     id = Column(Integer, primary_key=True)
     session_id = Column(String(255), ForeignKey('sessions.session_id'), nullable=False)
     document_id = Column(String(255), ForeignKey('documents.document_id'), nullable=False)
+    block_id = Column(String(255), ForeignKey('document_blocks.block_id'), nullable=False)
     rewrite_id = Column(String(255), unique=True, nullable=False, index=True)
-    rewrite_type = Column(ENUM(RewriteType))
-    rewrite_mode = Column(ENUM(RewriteMode))
     status = Column(ENUM(ProcessingStatus), default=ProcessingStatus.PENDING)
     pass_number = Column(Integer, default=1)  # For multi-pass rewriting
-    started_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     completed_at = Column(DateTime)
-    total_processing_time = Column(Float)
-    model_provider = Column(String(100))  # 'ollama', 'openai', etc.
-    model_name = Column(String(100))  # 'llama3:8b', 'gpt-4', etc.
+    processing_time_ms = Column(Integer)  # Processing time in milliseconds
     tokens_used = Column(Integer)  # Total tokens consumed
     configuration = Column(JSON)
     
     # Relationships
     session = relationship("UserSession", back_populates="rewrite_sessions")
     document = relationship("Document", back_populates="rewrite_sessions")
+    block = relationship("DocumentBlock", back_populates="rewrite_sessions")
     results = relationship("RewriteResult", back_populates="rewrite_session")
     
     def __repr__(self):
@@ -388,48 +366,6 @@ class PerformanceMetric(db.Model):
     
     def __repr__(self):
         return f'<PerformanceMetric {self.metric_name}>'
-
-class ModelConfiguration(db.Model):
-    """Configuration settings for AI models."""
-    __tablename__ = 'model_configurations'
-    
-    id = Column(Integer, primary_key=True)
-    config_id = Column(String(255), unique=True, nullable=False, index=True)
-    provider_type = Column(String(50), nullable=False)  # 'ollama', 'api', 'custom'
-    model_name = Column(String(255), nullable=False)
-    base_url = Column(String(500))
-    api_key_hash = Column(String(255))  # Hashed for security
-    configuration = Column(JSON)
-    is_active = Column(Boolean, default=False)
-    performance_metrics = Column(JSON)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    def __repr__(self):
-        return f'<ModelConfiguration {self.config_id}>'
-
-class ModelUsageLog(db.Model):
-    """Tracks all AI model usage for cost monitoring and performance analysis."""
-    __tablename__ = 'model_usage_logs'
-    
-    id = Column(Integer, primary_key=True)
-    log_id = Column(String(255), unique=True, nullable=False, index=True)
-    session_id = Column(String(255), ForeignKey('sessions.session_id'))
-    operation_type = Column(ENUM(OperationType), nullable=False)
-    model_provider = Column(String(100))
-    model_name = Column(String(100))
-    tokens_used = Column(Integer)
-    processing_time_ms = Column(Integer)
-    cost_estimate = Column(Float)  # Estimated cost in USD
-    success = Column(Boolean, default=True)
-    error_message = Column(Text)
-    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
-    
-    # Relationships
-    session = relationship("UserSession", back_populates="model_usage_logs")
-    
-    def __repr__(self):
-        return f'<ModelUsageLog {self.log_id}>'
 
 # Error Consolidation Model
 class ErrorConsolidation(db.Model):

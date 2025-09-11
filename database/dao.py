@@ -8,17 +8,14 @@ import uuid
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any, Tuple
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import and_, or_, func
 
 from database import db
 from database.models import (
     UserSession, Document, DocumentBlock, AnalysisSession,
-    StyleRule, RuleViolation, ValidationResult, RewriteSession,
-    RewriteResult, UserFeedback, PerformanceMetric, ModelConfiguration,
-    ModelUsageLog, AmbiguityDetection, ErrorConsolidation,
+    StyleRule, RuleViolation, RewriteSession,
+    RewriteResult, UserFeedback, PerformanceMetric,
     ProcessingStatus, SessionStatus, FeedbackType, DocumentStatus,
-    AnalysisMode, RewriteType, RewriteMode, OperationType, SeverityLevel
+    AnalysisMode, SeverityLevel, BlockType
 )
 
 logger = logging.getLogger(__name__)
@@ -176,10 +173,14 @@ class BlockDAO(BaseDAO):
         """Store document blocks."""
         db_blocks = []
         for i, block_data in enumerate(blocks):
+            # Convert string type to enum
+            block_type_str = block_data.get('type', 'paragraph').upper()
+            block_type = getattr(BlockType, block_type_str, BlockType.PARAGRAPH)
+            
             block = DocumentBlock(
                 document_id=document_id,
                 block_id=f"{document_id}_block_{i}",
-                block_type=block_data.get('type', 'paragraph'),
+                block_type=block_type,
                 block_order=i,
                 content=block_data['content'],
                 start_position=block_data.get('start_position'),
@@ -259,8 +260,7 @@ class AnalysisDAO(BaseDAO):
                 analysis.total_errors_found = total_errors
             if total_blocks is not None:
                 analysis.total_blocks_analyzed = total_blocks
-            if processing_time is not None:
-                analysis.total_processing_time = processing_time
+            # Processing time can be calculated from started_at and completed_at if needed
             
             db.session.commit()
             return True
@@ -451,22 +451,16 @@ class RewriteDAO(BaseDAO):
     def create_rewrite_session(
         session_id: str,
         document_id: str,
-        rewrite_type: str = "full_document",
-        rewrite_mode: str = "comprehensive",
-        model_provider: str = None,
-        model_name: str = None,
+        block_id: str,
         pass_number: int = 1,
         configuration: Dict[str, Any] = None
     ) -> RewriteSession:
-        """Create a new rewrite session."""
+        """Create a new block-level rewrite session."""
         rewrite_session = RewriteSession(
             session_id=session_id,
             document_id=document_id,
+            block_id=block_id,
             rewrite_id=BaseDAO.generate_id(),
-            rewrite_type=RewriteType(rewrite_type),
-            rewrite_mode=RewriteMode(rewrite_mode),
-            model_provider=model_provider,
-            model_name=model_name,
             pass_number=pass_number,
             status=ProcessingStatus.PENDING,
             configuration=configuration or {}
@@ -514,7 +508,7 @@ class RewriteDAO(BaseDAO):
     def update_rewrite_session(
         rewrite_id: str,
         status: ProcessingStatus,
-        processing_time: float = None,
+        processing_time_ms: int = None,
         tokens_used: int = None
     ) -> bool:
         """Update rewrite session status."""
@@ -523,8 +517,8 @@ class RewriteDAO(BaseDAO):
             rewrite_session.status = status
             if status == ProcessingStatus.COMPLETED:
                 rewrite_session.completed_at = datetime.utcnow()
-            if processing_time is not None:
-                rewrite_session.total_processing_time = processing_time
+            if processing_time_ms is not None:
+                rewrite_session.processing_time_ms = processing_time_ms
             if tokens_used is not None:
                 rewrite_session.tokens_used = tokens_used
             
@@ -588,74 +582,4 @@ class PerformanceDAO(BaseDAO):
         
         return query.order_by(PerformanceMetric.recorded_at.desc()).limit(limit).all()
 
-class ModelUsageDAO(BaseDAO):
-    """DAO for model usage tracking."""
-    
-    @staticmethod
-    @BaseDAO.handle_db_error("log_model_usage")
-    def log_model_usage(
-        session_id: str,
-        operation_type: str,
-        model_provider: str = None,
-        model_name: str = None,
-        tokens_used: int = None,
-        processing_time_ms: int = None,
-        cost_estimate: float = None,
-        success: bool = True,
-        error_message: str = None
-    ) -> ModelUsageLog:
-        """Log model usage."""
-        log_entry = ModelUsageLog(
-            log_id=BaseDAO.generate_id(),
-            session_id=session_id,
-            operation_type=OperationType(operation_type),
-            model_provider=model_provider,
-            model_name=model_name,
-            tokens_used=tokens_used,
-            processing_time_ms=processing_time_ms,
-            cost_estimate=cost_estimate,
-            success=success,
-            error_message=error_message
-        )
-        db.session.add(log_entry)
-        db.session.commit()
-        return log_entry
-    
-    @staticmethod
-    @BaseDAO.handle_db_error("get_usage_stats")
-    def get_usage_stats(
-        session_id: str = None,
-        operation_type: str = None,
-        days_back: int = 30
-    ) -> Dict[str, Any]:
-        """Get model usage statistics."""
-        query = ModelUsageLog.query
-        
-        if session_id:
-            query = query.filter_by(session_id=session_id)
-        if operation_type:
-            query = query.filter_by(operation_type=OperationType(operation_type))
-        
-        # Filter by time
-        cutoff_time = datetime.utcnow() - timedelta(days=days_back)
-        query = query.filter(ModelUsageLog.timestamp >= cutoff_time)
-        
-        logs = query.all()
-        
-        if not logs:
-            return {'total_operations': 0, 'total_tokens': 0, 'total_cost': 0.0, 'success_rate': 0.0}
-        
-        total_operations = len(logs)
-        total_tokens = sum(log.tokens_used or 0 for log in logs)
-        total_cost = sum(log.cost_estimate or 0.0 for log in logs)
-        successful_operations = len([log for log in logs if log.success])
-        success_rate = successful_operations / total_operations if total_operations > 0 else 0.0
-        
-        return {
-            'total_operations': total_operations,
-            'total_tokens': total_tokens,
-            'total_cost': total_cost,
-            'success_rate': success_rate,
-            'successful_operations': successful_operations,
-            'failed_operations': total_operations - successful_operations
-        }
+# ModelUsageDAO removed - redundant with RewriteDAO functionality
