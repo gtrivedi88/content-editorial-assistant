@@ -549,75 +549,70 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter, database_
             if not data:
                 return jsonify({'error': 'No JSON data provided'}), 400
             
-            # Validate required fields
-            required_fields = ['violation_id', 'error_type', 'error_message', 'feedback_type']
+            # Validate required fields (handle both error_id and violation_id)
+            required_fields = ['error_type', 'error_message', 'feedback_type']
             for field in required_fields:
                 if field not in data:
                     return jsonify({'error': f'Missing required field: {field}'}), 400
+            
+            # Handle both error_id (from frontend) and violation_id (database field)
+            violation_id = data.get('violation_id') or data.get('error_id')
+            if not violation_id:
+                return jsonify({'error': 'Missing required field: violation_id or error_id'}), 400
             
             # Extract request metadata
             user_agent = request.headers.get('User-Agent')
             ip_address = request.remote_addr
             db_session_id = session.get('db_session_id')
             
-            # Try database storage first
-            if database_service and db_session_id:
-                try:
-                    success, feedback_id = database_service.store_user_feedback(
-                        session_id=db_session_id,
-                        violation_id=data['violation_id'],
-                        feedback_data={
-                            'error_type': data['error_type'],
-                            'error_message': data['error_message'],
-                            'feedback_type': data['feedback_type'],
-                            'confidence_score': data.get('confidence_score', 0.5),
-                            'user_reason': data.get('user_reason')
-                        },
-                        user_agent=user_agent,
-                        ip_address=ip_address
-                    )
-                    
-                    if success:
-                        response_data = {
-                            'success': True,
-                            'message': 'Feedback stored successfully in database',
-                            'feedback_id': feedback_id,
-                            'timestamp': datetime.now().isoformat(),
-                            'storage_type': 'database'
-                        }
-                        
-                        logger.info(f"📊 Database feedback submitted: {feedback_id}")
-                        return jsonify(response_data), 201
-                    else:
-                        logger.warning(f"⚠️ Database feedback storage failed: {feedback_id}")
-                except Exception as e:
-                    logger.warning(f"⚠️ Database feedback error: {e}")
-            
-            # Fallback to file-based storage
-            try:
-                from .feedback_storage import feedback_storage
+            # PostgreSQL storage
+            if not database_service:
+                return jsonify({'error': 'Database service unavailable'}), 503
                 
-                success, message, feedback_id = feedback_storage.store_feedback(
-                    data, user_agent=user_agent, ip_address=ip_address
+            # Ensure we have a database session ID
+            if not db_session_id:
+                # Create a new database session if missing
+                try:
+                    db_session_id = database_service.create_user_session(user_agent=user_agent, ip_address=ip_address)
+                    session['db_session_id'] = db_session_id
+                    logger.info(f"✅ Created new database session: {db_session_id}")
+                except Exception as e:
+                    logger.error(f"❌ Failed to create database session: {e}")
+                    return jsonify({'error': 'Failed to create database session'}), 500
+            
+            try:
+                success, feedback_id = database_service.store_user_feedback(
+                    session_id=db_session_id,
+                    violation_id=violation_id,
+                    feedback_data={
+                        'error_type': data['error_type'],
+                        'error_message': data['error_message'],
+                        'feedback_type': data['feedback_type'],
+                        'confidence_score': data.get('confidence_score', 0.5),
+                        'user_reason': data.get('user_reason')
+                    },
+                    user_agent=user_agent,
+                    ip_address=ip_address
                 )
                 
                 if success:
                     response_data = {
                         'success': True,
-                        'message': message,
+                        'message': 'Feedback stored successfully in PostgreSQL',
                         'feedback_id': feedback_id,
                         'timestamp': datetime.now().isoformat(),
-                        'storage_type': 'file'
+                        'storage_type': 'postgresql'
                     }
                     
-                    logger.info(f"📁 File-based feedback submitted: {feedback_id}")
+                    logger.info(f"🐘 PostgreSQL feedback submitted: {feedback_id}")
                     return jsonify(response_data), 201
                 else:
-                    return jsonify({'error': message}), 400
+                    logger.error(f"❌ PostgreSQL feedback storage failed: {feedback_id}")
+                    return jsonify({'error': 'Failed to store feedback in PostgreSQL'}), 500
                     
             except Exception as e:
-                logger.error(f"❌ All feedback storage methods failed: {e}")
-                return jsonify({'error': f'Feedback submission failed: {str(e)}'}), 500
+                logger.error(f"❌ PostgreSQL feedback error: {e}")
+                return jsonify({'error': f'PostgreSQL storage failed: {str(e)}'}), 500
                 
         except Exception as e:
             logger.error(f"Feedback submission error: {str(e)}")
@@ -625,9 +620,10 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter, database_
     
     @app.route('/api/feedback/stats', methods=['GET'])
     def get_feedback_stats():
-        """Get feedback statistics."""
+        """Get feedback statistics from PostgreSQL."""
         try:
-            from .feedback_storage import feedback_storage
+            if not database_service:
+                return jsonify({'error': 'Database service unavailable'}), 503
             
             # Get query parameters
             session_id = request.args.get('session_id')
@@ -637,19 +633,20 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter, database_
             if days_back < 1 or days_back > 365:
                 return jsonify({'error': 'days_back must be between 1 and 365'}), 400
             
-            # Get statistics
-            stats = feedback_storage.get_feedback_stats(session_id=session_id, days_back=days_back)
+            # Get statistics from PostgreSQL
+            stats = database_service.get_feedback_statistics(session_id=session_id, days_back=days_back)
             
             response_data = {
                 'success': True,
                 'statistics': stats,
-                'timestamp': datetime.now().isoformat()
+                'timestamp': datetime.now().isoformat(),
+                'source': 'postgresql'
             }
             
             return jsonify(response_data)
             
         except Exception as e:
-            logger.error(f"Feedback stats error: {str(e)}")
+            logger.error(f"PostgreSQL feedback stats error: {str(e)}")
             return jsonify({'error': f'Failed to retrieve feedback stats: {str(e)}'}), 500
     
     @app.route('/api/feedback/insights', methods=['GET'])

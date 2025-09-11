@@ -250,13 +250,11 @@ function createInlineError(error) {
                         ` : ''}
                     ` : ''}
                     
-                    ${(error.confidence_calculation || error.validation_result) ? `
-                        <button type="button" 
-                                class="pf-v5-c-button pf-m-link pf-m-inline confidence-details-btn pf-v5-u-ml-xs" 
-                                onclick="showConfidenceDetails('${safeEncode(JSON.stringify(error))}')">
-                            <i class="fas fa-info-circle"></i> Details
-                        </button>
-                    ` : ''}
+                    <button type="button" 
+                            class="pf-v5-c-button pf-m-link pf-m-inline confidence-details-btn pf-v5-u-ml-xs" 
+                            onclick="showConfidenceDetails('${safeEncode(JSON.stringify(error))}')">
+                        <i class="fas fa-info-circle"></i> Details
+                    </button>
                 </div>
                 
                 <!-- Feedback Section -->

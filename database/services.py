@@ -190,11 +190,6 @@ class DatabaseService:
     ) -> Tuple[bool, str]:
         """Store user feedback."""
         try:
-            # Validate that the violation exists
-            violation = self.violation_dao.get_violation(violation_id)
-            if not violation:
-                return False, f"Violation {violation_id} not found"
-            
             ip_hash = self._hash_ip(ip_address) if ip_address else None
             
             feedback = self.feedback_dao.store_feedback(

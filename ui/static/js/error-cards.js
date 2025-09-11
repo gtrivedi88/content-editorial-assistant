@@ -104,9 +104,7 @@ function createTextSegmentSection(textSegment) {
  * @returns {string} - HTML string for confidence analysis section
  */
 function createConfidenceAnalysisSection(error, index) {
-    if (!error.confidence_calculation && !error.validation_result) {
-        return '';
-    }
+    // Always show confidence analysis section since createConfidenceTooltip handles all error types
     
     const confidenceTooltip = window.ConfidenceSystem ? 
         window.ConfidenceSystem.createConfidenceTooltip(error) : 
