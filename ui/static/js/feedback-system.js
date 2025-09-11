@@ -21,6 +21,7 @@ const FeedbackTracker = {
         try {
             const stored = sessionStorage.getItem('error_feedback');
             this.feedback = stored ? JSON.parse(stored) : {};
+
         } catch (e) {
             console.warn('Failed to load feedback from session:', e);
             this.feedback = {};
@@ -33,6 +34,7 @@ const FeedbackTracker = {
     saveToSession() {
         try {
             sessionStorage.setItem('error_feedback', JSON.stringify(this.feedback));
+
         } catch (e) {
             console.warn('Failed to save feedback to session:', e);
         }
@@ -44,26 +46,88 @@ const FeedbackTracker = {
      * @returns {string} - Unique identifier for the error
      */
     generateErrorId(error) {
-        // Use more comprehensive error fingerprinting
+        // Use stable components that don't change between analysis runs
+        // Focus on the core error identity rather than positional information
         const components = [
             error.type || 'unknown',
-            error.message || 'nomessage',
-            error.line_number || 'noline',
-            error.sentence_index !== undefined ? error.sentence_index : 'nosentence',
-            error.text_segment || 'notext'
+            error.message || 'nomessage'
         ];
         
-        // Create a more stable hash
+        // Add text segment if available, otherwise try other text identifiers
+        let textIdentifier = 'notext';
+        if (error.text_segment && error.text_segment.trim()) {
+            textIdentifier = error.text_segment.trim().replace(/\s+/g, ' ').substring(0, 100);
+        } else if (error.sentence && error.sentence.trim()) {
+            // Use sentence if text_segment is not available
+            textIdentifier = error.sentence.trim().replace(/\s+/g, ' ').substring(0, 100);
+        } else if (error.suggestions && error.suggestions.length > 0) {
+            // Use first suggestion as differentiator if no text available
+            textIdentifier = error.suggestions[0].replace(/\s+/g, ' ').substring(0, 50);
+        }
+        
+        components.push(textIdentifier);
+        
+        // Add additional differentiating factors for same-type errors
+        if (error.subtype) {
+            components.push(error.subtype);
+        }
+        
+        if (error.ambiguity_type) {
+            components.push(error.ambiguity_type);
+        }
+        
+        if (error.rule_subtype) {
+            components.push(error.rule_subtype);
+        }
+        
+        // For word usage errors, extract the specific word being flagged
+        if (error.type && error.type.includes('word_usage') && error.message) {
+            const wordMatch = error.message.match(/'([^']+)'/);
+            if (wordMatch) {
+                components.push(`flagged_word:${wordMatch[1]}`);
+            }
+        }
+        
+        // Add error position if available (but only the first few digits to avoid minor variations)
+        if (error.error_position && typeof error.error_position === 'number') {
+            // Round to nearest 10 to avoid minor position differences
+            const roundedPosition = Math.floor(error.error_position / 10) * 10;
+            components.push(`pos:${roundedPosition}`);
+        }
+        
+        // If we still have minimal differentiation, add a hash of all available properties
+        if (textIdentifier === 'notext' && error.message === error.type) {
+            // Create a more unique identifier from all error properties
+            const allProps = JSON.stringify({
+                suggestions: error.suggestions || [],
+                severity: error.severity,
+                confidence: error.confidence,
+                confidence_score: error.confidence_score,
+                // Include any other unique properties
+                ...Object.keys(error).reduce((acc, key) => {
+                    if (typeof error[key] === 'string' && error[key].length < 200) {
+                        acc[key] = error[key];
+                    }
+                    return acc;
+                }, {})
+            });
+            components.push(allProps.substring(0, 100));
+        }
+
+        // Create a more stable hash using enhanced components
         const rawId = components.join('|');
-        let hash = 0;
+
+        // Use DJB2 hash algorithm for better distribution
+        let hash = 5381;
         for (let i = 0; i < rawId.length; i++) {
-            const char = rawId.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
+            hash = ((hash << 5) + hash) + rawId.charCodeAt(i);
             hash = hash & hash; // Convert to 32-bit integer
         }
         
-        // Convert to positive base36 string
-        return Math.abs(hash).toString(36).padStart(8, '0');
+        // Convert to positive base36 string with more digits for better uniqueness
+        const errorId = Math.abs(hash).toString(36).padStart(10, '0');
+
+        return errorId;
     },
     
     /**
@@ -74,12 +138,14 @@ const FeedbackTracker = {
      * @returns {string} - Error ID
      */
     recordFeedback(error, feedbackType, reason = null) {
+
         const errorId = this.generateErrorId(error);
+
         const confidenceScore = window.ConfidenceSystem ? 
             window.ConfidenceSystem.extractConfidenceScore(error) : 
             (error.confidence_score || 0.5);
         
-        this.feedback[errorId] = {
+        const feedbackData = {
             type: feedbackType, // 'helpful', 'not_helpful'
             reason: reason,
             timestamp: Date.now(),
@@ -95,7 +161,11 @@ const FeedbackTracker = {
                 confidence_score: error.confidence_score
             }
         };
+
+        this.feedback[errorId] = feedbackData;
+
         this.saveToSession();
+
         return errorId;
     },
     
@@ -106,7 +176,12 @@ const FeedbackTracker = {
      */
     getFeedback(error) {
         const errorId = this.generateErrorId(error);
-        return this.feedback[errorId] || null;
+        const feedback = this.feedback[errorId] || null;
+
+        if (feedback) {
+
+        }
+        return feedback;
     },
     
     /**
@@ -135,14 +210,16 @@ const FeedbackTracker = {
  * @returns {string} - HTML string for feedback buttons
  */
 function createFeedbackButtons(error, context = 'card') {
-    const existingFeedback = FeedbackTracker.getFeedback(error);
     const errorId = FeedbackTracker.generateErrorId(error);
-    
+
+    const existingFeedback = FeedbackTracker.getFeedback(error);
+
     if (existingFeedback) {
+
         // Show feedback confirmation
         return createFeedbackConfirmation(errorId, existingFeedback);
     }
-    
+
     return createFeedbackPrompt(errorId, error);
 }
 
@@ -211,45 +288,76 @@ function createFeedbackPrompt(errorId, error) {
  * @param {string} encodedError - Base64 encoded error object
  */
 function submitFeedback(errorId, feedbackType, encodedError) {
+
     // Prevent multiple submissions
     const feedbackSection = document.querySelector(`[data-error-id="${errorId}"]`);
     if (!feedbackSection) {
-        console.warn(`Feedback section not found for error ID: ${errorId}`);
+        console.error(`Feedback section not found for error ID: ${errorId}`);
         return;
     }
-    
+
     // Check if already processing
     if (feedbackSection.dataset.processing === 'true') {
+
         return;
     }
     
     // Mark as processing
     feedbackSection.dataset.processing = 'true';
     
-    // Disable feedback buttons
-    const buttons = feedbackSection.querySelectorAll('.feedback-btn');
+    // Disable feedback buttons - use multiple selectors to be more robust
+    let buttons = Array.from(feedbackSection.querySelectorAll('.feedback-btn, .feedback-helpful, .feedback-not-helpful'));
+
+    // Also try to find buttons in the immediate DOM area as fallback
+    if (buttons.length === 0) {
+
+        const allButtons = Array.from(feedbackSection.querySelectorAll('button'));
+
+        allButtons.forEach(btn => {
+            if (btn.textContent && (btn.textContent.includes('Helpful') || btn.textContent.includes('Not helpful'))) {
+                buttons.push(btn);
+            }
+        });
+    }
+    
     buttons.forEach(btn => {
         btn.disabled = true;
         btn.style.opacity = '0.6';
     });
-    
+
     try {
-        const safeDecode = window.ConfidenceSystem ? 
-            window.ConfidenceSystem.safeBase64Decode : 
-            (str) => decodeURIComponent(Array.prototype.map.call(atob(str), c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+        // Use safe decoding with fallback
+        let errorJson;
+        let error;
         
-        const errorJson = safeDecode(encodedError);
-        const error = JSON.parse(errorJson);
+        // Try confidence system first (if available)
+        if (window.ConfidenceSystem && window.ConfidenceSystem.safeBase64Decode) {
+
+            errorJson = window.ConfidenceSystem.safeBase64Decode(encodedError);
+        } else {
+
+            errorJson = decodeURIComponent(Array.prototype.map.call(atob(encodedError), c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+        }
+
+        error = JSON.parse(errorJson);
+
+        // Validate the error object has required properties
+        if (!error.type || !error.message) {
+            throw new Error(`Invalid error object: missing type or message. Got: ${JSON.stringify(error)}`);
+        }
         
         if (feedbackType === 'not_helpful') {
+
             // Show reason selection modal for negative feedback
             showFeedbackReasonModal(errorId, feedbackType, error);
         } else {
+
             // Direct submission for positive feedback
             processFeedbackSubmission(errorId, feedbackType, error, null);
         }
     } catch (e) {
         console.error('Failed to process feedback:', e);
+        console.error('EncodedError that failed:', encodedError);
         
         // Re-enable buttons on error
         buttons.forEach(btn => {
@@ -271,32 +379,38 @@ function submitFeedback(errorId, feedbackType, encodedError) {
  * @param {Object|null} reason - Reason object
  */
 function processFeedbackSubmission(errorId, feedbackType, error, reason) {
+
     try {
         // Record feedback
-        FeedbackTracker.recordFeedback(error, feedbackType, reason);
-        
+
+        const recordedErrorId = FeedbackTracker.recordFeedback(error, feedbackType, reason);
+
+        // Verify feedback was recorded
+        const storedFeedback = FeedbackTracker.getFeedback(error);
+
         // Update UI to show feedback confirmation
-        const feedbackSection = document.querySelector(`[data-error-id="${errorId}"]`);
-        if (feedbackSection) {
-            // Remove processing state
-            feedbackSection.dataset.processing = 'false';
+        const feedbackSections = document.querySelectorAll(`[data-error-id="${errorId}"]`);
+
+        if (feedbackSections.length > 0) {
+            // Update all sections with the same error ID
+            feedbackSections.forEach((feedbackSection, index) => {
+
+                updateFeedbackSection(feedbackSection, errorId, error, feedbackType, reason);
+            });
             
-            // Update with confirmation
-            const newHtml = createFeedbackButtons(error);
-            feedbackSection.innerHTML = newHtml;
-            
-            // Add success animation
-            feedbackSection.style.transition = 'all 0.3s ease';
-            feedbackSection.style.transform = 'scale(1.05)';
-            setTimeout(() => {
-                feedbackSection.style.transform = 'scale(1)';
-            }, 200);
-            
-            // Submit to backend if available
+            // Submit to backend if available (only once, not per section)
             submitFeedbackToBackend(errorId, feedbackType, error, reason);
+        } else {
+            console.error(`[DEBUG] No feedback sections found for errorId: ${errorId}`);
+            
+            // Try to find any feedback sections for debugging
+            const allFeedbackSections = document.querySelectorAll('[data-error-id]');
+
         }
     } catch (e) {
         console.error('Error processing feedback submission:', e);
+        console.error('Error object that failed:', error);
+        
         const feedbackSection = document.querySelector(`[data-error-id="${errorId}"]`);
         if (feedbackSection) {
             feedbackSection.dataset.processing = 'false';
@@ -306,23 +420,74 @@ function processFeedbackSubmission(errorId, feedbackType, error, reason) {
 }
 
 /**
+ * Update a single feedback section
+ * @param {Element} feedbackSection - The feedback section element
+ * @param {string} errorId - Error ID
+ * @param {Object} error - Error object
+ * @param {string} feedbackType - Feedback type
+ * @param {Object|null} reason - Reason object
+ */
+function updateFeedbackSection(feedbackSection, errorId, error, feedbackType, reason) {
+    try {
+        if (feedbackSection) {
+
+            // Remove processing state
+            feedbackSection.dataset.processing = 'false';
+            
+            // Update with confirmation - this should now show the Change button
+
+            const newHtml = createFeedbackButtons(error);
+
+            // Force a small delay to ensure DOM is ready
+            setTimeout(() => {
+                feedbackSection.innerHTML = newHtml;
+
+                // Verify the update actually happened
+                const hasChangeButton = feedbackSection.querySelector('.feedback-change-btn');
+
+                // Add success animation
+                feedbackSection.style.transition = 'all 0.3s ease';
+                feedbackSection.style.transform = 'scale(1.05)';
+                setTimeout(() => {
+                    feedbackSection.style.transform = 'scale(1)';
+                }, 200);
+            }, 50);
+        }
+    } catch (e) {
+        console.error('Error updating feedback section:', e);
+        feedbackSection.dataset.processing = 'false';
+    }
+}
+
+/**
  * Change existing feedback
  * @param {string} errorId - Error ID
  */
 function changeFeedback(errorId) {
+
     const feedbackSection = document.querySelector(`[data-error-id="${errorId}"]`);
     if (!feedbackSection) {
-        console.warn(`Feedback section not found for error ID: ${errorId}`);
+        console.error(`Feedback section not found for error ID: ${errorId}`);
         return;
     }
-    
-    // Get existing feedback data
-    const existingFeedback = FeedbackTracker.feedback[errorId];
+
+    // Get existing feedback data - use direct access first, then try to find by error object
+    let existingFeedback = FeedbackTracker.feedback[errorId];
+
     if (!existingFeedback) {
-        console.warn(`No existing feedback found for error ID: ${errorId}`);
-        return;
+        // Fallback: search through all stored feedback to find matching errorId
+
+        // Find any feedback with matching errorId in the keys
+        const feedbackKeys = Object.keys(FeedbackTracker.feedback);
+        existingFeedback = feedbackKeys.includes(errorId) ? FeedbackTracker.feedback[errorId] : null;
+        
+        if (!existingFeedback) {
+            console.error(`No existing feedback found for error ID: ${errorId}`);
+            console.error(`Available feedback keys:`, feedbackKeys);
+            return;
+        }
     }
-    
+
     // Disable change button to prevent multiple clicks
     const changeBtn = feedbackSection.querySelector('.feedback-change-btn');
     if (changeBtn) {
@@ -338,6 +503,8 @@ function changeFeedback(errorId) {
         // Reconstruct error object from stored data
         const reconstructedError = existingFeedback.original_error || {
             type: existingFeedback.error_type,
+            message: existingFeedback.original_error?.message || 'Error message not available',
+            text_segment: existingFeedback.original_error?.text_segment || '',
             confidence_score: existingFeedback.confidence_score
         };
         
@@ -662,8 +829,6 @@ function closeFeedbackReasonModal() {
     }
 }
 
-
-
 /**
  * Generate CSS styles for feedback system
  * @returns {string} - CSS string for feedback styling
@@ -857,4 +1022,8 @@ if (typeof window !== 'undefined') {
         generateSessionId,
         showFeedbackError
     };
+    
+    // Initialize feedback system when the script loads
+    console.log('[DEBUG] Initializing FeedbackTracker...');
+    FeedbackTracker.init();
 }

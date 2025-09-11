@@ -1,6 +1,5 @@
 """
-General Writing Rule - Evidence-Based Analysis
-Based on Editorial Enhancement Plan Phase 2
+General Writing Rule - Core Writing Structure Issues
 
 """
 from typing import List, Dict, Any, Optional, Tuple, Set
@@ -16,13 +15,12 @@ except ImportError:
 
 class GeneralWritingRule(BaseRule):
     """
-    Checks for general writing mistakes using evidence-based analysis:
-    - Repeated words, comma issues, capitalization problems
-    - Grammar violations (subject-verb, fragments, splices)  
-    - Word usage confusions (affect/effect, its/it's, etc.)
-    - Style issues (parallel structure, tense, clarity)
-    - Advanced punctuation problems
-    Enhanced with spaCy morphological analysis and contextual awareness.
+    Analyzes core writing structure issues using evidence-based analysis:
+    - Sentence structure: fragments, run-ons, subject-verb agreement
+    - Text coherence: pronoun clarity, parallel structure, tense consistency  
+    - Basic proofreading: repeated words, wordiness patterns
+    - Advanced grammar: comma splices, double negatives
+
     """
     def __init__(self):
         """Initialize the rule with writing mistake patterns."""
@@ -34,72 +32,17 @@ class GeneralWritingRule(BaseRule):
         return 'general_writing'
     
     def _initialize_writing_patterns(self):
-        """Initialize comprehensive writing mistake detection patterns."""
+        """Initialize core writing structure patterns (no duplications with specialized rules)."""
         self.writing_patterns = {
-            # === BASIC TEXT ISSUES ===
+            # === BASIC PROOFREADING (not covered elsewhere) ===
             'repeated_words': re.compile(r'\b(\w+)\s+\1\b', re.IGNORECASE),
-            'extra_commas': re.compile(r',\s*,+'),
-            'missing_oxford_comma': re.compile(r'\b\w+,\s+\w+\s+and\s+\w+\b'),
-            'inconsistent_capitalization': re.compile(r'\b([A-Z][a-z]+)\s+([a-z][A-Z]+)'),
-            'misplaced_apostrophe': re.compile(r"\b\w+'s\s+\w+|\b\w+s'\s+\w+"),
             
-            # === GRAMMAR ISSUES ===
-            'double_negative': re.compile(r"\b(don't|doesn't|didn't|won't|can't|isn't|aren't|wasn't|weren't)\s+(no|nothing|nobody|nowhere|never|neither)\b", re.IGNORECASE),
-            'comma_splice': re.compile(r'\b[a-zA-Z]+\s*,\s*[a-z][^.!?]*[.!?]'),
+            # === CORE GRAMMAR STRUCTURE ===
+            'double_negative': re.compile(r"\b(don't|doesn't|didn't|won't|can't|isn't|aren't|wasn't|weren't)\b.*?\b(no|nothing|nobody|nowhere|never|neither)\b", re.IGNORECASE),
+            'comma_splice': re.compile(r'\w+,\s*[A-Za-z]\w*'),
             
-            # === WORD USAGE ISSUES ===
-            'affect_effect': re.compile(r'\b(affect|effect)\b', re.IGNORECASE),
-            'its_its': re.compile(r"\b(its|it's)\b", re.IGNORECASE),
-            'then_than': re.compile(r'\b(then|than)\b', re.IGNORECASE),
-            'your_youre': re.compile(r"\b(your|you're)\b", re.IGNORECASE),
-            'there_their_theyre': re.compile(r"\b(there|their|they're)\b", re.IGNORECASE),
-            'who_whom': re.compile(r'\b(who|whom)\b', re.IGNORECASE),
-            
-            # Misused contractions  
-            'should_of': re.compile(r'\bshould\s+of\b', re.IGNORECASE),
-            'could_of': re.compile(r'\bcould\s+of\b', re.IGNORECASE),
-            'would_of': re.compile(r'\bwould\s+of\b', re.IGNORECASE),
-            'might_of': re.compile(r'\bmight\s+of\b', re.IGNORECASE),
-            
-            # Preposition errors
-            'different_than': re.compile(r'\bdifferent\s+than\b', re.IGNORECASE),
-            'try_and': re.compile(r'\btry\s+and\b', re.IGNORECASE),
-            
-            # Redundancy
-            'very_unique': re.compile(r'\bvery\s+unique\b', re.IGNORECASE),
-            'more_perfect': re.compile(r'\bmore\s+perfect\b', re.IGNORECASE),
-            'most_unique': re.compile(r'\bmost\s+unique\b', re.IGNORECASE),
-            'very_essential': re.compile(r'\bvery\s+essential\b', re.IGNORECASE),
-            
-            # === STYLE ISSUES ===
-            'passive_voice': re.compile(r'\b(was|were|is|are|been|being)\s+\w+ed\b'),
-            'weak_verbs': re.compile(r'\b(is|are|was|were|be|being|been)\s+'),
-            
-            # === ADVANCED PUNCTUATION ===
-            'semicolon_misuse': re.compile(r';[^A-Z\s]'),  # Semicolon not followed by capital or space
-            'quote_inconsistency': re.compile(r'["\'"].+?["\''']'),  # Mixed quote styles
-            'hyphen_compound': re.compile(r'\b\w+\s+\w+(?=\s+\w+)', re.IGNORECASE),  # Potential compound words
-            
-            # === SENTENCE STRUCTURE ===
+            # === SENTENCE STRUCTURE INDICATORS ===
             'run_on_indicator': re.compile(r'\b(and|but|or|so|yet)\s+\w+.*\b(and|but|or|so|yet)\b'),
-            'sentence_fragment': re.compile(r'^[A-Z][^.!?]*[^.!?]$')  # No ending punctuation
-        }
-        
-        # Common word confusion contexts
-        self.word_confusions = {
-            'affect': {'correct_as_verb': ['influence', 'change', 'impact'], 'correct_as_noun': []},
-            'effect': {'correct_as_verb': ['cause', 'bring about'], 'correct_as_noun': ['result', 'consequence', 'outcome']},
-            'its': {'context': 'possessive', 'examples': ['its color', 'its purpose']},
-            "it's": {'context': 'contraction', 'examples': ["it's time", "it's working"]},
-            'then': {'context': 'time/sequence', 'examples': ['first this, then that']},
-            'than': {'context': 'comparison', 'examples': ['better than', 'more than']},
-            'your': {'context': 'possessive', 'examples': ['your book', 'your idea']},
-            "you're": {'context': 'contraction', 'examples': ["you're right", "you're going"]},
-            'there': {'context': 'location/existence', 'examples': ['over there', 'there is']},
-            'their': {'context': 'possessive', 'examples': ['their car', 'their opinion']},
-            "they're": {'context': 'contraction', 'examples': ["they're coming", "they're ready"]},
-            'who': {'context': 'subject', 'examples': ['who did it', 'the person who']},
-            'whom': {'context': 'object', 'examples': ['to whom', 'for whom']}
         }
     
     def analyze(self, text: str, sentences: List[str], nlp=None, context: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
@@ -135,6 +78,9 @@ class GeneralWritingRule(BaseRule):
         except Exception as e:
             # Graceful degradation for SpaCy errors
             return self._fallback_writing_analysis(text, sentences, context)
+        
+        # Deduplicate generic errors to prevent multiple identical "writing issue" reports
+        errors = self._deduplicate_generic_errors(errors)
         
         return errors
     
@@ -178,10 +124,15 @@ class GeneralWritingRule(BaseRule):
                 evidence_score = self._calculate_pattern_evidence(pattern_name, match, text, context)
                 
                 if evidence_score > 0.1:
+                    # Get the message - skip if None (filtered out as low-confidence generic)
+                    message = self._get_contextual_writing_message(pattern_name, match, evidence_score, context)
+                    if message is None:
+                        continue  # Skip this error - filtered out as generic/low-confidence
+                    
                     error = self._create_error(
                         sentence=self._get_sentence_for_match(match, text),
                         sentence_index=self._get_sentence_index_for_match(match, text),
-                        message=self._get_contextual_writing_message(pattern_name, match, evidence_score, context),
+                        message=message,
                         suggestions=self._generate_smart_writing_suggestions(pattern_name, match, evidence_score, context),
                         severity=self._get_writing_severity(pattern_name, evidence_score),
                         text=text,
@@ -538,26 +489,11 @@ class GeneralWritingRule(BaseRule):
         base_scores = {
             # High confidence patterns
             'repeated_words': 0.9,           # Almost always an error
-            'extra_commas': 0.9,             # Clear punctuation error
-            'should_of': 0.95,               # Clear grammatical error
-            'could_of': 0.95,
-            'would_of': 0.95,
             'double_negative': 0.8,          # Usually an error in formal writing
+            'comma_splice': 0.7,             # Clear grammar error
             
-            # Medium confidence patterns
-            'missing_oxford_comma': 0.6,     # Style preference
-            'different_than': 0.7,           # Common error but style dependent
-            'very_unique': 0.8,              # Redundancy, usually wrong
-            'passive_voice': 0.4,            # Often acceptable
-            'semicolon_misuse': 0.7,         # Good evidence of error
-            
-            # Lower confidence patterns (context dependent)
-            'affect_effect': 0.3,            # Need context analysis
-            'its_its': 0.3,
-            'then_than': 0.3,
-            'your_youre': 0.3,
-            'run_on_indicator': 0.4,         # Might be acceptable
-            'weak_verbs': 0.2                # Often acceptable
+            # Medium confidence patterns  
+            'run_on_indicator': 0.4,         # Might be acceptable depending on context
         }
         
         evidence_score = base_scores.get(pattern_name, 0.5)
@@ -580,88 +516,30 @@ class GeneralWritingRule(BaseRule):
         """Apply pattern-specific evidence adjustments."""
         matched_text = match.group().lower()
         
-        # Word confusion patterns need context analysis
-        if pattern_name in ['affect_effect', 'its_its', 'then_than', 'your_youre']:
-            evidence_score = self._analyze_word_confusion_context(pattern_name, match, text)
-        
         # Repeated words - check if it's intentional emphasis
-        elif pattern_name == 'repeated_words':
+        if pattern_name == 'repeated_words':
             if len(matched_text.split()) == 2 and matched_text.split()[0] in ['very', 'so', 'really', 'quite']:
                 evidence_score -= 0.3  # Might be intentional emphasis
         
-        # Oxford comma - depends on style guide
-        elif pattern_name == 'missing_oxford_comma':
-            # If document consistently avoids Oxford commas, don't flag
-            oxford_comma_usage = text.count(',') > 0 and ', and' in text
-            if not oxford_comma_usage:
-                evidence_score -= 0.3
-        
-        # Passive voice - check if appropriate
-        elif pattern_name == 'passive_voice':
-            # In technical writing, passive voice is often appropriate
-            if context.get('content_type') == 'technical':
+        # Double negative - less problematic in conversational contexts
+        elif pattern_name == 'double_negative':
+            if context.get('content_type') == 'conversational':
                 evidence_score -= 0.2
+        
+        # Comma splice - check if it might be acceptable stylistic choice
+        elif pattern_name == 'comma_splice':
+            # Very short clauses might be acceptable
+            if len(matched_text) < 20:
+                evidence_score -= 0.1
+        
+        # Run-on indicators - check context
+        elif pattern_name == 'run_on_indicator':
+            # In lists or procedural content, coordination is normal
+            if context.get('block_type') in ['list_item', 'procedural']:
+                evidence_score -= 0.3
         
         return evidence_score
     
-    def _analyze_word_confusion_context(self, pattern_name: str, match: re.Match, text: str) -> float:
-        """Analyze context for commonly confused words."""
-        matched_word = match.group().lower()
-        context_window = self._get_context_window(match, text, 20)  # 20 characters before/after
-        
-        # Get usage rules for the word
-        if matched_word not in self.word_confusions:
-            return 0.3  # Default evidence for unknown confusions
-        
-        word_info = self.word_confusions[matched_word]
-        
-        # Analyze based on word type
-        if pattern_name == 'affect_effect':
-            # "Affect" is usually a verb, "effect" is usually a noun
-            if matched_word == 'affect':
-                # Check if used as noun (incorrect in most cases)
-                if re.search(r'\b(the|an|his|her|its|this|that)\s+affect\b', context_window, re.IGNORECASE):
-                    return 0.8  # Likely incorrect
-                else:
-                    return 0.2  # Likely correct as verb
-            else:  # effect
-                # Check if used as verb (incorrect in most cases)
-                if re.search(r'\bto\s+effect\b', context_window, re.IGNORECASE):
-                    return 0.3  # "to effect" can be correct
-                elif re.search(r'\b(will|would|should|can|could)\s+effect\b', context_window, re.IGNORECASE):
-                    return 0.9  # Likely should be "affect"
-                else:
-                    return 0.2  # Likely correct as noun
-        
-        elif pattern_name == 'its_its':
-            if matched_word == "it's":
-                # Check if possessive context (should be "its")
-                if re.search(r"it's\s+(own|color|size|purpose|function)", context_window, re.IGNORECASE):
-                    return 0.9  # Should be "its"
-                else:
-                    return 0.2  # Likely correct contraction
-            else:  # its
-                # Check if contraction context (should be "it's")
-                if re.search(r'\bits\s+(time|working|ready|done)', context_window, re.IGNORECASE):
-                    return 0.8  # Should be "it's"
-                else:
-                    return 0.2  # Likely correct possessive
-        
-        elif pattern_name == 'then_than':
-            if matched_word == 'then':
-                # Check if comparison context (should be "than")
-                if re.search(r'(better|worse|more|less|greater|smaller)\s+then\b', context_window, re.IGNORECASE):
-                    return 0.9  # Should be "than"
-                else:
-                    return 0.2  # Likely correct temporal usage
-            else:  # than
-                # Check if temporal context (should be "then")
-                if re.search(r'\bthan\s+(we|I|you|they)\s+(will|would|should)', context_window, re.IGNORECASE):
-                    return 0.7  # Possibly should be "then"
-                else:
-                    return 0.2  # Likely correct comparison
-        
-        return 0.3  # Default for other word confusions
 
     # === HELPER METHODS ===
     
@@ -841,14 +719,14 @@ class GeneralWritingRule(BaseRule):
     def _get_writing_severity(self, pattern_name: str, evidence_score: float) -> str:
         """Determine severity based on pattern and evidence."""
         # Grammar errors are more severe
-        if pattern_name in ['should_of', 'could_of', 'would_of', 'double_negative', 'subject_verb_disagreement']:
+        if pattern_name in ['double_negative', 'comma_splice', 'subject_verb_disagreement']:
             return 'medium' if evidence_score > 0.7 else 'low'
         
-        # Clear errors
-        if pattern_name in ['repeated_words', 'extra_commas']:
+        # Clear proofreading errors
+        if pattern_name == 'repeated_words':
             return 'medium' if evidence_score > 0.8 else 'low'
         
-        # Style issues are usually low severity
+        # Structural issues are usually low severity
         return 'low'
 
     # === SMART MESSAGING ===
@@ -860,23 +738,19 @@ class GeneralWritingRule(BaseRule):
         
         messages = {
             'repeated_words': f"This text {confidence_phrase} repeated words: '{matched_text}'.",
-            'extra_commas': f"This text {confidence_phrase} extra commas that should be removed.",
-            'should_of': f"Use 'should have' instead of 'should of'.",
-            'could_of': f"Use 'could have' instead of 'could of'.",
-            'would_of': f"Use 'would have' instead of 'would of'.",
             'double_negative': f"This text {confidence_phrase} a double negative that may be confusing.",
-            'different_than': f"Consider using 'different from' instead of 'different than'.",
-            'very_unique': f"Something is either unique or not - 'very unique' is redundant.",
-            'affect_effect': f"Check if '{matched_text}' is the correct word choice (affect vs. effect).",
-            'its_its': f"Check if '{matched_text}' is the correct word choice (its vs. it's).",
-            'then_than': f"Check if '{matched_text}' is the correct word choice (then vs. than).",
-            'your_youre': f"Check if '{matched_text}' is the correct word choice (your vs. you're).",
-            'passive_voice': f"Consider using active voice instead of passive voice.",
-            'semicolon_misuse': f"This semicolon may be used incorrectly.",
-            'run_on_sentence': f"This sentence {confidence_phrase} run-on structure."
+            'comma_splice': f"This sentence {confidence_phrase} a comma splice - independent clauses should be separated properly.",
+            'run_on_indicator': f"This sentence {confidence_phrase} multiple coordinating conjunctions that may indicate a run-on structure."
         }
         
-        return messages.get(pattern_name, f"This text {confidence_phrase} a writing issue.")
+        # Only return generic message for unknown patterns with high confidence
+        if pattern_name not in messages:
+            if evidence_score > 0.6:  # Only report high-confidence unknown issues
+                return f"This text {confidence_phrase} a writing issue."
+            else:
+                return None  # Skip low-confidence unknown issues
+        
+        return messages.get(pattern_name)
 
     def _generate_smart_writing_suggestions(self, pattern_name: str, match: re.Match, evidence_score: float, context: Dict[str, Any]) -> List[str]:
         """Generate context-aware suggestions for writing violations."""
@@ -885,57 +759,23 @@ class GeneralWritingRule(BaseRule):
         suggestion_map = {
             'repeated_words': [
                 f"Remove the repeated word in '{matched_text}'.",
-                "Check for accidental word duplication.",
+                "Check for accidental word duplication.", 
                 "Proofread for repeated words."
-            ],
-            'extra_commas': [
-                "Remove the extra comma.",
-                "Use single commas to separate items.",
-                "Check comma placement rules."
-            ],
-            'should_of': [
-                "Replace 'should of' with 'should have'.",
-                "Use the correct auxiliary verb form.",
-                "'Of' is a preposition, not part of a verb."
-            ],
-            'could_of': [
-                "Replace 'could of' with 'could have'.",
-                "Use the correct auxiliary verb form.",
-                "The contraction is 'could've' (could have)."
-            ],
-            'would_of': [
-                "Replace 'would of' with 'would have'.",
-                "Use the correct auxiliary verb form.",
-                "The contraction is 'would've' (would have)."
             ],
             'double_negative': [
                 "Use a single negative for clarity.",
                 "Rewrite to avoid double negatives.",
                 "Consider the intended meaning and use appropriate negation."
             ],
-            'different_than': [
-                "Use 'different from' instead of 'different than'.",
-                "'Different than' is less preferred in formal writing.",
-                "Follow standard preposition usage with 'different'."
+            'comma_splice': [
+                "Use a period to separate the independent clauses.",
+                "Use a semicolon if the clauses are closely related.",
+                "Add a coordinating conjunction after the comma."
             ],
-            'very_unique': [
-                "Use 'unique' without 'very' - unique means one of a kind.",
-                "Remove redundant modifiers before absolute words.",
-                "Consider 'unusual' or 'distinctive' if gradation is needed."
-            ],
-            'affect_effect': self._get_affect_effect_suggestions(matched_text),
-            'its_its': self._get_its_suggestions(matched_text),
-            'then_than': self._get_then_than_suggestions(matched_text),
-            'your_youre': self._get_your_youre_suggestions(matched_text),
-            'passive_voice': [
-                "Consider rewriting in active voice.",
-                "Make the subject perform the action.",
-                "Active voice is often clearer and more direct."
-            ],
-            'semicolon_misuse': [
-                "Check semicolon usage rules.",
-                "Use semicolons to join independent clauses.",
-                "Consider using a period or comma instead."
+            'run_on_indicator': [
+                "Consider breaking this sentence into smaller parts.",
+                "Use periods to separate independent thoughts.",
+                "Limit coordinating conjunctions to avoid run-on sentences."
             ]
         }
         
@@ -948,66 +788,6 @@ class GeneralWritingRule(BaseRule):
             suggestions.append("Consider fixing this for better writing quality.")
         
         return suggestions[:3]
-    
-    def _get_affect_effect_suggestions(self, matched_text: str) -> List[str]:
-        """Generate specific suggestions for affect/effect confusion."""
-        if matched_text.lower() == 'affect':
-            return [
-                "'Affect' is usually a verb meaning to influence.",
-                "If you mean a result, use 'effect' (noun).",
-                "Remember: Affect = Action (verb), Effect = End result (noun)."
-            ]
-        else:
-            return [
-                "'Effect' is usually a noun meaning a result.",
-                "If you mean to influence, use 'affect' (verb).",
-                "Remember: Affect = Action (verb), Effect = End result (noun)."
-            ]
-    
-    def _get_its_suggestions(self, matched_text: str) -> List[str]:
-        """Generate specific suggestions for its/it's confusion."""
-        if matched_text.lower() == "it's":
-            return [
-                "'It's' is a contraction for 'it is' or 'it has'.",
-                "If you mean possession, use 'its' (no apostrophe).",
-                "Test: Can you replace it with 'it is'? Then use 'it's'."
-            ]
-        else:
-            return [
-                "'Its' shows possession (like his, her, their).",
-                "If you mean 'it is', use 'it's' (with apostrophe).",
-                "Possessive pronouns don't use apostrophes."
-            ]
-    
-    def _get_then_than_suggestions(self, matched_text: str) -> List[str]:
-        """Generate specific suggestions for then/than confusion."""
-        if matched_text.lower() == 'then':
-            return [
-                "'Then' refers to time or sequence.",
-                "If you're making a comparison, use 'than'.",
-                "Example: 'First this, then that' vs 'better than before'."
-            ]
-        else:
-            return [
-                "'Than' is used for comparisons.",
-                "If you mean time or sequence, use 'then'.",
-                "Example: 'better than before' vs 'first this, then that'."
-            ]
-    
-    def _get_your_youre_suggestions(self, matched_text: str) -> List[str]:
-        """Generate specific suggestions for your/you're confusion."""
-        if matched_text.lower() == "you're":
-            return [
-                "'You're' is a contraction for 'you are'.",
-                "If you mean possession, use 'your' (no apostrophe).",
-                "Test: Can you replace it with 'you are'? Then use 'you're'."
-            ]
-        else:
-            return [
-                "'Your' shows possession (belonging to you).",
-                "If you mean 'you are', use 'you're' (with apostrophe).",
-                "Example: 'your book' vs 'you're right'."
-            ]
     
     def _generate_agreement_suggestions(self, subject: 'Token', verb: 'Token') -> List[str]:
         """Generate suggestions for subject-verb agreement."""
@@ -1064,3 +844,43 @@ class GeneralWritingRule(BaseRule):
             "Aim for 15-20 words per sentence for better readability.",
             "Use periods to separate independent ideas."
         ]
+    
+    def _deduplicate_generic_errors(self, errors: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Remove duplicate generic errors to prevent spam."""
+        if not errors:
+            return errors
+        
+        # Group errors by their core identity (message + violation_type)
+        error_groups = {}
+        
+        for error in errors:
+            message = error.get('message', '')
+            violation_type = error.get('violation_type', '')
+            
+            # Create a key for grouping similar errors
+            key = f"{message}|{violation_type}"
+            
+            if key not in error_groups:
+                error_groups[key] = []
+            error_groups[key].append(error)
+        
+        deduped_errors = []
+        
+        for key, group in error_groups.items():
+            # For generic "writing issue" errors, only keep one per unique text segment
+            if "writing issue" in key.lower():
+                # Keep unique text segments only
+                seen_texts = set()
+                for error in group:
+                    text_segment = error.get('flagged_text', '')[:50]  # First 50 chars
+                    if text_segment not in seen_texts:
+                        seen_texts.add(text_segment)
+                        deduped_errors.append(error)
+                        # Limit to max 2 generic errors per document
+                        if len([e for e in deduped_errors if "writing issue" in e.get('message', '').lower()]) >= 2:
+                            break
+            else:
+                # For specific errors, keep all instances (they're legitimately different)
+                deduped_errors.extend(group)
+        
+        return deduped_errors
