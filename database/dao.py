@@ -417,6 +417,61 @@ class FeedbackDAO(BaseDAO):
         return UserFeedback.query.filter_by(violation_id=violation_id).all()
     
     @staticmethod
+    @BaseDAO.handle_db_error("get_existing_feedback")
+    def get_existing_feedback(session_id: str, violation_id: str) -> UserFeedback:
+        """Get existing feedback for a specific session and violation."""
+        return UserFeedback.query.filter_by(
+            session_id=session_id, 
+            violation_id=violation_id
+        ).first()
+    
+    @staticmethod
+    @BaseDAO.handle_db_error("update_feedback")
+    def update_feedback(
+        session_id: str,
+        violation_id: str,
+        feedback_data: Dict[str, Any],
+        user_agent: str = None,
+        ip_hash: str = None
+    ) -> UserFeedback:
+        """Update existing feedback or create new one."""
+        existing_feedback = FeedbackDAO.get_existing_feedback(session_id, violation_id)
+        
+        if existing_feedback:
+            # Update existing feedback
+            existing_feedback.feedback_type = FeedbackType(feedback_data['feedback_type'])
+            existing_feedback.confidence_score = feedback_data.get('confidence_score', 0.5)
+            existing_feedback.user_reason = feedback_data.get('user_reason')
+            existing_feedback.timestamp = datetime.utcnow()  # Update timestamp
+            if user_agent:
+                existing_feedback.user_agent = user_agent
+            if ip_hash:
+                existing_feedback.ip_hash = ip_hash
+                
+            db.session.commit()
+            logger.info(f"Updated existing feedback: {existing_feedback.feedback_id}")
+            return existing_feedback
+        else:
+            # Create new feedback if none exists
+            return FeedbackDAO.store_feedback(
+                session_id, violation_id, feedback_data, user_agent, ip_hash
+            )
+    
+    @staticmethod
+    @BaseDAO.handle_db_error("delete_feedback")
+    def delete_feedback(session_id: str, violation_id: str) -> bool:
+        """Delete feedback for a specific session and violation."""
+        existing_feedback = FeedbackDAO.get_existing_feedback(session_id, violation_id)
+        
+        if existing_feedback:
+            db.session.delete(existing_feedback)
+            db.session.commit()
+            logger.info(f"Deleted feedback: {existing_feedback.feedback_id}")
+            return True
+        
+        return False
+    
+    @staticmethod
     @BaseDAO.handle_db_error("get_rule_feedback_stats")
     def get_rule_feedback_stats(rule_id: str) -> Dict[str, Any]:
         """Get feedback statistics for a rule."""

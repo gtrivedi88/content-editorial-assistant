@@ -6,7 +6,7 @@ Complete database models matching the schema design.
 import json
 from datetime import datetime
 from enum import Enum
-from sqlalchemy import Column, Integer, String, Text, Float, Boolean, DateTime, JSON, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, Float, Boolean, DateTime, JSON, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import ENUM
 from database import db
@@ -341,6 +341,11 @@ class UserFeedback(db.Model):
     # Relationships
     session = relationship("UserSession", back_populates="feedback_entries")
     violation = relationship("RuleViolation", back_populates="feedback_entries")
+    
+    # Unique constraint to ensure one feedback per violation per session
+    __table_args__ = (
+        UniqueConstraint('session_id', 'violation_id', name='unique_session_violation_feedback'),
+    )
     
     def __repr__(self):
         return f'<UserFeedback {self.feedback_id}>'

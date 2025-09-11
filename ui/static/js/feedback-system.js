@@ -6,12 +6,15 @@
 // Session-based feedback tracking object
 const FeedbackTracker = {
     feedback: {},
+    sessionId: null,
+    feedbackFromPreviousSessions: {},
     
     /**
      * Initialize feedback tracking system
      */
     init() {
         this.loadFromSession();
+        this.loadExistingFeedbackFromDatabase();
     },
     
     /**
@@ -37,6 +40,62 @@ const FeedbackTracker = {
 
         } catch (e) {
             console.warn('Failed to save feedback to session:', e);
+        }
+    },
+    
+    /**
+     * Load existing feedback from database for current session
+     */
+    async loadExistingFeedbackFromDatabase() {
+        try {
+            const response = await fetch('/api/feedback/session');
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.feedback) {
+                    console.log('[DEBUG] Loading existing feedback from database:', data.feedback.length, 'items');
+                    
+                    // Store session ID for validation
+                    this.sessionId = data.session_id;
+                    
+                    // Process each feedback item
+                    for (const feedbackItem of data.feedback) {
+                        // Create a reconstructed error object for ID generation
+                        const reconstructedError = {
+                            type: feedbackItem.error_type,
+                            message: feedbackItem.error_message,
+                            // We don't have all the original error properties, but we have the essential ones
+                        };
+                        
+                        // Generate the same error ID that would be generated for this error
+                        const errorId = this.generateErrorId(reconstructedError);
+                        
+                        // Convert feedback_type back to frontend format
+                        const feedbackType = feedbackItem.feedback_type === 'correct' ? 'helpful' : 'not_helpful';
+                        
+                        // Store in our feedback tracking
+                        this.feedback[errorId] = {
+                            type: feedbackType,
+                            reason: feedbackItem.user_reason ? JSON.parse(feedbackItem.user_reason) : null,
+                            timestamp: Date.parse(feedbackItem.timestamp),
+                            error_type: feedbackItem.error_type,
+                            confidence_score: feedbackItem.confidence_score,
+                            feedback_id: feedbackItem.feedback_id,
+                            violation_id: feedbackItem.violation_id,
+                            // Mark as from database to prevent changes from previous sessions
+                            fromDatabase: true,
+                            original_error: reconstructedError
+                        };
+                    }
+                    
+                    console.log('[DEBUG] Loaded', Object.keys(this.feedback).length, 'feedback items from database');
+                    this.saveToSession(); // Update session storage with database data
+                }
+            } else {
+                console.warn('Failed to load existing feedback:', response.statusText);
+            }
+        } catch (error) {
+            console.warn('Error loading existing feedback from database:', error);
+            // Don't fail silently - this is important for the user experience
         }
     },
     
@@ -474,6 +533,10 @@ function changeFeedback(errorId) {
     // Get existing feedback data - use direct access first, then try to find by error object
     let existingFeedback = FeedbackTracker.feedback[errorId];
 
+    console.log(`[DEBUG] changeFeedback called for errorId: ${errorId}`);
+    console.log(`[DEBUG] Current feedback storage:`, Object.keys(FeedbackTracker.feedback));
+    console.log(`[DEBUG] Found existing feedback:`, existingFeedback);
+
     if (!existingFeedback) {
         // Fallback: search through all stored feedback to find matching errorId
 
@@ -488,6 +551,35 @@ function changeFeedback(errorId) {
         }
     }
 
+    // Check session validation - prevent changing feedback from previous sessions
+    if (existingFeedback.fromDatabase && FeedbackTracker.sessionId && existingFeedback.sessionId !== FeedbackTracker.sessionId) {
+        console.warn('Cannot change feedback from a previous session');
+        
+        // Show user-friendly message
+        const alertHtml = `
+            <div class="pf-v5-c-alert pf-m-warning pf-m-inline" style="margin-top: 0.5rem;">
+                <div class="pf-v5-c-alert__icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="pf-v5-c-alert__title">
+                    Cannot change feedback from previous sessions
+                </div>
+            </div>
+        `;
+        
+        feedbackSection.insertAdjacentHTML('afterend', alertHtml);
+        
+        // Remove alert after 5 seconds
+        setTimeout(() => {
+            const alert = feedbackSection.nextElementSibling;
+            if (alert && alert.classList.contains('pf-v5-c-alert')) {
+                alert.remove();
+            }
+        }, 5000);
+        
+        return;
+    }
+
     // Disable change button to prevent multiple clicks
     const changeBtn = feedbackSection.querySelector('.feedback-change-btn');
     if (changeBtn) {
@@ -496,7 +588,39 @@ function changeFeedback(errorId) {
     }
     
     try {
-        // Remove existing feedback
+        // If this feedback has database IDs, delete it from the database immediately
+        if (existingFeedback.violation_id || existingFeedback.feedback_id) {
+            console.log(`[DEBUG] Deleting feedback from database - feedback_id: ${existingFeedback.feedback_id}, violation_id: ${existingFeedback.violation_id}`);
+            
+            // Prepare deletion payload with multiple identifiers for reliability
+            const deletePayload = {};
+            if (existingFeedback.feedback_id) deletePayload.feedback_id = existingFeedback.feedback_id;
+            if (existingFeedback.violation_id) deletePayload.violation_id = existingFeedback.violation_id;
+            deletePayload.error_id = errorId;  // Frontend generated ID as fallback
+            
+            // Delete from database immediately
+            fetch('/api/feedback', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(deletePayload)
+            }).then(response => {
+                if (response.ok) {
+                    console.log(`[DEBUG] Successfully deleted feedback from database`);
+                } else {
+                    console.warn(`[DEBUG] Failed to delete feedback from database - Status: ${response.status}`);
+                    return response.json().then(data => {
+                        console.warn(`[DEBUG] Delete error details:`, data);
+                    });
+                }
+            }).catch(error => {
+                console.warn('Failed to delete feedback from database:', error);
+                // Continue with UI update even if database delete fails
+            });
+        }
+        
+        // Remove existing feedback from local storage
         delete FeedbackTracker.feedback[errorId];
         FeedbackTracker.saveToSession();
         
@@ -957,6 +1081,24 @@ function submitFeedbackToBackend(errorId, feedbackType, error, reason) {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify(feedbackData)
+    }).then(response => {
+        if (response.ok) {
+            return response.json();
+        } else {
+            throw new Error(`HTTP ${response.status}`);
+        }
+    }).then(data => {
+        if (data.success && data.feedback_id) {
+            // Update the stored feedback with database IDs for immediate deletion support
+            const existingFeedback = FeedbackTracker.feedback[errorId];
+            if (existingFeedback) {
+                existingFeedback.feedback_id = data.feedback_id;
+                existingFeedback.violation_id = data.violation_id; // Use the actual violation_id from API
+                FeedbackTracker.saveToSession();
+                
+                console.log(`[DEBUG] Updated feedback with database IDs - feedback_id: ${data.feedback_id}, violation_id: ${data.violation_id}`);
+            }
+        }
     }).catch(error => {
         console.warn('Failed to submit feedback to backend:', error);
         // Don't fail the UI operation for backend errors

@@ -188,11 +188,12 @@ class DatabaseService:
         user_agent: str = None,
         ip_address: str = None
     ) -> Tuple[bool, str]:
-        """Store user feedback."""
+        """Store or update user feedback."""
         try:
             ip_hash = self._hash_ip(ip_address) if ip_address else None
             
-            feedback = self.feedback_dao.store_feedback(
+            # Use update_feedback which handles both update and create cases
+            feedback = self.feedback_dao.update_feedback(
                 session_id=session_id,
                 violation_id=violation_id,
                 feedback_data=feedback_data,
@@ -200,10 +201,58 @@ class DatabaseService:
                 ip_hash=ip_hash
             )
             
-            logger.info(f"Stored feedback: {feedback.feedback_id} for violation: {violation_id}")
+            logger.info(f"Stored/updated feedback: {feedback.feedback_id} for violation: {violation_id}")
             return True, feedback.feedback_id
         except Exception as e:
-            logger.error(f"Failed to store feedback: {e}")
+            logger.error(f"Failed to store/update feedback: {e}")
+            return False, str(e)
+    
+    def get_existing_feedback(
+        self,
+        session_id: str,
+        violation_id: str
+    ) -> Tuple[bool, Optional[Dict[str, Any]]]:
+        """Get existing feedback for a session and violation."""
+        try:
+            feedback = self.feedback_dao.get_existing_feedback(session_id, violation_id)
+            
+            if feedback:
+                feedback_data = {
+                    'feedback_id': feedback.feedback_id,
+                    'session_id': feedback.session_id,
+                    'violation_id': feedback.violation_id,
+                    'error_type': feedback.error_type,
+                    'error_message': feedback.error_message,
+                    'feedback_type': feedback.feedback_type.value,
+                    'confidence_score': feedback.confidence_score,
+                    'user_reason': feedback.user_reason,
+                    'timestamp': feedback.timestamp.isoformat()
+                }
+                return True, feedback_data
+            else:
+                return True, None
+                
+        except Exception as e:
+            logger.error(f"Failed to get existing feedback: {e}")
+            return False, None
+            
+    def delete_user_feedback(
+        self,
+        session_id: str,
+        violation_id: str
+    ) -> Tuple[bool, str]:
+        """Delete user feedback."""
+        try:
+            success = self.feedback_dao.delete_feedback(session_id, violation_id)
+            
+            if success:
+                logger.info(f"Deleted feedback for session: {session_id}, violation: {violation_id}")
+                return True, "Feedback deleted successfully"
+            else:
+                return False, "No feedback found to delete"
+                
+        except Exception as e:
+            logger.error(f"Failed to delete feedback: {e}")
             return False, str(e)
     
     def get_session_analytics(self, session_id: str) -> Dict[str, Any]:

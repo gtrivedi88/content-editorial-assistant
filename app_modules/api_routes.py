@@ -600,6 +600,7 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter, database_
                         'success': True,
                         'message': 'Feedback stored successfully in PostgreSQL',
                         'feedback_id': feedback_id,
+                        'violation_id': violation_id,  # Include violation_id for frontend tracking
                         'timestamp': datetime.now().isoformat(),
                         'storage_type': 'postgresql'
                     }
@@ -776,6 +777,164 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter, database_
                 'timestamp': datetime.now().isoformat()
             }), 500
     
+    @app.route('/api/feedback/existing', methods=['GET'])
+    def get_existing_feedback():
+        """Get existing feedback for a specific session and violation."""
+        try:
+            if not database_service:
+                return jsonify({'error': 'Database service unavailable'}), 503
+                
+            session_id = request.args.get('session_id')
+            violation_id = request.args.get('violation_id')
+            
+            if not session_id or not violation_id:
+                return jsonify({'error': 'Missing required parameters: session_id and violation_id'}), 400
+            
+            success, feedback_data = database_service.get_existing_feedback(session_id, violation_id)
+            
+            if success:
+                if feedback_data:
+                    return jsonify({
+                        'success': True,
+                        'feedback': feedback_data
+                    }), 200
+                else:
+                    return jsonify({
+                        'success': True,
+                        'feedback': None,
+                        'message': 'No existing feedback found'
+                    }), 200
+            else:
+                return jsonify({'error': 'Failed to retrieve existing feedback'}), 500
+                
+        except Exception as e:
+            logger.error(f"Get existing feedback error: {str(e)}")
+            return jsonify({'error': f'Failed to get existing feedback: {str(e)}'}), 500
+    
+    @app.route('/api/feedback/session', methods=['GET'])
+    def get_session_feedback():
+        """Get all feedback for the current session."""
+        try:
+            if not database_service:
+                return jsonify({'error': 'Database service unavailable'}), 503
+                
+            db_session_id = session.get('db_session_id')
+            if not db_session_id:
+                return jsonify({
+                    'success': True,
+                    'feedback': [],
+                    'message': 'No active session'
+                }), 200
+            
+            feedback_list = database_service.feedback_dao.get_session_feedback(db_session_id)
+            
+            # Convert feedback to dict format
+            feedback_data = []
+            for feedback in feedback_list:
+                feedback_data.append({
+                    'feedback_id': feedback.feedback_id,
+                    'violation_id': feedback.violation_id,
+                    'error_type': feedback.error_type,
+                    'error_message': feedback.error_message,
+                    'feedback_type': feedback.feedback_type.value,
+                    'confidence_score': feedback.confidence_score,
+                    'user_reason': feedback.user_reason,
+                    'timestamp': feedback.timestamp.isoformat()
+                })
+            
+            return jsonify({
+                'success': True,
+                'feedback': feedback_data,
+                'session_id': db_session_id
+            }), 200
+                
+        except Exception as e:
+            logger.error(f"Get session feedback error: {str(e)}")
+            return jsonify({'error': f'Failed to get session feedback: {str(e)}'}), 500
+    
+    @app.route('/api/feedback', methods=['DELETE'])
+    def delete_feedback():
+        """Delete user feedback for a specific violation."""
+        try:
+            if not database_service:
+                return jsonify({'error': 'Database service unavailable'}), 503
+                
+            data = request.get_json()
+            if not data:
+                return jsonify({'error': 'No JSON data provided'}), 400
+            
+            # Handle both violation_id (from database) and error_id (frontend generated)
+            violation_id = data.get('violation_id')
+            error_id = data.get('error_id')
+            feedback_id = data.get('feedback_id')  # Direct feedback ID if available
+            
+            db_session_id = session.get('db_session_id')
+            if not db_session_id:
+                return jsonify({'error': 'No active session'}), 400
+            
+            logger.info(f"[DELETE] Session: {db_session_id}, violation_id: {violation_id}, error_id: {error_id}, feedback_id: {feedback_id}")
+            
+            success = False
+            message = "No feedback found to delete"
+            
+            # Try different approaches to find and delete the feedback
+            if feedback_id:
+                # Direct deletion by feedback_id
+                logger.info(f"[DELETE] Attempting deletion by feedback_id: {feedback_id}")
+                try:
+                    feedback = database_service.feedback_dao.get_session_feedback(db_session_id)
+                    target_feedback = None
+                    for fb in feedback:
+                        if fb.feedback_id == feedback_id:
+                            target_feedback = fb
+                            break
+                    
+                    if target_feedback:
+                        success = database_service.feedback_dao.delete_feedback(db_session_id, target_feedback.violation_id)
+                        message = "Feedback deleted successfully" if success else "Failed to delete feedback"
+                except Exception as e:
+                    logger.error(f"[DELETE] Error deleting by feedback_id: {e}")
+            
+            elif violation_id:
+                # Deletion by violation_id
+                logger.info(f"[DELETE] Attempting deletion by violation_id: {violation_id}")
+                success, message = database_service.delete_user_feedback(db_session_id, violation_id)
+            
+            elif error_id:
+                # Find by error_id (frontend generated ID) - need to match against all feedback for session
+                logger.info(f"[DELETE] Attempting to find feedback by error_id: {error_id}")
+                try:
+                    all_feedback = database_service.feedback_dao.get_session_feedback(db_session_id)
+                    for feedback in all_feedback:
+                        # Try to reconstruct the error object and generate the same error_id
+                        reconstructed_error = {
+                            'type': feedback.error_type,
+                            'message': feedback.error_message
+                        }
+                        
+                        # This is a simplified check - in practice, you'd want to implement 
+                        # the same generateErrorId logic or store the original error_id
+                        if feedback.violation_id == error_id:  # Simple fallback
+                            success = database_service.feedback_dao.delete_feedback(db_session_id, feedback.violation_id)
+                            message = "Feedback deleted successfully" if success else "Failed to delete feedback"
+                            break
+                except Exception as e:
+                    logger.error(f"[DELETE] Error finding feedback by error_id: {e}")
+            
+            if success:
+                logger.info(f"[DELETE] Successfully deleted feedback for session: {db_session_id}")
+                return jsonify({
+                    'success': True,
+                    'message': message
+                }), 200
+            else:
+                logger.warning(f"[DELETE] No feedback found to delete: {message}")
+                return jsonify({'error': message}), 404
+                
+        except Exception as e:
+            logger.error(f"Delete feedback error: {str(e)}")
+            return jsonify({'error': f'Failed to delete feedback: {str(e)}'}), 500
+
     @app.errorhandler(404)
     def not_found_error(error):
         """Handle 404 errors."""
