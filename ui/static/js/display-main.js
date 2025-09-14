@@ -85,18 +85,20 @@ function displayAnalysisResults(analysis, content, structuralBlocks = null) {
 function displayStructuralBlocks(blocks) {
     if (!blocks || blocks.length === 0) return displayEmptyStructure();
 
-    // Store blocks globally for rewriteBlock function access
-    window.currentStructuralBlocks = blocks;
-
-    // Work directly with blocks - no need for complex attribute placeholders
+    // Store only the blocks that actually get displayed for rewriteBlock function access
+    const displayedBlocks = [];
     let displayIndex = 0;
     const blocksHtml = blocks.map(block => {
         const html = createStructuralBlock(block, displayIndex, blocks);
         if (html) { // Check for non-empty HTML
+            displayedBlocks[displayIndex] = block; // Store block with correct index
             displayIndex++;
         }
         return html;
     }).filter(html => html).join('');
+    
+    // Store the displayed blocks mapping for rewriteBlock function access
+    window.currentStructuralBlocks = displayedBlocks;
 
     return `
         <div class="pf-v5-c-card app-card">

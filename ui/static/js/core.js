@@ -180,8 +180,14 @@ function rewriteBlock(blockId, blockType) {
     console.log(`🤖 Starting block rewrite for ${blockId} (${blockType})`);
     
     const block = findBlockById(blockId);
-    if (!block || !block.errors || block.errors.length === 0) {
-        console.warn('Block not found or has no errors:', blockId);
+    if (!block) {
+        console.warn('Block not found:', blockId);
+        return;
+    }
+    
+    if (!block.errors || block.errors.length === 0) {
+        console.warn(`Block ${blockId} has no errors - nothing to rewrite. Block type: ${block.block_type}`);
+        console.debug('Block data:', block);
         return;
     }
 
@@ -252,9 +258,16 @@ function findBlockById(blockId) {
         return window.currentStructuralBlocks[blockIndex];
     }
     
+    // Debug information for troubleshooting
+    console.debug(`Block lookup failed for ${blockId} (index: ${blockIndex})`);
+    console.debug(`Available blocks:`, window.currentStructuralBlocks ? Object.keys(window.currentStructuralBlocks) : 'None');
+    
     // Fallback: extract from DOM
     const blockElement = document.getElementById(blockId);
-    if (!blockElement) return null;
+    if (!blockElement) {
+        console.warn(`DOM element not found for ${blockId}`);
+        return null;
+    }
     
     // Extract block content and metadata from DOM
     const contentElement = blockElement.querySelector('.pf-v5-u-background-color-200');
