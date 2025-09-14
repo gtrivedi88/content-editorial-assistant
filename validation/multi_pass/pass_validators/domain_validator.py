@@ -166,7 +166,7 @@ class DomainValidator(BasePassValidator):
                     'system_documentation', 'user_manuals', 'specifications'
                 ],
                 'medium_applicability': [
-                    'general_writing', 'business_writing', 'academic_writing'
+                    'business_writing', 'academic_writing'
                 ],
                 'low_applicability': [
                     'creative_writing', 'casual_communication', 'marketing_copy'
@@ -202,7 +202,7 @@ class DomainValidator(BasePassValidator):
                     'descriptive_writing', 'literary_writing', 'fiction'
                 ],
                 'medium_applicability': [
-                    'general_writing', 'marketing_copy', 'blog_writing'
+                    'marketing_copy', 'blog_writing'
                 ],
                 'low_applicability': [
                     'technical_writing', 'academic_writing', 'legal_writing'
@@ -210,7 +210,7 @@ class DomainValidator(BasePassValidator):
             },
             'general': {
                 'high_applicability': [
-                    'general_writing', 'blog_writing', 'content_writing',
+                    'blog_writing', 'content_writing',
                     'web_content', 'social_media', 'informal_communication'
                 ],
                 'medium_applicability': [

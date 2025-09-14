@@ -33,6 +33,7 @@ semantic_groups:
     proximity_threshold: 25  # characters
     always_consolidate_pairs:
       - [verbs, ambiguity]          # Always group passive voice + pronoun issues
+      - [ambiguity] # Always group pronoun reference + ambiguity issues
       - [ambiguity, word_usage_t]   # Always group pronoun + word usage
       - [word_usage, word_usage_t]  # Always group related word usage
     message_template: "Multiple style issues detected: sentence structure and clarity can be improved."

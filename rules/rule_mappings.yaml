@@ -22,13 +22,12 @@ rule_priorities:
     - pronouns
     - verbs
     - sentence_length
-    - list_punctuation  # Add to high priority rules
-    - general_writing    # Phase 2: Comprehensive writing mistakes detection
+    - list_punctuation
     
   # Medium priority content rules  
   medium:
-    - indentation          # Phase 2: Indentation structure validation
-    - admonition_content   # Phase 2: Admonition content validation
+    - indentation 
+    - admonition_content 
     - word_usage_a
     - word_usage_b
     - word_usage_c
@@ -105,7 +104,6 @@ block_type_rules:
     - spelling
     - terminology
     - inclusive_language
-    - general_writing  # Phase 2: Writing quality for headings
     
     # Punctuation consistency
     - colons
@@ -158,7 +156,6 @@ block_type_rules:
     - sentence_length
     - second_person
     - ambiguity
-    - general_writing  # Phase 2: Comprehensive writing mistakes detection
     
     # MORPHOLOGICAL ANALYSIS RULES
     - adverbs_only
@@ -337,7 +334,6 @@ block_type_rules:
     - pronouns
     - inclusive_language
     - second_person
-    - general_writing  # Phase 2: Writing quality for list items
     
     # Enhanced morphological analysis
     - adverbs_only
@@ -540,7 +536,6 @@ block_type_rules:
     - pronouns
     - inclusive_language
     - second_person
-    - general_writing  # Phase 2: Writing quality for definitions
     
     # Enhanced morphological analysis
     - adverbs_only
@@ -633,7 +628,6 @@ block_type_rules:
     - conjunctions
     - anthropomorphism
     - articles
-    - general_writing  # Phase 2: Writing quality for admonitions
     
     # Punctuation for clarity
     - colons
@@ -944,15 +938,14 @@ validation:
   # Ensure all enhanced rules are properly mapped
   required_enhanced_rules:
     - prefixes  # New rule
-    - abbreviations  # Enhanced with etc. support
-    - word_usage_b  # Enhanced backup analysis
-    - contractions  # Enhanced regex patterns
-    - spacing  # Phase 1: New spacing rule
-    - list_punctuation  # Phase 1: New list punctuation rule
-    - periods  # Phase 1: Enhanced periods rule
-    - indentation  # Phase 2: New indentation structure validation
-    - admonition_content  # Phase 2: New admonition content validation
-    - general_writing  # Phase 2: New comprehensive writing mistakes detection
+    - abbreviations  
+    - word_usage_b  
+    - contractions  
+    - spacing  
+    - list_punctuation  
+    - periods  
+    - indentation  
+    - admonition_content  
   
   # Block types that must have comprehensive rule coverage
   comprehensive_coverage_blocks:

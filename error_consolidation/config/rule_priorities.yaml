@@ -44,6 +44,7 @@ rule_specific_priorities:
   
   # Language and Grammar (medium priority)
   anthropomorphism: 40
+  ambiguity: 39
   pronouns: 38
   verbs: 35
   articles: 33

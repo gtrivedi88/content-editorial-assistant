@@ -47,6 +47,7 @@ class LightweightPassiveAnalyzer:
     def find_passive_constructions(self, doc):
         """Find passive constructions in the document for ambiguity analysis."""
         constructions = []
+        seen_constructions = set()  # Track unique constructions to prevent duplicates
         
         # Look for passive voice patterns in the sentence
         for token in doc:
@@ -60,9 +61,13 @@ class LightweightPassiveAnalyzer:
                         break
                 
                 if main_verb:
-                    construction = self._create_construction(token, main_verb, doc)
-                    if construction:
-                        constructions.append(construction)
+                    # Create unique identifier for this construction
+                    construction_id = (main_verb.idx, token.idx, main_verb.lemma_, token.lemma_)
+                    if construction_id not in seen_constructions:
+                        construction = self._create_construction(token, main_verb, doc)
+                        if construction:
+                            constructions.append(construction)
+                            seen_constructions.add(construction_id)
             
             # Pattern 2: "be" + past participle (broader detection)
             elif (token.lemma_ == 'be' and 
@@ -70,9 +75,13 @@ class LightweightPassiveAnalyzer:
                 
                 for child in token.children:
                     if child.tag_ == 'VBN':
-                        construction = self._create_construction(token, child, doc)
-                        if construction:
-                            constructions.append(construction)
+                        # Create unique identifier for this construction
+                        construction_id = (child.idx, token.idx, child.lemma_, token.lemma_)
+                        if construction_id not in seen_constructions:
+                            construction = self._create_construction(token, child, doc)
+                            if construction:
+                                constructions.append(construction)
+                                seen_constructions.add(construction_id)
             
             # Pattern 3: Direct past participle with auxiliary (like "This is clicked")
             elif token.tag_ == 'VBN':
@@ -85,9 +94,13 @@ class LightweightPassiveAnalyzer:
                         break
                 
                 if auxiliary:
-                    construction = self._create_construction(auxiliary, token, doc)
-                    if construction:
-                        constructions.append(construction)
+                    # Create unique identifier for this construction
+                    construction_id = (token.idx, auxiliary.idx, token.lemma_, auxiliary.lemma_)
+                    if construction_id not in seen_constructions:
+                        construction = self._create_construction(auxiliary, token, doc)
+                        if construction:
+                            constructions.append(construction)
+                            seen_constructions.add(construction_id)
         
         return constructions
     
