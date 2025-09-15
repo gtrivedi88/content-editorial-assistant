@@ -483,6 +483,14 @@ class AbbreviationsRule(BaseLanguageRule):
         Returns:
             float: Evidence score from 0.0 (no evidence) to 1.0 (strong evidence)
         """
+        
+        # === ZERO FALSE POSITIVE GUARD FOR UNIVERSAL ABBREVIATIONS ===
+        # CRITICAL: If the term is universally known in technical contexts,
+        # it is not an error. Return 0.0 immediately to prevent other clues
+        # from incorrectly raising the evidence score.
+        if self._is_universally_known_abbreviation(token.text):
+            return 0.0
+        
         evidence_score = 0.0
         
         # === STEP 1: BASE EVIDENCE ASSESSMENT ===
@@ -753,15 +761,6 @@ class AbbreviationsRule(BaseLanguageRule):
         content_type = context.get('content_type', 'general')
         domain = context.get('domain', 'general')
         audience = context.get('audience', 'general')
-        
-        # CRITICAL: Check if this is a universally known abbreviation first
-        if self._is_universally_known_abbreviation(token.text):
-            # For universally known abbreviations, reduce evidence significantly
-            evidence_score -= 0.5
-            # In technical contexts with technical audiences, reduce even more
-            if content_type == 'technical' and audience in ['expert', 'developer']:
-                evidence_score -= 0.2  # Total reduction: 0.7
-            return max(0.0, evidence_score)
 
         # For non-universal abbreviations, be much more conservative with reductions
         # These abbreviations SHOULD be flagged in most contexts
@@ -895,9 +894,11 @@ class AbbreviationsRule(BaseLanguageRule):
         # Very common abbreviations that are widely understood
         # Should be conservative - only truly universal terms
         universal_abbreviations = {
+            # Original
             'HTTP', 'HTTPS', 'HTML', 'CSS', 'XML', 'JSON', 'PDF', 'URL', 'URI',
             'USB', 'WIFI', 'GPS', 'CPU', 'GPU', 'RAM', 'SSD', 'DVD', 'CD',
-            'SMS', 'EMAIL', 'FAQ', 'CEO', 'CTO', 'HR', 'IT', 'ID', 'IP'
+            'SMS', 'EMAIL', 'FAQ', 'CEO', 'CTO', 'HR', 'IT', 'ID', 'IP',
+            'API', 'REST', 'SDK', 'SQL', 'TCP', 'UDP', 'SSH', 'FTP'
         }
         return text.upper() in universal_abbreviations
 

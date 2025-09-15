@@ -2,7 +2,9 @@
 Word Usage Rule for words starting with 'Y' (Production-Grade)
 Evidence-based analysis with surgical zero false positive guards for Y-word usage detection.
 Based on IBM Style Guide recommendations with production-grade evidence calculation.
-Currently no Y-word patterns implemented - placeholder for future expansion.
+
+Handles professional tone, temporal ambiguity, and acceptable usage patterns for Y-words.
+Note: Second person pronouns ("you", "your") are handled by dedicated second_person_rule.py
 """
 from typing import List, Dict, Any
 from .base_word_usage_rule import BaseWordUsageRule
@@ -26,13 +28,8 @@ class YWordsRule(BaseWordUsageRule):
     - Near 100% false positive elimination through surgical guards
     - Word-specific evidence calculation for each Y-word violation
     - Evidence-aware suggestions tailored to writing context
-    - Currently no patterns implemented - ready for future expansion
-    
-    Note: Currently no specific Y-word usage rules are implemented.
-    The previous "your" rule was removed as it incorrectly flagged
-    general possessive pronouns, which are acceptable according to 
-    the IBM Style Guide. Possessives on abbreviations and trademarks
-    are handled by the possessives_rule.py instead.
+    - Professional tone enforcement for "yes", "no"
+    - Temporal ambiguity detection for "yet"
     """
     def _get_rule_type(self) -> str:
         return 'word_usage_y'
@@ -57,10 +54,6 @@ class YWordsRule(BaseWordUsageRule):
             
             # Temporal ambiguity
             "yet": {"alternatives": ["currently", "as of now", "at this time"], "category": "temporal_ambiguity", "severity": "low"},
-            
-            # Second person usage (context-dependent)
-            "you": {"alternatives": ["the user", "users", "one"], "category": "second_person", "severity": "low"},
-            "your": {"alternatives": ["the user's", "the", "one's"], "category": "second_person", "severity": "low"},
             
             # Correct forms that should not be flagged in most contexts
             "year": {"alternatives": [], "category": "acceptable_usage", "severity": "none"},
@@ -183,13 +176,6 @@ class YWordsRule(BaseWordUsageRule):
             else:
                 return 0.55  # Other temporal issues
         
-        # Second person usage (context-dependent)
-        elif category == 'second_person':
-            if word_lower in ['you', 'your']:
-                return 0.4  # Lower base score - highly context-dependent
-            else:
-                return 0.45  # Other second person issues
-        
         return 0.6  # Default moderate evidence for other patterns
 
     def _apply_linguistic_clues_y_words(self, ev: float, word: str, token, sentence) -> float:
@@ -220,20 +206,7 @@ class YWordsRule(BaseWordUsageRule):
             elif any(indicator in sent_text for indicator in ['but yet', 'and yet', 'however']):
                 ev -= 0.1  # Contrast usage may be acceptable
         
-        # === SECOND PERSON CLUES ===
-        if word_lower in ['you', 'your']:
-            # CONTEXTUAL CLUE: Check for consistent second-person tone
-            # If other second-person pronouns are used, lower evidence score
-            if self._has_consistent_second_person_tone(sentence, word_lower):
-                ev -= 0.4  # Consistent second-person tone suggests this usage is intentional
-            
-            # Direct instruction context
-            if any(indicator in sent_text for indicator in ['can', 'should', 'must', 'need to', 'have to']):
-                ev += 0.2  # Direct instruction benefits from objective language
-            elif any(indicator in sent_text for indicator in ['tutorial', 'guide', 'how to', 'step']):
-                ev -= 0.3  # Tutorial context may appropriately use second person
-            elif any(indicator in sent_text for indicator in ['api', 'function', 'method', 'code']):
-                ev += 0.15  # Technical context benefits from objective language
+        # Note: Second person clues removed - handled by dedicated second_person_rule.py
         
         return ev
 
@@ -264,52 +237,36 @@ class YWordsRule(BaseWordUsageRule):
                 ev += 0.3  # Customer content needs professional language
             elif word_lower == 'yet':
                 ev += 0.2  # Customer content needs temporal clarity
-            elif word_lower in ['you', 'your']:
-                ev -= 0.4  # Customer content commonly and appropriately uses second person
         
         elif content_type == 'technical':
             if word_lower in ['yes', 'no']:
                 ev += 0.25  # Technical docs benefit from precise boolean language
             elif word_lower == 'yet':
                 ev += 0.15  # Technical docs need temporal precision
-            elif word_lower in ['you', 'your']:
-                ev += 0.1  # Technical docs benefit from objective language
-        
+            
         elif content_type == 'api_documentation':
             if word_lower in ['yes', 'no']:
                 ev += 0.4  # API docs need precise technical language
-            elif word_lower in ['you', 'your']:
-                ev += 0.2  # API docs should be objective
-        
+            
         elif content_type == 'tutorial':
-            if word_lower in ['you', 'your']:
-                ev -= 0.4  # Tutorials commonly and appropriately use second person
-            elif word_lower in ['yes', 'no']:
+            if word_lower in ['yes', 'no']:
                 ev += 0.1  # Even tutorials benefit from professional tone
         
         elif content_type == 'legal':
             if word_lower in ['yes', 'no', 'yet']:
                 ev += 0.3  # Legal content needs precise language
-            elif word_lower in ['you', 'your']:
-                ev += 0.25  # Legal docs benefit from objective language
-        
+            
         # Audience adjustments
         if audience == 'external':
             if word_lower in ['yes', 'no', 'yet']:
-                ev += 0.2  # External audiences need professional language
-            elif word_lower in ['you', 'your']:
-                ev -= 0.1  # External communication may use second person
+                ev += 0.2  # External audiences need professional language  
         
         elif audience == 'developer':
             if word_lower in ['yes', 'no']:
-                ev += 0.15  # Developers expect precise technical language
-            elif word_lower in ['you', 'your']:
-                ev += 0.1  # Developer docs benefit from objective language
+                ev += 0.15  # Developers expect precise technical language  
         
         elif audience == 'beginner':
-            if word_lower in ['you', 'your']:
-                ev -= 0.3  # Beginner content may need direct address
-            elif word_lower in ['yes', 'no', 'yet']:
+            if word_lower in ['yes', 'no', 'yet']:
                 ev += 0.05  # Still benefits from professional language
         
         return ev
@@ -345,27 +302,27 @@ class YWordsRule(BaseWordUsageRule):
             'accepted_terms': {'year', 'yellow', 'young'},  # Common Y words that are fine
             'customer_facing_patterns': {
                 'flagged': {'yes', 'no', 'yet'},  # Customer content needs professional language
-                'accepted': {'you', 'your'}  # Customer content may appropriately use second person
+                'accepted': set()  # Second person handled by dedicated rule
             },
             'technical_patterns': {
-                'flagged': {'yes', 'no', 'yet', 'you', 'your'},  # Technical docs benefit from objective language
+                'flagged': {'yes', 'no', 'yet'},  # Technical docs benefit from objective language
                 'accepted': {'year', 'yellow'}  # Technical terms acceptable
             },
             'api_documentation_patterns': {
-                'flagged': {'yes', 'no', 'you', 'your'},  # API docs need objective technical language
+                'flagged': {'yes', 'no'},  # API docs need objective technical language
                 'accepted': {'yet', 'year'}  # Some terms acceptable in API context
             },
             'tutorial_patterns': {
                 'flagged': {'yes', 'no'},  # Tutorials still benefit from professional tone
-                'accepted': {'you', 'your', 'yet'}  # Tutorial content may use direct address and temporal language
+                'accepted': {'yet'}  # Tutorial content may use temporal language
             },
             'legal_patterns': {
-                'flagged': {'yes', 'no', 'yet', 'you', 'your'},  # Legal docs need precise objective language
+                'flagged': {'yes', 'no', 'yet'},  # Legal docs need precise objective language
                 'accepted': {'year'}  # Time references acceptable
             },
             'general_patterns': {
                 'flagged': {'yes', 'no', 'yet'},  # General content avoids informal tone
-                'accepted': {'you', 'your', 'year', 'yellow', 'young'}  # Common Y words acceptable
+                'accepted': {'year', 'yellow', 'young'}  # Common Y words acceptable
             }
         }
 
@@ -385,22 +342,4 @@ class YWordsRule(BaseWordUsageRule):
         Returns:
             bool: True if consistent second-person tone is detected
         """
-        
-        # Get the full document text from the sentence's document
-        doc = sentence.doc
-        full_text = doc.text.lower()
-        
-        # Second-person pronouns to look for (excluding the current word)
-        second_person_pronouns = ['you', 'your', 'yours', 'yourself', 'yourselves']
-        target_pronouns = [pronoun for pronoun in second_person_pronouns 
-                          if pronoun != current_word.lower()]
-        
-        # Check if any other second-person pronouns appear in the text
-        for pronoun in target_pronouns:
-            # Use word boundaries to avoid partial matches
-            import re
-            pattern = rf'\b{re.escape(pronoun)}\b'
-            if re.search(pattern, full_text, re.IGNORECASE):
-                return True  # Found other second-person pronouns
-        
-        return False  # No other second-person pronouns found
+        return False

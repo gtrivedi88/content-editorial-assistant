@@ -38,23 +38,25 @@ class FabricationRiskDetector(AmbiguityDetector):
     def __init__(self, config: AmbiguityConfig, parent_rule=None):
         super().__init__(config, parent_rule)
         
-        # High-risk vague action verbs that invite fabrication
-        self.vague_action_verbs = {
+        # === EVIDENCE-BASED APPROACH: Replace simple word lists with contextual patterns ===
+        
+        # High-risk vague verbs ONLY when used without proper context
+        self.potentially_vague_verbs = {
             'communicate', 'interact', 'process', 'handle', 'manage',
             'work', 'operate', 'function', 'perform', 'execute',
-            'coordinate', 'facilitate', 'optimize', 'streamline'
+            'coordinate', 'facilitate', 'optimize', 'streamline',
+            # Common vague verbs that often lack specifics
+            'do', 'make', 'get', 'use', 'deal', 'take', 'put'
         }
         
-        # Incomplete patterns that commonly lead to AI elaboration
-        self.incomplete_patterns = [
-            r'communicates?\s+with', r'connects?\s+to', r'works?\s+with',
-            r'interacts?\s+with', r'processes?\s+the', r'handles?\s+the',
-            r'manages?\s+the', r'performs?\s+the', r'executes?\s+the',
-            r'coordinates?\s+with', r'facilitates?\s+the', r'optimizes?\s+the'
-        ]
+        # Vague adjectives and descriptors that invite fabrication
+        self.potentially_vague_adjectives = {
+            'vague', 'general', 'various', 'different', 'certain',
+            'appropriate', 'suitable', 'relevant', 'necessary', 'important'
+        }
         
-        # Technical processes prone to over-specification
-        self.technical_processes = {
+        # Technical processes that CAN be problematic but need context analysis
+        self.contextual_technical_terms = {
             'backup', 'configuration', 'installation', 'deployment',
             'integration', 'synchronization', 'authentication',
             'authorization', 'validation', 'verification',
@@ -62,26 +64,28 @@ class FabricationRiskDetector(AmbiguityDetector):
             'optimization', 'coordination', 'facilitation'
         }
         
-        # Purpose indicators that invite unverified explanations
-        self.purpose_indicators = [
-            r'for\s+\w+\s+purposes?', r'to\s+ensure', r'to\s+verify',
-            r'to\s+confirm', r'to\s+check', r'to\s+validate',
-            r'to\s+monitor', r'in\s+order\s+to', r'to\s+optimize',
-            r'to\s+facilitate', r'to\s+coordinate'
-        ]
+        # SURGICAL CONFIDENCE THRESHOLD: Much higher for evidence-based approach
+        self.confidence_threshold = 0.80  # Only flag when very confident
         
-        # Universal threshold compliance (≥0.35)
-        self.confidence_threshold = 0.50  # Adjusted for evidence-based detection
+        # === LINGUISTIC ANCHORS FOR LEGITIMATE USAGE ===
         
-        # Clear indicators that reduce fabrication risk
-        self.specific_indicators = {
-            'proper_nouns', 'specific_numbers', 'exact_dates', 'precise_quantities',
-            'explicit_protocols', 'named_entities', 'concrete_examples'
+        # Common legitimate technical compound patterns
+        self.legitimate_technical_compounds = {
+            'error handling', 'data processing', 'file management', 'user authentication',
+            'network monitoring', 'system configuration', 'backup procedures',
+            'security validation', 'performance optimization', 'load balancing',
+            'database synchronization', 'application deployment', 'service integration'
+        }
+        
+        # Specific context indicators that REDUCE fabrication risk
+        self.specificity_indicators = {
+            'proper_nouns', 'technical_specifications', 'measurable_metrics',
+            'concrete_examples', 'explicit_procedures', 'named_technologies'
         }
     
     def detect(self, context: AmbiguityContext, nlp) -> List[AmbiguityDetection]:
         """
-        Detect fabrication risks using evidence-based analysis.
+        Detect fabrication risks using EVIDENCE-BASED ANALYSIS with linguistic intelligence.
         
         Args:
             context: Sentence context for analysis
@@ -94,586 +98,575 @@ class FabricationRiskDetector(AmbiguityDetector):
         if not context.sentence.strip():
             return detections
         
-        document_context = context.document_context or {}
-        block_type = document_context.get('block_type', '').lower()
-        
-        # Apply zero false positive guards first
-        if self._apply_zero_false_positive_guards(context, block_type):
+        # === SURGICAL ZERO FALSE POSITIVE GUARDS ===
+        if self._apply_surgical_zero_false_positive_guards(context):
             return detections
         
         try:
             doc = nlp(context.sentence)
             
-            # Detect various types of fabrication risks
-            vague_actions = self._detect_vague_actions(doc, context)
-            detections.extend(vague_actions)
-            
-            incomplete_explanations = self._detect_incomplete_explanations(context, doc)
-            detections.extend(incomplete_explanations)
-            
-            technical_risks = self._detect_technical_process_risks(doc, context)
-            detections.extend(technical_risks)
-            
-            purpose_risks = self._detect_purpose_fabrication_risks(context, doc)
-            detections.extend(purpose_risks)
+            # === EVIDENCE-BASED LINGUISTIC ANALYSIS ===
+            # Only analyze tokens that pass linguistic scrutiny
+            for token in doc:
+                # Check each potentially problematic word with full context analysis
+                if self._is_potential_fabrication_risk(token, doc, context):
+                    evidence_score = self._calculate_fabrication_evidence_linguistic(token, doc, context)
+                    
+                    # Only flag with high confidence to eliminate false positives
+                    if evidence_score >= self.confidence_threshold:
+                        detection = self._create_evidence_based_detection(token, evidence_score, context, doc)
+                        detections.append(detection)
             
         except Exception as e:
-            print(f"Error in fabrication risk detection: {e}")
+            print(f"Error in evidence-based fabrication risk detection: {e}")
         
         return detections
     
-    def _apply_zero_false_positive_guards(self, context: AmbiguityContext, block_type: str) -> bool:
+    def _apply_surgical_zero_false_positive_guards(self, context: AmbiguityContext) -> bool:
         """
-        Apply surgical zero false positive guards for fabrication risk detection.
+        SURGICAL ZERO FALSE POSITIVE GUARDS for fabrication risk detection.
         
-        Returns True if the detection should be skipped (no fabrication risk).
+        These guards eliminate false positives while preserving legitimate violations.
+        Returns True if detection should be SKIPPED (no fabrication risk).
         """
-        # Guard 1: Technical labels and headings that are naturally brief
-        if 'list_item' in block_type or block_type in ['heading', 'section', 'table_cell']:
-            if self._is_technical_label(context.sentence):
+        document_context = context.document_context or {}
+        block_type = document_context.get('block_type', '').lower()
+        sentence = context.sentence.lower()
+        
+        # === GUARD 1: TECHNICAL LABELS AND HEADINGS ===
+        # Technical headings and list items are naturally brief
+        if block_type in ['heading', 'section', 'list_item', 'table_cell', 'title']:
                 return True
         
-        # Guard 2: Code blocks and technical identifiers
-        if block_type in ['code_block', 'literal_block', 'inline_code']:
+        # === GUARD 2: CODE AND TECHNICAL CONTEXTS ===
+        # Code blocks, inline code, and technical identifiers
+        if block_type in ['code_block', 'literal_block', 'inline_code', 'config']:
             return True
         
-        # Guard 3: Very short sentences that are naturally incomplete
-        if len(context.sentence.split()) <= 3:
+        # === GUARD 3: LEGITIMATE TECHNICAL COMPOUND PHRASES ===
+        # Check for established technical compound phrases and terminology
+        if self._is_legitimate_technical_phrase(sentence):
             return True
         
-        # Guard 4: Sentences with comprehensive specific details that eliminate fabrication risk
-        if self._has_comprehensive_specific_details(context.sentence):
+        # === GUARD 4: SPECIFIC TECHNICAL DOCUMENTATION ===
+        # Sentences with concrete technical details (APIs, protocols, etc.)
+        if self._has_concrete_technical_specifications(sentence):
+            return True
+        
+        # === GUARD 5: VERY SHORT NATURAL STATEMENTS ===
+        # Very brief statements that are naturally complete
+        word_count = len(context.sentence.split())
+        if word_count <= 3:
+            return True
+        
+        # === GUARD 6: PROCEDURAL INSTRUCTIONS ===
+        # Clear procedural steps that are appropriately specific
+        if self._is_clear_procedural_instruction(sentence):
             return True
         
         return False
     
-    def _detect_vague_actions(self, doc, context: AmbiguityContext) -> List[AmbiguityDetection]:
-        """Detect vague action verbs that invite fabrication."""
-        detections = []
-        for token in doc:
-            # LINGUISTIC ANCHOR: Only flag actual verbs, not nouns
-            if token.pos_ == 'VERB' and self._is_vague_action_verb(token):
-                # LINGUISTIC ANCHOR 2: Skip gerunds that function as compound noun modifiers
-                if self._is_gerund_noun_modifier(token, doc):
-                    continue
-                    
-                evidence_score = self._calculate_fabrication_evidence(token, doc, context)
-                if evidence_score >= self.confidence_threshold:
-                    detection = self._create_vague_action_detection(token, evidence_score, context)
-                    detections.append(detection)
-        return detections
+    # === EVIDENCE-BASED LINGUISTIC ANALYSIS METHODS ===
     
-    def _detect_incomplete_explanations(self, context: AmbiguityContext, doc) -> List[AmbiguityDetection]:
-        """Detect incomplete explanations that invite elaboration."""
-        detections = []
-        sentence_lower = context.sentence.lower()
-        for pattern in self.incomplete_patterns:
-            for match in re.finditer(pattern, sentence_lower):
-                evidence_score = self._calculate_fabrication_evidence_pattern(match.group(), context, doc)
-                if evidence_score >= self.confidence_threshold:
-                    tokens = match.group().split()
-                    detection = self._create_incomplete_explanation_detection(match.group(), tokens, evidence_score, context)
-                    detections.append(detection)
-        return detections
-    
-    def _detect_technical_process_risks(self, doc, context: AmbiguityContext) -> List[AmbiguityDetection]:
-        """Detect technical processes that could be over-specified."""
-        detections = []
-        for token in doc:
-            if self._is_technical_process(token):
-                # LINGUISTIC ANCHOR: Skip gerunds that function as noun modifiers
-                if self._is_gerund_noun_modifier(token, doc):
-                    continue
-                
-                # LINGUISTIC ANCHOR: Skip compound technical nouns
-                if self._is_compound_technical_noun(token, doc):
-                    continue
-                    
-                evidence_score = self._calculate_fabrication_evidence_process(token, doc, context)
-                if evidence_score >= self.confidence_threshold:
-                    detection = self._create_technical_process_detection(token, evidence_score, context)
-                    detections.append(detection)
-        return detections
-    
-    def _detect_purpose_fabrication_risks(self, context: AmbiguityContext, doc) -> List[AmbiguityDetection]:
-        """Detect purpose statements that invite unverified explanations."""
-        detections = []
-        sentence_lower = context.sentence.lower()
-        for pattern in self.purpose_indicators:
-            for match in re.finditer(pattern, sentence_lower):
-                evidence_score = self._calculate_fabrication_evidence_purpose(match.group(), context, doc)
-                if evidence_score >= self.confidence_threshold:
-                    tokens = match.group().split()
-                    detection = self._create_purpose_fabrication_detection(match.group(), tokens, evidence_score, context)
-                    detections.append(detection)
-        return detections
-    
-    def _calculate_fabrication_evidence(self, token, doc, context: AmbiguityContext) -> float:
+    def _is_potential_fabrication_risk(self, token, doc, context: AmbiguityContext) -> bool:
         """
-        Enhanced Level 2 evidence calculation for fabrication risk detection.
+        LINGUISTIC SCREENING: Is this token potentially problematic?
         
-        Implements evidence-based rule development with:
-        - Multi-factor evidence assessment
-        - Context-aware domain validation 
-        - Universal threshold compliance (≥0.35)
-        - Specific criteria for fabrication vs general vagueness
+        Uses dependency parsing and POS analysis to avoid flagging legitimate usage.
         """
-        # Evidence-based base confidence (Level 2 enhancement)
-        evidence_score = 0.50  # Starting point for potential fabrication scenarios
+        word_lemma = token.lemma_.lower()
         
-        # EVIDENCE FACTOR 1: Vagueness Severity Assessment (High Impact)
-        if self._is_extremely_vague_verb(token):
-            evidence_score += 0.25  # Strong evidence - highly vague actions
-        elif self._is_moderately_vague_verb(token):
-            evidence_score += 0.15  # Medium evidence - somewhat vague
+        # Only consider potentially problematic words
+        is_vague_verb = word_lemma in self.potentially_vague_verbs
+        is_vague_adjective = word_lemma in self.potentially_vague_adjectives  
+        is_technical_term = word_lemma in self.contextual_technical_terms
         
-        # EVIDENCE FACTOR 2: Context Specificity Analysis (Critical for Technical Content)
-        if self._lacks_clear_object(token, doc):
-            evidence_score += 0.20  # High evidence - no clear object increases fabrication risk
+        if not (is_vague_verb or is_vague_adjective or is_technical_term):
+            return False
         
-        # EVIDENCE FACTOR 3: Domain Context Assessment (Domain Knowledge)
-        domain_modifier = 0.0
-        if context and hasattr(context, 'document_context'):
-            doc_context = context.document_context or {}
-            content_type = doc_context.get('content_type', '')
+        # === LINGUISTIC ANCHOR 1: COMPOUND NOUN MODIFIER GUARD ===
+        # Don't flag words functioning as noun modifiers (e.g., "error handling")
+        if self._is_functioning_as_noun_modifier(token, doc):
+            return False
+        
+        # === LINGUISTIC ANCHOR 2: TECHNICAL SUBJECT-VERB PATTERN GUARD ===
+        # Don't flag verbs with clear technical subjects (e.g., "The system processes data")
+        if token.pos_ == 'VERB' and self._has_clear_technical_subject(token, doc):
+            return False
+        
+        # === LINGUISTIC ANCHOR 3: SPECIFIC OBJECT GUARD ===
+        # Don't flag verbs with specific technical objects (e.g., "manage user accounts")
+        if token.pos_ == 'VERB' and self._has_specific_technical_object(token, doc):
+            return False
+        
+        # === LINGUISTIC ANCHOR 4: ESTABLISHED TERMINOLOGY GUARD ===
+        # Don't flag established technical terminology in proper contexts
+        if self._is_established_technical_terminology(token, doc, context):
+            return False
+        
+        return True  # Passed all guards - worth evidence analysis
+    
+    def _calculate_fabrication_evidence_linguistic(self, token, doc, context: AmbiguityContext) -> float:
+        """
+        EVIDENCE-BASED FABRICATION RISK CALCULATION using linguistic intelligence.
+        
+        Multi-factor evidence assessment following our established pattern.
+        """
+        # === DYNAMIC BASE EVIDENCE ASSESSMENT ===
+        word_lemma = token.lemma_.lower()
+        
+        # Extremely vague verbs
+        if word_lemma in ['handle', 'manage', 'work', 'operate', 'do', 'make', 'deal']:
+            evidence_score = 0.65  # Higher base for extremely vague terms
+        # Vague adjectives that invite elaboration  
+        elif word_lemma in ['vague', 'general', 'various', 'appropriate', 'suitable']:
+            evidence_score = 0.60  # High base for vague descriptors
+        # Moderately vague verbs
+        elif word_lemma in ['process', 'execute', 'perform', 'coordinate', 'get', 'use', 'take']:
+            evidence_score = 0.50  # Medium base for contextual terms
+        # Technical terms (lowest base - need significant evidence to flag)
+        else:
+            evidence_score = 0.45  # Lower base for technical terms
+        
+        # === EVIDENCE FACTOR 1: LINGUISTIC CONTEXT ANALYSIS ===
+        # How is the word actually being used grammatically?
+        linguistic_modifier = self._analyze_linguistic_usage_context(token, doc)
+        evidence_score += linguistic_modifier
+        
+        # === EVIDENCE FACTOR 2: SPECIFICITY DEFICIT ANALYSIS ===
+        # Does the sentence lack specific details that would prevent fabrication?
+        specificity_modifier = self._analyze_specificity_deficit(token, doc, context)
+        evidence_score += specificity_modifier
+        
+        # === EVIDENCE FACTOR 3: TECHNICAL CONTEXT VALIDATION ===
+        # Is this in a context where precision is critical?
+        technical_modifier = self._analyze_technical_precision_requirements(context)
+        evidence_score += technical_modifier
+        
+        # === EVIDENCE FACTOR 4: SENTENCE STRUCTURE ANALYSIS ===
+        # Does the sentence structure invite elaboration?
+        structure_modifier = self._analyze_sentence_structure_risk(token, doc)
+        evidence_score += structure_modifier
+        
+        # === EVIDENCE FACTOR 5: DOMAIN APPROPRIATENESS ===
+        # Is this level of vagueness appropriate for the domain?
+        domain_modifier = self._analyze_domain_appropriateness(word_lemma, context)
+        evidence_score += domain_modifier
+        
+        # Cap at reasonable evidence levels
+        return max(0.35, min(0.95, evidence_score))
+    
+    def _create_evidence_based_detection(self, token, evidence_score: float, context: AmbiguityContext, doc) -> AmbiguityDetection:
+        """Create evidence-based fabrication risk detection."""
+        
+        # Determine specific risk type and suggestions based on linguistic analysis
+        risk_type = self._determine_fabrication_risk_type(token, doc)
+        suggestions = self._generate_evidence_based_suggestions(token, evidence_score, risk_type, doc)
+        
+        evidence = AmbiguityEvidence(
+            tokens=[token.text],
+            linguistic_pattern=f"fabrication_risk_{risk_type}_{token.lemma_}",
+            confidence=evidence_score,
+            spacy_features={
+                'pos': token.pos_,
+                'lemma': token.lemma_,
+                'dep': token.dep_,
+                'risk_type': risk_type
+            },
+            context_clues={
+                'risk_type': risk_type,
+                'has_specific_context': self._has_specific_technical_object(token, doc),
+                'linguistic_role': token.dep_
+            }
+        )
+        
+        # Evidence-based severity assessment
+        if evidence_score > 0.90:
+            severity = AmbiguitySeverity.CRITICAL
+        elif evidence_score > 0.80:
+            severity = AmbiguitySeverity.HIGH
+        else:
+            severity = AmbiguitySeverity.MEDIUM
+        
+        ai_instructions = self._generate_evidence_based_ai_instructions(token, evidence_score, risk_type)
+        
+        return AmbiguityDetection(
+            ambiguity_type=AmbiguityType.FABRICATION_RISK,
+            category=AmbiguityCategory.SEMANTIC,
+            severity=severity,
+            context=context,
+            evidence=evidence,
+            resolution_strategies=[ResolutionStrategy.SPECIFY_REFERENCE, ResolutionStrategy.ADD_CONTEXT],
+            ai_instructions=ai_instructions,
+            span=(token.idx, token.idx + len(token.text)),
+            flagged_text=token.text
+        )
+    
+    # === SURGICAL GUARD HELPER METHODS ===
+    
+    def _is_legitimate_technical_phrase(self, sentence: str) -> bool:
+        """
+        SURGICAL GUARD: Check if sentence contains legitimate technical phrases.
+        
+        This guard catches established technical terminology that should never be flagged.
+        """
+        sentence_lower = sentence.lower()
+        
+        # Exact match legitimate technical compounds
+        if any(compound in sentence_lower for compound in self.legitimate_technical_compounds):
+            return True
+        
+        # Pattern-based technical phrase detection
+        technical_patterns = [
+            # Integration patterns
+            r'\bintegration\s+with\s+\w+\s+systems?\b',
+            r'\bapi\s+integration\b',
+            r'\bsystem\s+integration\b',
+            r'\bservice\s+integration\b',
             
-            if content_type == 'technical':
-                domain_modifier += 0.10  # Technical content needs specificity
-            elif content_type == 'procedural':
-                domain_modifier += 0.15  # Procedures must be specific
-            elif content_type == 'marketing':
-                domain_modifier -= 0.10  # Marketing allows more vagueness
+            # Working/Process patterns  
+            r'\bworking\s+with\s+\w+\s+files?\b',
+            r'\bworking\s+with\s+\w+\s+data\b',
+            r'\bprocessing\s+\w+\s+data\b',
+            r'\bdata\s+processing\b',
+            
+            # Management patterns
+            r'\bmanag\w*\s+\w+\s+accounts?\b',
+            r'\bmanag\w*\s+user\s+\w+\b',
+            r'\buser\s+management\b',
+            r'\baccount\s+management\b',
+            
+            # Monitoring patterns
+            r'\bmonitor\w*\s+system\s+\w+\b',
+            r'\bmonitor\w*\s+\w+\s+performance\b',
+            r'\bsystem\s+monitoring\b',
+            r'\bperformance\s+monitoring\b',
+            
+            # Configuration patterns
+            r'\bconfigur\w*\s+settings?\b',
+            r'\bconfiguration\s+files?\b',
+            r'\bsystem\s+configuration\b',
+        ]
         
-        # EVIDENCE FACTOR 4: Sentence Complexity Analysis (Length vs Detail)
-        sentence_complexity_modifier = 0.0
-        sentence_length = len(doc)
-        if sentence_length < 8:  # Very short sentences
-            sentence_complexity_modifier += 0.10  # High evidence - brevity increases risk
-        elif sentence_length < 15:  # Medium length
-            sentence_complexity_modifier += 0.05  # Medium evidence
-        
-        # EVIDENCE FACTOR 5: Specificity Indicators (Counter-Evidence)
-        specificity_modifier = 0.0
-        if self._has_specific_details_nearby(token, doc):
-            specificity_modifier -= 0.15  # Counter-evidence - specifics reduce risk
-        
-        # EVIDENCE FACTOR 6: Linguistic Pattern Strength (Pattern Recognition)
-        linguistic_evidence = 0.0
-        if token.dep_ in ['ROOT', 'ccomp']:  # Main verb of sentence
-            linguistic_evidence += 0.08  # Higher risk when vague verb is central
-        elif token.dep_ in ['xcomp', 'advcl']:  # Subordinate clauses
-            linguistic_evidence += 0.05  # Medium risk in subordinate position
-        
-        # EVIDENCE FACTOR 7: Technical Context Validation (Context Awareness)
-        technical_modifier = 0.0
-        if self._is_technical_context(context):
-            technical_modifier += 0.12  # Technical contexts need precision
-        
-        # EVIDENCE AGGREGATION (Level 2 Multi-Factor Assessment)
-        final_evidence = (evidence_score + 
-                         domain_modifier + 
-                         sentence_complexity_modifier + 
-                         specificity_modifier + 
-                         linguistic_evidence + 
-                         technical_modifier)
-        
-        # UNIVERSAL THRESHOLD COMPLIANCE (≥0.35 minimum)
-        # Cap at 0.95 to leave room for uncertainty
-        return min(0.95, max(0.35, final_evidence))
-    
-    def _calculate_fabrication_evidence_pattern(self, pattern: str, context: AmbiguityContext, doc) -> float:
-        """Calculate evidence for incomplete explanation patterns."""
-        evidence_score = 0.60  # Base score for incomplete patterns
-        
-        # High-risk patterns
-        if pattern in ['communicates with', 'works with', 'interacts with']:
-            evidence_score += 0.20
-        
-        # Technical context increases risk
-        if self._is_technical_context(context):
-            evidence_score += 0.15
-        
-        # Lack of specificity nearby
-        if not self._has_specific_details(context.sentence):
-            evidence_score += 0.10
-        
-        return min(0.95, max(0.35, evidence_score))
-    
-    def _calculate_fabrication_evidence_process(self, token, doc, context: AmbiguityContext) -> float:
-        """Calculate evidence for technical process risks."""
-        evidence_score = 0.55  # Base score for technical processes
-        
-        # High-risk processes
-        if token.lemma_.lower() in ['backup', 'configuration', 'integration']:
-            evidence_score += 0.25
-        
-        # Lack of process details
-        if not self._has_process_details(token, doc):
-            evidence_score += 0.15
-        
-        # Technical context assessment
-        if self._is_technical_context(context):
-            evidence_score += 0.10
-        
-        return min(0.95, max(0.35, evidence_score))
-    
-    def _calculate_fabrication_evidence_purpose(self, pattern: str, context: AmbiguityContext, doc) -> float:
-        """Calculate evidence for purpose fabrication risks."""
-        evidence_score = 0.65  # Base score for purpose statements
-        
-        # High-risk purpose patterns
-        if pattern in ['to ensure', 'to verify', 'to confirm']:
-            evidence_score += 0.15
-        
-        # Lack of specific purpose details
-        if not self._has_specific_purpose_details(context.sentence):
-            evidence_score += 0.10
-        
-        return min(0.95, max(0.35, evidence_score))
-    
-    # Helper methods
-    def _is_extremely_vague_verb(self, token) -> bool:
-        """Check if verb is extremely vague and prone to fabrication."""
-        extremely_vague = {'handle', 'manage', 'work', 'operate', 'function'}
-        return token.lemma_.lower() in extremely_vague
-    
-    def _is_moderately_vague_verb(self, token) -> bool:
-        """Check if verb is moderately vague."""
-        moderately_vague = {'process', 'execute', 'perform', 'communicate', 'interact'}
-        return token.lemma_.lower() in moderately_vague
-    
-    def _lacks_clear_object(self, token, doc) -> bool:
-        """Check if verb lacks a clear direct object."""
-        for child in token.children:
-            if child.dep_ in ['dobj', 'pobj'] and not child.is_stop:
-                return False
-        return True
-    
-    def _has_specific_details_nearby(self, token, doc) -> bool:
-        """Check for specific details near the token."""
-        start_idx, end_idx = max(0, token.i - 3), min(len(doc), token.i + 4)
-        for i in range(start_idx, end_idx):
-            if (doc[i].pos_ in ['PROPN', 'NUM'] or 
-                doc[i].like_url or 
-                len(doc[i].text) > 8 or
-                doc[i].ent_type_ in ['PERSON', 'ORG', 'PRODUCT']):
-                return True
-        return False
-    
-    def _has_specific_details(self, sentence: str) -> bool:
-        """Check if sentence contains specific, concrete details."""
-        # Check for numbers, proper nouns, URLs, specific quantities
         import re
-        
-        # Specific patterns that indicate concrete details
-        specific_patterns = [
-            r'\d+',  # Numbers
-            r'[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*',  # Proper nouns
-            r'https?://',  # URLs
-            r'\b\d+\s*(?:MB|GB|TB|KB|bytes?)\b',  # File sizes
-            r'\b\d+\s*(?:ms|seconds?|minutes?|hours?)\b',  # Time units
-        ]
-        
-        return any(re.search(pattern, sentence) for pattern in specific_patterns)
-    
-    def _has_comprehensive_specific_details(self, sentence: str) -> bool:
-        """
-        Check if sentence has comprehensive specific details that eliminate fabrication risk.
-        
-        This is more restrictive than _has_specific_details - requires multiple specific
-        indicators or very detailed technical specifications that leave no room for fabrication.
-        """
-        import re
-        
-        # Count different types of specific details
-        detail_count = 0
-        
-        # Specific quantities with units
-        if re.search(r'\b\d+\s*(?:MB|GB|TB|KB|bytes?|ms|seconds?|minutes?|hours?|%)\b', sentence):
-            detail_count += 1
-        
-        # URLs or file paths
-        if re.search(r'https?://|[a-zA-Z]:[/\\]|\.exe|\.dll|\.config', sentence):
-            detail_count += 1
-        
-        # Multiple proper nouns (3+)
-        proper_nouns = re.findall(r'\b[A-Z][a-z]+\b', sentence)
-        if len(proper_nouns) >= 3:
-            detail_count += 1
-        
-        # Specific API or technical terms with parameters
-        if re.search(r'\b\w+\(\)|[a-zA-Z]+://|[a-zA-Z]+\.[a-zA-Z]+\(\)', sentence):
-            detail_count += 1
-        
-        # Technical specifications (multiple technical terms)
-        tech_terms = ['API', 'HTTP', 'HTTPS', 'JSON', 'XML', 'REST', 'GraphQL', 'SQL', 'NoSQL']
-        tech_count = sum(1 for term in tech_terms if term in sentence)
-        if tech_count >= 2:
-            detail_count += 1
-        
-        # Requires at least 2 types of comprehensive details to eliminate fabrication risk
-        return detail_count >= 2
-    
-    def _has_specific_purpose_details(self, sentence: str) -> bool:
-        """Check if purpose statement has specific details."""
-        # Look for specific outcomes, metrics, or concrete goals
-        specific_purpose_words = [
-            'performance', 'security', 'reliability', 'accuracy', 'efficiency',
-            'compliance', 'standards', 'requirements', 'specifications'
-        ]
-        return any(word in sentence.lower() for word in specific_purpose_words)
-    
-    def _is_vague_action_verb(self, token) -> bool:
-        """Check if token is a vague action verb."""
-        if not token:
-            return False
-        return token.lemma_.lower() in self.vague_action_verbs
-    
-    def _is_technical_process(self, token) -> bool:
-        """Check if token represents a technical process."""
-        if not token:
-            return False
-        lemma = token.lemma_.lower()
-        text = token.text.lower()
-        return lemma in self.technical_processes or text in self.technical_processes
-    
-    def _has_process_details(self, token, doc) -> bool:
-        """Check if technical process has specific details."""
-        for child in token.children:
-            if child.pos_ in ['NOUN', 'PROPN', 'NUM'] and not child.is_stop:
+        for pattern in technical_patterns:
+            if re.search(pattern, sentence_lower):
                 return True
-        return False
-    
-    def _is_technical_context(self, context: AmbiguityContext) -> bool:
-        """Check if context indicates technical content."""
-        technical_keywords = [
-            'system', 'server', 'application', 'software', 'service', 
-            'database', 'network', 'api', 'configuration', 'deployment',
-            'authentication', 'authorization', 'validation', 'monitoring'
+        
+        # Technical terminology with prepositions (very common and legitimate)
+        technical_with_prep = [
+            ('integration', ['with', 'between', 'across']),
+            ('working', ['with', 'on', 'through']),  
+            ('processing', ['of', 'for', 'from']),
+            ('monitoring', ['of', 'for', 'across']),
+            ('management', ['of', 'for', 'across']),
+            ('configuration', ['of', 'for', 'in']),
         ]
-        return any(keyword in context.sentence.lower() for keyword in technical_keywords)
-    
-    def _is_technical_label(self, text: str) -> bool:
-        """Check if text is a technical label that should not be flagged."""
-        text_lower = text.lower().strip()
-        if len(text.split()) <= 3:
-            technical_terms = [
-                'deployment', 'code scanning', 'image building', 'vulnerability detection',
-                'integration', 'monitoring', 'authentication', 'configuration',
-                'backup', 'scaling', 'logging', 'api', 'cli', 'sdk'
-            ]
-            if text_lower in technical_terms:
-                return True
-            words = text_lower.split()
-            if len(words) == 2:
-                if any(word in ['code', 'image', 'security', 'data', 'system'] for word in words):
+        
+        for tech_word, prepositions in technical_with_prep:
+            for prep in prepositions:
+                if f"{tech_word} {prep}" in sentence_lower:
                     return True
+        
         return False
     
-    def _is_gerund_noun_modifier(self, token, doc) -> bool:
-        """
-        Detects when a gerund (VBG) is functioning as a noun modifier rather than an active verb.
-        Examples: "error handling", "data processing", "file handling"
-        """
-        # Only applies to gerunds (VBG tags)
-        if token.tag_ != 'VBG':
-            return False
+    def _has_concrete_technical_specifications(self, sentence: str) -> bool:
+        """Check if sentence has concrete technical specifications."""
+        import re
         
-        # Check if it's functioning as a compound noun modifier
+        # API endpoints, protocols, specific technologies
+        technical_patterns = [
+            r'https?://',  # URLs
+            r'\b[A-Z]{2,}\b',  # Acronyms (API, HTTP, REST)
+            r'\b\w+\.\w+\(\)',  # Method calls
+            r'\b\d+\.\d+\.\d+',  # Version numbers
+            r'\b[a-zA-Z]+://[a-zA-Z]',  # Protocols
+            r'\b\w+\s*=\s*\w+',  # Configurations
+        ]
+        
+        return any(re.search(pattern, sentence) for pattern in technical_patterns)
+    
+    def _is_clear_procedural_instruction(self, sentence: str) -> bool:
+        """Check if this is a clear procedural instruction."""
+        instruction_indicators = [
+            'click', 'select', 'enter', 'run', 'execute', 'install',
+            'configure', 'set', 'enable', 'disable', 'start', 'stop'
+        ]
+        return any(indicator in sentence for indicator in instruction_indicators)
+    
+    # === LINGUISTIC ANALYSIS HELPER METHODS ===
+    
+    def _is_functioning_as_noun_modifier(self, token, doc) -> bool:
+        """
+        LINGUISTIC ANCHOR: Is this word functioning as a noun modifier?
+        
+        Examples: "error handling", "data processing", "network monitoring"
+        These are legitimate technical compound nouns, not vague verbs.
+        """
+        # Check if it's modifying a noun (compound or adjectival modifier)
         if token.dep_ in ('compound', 'amod', 'acl'):
-            # If modifying a noun, it's likely a noun modifier, not an active verb
             if token.head.pos_ in ('NOUN', 'PROPN'):
                 return True
         
+        # Check for gerund functioning as noun modifier
+        if token.tag_ == 'VBG' and token.dep_ in ('compound', 'amod'):
+            return True
+        
         # Check for common technical compound patterns
-        if (token.i > 0 and token.i < len(doc) - 1):
-            prev_token = doc[token.i - 1]
+        if token.i < len(doc) - 1:
             next_token = doc[token.i + 1]
-            
-            technical_adjectives = {
-                'error', 'data', 'file', 'image', 'user', 'system', 'network',
-                'security', 'application', 'database', 'server', 'client',
-                'automatic', 'manual', 'real-time', 'batch', 'background'
-            }
-            
-            if (prev_token.lemma_.lower() in technical_adjectives and 
-                next_token.pos_ in ('NOUN', 'PROPN')):
-                return True
-        
-        # Check if the gerund has no typical verb arguments
-        has_verb_args = any(child.dep_ in ('dobj', 'iobj', 'ccomp', 'xcomp') 
-                           for child in token.children)
-        
-        if not has_verb_args and token.dep_ in ('compound', 'amod', 'acl'):
-            return True
+            if next_token.pos_ in ('NOUN', 'PROPN'):
+                compound_phrase = f"{token.text.lower()} {next_token.text.lower()}"
+                if compound_phrase in self.legitimate_technical_compounds:
+                    return True
         
         return False
     
-    def _is_compound_technical_noun(self, token, doc) -> bool:
+    def _has_clear_technical_subject(self, token, doc) -> bool:
         """
-        Detects compound technical nouns that should not be flagged as fabrication risks.
-        Examples: "data processing systems", "network monitoring tools"
+        LINGUISTIC ANCHOR: Does this verb have a clear technical subject?
+        
+        Examples: "The system processes data", "The application manages users"
+        Clear subjects make the verb usage legitimate, not vague.
         """
-        # Check if it's a compound noun
-        if token.pos_ != 'NOUN' or token.dep_ != 'compound':
-            return False
-        
-        # Check if it's modifying another noun
-        if token.head.pos_ not in ('NOUN', 'PROPN'):
-            return False
-        
-        # Check for technical compound patterns
-        if (token.i > 0 and token.i < len(doc) - 1):
-            prev_token = doc[token.i - 1]
-            next_token = doc[token.i + 1]
-            
-            technical_nouns = {
-                'data', 'image', 'network', 'system', 'user', 'error', 'file',
-                'security', 'application', 'database', 'server', 'client',
-                'backup', 'real-time', 'automatic', 'manual', 'real', 'time'
-            }
-            
-            system_nouns = {
-                'systems', 'tools', 'algorithms', 'capabilities', 'procedures',
-                'modules', 'frameworks', 'components', 'services', 'applications',
-                'methods', 'techniques', 'processes', 'mechanisms', 'features'
-            }
-            
-            if (prev_token.lemma_.lower() in technical_nouns and 
-                next_token.lemma_.lower() in system_nouns):
-                return True
-        
-        # Check if the compound is clearly a noun phrase
-        if token.head.dep_ in ('nsubj', 'dobj', 'pobj'):
-            return True
+        for child in token.children:
+            if child.dep_ in ('nsubj', 'nsubjpass'):
+                subject_text = child.text.lower()
+                # Technical subjects that make verb usage legitimate
+                technical_subjects = {
+                    'system', 'application', 'service', 'server', 'database',
+                    'api', 'software', 'program', 'module', 'component',
+                    'tool', 'feature', 'function', 'process', 'algorithm'
+                }
+                if subject_text in technical_subjects:
+                    return True
+                
+                # Check for compound technical subjects
+                if child.dep_ == 'compound':
+                    compound_subject = f"{doc[child.i-1].text.lower()} {subject_text}"
+                    if any(tech in compound_subject for tech in technical_subjects):
+                        return True
         
         return False
     
-    def _create_vague_action_detection(self, token, evidence_score: float, context: AmbiguityContext) -> AmbiguityDetection:
-        """Create fabrication risk detection for vague actions."""
-        evidence = AmbiguityEvidence(
-            tokens=[token.text], 
-            linguistic_pattern=f"vague_action_{token.lemma_}", 
-            confidence=evidence_score,
-            spacy_features={
-                'pos': token.pos_, 
-                'lemma': token.lemma_, 
-                'dep': token.dep_, 
-                'has_object': not self._lacks_clear_object(token, token.doc)
-            },
-            context_clues={'action_type': 'vague_verb', 'fabrication_risk': 'high'}
-        )
+    def _has_specific_technical_object(self, token, doc) -> bool:
+        """
+        LINGUISTIC ANCHOR: Does this verb have a specific technical object?
         
-        strategies = [ResolutionStrategy.SPECIFY_REFERENCE, ResolutionStrategy.RESTRUCTURE_SENTENCE]
+        Examples: "manage user accounts", "process payment data", "handle HTTP requests"
+        Specific objects make verb usage legitimate and precise.
+        """
+        for child in token.children:
+            if child.dep_ in ('dobj', 'pobj'):
+                # Look for technical objects
+                obj_text = child.text.lower()
+                technical_objects = {
+                    'data', 'files', 'requests', 'responses', 'accounts', 'users',
+                    'connections', 'sessions', 'transactions', 'records', 'logs',
+                    'events', 'messages', 'notifications', 'configurations'
+                }
+                if obj_text in technical_objects:
+                    return True
+                
+                # Check for compound technical objects
+                obj_phrase = ' '.join([t.text.lower() for t in child.subtree if not t.is_stop])
+                if len(obj_phrase.split()) >= 2:  # Multi-word objects are usually specific
+                    return True
         
-        ai_instructions = [
-            f"The verb '{token.text}' is vague and could lead to adding unverified details",
-            "Do not add specific purposes, methods, or details that are not in the original text",
-            "Keep the action description as general as the original unless specific details are provided",
-            "Avoid fabricating steps, processes, or explanations not explicitly stated"
-        ]
-        
-        return AmbiguityDetection(
-            ambiguity_type=AmbiguityType.FABRICATION_RISK, 
-            category=AmbiguityCategory.SEMANTIC,
-            severity=AmbiguitySeverity.CRITICAL, 
-            context=context, 
-            evidence=evidence,
-            resolution_strategies=strategies, 
-            ai_instructions=ai_instructions,
-            span=(token.idx, token.idx + len(token.text)),
-            flagged_text=token.text
-        )
+        return False
     
-    def _create_incomplete_explanation_detection(self, pattern: str, tokens: List[str], evidence_score: float, context: AmbiguityContext) -> AmbiguityDetection:
-        """Create fabrication risk detection for incomplete explanations."""
-        evidence = AmbiguityEvidence(
-            tokens=tokens, 
-            linguistic_pattern=f"incomplete_explanation_{pattern.replace(' ', '_')}",
-            confidence=evidence_score, 
-            spacy_features={'pattern_type': 'incomplete'}, 
-            context_clues={'pattern': pattern, 'fabrication_risk': 'high'}
-        )
+    def _is_established_technical_terminology(self, token, doc, context: AmbiguityContext) -> bool:
+        """
+        LINGUISTIC ANCHOR: Is this established technical terminology?
         
-        strategies = [ResolutionStrategy.SPECIFY_REFERENCE, ResolutionStrategy.ADD_CONTEXT]
+        Check if the word is used in an established technical context
+        that doesn't invite fabrication.
+        """
+        word_lemma = token.lemma_.lower()
+        sentence = context.sentence.lower()
         
-        ai_instructions = [
-            f"The phrase '{pattern}' is incomplete and could invite adding unverified details",
-            "Do not add specific purposes, methods, or explanations not in the original text",
-            "Preserve the level of detail from the original text",
-            "Avoid fabricating connections, relationships, or processes not explicitly stated"
-        ]
+        # Check for established technical phrases
+        established_phrases = {
+            'data processing', 'error handling', 'file management', 'user authentication',
+            'system monitoring', 'network configuration', 'backup procedures',
+            'security validation', 'performance optimization', 'load balancing'
+        }
         
-        return AmbiguityDetection(
-            ambiguity_type=AmbiguityType.FABRICATION_RISK, 
-            category=AmbiguityCategory.SEMANTIC,
-            severity=AmbiguitySeverity.CRITICAL, 
-            context=context, 
-            evidence=evidence,
-            resolution_strategies=strategies, 
-            ai_instructions=ai_instructions
-        )
+        return any(phrase in sentence for phrase in established_phrases)
     
-    def _create_technical_process_detection(self, token, evidence_score: float, context: AmbiguityContext) -> AmbiguityDetection:
-        """Create fabrication risk detection for technical processes."""
-        evidence = AmbiguityEvidence(
-            tokens=[token.text], 
-            linguistic_pattern=f"technical_process_{token.lemma_}",
-            confidence=evidence_score, 
-            spacy_features={
-                'pos': token.pos_, 
-                'lemma': token.lemma_, 
-                'process_type': 'technical'
-            },
-            context_clues={'process': token.text, 'fabrication_risk': 'high'}
-        )
+    def _analyze_linguistic_usage_context(self, token, doc) -> float:
+        """
+        EVIDENCE FACTOR 1: Analyze how the word is being used grammatically.
         
-        strategies = [ResolutionStrategy.SPECIFY_REFERENCE, ResolutionStrategy.RESTRUCTURE_SENTENCE]
+        Returns modifier to evidence score based on grammatical role.
+        """
+        modifier = 0.0
         
-        ai_instructions = [
-            f"The technical process '{token.text}' could be over-specified with unverified details",
-            "Do not add specific steps, parameters, or configurations not in the original text",
-            "Keep technical descriptions as general as the original unless specifics are provided",
-            "Avoid fabricating technical procedures, settings, or implementation details"
-        ]
+        # Main verb of sentence (ROOT) increases risk
+        if token.dep_ == 'ROOT':
+            modifier += 0.15  # Main verbs carry more fabrication risk
         
-        return AmbiguityDetection(
-            ambiguity_type=AmbiguityType.FABRICATION_RISK, 
-            category=AmbiguityCategory.SEMANTIC,
-            severity=AmbiguitySeverity.CRITICAL, 
-            context=context, 
-            evidence=evidence,
-            resolution_strategies=strategies, 
-            ai_instructions=ai_instructions,
-            span=(token.idx, token.idx + len(token.text)),
-            flagged_text=token.text
-        )
+        # Auxiliary or modal usage reduces risk
+        elif token.dep_ in ('aux', 'auxpass'):
+            modifier -= 0.10  # Auxiliary usage is less risky
+        
+        # Subordinate clause usage
+        elif token.dep_ in ('advcl', 'ccomp', 'xcomp'):
+            modifier += 0.05  # Subordinate clauses can invite elaboration
+        
+        # Check for imperatives (command form)
+        if token.is_sent_start and token.dep_ == 'ROOT':
+            modifier += 0.10  # Imperative mood can be vague
+        
+        return modifier
     
-    def _create_purpose_fabrication_detection(self, pattern: str, tokens: List[str], evidence_score: float, context: AmbiguityContext) -> AmbiguityDetection:
-        """Create fabrication risk detection for purpose statements."""
-        evidence = AmbiguityEvidence(
-            tokens=tokens, 
-            linguistic_pattern=f"purpose_statement_{pattern.replace(' ', '_')}",
-            confidence=evidence_score, 
-            spacy_features={'pattern_type': 'purpose'}, 
-            context_clues={'pattern': pattern, 'fabrication_risk': 'high'}
-        )
+    def _analyze_specificity_deficit(self, token, doc, context: AmbiguityContext) -> float:
+        """
+        EVIDENCE FACTOR 2: Analyze lack of specific details.
         
-        strategies = [ResolutionStrategy.SPECIFY_REFERENCE, ResolutionStrategy.RESTRUCTURE_SENTENCE]
+        Returns modifier based on how much specific context is missing.
+        """
+        modifier = 0.0
+        sentence_length = len(doc)
         
-        ai_instructions = [
-            f"The purpose statement '{pattern}' could invite adding unverified explanations",
-            "Do not add specific purposes or reasons not explicitly stated in the original text",
-            "Keep purpose statements as general as the original unless specific purposes are provided",
-            "Avoid fabricating motivations, goals, or objectives not explicitly mentioned"
-        ]
+        # Very short sentences lack context
+        if sentence_length < 8:
+            modifier += 0.15
+        elif sentence_length < 12:
+            modifier += 0.08
         
-        return AmbiguityDetection(
-            ambiguity_type=AmbiguityType.FABRICATION_RISK, 
-            category=AmbiguityCategory.SEMANTIC,
-            severity=AmbiguitySeverity.CRITICAL, 
-            context=context, 
-            evidence=evidence,
-            resolution_strategies=strategies, 
-            ai_instructions=ai_instructions
-        )
+        # Check for presence of specific details
+        has_numbers = any(t.pos_ == 'NUM' or t.like_num for t in doc)
+        has_proper_nouns = any(t.pos_ == 'PROPN' for t in doc)
+        has_technical_terms = any(t.text.upper() in ['API', 'HTTP', 'REST', 'JSON', 'XML'] for t in doc)
+        
+        specificity_count = sum([has_numbers, has_proper_nouns, has_technical_terms])
+        
+        if specificity_count == 0:
+            modifier += 0.20  # No specific details increase risk
+        elif specificity_count == 1:
+            modifier += 0.05  # Some specific details reduce risk
+        else:
+            modifier -= 0.10  # Multiple specific details significantly reduce risk
+        
+        return modifier
+    
+    def _analyze_technical_precision_requirements(self, context: AmbiguityContext) -> float:
+        """
+        EVIDENCE FACTOR 3: Analyze if this context requires precision.
+        
+        Returns modifier based on domain precision requirements.
+        """
+        modifier = 0.0
+        document_context = context.document_context or {}
+        
+        content_type = document_context.get('content_type', '')
+        if content_type in ['technical', 'api', 'developer']:
+            modifier += 0.15  # Technical contexts require precision
+        elif content_type in ['procedural', 'tutorial']:
+            modifier += 0.10  # Instructions need to be clear
+        elif content_type in ['marketing', 'overview']:
+            modifier -= 0.05  # Marketing allows more general language
+        
+        return modifier
+    
+    def _analyze_sentence_structure_risk(self, token, doc) -> float:
+        """
+        EVIDENCE FACTOR 4: Analyze sentence structure for fabrication risk.
+        
+        Returns modifier based on structural patterns that invite elaboration.
+        """
+        modifier = 0.0
+        
+        # Incomplete sentence patterns
+        if not any(child.dep_ in ('dobj', 'pobj', 'ccomp') for child in token.children):
+            modifier += 0.10  # Verbs without clear objects can be vague
+        
+        # Coordination patterns (multiple verbs)
+        if any(child.dep_ == 'conj' for child in token.children):
+            modifier -= 0.05  # Coordinated verbs often have context from each other
+        
+        # Passive voice patterns
+        if any(child.dep_ == 'auxpass' for child in token.children):
+            modifier += 0.08  # Passive voice can hide actors
+        
+        return modifier
+    
+    def _analyze_domain_appropriateness(self, word_lemma: str, context: AmbiguityContext) -> float:
+        """
+        EVIDENCE FACTOR 5: Analyze domain appropriateness.
+        
+        Returns modifier based on whether this level of vagueness is appropriate.
+        """
+        modifier = 0.0
+        sentence = context.sentence.lower()
+        
+        # Check for domain-specific contexts where the word is appropriate
+        if word_lemma in ['monitor', 'monitoring']:
+            if any(term in sentence for term in ['system', 'network', 'performance', 'health']):
+                modifier -= 0.15  # "System monitoring" is legitimate
+        
+        elif word_lemma in ['process', 'processing']:
+            if any(term in sentence for term in ['data', 'transaction', 'request', 'payment']):
+                modifier -= 0.15  # "Data processing" is legitimate
+        
+        elif word_lemma in ['manage', 'management']:
+            if any(term in sentence for term in ['user', 'account', 'resource', 'configuration']):
+                modifier -= 0.15  # "User management" is legitimate
+        
+        elif word_lemma in ['integration', 'integrate']:
+            if any(term in sentence for term in ['api', 'system', 'service', 'application']):
+                modifier -= 0.15  # "System integration" is legitimate
+        
+        return modifier
+    
+    def _determine_fabrication_risk_type(self, token, doc) -> str:
+        """Determine the specific type of fabrication risk."""
+        if token.pos_ == 'VERB':
+            return 'vague_verb'
+        elif token.pos_ in ('NOUN', 'PROPN'):
+            return 'vague_process'
+        else:
+            return 'contextual_vagueness'
+    
+    def _generate_evidence_based_suggestions(self, token, evidence_score: float, risk_type: str, doc) -> List[str]:
+        """Generate evidence-based suggestions."""
+        suggestions = []
+        word = token.text.lower()
+        
+        if evidence_score > 0.85:  # High confidence
+            if risk_type == 'vague_verb':
+                suggestions.append(f"Replace '{word}' with a specific action that describes exactly what happens.")
+                suggestions.append("Add technical details about the process, method, or mechanism.")
+            elif risk_type == 'vague_process':
+                suggestions.append(f"Specify what type of {word} is being performed.")
+                suggestions.append("Add context about tools, methods, or standards used.")
+        else:  # Medium confidence
+            suggestions.append(f"Consider adding more context around '{word}' to prevent ambiguity.")
+            suggestions.append("Specify the scope, method, or purpose if relevant.")
+        
+        return suggestions
+    
+    def _generate_evidence_based_ai_instructions(self, token, evidence_score: float, risk_type: str) -> List[str]:
+        """Generate AI instructions based on evidence analysis."""
+        instructions = []
+        
+        instructions.append(f"The word '{token.text}' creates fabrication risk in this context.")
+        
+        if evidence_score > 0.85:
+            instructions.append("High confidence: This word invites adding unverified details.")
+            instructions.append("Do not elaborate on processes, methods, or specifics not in the original text.")
+        else:
+            instructions.append("Moderate confidence: Be cautious about adding context not explicitly stated.")
+        
+        instructions.append("Preserve the original level of detail and abstraction.")
+        instructions.append("Avoid fabricating technical procedures, relationships, or explanations.")
+        
+        return instructions
+    
+    # === LEGACY METHODS REMOVED ===
+    # Old detection methods removed in favor of evidence-based approach
+    # All detection now handled by the main detect() method with linguistic intelligence
+    #
+    # REPLACED: Old primitive keyword-based detection
+    # NEW: Evidence-based linguistic analysis with surgical zero false positive guards

@@ -441,6 +441,34 @@ class ArticlesRule(BaseLanguageRule):
         Returns:
             float: Evidence score from 0.0 (acceptable omission) to 1.0 (missing article)
         """
+        
+        # === ZERO FALSE POSITIVE GUARD FOR UNCOUNTABLE TECHNICAL COMPOUNDS ===
+        # CRITICAL: Before any other analysis, check if the noun is part of a
+        # well-known uncountable technical compound noun (e.g., "disk space").
+        # If so, it is not an error, so we return 0.0 immediately.
+
+        if noun_token.i > 0:
+            doc = noun_token.doc
+            prev_token = doc[noun_token.i - 1]
+            # Check if the preceding token is a noun or adjective modifying our target noun
+            if prev_token.dep_ in ('compound', 'amod'):
+                compound_phrase = f"{prev_token.text.lower()} {noun_token.text.lower()}"
+                
+                # This set can be expanded over time with more examples.
+                uncountable_compounds = {
+                    "disk space",
+                    "error handling",
+                    "data processing",
+                    "user authentication",
+                    "attribute substitution",
+                    "system performance",
+                    "network traffic",
+                    "load balancing"
+                }
+                
+                if compound_phrase in uncountable_compounds:
+                    return 0.0  # This is a known technical phrase, not an error.
+
         evidence_score = 0.0
         
         # === STEP 1: BASE EVIDENCE ASSESSMENT ===

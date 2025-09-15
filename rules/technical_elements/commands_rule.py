@@ -209,6 +209,27 @@ class CommandsRule(BaseTechnicalRule):
         Only returns True for genuine verb usage, not command misuse.
         Uses YAML-based configuration for legitimate patterns.
         """
+        
+        # === NEW LINGUISTIC GUARD: Check for clear verb patterns first. ===
+        # This prevents flagging common words when they are used as verbs.
+
+        # GUARD A: Check for modal auxiliary verbs (e.g., "will find", "can run").
+        # If a command word is governed by an auxiliary verb, it's being used as a verb.
+        if any(child.dep_ == 'aux' and child.pos_ == 'AUX' for child in token.children):
+            return True  # Example: "you 'll find..." -> 'll (will) is an aux of find.
+
+        # GUARD B: Check the subject of the verb. Commands are imperative and don't
+        # typically have subjects like "you", "we", or "they" in technical prose.
+        subject = None
+        for child in token.children:
+            if child.dep_ == 'nsubj':
+                subject = child
+                break
+        
+        if subject and subject.lemma_.lower() in ['you', 'we', 'they', 'i', 'he', 'she']:
+            return True  # Example: "You run the script.", "We find the results."
+
+        # ... existing YAML-based logic follows ...
         sent_text = sentence_obj.text.lower()
         
         # Get pattern config for this command word

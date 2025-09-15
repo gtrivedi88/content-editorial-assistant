@@ -140,13 +140,42 @@ class CommasRule(BasePunctuationRule):
     def _analyze_introductory_comma_evidence(self, sent: 'Span', sentence_index: int, text: str, context: Dict[str, Any]) -> List[Dict[str, Any]]:
         """
         Evidence-based analysis for missing commas after introductory clauses.
+        
+        === ZERO FALSE POSITIVE GUARD FOR PROPER INTRODUCTORY ELEMENTS ===
+        Only flags TRUE introductory elements (subordinate clauses, prepositional phrases
+        at sentence start), not random words before the subject.
         """
         errors = []
         
         if len(sent) < 4:
             return errors
 
-        # Find main verb and subject
+        # === CRITICAL FIX: Proper introductory element detection ===
+        # ONLY flag actual introductory elements, not arbitrary words before subject
+        
+        # Check if sentence starts with a subordinating conjunction (true introductory clause)
+        subordinating_conjunctions = {
+            'after', 'although', 'as', 'because', 'before', 'if', 'since', 
+            'unless', 'until', 'when', 'while', 'though', 'whereas', 'wherever'
+        }
+        
+        first_token = sent[sent.start]
+        starts_with_subordinator = first_token.lemma_.lower() in subordinating_conjunctions
+        
+        # Check for adverbial phrases at start (e.g., "In the morning, ...")
+        starts_with_prep_phrase = (
+            first_token.pos_ == 'ADP' or  # Preposition
+            (first_token.pos_ == 'ADV' and len(sent) > 3)  # Adverbial phrase
+        )
+        
+        # Check for participial phrases (e.g., "Walking to work, ...")
+        starts_with_participle = first_token.pos_ == 'VERB' and first_token.tag_ in ('VBG', 'VBN')
+        
+        # If none of these patterns match, this is NOT a true introductory element
+        if not (starts_with_subordinator or starts_with_prep_phrase or starts_with_participle):
+            return errors  # No introductory element detected
+        
+        # Find the main clause boundary using proper linguistic analysis
         main_verb = next((tok for tok in sent if tok.dep_ == 'ROOT'), None)
         if not main_verb:
             return errors
@@ -155,40 +184,55 @@ class CommasRule(BasePunctuationRule):
         if not main_subject:
             return errors
 
-        # Check for introductory elements
-        main_clause_start_token = main_subject
-        for child in main_verb.children:
-            if child.dep_ in ('aux', 'auxpass') and child.i < main_clause_start_token.i:
-                main_clause_start_token = child
-
-        if main_clause_start_token.i > sent.start:
-            intro_element_length = main_clause_start_token.i - sent.start
+        # Find the actual end of the introductory element
+        # Look for the point where the main clause truly begins
+        intro_end_index = None
+        
+        if starts_with_subordinator:
+            # For subordinate clauses, find the subordinate clause's verb and its end
+            for token in sent:
+                if token.dep_ == 'advcl' or (token.head == main_verb and token.dep_ in ('prep', 'advmod')):
+                    # Find the rightmost token in this subordinate structure
+                    clause_tokens = [token] + list(token.subtree)
+                    intro_end_index = max(t.i for t in clause_tokens if t.i < main_subject.i)
+                    break
+        elif starts_with_prep_phrase:
+            # For prepositional phrases, find the end of the phrase
+            for token in sent:
+                if token.head == main_verb and token.dep_ == 'prep':
+                    phrase_tokens = list(token.subtree)
+                    intro_end_index = max(t.i for t in phrase_tokens if t.i < main_subject.i)
+                    break
+        
+        # If we found a proper introductory element, check if it needs a comma
+        if intro_end_index and intro_end_index > sent.start:
+            intro_element_length = intro_end_index - sent.start + 1
             
-            if intro_element_length > 2:
+            # Only flag if the introductory element is substantial (4+ tokens)
+            if intro_element_length >= 4:
+                # Check if comma already exists
+                last_intro_token = sent.doc[intro_end_index]
+                if last_intro_token.nbor(1).text == ',':
+                    return errors  # Comma already present
+                
                 evidence_score = self._calculate_introductory_comma_evidence(
-                    main_clause_start_token, sent, text, context, intro_element_length
+                    main_subject, sent, text, context, intro_element_length
                 )
                 
                 if evidence_score > 0.1:
-                    # Find the last meaningful token in the introductory clause
-                    last_intro_token = None
-                    for token in sent:
-                        if sent.start <= token.i < main_clause_start_token.i:
-                            last_intro_token = token
-                    
-                    if last_intro_token:
-                        errors.append(self._create_error(
-                            sentence=sent.text,
-                            sentence_index=sentence_index,
-                            message=self._get_contextual_introductory_comma_message(evidence_score),
-                            suggestions=self._generate_smart_introductory_comma_suggestions(last_intro_token, evidence_score, context),
-                            severity='medium' if evidence_score > 0.6 else 'low',
-                            text=text,
-                            context=context,
-                            evidence_score=evidence_score,
-                            span=(last_intro_token.idx + len(last_intro_token.text), last_intro_token.idx + len(last_intro_token.text)),
-                            flagged_text=last_intro_token.text
-                        ))
+                    errors.append(self._create_error(
+                        sentence=sent.text,
+                        sentence_index=sentence_index,
+                        message=self._get_contextual_introductory_comma_message(evidence_score),
+                        suggestions=self._generate_smart_introductory_comma_suggestions(last_intro_token, evidence_score, context),
+                        severity='medium' if evidence_score > 0.6 else 'low',
+                        text=text,
+                        context=context,
+                        evidence_score=evidence_score,
+                        span=(last_intro_token.idx + len(last_intro_token.text), last_intro_token.idx + len(last_intro_token.text)),
+                        flagged_text=last_intro_token.text
+                    ))
+        
         return errors
 
     # === EVIDENCE CALCULATION METHODS ===

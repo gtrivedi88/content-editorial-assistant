@@ -6,6 +6,7 @@ Uses YAML-based corrections vocabulary and centralized PassiveVoiceAnalyzer
 to eliminate code duplication while maintaining sophisticated context-aware suggestions.
 """
 from typing import List, Dict, Any, Optional
+import pyinflect
 from .services.language_vocabulary_service import get_verbs_vocabulary
 
 try:
@@ -127,7 +128,7 @@ class VerbsRule(BaseLanguageRule):
                                 sentence=sent_text,
                                 sentence_index=i,
                                 message=self._get_contextual_future_tense_message(flagged_text, evidence_score, context or {}),
-                                suggestions=self._generate_smart_future_tense_suggestions(head_verb, evidence_score, context or {}),
+                                suggestions=self._generate_smart_future_tense_suggestions(token, head_verb, evidence_score, context or {}),
                                 severity='low' if evidence_score < 0.6 else 'medium',
                                 text=text,
                                 context=context,
@@ -153,7 +154,7 @@ class VerbsRule(BaseLanguageRule):
                         sentence=sent_text,
                         sentence_index=i,
                         message=self._get_contextual_past_tense_message(flagged_text, evidence_score_past, context or {}),
-                        suggestions=self._generate_smart_past_tense_suggestions(root_verb, evidence_score_past, context or {}),
+                        suggestions=self._generate_smart_past_tense_suggestions(root_verb, evidence_score_past, context or {}, doc),
                         severity='low',
                         text=text,
                         context=context,
@@ -1147,26 +1148,44 @@ class VerbsRule(BaseLanguageRule):
         else:
             return f"The phrase '{flagged_text}' may benefit from present tense for clarity."
 
-    def _generate_smart_future_tense_suggestions(self, head_verb: Token, ev: float, context: Dict[str, Any]) -> List[str]:
-        """Generate context-aware suggestions for future tense patterns."""
+    def _generate_smart_future_tense_suggestions(self, will_token: Token, head_verb: Token, ev: float, context: Dict[str, Any]) -> List[str]:
+        """Generate context-aware suggestions for future tense patterns with proper subject-verb agreement."""
         
         base = head_verb.lemma_
         suggestions = []
         content_type = context.get('content_type', 'general')
         
-        # Base suggestions based on evidence strength and context
+        # Find the subject of the verb to ensure proper conjugation
+        subject_token = self._find_verb_subject(will_token, head_verb)
+        
+        # Base suggestions based on evidence strength and context with linguistically-aware conjugation
         if ev > 0.8:
             if content_type == 'procedural':
                 suggestions.append(f"Use imperative: '{base.capitalize()}' (direct instruction)")
-                suggestions.append(f"Use present: 'The system {base}s' (describe current behavior)")
+                if subject_token:
+                    present_form = self._generate_smart_verb_suggestions(head_verb, subject_token, 'present')
+                    suggestions.append(f"Use present: '{present_form}' (describe current behavior)")
+                else:
+                    suggestions.append(f"Use present: 'The system {self._conjugate_verb_for_subject(base, 'system')}' (describe current behavior)")
             elif content_type == 'api':
-                suggestions.append(f"Use present: 'The method {base}s' (current API behavior)")
-                suggestions.append(f"Use present: 'This {base}s the resource' (API functionality)")
+                method_form = self._conjugate_verb_for_subject(base, 'method')
+                suggestions.append(f"Use present: 'The method {method_form}' (current API behavior)")
+                this_form = self._conjugate_verb_for_subject(base, 'this')
+                suggestions.append(f"Use present: 'This {this_form} the resource' (API functionality)")
             else:
-                suggestions.append(f"Use present: '{base}s' (current state/behavior)")
-                suggestions.append(f"Use imperative: '{base.capitalize()}' (direct action)")
+                if subject_token:
+                    present_form = self._generate_smart_verb_suggestions(head_verb, subject_token, 'present')
+                    suggestions.append(f"Use present: '{present_form}' (current state/behavior)")
+                    suggestions.append(f"Use imperative: '{base.capitalize()}' (direct action)")
+                else:
+                    suggestions.append(f"Use present with proper subject-verb agreement")
+                    suggestions.append(f"Use imperative: '{base.capitalize()}' (direct action)")
         else:
-            suggestions.append(f"Consider present: '{base}s'")
+            if subject_token:
+                present_form = self._generate_smart_verb_suggestions(head_verb, subject_token, 'present')
+                suggestions.append(f"Consider present: '{present_form}'")
+            else:
+                suggestions.append(f"Consider present with proper subject-verb agreement")
             suggestions.append(f"Consider imperative: '{base.capitalize()}'")
         
         # Context-specific advice
@@ -1713,26 +1732,44 @@ class VerbsRule(BaseLanguageRule):
         else:
             return f"The verb '{flagged_text}' may benefit from present tense for clarity."
 
-    def _generate_smart_past_tense_suggestions(self, root_verb: Token, ev: float, context: Dict[str, Any]) -> List[str]:
-        """Generate context-aware suggestions for past tense patterns."""
+    def _generate_smart_past_tense_suggestions(self, root_verb: Token, ev: float, context: Dict[str, Any], doc: Doc = None) -> List[str]:
+        """Generate context-aware suggestions for past tense patterns with proper subject-verb agreement."""
         
         base = root_verb.lemma_
         suggestions = []
         content_type = context.get('content_type', 'general')
         
-        # Base suggestions based on evidence strength and context
+        # Find the subject of the verb to ensure proper conjugation
+        subject_token = self._find_verb_subject(root_verb, root_verb, doc)
+        
+        # Base suggestions based on evidence strength and context with linguistically-aware conjugation
         if ev > 0.8:
             if content_type == 'procedural':
                 suggestions.append(f"Use imperative: '{base.capitalize()}' (direct instruction)")
-                suggestions.append(f"Use present: 'The system {base}s' (describe current behavior)")
+                if subject_token:
+                    present_form = self._generate_smart_verb_suggestions(root_verb, subject_token, 'present')
+                    suggestions.append(f"Use present: '{present_form}' (describe current behavior)")
+                else:
+                    suggestions.append(f"Use present: 'The system {self._conjugate_verb_for_subject(base, 'system')}' (describe current behavior)")
             elif content_type == 'api':
-                suggestions.append(f"Use present: 'The method {base}s' (current API behavior)")
-                suggestions.append(f"Use present: 'This {base}s the resource' (API functionality)")
+                method_form = self._conjugate_verb_for_subject(base, 'method')
+                suggestions.append(f"Use present: 'The method {method_form}' (current API behavior)")
+                this_form = self._conjugate_verb_for_subject(base, 'this')
+                suggestions.append(f"Use present: 'This {this_form} the resource' (API functionality)")
             else:
-                suggestions.append(f"Use present: '{base}s' (current state/behavior)")
-                suggestions.append(f"Use imperative: '{base.capitalize()}' (direct action)")
+                if subject_token:
+                    present_form = self._generate_smart_verb_suggestions(root_verb, subject_token, 'present')
+                    suggestions.append(f"Use present: '{present_form}' (current state/behavior)")
+                    suggestions.append(f"Use imperative: '{base.capitalize()}' (direct action)")
+                else:
+                    suggestions.append(f"Use present with proper subject-verb agreement")
+                    suggestions.append(f"Use imperative: '{base.capitalize()}' (direct action)")
         else:
-            suggestions.append(f"Consider present: '{base}s'")
+            if subject_token:
+                present_form = self._generate_smart_verb_suggestions(root_verb, subject_token, 'present')
+                suggestions.append(f"Consider present: '{present_form}'")
+            else:
+                suggestions.append(f"Consider present with proper subject-verb agreement")
             suggestions.append("Consider if this describes current vs. historical behavior")
         
         # Context-specific advice
@@ -1748,6 +1785,155 @@ class VerbsRule(BaseLanguageRule):
             suggestions.append("Use present tense for current behavior and instructions.")
         
         return suggestions[:3]
+
+    # === LINGUISTICALLY-AWARE VERB SUGGESTION METHODS ===
+
+    def _generate_smart_verb_suggestions(self, verb_token: Token, subject_token: Token, desired_tense: str = 'present') -> str:
+        """
+        Generates a grammatically correct verb suggestion.
+        
+        Args:
+            verb_token: The verb to change (e.g., 'find')
+            subject_token: Its subject (e.g., 'you')
+            desired_tense: The desired tense ('present', 'past', etc.)
+            
+        Returns:
+            str: Correctly conjugated verb form
+        """
+        try:
+            verb_lemma = verb_token.lemma_
+            subject_text = subject_token.text.lower() if subject_token else 'it'
+            
+            # Determine the correct verb form based on subject
+            if subject_text in ['i', 'you', 'we', 'they'] or (hasattr(subject_token, 'tag_') and subject_token.tag_ == 'NNS'):
+                # 1st/2nd person or plural subject -> use base form for present tense (VBP)
+                tag = 'VBP' if desired_tense == 'present' else 'VBD'
+            else:
+                # 3rd person singular subject -> use '-s' form for present tense (VBZ)
+                tag = 'VBZ' if desired_tense == 'present' else 'VBD'
+            
+            # Get the correctly conjugated verb using pyinflect
+            conjugated_verb = pyinflect.getInflection(verb_lemma, tag=tag)
+            
+            if conjugated_verb and len(conjugated_verb) > 0:
+                # Combine subject and correctly conjugated verb
+                subject_pronoun = subject_token.text if subject_token else 'it'
+                return f"{subject_pronoun} {conjugated_verb[0]}"
+            else:
+                # Fallback to manual conjugation
+                correctly_conjugated = self._conjugate_verb_for_subject(verb_lemma, subject_text)
+                subject_pronoun = subject_token.text if subject_token else 'it'
+                return f"{subject_pronoun} {correctly_conjugated}"
+                
+        except Exception:
+            # Fallback for any errors
+            verb_lemma = verb_token.lemma_ if hasattr(verb_token, 'lemma_') else 'use'
+            subject_text = subject_token.text if subject_token else 'it'
+            correctly_conjugated = self._conjugate_verb_for_subject(verb_lemma, subject_text)
+            return f"{subject_text} {correctly_conjugated}"
+
+    def _conjugate_verb_for_subject(self, verb_lemma: str, subject: str) -> str:
+        """
+        Conjugate verb correctly based on subject using linguistic rules.
+        
+        Args:
+            verb_lemma: The base form of the verb
+            subject: The subject (text or role like 'system')
+            
+        Returns:
+            str: Correctly conjugated verb
+        """
+        subject_lower = subject.lower()
+        
+        # Handle pronouns and common subjects
+        if subject_lower in ['i', 'you', 'we', 'they']:
+            # 1st/2nd person and plural pronouns use base form
+            return verb_lemma
+        elif subject_lower in ['he', 'she', 'it']:
+            # 3rd person singular pronouns use -s form
+            return self._add_s_ending(verb_lemma)
+        elif subject_lower in ['system', 'server', 'application', 'service', 'documentation', 
+                               'manual', 'configuration', 'database', 'interface', 'platform', 
+                               'framework', 'method', 'function', 'process', 'this', 'that']:
+            # Technical singular subjects use -s form
+            return self._add_s_ending(verb_lemma)
+        else:
+            # Default to base form for safety
+            return verb_lemma
+
+    def _add_s_ending(self, verb_lemma: str) -> str:
+        """Add appropriate -s ending to verb for 3rd person singular."""
+        if verb_lemma.endswith('y') and len(verb_lemma) > 1 and verb_lemma[-2] not in 'aeiou':
+            # baby -> babies, try -> tries
+            return verb_lemma[:-1] + 'ies'
+        elif verb_lemma.endswith(('s', 'sh', 'ch', 'x', 'z')):
+            # pass -> passes, wash -> washes, catch -> catches
+            return verb_lemma + 'es'
+        elif verb_lemma.endswith('o') and len(verb_lemma) > 1 and verb_lemma[-2] not in 'aeiou':
+            # go -> goes, do -> does
+            return verb_lemma + 'es'
+        else:
+            # Regular verbs: work -> works, find -> finds
+            return verb_lemma + 's'
+
+    def _find_verb_subject(self, context_token: Token, verb_token: Token, doc: Doc = None) -> Token:
+        """
+        Find the subject of a verb using dependency parsing.
+        
+        Args:
+            context_token: Context token (like 'will' in 'you will find')
+            verb_token: The main verb token
+            doc: The document (optional)
+            
+        Returns:
+            Token: The subject token, or None if not found
+        """
+        try:
+            # First, try to find subject from the verb token directly
+            if hasattr(verb_token, 'children'):
+                for child in verb_token.children:
+                    if child.dep_ in ['nsubj', 'nsubjpass']:  # Nominal subject
+                        return child
+            
+            # Then try from the context token (like 'will')
+            if hasattr(context_token, 'head') and context_token.head:
+                head = context_token.head
+                if hasattr(head, 'children'):
+                    for child in head.children:
+                        if child.dep_ in ['nsubj', 'nsubjpass']:
+                            return child
+            
+            # Look at siblings of the context token
+            if hasattr(context_token, 'head') and context_token.head:
+                head = context_token.head
+                if hasattr(head, 'children'):
+                    for sibling in head.children:
+                        if sibling.dep_ in ['nsubj', 'nsubjpass'] and sibling != context_token:
+                            return sibling
+            
+            # Look backwards in the sentence for likely subjects
+            if hasattr(context_token, 'i') and hasattr(context_token, 'doc'):
+                # Check tokens before the context token
+                for i in range(max(0, context_token.i - 5), context_token.i):
+                    token = context_token.doc[i]
+                    if token.pos_ == 'PRON' and token.dep_ in ['nsubj', 'nsubjpass']:
+                        return token
+                    elif token.pos_ in ['NOUN', 'PROPN'] and token.dep_ in ['nsubj', 'nsubjpass']:
+                        return token
+            
+            # Final fallback: look for pronouns near the beginning of the sentence
+            if doc or (hasattr(context_token, 'sent')):
+                sentence = context_token.sent if hasattr(context_token, 'sent') else doc
+                if sentence:
+                    for token in sentence:
+                        if (token.pos_ == 'PRON' and 
+                            token.text.lower() in ['i', 'you', 'he', 'she', 'it', 'we', 'they']):
+                            return token
+            
+            return None
+            
+        except Exception:
+            return None
 
     def _is_technical_compound_noun(self, token: Token, doc: Doc) -> bool:
         """

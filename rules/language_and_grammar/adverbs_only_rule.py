@@ -98,6 +98,18 @@ class AdverbsOnlyRule(BaseLanguageRule):
     def _apply_linguistic_clues_only(self, evidence_score: float, token, sentence) -> float:
         """Apply SpaCy-based linguistic analysis clues for "only" placement ambiguity."""
         
+        # === CRITICAL PATTERN DETECTION: [Noun] [only] [Verb] ===
+        # This is a CLASSIC ambiguity pattern that must be caught
+        classic_ambiguity_detected = self._detect_classic_noun_only_verb_pattern(token, sentence)
+        if classic_ambiguity_detected:
+            evidence_score += 0.8  # STRONG evidence for classic ambiguous pattern
+        
+        # === CLEAR PATTERN DETECTION: "only [Det] [Noun]" ===  
+        # This pattern is unambiguous - "only" clearly modifies the noun phrase
+        clear_modification_detected = self._detect_clear_only_modification_pattern(token, sentence)
+        if clear_modification_detected:
+            evidence_score -= 0.6  # STRONG counter-evidence for clear modification
+        
         # === POSITIONAL ANALYSIS ===
         # Get position within sentence
         sent_tokens = list(sentence)
@@ -113,15 +125,20 @@ class AdverbsOnlyRule(BaseLanguageRule):
             
             # "Only" at sentence beginning is often clear (restrictive meaning)
             if relative_position < 0.2:  # First 20% of sentence
-                evidence_score -= 0.3  # "Only developers can access..."
+                evidence_score -= 0.2  # "Only developers can access..." (reduced from 0.3)
             
-            # "Only" in middle of sentence more likely ambiguous
+            # "Only" in middle of sentence more likely ambiguous  
             elif 0.3 < relative_position < 0.7:  # Middle 40% of sentence
-                evidence_score += 0.2  # "Developers only can access..." - ambiguous
+                evidence_score += 0.3  # "Developers only can access..." - ambiguous (increased from 0.2)
             
-            # "Only" near end may be unclear
+            # "Only" near end - check if it clearly modifies following phrase
             elif relative_position > 0.8:  # Last 20% of sentence
-                evidence_score += 0.1  # "Developers can access only" - might be unclear
+                # Check if "only" clearly modifies what follows it
+                next_token = token.nbor(1) if token.i < len(token.doc) - 1 else None
+                if next_token and next_token.pos_ in ['DET', 'NOUN', 'PROPN']:
+                    evidence_score -= 0.1  # "edit only this file" - clear modification
+                else:
+                    evidence_score += 0.1  # "Developers can access only" - might be unclear
         
         # === DEPENDENCY ANALYSIS ===
         # Check what "only" modifies
@@ -162,6 +179,8 @@ class AdverbsOnlyRule(BaseLanguageRule):
         if next_token:
             if next_token.pos_ in ['NOUN', 'PRON', 'PROPN']:
                 evidence_score -= 0.2  # "only users", "only John" - clear
+            elif next_token.pos_ == 'DET':  # "only the/this/that"
+                evidence_score -= 0.25  # "only this file" - very clear modification
             elif next_token.lemma_ in ['if', 'when', 'because']:
                 evidence_score -= 0.1  # "only if condition" - clear conditional
             elif next_token.pos_ == 'VERB':
@@ -284,11 +303,14 @@ class AdverbsOnlyRule(BaseLanguageRule):
         
         # General technical content analysis
         elif content_type == 'technical':
-            evidence_score -= 0.2  # Technical writing more precise
-            
-            # Check for technical patterns nearby
-            if self._has_technical_context_words(token.sent.text, distance=5):
-                evidence_score -= 0.2  # "only supports HTTPS", "read-only access"
+            # CRITICAL: Don't reduce evidence if classic ambiguous pattern detected
+            if not self._detect_classic_noun_only_verb_pattern(token, token.sent):
+                evidence_score -= 0.15  # Technical writing more precise (reduced from 0.2)
+                
+                # Check for technical patterns nearby
+                if self._has_technical_context_words(token.sent.text, distance=5):
+                    evidence_score -= 0.15  # "only supports HTTPS", "read-only access" (reduced from 0.2)
+            # If classic pattern detected, preserve the evidence for flagging
         
         # Procedural content uses "only" for clear restrictions
         elif content_type == 'procedural':
@@ -393,19 +415,43 @@ class AdverbsOnlyRule(BaseLanguageRule):
     def _get_contextual_message(self, token, evidence_score: float) -> str:
         """Generate context-aware error messages based on evidence score."""
         
+        # Check if this is the classic ambiguous pattern
+        if self._detect_classic_noun_only_verb_pattern(token, token.sent):
+            return "Classic ambiguous placement: 'only' could modify either the subject or the verb, creating confusion."
+        
         if evidence_score > 0.8:
-            return f"The placement of 'only' in this sentence is ambiguous and may confuse readers."
+            return "The placement of 'only' in this sentence is ambiguous and may confuse readers."
         elif evidence_score > 0.5:
-            return f"Consider reviewing the placement of 'only' to ensure clarity."
+            return "Consider reviewing the placement of 'only' to ensure clarity."
         else:
-            return f"The word 'only' could potentially be clearer depending on its intended meaning."
+            return "The word 'only' could potentially be clearer depending on its intended meaning."
 
     def _generate_smart_suggestions(self, token, evidence_score: float, context: dict) -> List[str]:
         """Generate context-aware suggestions based on evidence score and context."""
         
         suggestions = []
         
-        # Analyze current placement
+        # CRITICAL: Check for classic ambiguous pattern and provide specific guidance
+        if self._detect_classic_noun_only_verb_pattern(token, token.sent):
+            sent_tokens = list(token.sent)
+            token_idx = None
+            for i, sent_token in enumerate(sent_tokens):
+                if sent_token.i == token.i:
+                    token_idx = i
+                    break
+            
+            if token_idx and token_idx > 0:
+                prev_token = sent_tokens[token_idx - 1]
+                next_token = sent_tokens[token_idx + 1] if token_idx < len(sent_tokens) - 1 else None
+                
+                suggestions.append(f"AMBIGUOUS PLACEMENT: Does 'only' modify '{prev_token.text}' or the verb?")
+                suggestions.append(f"If you mean 'only {prev_token.text}' (not others): Move to 'Only {prev_token.text}...'")
+                if next_token:
+                    suggestions.append(f"If you mean 'only {next_token.text}' (limited action): Move to '{prev_token.text} can only {next_token.text}...'")
+                suggestions.append("Consider rephrasing entirely to eliminate ambiguity.")
+                return suggestions  # Return specific suggestions for this pattern
+        
+        # Analyze current placement for non-classic patterns
         sent_tokens = list(token.sent)
         token_position = None
         for i, sent_token in enumerate(sent_tokens):
@@ -441,3 +487,141 @@ class AdverbsOnlyRule(BaseLanguageRule):
             suggestions.append("The current placement may be acceptable, but review for your intended meaning.")
         
         return suggestions
+    
+    # === CRITICAL PATTERN DETECTION METHODS ===
+    
+    def _detect_classic_noun_only_verb_pattern(self, token, sentence) -> bool:
+        """
+        CRITICAL: Detect the classic ambiguous [Noun] [only] [Verb] pattern.
+        
+        This pattern creates ambiguity because "only" could modify either:
+        1. The noun (restrictive: "only users" = users but not admins)
+        2. The verb (scope limitation: "only edit" = edit but not delete)
+        
+        Examples:
+        - "Users only can edit files" (ambiguous)
+        - "Administrators only have access" (ambiguous)
+        
+        Returns True if this classic ambiguous pattern is detected.
+        """
+        sent_tokens = list(sentence)
+        token_idx = None
+        
+        # Find the position of "only" in the sentence
+        for i, sent_token in enumerate(sent_tokens):
+            if sent_token.i == token.i:
+                token_idx = i
+                break
+        
+        if token_idx is None or token_idx == 0:
+            return False
+        
+        # Check for [Noun] [only] [Verb] pattern
+        prev_token = sent_tokens[token_idx - 1] if token_idx > 0 else None
+        next_token = sent_tokens[token_idx + 1] if token_idx < len(sent_tokens) - 1 else None
+        
+        # PATTERN 1: Direct [Noun] [only] [Verb] 
+        if (prev_token and next_token and 
+            prev_token.pos_ in ['NOUN', 'PRON', 'PROPN'] and
+            next_token.pos_ == 'VERB'):
+            
+            # Additional validation: ensure this isn't a compound noun
+            if not (prev_token.dep_ == 'compound' and next_token.dep_ == 'compound'):
+                # Check that prev_token is likely the subject
+                if prev_token.dep_ in ['nsubj', 'nsubjpass'] or self._is_likely_subject(prev_token):
+                    return True
+        
+        # PATTERN 2: [Noun] [only] [Modal/Aux] [Verb]
+        # Examples: "Users only can edit", "Admins only should have"
+        if (prev_token and token_idx + 2 < len(sent_tokens) and
+            prev_token.pos_ in ['NOUN', 'PRON', 'PROPN']):
+            
+            # Check if next token is modal/auxiliary
+            if (next_token and next_token.pos_ == 'AUX' or 
+                (next_token and next_token.lemma_ in ['can', 'could', 'will', 'would', 'should', 'must', 'may', 'might'])):
+                
+                # Check if token after that is a verb
+                verb_token = sent_tokens[token_idx + 2]
+                if verb_token.pos_ == 'VERB':
+                    # Validate that prev_token is the subject
+                    if prev_token.dep_ in ['nsubj', 'nsubjpass'] or self._is_likely_subject(prev_token):
+                        return True
+        
+        # PATTERN 3: [Noun] [only] [have/has] - Special case for "have" constructions
+        if (prev_token and next_token and
+            prev_token.pos_ in ['NOUN', 'PRON', 'PROPN'] and
+            next_token.lemma_ == 'have'):
+            
+            if prev_token.dep_ in ['nsubj', 'nsubjpass'] or self._is_likely_subject(prev_token):
+                return True
+        
+        return False
+    
+    def _is_likely_subject(self, token) -> bool:
+        """Check if a token is likely functioning as a sentence subject."""
+        # Direct subject dependencies
+        if token.dep_ in ['nsubj', 'nsubjpass']:
+            return True
+        
+        # Check if it's the first noun/pronoun in the sentence (likely subject)
+        sent_tokens = list(token.sent)
+        for sent_token in sent_tokens:
+            if sent_token.pos_ in ['NOUN', 'PRON', 'PROPN']:
+                return sent_token.i == token.i
+        
+        # Check if it's connected to a verb as subject
+        if token.head.pos_ == 'VERB':
+            # Look at the relationship between token and verb
+            for child in token.head.children:
+                if child.i == token.i and child.dep_ in ['nsubj', 'nsubjpass']:
+                    return True
+        
+        return False
+    
+    def _detect_clear_only_modification_pattern(self, token, sentence) -> bool:
+        """
+        Detect clear "only [determiner/noun phrase]" patterns that are unambiguous.
+        
+        Examples of CLEAR patterns:
+        - "only this file" 
+        - "only the system"
+        - "only five users"
+        - "only valid data"
+        
+        These are unambiguous because "only" clearly modifies the noun phrase.
+        """
+        next_token = token.nbor(1) if token.i < len(token.doc) - 1 else None
+        if not next_token:
+            return False
+        
+        # Pattern 1: "only [determiner] [noun/adjective]"
+        # Examples: "only this file", "only the system"
+        if next_token.pos_ == 'DET':
+            # Check if there's a noun after the determiner
+            next_next_token = next_token.nbor(1) if next_token.i < len(next_token.doc) - 1 else None
+            if next_next_token and next_next_token.pos_ in ['NOUN', 'PROPN', 'ADJ']:
+                return True
+        
+        # Pattern 2: "only [number] [noun]"  
+        # Examples: "only five users", "only 3 files"
+        if next_token.pos_ == 'NUM' or next_token.like_num:
+            next_next_token = next_token.nbor(1) if next_token.i < len(next_token.doc) - 1 else None
+            if next_next_token and next_next_token.pos_ in ['NOUN', 'PROPN']:
+                return True
+        
+        # Pattern 3: "only [adjective] [noun]"
+        # Examples: "only valid data", "only important files"  
+        if next_token.pos_ == 'ADJ':
+            next_next_token = next_token.nbor(1) if next_token.i < len(next_token.doc) - 1 else None
+            if next_next_token and next_next_token.pos_ in ['NOUN', 'PROPN']:
+                return True
+        
+        # Pattern 4: "only [specific noun]" (proper nouns, technical terms)
+        # Examples: "only administrators", "only MySQL"
+        if next_token.pos_ in ['PROPN', 'NOUN']:
+            # Check if it's not followed by a verb (which would make it ambiguous)
+            next_next_token = next_token.nbor(1) if next_token.i < len(next_token.doc) - 1 else None
+            if not (next_next_token and next_next_token.pos_ == 'VERB'):
+                return True
+        
+        return False
