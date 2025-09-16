@@ -185,55 +185,26 @@ class PossessivesRule(BaseLanguageRule):
 
     def _get_base_possessive_evidence(self, potential_issue: Dict[str, Any], sentence) -> float:
         """
-        Get base evidence score for abbreviation possessive usage.
+        Get a strong base evidence score for abbreviation possessive usage,
+        aligned with the strict IBM Style Guide rule.
         
-        Analyzes the type of abbreviation and provides initial evidence assessment.
+        The IBM Style Guide is absolute: "Do not use an apostrophe and the letter s ('s) 
+        to show the possessive form of an abbreviation". No exceptions for context or type.
         """
-        
-        prev_token = potential_issue['abbreviation']
-        abbreviation = prev_token.text.upper()
-        
-        # === ABBREVIATION TYPE ANALYSIS ===
-        # Prioritize abbreviation-specific classification over entity detection
-        
-        # === TECHNICAL ACRONYMS (HIGH EVIDENCE) ===
-        # Technical acronyms that should prefer prepositional phrases
-        technical_acronyms = {
-            'SQL', 'JSON', 'XML', 'HTML', 'CSS', 'JS', 'PHP', 'PDF', 'CSV',
-            'REST', 'SOAP', 'HTTP', 'HTTPS', 'FTP', 'SSH', 'SSL', 'TLS',
-            'DNS', 'IP', 'TCP', 'UDP', 'VPN', 'LAN', 'WAN', 'WiFi', 'USB'
-        }
-        
-        if abbreviation in technical_acronyms:
-            return 0.6  # Moderate-high evidence - these technical acronyms often better with prepositions
-        
-        # === CONTEXT-DEPENDENT TECHNICAL TERMS (MODERATE EVIDENCE) ===
-        # These can go either way depending on context
-        context_dependent_terms = {
-            'API', 'SDK', 'IDE', 'OS', 'CPU', 'GPU', 'RAM', 'ROM', 'SSD', 'HDD'
-        }
-        
-        if abbreviation in context_dependent_terms:
-            return 0.5  # Moderate evidence - context will determine appropriateness
-        
-        # === BRAND/PRODUCT NAMES (LOW EVIDENCE) ===
-        # Well-known brand names that often use possessives appropriately
-        brand_names = {
-            'IBM', 'NASA', 'GOOGLE', 'MICROSOFT', 'APPLE', 'ORACLE', 'SAP',
-            'AWS', 'AZURE', 'GCP'
-        }
-        
-        if abbreviation in brand_names:
-            return 0.2  # Low evidence - brand names commonly use possessives
-        
-        # === ENTITY TYPE ANALYSIS (FALLBACK) ===
-        # Check if this is a named entity (only if not in specific lists above)
-        if prev_token.ent_type_ in ['ORG', 'PERSON', 'GPE']:
-            return 0.3  # Low-moderate evidence - named entities often use possessives appropriately
-        
-        # === GENERIC ABBREVIATIONS ===
-        # Generic abbreviations typically should use prepositional phrases
-        return 0.7  # High evidence for generic abbreviations
+        abbreviation_token = potential_issue['abbreviation']
+        abbreviation_text = abbreviation_token.text
+
+        # GUARD: Company names like 'IBM' are sometimes allowed possessives in marketing.
+        # We can give them a very low score to avoid flagging them, but the style guide
+        # generally advises against this as well. For now, we will treat them as exceptions.
+        brand_exceptions = {'IBM'}
+        if abbreviation_text in brand_exceptions:
+            return 0.0  # Do not flag
+
+        # For nearly all other technical abbreviations (API, SDK, HTML, etc.), the rule is absolute.
+        # Start with a very high base evidence score.
+        # The style guide does not differentiate between types of abbreviations for this rule.
+        return 0.9  # High confidence, as per the style guide's direct instruction.
 
     def _apply_linguistic_clues_possessive(self, evidence_score: float, potential_issue: Dict[str, Any], sentence) -> float:
         """
@@ -245,11 +216,22 @@ class PossessivesRule(BaseLanguageRule):
         - Named entity recognition
         - Possessive object analysis
         - Surrounding context patterns
+        
+        CRITICAL: When base evidence is high (0.9), the IBM Style Guide rule is absolute.
+        Linguistic clues should not override this strict rule.
         """
         
         prev_token = potential_issue['abbreviation']
         possessive_token = potential_issue['possessive_token']
         possessive_object = potential_issue.get('possessive_object')
+        
+        # === IBM STYLE GUIDE ENFORCEMENT ===
+        # If we started with high evidence (0.9), the rule is absolute - don't let linguistic 
+        # clues talk us out of flagging clear violations like "API's documentation"
+        if evidence_score >= 0.85:  # High base evidence from style guide rule
+            # Only allow minimal adjustments for truly exceptional cases
+            # The style guide rule should not be overridden by contextual analysis
+            original_evidence = evidence_score
         
         # === GRAMMATICAL CLASSIFICATION ===
         # Analyze the fundamental grammatical nature of the token
@@ -366,6 +348,13 @@ class PossessivesRule(BaseLanguageRule):
         if any(indicator in sentence_text for indicator in conversational_indicators):
             evidence_score -= 0.1  # Conversational context more tolerant
         
+        # === IBM STYLE GUIDE ENFORCEMENT (FINAL CHECK) ===
+        # Prevent linguistic clues from overriding the absolute style guide rule
+        if 'original_evidence' in locals() and original_evidence >= 0.85:
+            # Don't allow evidence to drop below 0.7 when we started with high confidence
+            # The IBM Style Guide rule is absolute and should not be contextually overridden
+            evidence_score = max(evidence_score, 0.7)
+        
         return evidence_score
 
     def _apply_structural_clues_possessive(self, evidence_score: float, potential_issue: Dict[str, Any], context: dict) -> float:
@@ -417,7 +406,12 @@ class PossessivesRule(BaseLanguageRule):
         - Document length context
         - Audience level considerations
         - Brand context analysis
+        
+        CRITICAL: IBM Style Guide rule enforcement - prevent overriding absolute rule.
         """
+        
+        # Store original evidence for enforcement
+        original_evidence = evidence_score
         
         prev_token = potential_issue['abbreviation']
         content_type = context.get('content_type', 'general')
@@ -480,6 +474,12 @@ class PossessivesRule(BaseLanguageRule):
         if self._has_high_possessive_density(text):
             evidence_score -= 0.1  # High possessive density suggests informal/brand context
         
+        # === IBM STYLE GUIDE ENFORCEMENT (FINAL CHECK) ===
+        # Prevent semantic clues from overriding the absolute style guide rule
+        if original_evidence >= 0.85:  # Started with high confidence from style guide
+            # Don't allow evidence to drop below 0.7 when IBM Style Guide rule applies
+            evidence_score = max(evidence_score, 0.7)
+        
         return evidence_score
 
     def _apply_feedback_clues_possessive(self, evidence_score: float, potential_issue: Dict[str, Any], context: dict) -> float:
@@ -492,7 +492,12 @@ class PossessivesRule(BaseLanguageRule):
         - Context-specific patterns
         - Brand possession patterns
         - Frequency-based adjustments
+        
+        CRITICAL: IBM Style Guide rule enforcement - prevent overriding absolute rule.
         """
+        
+        # Store original evidence for enforcement
+        original_evidence = evidence_score
         
         prev_token = potential_issue['abbreviation']
         feedback_patterns = self._get_cached_feedback_patterns('possessives')
@@ -523,6 +528,12 @@ class PossessivesRule(BaseLanguageRule):
         brand_possessives = feedback_patterns.get('accepted_brand_possessives', set())
         if abbreviation in brand_possessives:
             evidence_score -= 0.2  # Brand possessives often accepted
+        
+        # === IBM STYLE GUIDE ENFORCEMENT (FINAL CHECK) ===
+        # Prevent feedback patterns from overriding the absolute style guide rule
+        if original_evidence >= 0.85:  # Started with high confidence from style guide
+            # Don't allow evidence to drop below 0.7 when IBM Style Guide rule applies
+            evidence_score = max(evidence_score, 0.7)
         
         return evidence_score
 
@@ -634,56 +645,57 @@ class PossessivesRule(BaseLanguageRule):
         """
         Generate contextual message based on evidence strength and possessive type.
         
-        Provides nuanced messaging that adapts to:
-        - Evidence strength (high/medium/low confidence)
-        - Abbreviation type and entity classification
-        - Context-specific considerations
+        Provides messaging that reflects the absolute nature of the IBM Style Guide rule
+        when evidence score is high (indicating clear abbreviation violation).
         """
         
         abbreviation = potential_issue['abbreviation_text']
         
         if evidence_score > 0.8:
-            return f"Avoid using the possessive 's with the abbreviation '{abbreviation}'."
-        elif evidence_score > 0.5:
-            return f"Consider using a prepositional phrase instead of '{abbreviation}'s'."
+            return f"IBM Style Guide: Do not use 's with abbreviations like '{abbreviation}'. Use a prepositional phrase instead."
+        elif evidence_score > 0.6:
+            return f"Avoid using the possessive 's with the abbreviation '{abbreviation}'. Use 'the [property] of {abbreviation}' instead."
         else:
-            return f"The possessive '{abbreviation}'s' may be acceptable but consider a prepositional phrase for clarity."
+            return f"Consider using a prepositional phrase instead of '{abbreviation}'s' for clarity."
 
     def _generate_smart_possessive_suggestions(self, potential_issue: Dict[str, Any], evidence_score: float, context: dict) -> List[str]:
         """
         Generate smart, context-aware suggestions for possessive patterns.
         
-        Provides specific guidance based on:
-        - Evidence strength and confidence level
-        - Content type and writing context  
-        - Abbreviation-specific usage patterns
-        - Domain and audience considerations
+        Provides specific guidance that emphasizes the IBM Style Guide rule
+        when evidence score is high (indicating clear abbreviation violation).
         """
         
         suggestions = []
         prev_token = potential_issue['abbreviation']
         abbreviation = potential_issue['abbreviation_text']
+        possessive_object = potential_issue.get('possessive_object')
         
-        # Base suggestions based on evidence strength
-        if evidence_score > 0.7:
-            suggestions.append(f"Use a prepositional phrase: 'the [property] of {abbreviation}' instead of '{abbreviation}'s [property]'.")
-            suggestions.append("Rewrite to avoid the possessive construction entirely.")
-        else:
-            suggestions.append(f"Consider using 'the [property] of {abbreviation}' for formal writing.")
+        # Get the specific object being "possessed" for better suggestions
+        object_text = possessive_object.text if possessive_object else "[property]"
         
-        # Context-specific advice
-        if context:
-            content_type = context.get('content_type', 'general')
+        # High-confidence suggestions (IBM Style Guide rule)
+        if evidence_score > 0.8:
+            suggestions.append(f"Replace '{abbreviation}'s {object_text}' with 'the {object_text} of {abbreviation}'.")
+            suggestions.append(f"IBM Style Guide rule: Abbreviations like '{abbreviation}' should not use possessive 's.")
+            suggestions.append("Consider rephrasing to avoid possessive constructions with abbreviations entirely.")
+        
+        # Moderate-confidence suggestions
+        elif evidence_score > 0.6:
+            suggestions.append(f"Use 'the {object_text} of {abbreviation}' instead of '{abbreviation}'s {object_text}'.")
+            suggestions.append("Prepositional phrases are preferred over possessives with technical abbreviations.")
             
-            if content_type in ['technical', 'api', 'academic']:
-                suggestions.append("Technical and academic writing typically prefer prepositional phrases.")
-            elif content_type == 'marketing':
-                suggestions.append("Brand possessives may be acceptable in marketing contexts.")
-            elif content_type == 'specification':
-                suggestions.append("Specification documents should use precise prepositional constructions.")
+        # Lower confidence suggestions
+        else:
+            suggestions.append(f"Consider 'the {object_text} of {abbreviation}' for formal writing.")
+            suggestions.append("Prepositional phrases often provide clearer meaning than possessives.")
         
-        # Abbreviation-specific advice
-        if prev_token.ent_type_ in ['ORG', 'PERSON']:
-            suggestions.append("Named entities may appropriately use possessive forms.")
+        # Context-specific guidance (only for moderate/low evidence scores)
+        if evidence_score <= 0.6 and context:
+            content_type = context.get('content_type', 'general')
+            if content_type in ['technical', 'api', 'academic']:
+                suggestions.append("Technical writing typically prefers prepositional phrases over possessives.")
+            elif content_type == 'marketing':
+                suggestions.append("Marketing content may accept possessives for brand connection.")
         
         return suggestions[:3]

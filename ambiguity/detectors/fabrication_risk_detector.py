@@ -420,7 +420,7 @@ class FabricationRiskDetector(AmbiguityDetector):
                 if compound_phrase in self.legitimate_technical_compounds:
                     return True
         
-        return False
+            return False
     
     def _has_clear_technical_subject(self, token, doc) -> bool:
         """
@@ -445,7 +445,7 @@ class FabricationRiskDetector(AmbiguityDetector):
                 if child.dep_ == 'compound':
                     compound_subject = f"{doc[child.i-1].text.lower()} {subject_text}"
                     if any(tech in compound_subject for tech in technical_subjects):
-                        return True
+                return True
         
         return False
     
@@ -466,7 +466,7 @@ class FabricationRiskDetector(AmbiguityDetector):
                     'events', 'messages', 'notifications', 'configurations'
                 }
                 if obj_text in technical_objects:
-                    return True
+                return True
                 
                 # Check for compound technical objects
                 obj_phrase = ' '.join([t.text.lower() for t in child.subtree if not t.is_stop])

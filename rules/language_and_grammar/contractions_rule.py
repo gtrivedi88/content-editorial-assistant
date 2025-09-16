@@ -748,12 +748,12 @@ class ContractionsRule(BaseLanguageRule):
         if evidence_score == 0.0:
             return 0.0  # No evidence, skip this contraction
         
-        # === NARRATIVE/BLOG CONTENT CLUE (RELAX FORMAL RULES) ===
-        # Detect narrative/blog writing style and significantly reduce evidence
+        # === NARRATIVE/BLOG CONTENT CLUE (CONTROLLED ADJUSTMENT) ===
+        # Detect narrative/blog writing style and reduce evidence, but not excessively
         if self._is_narrative_or_blog_content(text, context):
-            evidence_score -= 0.5  # Major reduction for narrative/blog content
-            # In narrative/blog content, contractions ("we're", "it's", "wasn't") are not only 
-            # acceptable but enhance conversational tone and readability
+            evidence_score -= 0.3  # Moderate reduction (reduced from -0.5) - still flag some contractions in formal contexts
+            # In narrative/blog content, contractions are more acceptable but formal technical guides
+            # should still consider flagging them with lower confidence
         
         # === STEP 2: LINGUISTIC CLUES (MICRO-LEVEL) ===
         evidence_score = self._apply_linguistic_clues_contraction(evidence_score, potential_issue, doc)
@@ -909,45 +909,59 @@ class ContractionsRule(BaseLanguageRule):
             pattern = 'regex_detected'
             # Use contraction_text directly instead of creating mock token
         else:
-            return 0.5  # Default evidence for unknown types
+            return 0.7  # Higher default for unknown types (was 0.5)
         
-        # === CONTRACTION TYPE BASE EVIDENCE ===
-        # Possessive contractions often more problematic in formal writing
-        if 'possessive' in contraction_type:
-            return 0.8  # High evidence - possessives often inappropriate
+        # === ENHANCED BASE EVIDENCE FOR FORMAL TECHNICAL WRITING ===
+        # In formal technical guides, contractions should generally be flagged with higher confidence
         
-        # Negative contractions (n't) often acceptable in many contexts
-        elif 'negative' in contraction_type or "'t" in contraction_type:
-            return 0.4  # Moderate evidence - context-dependent
+        # Get the text to analyze (either from token or contraction_text)
+        if issue_type == 'morphological_contraction':
+            text_to_check = token.text.lower()
+        else:
+            text_to_check = contraction_text.lower()
         
-        # Auxiliary verb contractions vary by formality
-        elif 'auxiliary' in contraction_type or pattern.startswith('specific_'):
-            # Get the text to analyze (either from token or contraction_text)
-            text_to_check = token.text.lower() if issue_type == 'morphological_contraction' else contraction_text.lower()
+        # === COMMON CONTRACTIONS - Higher base evidence ===
+        # These are very common and should be flagged in formal writing
+        if any(pattern in text_to_check for pattern in ["'s", "'re", "'ve", "'ll", "'d", "'m", "n't"]):
+            # Possessive contractions often more problematic in formal writing
+            if 'possessive' in contraction_type or "'s" in text_to_check:
+                return 0.8  # High evidence - possessives often inappropriate
             
-            # Common auxiliaries like 're, 've, 'll
-            if "'re" in text_to_check or "'ve" in text_to_check or "'ll" in text_to_check:
-                return 0.6  # Moderate-high evidence
+            # Common auxiliary contractions - should be flagged in formal technical guides
+            elif "'re" in text_to_check or "'ve" in text_to_check or "'ll" in text_to_check:
+                return 0.7  # High evidence for formal writing (increased from 0.6)
+            
+            # Negative contractions - even these should be considered in formal contexts
+            elif "n't" in text_to_check or "'t" in text_to_check:
+                return 0.6  # Moderate-high evidence (increased from 0.4)
+            
             # Less formal contractions like 's (is), 'm (am)
             elif "'s" in text_to_check or "'m" in text_to_check:
-                return 0.5  # Moderate evidence
+                return 0.7  # Moderate-high evidence (increased from 0.5)
+            
             # Ambiguous contractions like 'd (would/had)
             elif "'d" in text_to_check:
-                return 0.7  # Higher evidence - ambiguous meaning
+                return 0.8  # High evidence - ambiguous meaning (increased from 0.7)
+            
             else:
-                return 0.5  # Default moderate evidence
+                return 0.7  # Higher default for other contractions (increased from 0.5)
         
-        # Pronominal contractions (pronoun + auxiliary)
+        # === CONTRACTION TYPE BASE EVIDENCE (Fallback) ===
+        # Pronominal contractions (pronoun + auxiliary)  
         elif 'pronominal' in contraction_type:
-            return 0.5  # Moderate evidence - depends on context
+            return 0.6  # Higher evidence (increased from 0.5)
         
         # Modal and copula contractions
         elif 'modal' in contraction_type or 'copula' in contraction_type:
-            return 0.6  # Moderate-high evidence
+            return 0.7  # Higher evidence (increased from 0.6)
         
-        # Unknown contraction types
+        # Auxiliary verb contractions 
+        elif 'auxiliary' in contraction_type:
+            return 0.7  # Higher evidence (increased from 0.5)
+        
+        # Unknown contraction types - be more conservative
         else:
-            return 0.5  # Default moderate evidence
+            return 0.6  # Higher default evidence (increased from 0.5)
 
     def _get_base_regex_contraction_evidence(self, contraction_text: str, suggestion_info: dict) -> float:
         """Get base evidence score for regex-detected contractions."""
@@ -959,32 +973,34 @@ class ContractionsRule(BaseLanguageRule):
         contraction_type = suggestion_info.get('type', '').lower()
         contraction_lower = contraction_text.lower()
         
-        # === PATTERN-BASED BASE EVIDENCE ===
+        # === ENHANCED PATTERN-BASED BASE EVIDENCE FOR FORMAL WRITING ===
+        # Formal technical guides should generally flag contractions with higher confidence
+        
         # Possessive patterns
         if 'possessive' in contraction_type:
             return 0.8  # High evidence - possessives often inappropriate
         
-        # Negative contractions
-        elif "'t" in contraction_lower and 'negative' in contraction_type:
-            return 0.4  # Moderate evidence - context-dependent
+        # Negative contractions - increased for formal context
+        elif "n't" in contraction_lower or ('negative' in contraction_type and "'t" in contraction_lower):
+            return 0.6  # Moderate-high evidence (increased from 0.4) 
         
-        # Common auxiliary patterns with specific evidence levels
+        # === COMMON CONTRACTIONS - Higher evidence for formal writing ===
         elif "'s" in contraction_lower:
-            return 0.5  # Moderate evidence - could be 'is' or possessive
+            return 0.7  # Higher evidence (increased from 0.5) - could be 'is' or possessive
         elif "'re" in contraction_lower:
-            return 0.6  # Moderate-high evidence
+            return 0.7  # Higher evidence (increased from 0.6)
         elif "'ve" in contraction_lower:
-            return 0.6  # Moderate-high evidence
+            return 0.7  # Higher evidence (increased from 0.6) 
         elif "'ll" in contraction_lower:
-            return 0.6  # Moderate-high evidence
+            return 0.7  # Higher evidence (increased from 0.6)
         elif "'d" in contraction_lower:
-            return 0.7  # Higher evidence - ambiguous meaning
+            return 0.8  # Higher evidence (increased from 0.7) - ambiguous meaning
         elif "'m" in contraction_lower:
-            return 0.5  # Moderate evidence
+            return 0.7  # Higher evidence (increased from 0.5)
         
         # Fallback for unknown patterns
         else:
-            return 0.5  # Default moderate evidence
+            return 0.6  # Higher default evidence (increased from 0.5)
 
     # === LINGUISTIC CLUES FOR CONTRACTIONS ===
 
@@ -1164,52 +1180,53 @@ class ContractionsRule(BaseLanguageRule):
         
         content_type = context.get('content_type', 'general')
         
-        # === CONTENT TYPE ANALYSIS ===
-        # Different content types have different contraction tolerance
+        # === ENHANCED CONTENT TYPE ANALYSIS FOR FORMAL WRITING ===
+        # CRITICAL: For formal technical guides, contractions should generally be flagged
+        # Reduced negative adjustments to ensure detection in formal contexts
         if content_type == 'technical':
-            evidence_score -= 0.2  # Technical writing often conversational for clarity
+            evidence_score -= 0.1  # Slightly less lenient (reduced from -0.2) - formal tech guides should flag contractions
         elif content_type == 'api':
-            evidence_score -= 0.3  # API docs often use conversational tone
+            evidence_score -= 0.1  # Much less lenient (reduced from -0.3) - API docs should be formal
         elif content_type == 'academic':
-            evidence_score += 0.3  # Academic writing expects formal language
+            evidence_score += 0.3  # Academic writing expects formal language (unchanged)
         elif content_type == 'legal':
-            evidence_score += 0.4  # Legal writing demands precision and formality
+            evidence_score += 0.4  # Legal writing demands precision and formality (unchanged)
         elif content_type == 'marketing':
-            evidence_score -= 0.4  # Marketing uses conversational tone
+            evidence_score -= 0.4  # Marketing uses conversational tone (unchanged)
         elif content_type == 'narrative':
-            evidence_score -= 0.3  # Storytelling often uses contractions
+            evidence_score -= 0.3  # Storytelling often uses contractions (unchanged)
         elif content_type == 'procedural':
-            evidence_score -= 0.2  # Instructions often use contractions for clarity
+            evidence_score -= 0.1  # Slightly less lenient (reduced from -0.2) - even procedures can be formal
         
-        # === DOMAIN-SPECIFIC PATTERNS ===
+        # === ENHANCED DOMAIN-SPECIFIC PATTERNS ===
         domain = context.get('domain', 'general')
         if domain in ['software', 'engineering', 'devops']:
-            evidence_score -= 0.2  # Technical domains often informal for readability
+            evidence_score -= 0.1  # Less lenient (reduced from -0.2) - technical domains should still be somewhat formal
         elif domain in ['documentation', 'tutorial']:
-            evidence_score -= 0.2  # Educational content often conversational
+            evidence_score -= 0.1  # Less lenient (reduced from -0.2) - documentation should lean toward formal
         elif domain in ['academic', 'research', 'scientific']:
-            evidence_score += 0.2  # Academic domains expect formality
+            evidence_score += 0.2  # Academic domains expect formality (unchanged)
         elif domain in ['legal', 'compliance', 'regulatory']:
-            evidence_score += 0.3  # Legal domains demand precision
+            evidence_score += 0.3  # Legal domains demand precision (unchanged)
         
-        # === AUDIENCE CONSIDERATIONS ===
+        # === ENHANCED AUDIENCE CONSIDERATIONS ===
         audience = context.get('audience', 'general')
         if audience in ['developer', 'technical', 'expert']:
-            evidence_score -= 0.2  # Technical audiences expect practical communication
+            evidence_score -= 0.1  # Less lenient (reduced from -0.2) - even technical audiences benefit from formal guides
         elif audience in ['academic', 'research']:
-            evidence_score += 0.2  # Academic audiences expect formal language
+            evidence_score += 0.2  # Academic audiences expect formal language (unchanged)
         elif audience in ['beginner', 'general', 'consumer']:
-            evidence_score -= 0.3  # General audiences benefit from conversational tone
+            evidence_score -= 0.3  # General audiences benefit from conversational tone (unchanged)
         elif audience in ['professional', 'business']:
-            evidence_score += 0.1  # Professional contexts more formal
+            evidence_score += 0.1  # Professional contexts more formal (unchanged)
         
         # === WRITING STYLE INDICATORS ===
-        # Analyze the overall document tone
+        # Analyze the overall document tone  
         if self._has_conversational_tone_indicators(text):
-            evidence_score -= 0.2  # Conversational documents accept contractions
+            evidence_score -= 0.1  # Reduced from -0.2 - even conversational tech docs can flag contractions
         
         if self._has_formal_tone_indicators(text):
-            evidence_score += 0.2  # Formal documents avoid contractions
+            evidence_score += 0.2  # Formal documents avoid contractions (unchanged)
         
         # === CONTRACTION TYPE IN CONTEXT ===
         issue_type = potential_issue.get('type', '')
@@ -1660,9 +1677,11 @@ class ContractionsRule(BaseLanguageRule):
         contraction_type = contraction_info.get('type', 'contraction')
         
         if evidence_score > 0.8:
-            return f"Contraction found: '{token.text}' ({contraction_type}). Consider expanding for formal writing."
-        elif evidence_score > 0.5:
-            return f"Contraction usage: '{token.text}' ({contraction_type}). Verify appropriateness for your writing style."
+            return f"Formal writing: Avoid contraction '{token.text}' ({contraction_type}). Expand for professional tone."
+        elif evidence_score > 0.3:
+            return f"Technical guide style: Consider expanding '{token.text}' ({contraction_type}) for formal documentation."
+        elif evidence_score > 0.1:
+            return f"Contraction usage: '{token.text}' ({contraction_type}). Consider expanding for formal technical writing."
         else:
             return f"Contraction noted: '{token.text}' ({contraction_type}). May be acceptable depending on context."
 
@@ -1676,9 +1695,11 @@ class ContractionsRule(BaseLanguageRule):
         contraction_type = suggestion_info.get('type', 'contraction')
         
         if evidence_score > 0.8:
-            return f"Contraction found: '{contraction_text}' ({contraction_type}). Consider expanding for formal writing."
-        elif evidence_score > 0.5:
-            return f"Contraction usage: '{contraction_text}' ({contraction_type}). Verify appropriateness for your writing style."
+            return f"Formal writing: Avoid contraction '{contraction_text}' ({contraction_type}). Expand for professional tone."
+        elif evidence_score > 0.3:
+            return f"Technical guide style: Consider expanding '{contraction_text}' ({contraction_type}) for formal documentation."
+        elif evidence_score > 0.1:
+            return f"Contraction usage: '{contraction_text}' ({contraction_type}). Consider expanding for formal technical writing."
         else:
             return f"Contraction noted: '{contraction_text}' ({contraction_type}). May be acceptable depending on context."
 
