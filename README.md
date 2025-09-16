@@ -13,6 +13,13 @@ Transform your technical documentation with comprehensive style analysis, readab
 
 ### 📋 Prerequisites
 - **Python 3.12+** ([Download here](https://www.python.org/downloads/))
+  
+  ⚠️ **CRITICAL:** This project requires Python 3.12 or higher. Older versions WILL NOT WORK.
+  
+  **Quick Check:**
+  ```bash
+  python3.12 --version  # Should show: Python 3.12.x
+  ```
 
 ### 🔧 Step 1: Create Virtual Environment
 
@@ -257,56 +264,55 @@ asciidoctor --version
 
 ## 🔧 Troubleshooting
 
-### Python Version Issues
-```bash
-# Verify you have Python 3.12 installed
-python3.12 --version
+### 🚨 Having Setup Issues?
 
-# If not available, install Python 3.12 first:
-# Linux (Fedora/RHEL): sudo dnf install python3.12
-# Windows/macOS: Download from https://www.python.org/downloads/
+**For comprehensive troubleshooting, see:** [`SETUP_TROUBLESHOOTING.md`](SETUP_TROUBLESHOOTING.md)
+
+This detailed guide covers:
+- ✅ Python version conflicts and installation
+- ✅ Virtual environment problems  
+- ✅ Package installation failures
+- ✅ SpaCy and NLTK setup issues
+- ✅ Ollama/Llama installation and configuration
+- ✅ OS-specific solutions (Windows/macOS/Linux)
+- ✅ Complete setup verification script
+
+### Quick Fixes
+
+**Python Version Issues:**
+```bash
+# CRITICAL: You must use Python 3.12+
+python3.12 --version  # Should show 3.12.x
+
+# Create venv with EXACT Python version
+python3.12 -m venv venv
 ```
 
-### Virtual Environment Issues
+**Virtual Environment Issues:**
 ```bash
-# If you see import errors, make sure venv is activated
-# You should see (venv) in your prompt
+# Always activate venv first (you should see (venv) in prompt)
+source venv/bin/activate    # Linux/macOS
+venv\Scripts\activate      # Windows
 
-# Windows
-venv\Scripts\activate
+# Verify Python version in venv
+python --version           # Should show Python 3.12.x
+```
 
-# Linux/macOS  
+**Package Installation Issues:**
+```bash
+# Nuclear option: fresh reinstall
+rm -rf venv
+python3.12 -m venv venv
 source venv/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt --no-cache-dir
 ```
 
-### Package Installation Issues
+**Quick Setup Verification:**
 ```bash
-# Upgrade pip first
-python -m pip install --upgrade pip
-
-# Reinstall requirements
-pip install -r requirements.txt --upgrade --no-cache-dir
-```
-
-### SpaCy Model Issues
-```bash
-# Manual SpaCy model installation
-python -m spacy download en_core_web_sm
-```
-
-### Ollama Connection Issues
-```bash
-# Check if Ollama is running
-ollama --version
-
-# Start Ollama service (Linux/macOS)
-ollama serve
-
-# Install our recommended model
-ollama pull llama3:8b
-
-# Test connection
-curl http://localhost:11434/api/tags
+# Verify everything is working
+python -c "import flask, spacy, nltk; print('✅ Core packages OK')"
+python -c "import spacy; spacy.load('en_core_web_sm'); print('✅ SpaCy model OK')"
 ```
 
 ---
