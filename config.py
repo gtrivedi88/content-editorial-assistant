@@ -4,19 +4,24 @@ Configuration for Content Editorial Assistant.
 
 import os
 import logging
+import secrets
 from dotenv import load_dotenv
 from typing import Dict, Any
 
-# Load environment variables
+# Load environment variables (optional - only if .env file exists)
 load_dotenv()
 
 class Config:
     """Application configuration."""
     
-    # Flask Configuration
+    # Flask Configuration - Auto-generate secure key if not provided
     SECRET_KEY = os.environ.get('SECRET_KEY')
     if not SECRET_KEY:
-        raise ValueError("SECRET_KEY environment variable is required")
+        # Auto-generate a secure secret key for this session
+        # In production, set SECRET_KEY environment variable
+        SECRET_KEY = secrets.token_hex(32)
+        if os.environ.get('FLASK_ENV') == 'production':
+            logging.warning("Using auto-generated SECRET_KEY. Set SECRET_KEY environment variable in production!")
     
     # Production/Development Mode
     DEBUG = os.environ.get('FLASK_ENV', 'production') == 'development'
