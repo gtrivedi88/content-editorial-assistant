@@ -175,9 +175,112 @@ class ProgrammingElementsRule(BaseTechnicalRule):
         return max(0.0, min(1.0, evidence_score))
     
     def _is_legitimate_verb_usage_programming(self, keyword: str, token, sentence_obj, context: Dict[str, Any]) -> bool:
-        """Check if programming keyword is being used as a legitimate verb using YAML configuration."""
+        """
+        ENHANCED: Check if programming keyword is being used as a legitimate verb using linguistic intelligence.
+        
+        Similar to CommandsRule enhancement - uses dependency parsing and context analysis
+        to distinguish standard verb usage from programming elements needing formatting.
+        """
         sent_text = sentence_obj.text.lower()
         
+        # === ENHANCED LINGUISTIC GUARD A: Modal auxiliary verbs (CONTEXT-AWARE) ===
+        # Check for modal auxiliary verbs (e.g., "will update", "can select", "should create")
+        # BUT only protect if not in programming context
+        auxiliary_verbs = [child for child in token.children if child.dep_ == 'aux' and child.pos_ == 'AUX']
+        if auxiliary_verbs:
+            # Check if this is in a programming context despite modal auxiliary
+            programming_context_indicators = self.config_service.get_programming_context_indicators()
+            
+            if any(indicator in sent_text for indicator in programming_context_indicators):
+                # Programming context - check if direct object is programming-related
+                programming_objects = self.config_service.get_programming_objects()
+                
+                for child in token.children:
+                    if child.dep_ == 'dobj' and child.lemma_.lower() in programming_objects:
+                        return False  # Programming context overrides auxiliary protection
+                
+                # No programming objects, auxiliary might be protective
+                return True
+            else:
+                # Non-programming context, auxiliary protects verb usage
+                return True
+        
+        # === ENHANCED LINGUISTIC GUARD B: Subject analysis (CONTEXT-AWARE) ===
+        # Check the subject of the verb - personal subjects suggest standard usage
+        # BUT only if not in a programming context
+        subject = None
+        for child in token.children:
+            if child.dep_ == 'nsubj':
+                subject = child
+                break
+        
+        if subject and subject.lemma_.lower() in ['you', 'we', 'they', 'i', 'he', 'she', 'user', 'team', 'person']:
+            # Check if this is in a clear programming context despite personal subject
+            programming_context_indicators = self.config_service.get_programming_context_indicators()
+            
+            if any(indicator in sent_text for indicator in programming_context_indicators):
+                # Don't treat as legitimate just because of personal subject - check objects first
+                programming_objects = self.config_service.get_programming_objects()
+                
+                # Check if direct object is programming-related
+                for child in token.children:
+                    if child.dep_ == 'dobj' and child.lemma_.lower() in programming_objects:
+                        return False  # Programming context overrides personal subject
+                
+                # If no programming objects found, personal subject might be legitimate
+                return True
+            else:
+                # No programming context, personal subject indicates legitimate usage
+                return True
+        
+        # === ENHANCED LINGUISTIC GUARD C: Business/general context objects ===
+        # STRICT: Only truly non-programming objects that clearly indicate business/general usage
+        non_programming_objects = self.config_service.get_non_programming_objects()
+        programming_objects = self.config_service.get_programming_objects()
+        
+        # Look for non-programming direct objects or prepositional objects
+        for child in token.children:
+            if child.dep_ in ['dobj', 'pobj']:
+                child_lemma = child.lemma_.lower()
+                # Only return True for clearly non-programming objects
+                if child_lemma in non_programming_objects:
+                    return True  # Standard business/general usage
+                # Explicitly don't return True for programming objects
+                elif child_lemma in programming_objects:
+                    return False  # This is a programming context that should be flagged
+        
+        # === ENHANCED LINGUISTIC GUARD D: Infinitive usage ===
+        # Check if this is an infinitive usage (e.g., "need to update", "want to select")
+        # Fixed: "to" is a child of the verb token, not the head verb
+        infinitive_verbs = self.config_service.get_infinitive_verbs()
+        if hasattr(token, 'head') and token.head.lemma_.lower() in infinitive_verbs:
+            # Check if this token has "to" as an auxiliary child
+            for child in token.children:
+                if child.dep_ == 'aux' and child.lemma_.lower() == 'to':
+                    return True  # Infinitive usage is standard verb usage
+            
+            # Additional check: if token is xcomp of an infinitive verb, it's infinitive usage
+            if hasattr(token, 'dep_') and token.dep_ == 'xcomp':
+                return True
+        
+        # === ENHANCED LINGUISTIC GUARD E: Sentence position analysis ===
+        # Check if this is at the beginning of an imperative sentence without programming context
+        sent_tokens = list(sentence_obj)
+        token_position = None
+        for i, sent_token in enumerate(sent_tokens):
+            if sent_token.i == token.i:
+                token_position = i
+                break
+        
+        if token_position == 0:  # First word in sentence
+            # Check if this is a general imperative, not programming command
+            # Look for business/general context indicators
+            general_context_indicators = self.config_service.get_general_context_indicators()
+            
+            if any(indicator in sent_text for indicator in general_context_indicators):
+                return True  # General imperative, not programming command
+        
+        # === ORIGINAL YAML CONFIGURATION CHECK ===
         # Get legitimate patterns from YAML configuration
         all_patterns = self.config_service.get_patterns()
         legitimate_patterns = []
@@ -190,22 +293,11 @@ class ProgrammingElementsRule(BaseTechnicalRule):
                 legitimate_patterns = pattern_config.legitimate_patterns
                 break
         
-        # Check for legitimate patterns
+        # Check for legitimate patterns from YAML
         if legitimate_patterns:
             for pattern in legitimate_patterns:
                 if pattern in sent_text:
                     return True
-        
-        # Check for general non-programming verb contexts
-        non_programming_objects = [
-            'file', 'document', 'content', 'text', 'image', 'item', 'option',
-            'user', 'person', 'team', 'business', 'house', 'meeting'
-        ]
-        
-        # Look for non-programming direct objects
-        for child in token.children:
-            if child.dep_ in ['dobj', 'pobj'] and child.lemma_.lower() in non_programming_objects:
-                return True
         
         return False
     
@@ -272,35 +364,63 @@ class ProgrammingElementsRule(BaseTechnicalRule):
         return any(indicator in sent_text for indicator in code_doc_indicators)
     
     def _apply_programming_linguistic_clues(self, evidence_score: float, issue: Dict[str, Any], sentence_obj) -> float:
-        """Apply linguistic clues specific to programming analysis."""
+        """Enhanced linguistic clues specific to programming analysis."""
         sent_text = sentence_obj.text.lower()
         keyword = issue.get('keyword', '')
+        token = issue.get('token')
         
-        # Technical programming context increases evidence
-        programming_indicators = [
-            'database', 'table', 'query', 'sql', 'api', 'function',
-            'method', 'object', 'class', 'variable', 'array'
-        ]
+        # === ENHANCED PROGRAMMING CONTEXT DETECTION ===
+        # Load programming context indicators from YAML
+        programming_indicators = self.config_service.get_programming_context_indicators()
         
         if any(indicator in sent_text for indicator in programming_indicators):
-            evidence_score += 0.15  # Clear programming context
+            evidence_adjustment = self.config_service.get_evidence_adjustment('programming_context_boost', 0.2)
+            evidence_score += evidence_adjustment  # Clear programming context
         
-        # Imperative mood suggests command usage
-        if sent_text.strip().startswith(keyword):
-            evidence_score += 0.1
+        # === ENHANCED IMPERATIVE DETECTION ===
+        # More sophisticated imperative detection
+        if token and hasattr(token, 'tag_') and token.tag_ == 'VB':  # Base form verb (imperative)
+            # Check if this is at sentence start (imperative mood)
+            sent_tokens = list(sentence_obj)
+            if sent_tokens and sent_tokens[0].i == token.i:
+                imperative_boost = self.config_service.get_evidence_adjustment('imperative_command_boost', 0.15)
+                evidence_score += imperative_boost  # Imperative programming command
         
-        # Direct object analysis
-        token = issue.get('token')
+        # === ENHANCED DIRECT OBJECT ANALYSIS ===
         if token:
-            # Look for technical direct objects
-            technical_objects = [
-                'table', 'record', 'row', 'column', 'database', 'index',
-                'object', 'instance', 'variable', 'array', 'function'
-            ]
+            # Load technical objects from YAML configuration
+            technical_objects = self.config_service.get_programming_objects()
             
             for child in token.children:
                 if child.dep_ == 'dobj' and child.lemma_.lower() in technical_objects:
-                    evidence_score += 0.2  # Technical object suggests programming misuse
+                    technical_object_boost = self.config_service.get_evidence_adjustment('technical_object_boost', 0.25)
+                    evidence_score += technical_object_boost  # Strong technical object suggests programming misuse
+                    break
+        
+        # === ENHANCED PROGRAMMING PATTERN DETECTION ===
+        # Generate dynamic programming patterns from YAML templates
+        programming_patterns = self.config_service.generate_programming_patterns(keyword)
+        
+        if any(pattern in sent_text for pattern in programming_patterns):
+            pattern_boost = self.config_service.get_evidence_adjustment('programming_pattern_boost', 0.2)
+            evidence_score += pattern_boost  # Specific programming usage patterns
+        
+        # === TECHNICAL PREPOSITION ANALYSIS ===
+        # Check for technical prepositional phrases that indicate programming context
+        if token:
+            for child in token.children:
+                if child.dep_ == 'prep':
+                    prep_phrase = child.text.lower()
+                    # Look at what follows the preposition
+                    for grandchild in child.children:
+                        if grandchild.dep_ == 'pobj':
+                            prep_object = grandchild.lemma_.lower()
+                            # Use programming objects from YAML for consistency
+                            programming_objects = self.config_service.get_programming_objects()
+                            if prep_object in programming_objects:
+                                preposition_boost = self.config_service.get_evidence_adjustment('technical_preposition_boost', 0.15)
+                                evidence_score += preposition_boost  # Technical prepositional context
+                                break
         
         return evidence_score
     

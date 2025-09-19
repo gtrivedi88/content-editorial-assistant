@@ -90,6 +90,189 @@ context_adjustments:
     developer: 0.0
     general: 0.1
 
+# === ENHANCED: LINGUISTIC INTELLIGENCE CONFIGURATION ===
+
+linguistic_guards:
+  # Programming context indicators - used multiple times in guards
+  programming_context_indicators:
+    - "database"
+    - "table" 
+    - "record"
+    - "row"
+    - "column"
+    - "schema"
+    - "query"
+    - "sql"
+    - "mysql"
+    - "postgresql"
+    - "mongodb"
+    - "nosql"
+    - "server"
+    - "system" 
+    - "repository"
+    - "code"
+    - "script"
+    - "program"
+    - "application"
+    - "software"
+    - "api"
+    - "function"
+    - "method"
+    - "object"
+    - "class"
+    - "variable"
+    - "array"
+    - "commit"
+    - "branch"
+    - "merge"
+    - "deploy"
+    - "build"
+    - "client"
+    - "backend"
+    - "frontend"
+    - "framework"
+
+  # Programming objects that should trigger flagging
+  programming_objects:
+    database_objects:
+      - "database"
+      - "table"
+      - "record" 
+      - "row"
+      - "column"
+      - "index"
+      - "schema"
+      - "query"
+      - "view"
+      - "procedure"
+      - "trigger"
+      - "constraint"
+    
+    programming_objects:
+      - "object"
+      - "instance"
+      - "variable"
+      - "array"
+      - "list"
+      - "dictionary"
+      - "function"
+      - "method"
+      - "class"
+      - "module"
+      - "package"
+    
+    system_objects:
+      - "file"
+      - "directory"
+      - "path"
+      - "config"
+      - "setting"
+      - "parameter"
+      - "service"
+      - "process"
+      - "thread"
+      - "connection"
+      - "system"
+      - "server"
+      - "repository"
+
+  # Non-programming objects that indicate business/general usage
+  non_programming_objects:
+    documents_content:
+      - "document"
+      - "content"
+      - "text"
+      - "image"
+      - "report"
+      - "form"
+      - "page"
+      - "section"
+      - "chapter"
+      - "documentation"
+    
+    people_organizations:
+      - "user"
+      - "person"
+      - "team"
+      - "business"
+      - "company"
+      - "organization"
+      - "client"
+      - "customer"
+      - "employee"
+      - "member"
+      - "group"
+      - "department"
+    
+    business_objects:
+      - "profile"
+      - "account"
+      - "order"
+      - "invoice"
+      - "contract"
+      - "agreement"
+      - "policy"
+      - "procedure"
+      - "process"
+      - "workflow"
+      - "schedule"
+      - "meeting"
+      - "project"
+      - "task"
+      - "goal"
+      - "objective"
+      - "plan"
+      - "strategy"
+
+  # Infinitive detection verbs
+  infinitive_verbs:
+    - "need"
+    - "want"
+    - "try"
+    - "plan"
+    - "decide"
+    - "choose"
+    - "attempt"
+    - "expect"
+    - "hope"
+    - "prefer"
+
+  # General context indicators for imperative analysis
+  general_context_indicators:
+    - "documentation"
+    - "information"
+    - "profile"
+    - "settings"
+    - "preferences"
+    - "account"
+    - "user"
+    - "team"
+    - "business"
+    - "process"
+    - "procedure"
+
+# Programming pattern templates (dynamic with keyword substitution)
+programming_patterns:
+  templates:
+    - "{keyword} the database"
+    - "{keyword} a table"
+    - "{keyword} the table"
+    - "{keyword} records"
+    - "{keyword} data"
+    - "{keyword} the system"
+    - "{keyword} the server"
+    - "{keyword} the repository"
+    - "{keyword} configuration"
+    - "{keyword} parameters"
+
+# Evidence scoring adjustments
+evidence_adjustments:
+  programming_context_boost: 0.2
+  imperative_command_boost: 0.15
+  technical_object_boost: 0.25
+  programming_pattern_boost: 0.2
+  technical_preposition_boost: 0.15
+
 # Thresholds and Messages
 thresholds:
   detection_threshold: 0.1

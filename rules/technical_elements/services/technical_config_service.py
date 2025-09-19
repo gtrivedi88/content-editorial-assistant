@@ -232,7 +232,8 @@ class TechnicalConfigService:
                 )
     
     def _load_programming_config(self, config: Dict[str, Any]):
-        """Load programming keywords configuration."""
+        """Load programming keywords configuration and enhanced linguistic intelligence data."""
+        # Original programming keywords loading
         programming_keywords = config.get('programming_keywords', {})
         for category, keywords in programming_keywords.items():
             for keyword_config in keywords:
@@ -244,6 +245,18 @@ class TechnicalConfigService:
                     description=keyword_config.get('description', ''),
                     legitimate_patterns=keyword_config.get('legitimate_patterns', [])
                 )
+        
+        # === ENHANCED: Load linguistic intelligence configurations ===
+        
+        # Load linguistic guards data
+        self._linguistic_guards = config.get('linguistic_guards', {})
+        
+        # Load programming pattern templates  
+        pattern_templates = config.get('programming_patterns', {})
+        self._programming_pattern_templates = pattern_templates.get('templates', [])
+        
+        # Load evidence adjustments
+        self._evidence_adjustments = config.get('evidence_adjustments', {})
     
     def _load_ui_config(self, config: Dict[str, Any]):
         """Load UI elements configuration."""
@@ -346,6 +359,59 @@ class TechnicalConfigService:
     def get_suggestions(self, confidence_level: str) -> List[str]:
         """Get suggestions for confidence level."""
         return self._suggestions.get(confidence_level, [])
+    
+    # === ENHANCED: Linguistic Intelligence Accessor Methods ===
+    
+    def get_programming_context_indicators(self) -> List[str]:
+        """Get programming context indicators for guard analysis."""
+        return self._linguistic_guards.get('programming_context_indicators', [])
+    
+    def get_programming_objects(self, category: Optional[str] = None) -> List[str]:
+        """Get programming objects that should trigger flagging."""
+        programming_objects = self._linguistic_guards.get('programming_objects', {})
+        if category and category in programming_objects:
+            return programming_objects[category]
+        
+        # Return all programming objects from all categories
+        all_objects = []
+        for objects_list in programming_objects.values():
+            if isinstance(objects_list, list):
+                all_objects.extend(objects_list)
+        return all_objects
+    
+    def get_non_programming_objects(self, category: Optional[str] = None) -> List[str]:
+        """Get non-programming objects that indicate business/general usage."""
+        non_programming_objects = self._linguistic_guards.get('non_programming_objects', {})
+        if category and category in non_programming_objects:
+            return non_programming_objects[category]
+        
+        # Return all non-programming objects from all categories
+        all_objects = []
+        for objects_list in non_programming_objects.values():
+            if isinstance(objects_list, list):
+                all_objects.extend(objects_list)
+        return all_objects
+    
+    def get_infinitive_verbs(self) -> List[str]:
+        """Get verbs that indicate infinitive usage."""
+        return self._linguistic_guards.get('infinitive_verbs', [])
+    
+    def get_general_context_indicators(self) -> List[str]:
+        """Get general context indicators for imperative analysis."""
+        return self._linguistic_guards.get('general_context_indicators', [])
+    
+    def get_programming_pattern_templates(self) -> List[str]:
+        """Get programming pattern templates with {keyword} placeholders."""
+        return getattr(self, '_programming_pattern_templates', [])
+    
+    def generate_programming_patterns(self, keyword: str) -> List[str]:
+        """Generate programming patterns for a specific keyword."""
+        templates = self.get_programming_pattern_templates()
+        return [template.format(keyword=keyword) for template in templates]
+    
+    def get_evidence_adjustment(self, adjustment_type: str, default: float = 0.0) -> float:
+        """Get evidence adjustment value for specific types."""
+        return getattr(self, '_evidence_adjustments', {}).get(adjustment_type, default)
     
     def get_guard_patterns(self) -> Dict[str, Any]:
         """Get guard patterns configuration."""
