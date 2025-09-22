@@ -225,13 +225,17 @@ class PossessivesRule(BaseLanguageRule):
         possessive_token = potential_issue['possessive_token']
         possessive_object = potential_issue.get('possessive_object')
         
+        # Store original evidence for IBM Style Guide enforcement
+        original_evidence = evidence_score
+        
         # === IBM STYLE GUIDE ENFORCEMENT ===
         # If we started with high evidence (0.9), the rule is absolute - don't let linguistic 
         # clues talk us out of flagging clear violations like "API's documentation"
         if evidence_score >= 0.85:  # High base evidence from style guide rule
-            # Only allow minimal adjustments for truly exceptional cases
-            # The style guide rule should not be overridden by contextual analysis
-            original_evidence = evidence_score
+            # The IBM Style Guide rule is absolute: "Do not use an apostrophe and the letter s ('s) 
+            # to show the possessive form of an abbreviation". No exceptions.
+            # Return the original high score without any linguistic adjustments.
+            return evidence_score
         
         # === GRAMMATICAL CLASSIFICATION ===
         # Analyze the fundamental grammatical nature of the token
@@ -350,10 +354,10 @@ class PossessivesRule(BaseLanguageRule):
         
         # === IBM STYLE GUIDE ENFORCEMENT (FINAL CHECK) ===
         # Prevent linguistic clues from overriding the absolute style guide rule
-        if 'original_evidence' in locals() and original_evidence >= 0.85:
-            # Don't allow evidence to drop below 0.7 when we started with high confidence
+        if original_evidence >= 0.85:
+            # Don't allow evidence to drop below 0.85 when we started with high confidence
             # The IBM Style Guide rule is absolute and should not be contextually overridden
-            evidence_score = max(evidence_score, 0.7)
+            evidence_score = max(evidence_score, original_evidence)
         
         return evidence_score
 
@@ -477,8 +481,8 @@ class PossessivesRule(BaseLanguageRule):
         # === IBM STYLE GUIDE ENFORCEMENT (FINAL CHECK) ===
         # Prevent semantic clues from overriding the absolute style guide rule
         if original_evidence >= 0.85:  # Started with high confidence from style guide
-            # Don't allow evidence to drop below 0.7 when IBM Style Guide rule applies
-            evidence_score = max(evidence_score, 0.7)
+            # Don't allow evidence to drop below original when IBM Style Guide rule applies
+            evidence_score = max(evidence_score, original_evidence)
         
         return evidence_score
 
@@ -532,8 +536,8 @@ class PossessivesRule(BaseLanguageRule):
         # === IBM STYLE GUIDE ENFORCEMENT (FINAL CHECK) ===
         # Prevent feedback patterns from overriding the absolute style guide rule
         if original_evidence >= 0.85:  # Started with high confidence from style guide
-            # Don't allow evidence to drop below 0.7 when IBM Style Guide rule applies
-            evidence_score = max(evidence_score, 0.7)
+            # Don't allow evidence to drop below original when IBM Style Guide rule applies
+            evidence_score = max(evidence_score, original_evidence)
         
         return evidence_score
 

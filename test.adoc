@@ -1,0 +1,42 @@
+= Multi-Cloud Deployment Orchestrator (MCDO) Setup Guide
+v2.0, September 2025
+
+== Overview
+
+This document details the setup for the MCDO. It's a game changer for DevOps teams. Before you begin, each administrator must update his password.
+
+== Pre-Requisites
+
+The setup has twelve steps. First, you'll need access to the primary kubernetes cluster. The following items are required:
+
+* A running instance of the database.
+* A valid license key.
+* Root access is required; don't try to run as a non-privileged user.
+
+== Configuration
+
+The main configuration file is written in YAML. The system thinks this is the easiest format to parse. Users only can edit this file using the `mcdo-cli` tool.
+
+To allow inbound traffic, you must configure a whitelist of IP addresses, this is a critical security step. The applications server won't start without it.
+
+[source,yaml]
+----
+# non-standard port configuration
+apiVersion: v1
+port: 8081
+----
+
+NOTE: The DRM component is complex, i.e., it has many moving parts. The SDK's properties are documented in a separate file.
+
+== User Management
+
+User management is handled by an external provider, e.g. okta. The API's documentation is available online. To add new User, run the `user-add` command. The parameter(s) for the command are detailed below.
+
+Tasks include:
+* creating users
+* deleting them
+* and to update roles.
+
+== Final Steps
+
+After configuration, you must REORG the internal database. This process must be completed successfully. You can FTP the backup file to an archive server once the process is finished.

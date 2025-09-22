@@ -1180,13 +1180,27 @@ class ContractionsRule(BaseLanguageRule):
         
         content_type = context.get('content_type', 'general')
         
+        # === FALLBACK TECHNICAL CONTEXT DETECTION ===
+        # If no explicit content_type but format suggests formal technical documentation
+        if content_type == 'general':
+            format_hint = context.get('format', '').lower()
+            block_type = context.get('block_type', '').lower()
+            
+            # AsciiDoc files are typically formal technical documentation
+            if format_hint in ['asciidoc', 'adoc']:
+                content_type = 'technical'
+                
+            # Formal block types suggest technical documentation  
+            elif block_type in ['procedure_step', 'code_block', 'literal_block', 'table_cell']:
+                content_type = 'technical'
+        
         # === ENHANCED CONTENT TYPE ANALYSIS FOR FORMAL WRITING ===
-        # CRITICAL: For formal technical guides, contractions should generally be flagged
-        # Reduced negative adjustments to ensure detection in formal contexts
+        # CRITICAL: For formal technical guides, contractions should generally be flagged with HIGH confidence
+        # FIXED: Formal contexts should INCREASE evidence scores, not decrease them
         if content_type == 'technical':
-            evidence_score -= 0.1  # Slightly less lenient (reduced from -0.2) - formal tech guides should flag contractions
+            evidence_score += 0.3  # Technical docs should flag contractions - formal writing expected (ensure all pass 0.35 threshold)
         elif content_type == 'api':
-            evidence_score -= 0.1  # Much less lenient (reduced from -0.3) - API docs should be formal
+            evidence_score += 0.3  # API docs must be formal and precise - high confidence for contractions
         elif content_type == 'academic':
             evidence_score += 0.3  # Academic writing expects formal language (unchanged)
         elif content_type == 'legal':
@@ -1196,14 +1210,14 @@ class ContractionsRule(BaseLanguageRule):
         elif content_type == 'narrative':
             evidence_score -= 0.3  # Storytelling often uses contractions (unchanged)
         elif content_type == 'procedural':
-            evidence_score -= 0.1  # Slightly less lenient (reduced from -0.2) - even procedures can be formal
+            evidence_score += 0.1  # Procedures should be clear and formal - flag contractions
         
         # === ENHANCED DOMAIN-SPECIFIC PATTERNS ===
         domain = context.get('domain', 'general')
         if domain in ['software', 'engineering', 'devops']:
-            evidence_score -= 0.1  # Less lenient (reduced from -0.2) - technical domains should still be somewhat formal
+            evidence_score += 0.1  # Technical domains should use formal language - flag contractions
         elif domain in ['documentation', 'tutorial']:
-            evidence_score -= 0.1  # Less lenient (reduced from -0.2) - documentation should lean toward formal
+            evidence_score += 0.1  # Documentation should be formal and clear - flag contractions  
         elif domain in ['academic', 'research', 'scientific']:
             evidence_score += 0.2  # Academic domains expect formality (unchanged)
         elif domain in ['legal', 'compliance', 'regulatory']:
@@ -1212,11 +1226,11 @@ class ContractionsRule(BaseLanguageRule):
         # === ENHANCED AUDIENCE CONSIDERATIONS ===
         audience = context.get('audience', 'general')
         if audience in ['developer', 'technical', 'expert']:
-            evidence_score -= 0.1  # Less lenient (reduced from -0.2) - even technical audiences benefit from formal guides
+            evidence_score += 0.1  # Technical audiences get professional, formal documentation - flag contractions
         elif audience in ['academic', 'research']:
             evidence_score += 0.2  # Academic audiences expect formal language (unchanged)
         elif audience in ['beginner', 'general', 'consumer']:
-            evidence_score -= 0.3  # General audiences benefit from conversational tone (unchanged)
+            evidence_score -= 0.2  # General audiences benefit from conversational tone (slightly less reduction)
         elif audience in ['professional', 'business']:
             evidence_score += 0.1  # Professional contexts more formal (unchanged)
         

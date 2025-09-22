@@ -1,0 +1,359 @@
+✓ Enhanced validation pipeline available for RulesRegistry
+✓ Pre-compiled 133 regex patterns in 0.007s
+✓ Loaded spaCy model: en_core_web_sm
+✅ Confidence calculator initialized
+✓ Pre-compiled 133 regex patterns in 0.003s
+✓ Loaded spaCy model: en_core_web_sm
+✓ Loaded SpaCy model: en_core_web_sm
+✓ Pre-compiled 133 regex patterns in 0.003s
+✓ Loaded spaCy model: en_core_web_sm
+✓ Loaded SpaCy model: en_core_web_sm
+✓ Pre-compiled 133 regex patterns in 0.003s
+✓ Loaded spaCy model: en_core_web_sm
+✓ Initialized domain classifier for domain validation
+✓ Pre-compiled 133 regex patterns in 0.003s
+✓ Loaded spaCy model: en_core_web_sm
+✅ Validation pipeline initialized
+✅ Using universal confidence threshold: 0.350
+🔍 Scanning for rules in: /home/gtrivedi/Documents/GitHub/style-guide-ai/rules
+🔍 Attempting to load: sentence_length_rule (depth: 0)
+✓ Pre-compiled 133 regex patterns in 0.003s
+✓ Loaded spaCy model: en_core_web_sm
+✓ Pre-compiled 133 regex patterns in 0.003s
+✓ Loaded spaCy model: en_core_web_sm
+✓ Loaded SpaCy model: en_core_web_sm
+✓ Pre-compiled 133 regex patterns in 0.003s
+✓ Loaded spaCy model: en_core_web_sm
+✓ Loaded SpaCy model: en_core_web_sm
+✓ Pre-compiled 133 regex patterns in 0.003s
+✓ Loaded spaCy model: en_core_web_sm
+✓ Initialized domain classifier for domain validation
+✓ Pre-compiled 133 regex patterns in 0.003s
+✓ Loaded spaCy model: en_core_web_sm
+✅ Found and instantiated rule class: SentenceLengthRule
+✅ Loaded rule: sentence_length (from main)
+🔍 Attempting to load: ambiguity_rule (depth: 0)
+⚠️ No rule class found in module ambiguity_rule
+⚠️ No valid rule class found in ambiguity_rule
+🔍 Attempting to load: second_person_rule (depth: 0)
+✅ Found and instantiated rule class: SecondPersonRule
+✅ Loaded rule: second_person (from main)
+🔍 Attempting to load: punctuation.colons_rule (depth: 1)
+✅ Found and instantiated rule class: ColonsRule
+✅ Loaded rule: colons (from punctuation)
+🔍 Attempting to load: punctuation.commas_rule (depth: 1)
+✅ Found and instantiated rule class: CommasRule
+✅ Loaded rule: commas (from punctuation)
+🔍 Attempting to load: punctuation.periods_rule (depth: 1)
+✅ Found and instantiated rule class: PeriodsRule
+✅ Loaded rule: periods (from punctuation)
+🔍 Attempting to load: punctuation.semicolons_rule (depth: 1)
+✅ Found and instantiated rule class: SemicolonsRule
+✅ Loaded rule: semicolons (from punctuation)
+🔍 Attempting to load: punctuation.quotation_marks_rule (depth: 1)
+✅ Found and instantiated rule class: QuotationMarksRule
+✅ Loaded rule: quotation_marks (from punctuation)
+🔍 Attempting to load: punctuation.dashes_rule (depth: 1)
+✅ Found and instantiated rule class: DashesRule
+✅ Loaded rule: dashes (from punctuation)
+🔍 Attempting to load: punctuation.ellipses_rule (depth: 1)
+✅ Found and instantiated rule class: EllipsesRule
+✅ Loaded rule: ellipses (from punctuation)
+🔍 Attempting to load: punctuation.exclamation_points_rule (depth: 1)
+✅ Found and instantiated rule class: ExclamationPointsRule
+✅ Loaded rule: exclamation_points (from punctuation)
+🔍 Attempting to load: punctuation.parentheses_rule (depth: 1)
+✅ Found and instantiated rule class: ParenthesesRule
+✅ Loaded rule: parentheses (from punctuation)
+🔍 Attempting to load: punctuation.punctuation_and_symbols_rule (depth: 1)
+✅ Found and instantiated rule class: PunctuationAndSymbolsRule
+✅ Loaded rule: punctuation_and_symbols (from punctuation)
+🔍 Attempting to load: punctuation.slashes_rule (depth: 1)
+✅ Found and instantiated rule class: SlashesRule
+✅ Loaded rule: slashes (from punctuation)
+🔍 Attempting to load: punctuation.hyphens_rule (depth: 1)
+✅ Found and instantiated rule class: HyphensRule
+✅ Loaded rule: hyphens (from punctuation)
+🔍 Attempting to load: punctuation.spacing_rule (depth: 1)
+✅ Found and instantiated rule class: SpacingRule
+✅ Loaded rule: spacing (from punctuation)
+🔍 Attempting to load: language_and_grammar.possessives_rule (depth: 1)
+✅ Found and instantiated rule class: PossessivesRule
+✅ Loaded rule: possessives (from language_and_grammar)
+🔍 Attempting to load: language_and_grammar.pronouns_rule (depth: 1)
+✅ Found and instantiated rule class: PronounsRule
+✅ Loaded rule: pronouns (from language_and_grammar)
+🔍 Attempting to load: language_and_grammar.prefixes_rule (depth: 1)
+✅ Found and instantiated rule class: PrefixesRule
+✅ Loaded rule: prefixes (from language_and_grammar)
+🔍 Attempting to load: language_and_grammar.spelling_rule (depth: 1)
+✅ Found and instantiated rule class: SpellingRule
+✅ Loaded rule: spelling (from language_and_grammar)
+🔍 Attempting to load: language_and_grammar.terminology_rule (depth: 1)
+✅ Found and instantiated rule class: TerminologyRule
+✅ Loaded rule: terminology (from language_and_grammar)
+🔍 Attempting to load: language_and_grammar.prepositions_rule (depth: 1)
+✅ Found and instantiated rule class: PrepositionsRule
+✅ Loaded rule: prepositions (from language_and_grammar)
+🔍 Attempting to load: language_and_grammar.abbreviations_rule (depth: 1)
+✅ Found and instantiated rule class: AbbreviationsRule
+✅ Loaded rule: abbreviations (from language_and_grammar)
+🔍 Attempting to load: language_and_grammar.adverbs_only_rule (depth: 1)
+✅ Found and instantiated rule class: AdverbsOnlyRule
+✅ Loaded rule: adverbs_only (from language_and_grammar)
+🔍 Attempting to load: language_and_grammar.anthropomorphism_rule (depth: 1)
+✅ Found and instantiated rule class: AnthropomorphismRule
+✅ Loaded rule: anthropomorphism (from language_and_grammar)
+🔍 Attempting to load: language_and_grammar.articles_rule (depth: 1)
+✅ Found and instantiated rule class: ArticlesRule
+✅ Loaded rule: articles (from language_and_grammar)
+🔍 Attempting to load: language_and_grammar.contractions_rule (depth: 1)
+✅ Found and instantiated rule class: ContractionsRule
+✅ Loaded rule: contractions (from language_and_grammar)
+🔍 Attempting to load: language_and_grammar.inclusive_language_rule (depth: 1)
+✅ Found and instantiated rule class: InclusiveLanguageRule
+✅ Loaded rule: inclusive_language (from language_and_grammar)
+🔍 Attempting to load: language_and_grammar.plurals_rule (depth: 1)
+✅ Found and instantiated rule class: PluralsRule
+✅ Loaded rule: plurals (from language_and_grammar)
+🔍 Attempting to load: language_and_grammar.verbs_rule (depth: 1)
+✅ Found and instantiated rule class: VerbsRule
+✅ Loaded rule: verbs (from language_and_grammar)
+🔍 Attempting to load: language_and_grammar.capitalization_rule (depth: 1)
+✅ Found and instantiated rule class: CapitalizationRule
+✅ Loaded rule: capitalization (from language_and_grammar)
+🔍 Attempting to load: language_and_grammar.conjunctions_rule (depth: 1)
+✅ Found and instantiated rule class: ConjunctionsRule
+✅ Loaded rule: conjunctions (from language_and_grammar)
+🔍 Attempting to load: structure_and_format.headings_rule (depth: 1)
+✅ Found and instantiated rule class: HeadingsRule
+✅ Loaded rule: headings (from structure_and_format)
+🔍 Attempting to load: structure_and_format.lists_rule (depth: 1)
+✅ Found and instantiated rule class: ListsRule
+✅ Loaded rule: lists (from structure_and_format)
+🔍 Attempting to load: structure_and_format.admonitions_rule (depth: 1)
+✅ Found and instantiated rule class: AdmonitionsRule
+✅ Loaded rule: admonitions (from structure_and_format)
+🔍 Attempting to load: structure_and_format.glossaries_rule (depth: 1)
+✅ Found and instantiated rule class: GlossariesRule
+✅ Loaded rule: glossaries (from structure_and_format)
+🔍 Attempting to load: structure_and_format.highlighting_rule (depth: 1)
+✅ Found and instantiated rule class: HighlightingRule
+✅ Loaded rule: highlighting (from structure_and_format)
+🔍 Attempting to load: structure_and_format.messages_rule (depth: 1)
+✅ Found and instantiated rule class: MessagesRule
+✅ Loaded rule: messages (from structure_and_format)
+🔍 Attempting to load: structure_and_format.notes_rule (depth: 1)
+✅ Found and instantiated rule class: NotesRule
+✅ Loaded rule: notes (from structure_and_format)
+🔍 Attempting to load: structure_and_format.paragraphs_rule (depth: 1)
+✅ Found and instantiated rule class: ParagraphsRule
+✅ Loaded rule: paragraphs (from structure_and_format)
+🔍 Attempting to load: structure_and_format.procedures_rule (depth: 1)
+✅ Found and instantiated rule class: ProceduresRule
+✅ Loaded rule: procedures (from structure_and_format)
+🔍 Attempting to load: structure_and_format.list_punctuation_rule (depth: 1)
+✅ Found and instantiated rule class: ListPunctuationRule
+✅ Loaded rule: list_punctuation (from structure_and_format)
+🔍 Attempting to load: structure_and_format.indentation_rule (depth: 1)
+✅ Found and instantiated rule class: IndentationRule
+✅ Loaded rule: indentation (from structure_and_format)
+🔍 Attempting to load: structure_and_format.admonition_content_rule (depth: 1)
+✅ Found and instantiated rule class: AdmonitionContentRule
+✅ Loaded rule: admonition_content (from structure_and_format)
+🔍 Attempting to load: audience_and_medium.conversational_style_rule (depth: 1)
+✅ Found and instantiated rule class: ConversationalStyleRule
+✅ Loaded rule: conversational_style (from audience_and_medium)
+🔍 Attempting to load: audience_and_medium.global_audiences_rule (depth: 1)
+✅ Found and instantiated rule class: GlobalAudiencesRule
+✅ Loaded rule: global_audiences (from audience_and_medium)
+🔍 Attempting to load: audience_and_medium.llm_consumability_rule (depth: 1)
+✅ Found and instantiated rule class: LLMConsumabilityRule
+✅ Loaded rule: llm_consumability (from audience_and_medium)
+🔍 Attempting to load: audience_and_medium.tone_rule (depth: 1)
+✅ Found and instantiated rule class: ToneRule
+✅ Loaded rule: tone (from audience_and_medium)
+🔍 Attempting to load: numbers_and_measurement.currency_rule (depth: 1)
+✅ Found and instantiated rule class: CurrencyRule
+✅ Loaded rule: numbers_currency (from numbers_and_measurement)
+🔍 Attempting to load: numbers_and_measurement.numbers_rule (depth: 1)
+✅ Found and instantiated rule class: NumbersRule
+✅ Loaded rule: numbers_general (from numbers_and_measurement)
+🔍 Attempting to load: numbers_and_measurement.units_of_measurement_rule (depth: 1)
+✅ Found and instantiated rule class: UnitsOfMeasurementRule
+✅ Loaded rule: units_of_measurement (from numbers_and_measurement)
+🔍 Attempting to load: numbers_and_measurement.dates_and_times_rule (depth: 1)
+✅ Found and instantiated rule class: DatesAndTimesRule
+✅ Loaded rule: dates_and_times (from numbers_and_measurement)
+🔍 Attempting to load: numbers_and_measurement.numerals_vs_words_rule (depth: 1)
+✅ Found and instantiated rule class: NumeralsVsWordsRule
+✅ Loaded rule: numerals_vs_words (from numbers_and_measurement)
+🔍 Attempting to load: references.citations_rule (depth: 1)
+✅ Found and instantiated rule class: CitationsRule
+✅ Loaded rule: references_citations (from references)
+🔍 Attempting to load: references.geographic_locations_rule (depth: 1)
+✅ Found and instantiated rule class: GeographicLocationsRule
+✅ Loaded rule: references_geographic_locations (from references)
+🔍 Attempting to load: references.names_and_titles_rule (depth: 1)
+✅ Found and instantiated rule class: NamesAndTitlesRule
+✅ Loaded rule: references_names_titles (from references)
+🔍 Attempting to load: references.product_names_rule (depth: 1)
+✅ Found and instantiated rule class: ProductNamesRule
+✅ Loaded rule: references_product_names (from references)
+🔍 Attempting to load: references.product_versions_rule (depth: 1)
+✅ Found and instantiated rule class: ProductVersionsRule
+✅ Loaded rule: references_product_versions (from references)
+🔍 Attempting to load: technical_elements.commands_rule (depth: 1)
+✅ Found and instantiated rule class: CommandsRule
+✅ Loaded rule: technical_commands (from technical_elements)
+🔍 Attempting to load: technical_elements.files_and_directories_rule (depth: 1)
+✅ Found and instantiated rule class: FilesAndDirectoriesRule
+✅ Loaded rule: technical_files_directories (from technical_elements)
+🔍 Attempting to load: technical_elements.keyboard_keys_rule (depth: 1)
+✅ Found and instantiated rule class: KeyboardKeysRule
+✅ Loaded rule: technical_keyboard_keys (from technical_elements)
+🔍 Attempting to load: technical_elements.mouse_buttons_rule (depth: 1)
+✅ Found and instantiated rule class: MouseButtonsRule
+✅ Loaded rule: technical_mouse_buttons (from technical_elements)
+🔍 Attempting to load: technical_elements.programming_elements_rule (depth: 1)
+✅ Found and instantiated rule class: ProgrammingElementsRule
+✅ Loaded rule: technical_programming_elements (from technical_elements)
+🔍 Attempting to load: technical_elements.ui_elements_rule (depth: 1)
+✅ Found and instantiated rule class: UIElementsRule
+✅ Loaded rule: technical_ui_elements (from technical_elements)
+🔍 Attempting to load: technical_elements.web_addresses_rule (depth: 1)
+✅ Found and instantiated rule class: WebAddressesRule
+✅ Loaded rule: technical_web_addresses (from technical_elements)
+🔍 Attempting to load: legal_information.claims_rule (depth: 1)
+✅ Found and instantiated rule class: ClaimsRule
+✅ Loaded rule: legal_claims (from legal_information)
+🔍 Attempting to load: legal_information.company_names_rule (depth: 1)
+✅ Found and instantiated rule class: CompanyNamesRule
+✅ Loaded rule: legal_company_names (from legal_information)
+🔍 Attempting to load: legal_information.personal_information_rule (depth: 1)
+✅ Found and instantiated rule class: PersonalInformationRule
+✅ Loaded rule: legal_personal_information (from legal_information)
+🔍 Attempting to load: word_usage.a_words_rule (depth: 1)
+✅ Found and instantiated rule class: AWordsRule
+✅ Loaded rule: word_usage_a (from word_usage)
+🔍 Attempting to load: word_usage.b_words_rule (depth: 1)
+✅ Found and instantiated rule class: BWordsRule
+✅ Loaded rule: word_usage_b (from word_usage)
+🔍 Attempting to load: word_usage.c_words_rule (depth: 1)
+✅ Found and instantiated rule class: CWordsRule
+✅ Loaded rule: word_usage_c (from word_usage)
+🔍 Attempting to load: word_usage.d_words_rule (depth: 1)
+✅ Found and instantiated rule class: DWordsRule
+✅ Loaded rule: word_usage_d (from word_usage)
+🔍 Attempting to load: word_usage.e_words_rule (depth: 1)
+✅ Found and instantiated rule class: EWordsRule
+✅ Loaded rule: word_usage_e (from word_usage)
+🔍 Attempting to load: word_usage.f_words_rule (depth: 1)
+✅ Found and instantiated rule class: FWordsRule
+✅ Loaded rule: word_usage_f (from word_usage)
+🔍 Attempting to load: word_usage.g_words_rule (depth: 1)
+✅ Found and instantiated rule class: GWordsRule
+✅ Loaded rule: word_usage_g (from word_usage)
+🔍 Attempting to load: word_usage.h_words_rule (depth: 1)
+✅ Found and instantiated rule class: HWordsRule
+✅ Loaded rule: word_usage_h (from word_usage)
+🔍 Attempting to load: word_usage.i_words_rule (depth: 1)
+✅ Found and instantiated rule class: IWordsRule
+✅ Loaded rule: word_usage_i (from word_usage)
+🔍 Attempting to load: word_usage.j_words_rule (depth: 1)
+✅ Found and instantiated rule class: JWordsRule
+✅ Loaded rule: word_usage_j (from word_usage)
+🔍 Attempting to load: word_usage.k_words_rule (depth: 1)
+✅ Found and instantiated rule class: KWordsRule
+✅ Loaded rule: word_usage_k (from word_usage)
+🔍 Attempting to load: word_usage.l_words_rule (depth: 1)
+✅ Found and instantiated rule class: LWordsRule
+✅ Loaded rule: word_usage_l (from word_usage)
+🔍 Attempting to load: word_usage.m_words_rule (depth: 1)
+✅ Found and instantiated rule class: MWordsRule
+✅ Loaded rule: word_usage_m (from word_usage)
+🔍 Attempting to load: word_usage.n_words_rule (depth: 1)
+✅ Found and instantiated rule class: NWordsRule
+✅ Loaded rule: word_usage_n (from word_usage)
+🔍 Attempting to load: word_usage.o_words_rule (depth: 1)
+✅ Found and instantiated rule class: OWordsRule
+✅ Loaded rule: word_usage_o (from word_usage)
+🔍 Attempting to load: word_usage.p_words_rule (depth: 1)
+✅ Found and instantiated rule class: PWordsRule
+✅ Loaded rule: word_usage_p (from word_usage)
+🔍 Attempting to load: word_usage.q_words_rule (depth: 1)
+✅ Found and instantiated rule class: QWordsRule
+✅ Loaded rule: word_usage_q (from word_usage)
+🔍 Attempting to load: word_usage.r_words_rule (depth: 1)
+✅ Found and instantiated rule class: RWordsRule
+✅ Loaded rule: word_usage_r (from word_usage)
+🔍 Attempting to load: word_usage.s_words_rule (depth: 1)
+✅ Found and instantiated rule class: SWordsRule
+✅ Loaded rule: word_usage_s (from word_usage)
+🔍 Attempting to load: word_usage.t_words_rule (depth: 1)
+✅ Found and instantiated rule class: TWordsRule
+✅ Loaded rule: word_usage_t (from word_usage)
+🔍 Attempting to load: word_usage.u_words_rule (depth: 1)
+✅ Found and instantiated rule class: UWordsRule
+✅ Loaded rule: word_usage_u (from word_usage)
+🔍 Attempting to load: word_usage.v_words_rule (depth: 1)
+✅ Found and instantiated rule class: VWordsRule
+✅ Loaded rule: word_usage_v (from word_usage)
+🔍 Attempting to load: word_usage.w_words_rule (depth: 1)
+✅ Found and instantiated rule class: WWordsRule
+✅ Loaded rule: word_usage_w (from word_usage)
+🔍 Attempting to load: word_usage.x_words_rule (depth: 1)
+✅ Found and instantiated rule class: XWordsRule
+✅ Loaded rule: word_usage_x (from word_usage)
+🔍 Attempting to load: word_usage.z_words_rule (depth: 1)
+✅ Found and instantiated rule class: ZWordsRule
+✅ Loaded rule: word_usage_z (from word_usage)
+🔍 Attempting to load: word_usage.special_chars_rule (depth: 1)
+✅ Found and instantiated rule class: SpecialCharsRule
+✅ Loaded rule: word_usage_special (from word_usage)
+🔍 Attempting to load: word_usage.y_words_rule (depth: 1)
+✅ Found and instantiated rule class: YWordsRule
+✅ Loaded rule: word_usage_y (from word_usage)
+🔍 Attempting to load: modular_compliance.concept_module_rule (depth: 1)
+✅ Found and instantiated rule class: ConceptModuleRule
+✅ Loaded rule: concept_module (from modular_compliance)
+🔍 Attempting to load: modular_compliance.procedure_module_rule (depth: 1)
+✅ Found and instantiated rule class: ProcedureModuleRule
+✅ Loaded rule: procedure_module (from modular_compliance)
+🔍 Attempting to load: modular_compliance.reference_module_rule (depth: 1)
+✅ Found and instantiated rule class: ReferenceModuleRule
+✅ Loaded rule: reference_module (from modular_compliance)
+🔍 Attempting to load: modular_compliance.cross_reference_rule (depth: 1)
+✅ Found and instantiated rule class: CrossReferenceRule
+✅ Loaded rule: cross_reference_compliance (from modular_compliance)
+🔍 Attempting to load: modular_compliance.template_compliance_rule (depth: 1)
+✅ Found and instantiated rule class: TemplateComplianceRule
+✅ Loaded rule: template_compliance (from modular_compliance)
+🔍 Attempting to load: modular_compliance.inter_module_analysis_rule (depth: 1)
+✅ Found and instantiated rule class: InterModuleAnalysisRule
+✅ Loaded rule: inter_module_analysis (from modular_compliance)
+📊 Rules discovery complete. Loaded 100 rules from 11 locations.
+📋 Loading rule mappings from: /home/gtrivedi/Documents/GitHub/style-guide-ai/rules/rule_mappings.yaml
+✅ Successfully loaded 36 block type rules and 14 exclusions
+🔧 Preparing to create 100 rule records from rules registry
+✓ Pre-compiled 133 regex patterns in 0.007s
+✓ Loaded spaCy model: en_core_web_sm
+🎯 Multi-shot prompting enabled: 159 examples across 103 error types
+✓ Pre-compiled 133 regex patterns in 0.003s
+✓ Loaded spaCy model: en_core_web_sm
+🚀 Starting Content Editorial Assistant Application...
+📱 Access the application at: http://127.0.0.1:5000
+📊 Real-time progress tracking enabled via WebSocket
+🤖 AI rewriting with Ollama integration ready
+
+🔍 DEBUG MODE ENABLED:
+   📊 API Route /rewrite-block: Comprehensive debug logging
+   🏭 Assembly Line Rewriter: Debug output enabled
+   🎯 Progress Tracker: WorldClassProgressTracker debug
+   📡 WebSocket Handlers: Progress update tracking
+   🌐 Frontend Console: Real-time progress debug
+
+👀 When you click 'Improve Issue', watch for debug output here!
+============================================================
+ * Serving Flask app 'app_modules.app_factory'
+ * Debug mode: off

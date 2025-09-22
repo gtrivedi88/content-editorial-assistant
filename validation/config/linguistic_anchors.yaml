@@ -87,24 +87,42 @@ confidence_boosting_anchors:
       context_window: 8
       description: "Explanatory phrases indicate deliberate clarification"
 
+  # Inclusive language patterns - boost confidence for gendered pronoun detection
+  inclusive_language_patterns:
+    # Generic roles that should use inclusive language
+    generic_roles:
+      patterns: ["\\badministrator\\b", "\\buser\\b", "\\bdeveloper\\b", "\\bperson\\b", "\\bindividual\\b", "\\bcustomer\\b", "\\bclient\\b", "\\bemployee\\b", "\\bmanager\\b", "\\bengineer\\b", "\\boperator\\b", "\\btechnician\\b", "\\bspecialist\\b"]
+      confidence_boost: 0.20
+      context_window: 5
+      description: "Generic roles should use inclusive language - boost confidence for gendered pronoun detection"
+    
+    # Instructional contexts with gendered pronouns
+    instructional_gendered_pronouns:
+      patterns: ["\\beach [a-z]+ must update \\b(his|her)\\b", "\\bthe [a-z]+ should \\w+ \\b(his|her)\\b", "\\bwhen [a-z]+ \\w+ \\b(his|her)\\b", "\\bif [a-z]+ \\w+ \\b(his|her)\\b"]
+      confidence_boost: 0.25
+      context_window: 8
+      description: "Gendered pronouns in instructional contexts should be flagged with high confidence"
+
 # Confidence-reducing anchors
 # These patterns decrease confidence when detected near potential errors
 confidence_reducing_anchors:
   # Proper nouns and names (often exceptions to grammar rules)
   proper_nouns:
-    # Person names that may have unconventional grammar
+    # Person names that may have unconventional grammar (excluding gendered pronouns)
     person_names:
       patterns: ["\\b[A-Z][a-z]+ [A-Z][a-z]+\\b", "\\b[A-Z]\\. [A-Z][a-z]+\\b", "\\bDr\\. [A-Z][a-z]+\\b", "\\bMr\\. [A-Z][a-z]+\\b", "\\bMs\\. [A-Z][a-z]+\\b"]
       confidence_reduction: 0.15
       context_window: 2
       description: "Person names may follow non-standard grammar patterns"
+      exclusions: ["\\bhis\\b", "\\bher\\b", "\\bhers\\b", "\\bhim\\b", "\\bshe\\b", "\\bhe\\b"]  # Don't reduce confidence for gendered pronouns
     
-    # Company and brand names
+    # Company and brand names (excluding gendered pronouns)
     brand_names:
       patterns: ["\\b[A-Z][a-z]*[A-Z][a-zA-Z]*\\b", "\\b[A-Z]{2,}\\b", "\\bi[A-Z][a-z]+\\b", "\\be[A-Z][a-z]+\\b"]
       confidence_reduction: 0.12
       context_window: 3
       description: "Brand names often violate standard grammar and spelling rules"
+      exclusions: ["\\bhis\\b", "\\bher\\b", "\\bhers\\b", "\\bhim\\b", "\\bshe\\b", "\\bhe\\b"]  # Don't reduce confidence for gendered pronouns
     
     # Geographic locations
     geographic_names:
@@ -236,11 +254,12 @@ rule_specific_weights:
     technical_patterns_weight: 0.8
     contextual_patterns_weight: 1.0
     
-  # Pronoun rules benefit from contextual anchors
+  # Pronoun rules benefit from contextual and inclusive language anchors
   pronouns:
     generic_patterns_weight: 1.0
     technical_patterns_weight: 0.9
     contextual_patterns_weight: 1.4
+    inclusive_language_patterns_weight: 2.0  # High weight for gendered pronoun detection
     
   # Terminology rules benefit from technical anchors
   terminology:
