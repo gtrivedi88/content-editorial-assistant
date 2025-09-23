@@ -17,6 +17,13 @@ try:
 except ImportError:
     MARKDOWN_TYPES_AVAILABLE = False
 
+# Import PlainText types as well
+try:
+    from structural_parsing.plaintext.types import PlainTextBlock, PlainTextBlockType
+    PLAINTEXT_TYPES_AVAILABLE = True
+except ImportError:
+    PLAINTEXT_TYPES_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 class BlockProcessor:
