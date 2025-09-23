@@ -33,7 +33,7 @@ class FormatDetector:
             (r'^```', 4),                # Code fences.
             (r'^>\s+', 2),                # Blockquotes.
             (r'^\|\s*.*\s*\|', 2),          # Tables.
-            (r'^\*\s+', 1),                # Unordered lists (lower score due to AsciiDoc ambiguity).
+            (r'^[\*\-\+]\s+', 1),          # Unordered lists (*, -, +) (lower score due to AsciiDoc ambiguity).
             (r'^\d+\.\s+', 1),              # Ordered lists.
         ]
 

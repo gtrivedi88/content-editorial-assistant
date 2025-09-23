@@ -169,12 +169,15 @@ class MarkdownParser:
             
             # For most block types, extract clean content without markup
             if block_type == MarkdownBlockType.HEADING:
-                # Remove heading markers (# ## ###)
+                # Remove heading markers (# ## ###) and trailing hashes
                 lines = raw_content.split('\n')
                 for line in lines:
                     clean_line = line.strip()
                     if clean_line.startswith('#'):
+                        # Remove leading hashes
                         content = clean_line.lstrip('#').strip()
+                        # Remove trailing hashes if present
+                        content = content.rstrip('#').strip()
                         break
             elif block_type == MarkdownBlockType.PARAGRAPH:
                 # For paragraphs, use the raw content as-is
@@ -227,14 +230,54 @@ class MarkdownParser:
         return block
     
     def _convert_child_tokens(self, tokens: List[Token], content_lines: List[str]) -> List[MarkdownBlock]:
-        """Convert child tokens to blocks."""
+        """Convert child tokens to blocks, avoiding duplicates for list items."""
         blocks = []
         
-        for token in tokens:
-            if token.nesting != -1:  # Skip closing tokens
+        i = 0
+        while i < len(tokens):
+            token = tokens[i]
+            
+            # Skip closing tokens
+            if token.nesting == -1:
+                i += 1
+                continue
+            
+            # For list items, we want to extract the actual content instead of creating nested paragraphs
+            if token.type == 'list_item_open':
+                # Find the content within this list item
+                j = i + 1
+                nesting_level = 1
+                item_content = ""
+                
+                while j < len(tokens) and nesting_level > 0:
+                    if tokens[j].nesting == 1:
+                        nesting_level += 1
+                    elif tokens[j].nesting == -1:
+                        nesting_level -= 1
+                    
+                    # Extract content from inline tokens
+                    if tokens[j].type == 'inline':
+                        item_content = tokens[j].content
+                    
+                    j += 1
+                
+                # Create list item block with extracted content
+                start_line = token.map[0] if token.map else 0
+                list_item_block = MarkdownBlock(
+                    block_type=MarkdownBlockType.LIST_ITEM,
+                    content=item_content,
+                    raw_content=item_content,
+                    start_line=start_line + 1,
+                    level=0
+                )
+                blocks.append(list_item_block)
+                i = j
+            else:
+                # For non-list items, use regular processing
                 block = self._create_block_from_token(token, content_lines)
                 if block:
                     blocks.append(block)
+                i += 1
         
         return blocks
     
