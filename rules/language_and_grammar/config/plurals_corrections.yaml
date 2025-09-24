@@ -368,8 +368,24 @@ plural_adjectives:
     - "tools development"
     - "tools configuration"
     - "applications development"
+    - "applications server"
+    - "applications deployment"
     - "networks architecture"
     - "databases administration"
+    
+    # Script and automation terms
+    - "updates script"        # Original case: "updates script" is acceptable
+    - "updates process"
+    - "updates management"
+    - "backups script"
+    - "backups process" 
+    - "exports utility"
+    - "imports process"
+    - "migrations script"
+    - "deployments pipeline"
+    - "configurations management"
+    - "installations guide"
+    - "upgrades process"
     
     # User interface terms
     - "users guide"
@@ -378,6 +394,12 @@ plural_adjectives:
     - "permissions management"
     - "credentials storage"
     - "preferences panel"
+    - "notifications system"
+    - "alerts configuration"
+    - "logs analysis"
+    - "reports generation"
+    - "metrics collection"
+    - "analytics dashboard"
 
 # Evidence scoring guidelines
 evidence_levels:

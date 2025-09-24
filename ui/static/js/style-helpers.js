@@ -58,7 +58,10 @@ function decodeHtmlEntities(text) {
 function renderSafeTableCellHtml(text) {
     if (!text) return '';
     
-    // First escape all HTML to be safe
+    // First decode HTML entities to get clean text (fixes &#8217; etc.)
+    text = decodeHtmlEntities(text);
+    
+    // Then escape all HTML to be safe
     let escaped = escapeHtml(text);
     
     // Then selectively un-escape safe formatting tags

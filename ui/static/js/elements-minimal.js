@@ -4,6 +4,90 @@
  */
 
 /**
+ * Decode HTML entities to regular characters
+ */
+function decodeHtmlEntities(text) {
+    if (typeof text !== 'string') return text;
+    
+    // Check if style-helpers.js is loaded and has this function
+    if (typeof window.decodeHtmlEntities === 'function' && window.decodeHtmlEntities !== decodeHtmlEntities) {
+        return window.decodeHtmlEntities(text);
+    }
+    
+    // Create a temporary element to decode HTML entities
+    const tempElement = document.createElement('div');
+    tempElement.innerHTML = text;
+    let decoded = tempElement.textContent || tempElement.innerText || '';
+    
+    // Fallback manual decoding for common problematic entities
+    const entityMap = {
+        '&#8217;': "'",  // Right single quotation mark (curly apostrophe)
+        '&#8216;': "'",  // Left single quotation mark
+        '&#8220;': '"',  // Left double quotation mark
+        '&#8221;': '"',  // Right double quotation mark
+        '&#8211;': '–',  // En dash
+        '&#8212;': '—',  // Em dash
+        '&#8230;': '…',  // Horizontal ellipsis
+        '&rsquo;': "'",  // Right single quotation mark
+        '&lsquo;': "'",  // Left single quotation mark
+        '&rdquo;': '"',  // Right double quotation mark
+        '&ldquo;': '"',  // Left double quotation mark
+        '&ndash;': '–',  // En dash
+        '&mdash;': '—',  // Em dash
+        '&hellip;': '…' // Horizontal ellipsis
+    };
+    
+    // Apply manual decoding as fallback
+    Object.keys(entityMap).forEach(entity => {
+        const char = entityMap[entity];
+        decoded = decoded.replace(new RegExp(entity, 'g'), char);
+    });
+    
+    return decoded;
+}
+
+/**
+ * Safe HTML renderer for table cells - allows common formatting tags
+ * This function allows <code> tags and other safe formatting to be rendered properly
+ */
+function renderSafeTableCellHtml(text) {
+    if (!text) return '';
+    
+    // Check if style-helpers.js is loaded and has this function
+    if (typeof window.renderSafeTableCellHtml === 'function' && window.renderSafeTableCellHtml !== renderSafeTableCellHtml) {
+        return window.renderSafeTableCellHtml(text);
+    }
+    
+    // First decode HTML entities to get clean text (fixes &#8217; etc.)
+    text = decodeHtmlEntities(text);
+    
+    // Then escape all HTML to be safe
+    let escaped = escapeHtml(text);
+    
+    // Finally selectively un-escape safe formatting tags
+    const safeTagsMap = {
+        '&lt;code&gt;': '<code style="background: rgba(14, 184, 166, 0.1); color: #0d9488; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 13px;">',
+        '&lt;/code&gt;': '</code>',
+        '&lt;strong&gt;': '<strong>',
+        '&lt;/strong&gt;': '</strong>',
+        '&lt;em&gt;': '<em>',
+        '&lt;/em&gt;': '</em>',
+        '&lt;b&gt;': '<strong>',
+        '&lt;/b&gt;': '</strong>',
+        '&lt;i&gt;': '<em>',
+        '&lt;/i&gt;': '</em>'
+    };
+    
+    // Replace escaped safe tags with their HTML equivalents
+    Object.keys(safeTagsMap).forEach(escapedTag => {
+        const htmlTag = safeTagsMap[escapedTag];
+        escaped = escaped.replace(new RegExp(escapedTag, 'gi'), htmlTag);
+    });
+    
+    return escaped;
+}
+
+/**
  * Create a list block display with clean bullets/numbers
  */
 function createListBlockElement(block, displayIndex) {
@@ -28,7 +112,7 @@ function createListBlockElement(block, displayIndex) {
     const generateListItems = (items) => {
         if (!items || items.length === 0) return '';
         return items.map(item => {
-            let content = escapeHtml(item.content);
+            let content = renderSafeTableCellHtml(item.content);
             
             let nestedContent = '';
             if (item.children && item.children.length > 0) {
@@ -128,8 +212,8 @@ function createDescriptionListBlockElement(block, displayIndex) {
         if (!items || items.length === 0) return '';
         return items.map(item => {
             // The item itself is a 'description_list_item' block
-            const term = escapeHtml(item.term || '');
-            const description = escapeHtml(item.description || '');
+            const term = renderSafeTableCellHtml(item.term || '');
+            const description = renderSafeTableCellHtml(item.description || '');
 
             // Separate errors for the term and the description
             const termErrors = (item.errors || []).filter(e => e.structural_context && e.structural_context.is_dlist_term);
@@ -311,7 +395,7 @@ function createTableBlockElement(block, displayIndex, allBlocks = []) {
                                             <i class="fas fa-table" aria-hidden="true"></i>
                                         </div>
                                         <div class="pf-v5-c-alert__title">
-                                            <span class="pf-v5-u-font-size-sm">In table cell: "${escapeHtml(cell.content)}"</span>
+                                            <span class="pf-v5-u-font-size-sm">In table cell: "${renderSafeTableCellHtml(cell.content)}"</span>
                                         </div>
                                         <div class="pf-v5-c-alert__description">
                                             ${(cell.errors || []).map(error => `
@@ -493,7 +577,7 @@ function generatePatternFlyTable(rows, hasHeader = false) {
                 border-bottom: 2px solid var(--pf-v5-global--palette--blue-300);
                 padding: var(--pf-v5-global--spacer--md);
                 text-align: left;
-            ">${escapeHtml(cell)}</th>`;
+            ">${renderSafeTableCellHtml(cell)}</th>`;
         }
         html += '</tr>';
         html += '</thead>';
@@ -517,7 +601,7 @@ function generatePatternFlyTable(rows, hasHeader = false) {
                 border-bottom: 1px solid var(--pf-v5-global--BorderColor--100);
                 vertical-align: top;
                 line-height: 1.5;
-            ">${escapeHtml(cell)}</td>`;
+            ">${renderSafeTableCellHtml(cell)}</td>`;
         }
         html += '</tr>';
     }
@@ -598,7 +682,7 @@ function createStructuralBlock(block, displayIndex, allBlocks = []) {
                         </div>
                     </div>` :
                     `<div class="pf-v5-u-p-md pf-v5-u-background-color-200" style="white-space: pre-wrap; word-wrap: break-word; border-radius: var(--pf-v5-global--BorderRadius--sm);">
-                        ${escapeHtml(block.content)}
+                        ${renderSafeTableCellHtml(block.content)}
                     </div>`
                 }
                 
