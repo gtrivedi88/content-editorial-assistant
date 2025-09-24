@@ -122,8 +122,9 @@ python main.py
 ### 📁 **Multi-Format Support**
 - **Text Files:** .txt, .md (Markdown)
 - **Documents:** .docx (Microsoft Word)
-- **Technical Formats:** .adoc (AsciiDoc), .dita (DITA)
+- **Technical Formats:** .adoc (AsciiDoc), .dita (DITA), .xml (XML/DITA)
 - **PDFs:** Extract and analyze existing documents
+- **Enterprise:** Adobe Experience Manager DITA workflows
 - **Direct Input:** Paste text directly into the interface
 
 ### 🎨 **Modern Interface**

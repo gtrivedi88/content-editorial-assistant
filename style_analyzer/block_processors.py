@@ -24,6 +24,13 @@ try:
 except ImportError:
     PLAINTEXT_TYPES_AVAILABLE = False
 
+# Import DITA types as well
+try:
+    from structural_parsing.dita.types import DITABlock, DITABlockType
+    DITA_TYPES_AVAILABLE = True
+except ImportError:
+    DITA_TYPES_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 class BlockProcessor:

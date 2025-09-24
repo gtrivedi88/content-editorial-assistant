@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class DocumentProcessor:
     """Handles document processing for multiple file formats."""
     
-    ALLOWED_EXTENSIONS = {'adoc', 'md', 'dita', 'docx', 'pdf', 'txt'}
+    ALLOWED_EXTENSIONS = {'adoc', 'md', 'dita', 'xml', 'docx', 'pdf', 'txt'}
     
     def __init__(self):
         """Initialize the document processor."""
@@ -27,6 +27,7 @@ class DocumentProcessor:
             '.md': self._extract_from_markdown,
             '.adoc': self._extract_from_asciidoc,
             '.dita': self._extract_from_dita,
+            '.xml': self._extract_from_xml,
             '.txt': self._extract_from_text
         }
     
@@ -177,25 +178,95 @@ class DocumentProcessor:
     
     def _extract_from_dita(self, filepath: str) -> Optional[str]:
         """Extract text from DITA file."""
+        return self._extract_from_xml(filepath)  # Use common XML extraction logic
+    
+    def _extract_from_xml(self, filepath: str) -> Optional[str]:
+        """Extract text from XML file (including DITA)."""
         try:
             with open(filepath, 'r', encoding='utf-8') as file:
                 content = file.read()
             
-            # Parse DITA XML and extract text
-            soup = BeautifulSoup(content, 'xml')
+            # Check if this is DITA content
+            is_dita = self._is_dita_content(content)
             
-            # Remove unwanted metadata but preserve titles
-            for element in soup(['prolog', 'metadata']):
-                element.decompose()
-            
-            # Extract text content
-            text = soup.get_text(separator='\n')
-            
-            return text.strip()
+            if is_dita:
+                return self._extract_from_dita_content(content)
+            else:
+                # Generic XML extraction
+                soup = BeautifulSoup(content, 'xml')
+                text = soup.get_text(separator='\n')
+                return text.strip()
             
         except Exception as e:
-            logger.error(f"Error extracting from DITA: {str(e)}")
+            logger.error(f"Error extracting from XML/DITA: {str(e)}")
             return None
+    
+    def _is_dita_content(self, content: str) -> bool:
+        """Check if XML content is DITA format."""
+        # Check for DITA DOCTYPE declarations
+        dita_doctypes = [
+            'DITA Concept', 'DITA Task', 'DITA Reference', 'DITA Topic',
+            'DITA Troubleshooting', 'DITA Glossary', 'DITA Map'
+        ]
+        
+        for doctype in dita_doctypes:
+            if doctype in content:
+                return True
+        
+        # Check for DITA root elements
+        dita_roots = ['<concept', '<task', '<reference', '<topic', '<troubleshooting', '<map']
+        content_lower = content.lower()
+        
+        for root in dita_roots:
+            if root in content_lower:
+                return True
+        
+        return False
+    
+    def _extract_from_dita_content(self, content: str) -> Optional[str]:
+        """Enhanced extraction specifically for DITA content."""
+        try:
+            soup = BeautifulSoup(content, 'xml')
+            
+            # Remove metadata and prolog sections
+            for element in soup(['prolog', 'metadata', 'critdates', 'permissions']):
+                element.decompose()
+            
+            # Extract text with better structure preservation
+            text_parts = []
+            
+            # Get title
+            title = soup.find('title')
+            if title:
+                text_parts.append(title.get_text().strip())
+                text_parts.append('')  # Blank line after title
+            
+            # Get shortdesc
+            shortdesc = soup.find('shortdesc')
+            if shortdesc:
+                text_parts.append(shortdesc.get_text().strip())
+                text_parts.append('')
+            
+            # Get main content body
+            body_tags = ['conbody', 'taskbody', 'refbody', 'troublebody']
+            for body_tag in body_tags:
+                body = soup.find(body_tag)
+                if body:
+                    # Process sections within body
+                    for elem in body.find_all(['p', 'section', 'example', 'prereq', 'context', 'steps', 'result']):
+                        elem_text = elem.get_text().strip()
+                        if elem_text:
+                            text_parts.append(elem_text)
+                            text_parts.append('')  # Paragraph separation
+                    break
+            
+            return '\\n'.join(text_parts).strip()
+            
+        except Exception as e:
+            logger.error(f"Error extracting DITA content: {str(e)}")
+            # Fallback to basic extraction
+            soup = BeautifulSoup(content, 'xml')
+            return soup.get_text(separator='\\n').strip()
     
     def _extract_from_text(self, filepath: str) -> Optional[str]:
         """Extract text from plain text file."""

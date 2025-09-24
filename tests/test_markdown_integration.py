@@ -133,13 +133,15 @@ def example():
         self.assertIsInstance(result, MarkdownParseResult)
         self.assertTrue(result.success)
 
-    def test_plaintext_fallback_to_markdown(self):
-        """Test that plaintext falls back to markdown parser."""
+    def test_plaintext_uses_dedicated_parser(self):
+        """Test that plaintext uses dedicated plain text parser."""
         content = """Just plain text content."""
         
         result = self.factory.parse(content, format_hint='plaintext')
         
-        self.assertIsInstance(result, MarkdownParseResult)
+        # Should now use PlainTextParseResult, not MarkdownParseResult
+        from structural_parsing.plaintext.types import PlainTextParseResult
+        self.assertIsInstance(result, PlainTextParseResult)
         self.assertTrue(result.success)
 
     def test_get_available_parsers(self):

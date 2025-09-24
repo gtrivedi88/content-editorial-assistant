@@ -78,7 +78,7 @@ Our AI will analyze your writing for style, grammar, readability, and structure.
 
                     <!-- Enhanced File Upload Area -->
                     <div class="input-area file-input-area" id="upload-input-area">
-                        <input type="file" id="file-input" class="hidden-input" accept=".pdf,.docx,.md,.adoc,.dita,.txt">
+                        <input type="file" id="file-input" class="hidden-input" accept=".pdf,.docx,.md,.adoc,.dita,.xml,.txt">
                         <div class="upload-interface upload-zone" id="upload-area">
                             <div class="upload-content">
                                 <div class="upload-icon-wrapper">
@@ -95,6 +95,7 @@ Our AI will analyze your writing for style, grammar, readability, and structure.
                                         <span class="format-item">Markdown</span>
                                         <span class="format-item">AsciiDoc</span>
                                         <span class="format-item">DITA</span>
+                                        <span class="format-item">XML</span>
                                     </div>
                                     <p class="size-limit app-text-xs">Maximum file size: 16MB</p>
                                 </div>
@@ -154,6 +155,7 @@ Our AI will analyze your writing for style, grammar, readability, and structure.
 // Mobile navigation is handled by the main ResponsiveNavigation class in navigation.js
 // This ensures consistent behavior across all pages and prevents conflicts
 
+document.addEventListener('DOMContentLoaded', function() {
     // Enhanced input method tabs
     const inputTabs = document.querySelectorAll('.input-tab');
     const inputAreas = document.querySelectorAll('.input-area');

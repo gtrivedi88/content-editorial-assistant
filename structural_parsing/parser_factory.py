@@ -11,6 +11,8 @@ from .markdown.parser import MarkdownParser
 from .markdown.types import MarkdownParseResult
 from .plaintext.parser import PlainTextParser
 from .plaintext.types import PlainTextParseResult
+from .dita.parser import DITAParser
+from .dita.types import DITAParseResult
 
 
 class StructuralParserFactory:
@@ -26,9 +28,10 @@ class StructuralParserFactory:
         self.asciidoc_parser = AsciiDocParser()
         self.markdown_parser = MarkdownParser()
         self.plaintext_parser = PlainTextParser()
+        self.dita_parser = DITAParser()
     
     def parse(self, content: str, filename: str = "", 
-              format_hint: Literal['asciidoc', 'markdown', 'plaintext', 'auto'] = 'auto') -> Union[AsciiDocParseResult, MarkdownParseResult, PlainTextParseResult]:
+              format_hint: Literal['asciidoc', 'markdown', 'plaintext', 'dita', 'auto'] = 'auto') -> Union[AsciiDocParseResult, MarkdownParseResult, PlainTextParseResult, DITAParseResult]:
         """
         Parse content using the appropriate parser.
         
@@ -52,6 +55,9 @@ class StructuralParserFactory:
         elif format_hint == 'plaintext':
             # Use dedicated plain text parser
             return self.plaintext_parser.parse(content, filename)
+        elif format_hint == 'dita':
+            # Use dedicated DITA parser
+            return self.dita_parser.parse(content, filename)
         
         # For 'auto' detection, use improved format detection first
         # This ensures we don't incorrectly parse Markdown as AsciiDoc
@@ -60,6 +66,9 @@ class StructuralParserFactory:
         if detected_format == 'plaintext':
             # Use dedicated plain text parser
             return self.plaintext_parser.parse(content, filename)
+        elif detected_format == 'dita':
+            # Use dedicated DITA parser
+            return self.dita_parser.parse(content, filename)
         elif detected_format == 'asciidoc':
             # Format detector thinks it's AsciiDoc, try AsciiDoc parser
             if self.asciidoc_parser.asciidoctor_available:
@@ -103,10 +112,15 @@ class StructuralParserFactory:
                 'available': True,  # plain text parser is always available
                 'parser': 'dedicated plain text parser',
                 'description': 'Dedicated plain text parser with paragraph detection'
+            },
+            'dita': {
+                'available': True,  # DITA parser is always available
+                'parser': 'dedicated DITA XML parser',
+                'description': 'DITA XML parser for Adobe Experience Manager workflows'
             }
         }
     
-    def detect_format(self, content: str) -> Literal['asciidoc', 'markdown', 'plaintext']:
+    def detect_format(self, content: str) -> Literal['asciidoc', 'markdown', 'plaintext', 'dita']:
         """
         Detect document format.
         
@@ -121,14 +135,14 @@ class StructuralParserFactory:
 
 # Convenience function for one-off parsing
 def parse_document(content: str, filename: str = "", 
-                  format_hint: Literal['asciidoc', 'markdown', 'plaintext', 'auto'] = 'auto') -> Union[AsciiDocParseResult, MarkdownParseResult, PlainTextParseResult]:
+                  format_hint: Literal['asciidoc', 'markdown', 'plaintext', 'dita', 'auto'] = 'auto') -> Union[AsciiDocParseResult, MarkdownParseResult, PlainTextParseResult, DITAParseResult]:
     """
     Parse a document using the structural parser factory.
     
     Args:
         content: Raw document content
         filename: Optional filename for error reporting
-        format_hint: Format hint ('asciidoc', 'markdown', 'plaintext', or 'auto')
+        format_hint: Format hint ('asciidoc', 'markdown', 'plaintext', 'dita', or 'auto')
         
     Returns:
         ParseResult from the appropriate parser

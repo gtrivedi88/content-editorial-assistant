@@ -36,6 +36,15 @@ class FormatDetector:
             (r'^[\*\-\+]\s+', 1),          # Unordered lists (*, -, +) (lower score due to AsciiDoc ambiguity).
             (r'^\d+\.\s+', 1),              # Ordered lists.
         ]
+        
+        self.dita_patterns = [
+            (r'<!DOCTYPE\s+\w+\s+PUBLIC.*DITA', 10),  # DITA DOCTYPE - very strong signal
+            (r'<(concept|task|reference|topic|troubleshooting)', 8),  # DITA topic types
+            (r'<(conbody|taskbody|refbody|troublebody)', 6),  # DITA body elements
+            (r'<(shortdesc|prereq|context|steps|result)', 4),  # DITA specific elements
+            (r'<(step|cmd|info|stepresult)', 3),  # Task-specific elements
+            (r'<?xml.*encoding=', 2),  # XML declaration
+        ]
 
     def detect_format(self, content: str) -> Literal['asciidoc', 'markdown', 'plaintext']:
         """
@@ -48,6 +57,12 @@ class FormatDetector:
         lines = content.split('\n')
         asciidoc_score = 0
         markdown_score = 0
+        dita_score = 0
+        
+        # Check for DITA patterns first (check entire content for XML patterns)
+        for pattern, weight in self.dita_patterns:
+            if re.search(pattern, content, re.IGNORECASE | re.DOTALL):
+                dita_score += weight
         
         # Track if we're inside delimited blocks to avoid scoring their content
         inside_asciidoc_block = False
@@ -90,16 +105,21 @@ class FormatDetector:
                     break
 
         # If no markup patterns found, treat as plain text
-        if asciidoc_score == 0 and markdown_score == 0:
+        if asciidoc_score == 0 and markdown_score == 0 and dita_score == 0:
             return 'plaintext'
 
-        # Enhanced decision logic: In case of ties, prefer AsciiDoc since it has more distinctive syntax
-        # This handles edge cases where content could be interpreted as either format
-        if asciidoc_score > markdown_score:
-            return 'asciidoc'
-        elif markdown_score > asciidoc_score:
-            return 'markdown'
+        # Enhanced decision logic with DITA support
+        scores = {
+            'dita': dita_score,
+            'asciidoc': asciidoc_score,
+            'markdown': markdown_score
+        }
+        
+        # Return format with highest score
+        max_format = max(scores, key=scores.get)
+        max_score = scores[max_format]
+        
+        if max_score > 0:
+            return max_format
         else:
-            # Tie situation - prefer AsciiDoc since its syntax is more distinctive
-            # and false AsciiDoc detection is less likely than false Markdown detection
-            return 'asciidoc'
+            return 'plaintext'

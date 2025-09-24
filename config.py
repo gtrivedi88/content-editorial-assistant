@@ -50,7 +50,7 @@ class Config:
     # File Upload Configuration
     UPLOAD_FOLDER = os.path.join(os.getcwd(), 'uploads')
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
-    ALLOWED_EXTENSIONS = {'adoc', 'md', 'dita', 'docx', 'pdf', 'txt'}
+    ALLOWED_EXTENSIONS = {'adoc', 'md', 'dita', 'xml', 'docx', 'pdf', 'txt'}
     
     # Style Guide Rules Configuration
     ENABLE_GRAMMAR_CHECK = True
