@@ -186,6 +186,72 @@ technical_mass_nouns:
     - education
     - learning
 
+# Hyphenated compounds where individual elements should not be flagged for missing articles
+# These are compound adjectives, adverbs, or technical terms that function as single units
+hyphenated_compounds:
+  # Technical adjectives
+  technical_adjectives:
+    - "fault-tolerant"      # Original case: don't flag "fault" in "fault-tolerant"
+    - "real-time"
+    - "high-level"
+    - "low-level"
+    - "state-of-the-art"
+    - "end-to-end"
+    - "point-to-point"
+    - "peer-to-peer"
+    - "client-server"
+    - "multi-user"
+    - "multi-threaded" 
+    - "cross-platform"
+    - "open-source"
+    - "closed-source"
+    - "full-scale"
+    - "large-scale"
+    - "small-scale"
+    - "time-sensitive"
+    - "user-friendly"
+    - "error-prone"
+    - "memory-efficient"
+    - "cpu-intensive"
+    - "bandwidth-limited"
+    
+  # Technical processes and methods
+  technical_processes:
+    - "load-balancing"
+    - "auto-scaling"
+    - "self-healing"
+    - "auto-provisioning"
+    - "hot-swapping"
+    - "cold-starting"
+    - "fail-over"
+    - "roll-back"
+    - "roll-forward"
+    
+  # System and configuration terms
+  system_terms:
+    - "command-line"
+    - "config-driven"
+    - "event-driven"
+    - "data-driven"
+    - "service-oriented"
+    - "component-based"
+    - "plugin-based"
+    - "rule-based"
+    - "policy-based"
+    
+  # Time and measurement compounds
+  time_measurement:
+    - "long-term"
+    - "short-term"
+    - "run-time"
+    - "compile-time"
+    - "design-time"
+    - "real-world"
+    - "day-to-day"
+    - "round-trip"
+    - "one-way"
+    - "two-way"
+
 # Usage examples for validation
 examples:
   correct_a:

@@ -33,8 +33,11 @@ class HighlightingRule(BaseStructureRule):
             return errors
 
         paragraph_node = context.get('node')
-        if not paragraph_node or paragraph_node.node_type != 'paragraph':
-            return errors
+        
+        # Enhanced: Support both rich document parsing and plain text analysis
+        if not paragraph_node:
+            # Fallback to plain text analysis when no rich document structure available
+            paragraph_node = None
 
         # --- Pass 1: Linguistic Analysis ---
         # Identify phrases that should be highlighted based on linguistic patterns.
@@ -45,26 +48,61 @@ class HighlightingRule(BaseStructureRule):
         # Check the rich document model to see if candidates are already highlighted.
         for candidate in candidates:
             start_char, end_char = candidate['span']
-            is_highlighted = self._is_span_highlighted(paragraph_node, start_char, end_char, style='bold')
             
-            if not is_highlighted:
-                evidence_score = self._calculate_highlighting_evidence(
-                    candidate, text, context
-                )
+            # Enhanced: Check both rich document and markdown formatting
+            # Handle both structured documents and plain text
+            if paragraph_node:
+                is_bold_highlighted = (self._is_span_highlighted(paragraph_node, start_char, end_char, style='bold') or
+                                     self._is_markdown_formatted(text, candidate, style='bold'))
+            else:
+                # Plain text analysis - only check markdown formatting
+                is_bold_highlighted = self._is_markdown_formatted(text, candidate, style='bold')
+            
+            if not is_bold_highlighted:
+                # Check if it's highlighted with wrong format (e.g., italics instead of bold)
+                if paragraph_node:
+                    is_italic_highlighted = (self._is_span_highlighted(paragraph_node, start_char, end_char, style='italic') or
+                                           self._is_markdown_formatted(text, candidate, style='italic'))
+                else:
+                    # Plain text analysis - only check markdown formatting
+                    is_italic_highlighted = self._is_markdown_formatted(text, candidate, style='italic')
                 
-                if evidence_score > 0.1:  # Low threshold - let enhanced validation decide
-                    errors.append(self._create_error(
-                        sentence=candidate['sentence'],
-                        sentence_index=candidate['sentence_index'],
-                        message=self._get_contextual_message('missing_highlighting', evidence_score, context, candidate=candidate),
-                        suggestions=self._generate_smart_suggestions('missing_highlighting', evidence_score, context, candidate=candidate),
-                        severity='medium',
-                        text=text,
-                        context=context,
-                        evidence_score=evidence_score,
-                        span=candidate['span'],
-                        flagged_text=candidate['text']
-                    ))
+                if is_italic_highlighted:
+                    # Wrong highlighting format detected
+                    evidence_score = self._calculate_wrong_format_evidence(candidate, text, context)
+                    
+                    if evidence_score > 0.1:
+                        errors.append(self._create_error(
+                            sentence=candidate['sentence'],
+                            sentence_index=candidate['sentence_index'],
+                            message=self._get_contextual_message('wrong_highlighting_format', evidence_score, context, candidate=candidate),
+                            suggestions=self._generate_smart_suggestions('wrong_highlighting_format', evidence_score, context, candidate=candidate),
+                            severity='medium',
+                            text=text,
+                            context=context,
+                            evidence_score=evidence_score,
+                            span=candidate['span'],
+                            flagged_text=candidate['text']
+                        ))
+                else:
+                    # Missing highlighting entirely
+                    evidence_score = self._calculate_highlighting_evidence(
+                        candidate, text, context
+                    )
+                    
+                    if evidence_score > 0.1:  # Low threshold - let enhanced validation decide
+                        errors.append(self._create_error(
+                            sentence=candidate['sentence'],
+                            sentence_index=candidate['sentence_index'],
+                            message=self._get_contextual_message('missing_highlighting', evidence_score, context, candidate=candidate),
+                            suggestions=self._generate_smart_suggestions('missing_highlighting', evidence_score, context, candidate=candidate),
+                            severity='medium',
+                            text=text,
+                            context=context,
+                            evidence_score=evidence_score,
+                            span=candidate['span'],
+                            flagged_text=candidate['text']
+                        ))
 
         return errors
 
@@ -165,9 +203,11 @@ class HighlightingRule(BaseStructureRule):
 
     def _find_highlighting_candidates(self, doc: Doc) -> List[Dict[str, Any]]:
         """
-        Uses linguistic anchors to find phrases that are likely UI elements.
+        Enhanced UI element detection using both generic patterns and specific YAML-configured labels.
         """
         candidates = []
+        
+        # METHOD 1: Generic UI element detection (existing logic)
         ui_element_lemmas = {"button", "menu", "window", "dialog", "tab", "field", "checkbox", "link", "icon", "list", "panel", "pane"}
 
         for token in doc:
@@ -203,7 +243,71 @@ class HighlightingRule(BaseStructureRule):
                                 'ui_type': token.lemma_,
                                 'imperative_verb': token.head.lemma_
                             })
+        
+        # METHOD 2: Specific UI label detection from YAML configuration
+        candidates.extend(self._find_specific_ui_labels(doc))
+        
         return candidates
+
+    def _find_specific_ui_labels(self, doc: Doc) -> List[Dict[str, Any]]:
+        """
+        Find specific UI labels from YAML configuration like "Forgot Password".
+        
+        This catches UI elements that don't follow the generic "click the button" pattern
+        but are specific UI labels that need bold formatting.
+        """
+        candidates = []
+        
+        # Get UI labels from YAML configuration
+        vocab_data = self._get_structure_vocabulary()
+        ui_elements = vocab_data.get('ui_elements', {})
+        ui_labels = ui_elements.get('ui_labels_requiring_bold', [])
+        
+        # Search for each configured UI label in the text
+        text_lower = doc.text.lower()
+        
+        for label_config in ui_labels:
+            if isinstance(label_config, dict):
+                label_text = label_config.get('element', '')
+                
+                # Find occurrences of this label
+                import re
+                pattern = re.escape(label_text)
+                for match in re.finditer(pattern, text_lower, re.IGNORECASE):
+                    # Find the actual case-preserved text
+                    actual_text = doc.text[match.start():match.end()]
+                    
+                    # Find which sentence this belongs to
+                    for sent_idx, sent in enumerate(doc.sents):
+                        if sent.start_char <= match.start() < sent.end_char:
+                            candidates.append({
+                                'text': actual_text,
+                                'span': (match.start(), match.end()),
+                                'sentence': sent.text,
+                                'sentence_index': sent_idx,
+                                'ui_type': 'specific_label',
+                                'label_category': label_config.get('category', 'ui_label'),
+                                'evidence_base': label_config.get('evidence', 0.8)
+                            })
+                            break
+        
+        return candidates
+
+    def _get_structure_vocabulary(self) -> Dict[str, Any]:
+        """Get structure vocabulary from YAML configuration."""
+        # Load from structure vocabularies YAML
+        import yaml
+        import os
+        
+        config_path = os.path.join(
+            os.path.dirname(__file__), 'config', 'structure_vocabularies.yaml'
+        )
+        
+        try:
+            with open(config_path, 'r', encoding='utf-8') as f:
+                return yaml.safe_load(f) or {}
+        except Exception:
+            return {}
 
     def _is_generic_ui_reference(self, ui_text: str) -> bool:
         """Check if UI reference is too generic to require highlighting."""
@@ -269,6 +373,52 @@ class HighlightingRule(BaseStructureRule):
         # A more complex implementation could check if all nodes covering the span are highlighted.
         return False
 
+    def _is_markdown_formatted(self, text: str, candidate: Dict[str, Any], style: str) -> bool:
+        """
+        Check if UI element is formatted with markdown-style highlighting.
+        
+        Detects patterns like:
+        - _text_ (italics)
+        - **text** (bold)
+        - `text` (code)
+        
+        Production-ready approach for markdown and plain text detection.
+        """
+        start_char, end_char = candidate['span']
+        ui_text = candidate['text']
+        
+        # Check the surrounding characters for markdown formatting
+        if style == 'italic':
+            # Check for _text_ pattern
+            if (start_char > 0 and end_char < len(text) and
+                text[start_char - 1] == '_' and text[end_char] == '_'):
+                return True
+            
+            # Check for *text* pattern (single asterisk)
+            if (start_char > 0 and end_char < len(text) and
+                text[start_char - 1] == '*' and text[end_char] == '*' and
+                not (start_char > 1 and text[start_char - 2] == '*')):
+                return True
+        
+        elif style == 'bold':
+            # Check for **text** pattern
+            if (start_char > 1 and end_char < len(text) - 1 and
+                text[start_char - 2:start_char] == '**' and text[end_char:end_char + 2] == '**'):
+                return True
+            
+            # Check for __text__ pattern (double underscore)
+            if (start_char > 1 and end_char < len(text) - 1 and
+                text[start_char - 2:start_char] == '__' and text[end_char:end_char + 2] == '__'):
+                return True
+        
+        elif style == 'code':
+            # Check for `text` pattern
+            if (start_char > 0 and end_char < len(text) and
+                text[start_char - 1] == '`' and text[end_char] == '`'):
+                return True
+        
+        return False
+
     # === CONTEXTUAL MESSAGING AND SUGGESTIONS ===
 
     def _get_contextual_message(self, violation_type: str, evidence_score: float, 
@@ -284,6 +434,17 @@ class HighlightingRule(BaseStructureRule):
                 return f"Consider highlighting '{ui_text}' to help users identify the UI element."
             else:
                 return f"UI element '{ui_text}' may benefit from bold formatting."
+        
+        elif violation_type == 'wrong_highlighting_format':
+            candidate = kwargs.get('candidate', {})
+            ui_text = candidate.get('text', 'UI element')
+            
+            if evidence_score > 0.8:
+                return f"UI element '{ui_text}' should use bold formatting, not italics."
+            elif evidence_score > 0.6:
+                return f"Consider changing '{ui_text}' from italics to bold formatting for UI elements."
+            else:
+                return f"UI element '{ui_text}' may need bold instead of italic formatting."
         
         return "UI highlighting issue detected."
 
@@ -302,6 +463,16 @@ class HighlightingRule(BaseStructureRule):
             
             if evidence_score > 0.7:
                 suggestions.append("Consistent UI element highlighting improves user experience and reduces confusion.")
+        
+        elif violation_type == 'wrong_highlighting_format':
+            candidate = kwargs.get('candidate', {})
+            ui_text = candidate.get('text', 'UI element')
+            
+            suggestions.append(f"Change from _{ui_text}_ to **{ui_text}** for proper UI element formatting.")
+            suggestions.append("Use bold formatting for UI elements instead of italics.")
+            
+            if evidence_score > 0.7:
+                suggestions.append("Bold formatting makes UI elements more visible and easier to identify.")
         
         return suggestions[:3]  # Limit to 3 suggestions
     
@@ -540,6 +711,38 @@ class HighlightingRule(BaseStructureRule):
                 evidence_score += 0.2  # Frequently rejected
         
         return evidence_score
+
+    def _calculate_wrong_format_evidence(self, candidate: Dict[str, Any], text: str, 
+                                        context: Dict[str, Any]) -> float:
+        """
+        Calculate evidence score for wrong highlighting format (e.g., italics instead of bold).
+        
+        UI elements should typically use bold formatting, not italics.
+        Higher evidence = more confident this is an error.
+        """
+        
+        # Apply inherited zero false positive guards
+        violation = {'text': candidate['text'], 'sentence': candidate['sentence']}
+        if self._apply_zero_false_positive_guards_structure(violation, context):
+            return 0.0
+        
+        # Start with high evidence - wrong format is usually clear error
+        evidence_score = 0.8
+        
+        # Check if this is a known UI element type that requires bold
+        ui_text = candidate['text'].lower()
+        
+        # UI elements that definitely need bold formatting (from YAML)
+        high_confidence_ui = ['button', 'menu', 'dialog', 'window', 'tab', 'link', 'password', 'login', 'forgot']
+        if any(element in ui_text for element in high_confidence_ui):
+            evidence_score = 0.9  # Very high confidence
+        
+        # Context adjustments
+        content_type = context.get('content_type', 'general')
+        if content_type in ['user_guide', 'tutorial', 'documentation']:
+            evidence_score += 0.05  # UI documentation should be precise
+        
+        return min(evidence_score, 1.0)
     
     def _classify_ui_element_type(self, candidate: Dict[str, Any]) -> str:
         """

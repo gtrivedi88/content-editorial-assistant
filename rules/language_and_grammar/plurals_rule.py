@@ -502,15 +502,20 @@ class PluralsRule(BaseLanguageRule):
         
         # ZERO FALSE POSITIVE GUARD: Check exemption lists before flagging plural adjectives
         
-        # Check uncountable technical nouns exemption list
+        # GUARD 1: Legitimate plural subjects
+        # Don't flag plural nouns that are subjects of verbs
+        if self._is_legitimate_plural_subject(token):
+            return False  # Don't flag legitimate plural subjects
+        
+        # GUARD 2: Check uncountable technical nouns exemption list
         if self._is_uncountable_technical_noun(token.text.lower()):
             return False  # Don't flag uncountable technical nouns like 'data'
         
-        # Check proper nouns ending in 's' exemption list
+        # GUARD 3: Check proper nouns ending in 's' exemption list
         if self._is_proper_noun_ending_in_s(token.text.lower()):
             return False  # Don't flag proper nouns like 'kubernetes'
         
-        # Check acceptable plural compounds list
+        # GUARD 4: Check acceptable plural compounds list
         if self._is_acceptable_plural_compound(token):
             return False  # Don't flag legitimate technical compounds like 'settings panel'
         
@@ -1271,3 +1276,45 @@ class PluralsRule(BaseLanguageRule):
             suggestions.append("Use the correct plural form")
         
         return suggestions[:3]
+
+    def _is_legitimate_plural_subject(self, token) -> bool:
+        """
+        Check if token is a legitimate plural subject of a verb.
+        
+        This prevents false positives for cases like:
+        - "enterprises move to the cloud" (enterprises = plural subject ✓)
+        - "users access the system" (users = plural subject ✓)
+        - "teams collaborate effectively" (teams = plural subject ✓)
+        
+        Production-ready approach using grammatical role analysis.
+        """
+        
+        # Check if this token is a nominal subject
+        if token.dep_ != 'nsubj':
+            return False
+        
+        # Check if it's the subject of a verb (should have a verb head)
+        if not (hasattr(token, 'head') and hasattr(token.head, 'pos_') and token.head.pos_ == 'VERB'):
+            return False
+        
+        # Additional checks using YAML configuration
+        corrections = self.vocabulary_service.get_plurals_corrections()
+        subject_patterns = corrections.get('legitimate_plural_subjects', {})
+        
+        # Check if this word is commonly used as a plural subject
+        word_lower = token.text.lower()
+        common_plural_subjects = subject_patterns.get('common_business_entities', [])
+        
+        if word_lower in common_plural_subjects:
+            return True
+        
+        # Check if the verb typically takes plural subjects
+        verb_lemma = token.head.lemma_.lower()
+        verbs_with_plural_subjects = subject_patterns.get('verbs_expecting_plural_subjects', [])
+        
+        if verb_lemma in verbs_with_plural_subjects:
+            return True
+        
+        # Fallback: if it's clearly a legitimate plural subject pattern
+        # Most plural subjects are legitimate unless they're clearly modifiers
+        return True  # Default to allowing plural subjects

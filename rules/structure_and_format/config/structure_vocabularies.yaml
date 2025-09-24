@@ -312,6 +312,57 @@ ui_elements:
       evidence: 0.7
       category: "container"
   
+  # Specific UI labels and text that should be bold
+  ui_labels_requiring_bold:
+    - element: "forgot password"
+      evidence: 0.9
+      category: "interactive_label"
+    - element: "sign in"
+      evidence: 0.9
+      category: "interactive_label"
+    - element: "log in"
+      evidence: 0.9
+      category: "interactive_label"
+    - element: "log out"
+      evidence: 0.9
+      category: "interactive_label"
+    - element: "sign up"
+      evidence: 0.9
+      category: "interactive_label"
+    - element: "register"
+      evidence: 0.8
+      category: "interactive_label"
+    - element: "submit"
+      evidence: 0.8
+      category: "interactive_label"
+    - element: "cancel"
+      evidence: 0.8
+      category: "interactive_label"
+    - element: "ok"
+      evidence: 0.8
+      category: "interactive_label"
+    - element: "save"
+      evidence: 0.8
+      category: "interactive_label"
+    - element: "delete"
+      evidence: 0.8
+      category: "interactive_label"
+    - element: "edit"
+      evidence: 0.8
+      category: "interactive_label"
+    - element: "view"
+      evidence: 0.7
+      category: "interactive_label"
+    - element: "help"
+      evidence: 0.7
+      category: "interactive_label"
+    - element: "settings"
+      evidence: 0.7
+      category: "interactive_label"
+    - element: "preferences"
+      evidence: 0.7
+      category: "interactive_label"
+  
   generic_terms:
     - "the button"
     - "a button"

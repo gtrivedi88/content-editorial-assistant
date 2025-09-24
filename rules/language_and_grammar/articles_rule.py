@@ -237,6 +237,11 @@ class ArticlesRule(BaseLanguageRule):
         if any(child.dep_ in ('det', 'poss') for child in token.children) or token.dep_ == 'poss':
             return False
 
+        # LINGUISTIC ANCHOR 2a: Check for hyphenated compounds (ZERO FALSE POSITIVE GUARD)
+        # Don't flag tokens that are part of hyphenated compound adjectives like "fault-tolerant"
+        if self._is_hyphenated_compound_element(token, doc):
+            return False
+
         # LINGUISTIC ANCHOR 3: Check for grammatical contexts where articles are not used.
         if token.dep_ == 'compound':
             return False
@@ -1137,3 +1142,80 @@ class ArticlesRule(BaseLanguageRule):
             suggestions.append("Adding an article would improve grammatical completeness.")
         
         return suggestions
+
+    def _is_hyphenated_compound_element(self, token, doc) -> bool:
+        """
+        Check if token is part of a hyphenated compound - surgical precision approach.
+        
+        This prevents false positives for cases like:
+        - "fault" in "fault-tolerant" 
+        - "real" in "real-time"
+        - "state" in "state-of-the-art"
+        
+        Uses surgical detection to avoid over-flagging.
+        """
+        
+        # METHOD 1: Check if token itself contains hyphen (compound word)
+        if '-' in token.text:
+            return True
+        
+        # METHOD 2: Check ONLY immediately adjacent tokens for direct hyphen connection
+        token_idx = token.i
+        
+        # Check next token - must be exactly a hyphen or start with hyphen
+        if token_idx + 1 < len(doc):
+            next_token = doc[token_idx + 1]
+            if next_token.text == '-':  # Exact hyphen token
+                return True
+        
+        # Check previous token - must be exactly a hyphen or end with hyphen  
+        if token_idx > 0:
+            prev_token = doc[token_idx - 1]
+            if prev_token.text == '-':  # Exact hyphen token
+                return True
+        
+        # METHOD 3: SURGICAL check for known patterns using YAML
+        # Only check if token is the first part of a known hyphenated compound
+        if self._is_first_part_of_known_hyphenated(token, doc):
+            return True
+        
+        return False
+
+    def _is_first_part_of_known_hyphenated(self, token, doc) -> bool:
+        """
+        SURGICAL: Check if token is the first part of a known hyphenated compound.
+        
+        Only returns True if the actual text sequence in the document matches 
+        a known hyphenated pattern, not just a prefix match.
+        """
+        phonetics_data = self.vocabulary_service.get_articles_phonetics()
+        hyphenated_patterns = phonetics_data.get('hyphenated_compounds', {})
+        
+        if not hyphenated_patterns:
+            return False
+        
+        # Build the actual text sequence starting from this token
+        token_idx = token.i
+        max_pattern_length = 5  # Reasonable limit for hyphenated compounds
+        
+        # Extract text sequence from this token forward
+        sequence_tokens = []
+        for i in range(token_idx, min(len(doc), token_idx + max_pattern_length)):
+            sequence_tokens.append(doc[i].text)
+        
+        sequence_text = " ".join(sequence_tokens).lower()
+        
+        # Check if this sequence matches any known hyphenated pattern
+        for category, patterns in hyphenated_patterns.items():
+            if isinstance(patterns, list):
+                for pattern in patterns:
+                    if isinstance(pattern, str):
+                        pattern_lower = pattern.lower()
+                        # Check if the pattern is contained in our sequence
+                        # and starts with our token
+                        if (pattern_lower in sequence_text and 
+                            sequence_text.startswith(token.text.lower()) and
+                            '-' in pattern):
+                            return True
+        
+        return False

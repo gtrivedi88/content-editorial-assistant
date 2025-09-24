@@ -147,6 +147,7 @@ technical_entities:
     - server
     - client
     - database
+    - cache
     - network
     - router
     - switch
