@@ -5,12 +5,14 @@ Based on IBM Style Guide topic: "Conjunctions"
 from typing import List, Dict, Any, Optional, Set, Tuple
 try:
     from .base_language_rule import BaseLanguageRule
+    from .services.language_vocabulary_service import LanguageVocabularyService
 except ImportError:
     # Fallback for direct imports or when module structure is problematic
     import sys
     import os
     sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
     from language_and_grammar.base_language_rule import BaseLanguageRule
+    from language_and_grammar.services.language_vocabulary_service import LanguageVocabularyService
 
 try:
     from spacy.tokens import Doc, Token, Span
@@ -36,6 +38,7 @@ class ConjunctionsRule(BaseLanguageRule):
         """Initialize the conjunctions rule with proper base class setup."""
         super().__init__()
         self.rule_type = self._get_rule_type()
+        self.vocabulary_service = LanguageVocabularyService()
 
     def analyze(self, text: str, sentences: List[str], nlp=None, context: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
         """
@@ -149,21 +152,51 @@ class ConjunctionsRule(BaseLanguageRule):
     
     def _analyze_parallel_structure_evidence(self, sent: 'Span', sentence_index: int, text: str, context: Dict[str, Any]) -> List[Dict[str, Any]]:
         """
-        Evidence-based analysis for parallel structure violations in coordinated elements.
+        Parallel structure analysis using direct grammatical tag comparison.
+
         """
         errors = []
         
-        # Find coordinating conjunctions that join multiple elements
-        for token in sent:
-            if token.pos_ == 'CCONJ' and token.lemma_.lower() in ['and', 'or']:
-                coordinated_elements = self._get_coordinated_elements(token, sent)
-                
-                if len(coordinated_elements) >= 2:
-                    parallel_error = self._check_parallel_structure_evidence(coordinated_elements, sent, sentence_index, text, context)
-                    if parallel_error:
-                        errors.append(parallel_error)
+        # Find all coordination groups in the sentence
+        coordinated_groups = self._find_coordinated_elements_simple(sent)
+        
+        for group in coordinated_groups:
+            if len(group) >= 2:
+                parallel_error = self._check_parallel_tags(group, sent, sentence_index, text, context)
+                if parallel_error:
+                    errors.append(parallel_error)
         
         return errors
+
+    def _find_coordinated_elements_simple(self, sent: 'Span') -> List[List['Token']]:
+        """
+        Robust coordination detection using direct conj relationships.
+
+        """
+        groups = []
+        processed_tokens = set()
+        
+        # Find all tokens with conj dependency (they are coordinated with their head)
+        for token in sent:
+            if token.dep_ == 'conj' and token not in processed_tokens:
+                # Start a new coordination group
+                group = [token.head, token]  # Head and the conjunct
+                processed_tokens.add(token)
+                processed_tokens.add(token.head)
+                
+                # Find all other tokens coordinated with the same head
+                for other_token in sent:
+                    if (other_token.dep_ == 'conj' and 
+                        other_token.head == token.head and 
+                        other_token not in processed_tokens):
+                        group.append(other_token)
+                        processed_tokens.add(other_token)
+                
+                if len(group) >= 2:
+                    groups.append(group)
+        
+        return groups
+
     
     # === MULTI-LEVEL EVIDENCE CALCULATION ===
     
@@ -462,65 +495,54 @@ class ConjunctionsRule(BaseLanguageRule):
         
         return None
     
-    def _get_coordinated_elements(self, conjunction: 'Token', sent: 'Span') -> List['Token']:
-        """Get elements coordinated by a conjunction."""
-        
-        coordinated_elements = []
-        
-        # Find elements connected by this conjunction
-        if conjunction.dep_ == 'cc':
-            # Look for elements this conjunction coordinates
-            head = conjunction.head
-            if head:
-                coordinated_elements.append(head)
-                
-                # Find other coordinated elements
-                for child in head.head.children if head.head else []:
-                    if child != head and child.dep_ == head.dep_:
-                        coordinated_elements.append(child)
-        
-        return coordinated_elements
     
-    def _check_parallel_structure_evidence(self, elements: List['Token'], sent: 'Span', sentence_index: int, text: str, context: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Check for parallel structure violations with evidence scoring."""
+    def _check_parallel_tags(self, elements: List['Token'], sent: 'Span', sentence_index: int, text: str, context: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """
+        Simple, robust parallel structure check using grammatical tags.
+        
+        Compares token.tag_ for each coordinated element:
+        - VBG (creating) vs NN (analysis) vs TO (to) + VB (generate) = violation
+        - VBG vs VBG vs VBG = parallel ✓
+        """
         
         if len(elements) < 2:
             return None
         
-        # Analyze grammatical consistency
-        pos_tags = [element.pos_ for element in elements]
-        deps = [element.dep_ for element in elements]
+        # Get grammatical patterns for each element
+        element_patterns = []
+        element_texts = []
         
-        # Check for consistency in POS tags and dependencies
-        pos_consistent = len(set(pos_tags)) == 1
-        dep_consistent = len(set(deps)) == 1
+        for element in elements:
+            # Get the grammatical pattern for this element
+            pattern = self._get_grammatical_pattern(element, sent)
+            element_patterns.append(pattern)
+            
+            # Get clean text representation
+            element_text = self._get_element_text(element, sent)
+            element_texts.append(element_text)
         
-        if not pos_consistent or not dep_consistent:
-            # Calculate evidence for parallel structure violation
-            evidence_score = 0.6  # Base evidence for inconsistency
+        # Check for consistency in grammatical patterns
+        unique_patterns = set(element_patterns)
+        if len(unique_patterns) > 1:
+            # Calculate evidence score based on pattern mismatch severity
+            evidence_score = self._calculate_tag_mismatch_evidence(element_patterns, context)
             
-            # Adjust based on context
-            content_type = context.get('content_type', 'general')
-            if content_type in ['academic', 'formal']:
-                evidence_score += 0.2
-            elif content_type == 'legal':
-                evidence_score += 0.3
-            
-            if evidence_score > 0.1:
-                element_texts = [elem.text for elem in elements]
+            if evidence_score > 0.5:  # Simple threshold
+                message = self._create_parallel_structure_message(element_texts, element_patterns)
+                suggestions = self._create_parallel_structure_suggestions(element_patterns)
                 
                 return self._create_error(
                     sentence=sent.text,
                     sentence_index=sentence_index,
-                    message=self._get_contextual_conjunction_message('parallel_structure', evidence_score, context, elements=element_texts),
-                    suggestions=self._generate_smart_conjunction_suggestions('parallel_structure', ', '.join(element_texts), context),
+                    message=message,
+                    suggestions=suggestions,
                     severity=self._determine_severity_from_evidence(evidence_score),
                     text=text,
                     context=context,
                     evidence_score=evidence_score,
                     span=(elements[0].idx, elements[-1].idx + len(elements[-1].text)),
-                    flagged_text=' '.join(element_texts),
-                    subtype='parallel_structure'
+                    flagged_text=', '.join(element_texts),
+                    subtype='parallel_structure_tag_mismatch'
                 )
         
         return None
@@ -594,3 +616,158 @@ class ConjunctionsRule(BaseLanguageRule):
             suggestions.append("Maintain clear step-by-step flow")
         
         return suggestions[:3]  # Return top 3 suggestions
+
+
+    def _get_grammatical_pattern(self, token: 'Token', sent) -> str:
+        """
+        Get the grammatical pattern for a coordinated element.
+        
+        Returns simple patterns like:
+        - VBG (gerund: "creating")
+        - NN (noun: "analysis")  
+        - TO+VB (infinitive: "to generate")
+        - NNS (plural noun: "users")
+        """
+        
+        # Handle infinitives: TO + VB
+        if token.tag_ == 'VB' and token.i > 0:
+            # Handle both Doc and Span objects
+            if hasattr(sent, 'start'):  # It's a Span
+                start_offset = sent.start
+            else:  # It's a Doc
+                start_offset = 0
+            
+            prev_idx = token.i - start_offset - 1
+            if prev_idx >= 0:
+                prev_token = sent[prev_idx]
+                if prev_token and prev_token.text.lower() == 'to' and prev_token.pos_ == 'PART':
+                    return 'TO+VB'  # infinitive
+        
+        # Handle prepositional phrases: starts with preposition
+        if token.pos_ == 'ADP':
+            return 'PREP'  # prepositional phrase
+        
+        # Direct tag mapping for most cases
+        tag_mappings = {
+            'VBG': 'VBG',  # gerund or present participle  
+            'NN': 'NN',    # singular noun
+            'NNS': 'NNS',  # plural noun
+            'VB': 'VB',    # base verb
+            'VBD': 'VBD',  # past tense verb
+            'VBN': 'VBN',  # past participle
+            'VBP': 'VBP',  # present verb
+            'VBZ': 'VBZ',  # 3rd person singular present
+            'JJ': 'JJ',    # adjective
+            'RB': 'RB',    # adverb
+        }
+        
+        return tag_mappings.get(token.tag_, token.tag_)
+
+    def _get_element_text(self, token: 'Token', sent) -> str:
+        """
+        Get clean text representation of a coordinated element.
+        
+        For infinitives, includes "to": "to generate"
+        For others, just the token: "creating", "analysis"
+        """
+        
+        # Handle infinitives: include the "to"
+        if token.tag_ == 'VB' and token.i > 0:
+            # Handle both Doc and Span objects
+            if hasattr(sent, 'start'):  # It's a Span
+                start_offset = sent.start
+            else:  # It's a Doc
+                start_offset = 0
+            
+            prev_idx = token.i - start_offset - 1
+            if prev_idx >= 0:
+                prev_token = sent[prev_idx]
+                if prev_token and prev_token.text.lower() == 'to' and prev_token.pos_ == 'PART':
+                    return f"to {token.text}"
+        
+        # For compound nouns, include the modifier
+        if token.dep_ in ['compound', 'amod'] and token.head:
+            return f"{token.text} {token.head.text}"
+        
+        # For most cases, just the token text
+        return token.text
+
+    def _calculate_tag_mismatch_evidence(self, patterns: List[str], context: Dict[str, Any]) -> float:
+        """
+        Calculate evidence score for tag mismatches.
+        
+        Simple scoring based on how severe the mismatch is:
+        - Mixed verb forms (VBG vs TO+VB) = high evidence
+        - Mixed noun/verb forms = high evidence  
+        - Similar forms = lower evidence
+        """
+        
+        unique_patterns = set(patterns)
+        base_evidence = 0.7  # Start with high evidence for any mismatch
+        
+        # Increase evidence for severe mismatches
+        has_verbs = any(p in ['VBG', 'VB', 'VBD', 'VBN', 'VBP', 'VBZ', 'TO+VB'] for p in unique_patterns)
+        has_nouns = any(p in ['NN', 'NNS'] for p in unique_patterns)
+        has_prep = any(p == 'PREP' for p in unique_patterns)
+        
+        if has_verbs and has_nouns:
+            base_evidence = 0.9  # Very clear violation
+        elif has_prep and (has_verbs or has_nouns):
+            base_evidence = 0.8  # Clear structural mismatch
+        elif 'TO+VB' in unique_patterns and 'VBG' in unique_patterns:
+            base_evidence = 0.85  # Classic gerund/infinitive mismatch
+        
+        # Context adjustments
+        content_type = context.get('content_type', 'general')
+        if content_type in ['technical', 'academic', 'formal']:
+            base_evidence += 0.1
+        
+        return min(base_evidence, 1.0)
+
+    def _create_parallel_structure_message(self, element_texts: List[str], patterns: List[str]) -> str:
+        """Create a clear, helpful error message."""
+        
+        pattern_descriptions = {
+            'VBG': 'gerund (-ing verb)',
+            'NN': 'noun',
+            'NNS': 'plural noun', 
+            'TO+VB': 'infinitive (to + verb)',
+            'PREP': 'prepositional phrase',
+            'JJ': 'adjective',
+            'VB': 'base verb'
+        }
+        
+        # Create element descriptions
+        elements_desc = []
+        for text, pattern in zip(element_texts, patterns):
+            desc = pattern_descriptions.get(pattern, pattern)
+            elements_desc.append(f"'{text}' ({desc})")
+        
+        return f"Non-parallel structure: {', '.join(elements_desc)}. Use consistent grammatical forms."
+
+    def _create_parallel_structure_suggestions(self, patterns: List[str]) -> List[str]:
+        """Create helpful suggestions for fixing parallel structure."""
+        
+        unique_patterns = set(patterns)
+        suggestions = []
+        
+        if 'VBG' in unique_patterns and 'TO+VB' in unique_patterns:
+            suggestions.extend([
+                "Convert all to gerunds: 'creating datasets, analyzing data, generating reports'",
+                "Convert all to infinitives: 'to create datasets, to analyze data, to generate reports'"
+            ])
+        elif 'VBG' in unique_patterns and 'NN' in unique_patterns:
+            suggestions.extend([
+                "Convert all to gerunds: 'creating datasets, analyzing data, monitoring systems'",
+                "Convert all to nouns: 'dataset creation, data analysis, system monitoring'"
+            ])
+        elif 'PREP' in unique_patterns:
+            suggestions.append("Use consistent prepositional structure or remove prepositions")
+        else:
+            suggestions.append("Ensure all coordinated elements use the same grammatical form")
+        
+        return suggestions[:3]  # Return top 3
+
+    def _get_conjunctions_patterns(self) -> Dict[str, Any]:
+        """Get conjunctions patterns from YAML vocabulary service."""
+        return self.vocabulary_service._load_yaml_file("conjunctions_patterns.yaml")

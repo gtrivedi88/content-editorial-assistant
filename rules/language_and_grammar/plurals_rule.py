@@ -172,13 +172,29 @@ class PluralsRule(BaseLanguageRule):
         return potential_issues
 
     def _is_excepted(self, text: str) -> bool:
-        """Check if the pattern is in exceptions."""
-        # Common abbreviations and technical terms that use (s) appropriately
-        exceptions = {
-            'parameter(s)', 'option(s)', 'setting(s)', 'value(s)', 'file(s)',
-            'directory(s)', 'argument(s)', 'variable(s)', 'property(s)'
-        }
-        return text.lower() in exceptions
+        """
+        Check if the parenthetical (s) pattern is in exceptions using YAML configuration.
+        
+        This prevents hardcoding and makes the rule production-ready by using 
+        the configurable exceptions from plurals_corrections.yaml.
+        """
+        corrections = self.vocabulary_service.get_plurals_corrections()
+        exceptions_config = corrections.get('exceptions', {})
+        
+        # Get patterns that are allowed in technical documentation contexts
+        technical_patterns = exceptions_config.get('technical_documentation', [])
+        
+        # Check if the text matches any of the allowed patterns  
+        text_lower = text.lower()
+        for pattern in technical_patterns:
+            # Convert pattern to lowercase for comparison
+            if text_lower in pattern.lower():
+                return True
+        
+        # TODO: Could extend this to check other exception contexts
+        # like space_constrained_ui, established_terminology etc.
+        
+        return False
 
     def _is_incorrect_plural_form(self, token) -> bool:
         """Check if token is an incorrect plural form using YAML vocabulary."""
@@ -484,10 +500,15 @@ class PluralsRule(BaseLanguageRule):
                 token.lemma_ != token.lower_):
             return False
         
-        # ZERO FALSE POSITIVE GUARD: Check uncountable technical nouns exemption list
-        # Consult exemption list before flagging plural adjectives
+        # ZERO FALSE POSITIVE GUARD: Check exemption lists before flagging plural adjectives
+        
+        # Check uncountable technical nouns exemption list
         if self._is_uncountable_technical_noun(token.text.lower()):
             return False  # Don't flag uncountable technical nouns like 'data'
+        
+        # Check proper nouns ending in 's' exemption list
+        if self._is_proper_noun_ending_in_s(token.text.lower()):
+            return False  # Don't flag proper nouns like 'kubernetes'
         
         return True
     
@@ -498,6 +519,22 @@ class PluralsRule(BaseLanguageRule):
         
         # Check both exact word match and lemmatized forms
         return word in uncountable_technical
+
+    def _is_proper_noun_ending_in_s(self, word: str) -> bool:
+        """
+        Check if word is a proper noun ending in 's' that should not be flagged as plural.
+        
+        This prevents false positives for legitimate proper nouns like:
+        - Technology platforms: kubernetes, jenkins, prometheus
+        - Company names: ibm 
+        - Geographic names: wales
+        - Frameworks: express
+        """
+        corrections = self.vocabulary_service.get_plurals_corrections()
+        proper_nouns = corrections.get('proper_nouns_ending_in_s', {})
+        
+        # Check both exact word match and case-insensitive match
+        return word in proper_nouns or word.capitalize() in proper_nouns
 
     def _apply_linguistic_clues_plurals(self, evidence_score: float, potential_issue: Dict[str, Any], doc) -> float:
         """

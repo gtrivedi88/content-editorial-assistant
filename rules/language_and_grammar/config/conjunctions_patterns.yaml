@@ -1,0 +1,213 @@
+# Conjunctions Patterns Configuration
+# Manages parallel structure patterns and coordination rules
+# Used by ConjunctionsRule for detecting non-parallel structures
+
+# Grammatical forms for parallel structure analysis
+# These define the detailed grammatical patterns that should be consistent in coordinated structures
+grammatical_forms:
+  # Verb forms and their characteristics
+  verb_forms:
+    gerund:
+      # -ing forms used as nouns
+      pos_pattern: "VERB"
+      morphology_tags: ["VBG"]
+      examples: ["creating", "analyzing", "generating", "processing", "developing"]
+      typical_usage: "gerund phrases as objects or subjects"
+      
+    infinitive:
+      # to + base form 
+      pos_pattern: "PART|VERB"  # "to" (PART) + verb (VERB)
+      morphology_tags: ["TO", "VB"]
+      examples: ["to create", "to analyze", "to generate", "to process", "to develop"]
+      typical_usage: "infinitive phrases as objects or subjects"
+      
+    present_participle:
+      # -ing forms used as adjectives or in continuous tenses
+      pos_pattern: "VERB"
+      morphology_tags: ["VBG"]
+      examples: ["running", "working", "processing", "analyzing"]
+      typical_usage: "participial phrases as modifiers"
+      
+    past_participle:
+      # -ed/-en forms used as adjectives or in perfect tenses
+      pos_pattern: "VERB"
+      morphology_tags: ["VBN"]
+      examples: ["processed", "analyzed", "generated", "developed", "written"]
+      typical_usage: "participial phrases as modifiers"
+
+  # Noun forms and their characteristics  
+  noun_forms:
+    simple_noun:
+      # Basic noun phrases
+      pos_pattern: "NOUN"
+      morphology_tags: ["NN", "NNS"]
+      examples: ["analysis", "development", "processing", "reports", "datasets"]
+      typical_usage: "simple noun phrases as objects or subjects"
+      
+    compound_noun:
+      # Multi-word noun phrases
+      pos_pattern: "NOUN NOUN|ADJ NOUN"
+      examples: ["data analysis", "system development", "report generation"]
+      typical_usage: "compound noun phrases as objects or subjects"
+      
+    nominalization:
+      # Noun forms derived from verbs (-tion, -ment, -ing as nouns)
+      pos_pattern: "NOUN"
+      suffixes: ["tion", "sion", "ment", "ance", "ence", "ing"]
+      examples: ["creation", "development", "management", "performance", "maintenance"]
+      typical_usage: "nominalized verbs as objects or subjects"
+
+  # Prepositional forms
+  prepositional_forms:
+    prepositional_phrase:
+      # Phrases starting with prepositions
+      pos_pattern: "ADP .*"
+      examples: ["for creating", "in analyzing", "by generating", "through processing"]
+      typical_usage: "prepositional phrases as adverbials or modifiers"
+
+# Parallel structure violation patterns
+# These define common non-parallel patterns that should be flagged
+violation_patterns:
+  # Mixed verb forms (most common violation)
+  mixed_verb_forms:
+    pattern_name: "Mixed verb forms in coordination"
+    description: "Mixing gerunds, infinitives, and finite verbs in coordinated structures"
+    examples:
+      incorrect:
+        - text: "creating datasets, data analysis, and to generate reports"
+          issue: "Mixes gerund (creating), noun (analysis), and infinitive (to generate)"
+          grammatical_forms: ["gerund", "noun", "infinitive"]
+        - text: "to develop software, testing applications, and deployment"
+          issue: "Mixes infinitive (to develop), gerund (testing), and noun (deployment)"  
+          grammatical_forms: ["infinitive", "gerund", "noun"]
+        - text: "writing code, debug issues, and to deploy systems"
+          issue: "Mixes gerund (writing), finite verb (debug), and infinitive (to deploy)"
+          grammatical_forms: ["gerund", "finite_verb", "infinitive"]
+      correct:
+        - text: "creating datasets, analyzing data, and generating reports"
+          grammatical_forms: ["gerund", "gerund", "gerund"]
+        - text: "to create datasets, to analyze data, and to generate reports"  
+          grammatical_forms: ["infinitive", "infinitive", "infinitive"]
+        - text: "dataset creation, data analysis, and report generation"
+          grammatical_forms: ["noun", "noun", "noun"]
+
+  # Mixed noun and verb forms
+  mixed_noun_verb_forms:
+    pattern_name: "Mixed noun and verb forms"
+    description: "Mixing noun phrases with verb phrases in coordination"
+    examples:
+      incorrect:
+        - text: "system maintenance, upgrading software, and security patches"
+          issue: "Mixes noun (maintenance), gerund (upgrading), and noun (patches)"
+          grammatical_forms: ["noun", "gerund", "noun"]
+        - text: "data backup, to restore files, and system monitoring"
+          issue: "Mixes noun (backup), infinitive (to restore), and noun (monitoring)"
+          grammatical_forms: ["noun", "infinitive", "noun"]
+      correct:
+        - text: "system maintenance, software upgrades, and security patches"
+          grammatical_forms: ["noun", "noun", "noun"]
+        - text: "maintaining systems, upgrading software, and monitoring security"
+          grammatical_forms: ["gerund", "gerund", "gerund"]
+
+  # Mixed prepositional and non-prepositional forms
+  mixed_prepositional_forms:
+    pattern_name: "Mixed prepositional structures"
+    description: "Mixing prepositional phrases with other forms"
+    examples:
+      incorrect:
+        - text: "for data processing, system analysis, and to generate reports"
+          issue: "Mixes prepositional phrase (for processing), noun (analysis), and infinitive (to generate)"
+          grammatical_forms: ["prepositional", "noun", "infinitive"]
+      correct:
+        - text: "for data processing, for system analysis, and for report generation"
+          grammatical_forms: ["prepositional", "prepositional", "prepositional"]
+        - text: "data processing, system analysis, and report generation"
+          grammatical_forms: ["noun", "noun", "noun"]
+
+# Context-specific parallel structure rules
+contextual_rules:
+  # Technical writing context
+  technical_writing:
+    strictness_level: "high"
+    preferred_forms: ["gerund", "noun", "infinitive"]  # In order of preference
+    avoid_mixing: true
+    explanation: "Technical writing benefits from consistent parallel structure for clarity"
+    
+  # Academic writing context  
+  academic_writing:
+    strictness_level: "high"
+    preferred_forms: ["noun", "gerund", "infinitive"]
+    avoid_mixing: true
+    explanation: "Academic writing requires precise parallel structure"
+    
+  # Business writing context
+  business_writing:
+    strictness_level: "medium"
+    preferred_forms: ["gerund", "noun"]
+    avoid_mixing: true
+    explanation: "Business writing should maintain professional parallel structure"
+
+  # Casual writing context
+  casual_writing:
+    strictness_level: "low"
+    preferred_forms: ["any"]
+    avoid_mixing: false
+    explanation: "Casual writing allows more flexibility in parallel structure"
+
+# Evidence scoring guidelines for parallel structure violations
+evidence_scoring:
+  # Base evidence scores for different violation types
+  base_scores:
+    mixed_verb_forms: 0.8        # High evidence - clear grammatical error
+    mixed_noun_verb_forms: 0.7   # High evidence - clear structural issue
+    mixed_prepositional_forms: 0.6  # Medium evidence - stylistic issue
+    pos_tag_mismatch: 0.5       # Medium evidence - potential issue
+    dependency_mismatch: 0.4    # Low evidence - may be acceptable
+
+  # Context modifiers
+  context_modifiers:
+    technical_writing: +0.2
+    academic_writing: +0.2  
+    business_writing: +0.1
+    formal_writing: +0.1
+    casual_writing: -0.1
+    
+  # Complexity modifiers
+  complexity_modifiers:
+    two_elements: +0.0          # Base case
+    three_elements: +0.1        # More complex, higher evidence
+    four_or_more_elements: +0.2 # Very complex, highest evidence
+    
+  # Minimum evidence threshold
+  min_evidence_threshold: 0.3   # Only flag violations above this threshold
+
+# Suggestions for fixing parallel structure violations
+fix_suggestions:
+  # Suggestions for different violation types
+  mixed_verb_forms:
+    - "Use consistent verb forms: all gerunds (-ing), all infinitives (to + verb), or all nouns"
+    - "Convert all elements to gerund form: 'creating datasets, analyzing data, and generating reports'"  
+    - "Convert all elements to infinitive form: 'to create datasets, to analyze data, and to generate reports'"
+    - "Convert all elements to noun form: 'dataset creation, data analysis, and report generation'"
+    
+  mixed_noun_verb_forms:
+    - "Use consistent grammatical forms: all nouns or all verb forms"
+    - "Convert verb forms to nouns: 'system maintenance, software upgrades, and security monitoring'"
+    - "Convert nouns to gerunds: 'maintaining systems, upgrading software, and monitoring security'"
+    
+  mixed_prepositional_forms:
+    - "Use consistent prepositional structure throughout the series"
+    - "Remove prepositions from all elements for parallel noun phrases"
+    - "Add prepositions to all elements for parallel prepositional phrases"
+
+# Advanced patterns for future enhancement
+advanced_patterns:
+  # Subordinate clause parallelism
+  subordinate_clauses:
+    description: "Parallel structure in subordinate clauses"
+    examples: ["when creating data, when analyzing results, and when generating reports"]
+    
+  # Comparative structures
+  comparative_structures:
+    description: "Parallel structure in comparisons"
+    examples: ["better at analyzing than creating", "more effective in processing than generating"]

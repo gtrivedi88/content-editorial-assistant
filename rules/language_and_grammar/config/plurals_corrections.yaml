@@ -20,6 +20,84 @@ uncountable_technical_nouns:
         - "These datas show..."  # flag this
         - "The datum indicates..." # don't suggest this
 
+# Special category: Proper nouns ending in 's' that are NOT plurals
+# These are legitimate singular proper nouns that should never be flagged as plurals
+proper_nouns_ending_in_s:
+  # Technology/Platform names
+  kubernetes:
+    type: "technology_platform"
+    explanation: "Kubernetes is a proper noun for the container orchestration platform"
+    usage_examples:
+      correct:
+        - "Kubernetes cluster"
+        - "Deploy to Kubernetes"
+        - "Kubernetes configuration"
+      never_suggest: ["kubernete", "kubernetis"]
+    
+  jenkins:
+    type: "technology_platform" 
+    explanation: "Jenkins is a proper noun for the automation server"
+    usage_examples:
+      correct:
+        - "Jenkins pipeline"
+        - "Configure Jenkins"
+        - "Jenkins build server"
+      never_suggest: ["jenkin"]
+    
+  prometheus:
+    type: "technology_platform"
+    explanation: "Prometheus is a proper noun for the monitoring system"
+    usage_examples:
+      correct:
+        - "Prometheus metrics"
+        - "Configure Prometheus"
+        - "Prometheus monitoring"
+      never_suggest: ["prometheou", "promethe"]
+  
+  wordpress:
+    type: "technology_platform"
+    explanation: "WordPress is a proper noun for the content management system"
+    usage_examples:
+      correct:
+        - "WordPress site"
+        - "WordPress installation" 
+        - "WordPress themes"
+      never_suggest: ["wordpres"]
+  
+  express:
+    type: "technology_framework"
+    explanation: "Express is a proper noun for the Node.js web framework"
+    usage_examples:
+      correct:
+        - "Express application"
+        - "Express middleware"
+        - "Express server"
+      never_suggest: ["expres"]
+
+  # Business/Organization names
+  ibm:
+    type: "company"
+    explanation: "IBM is a proper noun for the technology company"
+    usage_examples:
+      correct:
+        - "IBM guidelines"
+        - "IBM products"
+        - "IBM services" 
+      never_suggest: []
+  
+  # Geographic locations
+  wales:
+    type: "geographic"
+    explanation: "Wales is a proper noun for the country"
+    usage_examples:
+      correct:
+        - "Wales region"
+        - "Visit Wales"
+        - "Wales government"
+      never_suggest: ["wale"]
+  
+  # Add more as needed - this list can be extended without code changes
+
 # Traditional incorrect plural forms and their correct alternatives
 incorrect_plurals:
   # Regular uncountable nouns

@@ -89,6 +89,103 @@ prefix_rules:
     sound_type: "vowel"
     exceptions: "handled_by_specific_lists"
 
+# Technical mass nouns that are typically uncountable in technical writing
+# These nouns should not trigger "missing article" warnings
+technical_mass_nouns:
+  # Network/System terms
+  network_system:
+    - traffic
+    - bandwidth
+    - throughput
+    - latency
+    - connectivity
+    - performance
+    - availability
+    - reliability
+    - scalability
+    - compatibility
+    - interoperability
+    - security
+    - encryption
+    - access        # ADDED: "access" is uncountable - you need "access to", not "an access to"
+    
+  # Data/Information terms  
+  data_information:
+    - data
+    - information
+    - metadata
+    - content
+    - storage
+    - consistency
+    - integrity
+    - accuracy
+    - redundancy
+    - backup
+    - synchronization
+    - replication
+    - validation
+    - verification
+    
+  # Process/Quality terms
+  process_quality:
+    - maintenance
+    - monitoring
+    - logging
+    - debugging
+    - testing
+    - optimization
+    - configuration
+    - deployment
+    - installation
+    - documentation
+    - compliance
+    - governance
+    - oversight
+    
+  # Resource terms
+  resource:
+    - memory
+    - capacity
+    - utilization
+    - usage
+    - consumption
+    - allocation
+    - provisioning
+    - scaling
+    
+  # Abstract technical concepts
+  abstract_concepts:
+    - functionality
+    - usability
+    - efficiency
+    - productivity
+    - transparency
+    - flexibility
+    - extensibility
+    - modularity
+    - abstraction
+    - encapsulation
+    - inheritance
+    - polymorphism
+    
+  # Common technical mass nouns
+  common_technical:
+    - software
+    - hardware
+    - middleware
+    - firmware
+    - malware
+    - feedback
+    - research
+    - analysis
+    - synthesis
+    - knowledge
+    - expertise
+    - experience
+    - training
+    - education
+    - learning
+
 # Usage examples for validation
 examples:
   correct_a:
@@ -104,6 +201,13 @@ examples:
     - "an HTML document"
     - "an SQL query"
     
+  correct_no_article_mass_nouns:
+    - "you need access to the system"           # Not "an access"
+    - "ensure security is maintained"           # Not "a security"
+    - "this requires expertise in the field"    # Not "an expertise"
+    - "provide feedback on the implementation"  # Not "a feedback"
+    - "storage is allocated automatically"      # Not "a storage"
+    
   incorrect_usage:
     - text: "an user interface"
       correction: "a user interface"
@@ -111,3 +215,6 @@ examples:
     - text: "a hour ago"
       correction: "an hour ago"
       reason: "hour has silent h, starts with vowel sound"
+    - text: "you need an access to the system"
+      correction: "you need access to the system"
+      reason: "access is an uncountable noun"

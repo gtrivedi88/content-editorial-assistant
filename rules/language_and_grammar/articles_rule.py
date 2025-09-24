@@ -144,45 +144,14 @@ class ArticlesRule(BaseLanguageRule):
     def _is_uncountable(self, token: Token) -> bool:
         """
         LINGUISTIC ANCHOR: Enhanced mass noun detection for technical contexts.
-        Combines pyinflect analysis with comprehensive technical mass noun lists.
+        Combines pyinflect analysis with YAML-based technical mass noun lists.
+        This approach is production-ready and scalable without hardcoding.
         """
         lemma = token.lemma_.lower()
         
-        # LINGUISTIC ANCHOR 1: Comprehensive technical mass nouns
-        # These are commonly used as uncountable in technical writing
-        technical_mass_nouns = {
-            # Network/System terms
-            'traffic', 'bandwidth', 'throughput', 'latency', 'connectivity',
-            'performance', 'availability', 'reliability', 'scalability', 
-            'compatibility', 'interoperability', 'security', 'encryption',
-            
-            # Data/Information terms  
-            'data', 'information', 'metadata', 'content', 'storage',
-            'consistency', 'integrity', 'accuracy', 'redundancy', 'backup',
-            'synchronization', 'replication', 'validation', 'verification',
-            
-            # Process/Quality terms
-            'maintenance', 'monitoring', 'logging', 'debugging', 'testing',
-            'optimization', 'configuration', 'deployment', 'installation',
-            'documentation', 'compliance', 'governance', 'oversight',
-            
-            # Resource terms
-            'memory', 'storage', 'bandwidth', 'capacity', 'utilization', 'usage',
-            'consumption', 'allocation', 'provisioning', 'scaling',
-            
-            # Abstract technical concepts
-            'functionality', 'usability', 'efficiency', 'productivity',
-            'transparency', 'flexibility', 'extensibility', 'modularity',
-            'abstraction', 'encapsulation', 'inheritance', 'polymorphism',
-            
-            # Common mass nouns
-            'software', 'hardware', 'middleware', 'firmware', 'malware',
-            'feedback', 'research', 'analysis', 'synthesis', 'knowledge',
-            'expertise', 'experience', 'training', 'education', 'learning'
-        }
-        
-        # LINGUISTIC ANCHOR 2: Check technical mass noun list first
-        if lemma in technical_mass_nouns:
+        # LINGUISTIC ANCHOR 1: Check YAML-based technical mass nouns
+        # This replaces hardcoded lists and makes the rule scalable
+        if self._is_technical_mass_noun(lemma):
             return True
         
         # LINGUISTIC ANCHOR 3: Context-aware mass noun detection
@@ -193,6 +162,23 @@ class ArticlesRule(BaseLanguageRule):
         # LINGUISTIC ANCHOR 4: Fallback to pyinflect for other cases
         plural_form = pyinflect.getInflection(token.lemma_, 'NNS')
         return plural_form is None
+
+    def _is_technical_mass_noun(self, lemma: str) -> bool:
+        """
+        Check if word is a technical mass noun using YAML vocabulary service.
+        
+        This method replaces hardcoded lists to make the rule production-ready and scalable.
+        Technical mass nouns can be added to articles_phonetics.yaml without code changes.
+        """
+        phonetics_data = self.vocabulary_service.get_articles_phonetics()
+        technical_mass_nouns = phonetics_data.get('technical_mass_nouns', {})
+        
+        # Check all categories of technical mass nouns
+        for category, nouns_list in technical_mass_nouns.items():
+            if isinstance(nouns_list, list) and lemma in nouns_list:
+                return True
+        
+        return False
 
     def _is_mass_noun_context(self, token: Token) -> bool:
         """
