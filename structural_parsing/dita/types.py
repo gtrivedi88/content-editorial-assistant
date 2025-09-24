@@ -57,6 +57,8 @@ class DITABlockType(Enum):
     # Tables
     TABLE = "table"
     SIMPLETABLE = "simpletable"
+    TABLE_ROW = "table_row"
+    TABLE_CELL = "table_cell"
     
     # Specialized lists
     SIMPLE_LIST = "simple_list"

@@ -102,27 +102,42 @@ class MarkdownParser:
             if block:
                 # Handle nested tokens for container blocks
                 if token.nesting == 1:
-                    # Find matching closing token
-                    j = i + 1
-                    nesting_level = 1
-                    child_tokens = []
-                    
-                    while j < len(tokens) and nesting_level > 0:
-                        if tokens[j].nesting == 1:
-                            nesting_level += 1
-                        elif tokens[j].nesting == -1:
-                            nesting_level -= 1
+                    # For tables, skip child token processing since we handle structure manually
+                    if block.block_type == MarkdownBlockType.TABLE:
+                        # Skip to closing token
+                        j = i + 1
+                        nesting_level = 1
                         
-                        if nesting_level > 0:
-                            child_tokens.append(tokens[j])
-                        j += 1
-                    
-                    # Convert child tokens to child blocks
-                    if child_tokens:
-                        child_blocks = self._convert_child_tokens(child_tokens, content_lines)
-                        block.children.extend(child_blocks)
-                    
-                    i = j
+                        while j < len(tokens) and nesting_level > 0:
+                            if tokens[j].nesting == 1:
+                                nesting_level += 1
+                            elif tokens[j].nesting == -1:
+                                nesting_level -= 1
+                            j += 1
+                        
+                        i = j
+                    else:
+                        # Find matching closing token
+                        j = i + 1
+                        nesting_level = 1
+                        child_tokens = []
+                        
+                        while j < len(tokens) and nesting_level > 0:
+                            if tokens[j].nesting == 1:
+                                nesting_level += 1
+                            elif tokens[j].nesting == -1:
+                                nesting_level -= 1
+                            
+                            if nesting_level > 0:
+                                child_tokens.append(tokens[j])
+                            j += 1
+                        
+                        # Convert child tokens to child blocks
+                        if child_tokens:
+                            child_blocks = self._convert_child_tokens(child_tokens, content_lines)
+                            block.children.extend(child_blocks)
+                        
+                        i = j
                 else:
                     i += 1
                 
@@ -203,6 +218,9 @@ class MarkdownParser:
                     if lines and lines[-1].strip() == '```':
                         lines = lines[:-1]
                 content = '\n'.join(lines)
+            elif block_type == MarkdownBlockType.TABLE:
+                # For tables, keep raw content for parsing rows/cells later
+                content = raw_content.strip()
             else:
                 # For other types, use raw content
                 content = raw_content.strip()
@@ -219,6 +237,10 @@ class MarkdownParser:
             start_line=start_line + 1,  # Convert to 1-based indexing
             level=self._get_heading_level(token)
         )
+        
+        # For tables, parse content and create structured children
+        if block_type == MarkdownBlockType.TABLE and content:
+            self._parse_table_children(block)
         
         # Set token-specific attributes
         if token.type.startswith('heading_'):
@@ -291,8 +313,9 @@ class MarkdownParser:
             'ordered_list_open': MarkdownBlockType.ORDERED_LIST,
             'list_item_open': MarkdownBlockType.LIST_ITEM,
             'table_open': MarkdownBlockType.TABLE,
-            'thead_open': MarkdownBlockType.TABLE_HEADER,
-            'tbody_open': MarkdownBlockType.TABLE_BODY,
+            # Removed thead_open and tbody_open to keep tables as single blocks
+            # 'thead_open': MarkdownBlockType.TABLE_HEADER,
+            # 'tbody_open': MarkdownBlockType.TABLE_BODY,
             'tr_open': MarkdownBlockType.TABLE_ROW,
             'td_open': MarkdownBlockType.TABLE_CELL,
             'th_open': MarkdownBlockType.TABLE_CELL,
@@ -308,4 +331,70 @@ class MarkdownParser:
         """Extract heading level from token."""
         if token.type == 'heading_open':
             return int(token.tag[1])  # h1 -> 1, h2 -> 2, etc.
-        return 0 
+        return 0
+    
+    def _parse_table_children(self, table_block: MarkdownBlock) -> None:
+        """Parse markdown table content and create structured table_row and table_cell children."""
+        lines = table_block.content.split('\n')
+        table_lines = []
+        
+        # Filter out separator lines (like |----------|----------|)
+        for line in lines:
+            line = line.strip()
+            if line and not self._is_table_separator_line(line):
+                table_lines.append(line)
+        
+        # Clear existing children to avoid duplicates
+        table_block.children = []
+        
+        # Parse each table row
+        current_line = table_block.start_line
+        for line in table_lines:
+            if line.startswith('|') and line.endswith('|'):
+                # Split by | and clean up cells
+                cells = [cell.strip() for cell in line[1:-1].split('|')]
+                
+                # Create table_row block
+                row_block = MarkdownBlock(
+                    block_type=MarkdownBlockType.TABLE_ROW,
+                    content='',  # Row content is in its children
+                    raw_content=line,
+                    start_line=current_line,
+                    level=0
+                )
+                
+                # Create table_cell blocks for each cell
+                for cell_content in cells:
+                    cell_block = MarkdownBlock(
+                        block_type=MarkdownBlockType.TABLE_CELL,
+                        content=cell_content,
+                        raw_content=cell_content,
+                        start_line=current_line,
+                        level=0
+                    )
+                    row_block.children.append(cell_block)
+                
+                table_block.children.append(row_block)
+            
+            current_line += 1
+    
+    def _is_table_separator_line(self, line: str) -> bool:
+        """Check if a line is a table separator (like |----------|----------|)."""
+        line = line.strip()
+        if not line.startswith('|') or not line.endswith('|'):
+            return False
+        
+        # Remove outer pipes and check if it's mostly dashes, colons, and spaces
+        content = line[1:-1]
+        cells = content.split('|')
+        
+        for cell in cells:
+            cell = cell.strip()
+            # A separator cell should only contain -, :, and spaces
+            if not all(c in '-: ' for c in cell) or not cell:
+                return False
+            # Should have at least some dashes
+            if '-' not in cell:
+                return False
+        
+        return True 

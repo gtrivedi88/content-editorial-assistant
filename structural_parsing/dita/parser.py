@@ -111,13 +111,13 @@ class DITAParser:
             # Table elements
             'table': DITABlockType.TABLE,
             'simpletable': DITABlockType.SIMPLETABLE,
-            'sthead': DITABlockType.PARAGRAPH,
-            'strow': DITABlockType.PARAGRAPH,
-            'stentry': DITABlockType.PARAGRAPH,
-            'thead': DITABlockType.PARAGRAPH,
-            'tbody': DITABlockType.PARAGRAPH,
-            'row': DITABlockType.PARAGRAPH,
-            'entry': DITABlockType.PARAGRAPH,
+            'sthead': DITABlockType.TABLE_ROW,  # Simple table header
+            'strow': DITABlockType.TABLE_ROW,   # Simple table row
+            'stentry': DITABlockType.TABLE_CELL, # Simple table entry/cell
+            'thead': None,  # Skip thead container, let table handle structure
+            'tbody': None,  # Skip tbody container, let table handle structure
+            'row': DITABlockType.TABLE_ROW,     # CALS table row
+            'entry': DITABlockType.TABLE_CELL,  # CALS table entry/cell
             
             # Definition list elements
             'dt': DITABlockType.PARAGRAPH,
@@ -335,14 +335,18 @@ class DITAParser:
             attributes=attributes
         )
         
-        # Process child elements
-        children = []
-        for child in element:
-            child_block = self._create_block_from_element(child, content_lines, topic_type, level + 1)
-            if child_block:
-                children.append(child_block)
-        
-        block.children = children
+        # For tables, handle structure manually to ensure proper hierarchy
+        if block_type in [DITABlockType.TABLE, DITABlockType.SIMPLETABLE]:
+            self._parse_table_structure(block, element, content_lines, topic_type, level)
+        else:
+            # Process child elements normally
+            children = []
+            for child in element:
+                child_block = self._create_block_from_element(child, content_lines, topic_type, level + 1)
+                if child_block:
+                    children.append(child_block)
+            
+            block.children = children
         
         return block
     
@@ -368,6 +372,121 @@ class DITAParser:
         content = re.sub(r'\s+', ' ', content)
         
         return content.strip()
+    
+    def _parse_table_structure(self, table_block: DITABlock, table_element: ET.Element,
+                              content_lines: List[str], topic_type: DITATopicType, level: int) -> None:
+        """Parse DITA table structure and create TABLE_ROW and TABLE_CELL children."""
+        table_block.children = []
+        
+        if table_block.block_type == DITABlockType.SIMPLETABLE:
+            self._parse_simpletable_structure(table_block, table_element, content_lines, topic_type, level)
+        elif table_block.block_type == DITABlockType.TABLE:
+            self._parse_cals_table_structure(table_block, table_element, content_lines, topic_type, level)
+    
+    def _parse_simpletable_structure(self, table_block: DITABlock, table_element: ET.Element,
+                                    content_lines: List[str], topic_type: DITATopicType, level: int) -> None:
+        """Parse DITA simpletable structure."""
+        # Process direct children: sthead, strow
+        for child in table_element:
+            if child.tag in ['sthead', 'strow']:
+                # Create table row
+                row_block = DITABlock(
+                    block_type=DITABlockType.TABLE_ROW,
+                    content='',  # Row content is in its children
+                    raw_content=ET.tostring(child, encoding='unicode', method='xml'),
+                    start_line=1,  # Simplified
+                    level=level + 1,
+                    topic_type=topic_type,
+                    element_name=child.tag,
+                    attributes=dict(child.attrib)
+                )
+                
+                # Process stentry elements within the row
+                for entry in child:
+                    if entry.tag == 'stentry':
+                        cell_content = self._extract_element_content(entry)
+                        cell_block = DITABlock(
+                            block_type=DITABlockType.TABLE_CELL,
+                            content=cell_content,
+                            raw_content=ET.tostring(entry, encoding='unicode', method='xml'),
+                            start_line=1,  # Simplified
+                            level=level + 2,
+                            topic_type=topic_type,
+                            element_name=entry.tag,
+                            attributes=dict(entry.attrib)
+                        )
+                        row_block.children.append(cell_block)
+                
+                table_block.children.append(row_block)
+    
+    def _parse_cals_table_structure(self, table_block: DITABlock, table_element: ET.Element,
+                                   content_lines: List[str], topic_type: DITATopicType, level: int) -> None:
+        """Parse DITA CALS table structure."""
+        # Process tbody (and thead if present, though we skip thead containers)
+        for section in table_element:
+            if section.tag == 'tbody':
+                # Process rows within tbody
+                for child in section:
+                    if child.tag == 'row':
+                        # Create table row
+                        row_block = DITABlock(
+                            block_type=DITABlockType.TABLE_ROW,
+                            content='',  # Row content is in its children
+                            raw_content=ET.tostring(child, encoding='unicode', method='xml'),
+                            start_line=1,  # Simplified
+                            level=level + 1,
+                            topic_type=topic_type,
+                            element_name=child.tag,
+                            attributes=dict(child.attrib)
+                        )
+                        
+                        # Process entry elements within the row
+                        for entry in child:
+                            if entry.tag == 'entry':
+                                cell_content = self._extract_element_content(entry)
+                                cell_block = DITABlock(
+                                    block_type=DITABlockType.TABLE_CELL,
+                                    content=cell_content,
+                                    raw_content=ET.tostring(entry, encoding='unicode', method='xml'),
+                                    start_line=1,  # Simplified
+                                    level=level + 2,
+                                    topic_type=topic_type,
+                                    element_name=entry.tag,
+                                    attributes=dict(entry.attrib)
+                                )
+                                row_block.children.append(cell_block)
+                        
+                        table_block.children.append(row_block)
+            elif section.tag == 'row':
+                # Handle direct row children (some DITA tables don't use tbody)
+                row_block = DITABlock(
+                    block_type=DITABlockType.TABLE_ROW,
+                    content='',  # Row content is in its children
+                    raw_content=ET.tostring(section, encoding='unicode', method='xml'),
+                    start_line=1,  # Simplified
+                    level=level + 1,
+                    topic_type=topic_type,
+                    element_name=section.tag,
+                    attributes=dict(section.attrib)
+                )
+                
+                # Process entry elements within the row
+                for entry in section:
+                    if entry.tag == 'entry':
+                        cell_content = self._extract_element_content(entry)
+                        cell_block = DITABlock(
+                            block_type=DITABlockType.TABLE_CELL,
+                            content=cell_content,
+                            raw_content=ET.tostring(entry, encoding='unicode', method='xml'),
+                            start_line=1,  # Simplified
+                            level=level + 2,
+                            topic_type=topic_type,
+                            element_name=entry.tag,
+                            attributes=dict(entry.attrib)
+                        )
+                        row_block.children.append(cell_block)
+                
+                table_block.children.append(row_block)
     
     def get_parser_info(self) -> dict:
         """Get information about the DITA parser."""

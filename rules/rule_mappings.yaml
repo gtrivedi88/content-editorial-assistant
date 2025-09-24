@@ -671,15 +671,56 @@ block_type_rules:
     - abbreviations
     - spelling
 
-  # Blockquotes
+  # Blockquotes - Enhanced analysis for markdown blockquotes (often used for regular content)
   blockquote:
+    # Core language rules
     - capitalization
     - punctuation_and_symbols
     - quotation_marks
     - sentence_length
     - ambiguity
     - spelling
+    - contractions
+    - abbreviations
+    - prefixes
+    - inclusive_language
+    - pronouns
+    - terminology
+    - verbs
+    - second_person
+    
+    # Morphological analysis
+    - anthropomorphism
+    - articles
+    - conjunctions
+    - plurals
+    - possessives
+    - prepositions
+    
+    # Key punctuation rules
+    - colons
+    - commas
+    - dashes
+    - ellipses
+    - hyphens
+    - parentheses
+    - periods
+    - semicolons
+    - spacing
+    
+    # Content quality
+    - tone
+    - global_audiences
+    
+    # References and citations
     - references_citations
+    - references_product_names
+    
+    # Essential word usage rules
+    - word_usage_a
+    - word_usage_b
+    - word_usage_c
+    - word_usage_o
 
   # ===============================================================
   # TABLE CONTENT
