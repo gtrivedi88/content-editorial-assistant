@@ -287,6 +287,42 @@ suggestions:
     - "Use proper programming syntax: 'Use the {keyword} statement'"
     - "Consider: 'Execute {keyword} to...'"
 
+# Passive voice patterns - legitimate uses of programming keywords in passive constructions
+passive_voice_patterns:
+  # Auxiliary verbs that indicate passive voice constructions
+  auxiliary_verbs:
+    - "be"
+    - "is"
+    - "am" 
+    - "are"
+    - "was"
+    - "were"
+    - "been"
+    - "being"
+  
+  # Common legitimate passive patterns in technical writing
+  legitimate_patterns:
+    - "error is thrown"
+    - "exception is thrown"
+    - "timeout error is thrown"
+    - "data is selected"
+    - "records are selected"
+    - "file is deleted"
+    - "table is updated"
+    - "query is executed"
+    - "function is called"
+    - "method is invoked"
+    - "process is terminated"
+    - "connection is closed"
+  
+  # Context indicators that suggest passive voice is appropriate
+  appropriate_contexts:
+    - "system behavior descriptions"
+    - "error condition explanations"
+    - "process documentation"
+    - "technical specifications"
+    - "API documentation"
+
 guard_patterns:
   code_blocks: true
   inline_code: true

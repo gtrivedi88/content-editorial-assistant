@@ -240,13 +240,38 @@ plural_adjectives:
     servers_monitoring: "server monitoring"
     users_interface: "user interface"
     
-  # Acceptable technical compound terms
+  # Acceptable technical compound terms where plural modifiers are correct
   acceptable_compounds:
+    # Common technical interface terms
+    - "settings panel"
+    - "settings menu" 
+    - "settings dialog"
+    - "settings page"
+    - "settings window"
+    - "settings screen"
+    - "settings configuration"
+    
+    # Administrative and system terms
     - "systems engineering"
+    - "systems administrator"
+    - "systems analysis"
     - "operations research"
     - "services architecture"
+    - "services management"
     - "resources management"
     - "tools development"
+    - "tools configuration"
+    - "applications development"
+    - "networks architecture"
+    - "databases administration"
+    
+    # User interface terms
+    - "users guide"
+    - "users manual"
+    - "graphics settings"
+    - "permissions management"
+    - "credentials storage"
+    - "preferences panel"
 
 # Evidence scoring guidelines
 evidence_levels:

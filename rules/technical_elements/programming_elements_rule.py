@@ -183,6 +183,11 @@ class ProgrammingElementsRule(BaseTechnicalRule):
         """
         sent_text = sentence_obj.text.lower()
         
+        # === NEW LINGUISTIC GUARD: Passive voice constructions ===
+        # Check if this is part of a passive voice construction (e.g., "is thrown", "was thrown")
+        if self._is_passive_voice_construction(token):
+            return True  # Passive voice usage is legitimate, not a programming element
+        
         # === ENHANCED LINGUISTIC GUARD A: Modal auxiliary verbs (CONTEXT-AWARE) ===
         # Check for modal auxiliary verbs (e.g., "will update", "can select", "should create")
         # BUT only protect if not in programming context
@@ -455,3 +460,61 @@ class ProgrammingElementsRule(BaseTechnicalRule):
             evidence_score += 0.1
         
         return evidence_score
+
+    def _is_passive_voice_construction(self, token) -> bool:
+        """
+        Check if token is part of a passive voice construction using linguistic analysis.
+        
+        Returns True for cases like:
+        - "is thrown" (auxiliary + past participle)
+        - "was selected" (auxiliary + past participle)  
+        - "will be executed" (modal + auxiliary + past participle)
+        
+        This prevents flagging legitimate passive voice as programming elements.
+        """
+        # Check if this token is a past participle (VBN) with auxiliary head
+        if hasattr(token, 'tag_') and token.tag_ == 'VBN':
+            # Check if the head is an auxiliary verb indicating passive voice
+            if hasattr(token, 'head') and hasattr(token.head, 'pos_'):
+                head = token.head
+                
+                # Direct auxiliary head (is thrown, was thrown)
+                if head.pos_ == 'AUX' and head.lemma_.lower() in self._get_passive_auxiliaries():
+                    return True
+                
+                # Check for auxiliary chains (will be thrown, has been thrown)
+                if head.pos_ == 'VERB' and head.tag_ == 'VBN':  # Compound passive
+                    for grandparent in head.children:
+                        if grandparent.pos_ == 'AUX' and grandparent.lemma_.lower() in self._get_passive_auxiliaries():
+                            return True
+                
+                # Check if any auxiliary points to this verb via auxpass dependency
+                for sibling in token.head.children if token.head else []:
+                    if sibling.dep_ == 'auxpass' and sibling.pos_ == 'AUX':
+                        return True
+        
+        return False
+
+    def _get_passive_auxiliaries(self) -> set:
+        """
+        Get passive auxiliary verbs from YAML configuration.
+        Production-ready approach using vocabulary service.
+        """
+        # Get from YAML configuration using same pattern as other methods
+        try:
+            # Load raw YAML config to access passive_voice_patterns
+            import yaml
+            with open(self.config_service.config_path, 'r', encoding='utf-8') as f:
+                full_config = yaml.safe_load(f) or {}
+            
+            passive_config = full_config.get('passive_voice_patterns', {})
+            auxiliaries = passive_config.get('auxiliary_verbs', [])
+            
+            if auxiliaries:
+                return set(auxiliaries)
+        except Exception:
+            # If YAML loading fails, use fallback
+            pass
+        
+        # Fallback to standard passive auxiliaries
+        return {'be', 'is', 'am', 'are', 'was', 'were', 'been', 'being'}

@@ -510,6 +510,10 @@ class PluralsRule(BaseLanguageRule):
         if self._is_proper_noun_ending_in_s(token.text.lower()):
             return False  # Don't flag proper nouns like 'kubernetes'
         
+        # Check acceptable plural compounds list
+        if self._is_acceptable_plural_compound(token):
+            return False  # Don't flag legitimate technical compounds like 'settings panel'
+        
         return True
     
     def _is_uncountable_technical_noun(self, word: str) -> bool:
@@ -535,6 +539,74 @@ class PluralsRule(BaseLanguageRule):
         
         # Check both exact word match and case-insensitive match
         return word in proper_nouns or word.capitalize() in proper_nouns
+
+    def _is_acceptable_plural_compound(self, token) -> bool:
+        """
+        Check if token is part of an acceptable plural compound from YAML configuration.
+        
+        This handles cases like "settings panel" where "settings" is a legitimate 
+        plural modifier in technical writing.
+        """
+        corrections = self.vocabulary_service.get_plurals_corrections()
+        plural_adjectives = corrections.get('plural_adjectives', {})
+        acceptable_compounds = plural_adjectives.get('acceptable_compounds', [])
+        
+        if not acceptable_compounds:
+            return False
+        
+        # Get the possible compound phrases this token is part of
+        compound_phrases = self._extract_compound_phrase(token)
+        
+        if not compound_phrases:
+            return False
+        
+        # Split multiple phrases (separated by " | ") and check each
+        phrases_to_check = compound_phrases.split(" | ")
+        
+        for phrase in phrases_to_check:
+            phrase_lower = phrase.strip().lower()
+            for acceptable in acceptable_compounds:
+                if acceptable.lower() == phrase_lower:
+                    return True
+        
+        return False
+
+    def _extract_compound_phrase(self, token) -> str:
+        """
+        Extract the compound phrase that this token is part of.
+        
+        For "settings" in "settings panel", returns "settings panel".
+        For "systems" in "systems administrator", returns "systems administrator".
+        For "tools" in "tools development team", returns both "tools development" and "tools team".
+        """
+        if not token.doc:
+            return ""
+        
+        # Collect all possible compound phrases this token could be part of
+        possible_phrases = []
+        
+        # Method 1: Direct compound relationship (token -> head)
+        if token.dep_ == 'compound' and token.head:
+            phrase = f"{token.text} {token.head.text}"
+            possible_phrases.append(phrase)
+        
+        # Method 2: Look for compound chains in the sentence
+        # Find all compound tokens that could form a phrase with this token
+        sentence = list(token.sent)
+        
+        for other_token in sentence:
+            if other_token != token and other_token.pos_ == 'NOUN':
+                # Check if they form a compound phrase
+                distance = abs(other_token.i - token.i)
+                if distance <= 3:  # Within reasonable distance
+                    if token.i < other_token.i:
+                        phrase = f"{token.text} {other_token.text}"
+                    else:
+                        phrase = f"{other_token.text} {token.text}"
+                    possible_phrases.append(phrase)
+        
+        # Return all possible phrases joined (we'll check all of them)
+        return " | ".join(possible_phrases)
 
     def _apply_linguistic_clues_plurals(self, evidence_score: float, potential_issue: Dict[str, Any], doc) -> float:
         """
