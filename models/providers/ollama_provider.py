@@ -1,12 +1,6 @@
 """
 Ollama Provider
-Handles local Ollama model connections and text generation.
-
-USAGE:
-======
-This provider connects to your local Ollama instance.
-Make sure Ollama is running: `ollama serve`
-And you have the model pulled: `ollama pull llama3:8b`
+Local Ollama model provider.
 """
 
 import requests
@@ -18,12 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class OllamaProvider(BaseModelProvider):
-    """
-    Provider for local Ollama models.
-    
-    Handles connection to local Ollama instance and text generation
-    using any model you have pulled locally.
-    """
+    """Provider for local Ollama models."""
     
     def _validate_config(self) -> None:
         """Validate Ollama-specific configuration."""
@@ -37,12 +26,7 @@ class OllamaProvider(BaseModelProvider):
             raise ValueError("Ollama base_url must start with http:// or https://")
     
     def connect(self) -> bool:
-        """
-        Connect to Ollama and verify the model is available.
-        
-        Returns:
-            bool: True if Ollama is running and model is available
-        """
+        """Connect to Ollama and verify model is available."""
         try:
             # Check if Ollama is running
             response = requests.get(

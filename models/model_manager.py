@@ -1,26 +1,6 @@
 """
 Model Manager
 Main interface for AI model operations throughout the application.
-
-USAGE:
-======
-This is the PRIMARY interface that other modules should use.
-It provides a clean, simple API while handling all the complexity internally.
-
-EXAMPLES:
-=========
-# Simple text generation
-from models import ModelManager
-
-manager = ModelManager()
-result = manager.generate_text("Rewrite this text to be more concise...")
-
-# Check model status
-status = manager.get_status()
-print(f"Using: {status['model_info']['model']}")
-
-# Switch providers programmatically
-manager.switch_provider('api', {'api_provider': 'groq', 'model': 'llama3-70b-8192'})
 """
 
 import logging
@@ -32,15 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class ModelManager:
-    """
-    High-level model management interface.
-    
-    This class provides a clean, simple API for AI model operations
-    while hiding the complexity of provider management, configuration,
-    and error handling.
-    
-    Other modules should use THIS class, not the providers directly.
-    """
+    """High-level model management interface."""
     
     def __init__(self):
         """Initialize the model manager."""
@@ -48,29 +20,7 @@ class ModelManager:
         self._last_error = None
     
     def generate_text(self, prompt: str, **kwargs) -> str:
-        """
-        Generate text using the configured AI model.
-        
-        This is the MAIN method that other modules should use.
-        
-        Args:
-            prompt: Input text prompt
-            **kwargs: Additional generation parameters (temperature, max_tokens, etc.)
-            
-        Returns:
-            str: Generated text, or empty string if generation fails
-            
-        Examples:
-            # Basic usage
-            result = manager.generate_text("Rewrite: The quick brown fox jumps.")
-            
-            # With custom parameters
-            result = manager.generate_text(
-                "Improve this text...",
-                temperature=0.2,
-                max_tokens=256
-            )
-        """
+        """Generate text using the configured AI model."""
         try:
             provider = ModelFactory.create_provider()
             result = provider.generate_text(prompt, **kwargs)
@@ -90,12 +40,7 @@ class ModelManager:
             return ""
     
     def is_available(self) -> bool:
-        """
-        Check if the AI model is ready to use.
-        
-        Returns:
-            bool: True if model is available for text generation
-        """
+        """Check if the AI model is ready to use."""
         try:
             provider = ModelFactory.get_active_provider()
             if provider:
@@ -109,12 +54,7 @@ class ModelManager:
             return False
     
     def get_status(self) -> Dict[str, Any]:
-        """
-        Get comprehensive status information about the model setup.
-        
-        Returns:
-            dict: Status information including model, provider, health, etc.
-        """
+        """Get comprehensive status information about the model setup."""
         try:
             factory_status = ModelFactory.get_provider_status()
             config_info = ModelConfig.get_model_info()
@@ -138,22 +78,12 @@ class ModelManager:
             }
     
     def get_model_info(self) -> Dict[str, Any]:
-        """
-        Get information about the current model.
-        
-        Returns:
-            dict: Model information (simplified version of get_status)
-        """
+        """Get information about the current model."""
         status = self.get_status()
         return status.get('quick_info', {})
     
     def health_check(self) -> Dict[str, Any]:
-        """
-        Perform a comprehensive health check.
-        
-        Returns:
-            dict: Health check results
-        """
+        """Perform a comprehensive health check."""
         try:
             # Configuration validation
             config_valid = ModelConfig.validate_config()
@@ -218,32 +148,7 @@ class ModelManager:
         return recommendations
     
     def switch_provider(self, provider_type: str, provider_config: Optional[Dict[str, Any]] = None) -> bool:
-        """
-        Switch to a different provider programmatically.
-        
-        WARNING: This temporarily overrides configuration.
-        For permanent changes, update models/config.py
-        
-        Args:
-            provider_type: 'ollama' or 'api'
-            provider_config: Additional configuration for the provider
-            
-        Returns:
-            bool: True if switch was successful
-            
-        Examples:
-            # Switch to Groq API
-            manager.switch_provider('api', {
-                'api_provider': 'groq',
-                'model': 'llama3-70b-8192',
-                'api_key': 'your-key'
-            })
-            
-            # Switch to different Ollama model
-            manager.switch_provider('ollama', {
-                'model': 'mistral:7b'
-            })
-        """
+        """Switch to a different provider programmatically."""
         try:
             # Build new configuration
             new_config = ModelConfig.get_active_config().copy()
@@ -273,14 +178,7 @@ class ModelManager:
             return False
     
     def force_reconnect(self) -> bool:
-        """
-        Force reconnection to the current provider.
-        
-        Useful for recovering from connection issues.
-        
-        Returns:
-            bool: True if reconnection was successful
-        """
+        """Force reconnection to the current provider."""
         try:
             provider = ModelFactory.force_recreate()
             success = provider.is_available()
@@ -299,30 +197,21 @@ class ModelManager:
             return False
     
     def get_last_error(self) -> Optional[str]:
-        """
-        Get the last error that occurred.
-        
-        Returns:
-            str or None: Last error message, or None if no errors
-        """
+        """Get the last error that occurred."""
         return self._last_error
     
     def test_generation(self, test_prompt: Optional[str] = None) -> Dict[str, Any]:
-        """
-        Test text generation with a simple prompt.
-        
-        Args:
-            test_prompt: Custom test prompt. If None, uses default.
-            
-        Returns:
-            dict: Test results including success status and generated text
-        """
+        """Test text generation with a simple prompt."""
         if test_prompt is None:
             test_prompt = "Please respond with: 'Test successful'"
         
         try:
             start_time = __import__('time').time()
-            result = self.generate_text(test_prompt, max_tokens=50, temperature=0.1)
+            # Use centralized token configuration for health checks
+            from .token_config import get_token_config
+            token_config = get_token_config()
+            health_check_tokens = token_config.get_max_tokens('health_check')
+            result = self.generate_text(test_prompt, max_tokens=health_check_tokens, temperature=0.1)
             end_time = __import__('time').time()
             
             return {

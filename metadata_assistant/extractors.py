@@ -206,7 +206,11 @@ Content:
 
 Generate only the title, no other text:"""
             
-            ai_title = self.model_manager.generate_text(prompt, max_tokens=50, temperature=0.3)
+            # Use centralized token configuration for title extraction
+            from models.token_config import get_token_config
+            token_config = get_token_config()
+            title_tokens = token_config.get_max_tokens('title_extraction')
+            ai_title = self.model_manager.generate_text(prompt, max_tokens=title_tokens, temperature=0.4)
             if ai_title:
                 # Clean up AI response
                 ai_title = ai_title.strip().strip('"\'')
@@ -578,7 +582,13 @@ Draft: {draft_summary}
 
 Refined description:"""
             
-            refined = self.model_manager.generate_text(prompt, max_tokens=max_words*2, temperature=0.3)
+            # Use centralized token configuration for metadata extraction, but respect calculated limit
+            from models.token_config import get_token_config
+            token_config = get_token_config()
+            base_metadata_tokens = token_config.get_max_tokens('metadata_extraction')
+            # Use the smaller of calculated tokens or configured limit
+            metadata_tokens = min(max_words*2, base_metadata_tokens)
+            refined = self.model_manager.generate_text(prompt, max_tokens=metadata_tokens, temperature=0.3)
             if refined:
                 refined = refined.strip()
                 # Check word count

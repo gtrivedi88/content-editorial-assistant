@@ -50,20 +50,25 @@ from .factory import ModelFactory
 from .providers.base_provider import BaseModelProvider
 from .providers.ollama_provider import OllamaProvider
 from .providers.api_provider import APIProvider
+try:
+    from .providers.llamastack_provider import LlamaStackProvider
+except ImportError:
+    LlamaStackProvider = None
 
 # Export the main interface
 __all__ = [
-    'ModelManager',      # PRIMARY INTERFACE
-    'ModelConfig',       # Configuration access
-    'ModelFactory',      # Advanced provider management
-    'BaseModelProvider', # For custom providers
-    'OllamaProvider',    # Ollama implementation
-    'APIProvider'        # API implementation
+    'ModelManager',       # PRIMARY INTERFACE
+    'ModelConfig',        # Configuration access
+    'ModelFactory',       # Advanced provider management
+    'BaseModelProvider',  # For custom providers
+    'OllamaProvider',     # Ollama implementation
+    'APIProvider',        # API implementation
+    'LlamaStackProvider'  # Lightrail Llama Stack implementation
 ]
 
 # Version info
 __version__ = "1.0.0"
-__author__ = "Style Guide AI Team"
+__author__ = "Content Editorial Assistant Team"
 
 # Module-level convenience functions
 def get_model_manager() -> ModelManager:

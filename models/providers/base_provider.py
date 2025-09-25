@@ -11,97 +11,55 @@ logger = logging.getLogger(__name__)
 
 
 class BaseModelProvider(ABC):
-    """
-    Abstract base class for all model providers.
-    
-    This ensures all providers (Ollama, Groq, HuggingFace, etc.) 
-    implement the same interface for seamless switching.
-    """
+    """Abstract base class for all model providers."""
     
     def __init__(self, config: Dict[str, Any]):
-        """
-        Initialize the provider with configuration.
-        
-        Args:
-            config: Configuration dictionary from ModelConfig
-        """
+        """Initialize the provider with configuration."""
         self.config = config
         self.is_connected = False
         self._validate_config()
     
     @abstractmethod
     def _validate_config(self) -> None:
-        """
-        Validate provider-specific configuration.
-        Should raise ValueError if config is invalid.
-        """
+        """Validate provider-specific configuration."""
         pass
     
     @abstractmethod
     def connect(self) -> bool:
-        """
-        Establish connection to the model provider.
-        
-        Returns:
-            bool: True if connection successful, False otherwise
-        """
+        """Establish connection to the model provider."""
         pass
     
     @abstractmethod
     def is_available(self) -> bool:
-        """
-        Check if the provider and model are available.
-        
-        Returns:
-            bool: True if ready to generate text
-        """
+        """Check if provider and model are available."""
         pass
     
     @abstractmethod
     def generate_text(self, prompt: str, **kwargs) -> str:
-        """
-        Generate text using the model.
-        
-        Args:
-            prompt: Input text prompt
-            **kwargs: Additional generation parameters
-            
-        Returns:
-            str: Generated text
-        """
+        """Generate text using the model."""
         pass
     
     @abstractmethod
     def get_model_info(self) -> Dict[str, Any]:
-        """
-        Get information about the current model setup.
-        
-        Returns:
-            dict: Model information including name, provider, status
-        """
+        """Get information about the current model setup."""
         pass
     
     def disconnect(self) -> None:
-        """
-        Clean up provider resources.
-        Default implementation - override if needed.
-        """
+        """Clean up provider resources."""
         self.is_connected = False
         logger.info(f"Disconnected from {self.__class__.__name__}")
     
     def _prepare_generation_params(self, **kwargs) -> Dict[str, Any]:
-        """
-        Prepare generation parameters by merging config defaults with kwargs.
+        """Prepare generation parameters by merging config defaults with kwargs."""
+        # Import here to avoid circular imports
+        from ..token_config import get_token_config
         
-        Args:
-            **kwargs: Override parameters
-            
-        Returns:
-            dict: Combined parameters
-        """
+        token_config = get_token_config(self.config)
+        default_max_tokens = token_config.get_max_tokens('default')
+        
         params = {
             'temperature': self.config.get('temperature', 0.4),
-            'max_tokens': self.config.get('max_tokens', 512),
+            'max_tokens': self.config.get('max_tokens', default_max_tokens),  # Use centralized config
             'top_p': self.config.get('top_p', 0.7),
             'top_k': self.config.get('top_k', 20),
         }
