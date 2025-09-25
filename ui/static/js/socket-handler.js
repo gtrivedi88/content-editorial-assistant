@@ -180,7 +180,14 @@ function handleProcessComplete(data) {
             // Analysis completed
             currentAnalysis = data.data.analysis;
             const structuralBlocks = data.data.structural_blocks || null;
-            displayAnalysisResults(data.data.analysis, currentContent, structuralBlocks);
+            
+            // 🔧 FIX: Pass full data object so metadata_assistant is available
+            const analysisWithMetadata = {
+                ...data.data.analysis,
+                metadata_assistant: data.data.metadata_assistant,
+                content_type: data.data.content_type
+            };
+            displayAnalysisResults(analysisWithMetadata, currentContent, structuralBlocks);
         } else if (data.data.rewritten_text) {
             // Rewrite completed
             displayRewriteResults(data.data);

@@ -1,0 +1,247 @@
+# Taxonomy Types Configuration
+# Defines content categories for semantic classification
+
+Troubleshooting:
+  description: "Content focused on diagnosing and resolving problems, errors, and issues"
+  indicators:
+    - error
+    - fix
+    - resolve
+    - issue
+    - problem
+    - debug
+    - troubleshoot
+    - diagnose
+    - solve
+    - repair
+    - failure
+    - bug
+    - fault
+    - exception
+    - crash
+  structure_hints:
+    - numbered_list
+    - procedure_steps
+    - error_messages
+    - symptoms
+  examples:
+    - "Error resolution guides"
+    - "Debugging procedures"
+    - "FAQ sections"
+    - "Known issues documentation"
+  confidence_boost: 1.2
+  required_keywords: []
+
+Installation:
+  description: "Step-by-step guides for installing, setting up, or configuring software and systems"
+  indicators:
+    - install
+    - setup
+    - configure
+    - deploy
+    - requirements
+    - prerequisite
+    - download
+    - build
+    - compile
+    - environment
+    - dependencies
+  structure_hints:
+    - prerequisite_section
+    - step_by_step
+    - command_blocks
+    - system_requirements
+  examples:
+    - "Installation guides"
+    - "Setup procedures"
+    - "Configuration tutorials"
+    - "Environment setup"
+  confidence_boost: 1.3
+  required_keywords:
+    - install
+
+API_Documentation:
+  description: "Technical documentation for APIs, endpoints, and programmatic interfaces"
+  indicators:
+    - api
+    - endpoint
+    - request
+    - response
+    - parameter
+    - method
+    - rest
+    - graphql
+    - webhook
+    - authentication
+    - token
+    - sdk
+    - integration
+  structure_hints:
+    - code_blocks
+    - parameter_tables
+    - example_requests
+    - response_schemas
+  examples:
+    - "REST API documentation"
+    - "SDK documentation"
+    - "Integration guides"
+    - "Webhook documentation"
+  confidence_boost: 1.4
+  required_keywords:
+    - api
+
+Security:
+  description: "Content related to security practices, authentication, and access control"
+  indicators:
+    - security
+    - authentication
+    - authorization
+    - encrypt
+    - permission
+    - credential
+    - token
+    - certificate
+    - firewall
+    - vulnerability
+    - access control
+    - compliance
+  structure_hints:
+    - warning_blocks
+    - security_notes
+    - best_practices
+    - compliance_requirements
+  examples:
+    - "Security policies"
+    - "Authentication setup"
+    - "Access control guides"
+    - "Compliance documentation"
+  confidence_boost: 1.1
+  required_keywords: []
+
+Best_Practices:
+  description: "Guidelines, recommendations, and best practices for optimal implementation"
+  indicators:
+    - best
+    - practice
+    - recommend
+    - guideline
+    - standard
+    - convention
+    - pattern
+    - strategy
+    - approach
+    - methodology
+    - optimization
+  structure_hints:
+    - recommendation_blocks
+    - tip_boxes
+    - guidelines
+    - standards
+  examples:
+    - "Coding standards"
+    - "Design patterns"
+    - "Implementation guidelines"
+    - "Performance optimization"
+  confidence_boost: 1.0
+  required_keywords: []
+
+Reference:
+  description: "Reference materials, specifications, and lookup information"
+  indicators:
+    - reference
+    - specification
+    - manual
+    - documentation
+    - glossary
+    - definition
+    - command
+    - option
+    - syntax
+    - format
+    - schema
+  structure_hints:
+    - tables
+    - lists
+    - definitions
+    - specifications
+  examples:
+    - "Command references"
+    - "Configuration options"
+    - "Glossaries"
+    - "Technical specifications"
+  confidence_boost: 1.0
+  required_keywords: []
+
+Tutorial:
+  description: "Educational content that teaches concepts and skills through examples"
+  indicators:
+    - tutorial
+    - learn
+    - example
+    - walkthrough
+    - guide
+    - introduction
+    - getting started
+    - how to
+    - step by step
+    - beginner
+    - training
+  structure_hints:
+    - examples
+    - step_by_step
+    - learning_objectives
+    - exercises
+  examples:
+    - "Getting started guides"
+    - "Learning tutorials"
+    - "How-to articles"
+    - "Training materials"
+  confidence_boost: 1.1
+  required_keywords: []
+
+Migration:
+  description: "Content about migrating, upgrading, or transitioning between systems or versions"
+  indicators:
+    - migration
+    - upgrade
+    - transition
+    - convert
+    - import
+    - export
+    - legacy
+    - modernize
+    - compatibility
+  structure_hints:
+    - step_by_step
+    - compatibility_tables
+    - migration_paths
+  examples:
+    - "Version upgrade guides"
+    - "Data migration procedures"
+    - "Legacy system transitions"
+  confidence_boost: 1.2
+  required_keywords: []
+
+Performance:
+  description: "Content focused on performance optimization, monitoring, and tuning"
+  indicators:
+    - performance
+    - optimization
+    - tuning
+    - monitoring
+    - benchmark
+    - scaling
+    - efficiency
+    - speed
+    - throughput
+    - latency
+  structure_hints:
+    - metrics
+    - benchmarks
+    - optimization_tips
+  examples:
+    - "Performance tuning guides"
+    - "Monitoring setup"
+    - "Optimization strategies"
+  confidence_boost: 1.1
+  required_keywords: []

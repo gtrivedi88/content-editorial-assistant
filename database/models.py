@@ -395,3 +395,221 @@ class ErrorConsolidation(db.Model):
     
     def __repr__(self):
         return f'<ErrorConsolidation {self.consolidation_id}>'
+
+
+class MetadataGeneration(db.Model):
+    """Store generated metadata for documents with feedback integration."""
+    __tablename__ = 'metadata_generations'
+    
+    id = Column(Integer, primary_key=True)
+    session_id = Column(String(255), ForeignKey('sessions.session_id'), nullable=False)
+    document_id = Column(String(255), ForeignKey('documents.document_id'), nullable=False)
+    metadata_id = Column(String(255), unique=True, nullable=False, index=True)
+    
+    # Generated metadata
+    title = Column(String(500))
+    description = Column(Text)
+    keywords = Column(JSON)
+    taxonomy_tags = Column(JSON)
+    audience = Column(String(100))
+    content_type = Column(String(50))  # 'concept', 'procedure', 'reference'
+    intent = Column(String(100))
+    
+    # Generation metadata
+    confidence_scores = Column(JSON)
+    algorithms_used = Column(JSON)
+    processing_time = Column(Float)
+    processing_steps = Column(JSON)
+    fallback_used = Column(Boolean, default=False)
+    
+    # User interaction tracking (integrates with existing UserFeedback)
+    user_rating = Column(Integer)  # 1-5 rating via existing feedback UI
+    user_corrections = Column(JSON)  # User edits tracked
+    interaction_count = Column(Integer, default=0)  # Track engagement
+    
+    # 🆕 Enhanced tracking for content performance
+    content_hash = Column(String(64), index=True)  # For content deduplication
+    content_length = Column(Integer)  # Document length
+    last_edited_at = Column(DateTime)  # Track last user edit
+    approved_at = Column(DateTime)  # When user approved final version
+    
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships with existing models
+    session = relationship("UserSession", backref="metadata_generations")
+    document = relationship("Document", backref="metadata_generations")
+    
+    def __repr__(self):
+        return f'<MetadataGeneration {self.metadata_id}: {self.title[:50] if self.title else "Untitled"}...>'
+    
+    def to_dict(self):
+        """Convert to dictionary for JSON serialization."""
+        return {
+            'metadata_id': self.metadata_id,
+            'title': self.title,
+            'description': self.description,
+            'keywords': self.keywords,
+            'taxonomy_tags': self.taxonomy_tags,
+            'audience': self.audience,
+            'content_type': self.content_type,
+            'intent': self.intent,
+            'confidence_scores': self.confidence_scores,
+            'algorithms_used': self.algorithms_used,
+            'processing_time': self.processing_time,
+            'fallback_used': self.fallback_used,
+            'user_rating': self.user_rating,
+            'content_hash': self.content_hash,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
+
+
+# 🆕 Content Performance Analytics Models
+
+class ContentPerformanceMetrics(db.Model):
+    """Track content performance for SEO and analytics insights."""
+    __tablename__ = 'content_performance_metrics'
+    
+    id = Column(Integer, primary_key=True)
+    metadata_generation_id = Column(Integer, ForeignKey('metadata_generations.id'), nullable=False)
+    
+    # Performance metrics (populated by external systems or manual input)
+    page_views = Column(Integer, default=0)
+    unique_visitors = Column(Integer, default=0)
+    time_on_page = Column(Float)  # Average time in minutes
+    bounce_rate = Column(Float)  # Percentage (0.0-1.0)
+    
+    # SEO metrics
+    organic_search_traffic = Column(Integer, default=0)
+    click_through_rate = Column(Float)  # CTR from search results
+    search_impressions = Column(Integer, default=0)
+    average_search_position = Column(Float)
+    featured_snippet_appearances = Column(Integer, default=0)
+    
+    # Content effectiveness
+    user_satisfaction_score = Column(Float)  # User ratings/surveys
+    conversion_rate = Column(Float)  # If applicable
+    social_shares = Column(Integer, default=0)
+    backlinks_count = Column(Integer, default=0)
+    
+    # Metadata effectiveness tracking
+    title_performance_score = Column(Float)  # How well title performed
+    description_performance_score = Column(Float)  # CTR from descriptions
+    keyword_performance_scores = Column(JSON)  # Individual keyword performance
+    taxonomy_engagement_scores = Column(JSON)  # Category-based engagement
+    
+    # Time tracking
+    measurement_period_start = Column(DateTime, nullable=False)
+    measurement_period_end = Column(DateTime, nullable=False)
+    data_source = Column(String(100))  # 'google_analytics', 'manual', etc.
+    last_updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    metadata_generation = relationship("MetadataGeneration", backref="performance_metrics")
+    
+    def __repr__(self):
+        return f'<ContentPerformanceMetrics {self.id}: {self.page_views} views>'
+
+
+class MetadataFeedback(db.Model):
+    """Detailed feedback tracking for continuous learning."""
+    __tablename__ = 'metadata_feedback'
+    
+    id = Column(Integer, primary_key=True)
+    metadata_generation_id = Column(Integer, ForeignKey('metadata_generations.id'), nullable=False)
+    
+    # Feedback details
+    feedback_type = Column(String(50), nullable=False)  # 'keyword_removed', 'taxonomy_changed', etc.
+    component = Column(String(50), nullable=False)  # 'title', 'keywords', 'taxonomy', 'description'
+    
+    original_value = Column(Text)
+    corrected_value = Column(Text)
+    correction_reason = Column(String(100))  # 'irrelevant', 'inaccurate', 'better_fit'
+    
+    # Context for learning
+    content_sample = Column(Text)  # Sample content for training (first 1000 chars)
+    document_context = Column(JSON)  # Document metadata for context
+    confidence_before = Column(Float)
+    confidence_after = Column(Float)  # After correction
+    
+    # User context
+    user_session_id = Column(String(255), ForeignKey('sessions.session_id'))
+    user_agent = Column(Text)
+    user_experience_level = Column(String(50))  # 'beginner', 'intermediate', 'expert'
+    
+    # Learning tracking
+    used_for_training = Column(Boolean, default=False)
+    training_batch_id = Column(String(50))
+    improvement_score = Column(Float)  # Calculated learning value
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    metadata_generation = relationship("MetadataGeneration", backref="feedback_entries")
+    user_session = relationship("UserSession")
+    
+    def __repr__(self):
+        return f'<MetadataFeedback {self.id}: {self.component} {self.feedback_type}>'
+
+
+class TaxonomyLearning(db.Model):
+    """Track taxonomy classification learning data."""
+    __tablename__ = 'taxonomy_learning'
+    
+    id = Column(Integer, primary_key=True)
+    
+    # Content context
+    content_hash = Column(String(64), index=True, nullable=False)
+    content_sample = Column(Text, nullable=False)  # First 1000 chars for context
+    content_length = Column(Integer)
+    document_type = Column(String(50))
+    
+    # Classification data
+    predicted_tags = Column(JSON, nullable=False)  # Original AI predictions
+    actual_tags = Column(JSON)  # User-corrected tags
+    prediction_confidence = Column(JSON)  # Confidence scores for predictions
+    
+    # Document features
+    keywords_present = Column(JSON)  # Keywords found in document
+    document_structure = Column(JSON)  # Structure analysis (headings, lists, etc.)
+    linguistic_features = Column(JSON)  # NLP features (entities, POS tags, etc.)
+    
+    # Learning metrics
+    accuracy_score = Column(Float)  # How accurate was prediction (0.0-1.0)
+    semantic_similarity = Column(Float)  # If using embeddings
+    improvement_potential = Column(Float)  # Calculated learning value (0.0-1.0)
+    
+    # Algorithm metadata
+    model_version = Column(String(50))
+    algorithm_used = Column(String(50))  # 'semantic', 'keyword_based', 'ensemble'
+    processing_time = Column(Float)  # Time taken for classification
+    
+    # Training usage
+    used_for_training = Column(Boolean, default=False)
+    training_epoch = Column(Integer)
+    training_batch_id = Column(String(50))
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    processed_for_training = Column(Boolean, default=False)
+    
+    def __repr__(self):
+        return f'<TaxonomyLearning {self.id}: {len(self.predicted_tags or [])} predictions>'
+    
+    def calculate_accuracy(self):
+        """Calculate accuracy score based on predicted vs actual tags."""
+        if not self.predicted_tags or not self.actual_tags:
+            return 0.0
+        
+        predicted_set = set(self.predicted_tags)
+        actual_set = set(self.actual_tags)
+        
+        if len(actual_set) == 0:
+            return 1.0 if len(predicted_set) == 0 else 0.0
+        
+        intersection = predicted_set.intersection(actual_set)
+        union = predicted_set.union(actual_set)
+        
+        # Jaccard similarity
+        return len(intersection) / len(union) if union else 0.0

@@ -1,0 +1,1129 @@
+/* Metadata Assistant - Module 3 Styles */
+/* Integrates seamlessly with existing PatternFly design system */
+
+/* ================================
+   Metadata Section Styling
+   ================================ */
+
+#metadata-section {
+    /* Ensure consistent spacing with other modules */
+    --pf-v5-c-card--m-flat--BorderWidth: 1px;
+    box-shadow: var(--pf-v5-global--BoxShadow--sm);
+}
+
+#metadata-section .pf-v5-c-card__header {
+    /* Enhanced header styling */
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-bottom: 1px solid var(--pf-v5-global--BorderColor--100);
+    padding: var(--pf-v5-global--spacer--md) var(--pf-v5-global--spacer--lg);
+}
+
+#metadata-section .pf-v5-c-card__header-main h2 {
+    /* Metadata title styling */
+    color: var(--pf-v5-global--Color--100);
+    font-weight: var(--pf-v5-global--FontWeight--bold);
+    font-size: var(--pf-v5-global--FontSize--xl);
+}
+
+#metadata-section .pf-v5-c-card__subtitle {
+    /* Subtitle styling */
+    color: var(--pf-v5-global--Color--200);
+    margin-top: var(--pf-v5-global--spacer--xs);
+    font-size: var(--pf-v5-global--FontSize--sm);
+}
+
+/* ================================
+   Enhanced Description List Styling
+   ================================ */
+
+#metadata-section .pf-v5-c-description-list__group {
+    /* Enhanced field group spacing */
+    margin-bottom: var(--pf-v5-global--spacer--md);
+    padding-bottom: var(--pf-v5-global--spacer--sm);
+    border-bottom: 1px solid var(--pf-v5-global--BorderColor--light-100);
+}
+
+#metadata-section .pf-v5-c-description-list__group:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+#metadata-section .pf-v5-c-description-list__term {
+    /* Bold field labels */
+    font-weight: var(--pf-v5-global--FontWeight--bold);
+    color: var(--pf-v5-global--Color--dark-100);
+    margin-bottom: var(--pf-v5-global--spacer--xs);
+}
+
+#metadata-section .pf-v5-c-description-list__description {
+    /* Field content styling */
+    color: var(--pf-v5-global--Color--100);
+    line-height: var(--pf-v5-global--LineHeight--md);
+}
+
+#metadata-section .pf-v5-c-description-list__text {
+    /* Enhanced text readability */
+    word-break: break-word;
+    hyphens: auto;
+}
+
+/* ================================
+   Metadata Display Grid
+   ================================ */
+
+/* ================================
+   Enhanced Keywords and Categories
+   ================================ */
+
+#metadata-section .pf-v5-c-chip {
+    /* Enhanced chip styling */
+    margin-bottom: var(--pf-v5-global--spacer--xs);
+    margin-right: var(--pf-v5-global--spacer--xs);
+    border-radius: var(--pf-v5-global--BorderRadius--sm);
+    font-weight: var(--pf-v5-global--FontWeight--normal);
+    font-size: 14px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    padding: 6px 12px;
+    transition: all 0.2s ease;
+}
+
+#metadata-section .pf-v5-c-chip:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--pf-v5-global--BoxShadow--sm);
+}
+
+#metadata-section .pf-v5-c-chip-group {
+    /* Enhanced chip group layout */
+    gap: var(--pf-v5-global--spacer--xs);
+}
+
+#metadata-section .pf-v5-c-label {
+    /* Enhanced label styling */
+    margin-bottom: var(--pf-v5-global--spacer--xs);
+    margin-right: var(--pf-v5-global--spacer--xs);
+    font-weight: var(--pf-v5-global--FontWeight--semi-bold);
+    font-size: 14px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    padding: 6px 12px;
+    transition: all 0.2s ease;
+}
+
+#metadata-section .pf-v5-c-label:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--pf-v5-global--BoxShadow--sm);
+}
+
+.metadata-field-display {
+    /* Individual field container - deprecated in favor of description lists */
+    display: none;
+}
+
+/* ================================
+   Enhanced Typography
+   ================================ */
+
+#metadata-section strong {
+    /* Consistent bold text */
+    font-weight: var(--pf-v5-global--FontWeight--bold);
+    color: var(--pf-v5-global--Color--dark-100);
+}
+
+#metadata-section .pf-v5-c-title {
+    /* Section titles */
+    color: var(--pf-v5-global--primary-color--100);
+    font-weight: var(--pf-v5-global--FontWeight--bold);
+}
+
+#metadata-section .pf-v5-c-card__body {
+    /* Enhanced body padding */
+    padding: var(--pf-v5-global--spacer--lg);
+}
+
+/* ================================
+   Interactive Elements  
+   ================================ */
+
+.keyword-expand-btn {
+    /* Enhanced "+N more" button styling */
+    cursor: pointer;
+    border: 1px dashed var(--pf-v5-global--BorderColor--200) !important;
+    background-color: var(--pf-v5-global--BackgroundColor--light-100) !important;
+    color: var(--pf-v5-global--link--Color) !important;
+    font-size: 14px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    transition: all 0.2s ease-in-out;
+    font-weight: var(--pf-v5-global--FontWeight--semi-bold);
+}
+
+.keyword-expand-btn:hover {
+    background-color: var(--pf-v5-global--link--Color) !important;
+    color: var(--pf-v5-global--Color--light-100) !important;
+    border-color: var(--pf-v5-global--link--Color) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.keyword-expand-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.keyword-hidden-chips {
+    /* Smooth animation for hidden keywords */
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.description-expand-btn {
+    /* Enhanced expand/collapse button for descriptions */
+    color: var(--pf-v5-global--link--Color);
+    font-weight: var(--pf-v5-global--FontWeight--semi-bold);
+    text-decoration: none;
+    border: none;
+    background: none;
+    padding: var(--pf-v5-global--spacer--xs) 0;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    font-size: var(--pf-v5-global--FontSize--sm);
+}
+
+.description-expand-btn:hover {
+    color: var(--pf-v5-global--link--Color--hover);
+    text-decoration: none;
+}
+
+.description-expand-btn:hover .expand-icon {
+    transform: scale(1.1);
+}
+
+.expand-icon {
+    transition: transform 0.2s ease-in-out;
+}
+
+/* ================================
+   Interactive Editor Enhancements
+   ================================ */
+
+.description-textarea {
+    /* Professional textarea styling */
+    transition: all 0.2s ease;
+    resize: vertical;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    line-height: 1.4;
+}
+
+.description-textarea:focus {
+    border-color: #0969da;
+    box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.1);
+    outline: none;
+}
+
+
+/* ================================
+   Interactive Editor
+   ================================ */
+
+/* Enhanced form styling */
+#interactive-editor-content .pf-v5-c-form-control {
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    background-color: #ffffff;
+    transition: all 0.15s ease;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+    padding: 8px 12px;
+}
+
+#interactive-editor-content .pf-v5-c-form-control:focus {
+    border-color: #0969da;
+    box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.1);
+    outline: none;
+    background-color: #ffffff;
+}
+
+#interactive-editor-content .pf-v5-c-form-control:hover:not(:focus) {
+    border-color: #8c959f;
+    background-color: #f6f8fa;
+}
+
+/* Professional card styling for Interactive Editor */
+#interactive-editor-content .pf-v5-c-card.pf-m-flat {
+    background-color: #ffffff;
+    border: 1px solid #e1e4e8;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(16, 24, 40, 0.1);
+    transition: all 0.15s ease;
+    margin-bottom: 20px;
+}
+
+#interactive-editor-content .pf-v5-c-card.pf-m-flat:hover {
+    box-shadow: 0 4px 12px rgba(16, 24, 40, 0.15);
+    border-color: #d0d7de;
+}
+
+#interactive-editor-content .pf-v5-c-card__header {
+    background-color: #f6f8fa;
+    border-bottom: 1px solid #e1e4e8;
+    border-radius: 8px 8px 0 0;
+    padding: 16px 20px;
+}
+
+#interactive-editor-content .pf-v5-c-card__body {
+    padding: 20px;
+    background-color: #ffffff;
+}
+
+/* Professional form group styling */
+#interactive-editor-content .pf-v5-c-form__group {
+    margin-bottom: 20px;
+    background-color: #fafbfc;
+    border: 1px solid #e1e4e8;
+    border-radius: 6px;
+    padding: 16px;
+    transition: all 0.15s ease;
+}
+
+#interactive-editor-content .pf-v5-c-form__group:hover {
+    background-color: #f6f8fa;
+    border-color: #d0d7de;
+}
+
+#interactive-editor-content .pf-v5-c-form__group:focus-within {
+    background-color: #ffffff;
+    border-color: #0969da;
+    box-shadow: 0 0 0 1px rgba(9, 105, 218, 0.1);
+}
+
+/* Enhanced form labels */
+#interactive-editor-content .pf-v5-c-form__label-text {
+    font-weight: 600;
+    color: #1f2328;
+    font-size: 14px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+}
+
+/* Enhanced helper text */
+#interactive-editor-content .pf-v5-c-helper-text__item-text {
+    color: #656d76;
+    font-size: 13px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+}
+
+/* Professional chip styling in editor */
+#interactive-editor-content .pf-v5-c-chip {
+    background-color: #f6f8fa;
+    border: 1px solid #d0d7de;
+    border-radius: 16px;
+    color: #1f2328;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    padding: 6px 12px;
+    margin: 3px 6px 3px 0;
+    transition: all 0.15s ease;
+}
+
+#interactive-editor-content .pf-v5-c-chip:hover {
+    background-color: #eaeef2;
+    border-color: #afb8c1;
+    color: #0f1419;
+}
+
+/* Professional label styling in editor */
+#interactive-editor-content .pf-v5-c-label {
+    background-color: #dbeafe;
+    border: 1px solid #93c5fd;
+    border-radius: 16px;
+    color: #1e40af;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    padding: 6px 12px;
+    margin: 3px 6px 3px 0;
+    transition: all 0.15s ease;
+}
+
+#interactive-editor-content .pf-v5-c-label:hover {
+    background-color: #bfdbfe;
+    border-color: #60a5fa;
+    color: #1e3a8a;
+}
+
+/* Professional button styling */
+#interactive-editor-content .pf-v5-c-button {
+    border-radius: 6px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.15s ease;
+}
+
+#interactive-editor-content .pf-v5-c-button.pf-m-primary {
+    background-color: #0969da;
+    border-color: #0969da;
+    color: #ffffff;
+}
+
+#interactive-editor-content .pf-v5-c-button.pf-m-primary:hover:not(:disabled) {
+    background-color: #0860ca;
+    border-color: #0860ca;
+}
+
+#interactive-editor-content .pf-v5-c-button.pf-m-secondary {
+    background-color: #f6f8fa;
+    border-color: #d0d7de;
+    color: #24292f;
+}
+
+#interactive-editor-content .pf-v5-c-button.pf-m-secondary:hover:not(:disabled) {
+    background-color: #eaeef2;
+    border-color: #afb8c1;
+}
+
+/* Professional keyword and category containers */
+#current-keywords, #current-taxonomy {
+    background-color: #ffffff;
+    border: 1px solid #e1e4e8;
+    border-radius: 6px;
+    padding: 12px;
+    min-height: 80px;
+    margin-bottom: 12px;
+    transition: all 0.15s ease;
+}
+
+#current-keywords:hover, #current-taxonomy:hover {
+    border-color: #d0d7de;
+    background-color: #f6f8fa;
+}
+
+/* Keyword input styling */
+#add-keyword-input, #add-category-input {
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    background-color: #ffffff;
+    padding: 8px 12px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+    transition: all 0.15s ease;
+    width: 100%;
+    margin-bottom: 8px;
+}
+
+#add-keyword-input:focus, #add-category-input:focus {
+    border-color: #0969da;
+    box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.1);
+    outline: none;
+    background-color: #ffffff;
+}
+
+#add-keyword-input:hover:not(:focus), #add-category-input:hover:not(:focus) {
+    border-color: #8c959f;
+    background-color: #f6f8fa;
+}
+
+/* Add button styling */
+#interactive-editor-content .pf-v5-c-button[onclick*="addKeyword"],
+#interactive-editor-content .pf-v5-c-button[onclick*="addTaxonomy"] {
+    background-color: #0969da;
+    border-color: #0969da;
+    color: #ffffff;
+    padding: 6px 12px;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 6px;
+}
+
+#interactive-editor-content .pf-v5-c-button[onclick*="addKeyword"]:hover,
+#interactive-editor-content .pf-v5-c-button[onclick*="addTaxonomy"]:hover {
+    background-color: #0860ca;
+    border-color: #0860ca;
+}
+
+/* Dropdown styling */
+#interactive-editor-content .pf-v5-c-select {
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    background-color: #ffffff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+    transition: all 0.15s ease;
+}
+
+#interactive-editor-content .pf-v5-c-select:hover {
+    border-color: #8c959f;
+    background-color: #f6f8fa;
+}
+
+#interactive-editor-content .pf-v5-c-select:focus {
+    border-color: #0969da;
+    box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.1);
+    outline: none;
+}
+
+/* Section titles in editor */
+#interactive-editor-content .pf-v5-c-title {
+    color: #1f2328;
+    font-weight: 600;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+}
+
+/* Required field indicator */
+#interactive-editor-content .pf-v5-c-form__label-required {
+    color: #d1242f;
+}
+
+/* Character counter styling */
+#interactive-editor-content #description-char-count {
+    font-weight: 500;
+    color: #656d76;
+}
+
+/* Interactive Editor container styling */
+#metadata-editor-container {
+    margin-top: 16px;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+#metadata-editor-container .pf-v5-c-expandable-section__toggle {
+    background-color: #f6f8fa;
+    border: 1px solid #e1e4e8;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: #1f2328;
+    transition: all 0.15s ease;
+    width: 100%;
+    text-align: left;
+}
+
+#metadata-editor-container .pf-v5-c-expandable-section__toggle:hover {
+    background-color: #eaeef2;
+    border-color: #d0d7de;
+    box-shadow: 0 1px 3px rgba(16, 24, 40, 0.1);
+}
+
+#metadata-editor-container .pf-v5-c-expandable-section__toggle[aria-expanded="true"] {
+    background-color: #ffffff;
+    border-color: #e1e4e8;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    box-shadow: 0 1px 3px rgba(16, 24, 40, 0.1);
+}
+
+#metadata-editor-container .pf-v5-c-expandable-section__content {
+    background-color: #ffffff;
+    border: 1px solid #e1e4e8;
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    padding: 0;
+}
+
+/* Enhanced expandable section icon */
+#metadata-editor-container .pf-v5-c-expandable-section__toggle-icon {
+    transition: transform 0.2s ease;
+    color: #656d76;
+}
+
+#metadata-editor-container .pf-v5-c-expandable-section__toggle[aria-expanded="true"] .pf-v5-c-expandable-section__toggle-icon {
+    transform: rotate(90deg);
+    color: #656d76;
+}
+
+/* ================================
+   Enhanced Field Styling
+   ================================ */
+
+#metadata-section .pf-v5-c-description-list__text {
+    /* Enhanced text appearance */
+    font-weight: var(--pf-v5-global--FontWeight--normal);
+    line-height: var(--pf-v5-global--LineHeight--md);
+}
+
+#metadata-section .pf-v5-c-description-list__term strong {
+    /* Bold field labels with enhanced contrast */
+    color: var(--pf-v5-global--Color--dark-200);
+    font-weight: var(--pf-v5-global--FontWeight--bold);
+    letter-spacing: 0.025em;
+}
+
+#metadata-section .pf-v5-c-description-list__description {
+    /* Professional field content styling */
+    margin-top: var(--pf-v5-global--spacer--sm);
+    padding: var(--pf-v5-global--spacer--md);
+    background-color: #fafbfc;
+    border: 1px solid #e1e4e8;
+    border-radius: 6px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    line-height: 1.5;
+    transition: all 0.15s ease;
+}
+
+#metadata-section .pf-v5-c-description-list__description:hover {
+    background-color: #f6f8fa;
+    border-color: #d0d7de;
+    box-shadow: 0 1px 3px rgba(16, 24, 40, 0.1);
+}
+
+/* ================================
+   Professional Card Enhancement
+   ================================ */
+
+#metadata-section .pf-v5-c-card.pf-m-flat.pf-m-plain {
+    /* Professional card styling */
+    background-color: #ffffff;
+    border: 1px solid #e1e4e8;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(16, 24, 40, 0.1);
+    transition: all 0.15s ease;
+}
+
+#metadata-section .pf-v5-c-card.pf-m-flat.pf-m-plain:hover {
+    box-shadow: 0 4px 12px rgba(16, 24, 40, 0.15);
+    border-color: #d0d7de;
+}
+
+#metadata-section .pf-v5-c-card__header {
+    /* Clean card headers */
+    background-color: #f6f8fa;
+    border-bottom: 1px solid #e1e4e8;
+    border-radius: 8px 8px 0 0;
+    padding: 16px 20px;
+}
+
+#metadata-section .pf-v5-c-card__body {
+    /* Enhanced body padding */
+    padding: 20px;
+}
+
+/* ================================
+   Responsive Enhancements  
+   ================================ */
+
+@media (max-width: 768px) {
+    #metadata-section .pf-v5-c-description-list__description {
+        padding-left: var(--pf-v5-global--spacer--xs);
+        margin-left: 0;
+    }
+    
+    .keyword-expand-btn {
+        font-size: var(--pf-v5-global--FontSize--sm);
+    }
+}
+
+.metadata-field-label {
+    font-weight: var(--pf-v5-global--FontWeight--semi-bold);
+    color: var(--pf-v5-global--Color--100);
+    margin-right: var(--pf-v5-global--spacer--md);
+    flex-shrink: 0;
+}
+
+.metadata-field-value {
+    color: var(--pf-v5-global--Color--200);
+    text-align: right;
+    word-break: break-word;
+}
+
+/* ================================
+   Keywords and Taxonomy Styling
+   ================================ */
+
+.metadata-keywords-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--pf-v5-global--spacer--xs);
+    margin-top: var(--pf-v5-global--spacer--sm);
+}
+
+.metadata-keyword-chip {
+    display: inline-flex;
+    align-items: center;
+    background-color: var(--pf-v5-global--primary-color--100);
+    color: white;
+    padding: var(--pf-v5-global--spacer--xs) var(--pf-v5-global--spacer--sm);
+    border-radius: var(--pf-v5-global--BorderRadius--sm);
+    font-size: var(--pf-v5-global--FontSize--sm);
+    transition: all 0.2s ease;
+}
+
+.metadata-keyword-chip:hover {
+    background-color: var(--pf-v5-global--primary-color--200);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.metadata-keyword-chip .remove-btn {
+    background: none;
+    border: none;
+    color: white;
+    margin-left: var(--pf-v5-global--spacer--xs);
+    cursor: pointer;
+    opacity: 0.8;
+    padding: 0;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.metadata-keyword-chip .remove-btn:hover {
+    opacity: 1;
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.metadata-taxonomy-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--pf-v5-global--spacer--xs);
+    margin-top: var(--pf-v5-global--spacer--sm);
+}
+
+/* ================================
+   Interactive Editor Styling
+   ================================ */
+
+.metadata-editor-expandable {
+    margin-top: var(--pf-v5-global--spacer--md);
+    border: 1px solid var(--pf-v5-global--BorderColor--100);
+    border-radius: var(--pf-v5-global--BorderRadius--sm);
+}
+
+.metadata-editor-expandable .pf-v5-c-expandable-section__toggle {
+    /* Enhanced toggle button */
+    width: 100%;
+    padding: var(--pf-v5-global--spacer--md);
+    text-align: left;
+    background: var(--pf-v5-global--BackgroundColor--light-300);
+    border: none;
+    border-radius: var(--pf-v5-global--BorderRadius--sm) var(--pf-v5-global--BorderRadius--sm) 0 0;
+    transition: all 0.2s ease;
+}
+
+.metadata-editor-expandable .pf-v5-c-expandable-section__toggle:hover {
+    background: var(--pf-v5-global--BackgroundColor--light-200);
+}
+
+.metadata-editor-expandable .pf-v5-c-expandable-section__content {
+    border-top: 1px solid var(--pf-v5-global--BorderColor--100);
+    background: var(--pf-v5-global--BackgroundColor--100);
+}
+
+/* ================================
+   Editor Form Controls
+   ================================ */
+
+.metadata-editor-form .pf-v5-c-form__group {
+    margin-bottom: var(--pf-v5-global--spacer--lg);
+}
+
+.metadata-editor-form .pf-v5-c-form__label {
+    font-weight: var(--pf-v5-global--FontWeight--semi-bold);
+    color: var(--pf-v5-global--Color--100);
+}
+
+.metadata-editor-form .pf-v5-c-form-control {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.metadata-editor-form .pf-v5-c-form-control:focus {
+    border-color: var(--pf-v5-global--primary-color--100);
+    box-shadow: 0 0 0 2px rgba(var(--pf-v5-global--primary-color--100--rgb), 0.25);
+}
+
+/* Keywords Editor */
+#keywords-editor {
+    border: 1px solid var(--pf-v5-global--BorderColor--100);
+    border-radius: var(--pf-v5-global--BorderRadius--sm);
+    padding: var(--pf-v5-global--spacer--md);
+    background: var(--pf-v5-global--BackgroundColor--light-300);
+}
+
+#current-keywords {
+    min-height: 40px;
+    padding: var(--pf-v5-global--spacer--sm);
+    background: var(--pf-v5-global--BackgroundColor--100);
+    border-radius: var(--pf-v5-global--BorderRadius--sm);
+    border: 1px dashed var(--pf-v5-global--BorderColor--200);
+}
+
+#current-keywords:empty::after {
+    content: "No keywords yet. Add some below.";
+    color: var(--pf-v5-global--Color--200);
+    font-style: italic;
+    font-size: var(--pf-v5-global--FontSize--sm);
+}
+
+/* Taxonomy Editor */
+#taxonomy-editor .pf-v5-c-select__menu {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid var(--pf-v5-global--BorderColor--100);
+    border-radius: var(--pf-v5-global--BorderRadius--sm);
+    background: var(--pf-v5-global--BackgroundColor--100);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    position: absolute;
+    width: 100%;
+    top: 100%;
+    left: 0;
+}
+
+#taxonomy-editor .pf-v5-c-select__menu-item {
+    padding: var(--pf-v5-global--spacer--sm) var(--pf-v5-global--spacer--md);
+    width: 100%;
+    text-align: left;
+    border: none;
+    background: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+#taxonomy-editor .pf-v5-c-select__menu-item:hover {
+    background-color: var(--pf-v5-global--BackgroundColor--light-300);
+}
+
+#current-taxonomy {
+    min-height: 40px;
+    padding: var(--pf-v5-global--spacer--sm);
+    background: var(--pf-v5-global--BackgroundColor--100);
+    border-radius: var(--pf-v5-global--BorderRadius--sm);
+    border: 1px dashed var(--pf-v5-global--BorderColor--200);
+    margin-top: var(--pf-v5-global--spacer--sm);
+}
+
+#current-taxonomy:empty::after {
+    content: "No categories selected. Choose from the dropdown above.";
+    color: var(--pf-v5-global--Color--200);
+    font-style: italic;
+    font-size: var(--pf-v5-global--FontSize--sm);
+}
+
+/* ================================
+   AI Suggestions Styling
+   ================================ */
+
+#ai-suggestions-container {
+    min-height: 120px;
+    border: 1px solid var(--pf-v5-global--BorderColor--100);
+    border-radius: var(--pf-v5-global--BorderRadius--sm);
+    padding: var(--pf-v5-global--spacer--lg);
+    background: linear-gradient(135deg, #f8f9fa 0%, #fff 100%);
+}
+
+.ai-suggestion-item {
+    padding: var(--pf-v5-global--spacer--md);
+    border: 1px solid var(--pf-v5-global--BorderColor--200);
+    border-radius: var(--pf-v5-global--BorderRadius--sm);
+    margin-bottom: var(--pf-v5-global--spacer--sm);
+    background: var(--pf-v5-global--BackgroundColor--100);
+    transition: all 0.2s ease;
+}
+
+.ai-suggestion-item:hover {
+    border-color: var(--pf-v5-global--primary-color--100);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* ================================
+   Feedback UI Styling
+   ================================ */
+
+.metadata-feedback-ui {
+    border-top: 1px solid var(--pf-v5-global--BorderColor--100);
+    padding-top: var(--pf-v5-global--spacer--sm);
+    background: linear-gradient(to right, transparent 0%, var(--pf-v5-global--BackgroundColor--light-300) 50%, transparent 100%);
+    padding-left: var(--pf-v5-global--spacer--md);
+    padding-right: var(--pf-v5-global--spacer--md);
+    border-radius: var(--pf-v5-global--BorderRadius--sm);
+}
+
+.metadata-feedback-ui .pf-v5-c-button {
+    transition: all 0.2s ease;
+}
+
+.metadata-feedback-ui .pf-v5-c-button:hover {
+    transform: scale(1.1);
+}
+
+.overall-feedback-ui {
+    display: flex;
+    align-items: center;
+    gap: var(--pf-v5-global--spacer--sm);
+}
+
+/* Feedback button states */
+.pf-v5-c-button.pf-m-success {
+    color: var(--pf-v5-global--success-color--100);
+    border-color: var(--pf-v5-global--success-color--100);
+}
+
+.pf-v5-c-button.pf-m-success:hover {
+    background-color: var(--pf-v5-global--success-color--100);
+    color: white;
+}
+
+.pf-v5-c-button.pf-m-warning {
+    color: var(--pf-v5-global--warning-color--100);
+    border-color: var(--pf-v5-global--warning-color--100);
+}
+
+.pf-v5-c-button.pf-m-warning:hover {
+    background-color: var(--pf-v5-global--warning-color--100);
+    color: white;
+}
+
+/* ================================
+   Export Modal Styling
+   ================================ */
+
+#export-format-modal .pf-v5-c-button {
+    /* Export format buttons */
+    justify-content: flex-start;
+    text-align: left;
+    min-height: 60px;
+    margin-bottom: var(--pf-v5-global--spacer--sm);
+}
+
+#export-format-modal .pf-v5-c-button i {
+    width: 24px;
+    text-align: center;
+}
+
+/* ================================
+   Status and Notifications
+   ================================ */
+
+#editor-status {
+    opacity: 0.8;
+    font-style: italic;
+    transition: opacity 0.2s ease;
+}
+
+#editor-status:hover {
+    opacity: 1;
+}
+
+.metadata-confidence-badge {
+    font-size: var(--pf-v5-global--FontSize--xs);
+    opacity: 0.9;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--pf-v5-global--spacer--xs);
+}
+
+/* Confidence level colors */
+.confidence-high {
+    color: var(--pf-v5-global--success-color--100);
+}
+
+.confidence-medium {
+    color: var(--pf-v5-global--info-color--100);
+}
+
+.confidence-low {
+    color: var(--pf-v5-global--warning-color--100);
+}
+
+.confidence-very-low {
+    color: var(--pf-v5-global--danger-color--100);
+}
+
+/* ================================
+   Responsive Design
+   ================================ */
+
+@media (max-width: 768px) {
+    .metadata-field-display {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .metadata-field-value {
+        text-align: left;
+        margin-top: var(--pf-v5-global--spacer--xs);
+    }
+    
+    .metadata-keywords-container,
+    .metadata-taxonomy-container {
+        justify-content: center;
+    }
+    
+    .overall-feedback-ui {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--pf-v5-global--spacer--xs);
+    }
+    
+    #keywords-editor,
+    #taxonomy-editor {
+        margin-top: var(--pf-v5-global--spacer--sm);
+    }
+}
+
+@media (max-width: 576px) {
+    #metadata-section .pf-v5-c-card__header {
+        padding: var(--pf-v5-global--spacer--sm);
+    }
+    
+    #metadata-section .pf-v5-c-card__body {
+        padding: var(--pf-v5-global--spacer--sm);
+    }
+    
+    .metadata-editor-expandable .pf-v5-c-expandable-section__toggle {
+        padding: var(--pf-v5-global--spacer--sm);
+    }
+    
+    .metadata-keyword-chip {
+        font-size: var(--pf-v5-global--FontSize--xs);
+        padding: calc(var(--pf-v5-global--spacer--xs) / 2) var(--pf-v5-global--spacer--xs);
+    }
+}
+
+/* ================================
+   Animation and Transitions
+   ================================ */
+
+.metadata-fade-in {
+    animation: metadataFadeIn 0.3s ease-out;
+}
+
+@keyframes metadataFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.metadata-slide-in {
+    animation: metadataSlideIn 0.4s ease-out;
+}
+
+@keyframes metadataSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* ================================
+   Loading States
+   ================================ */
+
+.metadata-loading {
+    position: relative;
+}
+
+.metadata-loading::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    animation: metadataShimmer 1.5s infinite;
+}
+
+@keyframes metadataShimmer {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+/* ================================
+   Accessibility Enhancements
+   ================================ */
+
+/* Focus indicators */
+.metadata-editor-expandable .pf-v5-c-expandable-section__toggle:focus,
+#keywords-editor input:focus,
+#taxonomy-editor input:focus {
+    outline: 2px solid var(--pf-v5-global--primary-color--100);
+    outline-offset: 2px;
+}
+
+/* Screen reader only text */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .metadata-field-display {
+        border: 2px solid var(--pf-v5-global--Color--100);
+    }
+    
+    .metadata-keyword-chip,
+    .pf-v5-c-label {
+        border: 1px solid var(--pf-v5-global--Color--100);
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .metadata-keyword-chip,
+    .metadata-editor-expandable .pf-v5-c-expandable-section__toggle,
+    .metadata-feedback-ui .pf-v5-c-button,
+    .ai-suggestion-item {
+        transition: none;
+    }
+    
+    .metadata-fade-in,
+    .metadata-slide-in {
+        animation: none;
+    }
+}
+
+/* ================================
+   Print Styles
+   ================================ */
+
+@media print {
+    #metadata-section {
+        page-break-inside: avoid;
+        box-shadow: none;
+        border: 1px solid #000;
+    }
+    
+    .metadata-feedback-ui,
+    .overall-feedback-ui,
+    .pf-v5-c-card__footer,
+    .metadata-editor-expandable {
+        display: none;
+    }
+    
+    .metadata-keyword-chip,
+    .pf-v5-c-label {
+        background: transparent !important;
+        color: #000 !important;
+        border: 1px solid #000;
+    }
+}

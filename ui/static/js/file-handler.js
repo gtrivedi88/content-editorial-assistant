@@ -225,7 +225,14 @@ function analyzeContent(content, formatHint = 'auto', contentType = 'concept') {
             
             // Display results
             const structuralBlocks = data.structural_blocks || null;
-            displayAnalysisResults(data.analysis, content, structuralBlocks);
+            
+            // 🔧 FIX: Pass full data object so metadata_assistant is available
+            const analysisWithMetadata = {
+                ...data.analysis,
+                metadata_assistant: data.metadata_assistant,
+                content_type: data.content_type
+            };
+            displayAnalysisResults(analysisWithMetadata, content, structuralBlocks);
             
             // Log performance metrics for debugging
             console.log('Analysis Performance:', {

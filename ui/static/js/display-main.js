@@ -72,6 +72,11 @@ function displayAnalysisResults(analysis, content, structuralBlocks = null) {
         displayModularComplianceResults(analysis.modular_compliance, analysis.content_type);
     }
     
+    // 🆕 NEW: Display metadata results if available (Module 3)
+    if (analysis.metadata_assistant) {
+        displayMetadataResults(analysis.metadata_assistant, analysis.content_type);
+    }
+    
     // Add smooth scroll behavior with offset to account for sticky header
     resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
     
