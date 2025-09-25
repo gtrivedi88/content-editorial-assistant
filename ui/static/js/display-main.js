@@ -11,63 +11,62 @@ function displayAnalysisResults(analysis, content, structuralBlocks = null) {
     // Store current analysis and content for later use
     currentAnalysis = analysis;
     currentContent = content; // Store content for attribute block detection
+    
+    // Store original structural blocks before any filtering
+    if (structuralBlocks) {
+        window.originalStructuralBlocks = JSON.parse(JSON.stringify(structuralBlocks)); // Deep copy
+    }
+
+    // Initialize smart filter system with current errors
+    const errors = analysis.errors || [];
+    const filteredErrors = window.SmartFilterSystem ? 
+        window.SmartFilterSystem.applyFilters(errors) : errors;
+    
+    // Enhanced header with filter chips
+    const analysisHeader = createEnhancedAnalysisHeader(analysis, filteredErrors);
 
     // Use enhanced PatternFly Grid layout for better responsiveness
     resultsContainer.innerHTML = `
         <div class="pf-v5-l-grid pf-m-gutter">
             <div class="pf-v5-l-grid__item pf-m-8-col-on-lg pf-m-12-col">
                 <div class="pf-v5-l-stack pf-m-gutter">
-                    <!-- Analysis Header -->
+                    <!-- Enhanced Analysis Header with Filters -->
                     <div class="pf-v5-l-stack__item">
-                        <div class="pf-v5-c-card app-card">
-                            <div class="pf-v5-c-card__header">
-                                <div class="pf-v5-c-card__header-main">
-                                    <h2 class="pf-v5-c-title pf-m-xl">
-                                        <i class="fas fa-search pf-v5-u-mr-sm" style="color: var(--app-primary-color);"></i>
-                                        Analysis Results
-                                    </h2>
-                                </div>
-                                <div class="pf-v5-c-card__actions">
-                                    <div class="pf-v5-l-flex pf-m-space-items-sm">
-                                        <div class="pf-v5-l-flex__item">
-                                            <span class="pf-v5-c-label pf-m-${analysis.errors?.length > 0 ? 'orange' : 'green'}">
-                                                <span class="pf-v5-c-label__content">
-                                                    <i class="fas fa-${analysis.errors?.length > 0 ? 'exclamation-triangle' : 'check-circle'} pf-v5-c-label__icon"></i>
-                                                    ${analysis.errors?.length || 0} Issues
-                                                </span>
-                                            </span>
-                                        </div>
-                                        <div class="pf-v5-l-flex__item">
-                                            <button class="pf-v5-c-button pf-m-link pf-m-inline" type="button" onclick="scrollToStatistics()">
-                                                <i class="fas fa-chart-line pf-v5-u-mr-xs"></i>
-                                                View Stats
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        ${analysisHeader}
                     </div>
 
-                    <!-- Content Display -->
+                    <!-- Content Display with Filtered Results -->
                     <div class="pf-v5-l-stack__item">
-                        ${structuralBlocks ? displayStructuralBlocks(structuralBlocks) : displayFlatContent(content, analysis.errors)}
+                        ${structuralBlocks ? 
+                            displayStructuralBlocks(structuralBlocks, filteredErrors) : 
+                            displayFlatContent(content, filteredErrors)}
                     </div>
 
-                    <!-- Error Summary - Only show for plain text analysis, not for structural blocks -->
-                    ${!structuralBlocks && analysis.errors?.length > 0 ? `
+                    <!-- Filtered Error Summary -->
+                    ${!structuralBlocks && filteredErrors.length > 0 ? `
                         <div class="pf-v5-l-stack__item">
-                            ${createErrorSummary(analysis.errors)}
+                            ${createErrorSummary(filteredErrors)}
                         </div>
                     ` : ''}
                 </div>
             </div>
             <div class="pf-v5-l-grid__item pf-m-4-col-on-lg pf-m-12-col" id="statistics-column">
-                ${generateStatisticsCard(analysis)}
+                ${generateStatisticsCard(analysis, filteredErrors)}
             </div>
         </div>
     `;
 
+    // Register filter change callback for dynamic updates
+    // FIXED: Prevent multiple callback registration
+    if (window.SmartFilterSystem) {
+        // Clear any existing callbacks to prevent duplicates
+        window.SmartFilterSystem.callbacks = [];
+        
+        window.SmartFilterSystem.onFilterChange(() => {
+            refreshDisplayWithFilters();
+        });
+    }
+    
     // Display modular compliance results if available
     if (analysis.modular_compliance) {
         displayModularComplianceResults(analysis.modular_compliance, analysis.content_type);
@@ -82,14 +81,39 @@ function displayAnalysisResults(analysis, content, structuralBlocks = null) {
 }
 
 // Display structural blocks using enhanced PatternFly Cards
-function displayStructuralBlocks(blocks) {
+function displayStructuralBlocks(blocks, filteredErrors = null) {
     if (!blocks || blocks.length === 0) return displayEmptyStructure();
 
+    // Work on a deep copy to avoid mutating original blocks
+    let workingBlocks = JSON.parse(JSON.stringify(blocks));
+
+    // Filter errors within each block using ONLY the pre-filtered errors
+    if (filteredErrors && filteredErrors.length >= 0) {
+        // Use severity-based matching instead of object references
+        const filteredSeverities = new Set();
+        filteredErrors.forEach((error) => {
+            const severity = window.SmartFilterSystem?.getSeverityLevel(error);
+            filteredSeverities.add(severity);
+        });
+        
+        // Filter errors within each block using severity-based matching 
+        workingBlocks = workingBlocks.map((block) => {
+            if (block.errors) {
+                block.errors = block.errors.filter(error => {
+                    // Match by severity instead of object properties
+                    const severity = window.SmartFilterSystem?.getSeverityLevel(error);
+                    return filteredSeverities.has(severity);
+                });
+            }
+            return block;
+        });
+    }
+    
     // Store only the blocks that actually get displayed for rewriteBlock function access
     const displayedBlocks = [];
     let displayIndex = 0;
-    const blocksHtml = blocks.map(block => {
-        const html = createStructuralBlock(block, displayIndex, blocks);
+    const blocksHtml = workingBlocks.map(block => {
+        const html = createStructuralBlock(block, displayIndex, workingBlocks);
         if (html) { // Check for non-empty HTML
             displayedBlocks[displayIndex] = block; // Store block with correct index
             displayIndex++;
@@ -511,4 +535,239 @@ function initializeTooltips() {
             }
         });
     });
+}
+
+/**
+ * Create enhanced analysis header with smart filter chips
+ * @param {Object} analysis - Analysis results object
+ * @param {Array} filteredErrors - Currently filtered errors array
+ * @returns {string} - HTML string for enhanced analysis header
+ */
+function createEnhancedAnalysisHeader(analysis, filteredErrors) {
+    const totalErrors = analysis.errors?.length || 0;
+    const showingCount = filteredErrors.length;
+    
+    // Create filter chips if SmartFilterChips is available
+    const filterChips = window.SmartFilterChips && window.SmartFilterSystem ? 
+        window.SmartFilterChips.createSmartFilterChips(
+            window.SmartFilterSystem.totalCounts, 
+            window.SmartFilterSystem.activeFilters
+        ) : '';
+    
+    // Create filter statistics
+    const filterStats = window.SmartFilterChips && totalErrors > 0 ? 
+        window.SmartFilterChips.createFilterStatistics(totalErrors, showingCount, 
+            window.SmartFilterSystem ? window.SmartFilterSystem.activeFilters : new Set()) : '';
+    
+    return `
+        <div class="pf-v5-c-card app-card">
+            <div class="pf-v5-c-card__header">
+                <div class="pf-v5-c-card__header-main">
+                    <h2 class="pf-v5-c-title pf-m-xl">
+                        <i class="fas fa-search pf-v5-u-mr-sm" style="color: var(--app-primary-color);"></i>
+                        Analysis Results
+                    </h2>
+                </div>
+                <div class="pf-v5-c-card__actions">
+                    <div class="pf-v5-l-flex pf-m-space-items-sm pf-m-align-items-center">
+                        <div class="pf-v5-l-flex__item">
+                            <span class="pf-v5-c-label pf-m-${totalErrors > 0 ? 'orange' : 'green'}">
+                                <span class="pf-v5-c-label__content">
+                                    <i class="fas fa-${totalErrors > 0 ? 'exclamation-triangle' : 'check-circle'} pf-v5-c-label__icon"></i>
+                                    ${totalErrors > 0 ? `Showing ${showingCount} of ${totalErrors} Issues` : 'No Issues Found'}
+                                </span>
+                            </span>
+                        </div>
+                        <div class="pf-v5-l-flex__item">
+                            <button class="pf-v5-c-button pf-m-link pf-m-inline" type="button" onclick="scrollToStatistics()">
+                                <i class="fas fa-chart-line pf-v5-u-mr-xs"></i>
+                                View Stats
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            ${filterChips ? `
+                <div class="pf-v5-c-card__body">
+                    ${filterChips}
+                    ${filterStats}
+                </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+/**
+ * Refresh display with current filter settings
+ * Called when filters change to update the UI dynamically
+ * FIXED: Prevent infinite callback loop by using direct filtering
+ */
+function refreshDisplayWithFilters() {
+    // Only refresh if we have current analysis data
+    if (!currentAnalysis || !currentContent) {
+        console.warn('RefreshDisplayWithFilters: No current analysis data available');
+        return;
+    }
+    
+    const errors = currentAnalysis.errors || [];
+    
+    // Use the already filtered errors from SmartFilterSystem
+    let filteredErrors = errors;
+    if (window.SmartFilterSystem) {
+        // Use the already filtered errors instead of re-filtering
+        filteredErrors = window.SmartFilterSystem.filteredErrors || [];
+        
+        // SAFETY: If filteredErrors is empty but we have originalErrors, reapply filters
+        if (filteredErrors.length === 0 && window.SmartFilterSystem.originalErrors.length > 0) {
+            filteredErrors = window.SmartFilterSystem.originalErrors.filter(error => {
+                const severityLevel = window.SmartFilterSystem.getSeverityLevel(error);
+                return window.SmartFilterSystem.activeFilters.has(severityLevel);
+            });
+            // Update the system's filteredErrors
+            window.SmartFilterSystem.filteredErrors = filteredErrors;
+        }
+        
+        // Ensure counts are up to date
+        window.SmartFilterSystem.updateCounts(errors);
+    }
+    
+    // Update main content areas with filtered errors
+    updateContentDisplay(filteredErrors);
+    updateErrorSummary(filteredErrors);
+    updateStatisticsDisplay(currentAnalysis, filteredErrors);
+    updateFilterChipsDisplay();
+    
+    // Update the header statistics message
+    updateAnalysisHeaderCounts(errors.length, filteredErrors.length);
+    
+    // Update the filter statistics display ("X issues (Y hidden)")
+    updateFilterStatisticsDisplay(errors.length, filteredErrors.length);
+    
+    console.log(`🔄 Display refreshed with ${filteredErrors.length} filtered errors`);
+}
+
+/**
+ * Update content display with filtered errors
+ * @param {Array} filteredErrors - Currently filtered errors
+ * @private
+ */
+function updateContentDisplay(filteredErrors) {
+    const contentContainer = document.querySelector('.pf-v5-l-stack__item:nth-child(2)');
+    if (!contentContainer) return;
+    
+    // Use original blocks instead of potentially filtered ones
+    const hasStructuralBlocks = window.originalStructuralBlocks && window.originalStructuralBlocks.length > 0;
+    
+    if (hasStructuralBlocks) {
+        contentContainer.innerHTML = displayStructuralBlocks(window.originalStructuralBlocks, filteredErrors);
+    } else {
+        contentContainer.innerHTML = displayFlatContent(currentContent, filteredErrors);
+    }
+}
+
+/**
+ * Update error summary with filtered errors
+ * @param {Array} filteredErrors - Currently filtered errors
+ * @private
+ */
+function updateErrorSummary(filteredErrors) {
+    const errorSummaryContainer = document.querySelector('.pf-v5-l-stack__item:nth-child(3)');
+    if (!errorSummaryContainer) return;
+    
+    if (filteredErrors.length > 0) {
+        errorSummaryContainer.innerHTML = createErrorSummary(filteredErrors);
+        errorSummaryContainer.style.display = 'block';
+    } else {
+        errorSummaryContainer.style.display = 'none';
+    }
+}
+
+/**
+ * Update statistics display with filtered errors
+ * @param {Object} analysis - Analysis results object
+ * @param {Array} filteredErrors - Currently filtered errors
+ * @private
+ */
+function updateStatisticsDisplay(analysis, filteredErrors) {
+    const statisticsColumn = document.getElementById('statistics-column');
+    if (!statisticsColumn) return;
+    
+    statisticsColumn.innerHTML = generateStatisticsCard(analysis, filteredErrors);
+}
+
+/**
+ * Update filter chips display after filter state changes
+ * @private
+ */
+function updateFilterChipsDisplay() {
+    if (window.SmartFilterChips && window.SmartFilterSystem) {
+        window.SmartFilterChips.updateFilterChipsDisplay(
+            window.SmartFilterSystem.totalCounts,
+            window.SmartFilterSystem.activeFilters
+        );
+    }
+}
+
+/**
+ * Update the analysis header statistics display
+ * DIRECT FIX: Updates the "Showing X of Y Issues" message
+ * @param {number} totalErrors - Total number of errors
+ * @param {number} filteredErrors - Number of filtered errors
+ * @private
+ */
+function updateAnalysisHeaderCounts(totalErrors, filteredErrors) {
+    const headerLabel = document.querySelector('.pf-v5-c-card__actions .pf-v5-c-label__content');
+    if (headerLabel) {
+        const icon = headerLabel.querySelector('i');
+        const iconClass = totalErrors > 0 ? 'fas fa-exclamation-triangle' : 'fas fa-check-circle';
+        const labelClass = totalErrors > 0 ? 'orange' : 'green';
+        
+        // Update the message
+        if (totalErrors > 0) {
+            headerLabel.innerHTML = `
+                <i class="${iconClass} pf-v5-c-label__icon"></i>
+                Showing ${filteredErrors} of ${totalErrors} Issues
+            `;
+        } else {
+            headerLabel.innerHTML = `
+                <i class="${iconClass} pf-v5-c-label__icon"></i>
+                No Issues Found
+            `;
+        }
+        
+        // Update the label color
+        const labelElement = headerLabel.closest('.pf-v5-c-label');
+        if (labelElement) {
+            labelElement.className = `pf-v5-c-label pf-m-${labelClass}`;
+        }
+    }
+}
+
+/**
+ * Update the filter statistics display ("Showing X of Y issues (Z hidden)")
+ * DIRECT FIX: Updates the yellow/orange alert message below filter chips
+ * @param {number} totalErrors - Total number of errors
+ * @param {number} filteredErrors - Number of filtered errors  
+ * @private
+ */
+function updateFilterStatisticsDisplay(totalErrors, filteredErrors) {
+    if (!window.SmartFilterChips || !window.SmartFilterSystem) return;
+    
+    // Find the existing filter statistics container
+    const existingStats = document.querySelector('.filter-statistics');
+    if (existingStats) {
+        // Generate new statistics HTML
+        const newStatsHtml = window.SmartFilterChips.createFilterStatistics(
+            totalErrors, 
+            filteredErrors, 
+            window.SmartFilterSystem.activeFilters
+        );
+        
+        // Replace the existing statistics
+        if (newStatsHtml) {
+            existingStats.outerHTML = newStatsHtml;
+        } else {
+            existingStats.remove();
+        }
+    }
 }

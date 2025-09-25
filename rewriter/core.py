@@ -102,8 +102,8 @@ class AIRewriter:
             self.progress_callback('assembly_start', 'Assembly Line: Starting sentence-level precision rewriting...', 
                                  'Processing each sentence through sequential passes', 10)
         
-        # Apply sentence-level assembly line fixes
-        result = self.assembly_line.apply_sentence_level_assembly_line_fixes(content, errors, context)
+        # Apply block-level assembly line fixes  
+        result = self.assembly_line.apply_block_level_assembly_line_fixes(content, errors, "sentence")
         
         if result.get('assembly_line_used'):
             # Evaluate improvements made
@@ -134,8 +134,8 @@ class AIRewriter:
             self.progress_callback('pass2_start', 'Assembly Line Refinement: Re-analyzing content...', 
                                  'Detecting any remaining style issues with sentence-level precision', 20)
         
-        # For refinement, we use the same sentence-level assembly line approach
-        result = self.assembly_line.apply_sentence_level_assembly_line_fixes(content, errors, context)
+        # For refinement, we use the same block-level assembly line approach
+        result = self.assembly_line.apply_block_level_assembly_line_fixes(content, errors, "sentence")
         
         if result.get('assembly_line_used'):
             # Evaluate refinement improvements

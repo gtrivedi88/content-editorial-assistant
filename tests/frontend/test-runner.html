@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Filter System - Test Suite</title>
+    
+    <!-- QUnit Testing Framework -->
+    <link rel="stylesheet" href="https://code.jquery.com/qunit/qunit-2.19.4.css">
+    <script src="https://code.jquery.com/qunit/qunit-2.19.4.js"></script>
+    
+    <!-- PatternFly CSS for visual consistency -->
+    <link rel="stylesheet" href="../../ui/static/css/patternfly.css">
+    <link rel="stylesheet" href="../../ui/static/css/base-html.css">
+    
+    <style>
+        body {
+            font-family: var(--pf-v5-global--FontFamily--text, 'Red Hat Text', Helvetica, Arial, sans-serif);
+            background: var(--app-neutral-50, #F9FAFB);
+        }
+        
+        .test-header {
+            background: linear-gradient(135deg, var(--app-primary-color, #007AFF) 0%, var(--app-secondary-color, #5856D6) 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .test-header h1 {
+            margin: 0;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+        
+        .test-header p {
+            margin: 0.5rem 0 0 0;
+            opacity: 0.9;
+        }
+        
+        .test-controls {
+            background: white;
+            border: 1px solid var(--app-neutral-200, #E5E7EB);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 0 2rem 2rem 2rem;
+            box-shadow: var(--app-shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
+        }
+        
+        .test-controls h2 {
+            margin-top: 0;
+            color: var(--app-neutral-900, #111827);
+        }
+        
+        .control-group {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+        }
+        
+        .control-group button {
+            background: var(--app-primary-color, #007AFF);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        
+        .control-group button:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--app-shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+        }
+        
+        .control-group button.secondary {
+            background: var(--app-neutral-600, #4B5563);
+        }
+        
+        .test-info {
+            background: var(--app-neutral-100, #F3F4F6);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .test-info strong {
+            color: var(--app-neutral-900, #111827);
+        }
+        
+        #qunit {
+            margin: 0 2rem;
+        }
+        
+        /* Custom QUnit styling to match app theme */
+        #qunit-header {
+            background: var(--app-neutral-800, #1F2937) !important;
+            border-bottom: 2px solid var(--app-primary-color, #007AFF) !important;
+        }
+        
+        #qunit-banner.qunit-pass {
+            background: var(--app-success-color, #34C759) !important;
+        }
+        
+        #qunit-banner.qunit-fail {
+            background: var(--app-danger-color, #FF3B30) !important;
+        }
+        
+        .performance-metrics {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border: 1px solid #0284c7;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .performance-metrics h3 {
+            margin-top: 0;
+            color: #0c4a6e;
+        }
+        
+        .metric-item {
+            display: inline-block;
+            margin: 0.25rem 0.5rem;
+            padding: 0.25rem 0.5rem;
+            background: rgba(2, 132, 199, 0.1);
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-header">
+        <h1>🧪 Smart Filter System Test Suite</h1>
+        <p>Comprehensive testing for production-ready filter implementation</p>
+    </div>
+    
+    <div class="test-controls">
+        <h2>🎮 Test Controls</h2>
+        
+        <div class="control-group">
+            <button onclick="runAllTests()">▶️ Run All Tests</button>
+            <button onclick="runCoreTests()">🔧 Core Tests Only</button>
+            <button onclick="runPerformanceTests()">⚡ Performance Tests</button>
+            <button onclick="runUITests()" class="secondary">🎨 UI Tests</button>
+            <button onclick="clearResults()" class="secondary">🗑️ Clear Results</button>
+        </div>
+        
+        <div class="test-info">
+            <strong>Test Coverage:</strong>
+            <ul>
+                <li><strong>Unit Tests:</strong> Core filter logic, state management, callbacks</li>
+                <li><strong>Performance Tests:</strong> Large datasets, memory usage, stress testing</li>
+                <li><strong>Edge Cases:</strong> Invalid input, malformed data, unicode content</li>
+                <li><strong>Integration Tests:</strong> UI components, display system integration</li>
+            </ul>
+        </div>
+        
+        <div class="performance-metrics" id="performance-summary" style="display: none;">
+            <h3>📊 Performance Summary</h3>
+            <div id="performance-results"></div>
+        </div>
+    </div>
+    
+    <!-- QUnit Test Container -->
+    <div id="qunit"></div>
+    <div id="qunit-fixture"></div>
+    
+    <!-- Application Scripts -->
+    <script src="../../ui/static/js/smart-filter-system.js"></script>
+    <script src="../../ui/static/js/smart-filter-chips.js"></script>
+    
+    <!-- Test Scripts -->
+    <script src="test-data-generator.js"></script>
+    <script src="smart-filter-tests.js"></script>
+    <script src="performance-tests.js"></script>
+    
+    <script>
+        // Test control functions
+        let testResults = {
+            performance: [],
+            startTime: null,
+            endTime: null
+        };
+        
+        function runAllTests() {
+            clearResults();
+            console.log('🚀 Running complete test suite...');
+            testResults.startTime = performance.now();
+            QUnit.start();
+        }
+        
+        function runCoreTests() {
+            clearResults();
+            console.log('🔧 Running core tests only...');
+            
+            // Filter to run only core modules
+            QUnit.config.moduleFilter = [
+                'Smart Filter System Core',
+                'Input Validation and Edge Cases',
+                'Callback System',
+                'LocalStorage Persistence',
+                'State Management'
+            ];
+            
+            QUnit.start();
+        }
+        
+        function runPerformanceTests() {
+            clearResults();
+            console.log('⚡ Running performance tests...');
+            
+            // Filter to run only performance modules
+            QUnit.config.moduleFilter = [
+                'Filter Performance',
+                'UI Performance',
+                'Stress Tests',
+                'Regression Tests'
+            ];
+            
+            document.getElementById('performance-summary').style.display = 'block';
+            testResults.startTime = performance.now();
+            QUnit.start();
+        }
+        
+        function runUITests() {
+            clearResults();
+            console.log('🎨 Running UI-specific tests...');
+            
+            // Filter to run only UI-related modules
+            QUnit.config.moduleFilter = [
+                'UI Performance'
+            ];
+            
+            QUnit.start();
+        }
+        
+        function clearResults() {
+            // Clear QUnit results
+            const results = document.getElementById('qunit-tests');
+            if (results) {
+                results.innerHTML = '';
+            }
+            
+            // Clear performance summary
+            document.getElementById('performance-summary').style.display = 'none';
+            document.getElementById('performance-results').innerHTML = '';
+            
+            // Reset QUnit
+            QUnit.config.moduleFilter = undefined;
+            testResults = { performance: [], startTime: null, endTime: null };
+        }
+        
+        // Hook into QUnit events for enhanced reporting
+        QUnit.done(function(details) {
+            testResults.endTime = performance.now();
+            
+            console.log('✅ Test suite completed!');
+            console.log(`📊 Results: ${details.passed}/${details.total} passed in ${details.runtime}ms`);
+            
+            // Show performance summary if performance tests were run
+            if (document.getElementById('performance-summary').style.display === 'block') {
+                updatePerformanceSummary(details);
+            }
+            
+            // Auto-scroll to results
+            document.getElementById('qunit').scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start' 
+            });
+        });
+        
+        QUnit.testDone(function(details) {
+            // Collect performance data
+            if (details.module.includes('Performance') || details.module.includes('Stress')) {
+                testResults.performance.push({
+                    name: details.name,
+                    module: details.module,
+                    passed: details.passed,
+                    runtime: details.runtime,
+                    assertions: details.total
+                });
+            }
+        });
+        
+        function updatePerformanceSummary(overallDetails) {
+            const perfResults = document.getElementById('performance-results');
+            const totalRuntime = testResults.endTime - testResults.startTime;
+            
+            let html = `
+                <div class="metric-item">
+                    <strong>Total Runtime:</strong> ${totalRuntime.toFixed(2)}ms
+                </div>
+                <div class="metric-item">
+                    <strong>Tests Passed:</strong> ${overallDetails.passed}/${overallDetails.total}
+                </div>
+                <div class="metric-item">
+                    <strong>QUnit Runtime:</strong> ${overallDetails.runtime}ms
+                </div>
+            `;
+            
+            // Add individual performance test results
+            if (testResults.performance.length > 0) {
+                html += '<h4>Performance Test Details:</h4>';
+                testResults.performance.forEach(test => {
+                    const status = test.passed ? '✅' : '❌';
+                    html += `
+                        <div class="metric-item">
+                            ${status} ${test.name}: ${test.runtime}ms
+                        </div>
+                    `;
+                });
+            }
+            
+            perfResults.innerHTML = html;
+        }
+        
+        // Initialize test environment
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🧪 Smart Filter Test Suite initialized');
+            console.log('📦 Available test modules:', QUnit.config.modules);
+            
+            // Check if SmartFilterSystem is loaded
+            if (typeof SmartFilterSystem !== 'undefined') {
+                console.log('✅ SmartFilterSystem loaded successfully');
+            } else {
+                console.warn('⚠️ SmartFilterSystem not found - some tests may fail');
+            }
+            
+            // Check if SmartFilterChips is loaded
+            if (typeof window.SmartFilterChips !== 'undefined') {
+                console.log('✅ SmartFilterChips loaded successfully');
+            } else {
+                console.warn('⚠️ SmartFilterChips not found - UI tests may fail');
+            }
+            
+            // Show test controls
+            console.log('🎮 Use the controls above to run specific test suites');
+            console.log('💡 Tip: Open browser dev tools to see detailed logs');
+        });
+        
+        // Prevent QUnit from auto-starting
+        QUnit.config.autostart = false;
+        
+        // Configure QUnit for better reporting
+        QUnit.config.reorder = false;
+        QUnit.config.maxDepth = 5;
+        
+        // Add custom assertions for filter testing
+        QUnit.extend(QUnit.assert, {
+            severityMapping: function(error, expectedSeverity, message) {
+                const filter = new SmartFilterSystem();
+                const actualSeverity = filter.getSeverityLevel(error);
+                this.equal(actualSeverity, expectedSeverity, message || `Expected severity ${expectedSeverity} for confidence ${error.confidence}`);
+            },
+            
+            performanceThreshold: function(actualTime, maxTime, message) {
+                this.ok(actualTime <= maxTime, message || `Performance: ${actualTime.toFixed(2)}ms (target: ≤${maxTime}ms)`);
+            },
+            
+            filterCount: function(errors, filterSettings, expectedCount, message) {
+                const filter = new SmartFilterSystem();
+                filter.activeFilters = new Set(filterSettings);
+                const filtered = filter.applyFilters(errors);
+                this.equal(filtered.length, expectedCount, message || `Expected ${expectedCount} filtered errors`);
+            }
+        });
+        
+    </script>
+</body>
+</html>
