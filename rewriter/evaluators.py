@@ -271,7 +271,8 @@ class RewriteEvaluator:
     def evaluate_rewrite_quality(self, original: str, rewritten: str, errors: List[Dict[str, Any]], 
                                 use_ollama: bool = True, pass_number: int = 1) -> Dict[str, Any]:
         """
-        Comprehensive evaluation of rewrite quality.
+        Comprehensive evaluation of rewrite quality with negative example intelligence.
+        Understands when "no change" is the correct, high-quality response.
         
         Args:
             original: Original text
@@ -281,12 +282,22 @@ class RewriteEvaluator:
             pass_number: 1 for first pass, 2 for second pass
             
         Returns:
-            Dictionary with comprehensive evaluation
+            Dictionary with comprehensive evaluation including no-change intelligence
         """
         try:
+            # Check if this is a "no change" scenario and if it's appropriate
+            no_change_evaluation = self._evaluate_no_change_appropriateness(original, rewritten, errors)
+            
             confidence = self.calculate_confidence(original, rewritten, errors, use_ollama, pass_number)
             improvements = self.extract_improvements(original, rewritten, errors)
             changes = self.analyze_changes(original, rewritten)
+            
+            # Adjust evaluation for appropriate no-change scenarios
+            if no_change_evaluation['is_no_change'] and no_change_evaluation['is_appropriate']:
+                # Boost confidence for correctly identifying when not to change
+                confidence = max(confidence, 0.85)
+                improvements.extend(no_change_evaluation['reasoning'])
+                changes['no_change_intelligence'] = True
             
             evaluation = {
                 'confidence': confidence,
@@ -294,7 +305,8 @@ class RewriteEvaluator:
                 'changes_analysis': changes,
                 'quality_score': self._calculate_quality_score(confidence, changes, errors),
                 'pass_number': pass_number,
-                'model_used': 'ollama' if use_ollama else 'huggingface'
+                'model_used': 'ollama' if use_ollama else 'huggingface',
+                'no_change_analysis': no_change_evaluation
             }
             
             return evaluation
@@ -307,14 +319,90 @@ class RewriteEvaluator:
                 'changes_analysis': {},
                 'quality_score': 0.5,
                 'pass_number': pass_number,
-                'model_used': 'unknown'
+                'model_used': 'unknown',
+                'no_change_analysis': {'is_no_change': False, 'is_appropriate': False}
             }
+    
+    def _evaluate_no_change_appropriateness(self, original: str, rewritten: str, errors: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Evaluate whether "no change" was the appropriate response using negative example intelligence.
+        
+        Returns:
+            Dictionary with no-change analysis
+        """
+        is_no_change = original.strip() == rewritten.strip()
+        
+        if not is_no_change:
+            return {'is_no_change': False, 'is_appropriate': False, 'reasoning': []}
+        
+        reasoning = []
+        is_appropriate = False
+        
+        # Check for contextual appropriateness patterns
+        original_lower = original.lower()
+        
+        # Pattern 1: Passive voice in appropriate contexts
+        if any(error.get('type') == 'passive_voice' for error in errors):
+            if any(pattern in original_lower for pattern in [
+                'was corrupted', 'was designed', 'are performed', 'was completed',
+                'was interrupted', 'are generated', 'is processed'
+            ]):
+                is_appropriate = True
+                reasoning.append("Passive voice appropriate in technical/system context")
+        
+        # Pattern 2: Word usage in appropriate contexts  
+        if any(error.get('type', '').startswith('word_usage') for error in errors):
+            if 'simple solution' in original_lower or 'click the' in original_lower:
+                is_appropriate = True
+                reasoning.append("Word usage appropriate for UI instructions or comparisons")
+        
+        # Pattern 3: Second person in user-focused contexts
+        if any(error.get('type') == 'second_person' for error in errors):
+            if any(pattern in original_lower for pattern in [
+                'you can customize', 'your data', 'if you encounter', 'your session'
+            ]):
+                is_appropriate = True
+                reasoning.append("Second person necessary for user-specific instructions")
+        
+        # Pattern 4: Contractions in appropriate informal contexts
+        if any(error.get('type') == 'contractions' for error in errors):
+            if any(pattern in original_lower for pattern in [
+                "we're here to help", "don't forget", "it's working"
+            ]):
+                is_appropriate = True  
+                reasoning.append("Contractions appropriate for friendly, approachable tone")
+        
+        # Pattern 5: Technical formatting in conversational contexts
+        if any(error.get('type', '').startswith('technical_') for error in errors):
+            if '/etc/' in original and '`' not in original:
+                is_appropriate = True
+                reasoning.append("Informal file path formatting appropriate in conversational support")
+        
+        # Pattern 6: Tone in security/critical contexts  
+        if any(error.get('type') == 'tone' for error in errors):
+            if any(pattern in original_lower for pattern in [
+                'absolutely critical', 'must complete', 'cannot be ignored'
+            ]):
+                is_appropriate = True
+                reasoning.append("Strong tone appropriate for security warnings and critical instructions")
+        
+        return {
+            'is_no_change': True,
+            'is_appropriate': is_appropriate,
+            'reasoning': reasoning,
+            'patterns_detected': len(reasoning)
+        }
     
     def _calculate_quality_score(self, confidence: float, changes: Dict[str, Any], 
                                errors: List[Dict[str, Any]]) -> float:
-        """Calculate an overall quality score for the rewrite."""
+        """Calculate an overall quality score for the rewrite with no-change intelligence."""
         try:
             quality_score = confidence * 0.6  # Confidence contributes 60%
+            
+            # Special handling for appropriate no-change scenarios
+            if changes.get('no_change_intelligence', False):
+                # High score for correctly identifying when not to change
+                return min(0.95, confidence * 1.1)
             
             # Bonus for making significant changes
             if changes.get('significant_change', False):

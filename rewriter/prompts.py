@@ -349,13 +349,15 @@ Respond in this EXACT format with no other text before or after:
         # Create comprehensive example section
         examples_section = self._create_comprehensive_examples_section(all_examples, errors)
         
-        # Enhanced system prompt for maximum understanding
+        # Enhanced system prompt for maximum understanding with negative example intelligence
         system_prompt = (
             "You are a world-class technical editor with deep expertise in style guide enforcement. "
-            "Study the comprehensive examples below to understand the patterns and reasoning behind each correction. "
-            "Each example shows the transformation pattern you should apply to similar issues. "
-            "Use the same logical approach demonstrated in the examples to fix the current text. "
-            "Apply multiple error corrections simultaneously while preserving meaning and context."
+            "Study the comprehensive examples below to understand BOTH when to make corrections AND when to leave text unchanged. "
+            "Some examples show transformations (before ≠ after), others show when NO CHANGE is correct (before = after). "
+            "Pay special attention to negative examples where the 'before' and 'after' are identical - these teach you "
+            "when rules should NOT be applied due to contextual appropriateness. "
+            "Use sophisticated judgment: apply corrections when needed, but preserve appropriate usage patterns. "
+            "Context matters more than blind rule application. Show discernment, not just compliance."
         )
         
         error_analysis = self._create_detailed_error_analysis(errors, block_type)

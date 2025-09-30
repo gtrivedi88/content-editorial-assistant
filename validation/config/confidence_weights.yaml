@@ -107,7 +107,7 @@ fallback_weights:
     domain: 0.20
     discourse: 0.15
 
-# Weight adjustment factors
+# Weight adjustment factors  
 # These can be used to fine-tune confidence calculations
 adjustment_factors:
   # Factor to boost confidence for high-certainty linguistic patterns
@@ -115,6 +115,12 @@ adjustment_factors:
   
   # Factor to reduce confidence for ambiguous patterns
   ambiguity_penalty: 0.9
+  
+  # NEW: Factor to reduce confidence when context suggests rule shouldn't apply
+  contextual_appropriateness_adjustment: 0.3
+  
+  # NEW: Factor to boost confidence when negative example patterns detected
+  negative_example_boost: 1.2
   
   # Minimum confidence threshold before applying adjustments
   adjustment_threshold: 0.5
@@ -124,6 +130,35 @@ adjustment_factors:
   
   # Minimum confidence value (floor to prevent under-confidence)
   min_confidence: 0.05
+
+# NEW: Negative example patterns for contextual appropriateness
+negative_example_patterns:
+  passive_voice_appropriate:
+    - "was corrupted during"
+    - "was designed to"
+    - "are performed automatically"
+    - "was completed"
+    - "is processed by"
+    
+  word_usage_contextual:
+    - "simple solution for"
+    - "click the download"
+    - "just enter your"
+    
+  contractions_appropriate:
+    - "we're here to help"
+    - "don't forget to"
+    - "it's working as expected"
+    
+  second_person_appropriate:
+    - "you can customize your"
+    - "your data will be"
+    - "if you encounter this error"
+    
+  tone_contextual:
+    - "absolutely critical for security"
+    - "must complete this task"
+    - "cannot be ignored"
 
 # Confidence calculation settings
 calculation_settings:

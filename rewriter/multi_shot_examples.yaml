@@ -194,36 +194,6 @@ examples:
       success_rate: 0.88
       difficulty: "complex"
 
-  # ===== AMBIGUITY =====
-  ambiguity:
-    - before: "The button is clicked to submit"
-      after: "Click the button to submit"
-      context: "instruction"
-      reasoning: "Convert passive voice to active imperative, specify actor (user implied)"
-      success_rate: 0.94
-      difficulty: "simple"
-      
-    - before: "When the form is submitted, validation occurs"
-      after: "When you submit the form, the system validates the data"
-      context: "procedure"
-      reasoning: "Specify actors: 'you' submit, 'system' validates - eliminate vague passive voice"
-      success_rate: 0.91
-      difficulty: "medium"
-      
-    - before: "Errors are handled by the application automatically"
-      after: "The error handling module automatically processes errors"
-      context: "explanation"
-      reasoning: "Replace vague 'application' with specific component 'error handling module'"
-      success_rate: 0.89
-      difficulty: "medium"
-      
-    - before: "Data is processed and results are displayed when analysis is completed"
-      after: "The analytics engine processes data and displays results when analysis completes"
-      context: "explanation"
-      reasoning: "Complex: specify component actor (analytics engine), convert multiple passive constructions to active"
-      success_rate: 0.85
-      difficulty: "complex"
-
   # ===== LEGAL CLAIMS =====
   legal_claims:
     - before: "This is the easiest way to configure the system"
@@ -244,6 +214,146 @@ examples:
       after: "This process typically produces successful results"
       context: "procedure"
       reasoning: "Replace guarantee claim and subjective 'simple' with qualified, objective language"
+      success_rate: 0.88
+      difficulty: "complex"
+
+  # ===== CRITICAL MISSING RULES =====
+  
+  spacing:
+    - before: "Click the button,then save the file"
+      after: "Click the button, then save the file"
+      context: "instruction"
+      reasoning: "Add space after comma before 'then'"
+      success_rate: 0.98
+      difficulty: "simple"
+      
+    - before: "Navigate to File>Settings>Preferences"
+      after: "Navigate to File > Settings > Preferences"
+      context: "instruction"
+      reasoning: "Add spaces around menu separator symbols"
+      success_rate: 0.97
+      difficulty: "simple"
+      
+    - before: "Set the value to'true'or'false'"
+      after: "Set the value to 'true' or 'false'"
+      context: "instruction"
+      reasoning: "Add spaces around quoted values and conjunctions"
+      success_rate: 0.95
+      difficulty: "medium"
+      
+    - before: "Configure the API(version 2.0)settings,including timeout=30and retries=3"
+      after: "Configure the API (version 2.0) settings, including timeout=30 and retries=3"
+      context: "instruction"
+      reasoning: "Complex spacing: add spaces before parentheses, after commas, around 'and'"
+      success_rate: 0.91
+      difficulty: "complex"
+
+  ambiguity:
+    - before: "The system processes the data"
+      after: "The authentication system processes user data"
+      context: "explanation"
+      reasoning: "Specify which system and what type of data"
+      success_rate: 0.94
+      difficulty: "simple"
+      
+    - before: "When errors occur, they are handled"
+      after: "When validation errors occur, the error handler processes them"
+      context: "explanation"
+      reasoning: "Specify error type and handling component"
+      success_rate: 0.92
+      difficulty: "medium"
+      
+    - before: "The application automatically manages this"
+      after: "The backup service automatically manages file synchronization"
+      context: "explanation"
+      reasoning: "Replace vague 'application' and 'this' with specific component and process"
+      success_rate: 0.89
+      difficulty: "medium"
+      
+    - before: "Users can configure it to do what they need"
+      after: "Users can configure the notification system to send alerts based on specific criteria"
+      context: "explanation"
+      reasoning: "Complex ambiguity resolution: specify component, action, and criteria"
+      success_rate: 0.85
+      difficulty: "complex"
+
+  indentation:
+    - before: "1. First step\n2. Second step\n3. Third step"
+      after: "1. First step\n2. Second step\n3. Third step"
+      context: "procedure"
+      reasoning: "Maintain consistent indentation for numbered lists"
+      success_rate: 0.97
+      difficulty: "simple"
+      
+    - before: "- Main item\n- Sub item\n- Another sub item"
+      after: "- Main item\n  - Sub item\n  - Another sub item"
+      context: "list"
+      reasoning: "Indent sub-items with two spaces for hierarchy"
+      success_rate: 0.94
+      difficulty: "medium"
+      
+    - before: "## Section\nContent here\n### Subsection\nMore content\n#### Sub-subsection\nFinal content"
+      after: "## Section\nContent here\n\n### Subsection\nMore content\n\n#### Sub-subsection\nFinal content"
+      context: "document"
+      reasoning: "Add proper spacing between sections and maintain heading hierarchy"
+      success_rate: 0.92
+      difficulty: "medium"
+
+  admonition_content:
+    - before: "Note: Be careful"
+      after: "Note: Save your work before proceeding to prevent data loss"
+      context: "admonition"
+      reasoning: "Make note content specific and actionable"
+      success_rate: 0.95
+      difficulty: "simple"
+      
+    - before: "Warning: This might cause problems"
+      after: "Warning: This operation permanently deletes files. Ensure you have backups before continuing."
+      context: "warning"
+      reasoning: "Specify the risk and provide clear preventive action"
+      success_rate: 0.93
+      difficulty: "medium"
+      
+    - before: "Tip: You should know this"
+      after: "Tip: Use keyboard shortcuts Ctrl+S to save time during frequent operations"
+      context: "tip"
+      reasoning: "Provide specific, actionable advice with concrete examples"
+      success_rate: 0.91
+      difficulty: "medium"
+      
+    - before: "Caution: Something could happen"
+      after: "Caution: Modifying system files without proper permissions may cause application instability. Verify administrator access before proceeding."
+      context: "caution"
+      reasoning: "Complex admonition: specify exact risk, consequence, and verification step"
+      success_rate: 0.87
+      difficulty: "complex"
+
+  list_punctuation:
+    - before: "Requirements:\n• Valid license\n• Network connection\n• Admin rights"
+      after: "Requirements:\n• Valid license\n• Network connection\n• Administrator rights"
+      context: "list"
+      reasoning: "Use consistent terminology (administrator vs admin) in lists"
+      success_rate: 0.96
+      difficulty: "simple"
+      
+    - before: "Steps:\n1. Open file,\n2. Make changes,\n3. Save file."
+      after: "Steps:\n1. Open file\n2. Make changes\n3. Save file"
+      context: "procedure"
+      reasoning: "Remove unnecessary commas and final period in simple action lists"
+      success_rate: 0.94
+      difficulty: "simple"
+      
+    - before: "Features include:\n- Fast processing;\n- Secure storage;\n- Easy backup."
+      after: "Features include:\n- Fast processing\n- Secure storage\n- Easy backup"
+      context: "feature_list"
+      reasoning: "Remove semicolons and periods from parallel phrase lists"
+      success_rate: 0.92
+      difficulty: "medium"
+      
+    - before: "Configure the following:\n• Database: MySQL or PostgreSQL;\n• Cache: Redis (recommended), or Memcached;\n• Queue: RabbitMQ, Apache Kafka, or Amazon SQS."
+      after: "Configure the following:\n• Database: MySQL or PostgreSQL\n• Cache: Redis (recommended) or Memcached\n• Queue: RabbitMQ, Apache Kafka, or Amazon SQS"
+      context: "configuration"
+      reasoning: "Complex list: remove inconsistent punctuation, standardize parallel structure"
       success_rate: 0.88
       difficulty: "complex"
 
@@ -316,6 +426,126 @@ examples:
       reasoning: "Use generic term for personal information compliance"
       success_rate: 0.93
       difficulty: "simple"
+      
+    - before: "Enter your home address and phone number"
+      after: "Enter your mailing address and contact number"
+      context: "form"
+      reasoning: "Use generic terms for personal contact information"
+      success_rate: 0.94
+      difficulty: "simple"
+      
+    - before: "Provide your driver's license number and SSN for verification"
+      after: "Provide your government-issued ID number and tax identification number for verification"
+      context: "form"
+      reasoning: "Replace region-specific personal identifiers with generic equivalents"
+      success_rate: 0.91
+      difficulty: "medium"
+      
+    - before: "We need your full name, birthday, social security number, mother's maiden name, and current salary information"
+      after: "We need your full name, birth date, government identification number, security question response, and current income information"
+      context: "form"
+      reasoning: "Complex personal information generalization: replace specific terms with compliance-friendly alternatives"
+      success_rate: 0.87
+      difficulty: "complex"
+
+  # ===== ENHANCED LEGAL & COMPANY COVERAGE =====
+  
+  legal_company_names_enhanced:
+    - before: "Use Google Chrome browser"
+      after: "Use Google® Chrome™ browser"
+      context: "instruction"
+      reasoning: "Add both registered trademark and trademark symbols for comprehensive legal coverage"
+      success_rate: 0.98
+      difficulty: "simple"
+      
+    - before: "Install Microsoft Office and Adobe Photoshop"
+      after: "Install Microsoft® Office® and Adobe® Photoshop®"
+      context: "instruction"
+      reasoning: "Add trademark symbols to multiple company products"
+      success_rate: 0.96
+      difficulty: "simple"
+      
+    - before: "Compatible with Windows, macOS, and Linux operating systems"
+      after: "Compatible with Microsoft® Windows®, Apple® macOS®, and Linux operating systems"
+      context: "specification"
+      reasoning: "Add company trademarks to operating systems (Linux remains open source)"
+      success_rate: 0.93
+      difficulty: "medium"
+      
+    - before: "The solution works with Amazon Web Services, Oracle Database, VMware vSphere, and IBM Watson APIs"
+      after: "The solution works with Amazon® Web Services™, Oracle® Database, VMware® vSphere®, and IBM® Watson™ APIs"
+      context: "technical_specification"
+      reasoning: "Complex trademark application: multiple enterprise technology products with appropriate symbols"
+      success_rate: 0.89
+      difficulty: "complex"
+
+  # ===== TECHNICAL ELEMENTS COMPREHENSIVE COVERAGE =====
+  
+  technical_api_elements:
+    - before: "Call the API endpoint"
+      after: "Call the `GET /api/users` endpoint"
+      context: "instruction"
+      reasoning: "Format API endpoint with method and path in code formatting"
+      success_rate: 0.96
+      difficulty: "simple"
+      
+    - before: "Send POST request with user data"
+      after: "Send `POST /api/users` request with user data in JSON format"
+      context: "instruction"
+      reasoning: "Specify complete API endpoint and data format"
+      success_rate: 0.94
+      difficulty: "medium"
+      
+    - before: "The response includes status code, headers, and body content"
+      after: "The response includes HTTP status code (e.g., `200 OK`), response headers (`Content-Type: application/json`), and JSON body content"
+      context: "explanation"
+      reasoning: "Provide specific examples of HTTP response components with proper formatting"
+      success_rate: 0.91
+      difficulty: "complex"
+
+  technical_database_elements:
+    - before: "Query the users table"
+      after: "Query the `users` table"
+      context: "instruction"
+      reasoning: "Format database table names with backticks"
+      success_rate: 0.97
+      difficulty: "simple"
+      
+    - before: "SELECT username FROM users WHERE id = 1"
+      after: "`SELECT username FROM users WHERE id = 1`"
+      context: "code"
+      reasoning: "Format complete SQL queries with code formatting"
+      success_rate: 0.95
+      difficulty: "simple"
+      
+    - before: "Create database schema with tables for users, orders, and products including primary keys, foreign keys, and indexes"
+      after: "Create database schema with the following tables:\n• `users` table with `user_id` primary key\n• `orders` table with `order_id` primary key and `user_id` foreign key\n• `products` table with appropriate indexes on `name` and `category` columns"
+      context: "database_design"
+      reasoning: "Structure complex database information with specific table and column formatting"
+      success_rate: 0.88
+      difficulty: "complex"
+
+  technical_security_elements:
+    - before: "Use HTTPS for secure connections"
+      after: "Use HTTPS (port 443) for secure encrypted connections"
+      context: "security"
+      reasoning: "Specify security protocol details including port information"
+      success_rate: 0.94
+      difficulty: "simple"
+      
+    - before: "Implement authentication with JWT tokens"
+      after: "Implement authentication using JWT (JSON Web Token) with `Authorization: Bearer <token>` header"
+      context: "security"
+      reasoning: "Expand acronym and provide specific implementation detail"
+      success_rate: 0.92
+      difficulty: "medium"
+      
+    - before: "Configure SSL certificates, enable two-factor authentication, implement API rate limiting, and set up secure session management"
+      after: "Configure security measures:\n• SSL certificates: install valid certificates for HTTPS\n• Two-factor authentication: enable TOTP or SMS verification\n• API rate limiting: implement throttling (e.g., 100 requests/minute)\n• Session management: use secure, HTTP-only cookies with expiration"
+      context: "security_configuration"
+      reasoning: "Break complex security requirements into structured, specific implementation guidance"
+      success_rate: 0.86
+      difficulty: "complex"
 
   inclusive_language:
     - before: "Hey guys, let's start the meeting"
@@ -474,6 +704,8 @@ examples:
       success_rate: 0.97
       difficulty: "simple"
 
+  # ===== MODULAR COMPLIANCE COMPREHENSIVE COVERAGE =====
+  
   modular_compliance:
     - before: "See the section above for details"
       after: "See Section 3.2: Configuration Requirements for details"
@@ -481,6 +713,20 @@ examples:
       reasoning: "Replace vague cross-references with specific section references"
       success_rate: 0.95
       difficulty: "simple"
+      
+    - before: "As mentioned earlier, check the guide"
+      after: "As described in Chapter 2: Installation Guide, verify the prerequisites"
+      context: "reference"
+      reasoning: "Replace vague reference with specific chapter and action"
+      success_rate: 0.93
+      difficulty: "medium"
+      
+    - before: "The information below shows the settings"
+      after: "Table 4.1 shows the required configuration settings"
+      context: "reference"
+      reasoning: "Replace directional reference with specific table reference"
+      success_rate: 0.91
+      difficulty: "medium"
 
   concept_module:
     - before: "This explains how things work"
@@ -489,6 +735,20 @@ examples:
       reasoning: "Make concept introductions specific and descriptive"
       success_rate: 0.93
       difficulty: "medium"
+      
+    - before: "Understanding the basics is important"
+      after: "Understanding API rate limiting helps you design resilient applications that handle traffic spikes effectively"
+      context: "concept"
+      reasoning: "Transform vague concept introduction into specific, benefit-focused explanation"
+      success_rate: 0.91
+      difficulty: "medium"
+      
+    - before: "This section covers the main topic"
+      after: "This concept module explains how database indexing improves query performance and reduces response time"
+      context: "concept"
+      reasoning: "Replace generic section introduction with specific concept focus and clear benefits"
+      success_rate: 0.89
+      difficulty: "complex"
 
   procedure_module:
     - before: "Do these steps"
@@ -497,6 +757,27 @@ examples:
       reasoning: "Provide clear context and purpose for procedure modules"
       success_rate: 0.96
       difficulty: "simple"
+      
+    - before: "Follow this process"
+      after: "Follow this process to deploy your application to production"
+      context: "procedure"
+      reasoning: "Add specific goal and context to procedure introduction"
+      success_rate: 0.94
+      difficulty: "simple"
+      
+    - before: "Setting Up the Environment"
+      after: "Setting up the development environment"
+      context: "procedure_title"
+      reasoning: "Use gerund form and be specific about environment type"
+      success_rate: 0.92
+      difficulty: "medium"
+      
+    - before: "Install Software\n\nFirst, download the software. Then, run the installer. Finally, configure settings."
+      after: "Installing the development software\n\nBefore you begin, ensure you have administrator privileges.\n\n1. Download the installer from the official website\n2. Run the installer as administrator\n3. Configure the development environment settings\n\nVerification: Test the installation by running the help command."
+      context: "procedure_structure"
+      reasoning: "Complex procedure restructure: gerund title, prerequisites, numbered steps, verification"
+      success_rate: 0.85
+      difficulty: "complex"
 
   reference_module:
     - before: "More info here"
@@ -505,6 +786,175 @@ examples:
       reasoning: "Make reference modules descriptive and specific"
       success_rate: 0.94
       difficulty: "simple"
+      
+    - before: "Parameters and values are listed"
+      after: "Table 3.1 lists all configuration parameters, their data types, and default values"
+      context: "reference"
+      reasoning: "Specify what reference information is provided and its organization"
+      success_rate: 0.92
+      difficulty: "medium"
+      
+    - before: "Error Codes\n\n404: Not found\n500: Server error\n401: Unauthorized"
+      after: "HTTP error codes\n\nThe following table lists common HTTP error codes returned by the API:\n\n| Code | Name | Description | Resolution |\n|------|------|-------------|------------|\n| 404 | Not Found | Resource does not exist | Verify the endpoint URL |\n| 500 | Internal Server Error | Server-side error occurred | Contact support |\n| 401 | Unauthorized | Authentication required | Check API credentials |"
+      context: "reference_table"
+      reasoning: "Transform simple list into structured reference table with actionable information"
+      success_rate: 0.88
+      difficulty: "complex"
+
+  cross_reference:
+    - before: "See other section"
+      after: "For related information, see Section 5.3: Advanced Configuration Options"
+      context: "cross_reference"
+      reasoning: "Replace vague cross-reference with specific section title and number"
+      success_rate: 0.96
+      difficulty: "simple"
+      
+    - before: "Related topics: Security, Performance, Troubleshooting"
+      after: "Related topics:\n• Chapter 7: Security Best Practices\n• Section 4.2: Performance Optimization\n• Appendix B: Troubleshooting Guide"
+      context: "related_topics"
+      reasoning: "Transform generic topic list into specific, actionable cross-references"
+      success_rate: 0.93
+      difficulty: "medium"
+      
+    - before: "For more details, check the documentation about APIs and databases"
+      after: "For implementation details:\n• API integration: see Chapter 8: RESTful API Implementation\n• Database design: see Section 12.4: Database Schema Guidelines"
+      context: "multiple_references"
+      reasoning: "Break compound reference into specific, targeted cross-references"
+      success_rate: 0.89
+      difficulty: "complex"
+
+  inter_module_analysis:
+    - before: "This connects to other parts of the system"
+      after: "This authentication module integrates with the user management module (Section 3.1) and the session handling module (Section 3.2)"
+      context: "module_connections"
+      reasoning: "Specify exact module connections with section references"
+      success_rate: 0.91
+      difficulty: "medium"
+      
+    - before: "Prerequisites: Basic setup"
+      after: "Prerequisites:\n• Complete Chapter 2: Initial System Setup\n• Configure the database connection (Section 2.3)"
+      context: "prerequisites"
+      reasoning: "Transform vague prerequisites into specific, actionable requirements"
+      success_rate: 0.94
+      difficulty: "medium"
+      
+    - before: "This procedure affects multiple components including user accounts, security settings, and database configurations that are described elsewhere in various sections"
+      after: "This procedure affects multiple system components:\n• User accounts: modifications described in Section 4.2\n• Security settings: impacts covered in Chapter 6: Security Configuration\n• Database configurations: changes detailed in Section 8.1: Database Schema Updates"
+      context: "complex_dependencies"
+      reasoning: "Break complex inter-module relationships into clear, specific connections"
+      success_rate: 0.86
+      difficulty: "complex"
+
+  template_compliance:
+    - before: "Document Title\nContent goes here"
+      after: "Configuring user authentication\n\nThis procedure explains how to set up user authentication for your application.\n\n## Prerequisites\n• Administrative access to the system\n• Database connection configured\n\n## Procedure\n1. Access the configuration panel\n2. Navigate to the Authentication section"
+      context: "procedure_template"
+      reasoning: "Apply proper procedure template with gerund title, description, prerequisites, and structured content"
+      success_rate: 0.88
+      difficulty: "complex"
+      
+    - before: "Understanding APIs\nAPIs are interfaces"
+      after: "Understanding REST APIs\n\nREST APIs provide a standardized way for applications to communicate over HTTP. They use standard HTTP methods (GET, POST, PUT, DELETE) to perform operations on resources identified by URLs.\n\n## Key characteristics\nREST APIs are stateless, cacheable, and use a uniform interface for all interactions."
+      context: "concept_template"
+      reasoning: "Apply concept template with specific title, clear definition, and structured explanation"
+      success_rate: 0.90
+      difficulty: "medium"
+
+  # ===== LANGUAGE & GRAMMAR MISSING RULES =====
+  
+  spelling:
+    - before: "Seperate the files into different folders"
+      after: "Separate the files into different folders"
+      context: "instruction"
+      reasoning: "Fix common spelling error: 'seperate' to 'separate'"
+      success_rate: 0.99
+      difficulty: "simple"
+      
+    - before: "The user recieved an error message"
+      after: "The user received an error message"
+      context: "explanation"
+      reasoning: "Fix common spelling error: 'recieved' to 'received'"
+      success_rate: 0.98
+      difficulty: "simple"
+      
+    - before: "This occured because the system was offline"
+      after: "This occurred because the system was offline"
+      context: "explanation"
+      reasoning: "Fix spelling error with doubled consonant: 'occured' to 'occurred'"
+      success_rate: 0.97
+      difficulty: "medium"
+      
+    - before: "The priviledged user can acces confidencial files sucessfully"
+      after: "The privileged user can access confidential files successfully"
+      context: "explanation"
+      reasoning: "Complex spelling correction: fix multiple errors in technical context"
+      success_rate: 0.94
+      difficulty: "complex"
+
+  terminology:
+    - before: "Login to your account"
+      after: "Log in to your account"
+      context: "instruction"
+      reasoning: "Use two-word verb 'log in' for the action (vs. noun 'login')"
+      success_rate: 0.97
+      difficulty: "simple"
+      
+    - before: "Setup the database connection"
+      after: "Set up the database connection"
+      context: "instruction"
+      reasoning: "Use two-word verb 'set up' for the action (vs. noun 'setup')"
+      success_rate: 0.96
+      difficulty: "simple"
+      
+    - before: "Backup your files regularly"
+      after: "Back up your files regularly"
+      context: "instruction"
+      reasoning: "Use two-word verb 'back up' for the action (vs. noun 'backup')"
+      success_rate: 0.95
+      difficulty: "simple"
+      
+    - before: "The login page allows users to signin to their setup"
+      after: "The login page allows users to sign in to their account"
+      context: "explanation"
+      reasoning: "Complex terminology: distinguish verbs (sign in) from nouns (login), use proper object (account vs setup)"
+      success_rate: 0.91
+      difficulty: "complex"
+
+  prepositions_dedicated:
+    - before: "Navigate at the settings page"
+      after: "Navigate to the settings page"
+      context: "instruction"
+      reasoning: "Use correct preposition 'to' for destination, not 'at'"
+      success_rate: 0.96
+      difficulty: "simple"
+      
+    - before: "Click on the Submit button"
+      after: "Click the Submit button"
+      context: "instruction"
+      reasoning: "Remove unnecessary preposition 'on' after 'click'"
+      success_rate: 0.94
+      difficulty: "simple"
+      
+    - before: "The files are located in inside the folder"
+      after: "The files are located inside the folder"
+      context: "explanation"
+      reasoning: "Remove redundant preposition 'in' before 'inside'"
+      success_rate: 0.93
+      difficulty: "medium"
+      
+    - before: "Configure the system for to handle multiple users"
+      after: "Configure the system to handle multiple users"
+      context: "instruction"
+      reasoning: "Remove redundant preposition 'for' before infinitive 'to'"
+      success_rate: 0.92
+      difficulty: "medium"
+      
+    - before: "The API differs from than the previous version in on several key aspects"
+      after: "The API differs from the previous version in several key aspects"
+      context: "explanation"
+      reasoning: "Complex preposition correction: remove 'than' after 'from' and 'on' after 'in'"
+      success_rate: 0.87
+      difficulty: "complex"
 
   # ===== MEDIUM PRIORITY GRAMMAR & LANGUAGE =====
   
@@ -556,13 +1006,7 @@ examples:
       success_rate: 0.95
       difficulty: "simple"
 
-  spelling:
-    - before: "Seperate the files into categories"
-      after: "Separate the files into categories"
-      context: "instruction"
-      reasoning: "Fix spelling error: 'seperate' to 'separate'"
-      success_rate: 0.99
-      difficulty: "simple"
+  # Note: spelling examples are already included in MEDIUM PRIORITY section
 
   anthropomorphism:
     - before: "The system wants you to log in"
@@ -572,13 +1016,7 @@ examples:
       success_rate: 0.93
       difficulty: "simple"
 
-  terminology:
-    - before: "Press the power button"
-      after: "Press the Power button"
-      context: "instruction"
-      reasoning: "Use consistent capitalization for interface elements"
-      success_rate: 0.94
-      difficulty: "simple"
+  # Note: terminology examples are already included in MEDIUM PRIORITY section
 
   prefixes:
     - before: "Re-start the application"
@@ -1039,6 +1477,13 @@ examples:
       reasoning: "Adjust aggressive tone to be firm but professional"
       success_rate: 0.92
       difficulty: "medium"
+      
+    - before: "This is absolutely critical and cannot be ignored!"
+      after: "This step is important for system functionality"
+      context: "warning"
+      reasoning: "Replace hyperbolic language with measured, professional tone"
+      success_rate: 0.90
+      difficulty: "medium"
 
   conversational_style:
     - before: "Hey there! Let's get started with this awesome feature!"
@@ -1047,6 +1492,13 @@ examples:
       reasoning: "Adjust overly casual tone to professional but friendly"
       success_rate: 0.89
       difficulty: "medium"
+      
+    - before: "Oops! Something went wrong. No worries though!"
+      after: "An error occurred. Follow these steps to resolve the issue:"
+      context: "error_message"
+      reasoning: "Replace casual error language with professional, solution-focused messaging"
+      success_rate: 0.87
+      difficulty: "medium"
 
   global_audiences:
     - before: "This costs 50 bucks"
@@ -1054,6 +1506,13 @@ examples:
       context: "pricing"
       reasoning: "Replace regional slang 'bucks' with international currency format"
       success_rate: 0.94
+      difficulty: "simple"
+      
+    - before: "The app will be available fall 2024"
+      after: "The application will be available in Q4 2024"
+      context: "timeline"
+      reasoning: "Replace seasonal reference with global quarterly reference"
+      success_rate: 0.92
       difficulty: "simple"
 
   llm_consumability:
@@ -1194,7 +1653,7 @@ examples:
       success_rate: 0.94
       difficulty: "simple"
 
-  # ===== REFERENCES =====
+  # ===== COMPREHENSIVE REFERENCES COVERAGE =====
   
   references_citations:
     - before: "For more help, click here"
@@ -1203,6 +1662,20 @@ examples:
       reasoning: "Replace vague 'click here' with descriptive link text"
       success_rate: 0.95
       difficulty: "simple"
+      
+    - before: "Additional information is available at the link"
+      after: "Additional information is available in the API documentation guide"
+      context: "reference"
+      reasoning: "Replace vague 'at the link' with specific document reference"
+      success_rate: 0.93
+      difficulty: "simple"
+      
+    - before: "See the documentation for more details about configuration, troubleshooting, and advanced features"
+      after: "For more information, see:\n• Configuration: Chapter 3 of the Administrator Guide\n• Troubleshooting: Section 8.2 of the User Manual\n• Advanced features: Appendix C of the Developer Documentation"
+      context: "multiple_references"
+      reasoning: "Break compound references into specific, actionable citations"
+      success_rate: 0.89
+      difficulty: "complex"
 
   references_geographic_locations:
     - before: "Available in US, UK, and CA"
@@ -1211,6 +1684,20 @@ examples:
       reasoning: "Spell out country names instead of abbreviations"
       success_rate: 0.93
       difficulty: "simple"
+      
+    - before: "Servers in EU, APAC, and Americas"
+      after: "Servers in Europe, Asia-Pacific, and the Americas"
+      context: "infrastructure"
+      reasoning: "Expand regional abbreviations to full geographic terms"
+      success_rate: 0.91
+      difficulty: "medium"
+      
+    - before: "Data centers in NYC, LA, London, Tokyo, Sydney, and Frankfurt serve customers in US, UK, Japan, Australia, and Germany respectively"
+      after: "Data centers in New York, Los Angeles, London, Tokyo, Sydney, and Frankfurt serve customers in the United States, United Kingdom, Japan, Australia, and Germany respectively"
+      context: "global_infrastructure"
+      reasoning: "Expand both city abbreviations and country names for comprehensive geographic clarity"
+      success_rate: 0.88
+      difficulty: "complex"
 
   references_names_titles:
     - before: "Contact john smith for support"
@@ -1219,6 +1706,20 @@ examples:
       reasoning: "Capitalize proper names and titles"
       success_rate: 0.97
       difficulty: "simple"
+      
+    - before: "Developed by dr. sarah johnson, phd and prof. michael chen"
+      after: "Developed by Dr. Sarah Johnson, PhD and Prof. Michael Chen"
+      context: "attribution"
+      reasoning: "Capitalize proper names and academic titles"
+      success_rate: 0.95
+      difficulty: "medium"
+      
+    - before: "The research team includes john doe (senior engineer), jane smith (project manager), and bob wilson (qa lead)"
+      after: "The research team includes John Doe (Senior Engineer), Jane Smith (Project Manager), and Bob Wilson (QA Lead)"
+      context: "team_attribution"
+      reasoning: "Capitalize names and job titles consistently"
+      success_rate: 0.92
+      difficulty: "medium"
 
   references_product_names:
     - before: "Compatible with windows 10"
@@ -1227,6 +1728,20 @@ examples:
       reasoning: "Capitalize product names properly"
       success_rate: 0.96
       difficulty: "simple"
+      
+    - before: "Works with docker, kubernetes, jenkins, and git"
+      after: "Works with Docker, Kubernetes, Jenkins, and Git"
+      context: "tool_compatibility"
+      reasoning: "Capitalize proper product names for development tools"
+      success_rate: 0.94
+      difficulty: "simple"
+      
+    - before: "Integrates with salesforce, hubspot, slack, microsoft teams, google workspace, and atlassian jira"
+      after: "Integrates with Salesforce, HubSpot, Slack, Microsoft Teams, Google Workspace, and Atlassian Jira"
+      context: "integration_list"
+      reasoning: "Capitalize company and product names in business tool integration list"
+      success_rate: 0.91
+      difficulty: "medium"
 
   references_product_versions:
     - before: "Requires version 2.0 or above"
@@ -1235,6 +1750,52 @@ examples:
       reasoning: "Use 'later' instead of 'above' for version references"
       success_rate: 0.94
       difficulty: "simple"
+      
+    - before: "Supports PHP 7.4+, Python 3.8 and up, Node.js 14 or higher"
+      after: "Supports PHP 7.4 or later, Python 3.8 or later, Node.js 14 or later"
+      context: "version_requirements"
+      reasoning: "Use consistent 'or later' terminology for all version requirements"
+      success_rate: 0.92
+      difficulty: "medium"
+      
+    - before: "Minimum requirements: Java 8 or above, .NET Framework 4.5+, Ruby 2.7 and higher, Go 1.18 or newer"
+      after: "Minimum requirements: Java 8 or later, .NET Framework 4.5 or later, Ruby 2.7 or later, Go 1.18 or later"
+      context: "complex_version_requirements"
+      reasoning: "Standardize all version comparison language to 'or later' for consistency"
+      success_rate: 0.89
+      difficulty: "complex"
+
+  # ===== ADDITIONAL STRUCTURE & FORMAT MISSING RULES =====
+  
+  structure_tables:
+    - before: "| Name | Value |\n| --- | --- |\n| setting1 | true |\n| setting2 | false |"
+      after: "| Parameter | Value | Description |\n|-----------|-------|-------------|\n| setting1  | true  | Enables feature X |\n| setting2  | false | Disables feature Y |"
+      context: "table"
+      reasoning: "Add descriptive headers and helpful description column to tables"
+      success_rate: 0.93
+      difficulty: "medium"
+      
+    - before: "Configuration options:\nname=value\nhost=localhost\nport=3306"
+      after: "Configuration options:\n\n| Parameter | Default Value | Description |\n|-----------|---------------|-------------|\n| name      | value         | Database name |\n| host      | localhost     | Server hostname |\n| port      | 3306          | Connection port |"
+      context: "configuration_table"
+      reasoning: "Transform simple key-value list into structured table with descriptions"
+      success_rate: 0.89
+      difficulty: "complex"
+
+  structure_code_blocks:
+    - before: "Run this command: npm install"
+      after: "Run this command:\n```bash\nnpm install\n```"
+      context: "code"
+      reasoning: "Format commands in proper code blocks with language specification"
+      success_rate: 0.96
+      difficulty: "simple"
+      
+    - before: "Add the following to your config file: server.port=8080 and database.url=jdbc:mysql://localhost:3306/db"
+      after: "Add the following to your configuration file:\n```properties\nserver.port=8080\ndatabase.url=jdbc:mysql://localhost:3306/db\n```"
+      context: "configuration_code"
+      reasoning: "Format configuration snippets with appropriate syntax highlighting and line breaks"
+      success_rate: 0.92
+      difficulty: "medium"
 
   # ===== PUNCTUATION =====
   punctuation_commas:
@@ -1259,19 +1820,380 @@ examples:
       success_rate: 0.89
       difficulty: "medium"
 
+# ===== NEGATIVE EXAMPLES (NO CHANGE REQUIRED) =====
+# These examples teach the AI when NOT to apply rules - critical for reducing false positives
+# The "before" and "after" text are identical because no change should be made
+
+negative_examples:
+
+  # ===== PASSIVE VOICE - APPROPRIATE USAGE =====
+  passive_voice_appropriate:
+    - before: "The data was corrupted during the power outage"
+      after: "The data was corrupted during the power outage"
+      context: "incident_report"
+      reasoning: "Passive voice appropriate when actor is unknown or environmental cause"
+      success_rate: 0.92
+      difficulty: "medium"
+      
+    - before: "The system was designed to handle high-availability requirements"
+      after: "The system was designed to handle high-availability requirements"
+      context: "technical_specification"
+      reasoning: "Passive voice appropriate in technical specs where the design process is less important than the result"
+      success_rate: 0.89
+      difficulty: "medium"
+      
+    - before: "Backups are performed automatically at 2:00 AM daily"
+      after: "Backups are performed automatically at 2:00 AM daily"
+      context: "system_behavior"
+      reasoning: "Passive voice appropriate for automated processes where no human actor is involved"
+      success_rate: 0.94
+      difficulty: "simple"
+      
+    - before: "The following steps were completed: configuration was updated, users were notified, and testing was performed"
+      after: "The following steps were completed: configuration was updated, users were notified, and testing was performed"
+      context: "status_report"
+      reasoning: "Passive voice maintains parallel structure in completed action lists"
+      success_rate: 0.87
+      difficulty: "complex"
+
+  # ===== WORD USAGE - CONTEXTUALLY APPROPRIATE =====
+  word_usage_contextual:
+    - before: "This simple solution works for basic requirements"
+      after: "This simple solution works for basic requirements"
+      context: "comparison"
+      reasoning: "Word 'simple' appropriate when explicitly contrasting with complex alternatives"
+      success_rate: 0.91
+      difficulty: "medium"
+      
+    - before: "Click the Download button to save the file"
+      after: "Click the Download button to save the file"
+      context: "ui_instruction"
+      reasoning: "Word 'click' appropriate for direct UI interaction instructions"
+      success_rate: 0.95
+      difficulty: "simple"
+      
+    - before: "Just enter your email address to get started"
+      after: "Just enter your email address to get started"
+      context: "signup_flow"
+      reasoning: "Word 'just' appropriate in conversational onboarding to reduce perceived complexity"
+      success_rate: 0.88
+      difficulty: "medium"
+
+  # ===== CONTRACTIONS - APPROPRIATE INFORMAL TONE =====
+  contractions_appropriate:
+    - before: "We're here to help if you need assistance"
+      after: "We're here to help if you need assistance"
+      context: "support_message"
+      reasoning: "Contraction appropriate in customer support for friendly, approachable tone"
+      success_rate: 0.93
+      difficulty: "simple"
+      
+    - before: "Don't forget to save your work before closing the application"
+      after: "Don't forget to save your work before closing the application"
+      context: "user_reminder"
+      reasoning: "Contraction appropriate in user-facing reminders for conversational tone"
+      success_rate: 0.90
+      difficulty: "simple"
+      
+    - before: "It's working as expected in the test environment"
+      after: "It's working as expected in the test environment"
+      context: "informal_status"
+      reasoning: "Contraction appropriate in informal team communications and status updates"
+      success_rate: 0.89
+      difficulty: "medium"
+
+  # ===== SECOND PERSON - NECESSARY PERSONAL ADDRESS =====
+  second_person_appropriate:
+    - before: "You can customize your dashboard by dragging widgets"
+      after: "You can customize your dashboard by dragging widgets"
+      context: "feature_description"
+      reasoning: "Second person necessary when describing user-specific customizable features"
+      success_rate: 0.96
+      difficulty: "simple"
+      
+    - before: "If you encounter this error, your session has expired"
+      after: "If you encounter this error, your session has expired"
+      context: "error_explanation"
+      reasoning: "Second person appropriate when the error condition is specific to the user's session"
+      success_rate: 0.94
+      difficulty: "simple"
+      
+    - before: "Your data will be encrypted before transmission"
+      after: "Your data will be encrypted before transmission"
+      context: "security_assurance"
+      reasoning: "Second person possessive necessary when referring to user-owned data for clarity and trust"
+      success_rate: 0.97
+      difficulty: "simple"
+
+  # ===== TECHNICAL FORMATTING - CONTEXTUALLY APPROPRIATE =====
+  technical_formatting_contextual:
+    - before: "The config file is located in /etc/app/config.json"
+      after: "The config file is located in /etc/app/config.json"
+      context: "conversational_support"
+      reasoning: "Informal file path formatting appropriate in conversational support contexts"
+      success_rate: 0.88
+      difficulty: "medium"
+      
+    - before: "Press Ctrl+C to stop the process"
+      after: "Press Ctrl+C to stop the process"
+      context: "quick_reference"
+      reasoning: "Simplified key combination formatting appropriate in quick reference contexts"
+      success_rate: 0.92
+      difficulty: "simple"
+
+  # ===== ABBREVIATIONS - CONTEXTUALLY APPROPRIATE =====
+  abbreviations_contextual:
+    - before: "Configure CPU, RAM, etc. based on your requirements"
+      after: "Configure CPU, RAM, etc. based on your requirements"
+      context: "informal_guidance"
+      reasoning: "Abbreviation 'etc.' appropriate in informal contexts with clear examples provided"
+      success_rate: 0.85
+      difficulty: "medium"
+      
+    - before: "The API supports GET, POST, PUT, DELETE, etc."
+      after: "The API supports GET, POST, PUT, DELETE, etc."
+      context: "technical_summary"
+      reasoning: "Abbreviation 'etc.' acceptable when listing standard HTTP methods (universally understood)"
+      success_rate: 0.87
+      difficulty: "medium"
+
+  # ===== CAPITALIZATION - BRAND/STYLE SPECIFIC =====
+  capitalization_brand:
+    - before: "iPhone App Development Best Practices"
+      after: "iPhone App Development Best Practices"
+      context: "branded_heading"
+      reasoning: "Title case appropriate for branded content and marketing materials"
+      success_rate: 0.94
+      difficulty: "simple"
+      
+    - before: "API Integration Guide"
+      after: "API Integration Guide"
+      context: "document_title"
+      reasoning: "Title case appropriate for formal document titles and published content"
+      success_rate: 0.96
+      difficulty: "simple"
+
+  # ===== TONE - CONTEXTUALLY APPROPRIATE =====
+  tone_contextual:
+    - before: "This is absolutely critical for security"
+      after: "This is absolutely critical for security"
+      context: "security_warning"
+      reasoning: "Strong tone appropriate in security contexts where emphasis prevents vulnerabilities"
+      success_rate: 0.91
+      difficulty: "medium"
+      
+    - before: "Amazing! Your setup is complete"
+      after: "Amazing! Your setup is complete"
+      context: "success_celebration"
+      reasoning: "Enthusiastic tone appropriate in success messages and onboarding completion"
+      success_rate: 0.89
+      difficulty: "simple"
+
+  # ===== SENTENCE LENGTH - CONTEXTUALLY APPROPRIATE =====
+  sentence_length_contextual:
+    - before: "To configure the advanced security settings including two-factor authentication, API key rotation, session timeout controls, and audit logging, navigate to the Security panel in the administration interface and review each section carefully before making changes."
+      after: "To configure the advanced security settings including two-factor authentication, API key rotation, session timeout controls, and audit logging, navigate to the Security panel in the administration interface and review each section carefully before making changes."
+      context: "comprehensive_instruction"
+      reasoning: "Long sentence appropriate when breaking it would lose logical flow in complex procedures"
+      success_rate: 0.83
+      difficulty: "complex"
+
+  # ===== PRONOUNS - CONTEXTUALLY CLEAR =====
+  pronouns_contextual:
+    - before: "When the system starts, it initializes the database connection"
+      after: "When the system starts, it initializes the database connection"
+      context: "sequential_process"
+      reasoning: "Pronoun 'it' clear when subject is established in same sentence"
+      success_rate: 0.92
+      difficulty: "simple"
+      
+    - before: "The API validates requests. It returns errors for invalid data."
+      after: "The API validates requests. It returns errors for invalid data."
+      context: "clear_sequence"
+      reasoning: "Pronoun 'it' acceptable in consecutive sentences with clear referent"
+      success_rate: 0.88
+      difficulty: "medium"
+
+  # ===== CLAIMS - CONTEXTUALLY APPROPRIATE =====
+  claims_appropriate:
+    - before: "This is the best approach for security compliance"
+      after: "This is the best approach for security compliance"
+      context: "security_requirement"
+      reasoning: "Claim 'best' appropriate when backed by compliance standards and regulatory requirements"
+      success_rate: 0.89
+      difficulty: "medium"
+      
+    - before: "Our platform guarantees 99.99% uptime"
+      after: "Our platform guarantees 99.99% uptime"
+      context: "sla_commitment"
+      reasoning: "Guarantee appropriate when backed by formal SLA commitments and penalties"
+      success_rate: 0.91
+      difficulty: "simple"
+      
+    - before: "This is the easiest method for beginners"
+      after: "This is the easiest method for beginners"
+      context: "educational_comparison"
+      reasoning: "Subjective claim appropriate when comparing learning curves for specific audience"
+      success_rate: 0.87
+      difficulty: "medium"
+
+  # ===== LEGAL COMPANY NAMES - FAIR USE CONTEXTS =====
+  legal_company_names_contextual:
+    - before: "Install Docker and configure the container"
+      after: "Install Docker and configure the container"
+      context: "educational_tutorial"
+      reasoning: "Trademark symbol not required in educational fair use contexts"
+      success_rate: 0.93
+      difficulty: "simple"
+      
+    - before: "Compatible with MySQL, PostgreSQL, and Oracle databases"
+      after: "Compatible with MySQL, PostgreSQL, and Oracle databases"
+      context: "compatibility_list"
+      reasoning: "Trademark symbols not required in factual compatibility statements"
+      success_rate: 0.91
+      difficulty: "simple"
+
+  # ===== CURRENCY - CONTEXTUALLY APPROPRIATE =====
+  currency_contextual:
+    - before: "The license costs $99 for individual users"
+      after: "The license costs $99 for individual users"
+      context: "domestic_pricing"
+      reasoning: "Currency symbol appropriate for domestic pricing in local market contexts"
+      success_rate: 0.94
+      difficulty: "simple"
+      
+    - before: "Budget approximately $500-$1000 for the setup"
+      after: "Budget approximately $500-$1000 for the setup"
+      context: "informal_estimate"
+      reasoning: "Currency symbols appropriate in informal budget estimates and ranges"
+      success_rate: 0.92
+      difficulty: "simple"
+
+  # ===== AMBIGUITY - INTENTIONALLY GENERAL =====
+  ambiguity_appropriate:
+    - before: "The system handles various data types efficiently"
+      after: "The system handles various data types efficiently"
+      context: "marketing_overview"
+      reasoning: "General language appropriate in overview contexts where specifics would overwhelm"
+      success_rate: 0.88
+      difficulty: "medium"
+      
+    - before: "Configure the settings as needed for your environment"
+      after: "Configure the settings as needed for your environment"
+      context: "flexible_guidance"
+      reasoning: "Intentionally vague when configuration depends on user-specific requirements"
+      success_rate: 0.85
+      difficulty: "medium"
+
+  # ===== ANTHROPOMORPHISM - APPROPRIATE PERSONIFICATION =====
+  anthropomorphism_appropriate:
+    - before: "The system wants you to confirm before proceeding"
+      after: "The system wants you to confirm before proceeding"
+      context: "user_facing_message"
+      reasoning: "Anthropomorphism appropriate in user-facing messages for friendly, approachable tone"
+      success_rate: 0.84
+      difficulty: "medium"
+      
+    - before: "The application is smart enough to detect conflicts automatically"
+      after: "The application is smart enough to detect conflicts automatically"
+      context: "feature_marketing"
+      reasoning: "Anthropomorphism acceptable when highlighting intelligent features to users"
+      success_rate: 0.86
+      difficulty: "simple"
+
+  # ===== INCLUSIVE LANGUAGE - CONTEXTUALLY APPROPRIATE =====
+  inclusive_language_contextual:
+    - before: "The founding fathers established these principles"
+      after: "The founding fathers established these principles"
+      context: "historical_reference"
+      reasoning: "Historical terms appropriate when referring to specific historical groups or documents"
+      success_rate: 0.92
+      difficulty: "simple"
+      
+    - before: "This requires significant man-hours to implement"
+      after: "This requires significant man-hours to implement"
+      context: "industry_standard_term"
+      reasoning: "Traditional terms acceptable when quoting established industry standards or legacy documentation"
+      success_rate: 0.83
+      difficulty: "medium"
+
+  # ===== NUMBERS AND MEASUREMENT - CONTEXTUALLY APPROPRIATE =====
+  numbers_contextual:
+    - before: "There are 5,000,000 records in the database"
+      after: "There are 5,000,000 records in the database"
+      context: "precise_technical_spec"
+      reasoning: "Exact numbers appropriate when precision is required for technical specifications"
+      success_rate: 0.91
+      difficulty: "simple"
+      
+    - before: "The file is 2KB in size"
+      after: "The file is 2KB in size"
+      context: "technical_measurement"
+      reasoning: "No space between number and unit acceptable for file sizes and technical measurements in some style guides"
+      success_rate: 0.89
+      difficulty: "medium"
+
+  # ===== PUNCTUATION - CONTEXTUALLY APPROPRIATE =====
+  punctuation_contextual:
+    - before: "Warning: This is critical!"
+      after: "Warning: This is critical!"
+      context: "urgent_alert"
+      reasoning: "Exclamation point appropriate in urgent warnings and alerts where emphasis is needed"
+      success_rate: 0.90
+      difficulty: "simple"
+      
+    - before: "Configure settings > Advanced > Security"
+      after: "Configure settings > Advanced > Security"
+      context: "navigation_path"
+      reasoning: "Navigation symbols without spaces acceptable in UI breadcrumb paths"
+      success_rate: 0.93
+      difficulty: "simple"
+
+  # ===== LISTS AND PROCEDURES - CONTEXTUALLY APPROPRIATE =====
+  lists_contextual:
+    - before: "Requirements:\n- Valid license;\n- Network access;\n- Admin rights."
+      after: "Requirements:\n- Valid license;\n- Network access;\n- Admin rights."
+      context: "formal_specification"
+      reasoning: "Semicolon punctuation in lists appropriate in formal specifications and legal contexts"
+      success_rate: 0.87
+      difficulty: "medium"
+      
+    - before: "Quick steps: 1) Login 2) Upload 3) Process"
+      after: "Quick steps: 1) Login 2) Upload 3) Process"
+      context: "quick_reference"
+      reasoning: "Compact list formatting appropriate in quick reference cards and space-constrained contexts"
+      success_rate: 0.88
+      difficulty: "simple"
+
+  # ===== REFERENCES - CONTEXTUALLY APPROPRIATE =====
+  references_contextual:
+    - before: "See the documentation for more details"
+      after: "See the documentation for more details"
+      context: "brief_reference"
+      reasoning: "General reference appropriate when specific section would vary by user context"
+      success_rate: 0.85
+      difficulty: "medium"
+      
+    - before: "Click here to download the installer"
+      after: "Click here to download the installer"
+      context: "inline_link"
+      reasoning: "Click here acceptable in email and embedded contexts where link text is constrained"
+      success_rate: 0.82
+      difficulty: "medium"
+
 # Selection strategies for dynamic example matching
 selection_strategies:
   
   # Context-based selection
   by_context:
     enabled: true
-    weight: 0.4
+    weight: 0.35
     description: "Match examples based on content type (heading, instruction, etc.)"
   
   # Difficulty-based progression  
   by_difficulty:
     enabled: true
-    weight: 0.3
+    weight: 0.25
     description: "Start with simple examples, progress to complex for learning"
     progression: ["simple", "medium", "complex"]
   
@@ -1287,6 +2209,18 @@ selection_strategies:
     enabled: true
     weight: 0.1
     description: "Match examples similar to current error text"
+  
+  # Negative example selection (NEW)
+  by_negative_examples:
+    enabled: true
+    weight: 0.1
+    description: "Include negative examples to teach when NOT to apply rules"
+    ratio: 0.25  # Include 25% negative examples in multi-shot prompts
+    contexts: [
+      "incident_report", "technical_specification", "system_behavior", "support_message", 
+      "ui_instruction", "security_requirement", "educational_tutorial", "marketing_overview",
+      "historical_reference", "formal_specification", "quick_reference", "urgent_alert"
+    ]
     
 # Learning and improvement settings
 learning:
@@ -1295,6 +2229,17 @@ learning:
   minimum_examples: 2
   maximum_examples: 5
   adaptive_selection: true
+  
+  # Negative example learning (NEW)
+  negative_examples:
+    enabled: true
+    include_ratio: 0.25  # 25% of examples should be negative
+    priority_contexts: [
+      "technical_specification", "security_warning", "ui_instruction", "marketing_overview",
+      "historical_reference", "educational_tutorial", "formal_specification", "urgent_alert"
+    ]
+    false_positive_reduction: true  # Track and reduce false positive rates
+    coverage_target: 0.8  # Aim for 80% rule coverage with negative examples
   
 # Performance settings  
 performance:

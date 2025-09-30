@@ -50,7 +50,7 @@ class ExampleSelector:
             self.examples_db = {}
     
     def select_examples(self, error_type: str, current_text: str, context: str = "text", 
-                       num_examples: Optional[int] = None) -> List[Dict[str, Any]]:
+                       num_examples: Optional[int] = None, include_negative: bool = True) -> List[Dict[str, Any]]:
         """
         Select the best examples for multi-shot prompting.
         

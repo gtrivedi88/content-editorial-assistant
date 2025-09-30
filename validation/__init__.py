@@ -19,6 +19,8 @@ from .multi_pass import (
     DomainValidator, CrossRuleValidator, ValidationPipeline, PipelineConfiguration,
     PipelineResult, ConsensusStrategy, TerminationCondition, ValidatorWeight
 )
+# Import specialized validators
+from .negative_example_validator import NegativeExampleValidator
 
 __all__ = [
     # Configuration
@@ -47,5 +49,7 @@ __all__ = [
     'PipelineResult',
     'ConsensusStrategy',
     'TerminationCondition',
-    'ValidatorWeight'
+    'ValidatorWeight',
+    # Specialized Validators
+    'NegativeExampleValidator'
 ]

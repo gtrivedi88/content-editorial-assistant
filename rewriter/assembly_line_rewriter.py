@@ -214,88 +214,6 @@ class AssemblyLineRewriter:
                 'error': f'World-class AI processing failed: {str(e)}'
             }
 
-    def _process_through_assembly_line_stations(self, content: str, errors: List[Dict[str, Any]], 
-                                              stations: List[str], session_id: str, block_id: str, 
-                                              block_type: str) -> Dict[str, Any]:
-        """
-        Process content through assembly line stations with live progress updates.
-        """
-        try:
-            # Import here to avoid circular imports
-            from app_modules.websocket_handlers import emit_station_progress_update
-            
-            current_content = content
-            all_improvements = []
-            total_errors_fixed = 0
-            
-            for i, station in enumerate(stations):
-                station_name = self.get_station_display_name(station)
-                
-                # Get errors for this station
-                station_errors = self._get_errors_for_station(errors, station)
-                if not station_errors:
-                    continue
-                
-                # Emit processing start for this station
-                if session_id and block_id:
-                    emit_station_progress_update(
-                        session_id, block_id, station, 'processing',
-                        preview_text=f"Processing {len(station_errors)} {station} issue(s)..."
-                    )
-                
-                logger.info(f"🏭 Station {station_name}: Processing {len(station_errors)} errors")
-                
-                # Process errors through this station (simulate real assembly line work)
-                import time
-                time.sleep(0.5)  # Simulate processing time for live UI updates
-                
-                station_result = self.rewrite_sentence(current_content, station_errors, pass_number=1)
-                
-                # Update content for next station
-                current_content = station_result.get('rewritten_text', current_content)
-                all_improvements.extend(station_result.get('improvements', []))
-                total_errors_fixed += station_result.get('errors_fixed', 0)
-                
-                # Generate preview text for UI
-                preview_text = self._generate_station_preview(station, station_errors, current_content)
-                
-                # POST-REWRITE VALIDATION: Check for AI-introduced ambiguities (lightweight)
-                validation_concerns = []
-                if station in ['urgent', 'high']:  # Only validate critical fixes
-                    validation_concerns = self._validate_rewrite_quality(
-                        original_content=content, 
-                        rewritten_content=current_content,
-                        original_errors=station_errors
-                    )
-                
-                # Emit completion for this station (include validation status)
-                if session_id and block_id:
-                    # Add validation warning to preview if concerns found
-                    final_preview = preview_text
-                    if validation_concerns:
-                        final_preview += f" ⚠️ {len(validation_concerns)} validation concern(s)"
-                    
-                    emit_station_progress_update(
-                        session_id, block_id, station, 'complete',
-                        preview_text=final_preview
-                    )
-                
-                logger.info(f"✅ Station {station_name}: Complete ({station_result.get('errors_fixed', 0)} fixes)")
-                if validation_concerns:
-                    logger.warning(f"⚠️ Validation concerns for {station_name}: {validation_concerns}")
-            
-            return {
-                'rewritten_text': current_content,
-                'improvements': all_improvements,
-                'confidence': 0.85,  # High confidence for assembly line processing
-                'errors_fixed': total_errors_fixed
-            }
-            
-        except Exception as e:
-            logger.error(f"Assembly line station processing failed: {e}")
-            # Fallback to single-pass processing
-            return self.rewrite_sentence(content, errors, pass_number=1)
-
     def _get_errors_for_station(self, errors: List[Dict[str, Any]], station: str) -> List[Dict[str, Any]]:
         """Get errors that belong to a specific assembly line station."""
         return ErrorStationMapper.get_errors_for_station(errors, station)
@@ -454,6 +372,23 @@ class AssemblyLineRewriter:
                 
                 improvements = station_result.get('improvements', [])
                 
+                # POST-REWRITE VALIDATION: Check for AI-introduced problems (for critical stations)
+                validation_concerns = []
+                if station in ['urgent', 'high']:  # Only validate critical fixes
+                    validation_concerns = self._validate_rewrite_quality(
+                        original_content=text, 
+                        rewritten_content=current_text,
+                        original_errors=station_errors
+                    )
+                    
+                    # Log validation concerns
+                    if validation_concerns:
+                        logger.warning(f"⚠️ Validation concerns for {station_name}: {validation_concerns}")
+                        
+                        # Add validation concerns to improvements for visibility
+                        validation_note = f"Validation concerns: {len(validation_concerns)} issue(s) detected"
+                        improvements.append(validation_note)
+                
                 pass_results.append({
                     'station': station,
                     'station_name': station_name,
@@ -463,7 +398,8 @@ class AssemblyLineRewriter:
                     'input_text': input_text,
                     'output_text': current_text,
                     'processing_method': station_result.get('processing_method', 'world_class_ai'),
-                    'improvements': improvements
+                    'improvements': improvements,
+                    'validation_concerns': validation_concerns
                 })
                 
                 # Complete station with world-class progress tracking
@@ -487,7 +423,8 @@ class AssemblyLineRewriter:
                     'input_text': input_text,
                     'output_text': current_text,
                     'processing_method': 'ai_no_changes',
-                    'improvements': []
+                    'improvements': [],
+                    'validation_concerns': []  # No validation concerns when no changes made
                 })
                 
                 # Complete station with no changes
@@ -693,129 +630,3 @@ class AssemblyLineRewriter:
 
 
 
-    def _split_into_sentences(self, content: str) -> List[str]:
-        """Split content into sentences using robust spaCy sentence segmentation."""
-        try:
-            import spacy
-            # Try to load the existing spaCy model used elsewhere in the system
-            nlp = spacy.load("en_core_web_sm")
-            doc = nlp(content.strip())
-            
-            # Extract sentences using spaCy's robust sentence boundary detection
-            sentences = [sent.text.strip() for sent in doc.sents if sent.text.strip()]
-            return sentences
-            
-        except (ImportError, OSError) as e:
-            # Fallback to regex if spaCy is not available
-            import re
-            logger.warning(f"spaCy not available, using regex fallback: {e}")
-            sentences = re.split(r'(?<=[.!?])\s+', content.strip())
-            return [s.strip() for s in sentences if s.strip()]
-    
-    def _get_errors_for_sentence(self, sentence: str, all_errors: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Filter errors that apply to this specific sentence."""
-        sentence_errors = []
-        for error in all_errors:
-            # Check if error applies to this sentence (simple matching)
-            flagged_text = error.get('flagged_text', '')
-            if not flagged_text or flagged_text.lower() in sentence.lower():
-                sentence_errors.append(error)
-        return sentence_errors
-
-    def rewrite_sentence(self, sentence: str, errors: List[Dict[str, Any]], pass_number: int = 1) -> Dict[str, Any]:
-        """
-        Rewrites a single sentence using a comprehensive, single-pass approach.
-
-        Args:
-            sentence: The original sentence to rewrite.
-            errors: A list of all errors found in the sentence.
-            pass_number: The pass number (1 for initial fix, 2 for refinement).
-
-        Returns:
-            A dictionary containing the rewritten sentence and analysis.
-        """
-        if not sentence or not sentence.strip():
-            return self._empty_result()
-
-        if pass_number == 1:
-            # First pass: Fix all specific errors in one go.
-            return self._perform_first_pass(sentence, errors)
-        else:
-            # Second pass: Perform a holistic refinement.
-            return self._perform_refinement_pass(sentence)
-
-    def _perform_first_pass(self, sentence: str, errors: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """Handles the primary error-correction pass."""
-        if not errors:
-            logger.info("No errors found for sentence, skipping rewrite.")
-            return {
-                'rewritten_text': sentence,
-                'improvements': [],
-                'confidence': 1.0,
-                'errors_fixed': 0
-            }
-
-        # Sort all errors by their priority level using our internal method.
-        sorted_errors = self._sort_errors_by_priority(errors)
-        
-        # Create a single, comprehensive prompt with all sorted errors.
-        prompt = self.prompt_generator.create_assembly_line_prompt(sentence, sorted_errors, pass_number=1)
-        
-        logger.debug(f"Generated single-pass prompt for sentence: {sentence}")
-        
-        # FIXED: Use correct method name and parameters
-        ai_response = self.text_generator.generate_text(prompt, sentence)
-
-        if not ai_response or not ai_response.strip():
-            logger.warning("AI model returned an empty response.")
-            return self._error_result(sentence, "AI model returned an empty response.")
-
-        # FIXED: Use text processor to clean the response (integrates with OutputEnforcer)
-        cleaned_response = self.text_processor.clean_generated_text(ai_response, sentence)
-
-        # FIXED: Use correct method name and handle return value properly
-        evaluation = self.evaluator.evaluate_rewrite_quality(sentence, cleaned_response, errors)
-
-        return {
-            'rewritten_text': cleaned_response,  # Use the cleaned response directly
-            'improvements': evaluation.get('improvements', []),
-            'confidence': evaluation.get('confidence', 0.75),
-            'errors_fixed': len(sorted_errors)  # Count of errors we attempted to fix
-        }
-
-    def _perform_refinement_pass(self, sentence: str) -> Dict[str, Any]:
-        """Handles the second, holistic refinement pass."""
-        prompt = self.prompt_generator.create_assembly_line_prompt(sentence, [], pass_number=2)
-        
-        logger.debug(f"Generated refinement prompt for sentence: {sentence}")
-
-        # FIXED: Use correct method name and parameters
-        ai_response = self.text_generator.generate_text(prompt, sentence)
-
-        if not ai_response or not ai_response.strip():
-            logger.warning("AI model returned an empty response during refinement.")
-            return self._error_result(sentence, "AI model returned an empty response during refinement.")
-
-        # FIXED: Use text processor to clean the response (integrates with OutputEnforcer)
-        cleaned_response = self.text_processor.clean_generated_text(ai_response, sentence)
-
-        return {
-            'rewritten_text': cleaned_response,
-            'improvements': ["Holistic refinement for clarity and flow."],
-            'confidence': 0.9,
-            'errors_fixed': 0  # No specific errors are targeted in this pass
-        }
-
-    def _empty_result(self) -> Dict[str, Any]:
-        """Returns a standard result for empty input."""
-        return {'rewritten_text': '', 'improvements': [], 'confidence': 0.0, 'errors_fixed': 0}
-
-    def _error_result(self, original_text: str, error_message: str) -> Dict[str, Any]:
-        """Returns a standard result when an error occurs."""
-        return {
-            'rewritten_text': original_text,
-            'improvements': [],
-            'confidence': 0.0,
-            'errors_fixed': 0,
-            'error': error_message
-        }
