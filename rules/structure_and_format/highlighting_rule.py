@@ -1,7 +1,6 @@
 """
-Highlighting Rule (Enhanced with Evidence-Based Analysis)
+Highlighting Rule (Production-Grade, Evidence-Based Analysis)
 Based on IBM Style Guide topic: "Highlighting"
-Enhanced to follow evidence-based rule development methodology for zero false positives.
 """
 from typing import List, Dict, Any
 from .base_structure_rule import BaseStructureRule
@@ -184,12 +183,8 @@ class HighlightingRule(BaseStructureRule):
         evidence_score = self._adjust_evidence_for_structure_context(evidence_score, context)
         
         # === STEP 4: SEMANTIC CLUES (MACRO-LEVEL) ===
-        # Content type adjustments
-        content_type = context.get('content_type', 'general')
-        if content_type in ['user_guide', 'tutorial']:
-            evidence_score += 0.1  # User guides should highlight UI elements
-        elif content_type in ['reference', 'api']:
-            evidence_score -= 0.1  # Reference docs might be less strict
+        # NOTE: Content type adjustments are now handled comprehensively in Step 3 (Structural Clues)
+        # This step is reserved for additional macro-level semantic analysis if needed
         
         # === STEP 5: FEEDBACK PATTERNS (LEARNING CLUES) ===
         evidence_score = self._apply_feedback_clues_highlighting(evidence_score, candidate, context)
@@ -709,6 +704,101 @@ class HighlightingRule(BaseStructureRule):
                 evidence_score -= 0.3  # Frequently accepted
             elif acceptance_rate < 0.3:
                 evidence_score += 0.2  # Frequently rejected
+        
+        return evidence_score
+    
+    def _adjust_evidence_for_structure_context(self, evidence_score: float, context: Dict[str, Any]) -> float:
+        """
+        Adjust evidence score based on structural context (meso-level analysis).
+        
+        Increases evidence for procedural documents (user guides, tutorials) where UI highlighting
+        is more critical. Decreases evidence for reference documents where highlighting might be
+        less strict.
+        
+        Args:
+            evidence_score: Current evidence score to adjust
+            context: Document context containing content_type, block_type, etc.
+            
+        Returns:
+            float: Adjusted evidence score
+        """
+        if not context:
+            return evidence_score
+        
+        # Content type adjustments (primary structural clues)
+        content_type = context.get('content_type', 'general')
+        block_type = context.get('block_type', 'paragraph')
+        
+        # Procedural documents: UI highlighting is critical for user navigation
+        if content_type in ['user_guide', 'tutorial', 'how_to', 'walkthrough', 'guide']:
+            evidence_score += 0.15  # Boost evidence for procedural content
+            
+            # Extra boost for step-by-step instructions
+            if block_type in ['ordered_list', 'step', 'procedure']:
+                evidence_score += 0.1
+        
+        # Interactive documents: UI elements should be clearly highlighted
+        elif content_type in ['interactive', 'hands_on', 'exercise']:
+            evidence_score += 0.2  # Strong boost for interactive content
+        
+        # Documentation that requires precision
+        elif content_type in ['documentation', 'manual', 'specification']:
+            evidence_score += 0.1  # Moderate boost for formal documentation
+        
+        # Reference documents: More lenient on UI highlighting
+        elif content_type in ['reference', 'api', 'glossary', 'index']:
+            evidence_score -= 0.1  # Reduce evidence for reference content
+            
+            # Technical references can be even more lenient
+            if 'technical' in content_type or 'api' in content_type:
+                evidence_score -= 0.05
+        
+        # Academic/research content: Often uses different conventions
+        elif content_type in ['academic', 'research', 'paper', 'study']:
+            evidence_score -= 0.15  # Significantly reduce for academic content
+        
+        # Block type adjustments (secondary structural clues)
+        
+        # Lists and procedures: UI elements should be highlighted for clarity
+        if block_type in ['ordered_list', 'unordered_list', 'checklist']:
+            evidence_score += 0.05
+        
+        # Code blocks: UI elements might be examples or technical references
+        elif block_type in ['code_block', 'inline_code', 'example']:
+            evidence_score -= 0.2  # Significantly reduce for code contexts
+        
+        # Tables: UI elements might be part of data, not instructions
+        elif block_type in ['table', 'data_table']:
+            evidence_score -= 0.1
+        
+        # Quotes and citations: UI elements are likely examples or references
+        elif block_type in ['blockquote', 'citation', 'quote']:
+            evidence_score -= 0.15
+        
+        # Headers and titles: UI elements might be section names, not instructions
+        elif block_type in ['heading', 'title', 'header']:
+            evidence_score -= 0.1
+        
+        # Structural depth considerations
+        depth = context.get('depth', 0)
+        if depth > 3:  # Deeply nested content might have different conventions
+            evidence_score -= 0.05
+        
+        # Document length considerations (longer docs might be more formal)
+        doc_length = context.get('doc_length', 0)
+        if doc_length > 10000:  # Very long documents
+            evidence_score -= 0.05  # Slightly more lenient
+        elif doc_length < 1000:  # Short documents
+            evidence_score += 0.05  # Slightly more strict for concise docs
+        
+        # Section context adjustments
+        section_type = context.get('section_type', '')
+        if section_type in ['introduction', 'overview', 'summary']:
+            evidence_score -= 0.05  # More lenient in overview sections
+        elif section_type in ['instructions', 'steps', 'procedure']:
+            evidence_score += 0.1   # More strict in instruction sections
+        elif section_type in ['troubleshooting', 'faq']:
+            evidence_score += 0.05  # Moderate increase for help sections
         
         return evidence_score
 

@@ -2,6 +2,11 @@
 Word Usage Rule for words starting with 'T' (Production-Grade)
 Evidence-based analysis with surgical zero false positive guards for T-word usage detection.
 Based on IBM Style Guide recommendations with production-grade evidence calculation.
+
+CORRECTED "THAT" DETECTION: 
+- Detects MISSING "that" after reporting verbs (verify, note, ensure, etc.)
+- Provides clear suggestions to INSERT "that" for global audience clarity
+- No longer incorrectly flags the presence of "that"
 """
 from typing import List, Dict, Any
 from .base_word_usage_rule import BaseWordUsageRule
@@ -48,7 +53,6 @@ class TWordsRule(BaseWordUsageRule):
             "team room": {"alternatives": ["teamroom"], "category": "spacing", "severity": "low"},
             "terminate": {"alternatives": ["end", "stop"], "category": "word_choice", "severity": "low"},
             "thank you": {"alternatives": ["(remove)"], "category": "cultural_sensitivity", "severity": "medium"},
-            "that": {"alternatives": ["that (include for clarity)"], "category": "clarity", "severity": "low"},
             "time frame": {"alternatives": ["timeframe"], "category": "spacing", "severity": "low"},
             "time out": {"alternatives": ["time out (verb)", "timeout (noun)"], "category": "form_usage", "severity": "low"},
             "toast": {"alternatives": ["notification"], "category": "ui_language", "severity": "medium"},
@@ -201,6 +205,10 @@ class TWordsRule(BaseWordUsageRule):
                             span=(token1.idx, token2.idx + len(token2.text)),
                             flagged_text=f"{token1.text}-{token2.text}"
                         ))
+
+        # 4. Special detection for missing "that" after reporting verbs
+        missing_that_errors = self._detect_missing_that_violations(doc, text, context or {})
+        errors.extend(missing_that_errors)
         
         return errors
 
@@ -288,8 +296,6 @@ class TWordsRule(BaseWordUsageRule):
                 return 0.55  # Word choice context-dependent
             elif word_lower == 'time out':
                 return 0.6   # Form usage important
-            elif word_lower == 'that':
-                return 0.5   # Clarity context-dependent
             else:
                 return 0.6   # Other improvement opportunities
         
@@ -476,3 +482,161 @@ class TWordsRule(BaseWordUsageRule):
                 'accepted': {'text', 'table', 'true', 'test', 'terminate'}  # Common terms acceptable
             }
         }
+
+    def _detect_missing_that_violations(self, doc, text: str, context: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """
+        Detect missing "that" after reporting verbs for clarity.
+        
+        Looks for patterns like:
+        - "Verify the system is running" → should be "Verify that the system is running"
+        - "Note these changes will have..." → should be "Note that these changes will have..."
+        
+        Returns list of error dictionaries for missing "that" violations.
+        """
+        errors = []
+        
+        # Define reporting verbs that often need "that" for clarity
+        reporting_verbs = {
+            'verify', 'ensure', 'confirm', 'check', 'note', 'observe', 'notice',
+            'realize', 'understand', 'recognize', 'acknowledge', 'assume',
+            'believe', 'suppose', 'expect', 'remember', 'forget', 'know',
+            'see', 'find', 'discover', 'learn', 'hear', 'feel', 'think'
+        }
+        
+        for sent_idx, sent in enumerate(doc.sents):
+            # Look for reporting verbs in this sentence
+            for token in sent:
+                if (hasattr(token, 'lemma_') and token.lemma_.lower() in reporting_verbs and
+                    hasattr(token, 'pos_') and token.pos_ == 'VERB'):
+                    
+                    # Check if this verb is followed by a noun phrase without "that"
+                    violation_detected, insertion_point, noun_phrase = self._check_missing_that_pattern(token)
+                    
+                    if violation_detected:
+                        # Apply surgical guards
+                        if self._apply_surgical_zero_false_positive_guards_word_usage(token, context):
+                            continue
+                        
+                        # Calculate evidence score for missing "that"
+                        evidence_score = self._calculate_missing_that_evidence(
+                            token, sent, text, context
+                        )
+                        
+                        if evidence_score > 0.1:
+                            # Create clear, actionable suggestion
+                            verb_text = token.text
+                            suggested_text = f"For clarity, consider inserting 'that' after '{verb_text}'"
+                            
+                            errors.append(self._create_error(
+                                sentence=sent.text,
+                                sentence_index=sent_idx,
+                                message=f"Missing 'that' for clarity after '{verb_text}'",
+                                suggestions=[suggested_text],
+                                severity='low' if evidence_score < 0.7 else 'medium',
+                                text=text,
+                                context=context,
+                                evidence_score=evidence_score,
+                                span=(insertion_point, insertion_point),  # Point where "that" should be inserted
+                                flagged_text=f"{verb_text} {noun_phrase}",
+                                violation_type='missing_that'
+                            ))
+        
+        return errors
+    
+    def _check_missing_that_pattern(self, verb_token):
+        """
+        Check if a reporting verb is followed by a noun phrase without "that".
+        
+        Returns:
+            tuple: (violation_detected: bool, insertion_point: int, noun_phrase: str)
+        """
+        # Look at the tokens immediately following the verb
+        sent = verb_token.sent
+        verb_idx = verb_token.i - sent.start
+        sent_tokens = list(sent)
+        
+        # Skip if this is the last token in the sentence
+        if verb_idx >= len(sent_tokens) - 1:
+            return False, 0, ""
+        
+        next_token = sent_tokens[verb_idx + 1]
+        
+        # Skip if the next token is "that" (already has it)
+        if hasattr(next_token, 'text') and next_token.text.lower() == 'that':
+            return False, 0, ""
+        
+        # Skip if there's a direct object pronoun (me, you, him, her, it, us, them)
+        if (hasattr(next_token, 'text') and 
+            next_token.text.lower() in ['me', 'you', 'him', 'her', 'it', 'us', 'them']):
+            return False, 0, ""
+        
+        # Skip if followed by an infinitive (to + verb)
+        if (hasattr(next_token, 'text') and next_token.text.lower() == 'to' and
+            verb_idx < len(sent_tokens) - 2 and
+            hasattr(sent_tokens[verb_idx + 2], 'pos_') and 
+            sent_tokens[verb_idx + 2].pos_ == 'VERB'):
+            return False, 0, ""
+        
+        # Look for a noun phrase pattern that suggests missing "that"
+        # Pattern: reporting_verb + determiner/noun + ...
+        if (hasattr(next_token, 'pos_') and 
+            next_token.pos_ in ['DET', 'NOUN', 'PRON', 'PROPN', 'ADJ'] and
+            verb_idx < len(sent_tokens) - 2):
+            
+            # Check if this looks like a clause (has a verb later)
+            has_clause_verb = False
+            noun_phrase_tokens = []
+            
+            for i in range(verb_idx + 1, min(verb_idx + 6, len(sent_tokens))):  # Look ahead up to 5 tokens
+                token = sent_tokens[i]
+                noun_phrase_tokens.append(token.text)
+                
+                if hasattr(token, 'pos_') and token.pos_ == 'VERB' and token.i != verb_token.i:
+                    has_clause_verb = True
+                    break
+            
+            if has_clause_verb and len(noun_phrase_tokens) >= 2:
+                insertion_point = next_token.idx  # Character position where "that" should go
+                noun_phrase = ' '.join(noun_phrase_tokens[:3])  # First few tokens for context
+                return True, insertion_point, noun_phrase
+        
+        return False, 0, ""
+    
+    def _calculate_missing_that_evidence(self, verb_token, sentence, text: str, context: Dict[str, Any]) -> float:
+        """
+        Calculate evidence score for missing "that" violations.
+        
+        Higher scores indicate stronger evidence that "that" should be inserted for clarity.
+        """
+        # Base evidence score - missing "that" is generally a clarity issue
+        evidence_score = 0.6
+        
+        # Higher evidence for certain reporting verbs that especially benefit from "that"
+        verb_lemma = verb_token.lemma_.lower()
+        high_clarity_verbs = {'note', 'observe', 'verify', 'confirm', 'ensure'}
+        if verb_lemma in high_clarity_verbs:
+            evidence_score += 0.2
+        
+        # Higher evidence for complex or long noun phrases
+        sent_text = sentence.text.lower()
+        if len(sent_text.split()) > 10:  # Longer sentences benefit more from "that"
+            evidence_score += 0.1
+        
+        # Content type adjustments
+        content_type = context.get('content_type', 'general')
+        if content_type in ['documentation', 'technical', 'international']:
+            evidence_score += 0.15  # Technical/international content needs clarity
+        elif content_type in ['user_guide', 'tutorial']:
+            evidence_score += 0.1   # User-facing content benefits from clarity
+        
+        # Audience adjustments
+        audience = context.get('audience', 'general')
+        if audience in ['global', 'international', 'external']:
+            evidence_score += 0.15  # Global audiences especially benefit from "that"
+        
+        # Structural context adjustments
+        block_type = context.get('block_type', 'paragraph')
+        if block_type in ['step', 'procedure', 'instruction']:
+            evidence_score += 0.1  # Procedural content needs clarity
+        
+        return max(0.0, min(1.0, evidence_score))
