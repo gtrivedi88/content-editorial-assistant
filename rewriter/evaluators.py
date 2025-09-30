@@ -17,25 +17,47 @@ except ImportError:
 
 
 class RewriteEvaluator:
-    """Evaluates rewrite quality and extracts improvements."""
+    """Evaluates rewrite quality and extracts improvements.
+    Cached confidence calculations."""
     
     def __init__(self):
-        """Initialize the rewrite evaluator."""
+        """Initialize the rewrite evaluator with performance optimizations."""
         if ENHANCED_CONFIDENCE_AVAILABLE:
             self.confidence_calculator = ConfidenceCalculator()
         else:
             self.confidence_calculator = None
+        
+        # Simple confidence cache for repeated calculations
+        self._confidence_cache = {}
+        self._cache_max_size = 100
     
     def calculate_confidence(self, original: str, rewritten: str, errors: List[Dict[str, Any]], 
                            use_ollama: bool = True, pass_number: int = 1) -> float:
-        """Calculate confidence score for the rewrite using enhanced validation system."""
+        """Calculate confidence score for the rewrite using enhanced validation system.
+        Cached calculations for similar inputs."""
         try:
-            # Use enhanced confidence calculation if available
+            # Create cache key for similar calculations
+            cache_key = self._create_confidence_cache_key(original, rewritten, errors, use_ollama, pass_number)
+            
+            if cache_key in self._confidence_cache:
+                logger.debug("⚡ Using cached confidence calculation")
+                return self._confidence_cache[cache_key]
+            
+            # Calculate confidence
             if self.confidence_calculator:
-                return self._calculate_enhanced_confidence(original, rewritten, errors, use_ollama, pass_number)
+                confidence = self._calculate_enhanced_confidence(original, rewritten, errors, use_ollama, pass_number)
             else:
-                # Fallback to simple heuristic if enhanced system not available
-                return self._calculate_fallback_confidence(original, rewritten, errors, use_ollama, pass_number)
+                confidence = self._calculate_fallback_confidence(original, rewritten, errors, use_ollama, pass_number)
+            
+            # Cache result (with size limit)
+            if len(self._confidence_cache) >= self._cache_max_size:
+                # Simple cache eviction: remove oldest entries
+                oldest_keys = list(self._confidence_cache.keys())[:20]
+                for key in oldest_keys:
+                    del self._confidence_cache[key]
+            
+            self._confidence_cache[cache_key] = confidence
+            return confidence
             
         except Exception as e:
             logger.error(f"Error calculating confidence: {e}")
@@ -81,6 +103,13 @@ class RewriteEvaluator:
         )
         
         return max(0.0, min(1.0, rewrite_confidence))
+    
+    def _create_confidence_cache_key(self, original: str, rewritten: str, errors: List[Dict[str, Any]], 
+                                   use_ollama: bool, pass_number: int) -> str:
+        """Create a cache key for confidence calculations."""
+        # Simple hashing based on text lengths and error count for performance
+        error_types = tuple(sorted(error.get('type', '') for error in errors[:5]))  # Limit for performance
+        return f"{len(original)}_{len(rewritten)}_{len(errors)}_{use_ollama}_{pass_number}_{hash(error_types) % 10000}"
     
     def _calculate_fallback_confidence(self, original: str, rewritten: str, errors: List[Dict[str, Any]], 
                                      use_ollama: bool, pass_number: int) -> float:

@@ -7,6 +7,7 @@ import logging
 import yaml
 import os
 import random
+import time
 from typing import List, Dict, Any, Optional, Tuple
 from difflib import SequenceMatcher
 
@@ -17,22 +18,42 @@ class ExampleSelector:
     """
     Intelligent example selection for multi-shot prompting.
     Provides contextual, success-optimized examples for AI learning.
+    PERFORMANCE OPTIMIZED: Singleton with cached database loading.
     """
     
+    _instance = None
+    _initialized = False
+    
+    def __new__(cls):
+        """Singleton pattern to prevent multiple YAML loads."""
+        if cls._instance is None:
+            cls._instance = super(ExampleSelector, cls).__new__(cls)
+        return cls._instance
+    
     def __init__(self):
-        """Initialize the example selector with database loading."""
-        self.examples_db = {}
-        self.selection_strategies = {}
-        self.learning_config = {}
-        self.performance_config = {}
-        self._load_examples_database()
+        """Initialize the example selector with cached database loading."""
+        if not self._initialized:
+            self.examples_db = {}
+            self.selection_strategies = {}
+            self.learning_config = {}
+            self.performance_config = {}
+            self._load_examples_database()
+            ExampleSelector._initialized = True
+            logger.info("🚀 ExampleSelector initialized with cached database")
     
     def _load_examples_database(self) -> None:
-        """Load the multi-shot examples database from YAML."""
+        """Load the multi-shot examples database from YAML (CACHED - only once!)."""
         try:
             db_path = os.path.join(os.path.dirname(__file__), 'multi_shot_examples.yaml')
+            
+            # Performance optimization: Only load once
+            logger.info("🔄 Loading examples database (92KB YAML file)...")
+            start_time = time.time()
+            
             with open(db_path, 'r', encoding='utf-8') as f:
                 data = yaml.safe_load(f)
+            
+            load_time = (time.time() - start_time) * 1000
             
             self.examples_db = data.get('examples', {})
             self.selection_strategies = data.get('selection_strategies', {})
@@ -43,7 +64,7 @@ class ExampleSelector:
             total_examples = sum(len(examples) for examples in self.examples_db.values())
             error_types_covered = len(self.examples_db)
             
-            logger.info(f"📚 Loaded {total_examples} examples across {error_types_covered} error types")
+            logger.info(f"⚡ PERFORMANCE: Loaded {total_examples} examples across {error_types_covered} error types in {load_time:.1f}ms (CACHED)")
             
         except (FileNotFoundError, yaml.YAMLError) as e:
             logger.error(f"Failed to load examples database: {e}")

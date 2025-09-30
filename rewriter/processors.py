@@ -12,11 +12,46 @@ logger = logging.getLogger(__name__)
 
 
 class TextProcessor:
-    """Handles cleaning and post-processing of AI-generated text."""
+    """Handles cleaning and post-processing of AI-generated text.
+    Pre-compiled regex patterns."""
+    
+    # Pre-compile regex patterns for performance
+    _regex_cache = {
+        'wordy_patterns': {},
+        'explanatory_patterns': [
+            re.compile(r"(.+?)\s+No changes were made", re.IGNORECASE),
+            re.compile(r"(.+?)\s+The heading", re.IGNORECASE),
+            re.compile(r"(.+?)\s+This heading", re.IGNORECASE),
+            re.compile(r"(.+?)\s+I have", re.IGNORECASE),
+            re.compile(r"(.+?)\s+I've", re.IGNORECASE),
+            re.compile(r"(.+?)\s+As requested", re.IGNORECASE),
+            re.compile(r"(.+?)\s+Note:", re.IGNORECASE),
+            re.compile(r"(.+?)\s+\(Note:", re.IGNORECASE),
+            re.compile(r"(.+?)\s+already follows", re.IGNORECASE),
+            re.compile(r"(.+?)\s+meets the", re.IGNORECASE),
+            re.compile(r"(.+?)\s+since it meets", re.IGNORECASE),
+        ],
+        'whitespace': re.compile(r'\s+'),
+    }
     
     def __init__(self):
-        """Initialize the text processor."""
+        """Initialize the text processor with cached output enforcer."""
         self.output_enforcer = create_output_enforcer()
+        
+        # Pre-compile wordy replacements for performance
+        if not self._regex_cache['wordy_patterns']:
+            wordy_replacements = {
+                'in order to': 'to',
+                'due to the fact that': 'because',
+                'at this point in time': 'now',
+                'a large number of': 'many',
+                'make a decision': 'decide',
+                'for the purpose of': 'to',
+                'in spite of the fact that': 'although'
+            }
+            for wordy, concise in wordy_replacements.items():
+                pattern = r'\b' + re.escape(wordy) + r'\b'
+                self._regex_cache['wordy_patterns'][wordy] = (re.compile(pattern, re.IGNORECASE), concise)
     
     def clean_generated_text(self, generated_text: str, original_text: str, 
                             use_structured: bool = True) -> str:
@@ -53,19 +88,9 @@ class TextProcessor:
         rewritten = content
         
         try:
-            # Always apply basic conciseness replacements
-            wordy_replacements = {
-                'in order to': 'to',
-                'due to the fact that': 'because',
-                'at this point in time': 'now',
-                'a large number of': 'many',
-                'make a decision': 'decide',
-                'for the purpose of': 'to',
-                'in spite of the fact that': 'although'
-            }
-            
-            for wordy, concise in wordy_replacements.items():
-                rewritten = re.sub(r'\b' + re.escape(wordy) + r'\b', concise, rewritten, flags=re.IGNORECASE)
+            # PERFORMANCE: Use pre-compiled regex patterns
+            for wordy, (pattern, concise) in self._regex_cache['wordy_patterns'].items():
+                rewritten = pattern.sub(concise, rewritten)
             
             # Apply error-specific fixes
             for error in errors:
@@ -114,37 +139,12 @@ class TextProcessor:
             # First, handle the specific case where AI adds explanations after the heading
             result = cleaned_text.strip()
             
-            # Extract text before explanatory phrases
-            explanatory_patterns = [
-                r"(.+?)\s+No changes were made",
-                r"(.+?)\s+The heading",
-                r"(.+?)\s+This heading",  
-                r"(.+?)\s+I have",
-                r"(.+?)\s+I've",
-                r"(.+?)\s+As requested",
-                r"(.+?)\s+Note:",
-                r"(.+?)\s+\(Note:",
-                r"(.+?)\s+already follows",
-                r"(.+?)\s+meets the",
-                r"(.+?)\s+since it meets",
-                r"(.+?)\s+Let me explain",
-                r"(.+?)\s+Here's why",
-                r"(.+?)\s+The reason",
-                r"(.+?)\s+I made the following changes:?",
-                r"(.+?)\s+The changes made:?",
-                r"(.+?)\s+Changes made:?",
-                r"(.+?)\s+I applied",
-                r"(.+?)\s+I removed",
-                r"(.+?)\s+I fixed",
-                r"(.+?)\s+Key changes:?",
-                r"(.+?)\s+Main changes:?"
-            ]
-            
-            for pattern in explanatory_patterns:
-                match = re.search(pattern, result, re.IGNORECASE)
+            # PERFORMANCE: Use pre-compiled regex patterns
+            for pattern in self._regex_cache['explanatory_patterns']:
+                match = pattern.search(result)
                 if match:
                     result = match.group(1).strip()
-                    logger.info(f"Extracted heading before explanation: '{result}'")
+                    logger.debug(f"Extracted heading before explanation: '{result}'")
                     break
             
             # Common AI additions that should be removed from headings
@@ -179,8 +179,8 @@ class TextProcessor:
                 if pattern.lower() in result.lower():
                     result = re.sub(pattern, '', result, flags=re.IGNORECASE).strip()
             
-            # Clean up any duplicate spaces
-            result = re.sub(r'\s+', ' ', result).strip()
+            # PERFORMANCE: Use pre-compiled regex for whitespace
+            result = self._regex_cache['whitespace'].sub(' ', result).strip()
             
             # If we removed everything, return original
             if not result or len(result) < 2:

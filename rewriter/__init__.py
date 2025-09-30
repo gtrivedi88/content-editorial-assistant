@@ -9,6 +9,7 @@ from .generators import TextGenerator
 from .processors import TextProcessor
 from .evaluators import RewriteEvaluator
 from .document_rewriter import DocumentRewriter
+from .surgical_snippet_processor import SurgicalSnippetProcessor
 from models import ModelManager
 
 __all__ = [
@@ -18,5 +19,6 @@ __all__ = [
     'TextProcessor',
     'RewriteEvaluator',
     'DocumentRewriter',
+    'SurgicalSnippetProcessor',
     'ModelManager'
 ] 

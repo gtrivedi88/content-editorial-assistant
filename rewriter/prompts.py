@@ -2,10 +2,13 @@
 Prompt Generation Module for the AI Rewriter
 Enhanced with multi-shot prompting for world-class performance.
 """
+import logging
 from typing import List, Dict, Any, Optional
 import yaml
 import os
 from .example_selector import ExampleSelector
+
+logger = logging.getLogger(__name__)
 
 class PromptGenerator:
     """
@@ -14,14 +17,17 @@ class PromptGenerator:
     """
     
     def __init__(self):
-        """Initialize with assembly line configuration and example selector."""
+        """Initialize with assembly line configuration and shared example selector."""
         self.instruction_templates = self._load_assembly_line_config()
+        # PERFORMANCE: Use singleton ExampleSelector (cached YAML loading)
         self.example_selector = ExampleSelector()
         
-        # Log initialization status
-        example_stats = self.example_selector.get_example_stats()
-        if 'error' not in example_stats:
-            print(f"🎯 Multi-shot prompting enabled: {example_stats['total_examples']} examples across {example_stats['total_error_types']} error types")
+        # Log initialization status (only on first creation)
+        if not hasattr(PromptGenerator, '_stats_logged'):
+            example_stats = self.example_selector.get_example_stats()
+            if 'error' not in example_stats:
+                logger.info(f"🎯 Multi-shot prompting enabled: {example_stats['total_examples']} examples across {example_stats['total_error_types']} error types")
+                PromptGenerator._stats_logged = True
     
     def _load_assembly_line_config(self) -> Dict[str, str]:
         """Load instruction templates from assembly_line_config.yaml."""
