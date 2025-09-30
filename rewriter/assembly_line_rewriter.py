@@ -13,6 +13,7 @@ from .evaluators import RewriteEvaluator
 from .station_mapper import ErrorStationMapper
 from .progress_tracker import WorldClassProgressTracker
 from .surgical_snippet_processor import SurgicalSnippetProcessor
+from .confidence_gateway import ConfidenceGateway, GatewayMode
 
 logger = logging.getLogger(__name__)
 
@@ -24,8 +25,13 @@ class AssemblyLineRewriter:
     _shared_prompt_generator = None
     _shared_evaluator = None
     _shared_surgical_processor = None
+    _shared_confidence_gateway = None
     
-    def __init__(self, text_generator: TextGenerator, text_processor: TextProcessor, progress_callback: Optional[Callable] = None):
+    def __init__(self, text_generator: TextGenerator, text_processor: TextProcessor, 
+                 progress_callback: Optional[Callable] = None,
+                 enable_confidence_gateway: bool = True,
+                 gateway_threshold: float = 0.4,
+                 gateway_mode: GatewayMode = GatewayMode.ENABLED):
         self.text_generator = text_generator
         self.text_processor = text_processor
         self.progress_callback = progress_callback
@@ -42,17 +48,29 @@ class AssemblyLineRewriter:
                 text_generator, AssemblyLineRewriter._shared_prompt_generator
             )
             logger.info("🔬 Created shared SurgicalSnippetProcessor")
+        if AssemblyLineRewriter._shared_confidence_gateway is None:
+            AssemblyLineRewriter._shared_confidence_gateway = ConfidenceGateway(
+                confidence_threshold=gateway_threshold,
+                mode=gateway_mode,
+                enable_detailed_logging=True,
+                config_file="config/confidence_gateway_schema.yaml"
+            )
+            logger.info("🚪 Created shared Phase 2A ConfidenceGateway with smart thresholding")
             
         self.prompt_generator = AssemblyLineRewriter._shared_prompt_generator
         self.evaluator = AssemblyLineRewriter._shared_evaluator
         self.surgical_processor = AssemblyLineRewriter._shared_surgical_processor
+        self.confidence_gateway = AssemblyLineRewriter._shared_confidence_gateway if enable_confidence_gateway else None
         
         # Performance tracking for world-class AI processing
         self.processing_stats = {
             'blocks_processed': 0,
             'errors_fixed': 0,
             'average_confidence': 0.0,
-            'total_processing_time_ms': 0
+            'total_processing_time_ms': 0,
+            'gateway_enabled': enable_confidence_gateway,
+            'errors_suppressed_by_gateway': 0,
+            'gateway_cost_savings': 0.0
         }
         
         logger.debug(f"⚡ World-class AI rewriter initialized with shared components")
@@ -142,8 +160,40 @@ class AssemblyLineRewriter:
                     'errors_fixed': 0,
                     'applicable_stations': [],
                     'block_type': block_type,
-                    'processing_method': 'no_errors_detected'
+                    'processing_method': 'no_errors_detected',
+                    'gateway_report': None
                 }
+            
+            # CONFIDENCE GATEWAY: Pre-filter errors before expensive processing
+            gateway_report = None
+            if self.confidence_gateway:
+                print(f"   🚪 Applying confidence gateway to {len(block_errors)} errors")
+                block_errors, gateway_report = self.confidence_gateway.filter_errors(
+                    block_errors, 
+                    text=block_content,
+                    context={'block_type': block_type, 'session_id': session_id}
+                )
+                
+                # Update stats with gateway results
+                if gateway_report:
+                    self.processing_stats['errors_suppressed_by_gateway'] += gateway_report.get('errors_suppressed', 0)
+                    self.processing_stats['gateway_cost_savings'] += gateway_report.get('estimated_cost_savings', 0.0)
+                    
+                    print(f"   🚪 Gateway result: {len(block_errors)} errors passed, {gateway_report.get('errors_suppressed', 0)} suppressed")
+                
+                # If gateway suppressed all errors, return clean result
+                if not block_errors:
+                    print(f"   🚪 All errors suppressed by gateway - returning clean result")
+                    return {
+                        'rewritten_text': block_content,
+                        'improvements': ['All detected errors filtered by confidence gateway'],
+                        'confidence': 1.0,
+                        'errors_fixed': 0,
+                        'applicable_stations': [],
+                        'block_type': block_type,
+                        'processing_method': 'gateway_filtered_all',
+                        'gateway_report': gateway_report
+                    }
             
             import time
             start_time = time.time()
@@ -204,13 +254,16 @@ class AssemblyLineRewriter:
                     result.get('improvements', [])
                 )
             
-            # Add block-specific metadata
+            # Add block-specific metadata including gateway information
+            original_error_count = len(block_errors) + gateway_report.get('errors_suppressed', 0) if gateway_report else len(block_errors)
             result.update({
                 'applicable_stations': applicable_stations,
                 'block_type': block_type,
-                'original_errors': len(block_errors),
+                'original_errors': original_error_count,
+                'errors_after_gateway': len(block_errors),
                 'processing_time_ms': processing_time,
-                'world_class_ai_used': True
+                'world_class_ai_used': True,
+                'gateway_report': gateway_report
             })
             
             # Add progress tracking data only if available

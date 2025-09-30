@@ -1,0 +1,80 @@
+# Simple YAML configuration - no schema validation needed
+
+# Core Gateway Settings  
+gateway:
+  enabled: true
+  mode: enabled
+  confidence_threshold: 0.4
+  enable_detailed_logging: true
+
+# Error Type Specific Thresholds
+error_type_thresholds:
+  high_confidence:
+    threshold: 0.3
+    types:
+      - spelling
+      - contractions 
+      - prefixes
+      - currency
+      - abbreviations
+      - technical_files_directories
+      - technical_commands
+      - possessives
+      - plurals
+
+  medium_confidence:
+    threshold: 0.4
+    types:
+      - hyphens
+      - commas
+      - periods
+      - capitalization
+      - spacing
+      - terminology
+
+  low_confidence:
+    threshold: 0.6
+    types:
+      - ambiguity
+      - tone
+      - passive_voice
+      - sentence_length
+      - pronouns
+      - articles
+
+# Context-Aware Threshold Adjustments
+context_adjustments:
+  technical_documentation:
+    adjustment: -0.05
+    reason: Technical content has well-defined style rules
+  
+  marketing_content:
+    adjustment: 0.10
+    reason: Marketing content allows more creative language
+  
+  legal_content:
+    adjustment: -0.10
+    reason: Legal content requires precise terminology
+  
+  casual_content:
+    adjustment: 0.15
+    reason: Casual content allows colloquial expressions
+  
+  formal_documentation:
+    adjustment: -0.05
+    reason: Formal documentation requires adherence to guidelines
+
+# Performance Settings
+cost_estimation:
+  llm_call_cost_estimate: 0.002
+
+# Hot-Reload Configuration
+hot_reload:
+  enabled: true
+  check_interval_seconds: 30
+  log_reloads: true
+
+# Debug Settings
+debug:
+  log_confidence_scores: true
+  log_threshold_adjustments: true
