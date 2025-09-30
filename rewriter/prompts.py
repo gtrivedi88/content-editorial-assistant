@@ -1,12 +1,19 @@
 """
 Prompt Generation Module for the AI Rewriter
-Enhanced with multi-shot prompting for world-class performance.
+Enhanced with multi-shot prompting and evidence-based instruction templates.
 """
 import logging
 from typing import List, Dict, Any, Optional
 import yaml
 import os
 from .example_selector import ExampleSelector
+
+# Enhanced instruction template system integration
+try:
+    from validation.feedback.instruction_template_tracker import get_template_tracker, select_instruction_template, record_instruction_success
+    TEMPLATE_TRACKING_AVAILABLE = True
+except ImportError:
+    TEMPLATE_TRACKING_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -17,16 +24,31 @@ class PromptGenerator:
     """
     
     def __init__(self):
-        """Initialize with assembly line configuration and shared example selector."""
+        """Initialize with assembly line configuration and enhanced template tracking."""
         self.instruction_templates = self._load_assembly_line_config()
         # PERFORMANCE: Use singleton ExampleSelector (cached YAML loading)
         self.example_selector = ExampleSelector()
+        
+        # Initialize evidence-based template tracking
+        self.template_tracking_enabled = TEMPLATE_TRACKING_AVAILABLE
+        if self.template_tracking_enabled:
+            try:
+                self.template_tracker = get_template_tracker()
+                logger.info("🎯 Evidence-based instruction templates enabled")
+            except Exception as e:
+                logger.warning(f"Failed to initialize template tracker: {e}")
+                self.template_tracking_enabled = False
         
         # Log initialization status (only on first creation)
         if not hasattr(PromptGenerator, '_stats_logged'):
             example_stats = self.example_selector.get_example_stats()
             if 'error' not in example_stats:
                 logger.info(f"🎯 Multi-shot prompting enabled: {example_stats['total_examples']} examples across {example_stats['total_error_types']} error types")
+                
+                if self.template_tracking_enabled:
+                    tracker_stats = self.template_tracker.get_system_stats()
+                    logger.info(f"🚀 Template tracking: {tracker_stats['total_templates']} templates across {tracker_stats['total_rule_types']} rule types")
+                
                 PromptGenerator._stats_logged = True
     
     def _load_assembly_line_config(self) -> Dict[str, str]:
@@ -250,8 +272,9 @@ Respond in this EXACT format with no other text before or after:
                                    spacy_suggestions: List[str], flagged_text: str,
                                    context: str = "text") -> str:
         """
-        Create enhanced instruction with multi-shot examples and context.
-        This is the KEY improvement that makes AI output world-class.
+        Create enhanced instruction with evidence-based template selection and multi-shot examples.
+        
+        NEW: Uses performance-based template selection to optimize AI instruction effectiveness!
         
         Args:
             error_type: The type of error detected
@@ -261,9 +284,50 @@ Respond in this EXACT format with no other text before or after:
             context: Context type for example selection
             
         Returns:
-            Rich, context-aware instruction with multi-shot examples
+            Optimized, context-aware instruction with best-performing template
         """
-        # Get base template guidance
+        # 🚀 NEW: Try evidence-based template selection first
+        if self.template_tracking_enabled:
+            try:
+                template_style, dynamic_template = self.template_tracker.select_best_template(error_type)
+                
+                if dynamic_template:
+                    logger.debug(f"🎯 Using evidence-based template for {error_type}: {template_style} style")
+                    
+                    # Create instruction with selected template
+                    instruction_parts = []
+                    
+                    # Add the performance-optimized template
+                    instruction_parts.append(f"**Rule**: {dynamic_template}")
+                    
+                    # Add specific SpaCy context
+                    instruction_parts.append(f"**Specific Issue**: {spacy_message}")
+                    
+                    # Add SpaCy suggestions if available
+                    if spacy_suggestions:
+                        suggestion_text = spacy_suggestions[0] if isinstance(spacy_suggestions, list) else str(spacy_suggestions)
+                        instruction_parts.append(f"**SpaCy Guidance**: {suggestion_text}")
+                    
+                    # Add multi-shot examples for pattern learning
+                    examples = self.example_selector.select_examples(
+                        error_type, flagged_text, context, num_examples=2
+                    )
+                    if examples:
+                        examples_text = self.example_selector.format_examples_for_prompt(examples, error_type)
+                        instruction_parts.append(f"**Multi-Shot Examples**: {examples_text}")
+                    
+                    # Add flagged text context
+                    instruction_parts.append(f"**Apply to**: \"{flagged_text}\"")
+                    
+                    # Add template metadata for tracking
+                    instruction_parts.append(f"**Template**: {template_style}")
+                    
+                    return " | ".join(instruction_parts)
+                    
+            except Exception as e:
+                logger.debug(f"Evidence-based template selection failed for {error_type}: {e}")
+        
+        # Fallback to legacy static template system
         base_template = self.instruction_templates.get(error_type, "")
         
         # Get dynamic multi-shot examples (limit to 2 to reduce token usage)
@@ -272,7 +336,7 @@ Respond in this EXACT format with no other text before or after:
         )
         examples_text = self.example_selector.format_examples_for_prompt(examples, error_type)
         
-        # Create hybrid instruction with multi-shot learning
+        # Create hybrid instruction with multi-shot learning (legacy approach)
         if base_template:
             # Combine template + SpaCy context + multi-shot examples
             instruction_parts = []
@@ -569,6 +633,76 @@ Respond in this EXACT format with no other text before or after:
             return "Learn from these patterns:\n" + "\n".join(example_texts)
         else:
             return f"Apply {station}-priority fixes following standard patterns."
+    
+    def record_template_feedback(self, 
+                               error_type: str,
+                               template_style: str,
+                               success: bool,
+                               confidence_score: float = 0.0,
+                               processing_time_ms: float = 0.0,
+                               session_id: str = None):
+        """
+        Record feedback on template performance for continuous learning.
+        
+        This enables the evidence-based template system to learn which instruction
+        styles work best for each rule type over time.
+        
+        Args:
+            error_type: Rule type that used the template
+            template_style: Style of template that was used
+            success: Whether the template led to successful correction
+            confidence_score: Confidence score of the AI result
+            processing_time_ms: Processing time in milliseconds
+            session_id: Session ID for tracking
+        """
+        if not self.template_tracking_enabled:
+            return
+        
+        try:
+            self.template_tracker.record_template_usage(
+                rule_type=error_type,
+                template_style=template_style,
+                success=success,
+                confidence_score=confidence_score,
+                processing_time_ms=processing_time_ms,
+                session_id=session_id,
+                feedback_source="ai_rewrite_result"
+            )
+            
+            logger.debug(f"📊 Recorded template feedback: {error_type}/{template_style} -> {'success' if success else 'failure'}")
+            
+        except Exception as e:
+            logger.warning(f"Failed to record template feedback: {e}")
+    
+    def get_template_performance_stats(self, rule_type: str = None) -> Dict[str, Any]:
+        """
+        Get template performance statistics for analysis.
+        
+        Args:
+            rule_type: Optional specific rule type to get stats for
+            
+        Returns:
+            Performance statistics dictionary
+        """
+        if not self.template_tracking_enabled:
+            return {'error': 'Template tracking not available'}
+        
+        try:
+            if rule_type:
+                return self.template_tracker.get_template_performance(rule_type)
+            else:
+                return self.template_tracker.get_system_stats()
+        except Exception as e:
+            return {'error': str(e)}
+    
+    def save_template_performance_data(self):
+        """Save template performance data to persistent storage."""
+        if self.template_tracking_enabled:
+            try:
+                self.template_tracker.save_performance_data()
+                logger.info("💾 Template performance data saved")
+            except Exception as e:
+                logger.error(f"Failed to save template performance data: {e}")
 
     def create_simple_rewrite_prompt(self, text: str) -> str:
         """Creates a simple, general-purpose JSON rewrite prompt (used for fallbacks)."""

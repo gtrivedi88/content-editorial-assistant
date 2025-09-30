@@ -423,9 +423,32 @@ function initializeBlockAssemblyLineProgress(blockId, stations) {
     const assemblyLineElement = document.querySelector(`[data-block-id="${blockId}"] .assembly-line-stations`);
     if (!assemblyLineElement) return;
     
-    // Reset all stations to waiting state
+    console.log(`🏗️ Creating ALL ${stations.length} stations upfront for block ${blockId}:`, stations);
+    
+    // Create ALL applicable stations immediately (not dynamically during processing)
     stations.forEach(station => {
-        const stationElement = assemblyLineElement.querySelector(`[data-station="${station}"]`);
+        let stationElement = assemblyLineElement.querySelector(`[data-station="${station}"]`);
+        
+        // Create station if it doesn't exist
+        if (!stationElement) {
+            console.log(`🏗️ Creating missing station: ${station}`);
+            
+            // Get display name for this station
+            const stationDisplayNames = {
+                'urgent': 'Critical/Legal Pass',
+                'high': 'Structural Pass',
+                'medium': 'Grammar Pass',
+                'low': 'Style Pass'
+            };
+            const displayName = stationDisplayNames[station] || 'Processing Pass';
+            
+            // Create HTML and insert into DOM (inline to avoid cross-file dependencies)
+            const stationHtml = createStationElementHtml(station, displayName);
+            assemblyLineElement.insertAdjacentHTML('beforeend', stationHtml);
+            stationElement = assemblyLineElement.querySelector(`[data-station="${station}"]`);
+        }
+        
+        // Reset station to waiting state
         if (stationElement) {
             stationElement.classList.remove('station-processing', 'station-complete', 'station-error');
             stationElement.classList.add('station-waiting');
@@ -434,8 +457,58 @@ function initializeBlockAssemblyLineProgress(blockId, stations) {
             if (statusIcon) {
                 statusIcon.className = 'station-status-icon fas fa-clock';
             }
+            
+            const statusText = stationElement.querySelector('.station-status-text');
+            if (statusText) {
+                statusText.textContent = 'Waiting...';
+            }
         }
     });
+    
+    console.log(`✅ ALL ${stations.length} stations displayed upfront and ready for processing`);
+}
+
+/**
+ * Create HTML for a station element (inline version to avoid cross-file dependencies)
+ */
+function createStationElementHtml(station, displayName) {
+    // Station color mapping
+    const getStationColor = (station) => {
+        const colorMap = { 'urgent': 'red', 'high': 'orange', 'medium': 'gold', 'low': 'blue' };
+        return colorMap[station] || 'grey';
+    };
+    
+    // Station priority mapping  
+    const getStationPriority = (station) => {
+        const priorityMap = { 'urgent': 'Critical', 'high': 'High', 'medium': 'Medium', 'low': 'Low' };
+        return priorityMap[station] || 'Normal';
+    };
+    
+    return `
+        <div class="pf-v5-l-stack__item">
+            <div class="dynamic-station station-waiting" data-station="${station}">
+                <div class="pf-v5-l-flex pf-m-align-items-center">
+                    <div class="pf-v5-l-flex__item">
+                        <i class="station-status-icon fas fa-clock pf-v5-u-mr-sm"></i>
+                    </div>
+                    <div class="pf-v5-l-flex__item pf-m-flex-1">
+                        <span class="pf-v5-u-font-weight-bold">${displayName}</span>
+                        <div class="station-status-text pf-v5-u-font-size-sm pf-v5-u-color-400">
+                            Waiting...
+                        </div>
+                    </div>
+                    <div class="pf-v5-l-flex__item">
+                        <span class="station-priority-badge pf-v5-c-label pf-m-outline pf-m-${getStationColor(station)}">
+                            <span class="pf-v5-c-label__content">${getStationPriority(station)}</span>
+                        </span>
+                    </div>
+                </div>
+                <div class="station-preview pf-v5-u-mt-xs pf-v5-u-font-size-sm pf-v5-u-color-300" style="display: none;">
+                    <!-- Preview text will be inserted here during processing -->
+                </div>
+            </div>
+        </div>
+    `;
 }
 
 /**

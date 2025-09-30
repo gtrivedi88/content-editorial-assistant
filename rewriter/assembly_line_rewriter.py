@@ -2,6 +2,7 @@
 Assembly Line Rewriter
 Orchestrates the rewriting process using world-class AI multi-shot prompting.
 Simplified architecture with single AI-based processing pipeline.
+Enhanced with intelligent instruction consolidation using validation system.
 """
 import logging
 import time
@@ -13,6 +14,14 @@ from .evaluators import RewriteEvaluator
 from .station_mapper import ErrorStationMapper
 from .progress_tracker import WorldClassProgressTracker
 from .surgical_snippet_processor import SurgicalSnippetProcessor
+
+# Enhanced validation system integration
+try:
+    from validation.confidence.confidence_calculator import ConfidenceCalculator
+    from validation.confidence.rule_reliability import get_rule_reliability_coefficient
+    ENHANCED_VALIDATION_AVAILABLE = True
+except ImportError:
+    ENHANCED_VALIDATION_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +55,18 @@ class AssemblyLineRewriter:
         self.prompt_generator = AssemblyLineRewriter._shared_prompt_generator
         self.evaluator = AssemblyLineRewriter._shared_evaluator
         self.surgical_processor = AssemblyLineRewriter._shared_surgical_processor
+        
+        # Initialize enhanced validation system for intelligent consolidation
+        self.enhanced_validation_enabled = ENHANCED_VALIDATION_AVAILABLE
+        if self.enhanced_validation_enabled:
+            try:
+                self.confidence_calculator = ConfidenceCalculator()
+                logger.info("🎯 Enhanced validation system initialized for intelligent consolidation")
+            except Exception as e:
+                logger.warning(f"Failed to initialize confidence calculator: {e}")
+                self.enhanced_validation_enabled = False
+        else:
+            logger.info("⚠️ Enhanced validation system not available - using fallback consolidation logic")
         
         # Performance tracking for world-class AI processing
         self.processing_stats = {
@@ -241,6 +262,227 @@ class AssemblyLineRewriter:
         """Get errors that belong to a specific assembly line station."""
         return ErrorStationMapper.get_errors_for_station(errors, station)
 
+    def _consolidate_instructions(self, station_errors: List[Dict[str, Any]], station: str = None) -> List[Dict[str, Any]]:
+        """
+        Consolidate conflicting instructions for the same text spans within a station.
+        
+        This prevents the LLM from receiving conflicting instructions like:
+        - "Change 'will provide' to present tense" (Verbs rule)
+        - "Replace 'will provide' with better word choice" (Conversational Style rule)
+        
+        Which could cause hallucinations like "overprovide".
+        
+        Args:
+            station_errors: List of errors for this station
+            station: Station name for logging context
+            
+        Returns:
+            List of consolidated errors with conflicts resolved
+        """
+        if len(station_errors) <= 1:
+            logger.debug(f"🔧 Consolidation: {len(station_errors)} error(s) - no consolidation needed")
+            return station_errors
+        
+        logger.info(f"🔧 Starting instruction consolidation for {len(station_errors)} errors in {station} station")
+        
+        # Group errors by exact text span and flagged text
+        span_groups = {}
+        
+        for error in station_errors:
+            span_key = self._create_span_key(error)
+            
+            if span_key not in span_groups:
+                span_groups[span_key] = []
+            span_groups[span_key].append(error)
+        
+        logger.debug(f"🔧 Created {len(span_groups)} span groups from {len(station_errors)} errors")
+        
+        consolidated_errors = []
+        total_conflicts_resolved = 0
+        
+        for span_key, error_group in span_groups.items():
+            if len(error_group) == 1:
+                # No conflict - keep single error
+                consolidated_errors.append(error_group[0])
+                logger.debug(f"🔧 Span '{span_key[:50]}...': No conflict (1 error)")
+            else:
+                # Conflict detected - resolve by priority
+                primary_error = self._select_primary_error_for_span(error_group, station)
+                consolidated_errors.append(primary_error)
+                
+                removed_types = [e.get('type', 'unknown') for e in error_group if e != primary_error]
+                flagged_text = error_group[0].get('flagged_text', 'unknown')
+                
+                logger.info(f"🎯 CONFLICT RESOLVED: '{flagged_text}' - Prioritized '{primary_error.get('type')}' over {removed_types}")
+                total_conflicts_resolved += len(error_group) - 1
+                
+                # Add consolidation metadata for debugging
+                primary_error['consolidation_info'] = {
+                    'was_consolidated': True,
+                    'original_count': len(error_group),
+                    'removed_types': removed_types,
+                    'consolidation_reason': 'same_span_priority_resolution'
+                }
+        
+        logger.info(f"🏆 Consolidation complete: {len(station_errors)} → {len(consolidated_errors)} errors ({total_conflicts_resolved} conflicts resolved)")
+        
+        return consolidated_errors
+    
+    def _create_span_key(self, error: Dict[str, Any]) -> str:
+        """
+        Create a unique key for grouping errors by text span.
+        
+        Uses both span coordinates and flagged text to ensure accurate grouping.
+        """
+        # Primary: Use span if available
+        span = error.get('span')
+        if span and isinstance(span, (list, tuple)) and len(span) == 2:
+            span_part = f"span_{span[0]}_{span[1]}"
+        else:
+            span_part = "span_unknown"
+        
+        # Secondary: Use flagged text for additional precision
+        flagged_text = error.get('flagged_text', '').strip().lower()
+        if flagged_text:
+            text_part = f"text_{flagged_text}"
+        else:
+            text_part = "text_unknown"
+        
+        # Combine both for precise matching
+        return f"{span_part}_{text_part}"
+    
+    def _select_primary_error_for_span(self, error_group: List[Dict[str, Any]], station: str = None) -> Dict[str, Any]:
+        """
+        Select the primary error when multiple errors target the same span.
+        
+        Enhanced with your validation system:
+        1. Uses ConfidenceCalculator for intelligent scoring
+        2. Uses RuleReliabilityCalculator for evidence-based reliability
+        3. Combines confidence + reliability + structural priorities
+        
+        Args:
+            error_group: List of conflicting errors for the same span
+            station: Station context for priority decisions
+            
+        Returns:
+            The primary error that should be used
+        """
+        def get_enhanced_priority_score(error: Dict[str, Any]) -> tuple:
+            error_type = error.get('type', 'unknown')
+            
+            if self.enhanced_validation_enabled:
+                # Use your sophisticated validation system! 🎯
+                try:
+                    # Calculate confidence using your ConfidenceCalculator
+                    confidence_score = self.confidence_calculator.calculate_confidence(error)
+                    
+                    # Get rule reliability from your RuleReliabilityCalculator  
+                    reliability_coefficient = get_rule_reliability_coefficient(error_type)
+                    
+                    # Combine confidence and reliability for base score
+                    base_score = confidence_score * reliability_coefficient * 100
+                    
+                    logger.debug(f"🧠 Enhanced scoring for {error_type}: confidence={confidence_score:.3f}, reliability={reliability_coefficient:.3f}, base={base_score:.1f}")
+                    
+                except Exception as e:
+                    logger.debug(f"Enhanced validation failed for {error_type}, using fallback: {e}")
+                    base_score = self._get_fallback_priority_score(error)
+            else:
+                # Fallback to original logic when validation system unavailable
+                base_score = self._get_fallback_priority_score(error)
+            
+            # Apply structural priority boost (grammar rules still beat style rules)
+            structural_boost = self._get_structural_priority_boost(error_type)
+            
+            # Apply suggestion quality bonus
+            suggestion_bonus = self._get_suggestion_quality_bonus(error)
+            
+            # Apply message specificity bonus
+            message_bonus = self._get_message_specificity_bonus(error)
+            
+            # Calculate final score
+            final_score = base_score + structural_boost + suggestion_bonus + message_bonus
+            
+            logger.debug(f"🎯 Final priority for {error_type}: {final_score:.1f} (base={base_score:.1f}, struct={structural_boost}, sugg={suggestion_bonus}, msg={message_bonus})")
+            
+            # Return tuple for sorting: (final_score, has_suggestions, error_type for tie-breaking)
+            suggestions = error.get('suggestions', [])
+            return (final_score, len(suggestions), error_type)
+        
+        # Sort by priority (highest first) and return top error
+        sorted_errors = sorted(error_group, key=get_enhanced_priority_score, reverse=True)
+        primary_error = sorted_errors[0]
+        
+        # Add consolidation metadata
+        if self.enhanced_validation_enabled:
+            primary_error['consolidation_method'] = 'enhanced_validation'
+        else:
+            primary_error['consolidation_method'] = 'fallback_logic'
+        
+        logger.debug(f"🏆 Selected '{primary_error.get('type')}' as primary from {len(error_group)} conflicting errors using {primary_error['consolidation_method']}")
+        
+        return primary_error
+    
+    def _get_fallback_priority_score(self, error: Dict[str, Any]) -> float:
+        """Fallback priority scoring when enhanced validation is unavailable."""
+        error_type = error.get('type', 'unknown')
+        severity = error.get('severity', 'low')
+        
+        # Original hardcoded logic as fallback
+        grammar_structural_types = {
+            'verbs': 100, 'ambiguity': 95, 'pronouns': 90,
+            'passive_voice': 85, 'sentence_length': 80
+        }
+        grammar_priority = grammar_structural_types.get(error_type, 0)
+        
+        severity_scores = {
+            'critical': 50, 'high': 40, 'medium': 30, 'low': 20, 'info': 10
+        }
+        severity_priority = severity_scores.get(severity.lower(), 20)
+        
+        return float(grammar_priority + severity_priority)
+    
+    def _get_structural_priority_boost(self, error_type: str) -> float:
+        """Get structural priority boost for grammar/structural rules."""
+        grammar_structural_types = {
+            'verbs', 'ambiguity', 'pronouns', 'passive_voice', 'sentence_length'
+        }
+        if error_type in grammar_structural_types:
+            return 25.0  # Grammar rules get boost
+        
+        style_types = {'conversational_style', 'tone', 'word_usage'}
+        if error_type in style_types or any(style in error_type for style in style_types):
+            return -15.0  # Style rules get penalty in conflicts
+        
+        return 0.0
+    
+    def _get_suggestion_quality_bonus(self, error: Dict[str, Any]) -> float:
+        """Get bonus based on suggestion quality."""
+        suggestions = error.get('suggestions', [])
+        if not suggestions:
+            return 0.0
+        
+        if any(len(s) > 10 for s in suggestions):  # Detailed suggestions
+            return 10.0
+        elif len(suggestions) > 0:  # Has suggestions
+            return 5.0
+        
+        return 0.0
+    
+    def _get_message_specificity_bonus(self, error: Dict[str, Any]) -> float:
+        """Get bonus based on message specificity."""
+        message = error.get('message', '')
+        if not message:
+            return 0.0
+        
+        bonus = 0.0
+        if 'example:' in message.lower() or '→' in message:
+            bonus += 8.0  # Has examples
+        if any(word in message.lower() for word in ['change', 'replace', 'use', 'consider']):
+            bonus += 5.0  # Actionable message
+        
+        return bonus
+
     def _generate_station_preview(self, station: str, errors: List[Dict[str, Any]], processed_content: str) -> str:
         """Generate preview text showing what this station accomplished."""
         if not errors:
@@ -377,12 +619,19 @@ class AssemblyLineRewriter:
             station_name = self.get_station_display_name(station)
             logger.info(f"🔧 Pass {i}/{len(applicable_stations)} - {station_name}: {len(station_errors)} errors")
             
+            # Consolidate conflicting instructions within this station
+            consolidated_errors = self._consolidate_instructions(station_errors, station)
+            
+            # Update error count after consolidation
+            if len(consolidated_errors) != len(station_errors):
+                logger.info(f"🎯 {station_name}: {len(station_errors)} → {len(consolidated_errors)} errors after consolidation")
+            
             # Start station tracking only if enabled
             if progress_tracker:
-                progress_tracker.start_station(station, station_name, len(station_errors))
+                progress_tracker.start_station(station, station_name, len(consolidated_errors))
             
-            # Apply world-class AI for this station's errors
-            station_result = self._apply_world_class_ai_fixes(current_text, station_errors, block_type, station, progress_tracker)
+            # Apply world-class AI for this station's consolidated errors  
+            station_result = self._apply_world_class_ai_fixes(current_text, consolidated_errors, block_type, station, progress_tracker)
             
             if station_result.get('rewritten_text') and station_result['rewritten_text'] != current_text:
                 # Success at this station

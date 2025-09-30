@@ -1,5 +1,5 @@
 """
-Feedback-informed Reliability Calibration System (Upgrade 6)
+Feedback-informed Reliability Calibration System
 Periodically adjusts rule reliability coefficients based on user feedback to create a closed-loop system.
 """
 
