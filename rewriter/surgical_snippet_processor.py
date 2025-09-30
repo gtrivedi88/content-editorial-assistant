@@ -88,6 +88,7 @@ class SurgicalSnippetProcessor:
             'technical_ui_elements',         # Button names
             'technical_web_addresses',       # URL formatting
             'technical_keyboard_keys',       # Key combinations
+            'technical_mouse_buttons',       # Mouse action formatting
             
             # NUMBERS & MEASUREMENT (Precise transformations)
             'currency',              # "$100" → "USD 100"
@@ -102,40 +103,10 @@ class SurgicalSnippetProcessor:
             'indentation',           # List formatting
         }
         
-        # Word usage rules (A-Z) - Many are surgical candidates
+        # Word usage rules (A-Z) - EXCLUDED: These are context-dependent
+
         if error_type.startswith('word_usage_') or error_type.endswith('_words'):
-            flagged_text = error.get('flagged_text', '').lower()
-            
-            # Simple single-word replacements (surgical)
-            simple_replacements = {
-                # High-frequency simple replacements
-                'utilize', 'commence', 'terminate', 'demonstrate', 'facilitate',
-                'approximately', 'subsequently', 'additionally', 'currently',
-                'obviously', 'simply', 'just', 'really', 'very', 'quite',
-                'basically', 'essentially', 'actually', 'literally',
-                
-                # Technical simplifications
-                'functionality', 'implementation', 'configuration', 'initialization',
-                'optimization', 'customization', 'documentation', 'specification',
-                
-                # Common wordy phrases that can be surgically replaced
-                'in order to', 'due to the fact that', 'at this point in time',
-                'for the purpose of', 'in spite of the fact that'
-            }
-            
-            # Check if the flagged text contains surgical candidates
-            if any(word in flagged_text for word in simple_replacements):
-                return True
-                
-            # Specific word usage patterns that are surgical
-            surgical_patterns = {
-                'click here', 'click the link', 'see below', 'see above',
-                'login to', 'setup the', 'backup your', 'checkout the',
-                'e.g.', 'i.e.', 'etc.', 'vs.', 'w/', 'w/o'
-            }
-            
-            if any(pattern in flagged_text for pattern in surgical_patterns):
-                return True
+            return False  # Word usage is always context-dependent
         
         # Check if error has precise span information (required for surgical)
         span = error.get('span')
@@ -439,6 +410,11 @@ class SurgicalSnippetProcessor:
             'technical_ui_elements': {
                 'task': f"Format UI element '{flagged_text}' with proper emphasis",
                 'examples': "Submit button → **Submit** button, Login link → **Login** link"
+            },
+            
+            'technical_mouse_buttons': {
+                'task': f"Format mouse action '{flagged_text}' with proper terminology",
+                'examples': "click on → click, right click → right-click, double click → double-click"
             },
             
             'technical_files_directories': {
