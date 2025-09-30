@@ -10,7 +10,6 @@ from .processors import TextProcessor
 from .evaluators import RewriteEvaluator
 from .document_rewriter import DocumentRewriter
 from .surgical_snippet_processor import SurgicalSnippetProcessor
-from .confidence_gateway import ConfidenceGateway, GatewayMode
 from models import ModelManager
 
 __all__ = [
@@ -21,7 +20,5 @@ __all__ = [
     'RewriteEvaluator',
     'DocumentRewriter',
     'SurgicalSnippetProcessor',
-    'ConfidenceGateway',
-    'GatewayMode',
     'ModelManager'
 ] 
