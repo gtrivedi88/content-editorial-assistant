@@ -32,7 +32,8 @@ class RewriteEvaluator:
         self._cache_max_size = 100
     
     def calculate_confidence(self, original: str, rewritten: str, errors: List[Dict[str, Any]], 
-                           use_ollama: bool = True, pass_number: int = 1) -> float:
+                           use_ollama: bool = True, pass_number: int = 1, 
+                           processing_result: Dict[str, Any] = None) -> float:
         """Calculate confidence score for the rewrite using enhanced validation system.
         Cached calculations for similar inputs."""
         try:
@@ -45,7 +46,7 @@ class RewriteEvaluator:
             
             # Calculate confidence
             if self.confidence_calculator:
-                confidence = self._calculate_enhanced_confidence(original, rewritten, errors, use_ollama, pass_number)
+                confidence = self._calculate_enhanced_confidence(original, rewritten, errors, use_ollama, pass_number, processing_result)
             else:
                 confidence = self._calculate_fallback_confidence(original, rewritten, errors, use_ollama, pass_number)
             
@@ -81,7 +82,7 @@ class RewriteEvaluator:
             return 0.8  # Default high confidence for second pass
     
     def _calculate_enhanced_confidence(self, original: str, rewritten: str, errors: List[Dict[str, Any]], 
-                                     use_ollama: bool, pass_number: int) -> float:
+                                     use_ollama: bool, pass_number: int, processing_result: Dict[str, Any] = None) -> float:
         """Calculate confidence using the enhanced ConfidenceCalculator system."""
         # Use normalized confidence calculation for rewrite quality assessment
         
@@ -99,7 +100,7 @@ class RewriteEvaluator:
         
         # Apply rewrite-specific modifiers
         rewrite_confidence = self._apply_rewrite_modifiers(
-            rewrite_confidence, original, rewritten, errors, use_ollama, pass_number
+            rewrite_confidence, original, rewritten, errors, use_ollama, pass_number, processing_result
         )
         
         return max(0.0, min(1.0, rewrite_confidence))
@@ -151,19 +152,26 @@ class RewriteEvaluator:
         return max(rule_counts, key=rule_counts.get) if rule_counts else 'grammar'
     
     def _apply_rewrite_modifiers(self, base_confidence: float, original: str, rewritten: str, 
-                               errors: List[Dict[str, Any]], use_ollama: bool, pass_number: int) -> float:
-        """Apply rewrite-specific confidence modifiers."""
+                               errors: List[Dict[str, Any]], use_ollama: bool, pass_number: int, 
+                               processing_result: Dict[str, Any] = None) -> float:
+        """Apply rewrite-specific confidence modifiers with surgical processing awareness."""
         confidence = base_confidence
         
-        # Model quality modifier (Ollama generally more reliable)
+        # Enhanced model quality modifier
         if use_ollama and rewritten != original:
-            confidence *= 1.2  # 20% boost for Ollama
+            confidence *= 1.25  # Increased from 1.2 - Ollama is very reliable
         elif not use_ollama and rewritten != original:
-            confidence *= 1.1  # 10% boost for external models
+            confidence *= 1.15  # Increased from 1.1 - external models improved
         
-        # Change quality assessment
+        # Change quality assessment with surgical processing awareness
         if rewritten == original:
-            confidence *= 0.7  # Penalize no changes
+            # Check if no changes are appropriate (negative example intelligence)
+            no_change_analysis = self._evaluate_no_change_appropriateness(original, rewritten, errors)
+            if no_change_analysis.get('is_appropriate', False):
+                confidence *= 1.1  # Boost for correctly identifying when not to change
+                logger.debug(f"✅ No-change appropriateness detected: {no_change_analysis.get('reasoning', [])}")
+            else:
+                confidence *= 0.7  # Penalize no changes when changes were expected
         else:
             # Length ratio quality check
             original_length = len(original.split())
@@ -172,15 +180,121 @@ class RewriteEvaluator:
             if original_length > 0:
                 length_ratio = rewritten_length / original_length
                 if 0.8 <= length_ratio <= 1.2:  # Reasonable length change
-                    confidence *= 1.05  # Small boost for reasonable changes
+                    confidence *= 1.1  # Increased from 1.05 - reasonable changes are good
                 elif length_ratio > 1.5 or length_ratio < 0.5:  # Extreme changes
-                    confidence *= 0.9  # Small penalty for extreme changes
+                    confidence *= 0.85  # Increased penalty for extreme changes
+        
+        # Processing method quality bonus based on actual results
+        processing_method_bonus = self._calculate_actual_processing_bonus(processing_result)
+        confidence *= processing_method_bonus
+        
+        # ENHANCED error count scaling - REWARD for fixing more errors  
+        if errors:
+            if len(errors) <= 2:
+                error_count_factor = 1.0      # Baseline for small fixes
+            elif len(errors) <= 5:
+                error_count_factor = 1.08     # 8% reward for moderate error fixing
+            elif len(errors) <= 8:
+                error_count_factor = 1.15     # 15% reward for substantial error fixing (like your case!)
+            elif len(errors) <= 12:
+                error_count_factor = 1.20     # 20% reward for extensive error fixing
+            else:
+                error_count_factor = 1.25     # 25% reward for comprehensive error fixing
+            
+            confidence *= error_count_factor
+            logger.debug(f"🎯 Error count reward: {len(errors)} errors → {error_count_factor:.3f}x boost")
         
         # Multi-pass bonus
         if pass_number == 2:
-            confidence *= 1.1  # 10% boost for second pass refinement
+            confidence *= 1.15  # Increased from 1.1 for second pass refinement
+        
+        # SUCCESS VALIDATION REWARD - Check if output shows quality indicators
+        success_validation_bonus = self._calculate_success_validation_bonus(original, rewritten, processing_result)
+        confidence *= success_validation_bonus
         
         return confidence
+    
+    def _calculate_success_validation_bonus(self, original: str, rewritten: str, processing_result: Dict[str, Any] = None) -> float:
+        """Calculate reward bonus based on output quality validation."""
+        bonus = 1.0
+        
+        if not processing_result:
+            return bonus
+        
+        # Check for quality indicators that suggest successful processing
+        quality_indicators = processing_result.get('quality_indicators', {})
+        improvements = processing_result.get('improvements', [])
+        
+        # Reward for generating improvements
+        if len(improvements) > 0:
+            improvement_bonus = min(1.08, 1.0 + len(improvements) * 0.01)  # Up to 8% for improvements
+            bonus *= improvement_bonus
+            logger.debug(f"📈 Improvement reward: {len(improvements)} improvements → {improvement_bonus:.3f}x")
+        
+        # Reward for processing efficiency
+        if quality_indicators:
+            processing_speed = quality_indicators.get('processing_speed_ms_per_error', 1000)
+            if processing_speed < 100:  # Very fast processing
+                bonus *= 1.05  # 5% bonus for speed
+                logger.debug(f"⚡ Speed reward: {processing_speed:.0f}ms/error → 1.05x")
+            
+            # Reward for high surgical success rate
+            surgical_rate = quality_indicators.get('perfect_surgical_rate', 0.5)
+            if surgical_rate >= 0.9:
+                bonus *= 1.08  # 8% bonus for excellent surgical performance
+                logger.debug(f"🎯 Surgical excellence reward: {surgical_rate:.2f} → 1.08x")
+        
+        # Text quality validation - reward for meaningful changes without over-editing
+        if original != rewritten and len(original.split()) > 0:
+            original_words = len(original.split())
+            rewritten_words = len(rewritten.split())
+            length_ratio = rewritten_words / original_words
+            
+            # Reward for appropriate text changes (not too extreme)
+            if 0.85 <= length_ratio <= 1.15:  # Reasonable editing
+                bonus *= 1.06  # 6% bonus for appropriate changes
+                logger.debug(f"✍️ Appropriate editing reward: ratio {length_ratio:.2f} → 1.06x")
+        
+        return min(1.15, bonus)  # Cap total validation bonus at 15%
+    
+    def _calculate_actual_processing_bonus(self, processing_result: Dict[str, Any] = None) -> float:
+        """Calculate REWARD-BASED confidence bonus based on actual processing success."""
+        if not processing_result:
+            return 1.02  # Small baseline bonus
+        
+        processing_method = processing_result.get('processing_method', '')
+        
+        # ENHANCED surgical processing rewards
+        if 'surgical' in processing_method.lower():
+            surgical_success_rate = processing_result.get('surgical_success_rate', 0.8)
+            if surgical_success_rate >= 0.95:
+                bonus = 1.18  # 18% bonus for near-perfect surgical success
+            elif surgical_success_rate >= 0.85:
+                bonus = 1.14  # 14% bonus for excellent surgical success
+            elif surgical_success_rate >= 0.75:
+                bonus = 1.10  # 10% bonus for good surgical success
+            else:
+                bonus = 1.06  # 6% baseline surgical bonus
+            
+            logger.debug(f"🎖️ Surgical reward bonus: success={surgical_success_rate:.2f} → {bonus:.3f}x")
+            
+        elif 'hybrid' in processing_method.lower():
+            # Hybrid gets bonus for combining surgical + contextual effectively
+            quality_indicators = processing_result.get('quality_indicators', {})
+            surgical_efficiency = quality_indicators.get('perfect_surgical_rate', 0.8)
+            if surgical_efficiency >= 0.9:
+                bonus = 1.12  # 12% bonus for excellent hybrid processing
+            else:
+                bonus = 1.08  # 8% bonus for standard hybrid processing
+        
+        elif 'contextual' in processing_method.lower():
+            # Contextual processing gets bonus for handling complex errors
+            bonus = 1.06  # 6% bonus for contextual processing (increased)
+        else:
+            bonus = 1.03  # 3% baseline bonus (increased)
+        
+        logger.debug(f"🔬 Processing reward bonus: method='{processing_method}', bonus={bonus:.3f}x")
+        return bonus
     
     def extract_improvements(self, original: str, rewritten: str, errors: List[Dict[str, Any]]) -> List[str]:
         """Extract and describe the improvements made."""

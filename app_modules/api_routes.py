@@ -472,6 +472,20 @@ def setup_routes(app, document_processor, style_analyzer, ai_rewriter, database_
             
             logger.info(f"Starting block rewrite for session {session_id}, block {block_id}, type: {block_type}")
             
+            # FIRST: Get applicable stations and emit them to UI
+            applicable_stations = []
+            if hasattr(ai_rewriter, 'ai_rewriter') and hasattr(ai_rewriter.ai_rewriter, 'assembly_line'):
+                applicable_stations = ai_rewriter.ai_rewriter.assembly_line.get_applicable_stations(block_errors)
+            elif hasattr(ai_rewriter, 'assembly_line'):
+                applicable_stations = ai_rewriter.assembly_line.get_applicable_stations(block_errors)
+            
+            print(f"   🏭 Applicable stations: {applicable_stations}")
+            
+            # Emit block processing start with all stations upfront
+            from .websocket_handlers import emit_block_processing_start
+            emit_block_processing_start(session_id, block_id, block_type, applicable_stations)
+            print(f"   📡 Emitted all stations to UI upfront: {applicable_stations}")
+            
             # Emit progress start via WebSocket
             print(f"   📡 Emitting initial progress update...")
             if session_id:

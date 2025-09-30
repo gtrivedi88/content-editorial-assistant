@@ -14,7 +14,7 @@ class TokenConfig:
     
     def __init__(self, model_config: Dict[str, any]):
         """Initialize with model configuration from .env via ModelConfig."""
-        self.base_max_tokens = model_config.get('max_tokens', 2048)
+        self.base_max_tokens = model_config.get('max_tokens', 3072)
         logger.debug(f"TokenConfig initialized with base_max_tokens: {self.base_max_tokens}")
     
     def get_max_tokens(self, use_case: str = 'default') -> int:
@@ -38,8 +38,10 @@ class TokenConfig:
             'title_extraction': min(100, self.base_max_tokens), # Short titles, bounded by .env
             'metadata_extraction': min(1000, self.base_max_tokens), # Brief metadata, bounded
             'test_payload': min(1, self.base_max_tokens),       # Minimal test, but respect .env
-            'rewriting': self.base_max_tokens,                  # Full limit for AI rewriting
-            'assembly_line': self.base_max_tokens,              # Full limit for assembly line
+            'rewriting': max(2048, self.base_max_tokens),       # Sufficient tokens for complex prompts + response
+            'assembly_line': max(2048, self.base_max_tokens),   # Sufficient tokens for complex prompts + response
+            'surgical': min(800, self.base_max_tokens),         # BALANCED: Fast but sufficient for response
+            'surgical_batch': min(1200, self.base_max_tokens),  # BALANCED: Fast but sufficient for batch response
         }
         
         result = use_case_limits.get(use_case, self.base_max_tokens)
@@ -56,7 +58,8 @@ class TokenConfig:
             use_case: self.get_max_tokens(use_case) 
             for use_case in [
                 'default', 'health_check', 'title_extraction', 
-                'metadata_extraction', 'test_payload', 'rewriting', 'assembly_line'
+                'metadata_extraction', 'test_payload', 'rewriting', 'assembly_line',
+                'surgical', 'surgical_batch'
             ]
         }
     

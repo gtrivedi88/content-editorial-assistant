@@ -21,10 +21,10 @@ class ModelConfig:
     ACCESS_TOKEN = os.getenv('ACCESS_TOKEN', None)
     CERT_PATH = os.getenv("CERT_PATH", True)
     
-    TEMPERATURE = float(os.getenv('MODEL_TEMPERATURE', '0.4'))
-    MAX_TOKENS = int(os.getenv('MODEL_MAX_TOKENS', '512'))
-    TOP_P = float(os.getenv('MODEL_TOP_P', '0.7'))
-    TOP_K = int(os.getenv('MODEL_TOP_K', '20'))
+    TEMPERATURE = float(os.getenv('MODEL_TEMPERATURE'))
+    MAX_TOKENS = int(os.getenv('MODEL_MAX_TOKENS'))
+    TOP_P = float(os.getenv('MODEL_TOP_P'))
+    TOP_K = int(os.getenv('MODEL_TOP_K'))
     
     @classmethod
     def get_active_config(cls) -> Dict[str, Any]:

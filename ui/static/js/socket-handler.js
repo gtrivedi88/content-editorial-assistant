@@ -346,7 +346,7 @@ function calculateStationProgress(blockId, currentStation, status) {
     });
     
     // If current station just completed, count it
-    if (status === 'complete') {
+    if (status === 'complete' || status === 'completed') {
         completedStations++;
         currentStationProgress = 0;
     }
@@ -445,8 +445,13 @@ function updateStationStatus(blockId, station, status, previewText = null) {
     const assemblyLineElement = document.querySelector(`[data-block-id="${blockId}"] .assembly-line-stations`);
     if (!assemblyLineElement) return;
     
-    const stationElement = assemblyLineElement.querySelector(`[data-station="${station}"]`);
-    if (!stationElement) return;
+    let stationElement = assemblyLineElement.querySelector(`[data-station="${station}"]`);
+    
+    // Since all stations are now shown upfront, this should not happen
+    if (!stationElement) {
+        console.warn(`⚠️ Station element not found for: ${station} (this should not happen with upfront station display)`);
+        return;
+    }
     
     // Update station classes
     stationElement.classList.remove('station-waiting', 'station-processing', 'station-complete', 'station-error');
@@ -461,6 +466,7 @@ function updateStationStatus(blockId, station, status, previewText = null) {
             if (statusText) statusText.textContent = 'Processing...';
             break;
         case 'complete':
+        case 'completed':  // Handle both status values for consistency
             stationElement.classList.add('station-complete');
             if (statusIcon) statusIcon.className = 'station-status-icon fas fa-check-circle';
             if (statusText) statusText.textContent = 'Complete';

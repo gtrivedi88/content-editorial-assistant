@@ -80,7 +80,10 @@ class PromptGenerator:
             "For each error, follow the EXACT fix instruction provided - including any specific format examples given. "
             "If an instruction shows 'For example, change X to Y', use that exact format for the fix. "
             "Apply the fixes in the order they are listed, making only the specified changes. "
-            "Preserve the original meaning and sentence structure. Make no other edits."
+            "Preserve the original meaning and sentence structure. Make no other edits. "
+            "CRITICAL: Maintain text quality by avoiding new errors. "
+            "Do not introduce typos, duplicate words, or malformed text. "
+            "Verify your output is grammatically correct and error-free."
         )
 
         context_section = ""
@@ -123,7 +126,8 @@ Respond in this EXACT format with no other text before or after:
         """
         system_prompt = (
             "You are an expert technical editor. Use step-by-step reasoning to fix the text. "
-            "Follow this reasoning process for each error, then provide the final corrected text."
+            "Follow this reasoning process for each error, then provide the final corrected text. "
+            "CRITICAL: Maintain text quality by avoiding new errors, typos, or malformed text."
         )
         
         reasoning_steps = []
@@ -174,7 +178,8 @@ Respond in this EXACT format with no other text before or after:
             "For each error, follow the EXACT fix instruction provided and learn from the multi-shot examples. "
             "Apply the same patterns demonstrated in the examples to fix the current text. "
             "Apply the fixes in the order they are listed, making only the specified changes. "
-            "Preserve the original meaning and sentence structure. Make no other edits."
+            "Preserve the original meaning and sentence structure. Make no other edits. "
+            "CRITICAL: Maintain text quality by avoiding new errors, typos, or malformed text."
         )
 
         error_list_str = self._format_error_list(errors, block_type)
@@ -202,7 +207,8 @@ Respond in this EXACT format with no other text before or after:
             "You are an expert technical editor. Your task is to refine the following text, "
             "which has already had its primary grammatical and structural errors fixed. "
             "Improve its clarity, conciseness, and professional tone while strictly preserving the original meaning. "
-            "Focus on flow and word choice. Do not introduce new information."
+            "Focus on flow and word choice. Do not introduce new information. "
+            "CRITICAL: Maintain text quality by avoiding new errors, typos, or malformed text."
         )
 
         prompt = f"""{system_prompt}
@@ -260,9 +266,9 @@ Respond in this EXACT format with no other text before or after:
         # Get base template guidance
         base_template = self.instruction_templates.get(error_type, "")
         
-        # Get dynamic multi-shot examples
+        # Get dynamic multi-shot examples (limit to 2 to reduce token usage)
         examples = self.example_selector.select_examples(
-            error_type, flagged_text, context, num_examples=3
+            error_type, flagged_text, context, num_examples=2
         )
         examples_text = self.example_selector.format_examples_for_prompt(examples, error_type)
         

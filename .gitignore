@@ -13,5 +13,5 @@ data/
 cache/
 temp/
 .env
-
+/2022-IT-Root-CA.pem
 CLAUDE.md

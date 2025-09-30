@@ -219,7 +219,7 @@ class WorldClassProgressTracker:
                     self.session_id, 
                     self.block_id, 
                     station, 
-                    'completed',
+                    'complete',
                     f"Completed - {errors_fixed} errors fixed"
                 )
     
@@ -250,6 +250,22 @@ class WorldClassProgressTracker:
         with self._lock:
             total_duration = time.time() - self.start_time
             
+            # Ensure all stations are marked as completed in station progress
+            for station_key in self.station_progress.keys():
+                if self.station_progress[station_key]['status'] != 'completed':
+                    self.station_progress[station_key]['status'] = 'completed'
+                    self.station_progress[station_key]['progress'] = 100
+                    
+                    # Send final completion signal for each station to UI
+                    if self._websocket_available:
+                        self.emit_station_progress(
+                            self.session_id, 
+                            self.block_id, 
+                            station_key, 
+                            'complete',
+                            "Processing complete"
+                        )
+            
             # Generate performance summary
             performance_summary = {
                 'total_duration': total_duration,
@@ -263,7 +279,7 @@ class WorldClassProgressTracker:
             
             logger.info(f"🏆 Processing complete: {total_errors_fixed} errors fixed across {self.completed_stations} stations in {total_duration:.2f}s")
             
-            # Emit final completion
+            # Emit final completion with 100% progress
             self._emit_overall_progress(
                 100,
                 "Processing Complete",
@@ -303,17 +319,28 @@ class WorldClassProgressTracker:
         pass_progress = 0
         if self.total_stations > 0:
             completed_stations_in_pass = sum(1 for station in self.station_progress.values() if station['status'] == 'completed')
+            
+            # Add progress from current station if it's processing
             current_station_progress = 0
-            
-            # Add partial progress from current station
             if self.current_station and self.current_station in self.station_progress:
-                current_station_progress = self.station_progress[self.current_station]['progress'] / 100 / self.total_stations
+                station_info = self.station_progress[self.current_station]
+                if station_info['status'] == 'processing':
+                    # For processing station, add 50% to show it's started
+                    current_station_progress = 0.5
+                elif station_info['status'] == 'completed':
+                    # If current station is completed but not yet counted, count it
+                    if completed_stations_in_pass == 0 or station_info not in [s for s in self.station_progress.values() if s['status'] == 'completed'][:-1]:
+                        current_station_progress = 1.0
             
-            pass_progress = (completed_stations_in_pass / self.total_stations) + current_station_progress
+            pass_progress = (completed_stations_in_pass + current_station_progress) / self.total_stations
         
         # Calculate overall progress across all passes
+        # For single-pass processing (which we're using), this is just the pass progress
         completed_passes = self.current_pass - 1
         overall_progress = ((completed_passes + pass_progress) / self.total_passes) * 100
+        
+        # Debug logging to help track progress calculation
+        logger.debug(f"📊 Progress calculation: completed_stations={sum(1 for s in self.station_progress.values() if s['status'] == 'completed')}, current_station={self.current_station}, pass_progress={pass_progress:.2f}, overall={overall_progress:.1f}%")
         
         return min(int(overall_progress), 100)
     

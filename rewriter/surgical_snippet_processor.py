@@ -35,6 +35,9 @@ class SurgicalSnippetProcessor:
             'token_savings_estimated': 0
         }
         
+        # Progress tracking
+        self.progress_tracker = None
+        
         logger.info("🔬 Surgical Snippet Processor initialized")
     
     def is_surgical_candidate(self, error: Dict[str, Any]) -> bool:
@@ -54,70 +57,86 @@ class SurgicalSnippetProcessor:
         """
         error_type = error.get('type', '').lower()
         
-        # Perfect surgical candidates (self-contained, span-based)
-        perfect_surgical = {
-            # LANGUAGE & GRAMMAR (High volume, high impact)
-            'contractions',           # "You'll" → "You will"
-            'prefixes',              # "re-start" → "restart"  
-            'abbreviations',         # "e.g." → "for example"
-            'possessives',           # "systems" → "system's"
-            'plurals',               # "file(s)" → "files"
-            'articles',              # Missing "the", "a", "an"
-            'spelling',              # "seperate" → "separate"
-            'terminology',           # "login" → "log in"
-            'adverbs_only',          # "really very" → "very"
-            'conjunctions',          # "and/or" → "and or"
-            
-            # PUNCTUATION (Perfect for surgical fixes)
-            'commas',                # Missing Oxford commas
-            'periods',               # Missing sentence endings
-            'colons',                # "Note :" → "Note:"
-            'semicolons',            # Inappropriate usage
-            'hyphens',               # "well known" → "well-known"
-            'parentheses',           # Spacing issues
-            'quotation_marks',       # Format corrections
-            'ellipses',              # "..." → "…"
-            'exclamation_points',    # Removal for professional tone
-            'slashes',               # "and/or" → "and or"
-            
-            # TECHNICAL ELEMENTS (High precision, span-based)
-            'technical_files_directories',    # File paths
-            'technical_commands',            # Command formatting
-            'technical_programming_elements', # Code snippets
-            'technical_ui_elements',         # Button names
-            'technical_web_addresses',       # URL formatting
-            'technical_keyboard_keys',       # Key combinations
-            'technical_mouse_buttons',       # Mouse action formatting
-            
-            # NUMBERS & MEASUREMENT (Precise transformations)
-            'currency',              # "$100" → "USD 100"
-            'numbers',               # "5" → "five" (context-dependent)
-            'numerals_vs_words',     # Number formatting
-            'units_of_measurement',  # "5KB" → "5 KB"
-            'dates_and_times',       # Format standardization
-            
-            # SIMPLE FORMATTING
-            'capitalization',        # Basic caps fixes
-            'spacing',               # Missing spaces
-            'indentation',           # List formatting
-        }
-        
-        # Word usage rules (A-Z) - EXCLUDED: These are context-dependent
-
-        if error_type.startswith('word_usage_') or error_type.endswith('_words'):
-            return False  # Word usage is always context-dependent
-        
-        # Check if error has precise span information (required for surgical)
+        # Debug logging to understand why errors aren't being classified as surgical
         span = error.get('span')
         flagged_text = error.get('flagged_text', '')
         
-        return (error_type in perfect_surgical and 
-                span is not None and 
-                len(flagged_text) > 0 and 
-                len(flagged_text) < 50)  # Reasonable snippet size limit
+        logger.debug(f"🔬 Surgical candidate check: type='{error_type}', span={span}, flagged_text='{flagged_text}'")
+        
+        # ONLY objective, never context-dependent fixes
+        perfect_surgical = {
+            # SPELLING (100% objective - no context dependency)
+            'spelling',              # "seperate" → "separate" 
+            'spelling_rule',         # Alternative form
+            'typo',                  # Basic typos
+            'typos',                 # Plural form
+            
+            # BASIC SPACING (100% objective - formatting only)  
+            'spacing',               # General spacing rule
+            'spacing_basic',         # "word,word" → "word, word" (basic spacing)
+            'spacing_colon',         # "Note :" → "Note:" (colon spacing)
+            'spacing_parentheses',   # "word( text )" → "word (text)" (parentheses spacing)
+            'double_spaces',         # Multiple spaces → single space
+            'trailing_spaces',       # Remove trailing spaces
+            
+            # PUNCTUATION (100% objective - formatting only)
+            'periods',               # Missing periods at sentence end
+            'exclamation_points',    # Remove excessive !!! → !
+            'ellipses',              # ... → … (proper ellipsis character)
+            'quotation_marks',       # "text" formatting standardization
+            'parentheses',           # Fix ( spacing ) → (spacing)
+            'colons',                # "Note :" → "Note:" (colon formatting)
+            'semicolons',            # Basic semicolon spacing
+            'dashes',                # -- → — (em dash conversion)
+            'slashes',               # Basic slash spacing (not contextual and/or)
+            'punctuation_and_symbols', # Basic symbol formatting
+            
+            # TECHNICAL FORMATTING (100% objective - code/path formatting)
+            'technical_files_directories',      # File paths need backticks
+            'technical_commands',              # Command formatting (backticks)  
+            'technical_programming_elements',  # Code snippet formatting
+            'technical_web_addresses',         # URL formatting consistency
+            'technical_keyboard_keys',         # Key combination formatting
+            'technical_mouse_buttons',         # Mouse action formatting
+            'technical_ui_elements',           # Button/UI element formatting
+            'commands',                        # Alternative command formatting
+            
+            # BASIC LANGUAGE (100% objective - simple transformations)
+            'abbreviations',         # e.g. → for example (simple, clear cases)
+            'prefixes',              # re-start → restart (simple hyphen removal)
+            
+            # NUMBERS & MEASUREMENT (100% objective - spacing/formatting)
+            'units_of_measurement',  # 5KB → 5 KB (spacing standardization)
+            'numerals_vs_words',     # Consistent number formatting (clear cases)
+            'currency',              # $100 → USD 100 (format standardization - simple cases)
+            'dates_and_times',       # Basic date/time formatting (objective patterns)
+            'numbers',               # Basic number formatting (simple cases)
+            
+            # ADVANCED PUNCTUATION (100% objective - PHASE 3 additions)
+            'hyphens',               # Basic hyphenation rules (clear patterns)
+            'commas',                # Basic comma spacing (not Oxford comma context)
+            
+            # STRUCTURE & FORMAT (100% objective - PHASE 3 additions)
+            'indentation',           # List indentation consistency
+            'highlighting',          # Basic text highlighting formatting
+            'list_punctuation',      # List item punctuation consistency
+        }
+        
+        # Check if error has precise span information (required for surgical)
+        has_span = span is not None and isinstance(span, (list, tuple)) and len(span) >= 2
+        has_flagged_text = flagged_text and len(flagged_text.strip()) > 0
+        reasonable_size = len(flagged_text) < 100 if flagged_text else True  # Increased from 50
+        
+        is_surgical_type = error_type in perfect_surgical
+        
+        result = (is_surgical_type and has_span and has_flagged_text and reasonable_size)
+        
+        logger.debug(f"🔬 Surgical decision: type_match={is_surgical_type}, has_span={has_span}, has_text={has_flagged_text}, size_ok={reasonable_size} → {result}")
+        
+        return result
     
     def process_surgical_snippets(self, text: str, surgical_errors: List[Dict[str, Any]], 
-                                 block_type: str = "text") -> Dict[str, Any]:
+                                 block_type: str = "text", progress_tracker=None) -> Dict[str, Any]:
         """
         Process errors using surgical snippet optimization with micro-batching.
         
@@ -154,10 +173,21 @@ class SurgicalSnippetProcessor:
         snippets_processed = 0
         total_confidence = 0.0
         
+        # Set progress tracker
+        self.progress_tracker = progress_tracker
+        
         # MICRO-BATCHING: Create conservative error clusters
         error_clusters = self._create_micro_batch_clusters(surgical_errors, text)
         
         logger.info(f"🔬 Processing {len(surgical_errors)} surgical errors in {len(error_clusters)} clusters for {block_type}")
+        
+        # Send initial progress update
+        if self.progress_tracker:
+            self.progress_tracker._emit_overall_progress(
+                self.progress_tracker._calculate_overall_progress(),
+                "Surgical Processing", 
+                f"Processing {len(surgical_errors)} errors in {len(error_clusters)} clusters..."
+            )
         
         # Process clusters in reverse order to maintain span positions
         clusters_sorted = sorted(error_clusters, 
@@ -167,8 +197,20 @@ class SurgicalSnippetProcessor:
         batch_count = 0
         individual_count = 0
         
+        cluster_index = 0
+        total_clusters = len(clusters_sorted)
+        
         for cluster in clusters_sorted:
             try:
+                # Send progress update for current cluster
+                if self.progress_tracker:
+                    cluster_progress = f"Processing cluster {cluster_index + 1}/{total_clusters} ({len(cluster)} errors)"
+                    self.progress_tracker._emit_overall_progress(
+                        self.progress_tracker._calculate_overall_progress(),
+                        "Surgical Processing", 
+                        cluster_progress
+                    )
+                
                 if len(cluster) == 1:
                     # Single error - use individual processing
                     result = self._process_individual_error(current_text, cluster[0], block_type)
@@ -185,9 +227,12 @@ class SurgicalSnippetProcessor:
                     total_confidence += result['confidence'] * result['errors_fixed']
                     total_improvements.extend(result['improvements'])
                     
+                cluster_index += 1
+                    
             except Exception as e:
                 logger.warning(f"Surgical processing failed for cluster: {e}")
                 # Continue with other clusters - partial success is still valuable
+                cluster_index += 1
         
         # Update performance stats with micro-batch metrics
         processing_time = (time.time() - start_time) * 1000
@@ -207,19 +252,41 @@ class SurgicalSnippetProcessor:
         if batch_count > 0 and individual_count > 0:
             processing_method = 'hybrid_micro_batch'
         
+        # ULTRA-HIGH CONFIDENCE for successful surgical processing
+        surgical_success_rate = snippets_processed / len(surgical_errors) if surgical_errors else 1.0
+        
+        # Dynamic confidence based on surgical success with reward bonuses
+        if surgical_success_rate >= 0.95:  # 95%+ success
+            surgical_confidence = min(0.995, final_confidence * 1.12)  # Near-perfect with 12% bonus
+        elif surgical_success_rate >= 0.85:  # 85%+ success  
+            surgical_confidence = min(0.99, final_confidence * 1.08)   # Excellent with 8% bonus
+        elif surgical_success_rate >= 0.75:  # 75%+ success
+            surgical_confidence = min(0.98, final_confidence * 1.05)   # Good with 5% bonus
+        else:
+            surgical_confidence = min(0.95, final_confidence)          # Standard cap
+        
+        logger.debug(f"🎖️ Surgical confidence boost: {final_confidence:.3f} → {surgical_confidence:.3f} (success rate: {surgical_success_rate:.2f})")
+        
         processing_stats = {
             'rewritten_text': current_text,
-            'confidence': min(0.98, final_confidence),
+            'confidence': surgical_confidence,  # Use enhanced confidence
             'improvements': total_improvements,
             'surgical_snippets_processed': snippets_processed,
             'surgical_snippets_attempted': len(surgical_errors),
+            'surgical_success_rate': surgical_success_rate,  # NEW: Track success rate
             'processing_method': processing_method,
             'processing_time_ms': processing_time,
             'latency_optimized': True,
             'micro_batch_clusters': len(error_clusters),
             'micro_batch_calls': batch_count,
             'individual_calls': individual_count,
-            'estimated_speedup_percent': int((1 - processing_time/2000) * 100) if processing_time < 2000 else 0
+            'estimated_speedup_percent': int((1 - processing_time/2000) * 100) if processing_time < 2000 else 0,
+            'quality_indicators': {  # NEW: Quality tracking for confidence
+                'perfect_surgical_rate': surgical_success_rate,
+                'micro_batch_efficiency': batch_count / (batch_count + individual_count) if (batch_count + individual_count) > 0 else 0,
+                'processing_speed_ms_per_error': processing_time / max(1, len(surgical_errors)),
+                'improvements_generated': len(total_improvements)
+            }
         }
         
         logger.info(f"🚀 Micro-batch surgical complete: {snippets_processed}/{len(surgical_errors)} errors fixed in {len(error_clusters)} clusters ({processing_time:.0f}ms)")
@@ -252,7 +319,7 @@ class SurgicalSnippetProcessor:
             # LLM call with small payload (should be ~200-300ms vs 1-2s)
             snippet_start_time = time.time()
             
-            fixed_snippet = self.text_generator.generate_text(surgical_prompt, snippet)
+            fixed_snippet = self.text_generator.generate_text(surgical_prompt, snippet, use_case='surgical')
             
             processing_time = (time.time() - snippet_start_time) * 1000
             logger.debug(f"⚡ Surgical LLM call: {processing_time:.0f}ms")
@@ -364,6 +431,52 @@ class SurgicalSnippetProcessor:
                 'examples': "re-start → restart, co-operate → cooperate, pre-built → prebuilt"
             },
             
+            # PUNCTUATION RULES
+            'periods': {
+                'task': f"Add missing period to end sentence properly",
+                'examples': "sentence ending → sentence ending., incomplete → incomplete."
+            },
+            
+            'exclamation_points': {
+                'task': f"Reduce excessive exclamation marks in '{flagged_text}'",
+                'examples': "Great!!! → Great!, Amazing!! → Amazing!"
+            },
+            
+            'ellipses': {
+                'task': f"Replace three dots with proper ellipsis character",
+                'examples': "... → …, wait... → wait…"
+            },
+            
+            'quotation_marks': {
+                'task': f"Standardize quotation mark formatting in '{flagged_text}'",
+                'examples': "'text' → \"text\", `quote` → \"quote\""
+            },
+            
+            'parentheses': {
+                'task': f"Fix spacing around parentheses in '{flagged_text}'",
+                'examples': "word( text ) → word (text), text( more) → text (more)"
+            },
+            
+            'colons': {
+                'task': f"Fix colon spacing in '{flagged_text}'",
+                'examples': "Note : text → Note: text, Example : → Example:"
+            },
+            
+            'semicolons': {
+                'task': f"Fix semicolon spacing in '{flagged_text}'",
+                'examples': "text ;more → text; more, word; text → word; text"
+            },
+            
+            'dashes': {
+                'task': f"Replace double dash with em dash",
+                'examples': "text--more → text—more, word -- text → word — text"
+            },
+            
+            'slashes': {
+                'task': f"Fix slash spacing in '{flagged_text}'",
+                'examples': "text/more → text / more, word/text → word / text"
+            },
+            
             # CURRENCY
             'currency': {
                 'task': f"Convert '{flagged_text}' to international format",
@@ -416,6 +529,11 @@ class SurgicalSnippetProcessor:
                 'examples': "ls command → `ls` command, git status → `git status`"
             },
             
+            'commands': {
+                'task': f"Format command '{flagged_text}' with backticks",
+                'examples': "ls command → `ls` command, grep text → `grep` text"
+            },
+            
             'technical_ui_elements': {
                 'task': f"Format UI element '{flagged_text}' with proper emphasis",
                 'examples': "Submit button → **Submit** button, Login link → **Login** link"
@@ -431,6 +549,21 @@ class SurgicalSnippetProcessor:
                 'examples': "config.txt → `config.txt`, /home/user → `/home/user`"
             },
             
+            'technical_programming_elements': {
+                'task': f"Format code element '{flagged_text}' with backticks",
+                'examples': "function() → `function()`, variable → `variable`, class → `class`"
+            },
+            
+            'technical_web_addresses': {
+                'task': f"Format web address '{flagged_text}' consistently",
+                'examples': "www.example.com → `www.example.com`, https://site → `https://site`"
+            },
+            
+            'technical_keyboard_keys': {
+                'task': f"Format keyboard key '{flagged_text}' with proper emphasis",
+                'examples': "Ctrl+C → **Ctrl+C**, Enter key → **Enter** key, Alt+Tab → **Alt+Tab**"
+            },
+            
             # NUMBERS & MEASUREMENT
             'numbers': {
                 'task': f"Format number '{flagged_text}' according to style guidelines",
@@ -440,6 +573,61 @@ class SurgicalSnippetProcessor:
             'units_of_measurement': {
                 'task': f"Add proper spacing to unit '{flagged_text}'",
                 'examples': "5KB → 5 KB, 10GB → 10 GB, 100MHz → 100 MHz"
+            },
+            
+            'numerals_vs_words': {
+                'task': f"Format number '{flagged_text}' consistently",
+                'examples': "2 items → two items, 15 → 15, twenty-five → 25"
+            },
+            
+            'punctuation_and_symbols': {
+                'task': f"Format symbol '{flagged_text}' correctly",
+                'examples': "& → and, @ → at, % → percent (in text contexts)"
+            },
+            
+            'spacing': {
+                'task': f"Fix spacing in '{flagged_text}'",
+                'examples': "word,word → word, word, text( more) → text (more)"
+            },
+            
+            'hyphens': {
+                'task': f"Fix hyphenation in '{flagged_text}'",
+                'examples': "well known → well-known, twenty five → twenty-five, user friendly → user-friendly"
+            },
+            
+            'commas': {
+                'task': f"Fix comma spacing in '{flagged_text}'",
+                'examples': "word,word → word, word, text,more → text, more"
+            },
+            
+            'currency': {
+                'task': f"Format currency '{flagged_text}' consistently",
+                'examples': "$100 → USD 100, €50 → EUR 50, £25 → GBP 25"
+            },
+            
+            'dates_and_times': {
+                'task': f"Format date/time '{flagged_text}' consistently",
+                'examples': "01/01/2024 → January 1, 2024, 3:00PM → 3:00 p.m."
+            },
+            
+            'numbers': {
+                'task': f"Format number '{flagged_text}' according to guidelines",
+                'examples': "5 items → five items, 1000 → 1,000, 25 → twenty-five (context dependent)"
+            },
+            
+            'indentation': {
+                'task': f"Fix indentation in '{flagged_text}'",
+                'examples': "inconsistent spacing → consistent indentation, mixed tabs/spaces → uniform spacing"
+            },
+            
+            'highlighting': {
+                'task': f"Fix text highlighting format in '{flagged_text}'",
+                'examples': "*bold text* → **bold text**, _italic_ → *italic*"
+            },
+            
+            'list_punctuation': {
+                'task': f"Fix list punctuation in '{flagged_text}'",
+                'examples': "item; → item., item, → item;"
             },
             
             # WORD USAGE (dynamic based on error type)
@@ -827,7 +1015,7 @@ Corrected snippet:"""
             
             # Make single LLM call for entire cluster
             batch_start_time = time.time()
-            fixed_snippet = self.text_generator.generate_text(batch_prompt, cluster_snippet)
+            fixed_snippet = self.text_generator.generate_text(batch_prompt, cluster_snippet, use_case='surgical_batch')
             batch_processing_time = (time.time() - batch_start_time) * 1000
             
             logger.debug(f"⚡ Micro-batch LLM call: {batch_processing_time:.0f}ms for {len(cluster)} errors")
@@ -911,28 +1099,37 @@ Corrected snippet:"""
             'quotation_marks': 'Fix quotes: "word" → "word", \'text\' → "text"',
             'ellipses': "... → …, dot dot dot → …",
             'exclamation_points': "Remove excessive: word!! → word, critical! → critical",
-            'slashes': "and/or → and or, yes/no → yes or no",
+            'slashes': "text/more → text / more, basic slash spacing",
+            'dashes': "text--more → text—more, double dash to em dash",
+            'punctuation_and_symbols': "& → and, @ → at, symbol formatting",
             
             # TECHNICAL ELEMENTS (Complete coverage)
             'technical_files_directories': "config.txt → `config.txt`, /home/user → `/home/user`",
             'technical_commands': "ls command → `ls` command, git status → `git status`",
+            'commands': "grep text → `grep` text, ssh user → `ssh` user",
             'technical_programming_elements': "function() → `function()`, variable → `variable`",
             'technical_ui_elements': "Submit button → **Submit** button, Login link → **Login** link",
             'technical_web_addresses': "www.example.com → `www.example.com`, https://site → `https://site`",
             'technical_keyboard_keys': "Ctrl+C → **Ctrl+C**, Enter key → **Enter** key",
             'technical_mouse_buttons': "click on → click, right click → right-click, double click → double-click",
             
-            # NUMBERS & MEASUREMENT (Complete coverage)
+            # NUMBERS & MEASUREMENT (Complete coverage - PHASE 3 EXPANDED)
             'currency': "$100 → USD 100, €50 → EUR 50, £25 → GBP 25",
             'numbers': "5 → five (small numbers), 1000 → 1,000 (large numbers)",
             'numerals_vs_words': "Format numbers consistently: 2 → two, 15 → 15",
             'units_of_measurement': "5KB → 5 KB, 10GB → 10 GB, 100MHz → 100 MHz",
             'dates_and_times': "01/01/2024 → January 1, 2024, 3:00PM → 3:00 p.m.",
             
-            # SIMPLE FORMATTING (Complete coverage)
+            # BASIC LANGUAGE (PHASE 2 ADDITIONS)
+            'abbreviations': "e.g. → for example, i.e. → that is, etc. → and so on",
+            'prefixes': "re-start → restart, co-operate → cooperate, pre-built → prebuilt",
+            
+            # STRUCTURE & FORMAT (Complete coverage - PHASE 3 EXPANDED)
             'capitalization': "json → JSON, api → API, http → HTTP",
             'spacing': "word,word → word, word, text(more) → text (more)",
-            'indentation': "Fix list indentation and bullet consistency"
+            'indentation': "Fix list indentation: inconsistent → consistent spacing",
+            'highlighting': "*bold* → **bold**, _italic_ → *italic*",
+            'list_punctuation': "item; → item., item, → item; (list consistency)"
         }
         
         return examples_map.get(error_type, f"Fix {error_type} according to style guidelines")

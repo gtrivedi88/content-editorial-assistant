@@ -4,7 +4,7 @@ API Provider
 
 import requests
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from .base_provider import BaseModelProvider
 
 logger = logging.getLogger(__name__)
@@ -119,7 +119,7 @@ class APIProvider(BaseModelProvider):
         return self.is_connected
     
     def generate_text(self, prompt: str, **kwargs) -> str:
-        """Generate text using the API provider."""
+        """Generate text using the API provider with optimized timeouts."""
         if not self.is_available():
             logger.error("API is not available")
             return ""
@@ -127,6 +127,10 @@ class APIProvider(BaseModelProvider):
         params = self._prepare_generation_params(**kwargs)
         endpoint, payload = self._build_request(prompt, params)
         headers = self._get_headers()
+        
+        # Optimize timeout based on use case
+        use_case = kwargs.get('use_case', 'default')
+        timeout = self._get_timeout_for_use_case(use_case)
         
         try:
             # Get SSL certificate path if provided
@@ -137,7 +141,7 @@ class APIProvider(BaseModelProvider):
                 endpoint,
                 json=payload,
                 headers=headers,
-                timeout=self.config.get('timeout', 30),
+                timeout=timeout,
                 verify=verify
             )
             
@@ -150,6 +154,12 @@ class APIProvider(BaseModelProvider):
                 else:
                     logger.warning("API returned empty response")
                     return ""
+            elif response.status_code == 429:
+                logger.error(f"❌ API rate limit exceeded (429). Consider reducing request frequency or upgrading your API plan.")
+                return ""
+            elif response.status_code in [400, 413]:  # Bad request or payload too large
+                logger.error(f"❌ API error: {response.status_code} - Request may be too large or malformed. Response: {response.text}")
+                return ""
             else:
                 logger.error(f"❌ API error: {response.status_code} - {response.text}")
                 return ""
@@ -176,41 +186,52 @@ class APIProvider(BaseModelProvider):
         
         return endpoint, payload
     
+    def _get_timeout_for_use_case(self, use_case: str) -> int:
+        """Get optimized timeout based on use case."""
+        timeout_map = {
+            'surgical': 8,           # FAST: Surgical fixes should be quick
+            'surgical_batch': 12,    # FAST: Small surgical batches
+            'health_check': 5,       # Very quick health checks
+            'test_payload': 3,       # Minimal test responses
+            'title_extraction': 10,  # Short title generation
+            'metadata_extraction': 15, # Brief metadata
+            'rewriting': 30,         # Standard rewriting
+            'assembly_line': 35,     # Complex assembly line
+            'default': 30            # Default timeout
+        }
+        
+        timeout = timeout_map.get(use_case, self.config.get('timeout', 30))
+        logger.debug(f"Using {timeout}s timeout for use_case '{use_case}'")
+        return timeout
+    
     def _extract_response(self, response_data: Dict[str, Any]) -> str:
         """Extract generated text from API response."""
         try:
-            # Try OpenAI-compatible format first (most common)
+            # OpenAI-compatible format
             if 'choices' in response_data and response_data['choices']:
                 choice = response_data['choices'][0]
                 if 'message' in choice and 'content' in choice['message']:
-                    return choice['message']['content']
+                    return choice['message']['content'].strip()
                 elif 'text' in choice:
-                    return choice['text']
+                    return choice['text'].strip()
             
-            # Try direct content fields
-            if 'content' in response_data:
-                return response_data['content']
+            # Direct content fields
+            for field in ['content', 'text', 'generated_text']:
+                if field in response_data and response_data[field]:
+                    return response_data[field].strip()
             
-            # Try text field
-            if 'text' in response_data:
-                return response_data['text']
-            
-            # Try generated_text field
-            if 'generated_text' in response_data:
-                return response_data['generated_text']
-            
-            # Try array response (some APIs return arrays)
+            # Array response
             if isinstance(response_data, list) and response_data:
                 first_item = response_data[0]
-                if isinstance(first_item, dict):
-                    if 'generated_text' in first_item:
-                        return first_item['generated_text']
-                    elif 'text' in first_item:
-                        return first_item['text']
-                elif isinstance(first_item, str):
-                    return first_item
+                if isinstance(first_item, str):
+                    return first_item.strip()
+                elif isinstance(first_item, dict):
+                    for field in ['generated_text', 'text', 'content']:
+                        if field in first_item and first_item[field]:
+                            return first_item[field].strip()
             
-            logger.error(f"Cannot extract text from response. Keys available: {list(response_data.keys()) if isinstance(response_data, dict) else 'non-dict response'}")
+            # Log the actual API issue for debugging
+            logger.warning(f"API response missing content. Response structure: {response_data}")
             return ""
             
         except Exception as e:
