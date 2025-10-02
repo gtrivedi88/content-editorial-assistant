@@ -1,13 +1,13 @@
 site:
-  title: Peer-Review Platform Documentation
-  url: https://gtrivedi88.github.io/peer-lens
-  start_page: peer-lens::index.adoc
+  title: Content Editorial Assistant Documentation
+  url: https://your-gitlab-pages-url.com
+  start_page: content-editorial-assistant::index.adoc
 
 content:
   sources:
   - url: ../
     branches: HEAD
-    edit_url: 'https://github.com/gtrivedi88/peer-lens/blob/main/{path}'
+    edit_url: 'https://gitlab.com/your-username/content-editorial-assistant/-/blob/main/{path}'
     start_path: docs
 
 ui:

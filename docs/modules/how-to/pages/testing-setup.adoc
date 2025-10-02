@@ -1,0 +1,211 @@
+= Testing Setup and Quick Start
+:navtitle: Testing Setup
+
+Learn how to set up and run the comprehensive testing infrastructure for the Content Editorial Assistant.
+
+== Prerequisites
+
+* Python 3.12+ with virtual environment
+* Git and GitLab access
+* Your existing `.env` configuration
+
+== Quick Setup (5 Minutes)
+
+=== 1. Install Test Dependencies
+
+[source,bash]
+----
+# Activate your virtual environment
+source venv/bin/activate
+
+# Install test packages
+pip install -r requirements-test.txt
+
+# Install Playwright browsers for UI testing
+playwright install chromium
+----
+
+=== 2. Run Your First Test
+
+[source,bash]
+----
+# Run all tests with AI analysis and report
+python -m testing_agent.test_runner
+
+# Or run specific categories
+pytest tests/unit/ -v          # Unit tests only
+pytest tests/integration/ -v   # Integration tests
+pytest tests/ui/ -v            # UI tests with browser
+----
+
+=== 3. View the Report
+
+[source,bash]
+----
+# Open the generated HTML report
+open testing_agent/reports/latest_report.html
+# Or: firefox testing_agent/reports/latest_report.html
+----
+
+== Test Categories
+
+The testing system runs 9 categories of tests:
+
+[cols="1,2,1"]
+|===
+|Category |Description |Typical Duration
+
+|*Unit*
+|Fast, isolated component tests
+|2 min
+
+|*Integration*
+|Multi-component workflow tests
+|5 min
+
+|*API*
+|REST endpoint tests
+|1 min
+
+|*Database*
+|Database operations
+|2 min
+
+|*Frontend*
+|Frontend component tests
+|2 min
+
+|*UI*
+|Browser-based tests (Playwright)
+|3 min
+
+|*WebSocket*
+|Real-time communication tests
+|1 min
+
+|*Validation*
+|Validation module tests
+|3 min
+
+|*Performance*
+|Load and stress testing
+|2 min
+|===
+
+== AI-Powered Analysis
+
+The testing agent uses your existing AI configuration from `.env`:
+
+[source,bash]
+----
+# Your .env file
+MODEL_PROVIDER=api                    # Uses your configured provider
+BASE_URL=https://your-api-url.com
+MODEL_ID=mistralai/Mistral-7B-Instruct-v0.3
+ACCESS_TOKEN=your-token
+----
+
+The AI analyzes test results and provides:
+
+* Pattern detection (same error across multiple tests)
+* Root cause suggestions
+* Prioritized action items
+* Regression detection
+* Performance trend analysis
+
+== Daily Automation (GitLab CI)
+
+Set up automated daily test runs:
+
+. Go to *GitLab → CI/CD → Schedules*
+. Click *New schedule*
+. Set schedule: `0 2 * * *` (runs at 2 AM)
+. Add variable: `SCHEDULED_JOB=daily_tests`
+. Save
+
+Tests will run automatically every day and generate reports.
+
+== Configuration
+
+Create or update `.env` for testing-specific settings:
+
+[source,bash]
+----
+# Application
+APP_URL=http://localhost:5000
+HEADLESS=true
+
+# Test Execution
+PARALLEL_TESTS=true
+TEST_TIMEOUT=300
+----
+
+NOTE: The testing agent reuses your existing `MODEL_PROVIDER`, `BASE_URL`, and other model settings from `.env`.
+
+== Common Commands
+
+[source,bash]
+----
+# Run all tests with coverage
+pytest --cov=. --cov-report=html
+
+# Run specific test file
+pytest tests/unit/rules/test_base_rule.py -v
+
+# Collect tests without running
+pytest --collect-only tests/
+
+# Run tests matching a pattern
+pytest -k "database" -v
+
+# Run with different verbosity
+pytest -v           # Verbose
+pytest -vv          # Very verbose
+pytest -q           # Quiet
+----
+
+== Troubleshooting
+
+=== Import Errors
+
+[source,bash]
+----
+# Ensure virtual environment is activated
+source venv/bin/activate
+
+# Set PYTHONPATH
+export PYTHONPATH="${PYTHONPATH}:$(pwd)"
+----
+
+=== Missing Dependencies
+
+[source,bash]
+----
+# Reinstall test dependencies
+pip install -r requirements-test.txt --force-reinstall
+----
+
+=== Playwright Errors
+
+[source,bash]
+----
+# Install system dependencies
+playwright install-deps chromium
+
+# Reinstall browsers
+playwright install chromium --force
+----
+
+== Next Steps
+
+* xref:testing-guide.adoc[Learn about agent-driven testing]
+* xref:writing-tests.adoc[Write new tests]
+* xref:../ROOT/pages/index.adoc[Return to documentation home]
+
+== Resources
+
+* link:../../README.md[Main README]
+* link:../../testing_agent/README.md[Testing Agent Technical Reference]
+* link:https://docs.pytest.org/[Pytest Documentation]
+* link:https://playwright.dev/python/[Playwright Documentation]
+

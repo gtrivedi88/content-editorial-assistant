@@ -1,5 +1,5 @@
-name: peer-lens
-title: Peer-Review Platform
+name: content-editorial-assistant
+title: Content Editorial Assistant
 version: ~
 nav:
 - modules/ROOT/nav.adoc

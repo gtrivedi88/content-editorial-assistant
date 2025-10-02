@@ -1,14 +1,14 @@
-# Peer-Review Platform Documentation
+# Content Editorial Assistant Documentation
 
-This directory contains the complete documentation for the Peer-Review Platform project, built with [Antora](https://antora.org/) and deployed to GitHub Pages.
+This directory contains the complete documentation for the Content Editorial Assistant (CEA) project, built with [Antora](https://antora.org/) and deployed to GitLab Pages.
 
 ## Documentation Structure
 
 The documentation is organized into three main sections:
 
-- **Architecture**: Complete system architecture and design documentation
-- **How-to Guides**: Step-by-step guides for extending and customizing the system
-- **API Reference**: Complete API documentation for REST and WebSocket interfaces
+- **Architecture**: Complete system architecture and design documentation for the AI-powered style analysis system
+- **How-to Guides**: Step-by-step guides for extending rules, adding ambiguity detectors, and integrating new AI models
+- **API Reference**: Complete API documentation for REST and WebSocket interfaces, including AI rewriting endpoints
 
 ## Building the Documentation
 
@@ -61,7 +61,7 @@ The documentation is automatically deployed to GitHub Pages via GitHub Actions w
 1. **Trigger**: Push to `main` branch or changes to `docs/**` files
 2. **Build**: GitHub Actions runs Antora to build the site
 3. **Deploy**: Built site is deployed to GitHub Pages
-4. **Access**: Available at `https://gtrivedi88.github.io/peer-lens`
+4. **Access**: Available at your GitLab Pages URL
 
 ### Manual Deployment
 
@@ -101,18 +101,24 @@ graph TD
 ```
 docs/
 ├── antora-playbook.yml          # Antora configuration
-├── docs/
-│   ├── antora.yml              # Component configuration
-│   └── modules/
-│       ├── ROOT/               # Main documentation
-│       │   ├── nav.adoc        # Navigation
-│       │   └── pages/          # Content pages
-│       ├── architecture/       # Architecture documentation
-│       │   ├── nav.adoc        # Architecture navigation
-│       │   └── pages/          # Architecture pages
-│       └── how-to/            # How-to guides
-│           ├── nav.adoc        # How-to navigation
-│           └── pages/          # How-to pages
+├── antora.yml                   # Component configuration
+└── modules/
+    ├── ROOT/                   # Main documentation
+    │   ├── nav.adoc            # Navigation
+    │   └── pages/              # Content pages
+    │       ├── index.adoc      # Main landing page
+    │       ├── getting-started.adoc  # Setup guide
+    │       └── api-reference.adoc    # API documentation
+    ├── architecture/           # Architecture documentation
+    │   ├── nav.adoc            # Architecture navigation
+    │   └── pages/
+    │       └── architecture.adoc     # System architecture
+    └── how-to/                # How-to guides
+        ├── nav.adoc            # How-to navigation
+        └── pages/              # How-to pages
+            ├── how-to-add-new-rule.adoc
+            ├── how-to-add-new-ambiguity-detector.adoc
+            └── how-to-add-new-model.adoc
 └── package.json               # Node.js dependencies
 ```
 
@@ -260,4 +266,4 @@ For help with the documentation:
 
 ## License
 
-This documentation is part of the Peer-Review Platform project and follows the same license terms.
+This documentation is part of the Content Editorial Assistant project and follows the same license terms.

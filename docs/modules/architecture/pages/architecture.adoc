@@ -1,4 +1,6 @@
-= Content Editorial Assistant - Complete Architecture Documentation
+= Content Editorial Assistant - System Architecture
+:description: Complete technical architecture documentation for the Content Editorial Assistant platform
+:keywords: architecture, ai-rewriting, style-analysis, technical-documentation
 :sectnums:
 :sectanchors:
 :source-highlighter: highlightjs
@@ -21,13 +23,12 @@ Content Editorial Assistant is a comprehensive technical writing assistant that 
 
 [source,text]
 ----
-style-guide-ai/
-├── app.py                          # Main application entry point
+content-editorial-assistant/
+├── main.py                         # Main application entry point (production)
+├── config.py                       # Application configuration
 ├── requirements.txt                # Python dependencies
-├── setup.py                        # Installation and setup configuration
 ├── README.md                       # Project documentation
-├── MARKDOWN_IMPLEMENTATION_GUIDE.md # Markdown format guide
-├── ASCIIDOC_IMPLEMENTATION_GUIDE.md # AsciiDoc format guide
+├── CLAUDE.md                       # AI assistant documentation
 ├── 
 ├── app_modules/                    # Modular Flask application components
 │   ├── __init__.py                 # Package initialization
@@ -35,27 +36,24 @@ style-guide-ai/
 │   ├── api_routes.py               # HTTP API route handlers
 │   ├── error_handlers.py           # Global error handling
 │   ├── websocket_handlers.py       # WebSocket event handlers
-│   └── fallback_services.py        # Fallback service implementations
+│   ├── fallback_services.py        # Fallback service implementations
+│   ├── feedback_storage.py         # User feedback management
+│   └── pdf_report_generator.py     # PDF report generation
 ├── 
-├── src/                            # Source code and configuration
-│   ├── __init__.py                 # Package initialization
-│   ├── config.py                   # Application configuration
-│   └── simple_ai_rewriter.py       # Simple AI rewriter integration
-├── 
-├── templates/                      # HTML templates
-│   ├── base.html                   # Base template
-│   ├── index.html                  # Main application page
-│   └── error.html                  # Error page template
-├── 
-├── static/                         # Static web assets
-│   ├── css/
-│   │   └── styles.css              # Application styles
-│   └── js/
-│       ├── core.js                 # Core JavaScript functionality
-│       ├── file-handler.js         # File upload handling
-│       ├── socket-handler.js       # WebSocket communication
-│       ├── analysis-display.js     # Analysis results display
-│       └── utility-functions.js    # Utility functions
+├── ui/                             # User interface components
+│   ├── templates/                  # HTML templates
+│   │   ├── base.html               # Base template
+│   │   ├── index.html              # Main application page
+│   │   └── error.html              # Error page template
+│   └── static/                     # Static web assets
+│       ├── css/
+│       │   └── styles.css          # Application styles
+│       └── js/
+│           ├── core.js             # Core JavaScript functionality
+│           ├── file-handler.js     # File upload handling
+│           ├── socket-handler.js   # WebSocket communication
+│           ├── analysis-display.js # Analysis results display
+│           └── utility-functions.js # Utility functions
 ├── 
 ├── style_analyzer/                 # Style analysis engine
 │   ├── __init__.py                 # Package initialization
@@ -174,20 +172,83 @@ style-guide-ai/
 │       ├── ruby_server.py          # Ruby server integration
 │       └── types.py                # AsciiDoc types
 ├── 
-├── docs/                           # Documentation
-│   ├── architecture.adoc           # This architecture document
-│   ├── how-to-add-new-rule.adoc   # Guide for adding rules
-│   ├── how-to-add-new-ambiguity-detector.adoc # Guide for ambiguity detectors
-│   └── how-to-add-new-model.adoc   # Guide for adding models
+├── docs/                           # Antora-based documentation system
+│   ├── antora-playbook.yml         # Antora build configuration
+│   ├── antora.yml                  # Component configuration
+│   ├── modules/
+│   │   ├── ROOT/                   # Main documentation
+│   │   │   ├── nav.adoc            # Navigation structure
+│   │   │   └── pages/
+│   │   │       ├── index.adoc      # Documentation homepage
+│   │   │       ├── getting-started.adoc # Setup guide
+│   │   │       └── api-reference.adoc   # Complete API docs
+│   │   ├── architecture/           # Architecture documentation
+│   │   │   └── pages/
+│   │   │       └── architecture.adoc    # This document
+│   │   └── how-to/                # How-to guides
+│   │       └── pages/
+│   │           ├── how-to-add-new-rule.adoc
+│   │           ├── how-to-add-new-ambiguity-detector.adoc
+│   │           └── how-to-add-new-model.adoc
+│   ├── antora-lunr-ui/            # Custom UI components
+│   └── package.json               # Node.js dependencies
 ├── 
-├── docker/                         # Docker configuration
-│   ├── Dockerfile                  # Docker build file
-│   ├── docker-compose.yml          # Docker compose configuration
-│   ├── build-and-push.sh          # Build and push script
-│   └── README.md                   # Docker documentation
+├── llamastack/                     # LlamaStack configuration
+│   └── config.yaml                 # LlamaStack deployment config
+├── 
+├── models/                         # AI model management system
+│   ├── __init__.py                 # Package initialization
+│   ├── config.py                   # Model configuration
+│   ├── factory.py                  # Model factory pattern
+│   ├── model_manager.py            # Model lifecycle management
+│   ├── providers/                  # Model provider implementations
+│   │   ├── ollama_provider.py      # Local Ollama integration
+│   │   ├── api_provider.py         # Remote API integration
+│   │   ├── llamastack_provider.py  # Enterprise LlamaStack
+│   │   └── base_provider.py        # Provider base class
+│   └── README.md                   # Model system documentation
+├── 
+├── database/                       # Database layer
+│   ├── __init__.py                 # Package initialization
+│   ├── models.py                   # SQLAlchemy models
+│   ├── dao.py                      # Data access objects
+│   └── services.py                 # Database services
+├── 
+├── migrations/                     # Database migrations
+│   ├── init_database.py            # Database initialization
+│   └── add_feedback_unique_constraint.py # Schema updates
+├── 
+├── error_consolidation/            # Error processing system
+│   ├── consolidator.py             # Error consolidation logic
+│   ├── message_merger.py           # Message deduplication
+│   ├── rule_priority.py            # Priority management
+│   └── text_span_analyzer.py       # Text span analysis
+├── 
+├── validation/                     # Validation and monitoring
+│   ├── confidence/                 # Confidence scoring system
+│   ├── feedback/                   # Feedback processing
+│   ├── monitoring/                 # System monitoring
+│   └── multi_pass/                 # Multi-pass validation
 ├── 
 ├── uploads/                        # Uploaded files (temporary)
 ├── instance/                       # Instance-specific files
+├── feedback_data/                  # User feedback storage
+│   ├── aggregated/                 # Processed feedback data
+│   ├── daily/                      # Daily feedback logs
+│   └── sessions/                   # Session-based feedback
+├── 
+├── scripts/                        # Utility scripts
+│   ├── run_quality_checks.py       # Quality assurance
+│   ├── tune_reliability.py         # Performance tuning
+│   └── websocket_stress_test.py    # Load testing
+├── 
+├── hooks/                          # Deployment hooks
+│   └── pre_activate.py             # Pre-deployment validation
+├── 
+├── instance/                       # Instance-specific files
+│   └── content_editorial_assistant.db # SQLite database
+├── uploads/                        # Temporary file uploads
+├── temp/                           # Temporary processing files
 ├── logs/                           # Application logs
 └── venv/                           # Virtual environment
 ----
@@ -303,30 +364,38 @@ sequenceDiagram
 
 === Main Application Entry Point
 
-==== `app.py`
-The main application file that bootstraps the entire system.
+==== `main.py`
+The main application file that bootstraps the entire system for production deployment.
 
-**Purpose**: Primary entry point for the Flask application
+**Purpose**: Production entry point for the Content Editorial Assistant
 **Key Functions**:
+- Initializes LlamaStack client for enterprise deployment
 - Creates Flask app using factory pattern
-- Configures upload settings
-- Starts the application with SocketIO support
+- Configures upload settings and directories
+- Handles graceful shutdown and signals
+- Supports both development and production environments
 
 **Dependencies**:
 - `app_modules.app_factory`: Application factory
-- `src.config`: Configuration management
+- `config`: Configuration management
+- `llama_stack_client`: Enterprise AI model integration
 
 **Code Structure**:
 [source,python]
 ----
 from app_modules.app_factory import create_app, configure_upload_folder
-from src.config import Config
+from config import Config
+
+# Initialize LlamaStack client for enterprise deployment
+setup_llama_stack_client()
 
 # Create application using factory pattern
 app, socketio = create_app(Config)
-
-# Configure upload settings
 configure_upload_folder(app)
+
+# Add LlamaStack client to app context
+if llama_stack_client:
+    app.llama_stack_client = llama_stack_client
 ----
 
 ==== `requirements.txt`
@@ -351,7 +420,7 @@ Installation and configuration script for the application.
 
 === Configuration Layer
 
-==== `src/config.py`
+==== `config.py`
 Central configuration management for the entire application.
 
 **Purpose**: Environment-based configuration with fallbacks
@@ -360,12 +429,13 @@ Central configuration management for the entire application.
 - `DevelopmentConfig`: Development-specific settings
 
 **Configuration Categories**:
-- **Flask Configuration**: Secret keys, debug settings
-- **AI Model Configuration**: Ollama, HuggingFace, OpenAI settings
-- **Database Configuration**: SQLAlchemy settings
-- **File Upload Configuration**: Size limits, allowed extensions
-- **Style Guide Rules Configuration**: Rule thresholds and settings
-- **Logging Configuration**: Log levels and formats
+- **Flask Configuration**: Secret keys, debug settings, auto-generated secure keys
+- **Database Configuration**: SQLAlchemy settings with connection pooling
+- **File Upload Configuration**: 16MB size limits, multi-format support
+- **Style Guide Rules Configuration**: Rule thresholds and confidence settings
+- **Block Processing Configuration**: Timeout, retry, and batch size settings
+- **Performance Monitoring**: Error rate monitoring, WebSocket configuration
+- **Environment-Specific Settings**: Development vs. production configurations
 
 **Key Methods**:
 - `get_ai_config()`: Returns AI model configuration
@@ -1216,13 +1286,14 @@ Base template providing common layout and functionality.
 
 **Purpose**: Common layout structure for all pages
 **Features**:
-- Responsive design framework
+- Responsive Bootstrap-based design framework
 - Common CSS and JavaScript includes
-- Navigation structure
+- Navigation structure and branding
 - Error handling integration
+- WebSocket connection management
 
 ==== `ui/templates/index.html`
-Main application interface.
+Main application interface for the Content Editorial Assistant.
 
 **Purpose**: Primary user interface for the Content Editorial Assistant application
 **Key Sections**:
@@ -1250,7 +1321,7 @@ Error page template for user-friendly error display.
 
 === Static Assets
 
-==== `static/css/styles.css`
+==== `ui/static/css/styles.css`
 Main stylesheet for the application.
 
 **Purpose**: Comprehensive styling for the entire application
@@ -1262,7 +1333,7 @@ Main stylesheet for the application.
 - Progress indicator styling
 - Analysis result formatting
 
-==== `static/js/core.js`
+==== `ui/static/js/core.js`
 Core JavaScript functionality.
 
 **Purpose**: Main application logic and coordination
@@ -1273,7 +1344,7 @@ Core JavaScript functionality.
 - Error handling
 - User interface updates
 
-==== `static/js/file-handler.js`
+==== `ui/static/js/file-handler.js`
 File upload and handling functionality.
 
 **Purpose**: Manages file upload operations
@@ -1303,7 +1374,7 @@ class FileHandler {
 }
 ----
 
-==== `static/js/socket-handler.js`
+==== `ui/static/js/socket-handler.js`
 WebSocket communication management.
 
 **Purpose**: Real-time communication with the server
@@ -1319,7 +1390,7 @@ WebSocket communication management.
 - `completion`: Task completion
 - `error`: Error notifications
 
-==== `static/js/analysis-display.js`
+==== `ui/static/js/analysis-display.js`
 Analysis results display and interaction.
 
 **Purpose**: Displays and manages analysis results
@@ -1330,7 +1401,7 @@ Analysis results display and interaction.
 - Statistics visualization
 - Interactive error navigation
 
-==== `static/js/utility-functions.js`
+==== `ui/static/js/utility-functions.js`
 Common utility functions and helpers.
 
 **Purpose**: Shared utility functions across the application

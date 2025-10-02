@@ -1,94 +1,170 @@
-= Peer-Review Platform Documentation
+= Content Editorial Assistant Documentation
 :!sectids:
 
-== Welcome to Peer-Review Platform
+== Welcome to Content Editorial Assistant
 
-The Peer-Review Platform is a comprehensive documentation analysis and improvement tool that combines traditional style checking with AI-powered content enhancement. This system analyzes documents for style compliance, detects ambiguities, and provides intelligent suggestions for improvement.
+The Content Editorial Assistant (CEA) is a comprehensive AI-powered technical writing assistant that combines sophisticated style analysis, readability scoring, and iterative AI rewriting. Designed for technical writers targeting 9th-11th grade readability standards, CEA transforms your documentation with real-time analysis and intelligent improvement suggestions.
 
 === Key Features
 
-* **Multi-format Support**: Analyze PDF, DOCX, Markdown, and AsciiDoc documents
-* **45+ Style Rules**: Comprehensive rule system covering grammar, punctuation, structure, and formatting
-* **AI-powered Rewriting**: Two-pass improvement system using Ollama integration
-* **Ambiguity Detection**: Specialized detectors for fabrication risks, missing actors, and unclear references
-* **Real-time Analysis**: WebSocket-based communication for instant feedback
-* **Extensible Architecture**: Modular design for easy extension and customization
+* **AI-Powered Iterative Rewriting**: Two-pass improvement system with local Ollama integration for privacy-first AI enhancement
+* **Comprehensive Style Analysis**: 45+ IBM Style Guide-based rules covering grammar, punctuation, structure, and formatting
+* **Multi-format Document Support**: Process PDF, DOCX, Markdown, AsciiDoc, DITA, and plain text files
+* **Advanced Ambiguity Detection**: Specialized detectors for fabrication risks, missing actors, unclear references, and unsupported claims
+* **Real-time Progress Tracking**: WebSocket-based communication showing actual AI work in progress
+* **Readability Optimization**: Multiple readability metrics (Flesch, Gunning Fog, SMOG, Coleman-Liau, ARI) targeting 9th-11th grade levels
+* **Structural Document Parsing**: Format-aware processing that preserves document structure and context
+* **Extensible Architecture**: Modular design for easy addition of new rules, detectors, and AI models
 
 === Getting Started
 
-* **Architecture**: xref:architecture:architecture.adoc[System Architecture] - Understanding the complete system design and component interactions.
+* **Setup Guide**: xref:getting-started.adoc[Getting Started] - Complete setup instructions for local development and deployment
+
+* **System Architecture**: xref:architecture:architecture.adoc[Architecture Overview] - Understanding the complete system design and component interactions
 
 * **How-to Guides**: Step-by-step guides for extending the system:
-** xref:how-to:how-to-add-new-rule.adoc[Add New Rule]
+** xref:how-to:how-to-add-new-rule.adoc[Add New Style Rule]
 ** xref:how-to:how-to-add-new-ambiguity-detector.adoc[Add New Ambiguity Detector]
 ** xref:how-to:how-to-add-new-model.adoc[Add New AI Model]
 
-* **API Reference**: xref:api-reference.adoc[API Documentation] - Complete reference for all API endpoints and WebSocket interfaces.
+* **API Reference**: xref:api-reference.adoc[API Documentation] - Complete reference for analysis, rewriting, and WebSocket interfaces
 
 === Technology Stack
 
-* **Backend**: Flask 3.0+, Python 3.8+
-* **AI/ML**: SpaCy 3.7+, Transformers 4.36+, Ollama 0.1+
-* **Document Processing**: PyPDF2, python-docx, python-markdown
-* **Frontend**: HTML5, JavaScript ES6+, WebSockets
-* **Deployment**: Docker, Docker Compose
+* **Backend**: Flask 3.0+, Python 3.12+ (required)
+* **AI/ML**: Ollama (local LLM serving), SpaCy 3.7+, Transformers 4.36+, LlamaStack integration
+* **Document Processing**: PyMuPDF (PDFs), python-docx (Word), python-markdown (Markdown), Ruby Asciidoctor (AsciiDoc)
+* **Analysis**: Advanced readability calculations, NLP-based style rule detection, confidence scoring
+* **Frontend**: Modern responsive UI with real-time WebSocket communication
+* **Deployment**: Docker, LightRail platform integration, multi-environment support
 
-=== Architecture Overview
+=== System Workflow
 
-The system follows a modular architecture with clear separation of concerns:
+The Content Editorial Assistant follows an intelligent, multi-stage processing workflow:
 
-[mermaid,target=architecture-overview]
+[mermaid,target=system-workflow]
 ....
 graph TD
-    A[Document Input] --> B[Format Detection]
-    B --> C[Document Parser]
-    C --> D[Style Analyzer]
-    D --> E[Rules Engine]
-    D --> F[Ambiguity Detector]
-    D --> G[AI Rewriter]
+    A[Document Upload/Text Input] --> B[Format Detection]
+    B --> C[Structural Parser]
+    C --> D[Block-Level Analysis]
+    D --> E[Style Rule Engine]
+    D --> F[Ambiguity Detection]
+    D --> G[Readability Analysis]
     E --> H[Analysis Results]
     F --> H
     G --> H
-    H --> I[Client Interface]
+    H --> I[Real-time Feedback]
+    
+    I --> J[AI Rewrite Request]
+    J --> K[Model Manager]
+    K --> L[Prompt Generator]
+    L --> M[AI Generation - Pass 1]
+    M --> N[Quality Evaluation]
+    N --> O[AI Refinement - Pass 2]
+    O --> P[Final Results]
+    
+    H -.-> Q[Statistics Dashboard]
+    P -.-> Q
 ....
 
 === Quick Start
 
-1. **Installation**
+1. **Prerequisites**
 +
 [source,bash]
 ----
-git clone https://github.com/gtrivedi88/peer-lens.git
-cd peer-lens
+# Python 3.12+ (CRITICAL REQUIREMENT)
+python3.12 --version  # Should show Python 3.12.x
+----
+
+2. **Setup Virtual Environment**
++
+[source,bash]
+----
+# Create and activate virtual environment
+python3.12 -m venv venv
+source venv/bin/activate  # Linux/macOS
+# OR
+venv\Scripts\activate     # Windows
+----
+
+3. **Install Dependencies**
++
+[source,bash]
+----
+pip install --upgrade pip
 pip install -r requirements.txt
 ----
 
-2. **Configuration**
+4. **Run the Application**
 +
 [source,bash]
 ----
-cp config.example.py config.py
-# Edit config.py with your settings
+python main.py
 ----
 
-3. **Run the Application**
-+
-[source,bash]
-----
-python app.py
-----
-
-4. **Access the Interface**
+5. **Access the Interface**
 +
 Open your browser to `http://localhost:5000`
++
+The application will auto-setup everything on first run:
++
+* SpaCy language models
+* NLTK data downloads
+* Directory creation
+* Dependency verification
+
+=== Optional AI Enhancement
+
+For the best AI rewriting experience, install Ollama with the recommended model:
+
+[source,bash]
+----
+# Install Ollama (see platform-specific instructions)
+curl -fsSL https://ollama.com/install.sh | sh  # Linux
+# OR download from https://ollama.com for Windows/macOS
+
+# Pull recommended model
+ollama pull llama3:8b  # Recommended for superior writing quality
+----
+
+**Why llama3:8b?**
+
+* Superior writing quality and reasoning capabilities
+* Excellent for complex technical writing improvements
+* Better understanding of context and nuance
+* Optimal performance with our two-pass iterative process
+
+=== Advanced Features
+
+==== AI Rewriting Process
+
+1. **Pass 1**: AI analyzes your text and addresses specific style issues
+2. **Pass 2**: AI reviews its own work and refines for maximum clarity
+3. **Confidence Scoring**: Know exactly how much improvement was achieved
+
+==== Document Format Support
+
+* **AsciiDoc**: Full structural parsing with Ruby Asciidoctor integration
+* **Markdown**: CommonMark-compatible with block-level analysis
+* **PDF/DOCX**: Text extraction with format preservation
+* **Plain Text**: Direct analysis with context awareness
+
+==== Analysis Modes
+
+* **SPACY_RULES**: Full NLP analysis with modular rules (optimal)
+* **RULES_FALLBACK**: Rule-based analysis with fallbacks (good)
+* **SPACY_LEGACY**: Basic SpaCy analysis (minimal)
+* **MINIMAL**: Safe fallback mode (basic)
 
 === Support
 
 For questions, issues, or contributions:
 
-* **Documentation**: Browse the architecture and how-to guides
-* **Issues**: Report bugs or request features on GitHub
-* **Contributions**: See the contribution guidelines for development setup
+* **Documentation**: Browse the complete architecture and how-to guides
+* **Issues**: Report bugs or request features via GitLab issues
+* **Contributions**: Follow the development setup guide for local contributions
 
 === License
 
