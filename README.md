@@ -1,27 +1,24 @@
-# 🎯 Content Editorial Assistant (CEA)
-
-**AI-Powered Technical Writing Assistant with Local Ollama Integration**
+# Content editorial assistant (CEA)
 
 Transform your technical documentation with comprehensive style analysis, readability scoring, and AI-powered iterative rewriting. Designed for technical writers targeting 9th-11th grade readability standards.
 
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
 [![Cross-Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-green.svg)](https://github.com/yourusername/peer-review-platform)
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](License)
 ---
 
-## 🚀 Super Simple Setup (Just 3 Steps!)
+## Super Simple Setup (Just 3 Steps!)
 
-### 📋 Prerequisites
+### Prerequisites
 - **Python 3.12+** ([Download here](https://www.python.org/downloads/))
   
-  ⚠️ **CRITICAL:** This project requires Python 3.12 or higher. Older versions WILL NOT WORK.
+  **CRITICAL:** This project requires Python 3.12 or higher. Older versions WILL NOT WORK.
   
   **Quick Check:**
   ```bash
   python3.12 --version  # Should show: Python 3.12.x
   ```
 
-### 🔧 Step 1: Create Virtual Environment
+### Step 1: Create Virtual Environment
 
 **Windows:**
 ```batch
@@ -58,9 +55,9 @@ python3.12 -m venv venv
 source venv/bin/activate
 ```
 
-**✅ You should see `(venv)` at the start of your command prompt**
+**You should see `(venv)` at the start of your command prompt**
 
-### 📦 Step 2: Install Requirements
+### Step 2: Install Requirements
 ```bash
 # Upgrade pip first
 pip install --upgrade pip
@@ -69,23 +66,23 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### 🎯 Step 3: Start the Application
+### Step 3: Start the Application
 ```bash
 python main.py
 ```
 
-**Then visit:** [http://localhost:5000](http://localhost:5000) 🌐
+**Then visit:** [http://localhost:5000](http://localhost:5000)
 
-**✨ That's it!** The application will auto-setup everything on first run:
-- ✅ SpaCy language models
-- ✅ NLTK data downloads  
-- ✅ Directory creation
-- ✅ Dependency verification
-- ✅ Ollama detection & guidance
+**That's it!** The application will auto-setup everything on first run:
+- SpaCy language models
+- NLTK data downloads  
+- Directory creation
+- Dependency verification
+- Ollama detection & guidance
 
 ---
 
-## 🔄 Daily Usage
+## Daily Usage
 
 **Always activate your virtual environment first:**
 
@@ -105,29 +102,103 @@ python main.py
 
 ---
 
-## ✨ Key Features
+## Testing & Quality Assurance
 
-### 🧠 **Iterative AI Rewriting**
+**Comprehensive automated testing with AI-powered analysis:**
+
+### Quick Test Setup
+```bash
+# Install test dependencies (in your activated venv)
+pip install -r requirements-test.txt
+playwright install chromium
+
+# Run all tests
+pytest
+
+# Run with AI analysis and report
+python -m testing_agent.test_runner
+
+# View report
+open testing_agent/reports/latest_report.html
+```
+
+### Test Categories
+- **Unit Tests** - Fast module-level tests (2 min)
+- **Integration Tests** - End-to-end workflows (5 min)
+- **UI Tests** - Browser-based interface tests (3 min)
+- **Performance Tests** - Load and stress testing
+- **Quality Metrics** - ML quality monitoring
+
+### Daily Automation (GitLab CI/CD)
+Tests automatically run daily at 2 AM via GitLab CI pipeline:
+1. Go to **CI/CD → Schedules** → **New schedule**
+2. Set cron: `0 2 * * *`
+3. Variable: `SCHEDULED_JOB=daily_tests`
+
+### AI Test Analysis
+The testing agent uses the same AI configuration as your main app:
+
+**Local Development** (uses your `.env` file):
+```bash
+# Your local .env file
+AI_PROVIDER=ollama           # or openai, anthropic, custom
+OLLAMA_MODEL=llama3.2:latest
+# ... other settings from your .env
+```
+
+**GitLab CI/CD** (uses **secure** GitLab environment variables):
+1. Go to **Settings → CI/CD → Variables**
+2. Add variables (they are **encrypted and private**, NOT public):
+   - `AI_PROVIDER` = `ollama`
+   - `OLLAMA_MODEL` = `llama3.2:latest`
+   - For APIs: `OPENAI_API_KEY` = `sk-...` (check "Masked" and "Protected")
+   
+**Security & Access:**
+- ✅ Variables are **encrypted at rest**
+- ✅ Mark sensitive keys as **"Masked"** (hidden in logs)
+- ✅ Mark as **"Protected"** (only accessible on protected branches)
+- ✅ **NOT visible** in repository or to unauthorized users
+- ⚠️ Maintainer/Owner role can view/edit variables (they need to run CI/CD)
+- ✅ Only accessible to GitLab CI jobs you configure
+
+**Important for Ollama Users:**
+If you use **local Ollama** (model downloaded on your machine), it **won't work in GitLab CI** because:
+- GitLab CI runs on a remote server (not your machine)
+- Your local Ollama/models aren't accessible to GitLab runners
+
+**Solutions:**
+1. **Option A**: Use **API-based AI** for GitLab CI (OpenAI, Anthropic)
+2. **Option B**: Skip AI analysis in CI, only run tests (set `AI_PROVIDER=none`)
+3. **Option C**: Self-hosted GitLab runner with Ollama installed (advanced)
+
+The `testing_agent/config.py` reads from environment variables, so it works securely in both places!
+
+**For detailed testing documentation:** See [`TESTING_AGENT_GUIDE.md`](TESTING_AGENT_GUIDE.md)
+
+---
+
+## Key Features
+
+### **Iterative AI Rewriting**
 - **Two-Pass Process:** AI reviews and refines its own output
 - **Local Ollama Integration:** Privacy-first with Llama models
 - **Real-Time Progress:** Watch the AI improvement process step-by-step
 - **Smart Confidence Scoring:** Know how much the AI improved your text
 
-### 📊 **Comprehensive Analysis**
+### **Comprehensive Analysis**
 - **Grade Level Assessment:** Targets 9th-11th grade readability
 - **Multiple Readability Scores:** Flesch, Gunning Fog, SMOG, Coleman-Liau, ARI
 - **Style Issues Detection:** Passive voice, sentence length, wordiness
 - **Technical Writing Metrics:** Custom scoring for documentation
 
-### 📁 **Multi-Format Support**
+### **Multi-Format Support**
 - **Text Files:** .txt, .md (Markdown)
 - **Documents:** .docx (Microsoft Word)
-- **Technical Formats:** .adoc (AsciiDoc), .dita (DITA), .xml (XML/DITA)
+- **Technical Formats:** .adoc (AsciiDoc), .dita (DITA)
 - **PDFs:** Extract and analyze existing documents
-- **Enterprise:** Adobe Experience Manager DITA workflows
 - **Direct Input:** Paste text directly into the interface
 
-### 🎨 **Modern Interface**
+### **Modern Interface**
 - **Real-Time Analysis:** Instant feedback on text quality
 - **Interactive Error Highlighting:** Click to see specific issues
 - **Progress Transparency:** No fake spinners - see actual AI work
@@ -135,7 +206,7 @@ python main.py
 
 ---
 
-## 🤖 AI Features (Optional)
+## AI Features (Optional)
 
 For the best AI rewriting experience, install **Ollama** with our recommended model:
 
@@ -156,18 +227,18 @@ ollama pull llama3:8b
 ```
 
 **Recommended Model:**
-- `llama3:8b` - **Superior writing quality and reasoning (4.7GB)** ⭐ **Recommended**
+- `llama3:8b` - **Superior writing quality and reasoning (4.7GB)** **Recommended**
 
 **Alternative Models (if needed):**
 - `llama3.2:3b` - Good balance of speed and quality (2GB)
 
 **Why llama3:8b?**
-- ✅ Superior writing quality and reasoning capabilities
-- ✅ Excellent for complex technical writing improvements
-- ✅ Better understanding of context and nuance
-- ✅ Optimal performance with our two-pass iterative process
+- Superior writing quality and reasoning capabilities
+- Excellent for complex technical writing improvements
+- Better understanding of context and nuance
+- Optimal performance with our two-pass iterative process
 
-### 🔧 Using a Different Model (Optional)
+### Using a Different Model (Optional)
 
 If you prefer to use a different model than our recommended `llama3:8b`, you can easily customize it:
 
@@ -203,7 +274,7 @@ python main.py
 
 ---
 
-## 📝 AsciiDoc Support (Optional)
+## AsciiDoc Support (Optional)
 
 For **AsciiDoc** document parsing and analysis, install the **asciidoctor** Ruby gem:
 
@@ -251,32 +322,32 @@ asciidoctor --version
 
 ### Benefits of Asciidoctor
 
-- ✅ **High-Performance Parsing:** Uses persistent Ruby server (15x faster than subprocess)
-- ✅ **Full AsciiDoc Support:** Complete parsing of admonitions, tables, includes, etc.
-- ✅ **Accurate Structure Analysis:** Proper block-level content analysis
-- ✅ **Document Title Detection:** Correctly identifies and displays document titles
+- **High-Performance Parsing:** Uses persistent Ruby server (15x faster than subprocess)
+- **Full AsciiDoc Support:** Complete parsing of admonitions, tables, includes, etc.
+- **Accurate Structure Analysis:** Proper block-level content analysis
+- **Document Title Detection:** Correctly identifies and displays document titles
 
 **Without Asciidoctor:**
-- ⚠️ AsciiDoc parsing will be limited to basic text extraction
-- ⚠️ Document structure analysis may be incomplete
-- ⚠️ Style analysis won't recognize AsciiDoc-specific elements
+- AsciiDoc parsing will be limited to basic text extraction
+- Document structure analysis may be incomplete
+- Style analysis won't recognize AsciiDoc-specific elements
 
 ---
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
-### 🚨 Having Setup Issues?
+### Having Setup Issues?
 
 **For comprehensive troubleshooting, see:** [`SETUP_TROUBLESHOOTING.md`](SETUP_TROUBLESHOOTING.md)
 
 This detailed guide covers:
-- ✅ Python version conflicts and installation
-- ✅ Virtual environment problems  
-- ✅ Package installation failures
-- ✅ SpaCy and NLTK setup issues
-- ✅ Ollama/Llama installation and configuration
-- ✅ OS-specific solutions (Windows/macOS/Linux)
-- ✅ Complete setup verification script
+- Python version conflicts and installation
+- Virtual environment problems  
+- Package installation failures
+- SpaCy and NLTK setup issues
+- Ollama/Llama installation and configuration
+- OS-specific solutions (Windows/macOS/Linux)
+- Complete setup verification script
 
 ### Quick Fixes
 
@@ -312,22 +383,22 @@ pip install -r requirements.txt --no-cache-dir
 **Quick Setup Verification:**
 ```bash
 # Verify everything is working
-python -c "import flask, spacy, nltk; print('✅ Core packages OK')"
-python -c "import spacy; spacy.load('en_core_web_sm'); print('✅ SpaCy model OK')"
+python -c "import flask, spacy, nltk; print('Core packages OK')"
+python -c "import spacy; spacy.load('en_core_web_sm'); print('SpaCy model OK')"
 ```
 
 ---
 
-## 📊 Example Analysis
+## Example Analysis
 
 **Input Text:**
 > "In order to facilitate the implementation of the new system, it was decided by the team that the best approach would be to utilize a modular architecture."
 
 **AI Analysis Detects:**
-- ❌ Passive voice: "it was decided"
-- ❌ Wordy phrases: "in order to", "utilize"
-- ❌ Long sentence: 25 words (target: 15-20)
-- ❌ Grade level: 14th (target: 9th-11th)
+- Passive voice: "it was decided"
+- Wordy phrases: "in order to", "utilize"
+- Long sentence: 25 words (target: 15-20)
+- Grade level: 14th (target: 9th-11th)
 
 **AI Rewrite (Pass 1):**
 > "To implement the new system, the team decided to use a modular architecture."
@@ -336,15 +407,15 @@ python -c "import spacy; spacy.load('en_core_web_sm'); print('✅ SpaCy model OK
 > "The team chose a modular architecture to implement the new system."
 
 **Improvements:**
-- ✅ Reduced from 25 to 10 words
-- ✅ Converted to active voice
-- ✅ Removed wordy phrases
-- ✅ Lowered to 9th grade level
-- ✅ Improved clarity and flow
+- Reduced from 25 to 10 words
+- Converted to active voice
+- Removed wordy phrases
+- Lowered to 9th grade level
+- Improved clarity and flow
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 style-guide-ai/
@@ -364,7 +435,7 @@ style-guide-ai/
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create your feature branch: `git checkout -b feature/amazing-feature`
@@ -374,13 +445,7 @@ style-guide-ai/
 
 ---
 
-## 📄 License
-
-This project is licensed under the [Apache License 2.0](LICENSE)
-
----
-
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - **SpaCy** for advanced NLP processing
 - **Ollama** for local AI model serving
@@ -389,5 +454,5 @@ This project is licensed under the [Apache License 2.0](LICENSE)
 
 ---
 
-**Made with ❤️ for technical writers who value privacy and quality.** 
+**Made with love for technical writers who value privacy and quality.** 
 

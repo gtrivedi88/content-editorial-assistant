@@ -1,0 +1,29 @@
+{
+  "timestamp": "2025-10-02T01:07:23.390569",
+  "status": "critical",
+  "pass_rate": 6.82,
+  "report_url": "testing_agent/reports/test_report_20251002_010723.html",
+  "action_items": [
+    {
+      "priority": 3,
+      "type": "flaky",
+      "title": "Stabilize flaky test: tests/unit/rules/test_base_rule.py::TestBaseRule::test_base_rule_has_check_method",
+      "description": "Fails 10.0% of the time",
+      "estimated_impact": "low"
+    },
+    {
+      "priority": 3,
+      "type": "flaky",
+      "title": "Stabilize flaky test: tests/unit/rules/test_base_rule.py::TestBaseRule::test_base_rule_check_returns_list",
+      "description": "Fails 10.0% of the time",
+      "estimated_impact": "low"
+    },
+    {
+      "priority": 3,
+      "type": "flaky",
+      "title": "Stabilize flaky test: tests/unit/rules/test_base_rule.py::TestBaseRule::test_base_rule_has_name",
+      "description": "Fails 10.0% of the time",
+      "estimated_impact": "low"
+    }
+  ]
+}

@@ -1,0 +1,831 @@
+{
+  "timestamp": "2025-10-02T01:02:18.492665",
+  "total": 44,
+  "passed": 3,
+  "failed": 41,
+  "skipped": 0,
+  "duration": 11.025602340698242,
+  "passed_tests": [
+    "tests/unit/rules/test_comprehensive_rules.py::TestAllRulesExist::test_all_rules_importable",
+    "tests/unit/rules/test_comprehensive_rules.py::TestRuleCategories::test_numbers_measurement_rules",
+    "tests/unit/rules/test_comprehensive_rules.py::TestRuleCategories::test_technical_elements_rules"
+  ],
+  "failed_tests": [
+    "tests/unit/rules/test_base_rule.py::TestBaseRule::test_base_rule_has_check_method",
+    "tests/unit/rules/test_base_rule.py::TestBaseRule::test_base_rule_check_returns_list",
+    "tests/unit/rules/test_base_rule.py::TestBaseRule::test_base_rule_has_name",
+    "tests/unit/rules/test_base_rule.py::TestBaseRule::test_base_rule_has_description",
+    "tests/unit/rules/test_base_rule.py::TestRuleInterface::test_rule_returns_error_format",
+    "tests/unit/rules/test_base_rule.py::TestRuleInterface::test_rule_handles_empty_text",
+    "tests/unit/rules/test_base_rule.py::TestRuleInterface::test_rule_handles_none_text",
+    "tests/unit/rules/test_comprehensive_rules.py::TestAllRulesExist::test_all_rules_have_check_method",
+    "tests/unit/rules/test_comprehensive_rules.py::TestRuleCategories::test_language_grammar_rules",
+    "tests/unit/rules/test_comprehensive_rules.py::TestRuleCategories::test_punctuation_rules",
+    "tests/unit/rules/test_comprehensive_rules.py::TestRuleCategories::test_word_usage_rules",
+    "tests/unit/rules/test_comprehensive_rules.py::TestRuleCategories::test_structure_format_rules",
+    "tests/unit/rules/test_comprehensive_rules.py::TestRuleInterface::test_base_rule_interface",
+    "tests/unit/rules/test_comprehensive_rules.py::TestRuleInterface::test_rule_check_returns_list",
+    "tests/unit/rules/test_comprehensive_rules.py::TestRuleInterface::test_rule_handles_empty_text",
+    "tests/unit/rules/test_comprehensive_rules.py::TestRuleIntegration::test_multiple_rules_on_same_text",
+    "tests/unit/rules/test_comprehensive_rules.py::TestRuleIntegration::test_rules_with_different_severities",
+    "tests/unit/rules/test_grammar_rules.py::TestPassiveVoiceAnalyzer::test_detect_passive_voice",
+    "tests/unit/rules/test_grammar_rules.py::TestPassiveVoiceAnalyzer::test_active_voice_no_issues",
+    "tests/unit/rules/test_grammar_rules.py::TestArticlesRule::test_missing_article",
+    "tests/unit/rules/test_grammar_rules.py::TestArticlesRule::test_correct_articles",
+    "tests/unit/rules/test_grammar_rules.py::TestVerbsRule::test_verb_agreement",
+    "tests/unit/rules/test_grammar_rules.py::TestVerbsRule::test_correct_verbs",
+    "tests/unit/rules/test_grammar_rules.py::TestPronounsRule::test_pronoun_usage",
+    "tests/unit/rules/test_grammar_rules.py::TestPronounsRule::test_ambiguous_pronouns",
+    "tests/unit/rules/test_punctuation_rules.py::TestCommasRule::test_comma_usage",
+    "tests/unit/rules/test_punctuation_rules.py::TestCommasRule::test_missing_comma",
+    "tests/unit/rules/test_punctuation_rules.py::TestPeriodsRule::test_period_usage",
+    "tests/unit/rules/test_punctuation_rules.py::TestPeriodsRule::test_missing_period",
+    "tests/unit/rules/test_punctuation_rules.py::TestQuotationMarksRule::test_quotation_marks",
+    "tests/unit/rules/test_punctuation_rules.py::TestQuotationMarksRule::test_mismatched_quotes",
+    "tests/unit/rules/test_punctuation_rules.py::TestHyphensRule::test_hyphen_usage",
+    "tests/unit/rules/test_punctuation_rules.py::TestHyphensRule::test_missing_hyphen",
+    "tests/unit/rules/test_style_rules.py::TestSentenceLengthRule::test_long_sentence_detected",
+    "tests/unit/rules/test_style_rules.py::TestSentenceLengthRule::test_short_sentences_ok",
+    "tests/unit/rules/test_style_rules.py::TestSecondPersonRule::test_detect_second_person",
+    "tests/unit/rules/test_style_rules.py::TestSecondPersonRule::test_third_person_preferred",
+    "tests/unit/rules/test_style_rules.py::TestHeadingsRule::test_heading_format",
+    "tests/unit/rules/test_style_rules.py::TestHeadingsRule::test_improper_heading_hierarchy",
+    "tests/unit/rules/test_style_rules.py::TestListsRule::test_list_format",
+    "tests/unit/rules/test_style_rules.py::TestListsRule::test_inconsistent_list_punctuation"
+  ],
+  "failures": [
+    {
+      "test_name": "tests/unit/rules/test_base_rule.py::TestBaseRule::test_base_rule_has_check_method",
+      "message": "tests/unit/rules/test_base_rule.py:16: in test_base_rule_has_check_method\n    rule = BaseRule()\n           ^^^^^^^^^^\nE   TypeError: Can't instantiate abstract class BaseRule without an implementation for abstract methods '_get_rule_type', 'analyze'",
+      "type": "AssertionError",
+      "traceback": "tests/unit/rules/test_base_rule.py:16: in test_base_rule_has_check_method\n    rule = BaseRule()\n           ^^^^^^^^^^\nE   TypeError: Can't instantiate abstract class BaseRule without an implementation for abstract methods '_get_rule_type', 'analyze'"
+    },
+    {
+      "test_name": "tests/unit/rules/test_base_rule.py::TestBaseRule::test_base_rule_check_returns_list",
+      "message": "tests/unit/rules/test_base_rule.py:21: in test_base_rule_check_returns_list\n    rule = BaseRule()\n           ^^^^^^^^^^\nE   TypeError: Can't instantiate abstract class BaseRule without an implementation for abstract methods '_get_rule_type', 'analyze'",
+      "type": "AssertionError",
+      "traceback": "tests/unit/rules/test_base_rule.py:21: in test_base_rule_check_returns_list\n    rule = BaseRule()\n           ^^^^^^^^^^\nE   TypeError: Can't instantiate abstract class BaseRule without an implementation for abstract methods '_get_rule_type', 'analyze'"
+    },
+    {
+      "test_name": "tests/unit/rules/test_base_rule.py::TestBaseRule::test_base_rule_has_name",
+      "message": "tests/unit/rules/test_base_rule.py:28: in test_base_rule_has_name\n    rule = BaseRule()\n           ^^^^^^^^^^\nE   TypeError: Can't instantiate abstract class BaseRule without an implementation for abstract methods '_get_rule_type', 'analyze'",
+      "type": "AssertionError",
+      "traceback": "tests/unit/rules/test_base_rule.py:28: in test_base_rule_has_name\n    rule = BaseRule()\n           ^^^^^^^^^^\nE   TypeError: Can't instantiate abstract class BaseRule without an implementation for abstract methods '_get_rule_type', 'analyze'"
+    },
+    {
+      "test_name": "tests/unit/rules/test_base_rule.py::TestBaseRule::test_base_rule_has_description",
+      "message": "tests/unit/rules/test_base_rule.py:33: in test_base_rule_has_description\n    rule = BaseRule()\n           ^^^^^^^^^^\nE   TypeError: Can't instantiate abstract class BaseRule without an implementation for abstract methods '_get_rule_type', 'analyze'",
+      "type": "AssertionError",
+      "traceback": "tests/unit/rules/test_base_rule.py:33: in test_base_rule_has_description\n    rule = BaseRule()\n           ^^^^^^^^^^\nE   TypeError: Can't instantiate abstract class BaseRule without an implementation for abstract methods '_get_rule_type', 'analyze'"
+    },
+    {
+      "test_name": "tests/unit/rules/test_base_rule.py::TestRuleInterface::test_rule_returns_error_format",
+      "message": "tests/unit/rules/test_base_rule.py:43: in test_rule_returns_error_format\n    rule = BaseRule()\n           ^^^^^^^^^^\nE   TypeError: Can't instantiate abstract class BaseRule without an implementation for abstract methods '_get_rule_type', 'analyze'",
+      "type": "AssertionError",
+      "traceback": "tests/unit/rules/test_base_rule.py:43: in test_rule_returns_error_format\n    rule = BaseRule()\n           ^^^^^^^^^^\nE   TypeError: Can't instantiate abstract class BaseRule without an implementation for abstract methods '_get_rule_type', 'analyze'"
+    },
+    {
+      "test_name": "tests/unit/rules/test_base_rule.py::TestRuleInterface::test_rule_handles_empty_text",
+      "message": "tests/unit/rules/test_base_rule.py:55: in test_rule_handles_empty_text\n    rule = BaseRule()\n           ^^^^^^^^^^\nE   TypeError: Can't instantiate abstract class BaseRule without an implementation for abstract methods '_get_rule_type', 'analyze'",
+      "type": "AssertionError",
+      "traceback": "tests/unit/rules/test_base_rule.py:55: in test_rule_handles_empty_text\n    rule = BaseRule()\n           ^^^^^^^^^^\nE   TypeError: Can't instantiate abstract class BaseRule without an implementation for abstract methods '_get_rule_type', 'analyze'"
+    },
+    {
+      "test_name": "tests/unit/rules/test_base_rule.py::TestRuleInterface::test_rule_handles_none_text",
+      "message": "tests/unit/rules/test_base_rule.py:63: in test_rule_handles_none_text\n    rule = BaseRule()\n           ^^^^^^^^^^\nE   TypeError: Can't instantiate abstract class BaseRule without an implementation for abstract methods '_get_rule_type', 'analyze'",
+      "type": "AssertionError",
+      "traceback": "tests/unit/rules/test_base_rule.py:63: in test_rule_handles_none_text\n    rule = BaseRule()\n           ^^^^^^^^^^\nE   TypeError: Can't instantiate abstract class BaseRule without an implementation for abstract methods '_get_rule_type', 'analyze'"
+    },
+    {
+      "test_name": "tests/unit/rules/test_comprehensive_rules.py::TestAllRulesExist::test_all_rules_have_check_method",
+      "message": "tests/unit/rules/test_comprehensive_rules.py:65: in test_all_rules_have_check_method\n    assert len(errors) == 0, f\"Rules missing check():\\n\" + \"\\n\".join(errors)\nE   AssertionError: Rules missing check():\nE     rules/ambiguity_rule.py: AmbiguityRule missing check() method\nE     rules/base_rule.py: BaseRule missing check() method\nE     rules/second_person_rule.py: SecondPersonRule missing check() method\nE     rules/sentence_length_rule.py: SentenceLengthRule missing check() method\nE     rules/audience_and_medium/conversational_style_rule.py: ConversationalStyleRule missing check() method\nE     rules/audience_and_medium/llm_consumability_rule.py: LLMConsumabilityRule missing check() method\nE     rules/audience_and_medium/base_audience_rule.py: BaseAudienceRule missing check() method\nE     rules/audience_and_medium/global_audiences_rule.py: GlobalAudiencesRule missing check() method\nE     rules/audience_and_medium/tone_rule.py: ToneRule missing check() method\nE     rules/language_and_grammar/base_language_rule.py: BaseLanguageRule missing check() method\nE     rules/language_and_grammar/conjunctions_rule.py: ConjunctionsRule missing check() method\nE     rules/language_and_grammar/prepositions_rule.py: PrepositionsRule missing check() method\nE     rules/language_and_grammar/pronouns_rule.py: PronounsRule missing check() method\nE     rules/language_and_grammar/spelling_rule.py: SpellingRule missing check() method\nE     rules/language_and_grammar/terminology_rule.py: TerminologyRule missing check() method\nE     rules/language_and_grammar/abbreviations_rule.py: AbbreviationsRule missing check() method\nE     rules/language_and_grammar/adverbs_only_rule.py: AdverbsOnlyRule missing check() method\nE     rules/language_and_grammar/anthropomorphism_rule.py: AnthropomorphismRule missing check() method\nE     rules/language_and_grammar/articles_rule.py: ArticlesRule missing check() method\nE     rules/language_and_grammar/capitalization_rule.py: CapitalizationRule missing check() method\nE   assert 20 == 0\nE    +  where 20 = len(['rules/ambiguity_rule.py: AmbiguityRule missing check() method', 'rules/base_rule.py: BaseRule missing check() method', 'rules/second_person_rule.py: SecondPersonRule missing check() method', 'rules/sentence_length_rule.py: SentenceLengthRule missing check() method', 'rules/audience_and_medium/conversational_style_rule.py: ConversationalStyleRule missing check() method', 'rules/audience_and_medium/llm_consumability_rule.py: LLMConsumabilityRule missing check() method', ...])",
+      "type": "AssertionError",
+      "traceback": "tests/unit/rules/test_comprehensive_rules.py:65: in test_all_rules_have_check_method\n    assert len(errors) == 0, f\"Rules missing check():\\n\" + \"\\n\".join(errors)\nE   AssertionError: Rules missing check():\nE     rules/ambiguity_rule.py: AmbiguityRule missing check() method\nE     rules/base_rule.py: BaseRule missing check() method\nE     rules/second_person_rule.py: SecondPersonRule missing check() method\nE     rules/sentence_length_rule.py: SentenceLengthRule missing check() method\nE     rules/audience_and_medium/conversational_style_rule.py: ConversationalStyleRule missing check() method\nE     rules/audience_and_medium/llm_consumability_rule.py: LLMConsumabilityRule missing check() method\nE     rules/audience_and_medium/base_audience_rule.py: BaseAudienceRule missing check() method\nE     rules/audience_and_medium/global_audiences_rule.py: GlobalAudiencesRule missing check() method\nE     rules/audience_and_medium/tone_rule.py: ToneRule missing check() method\nE     rules/language_and_grammar/base_language_rule.py: BaseLanguageRule missing check() method\nE     rules/language_and_grammar/conjunctions_rule.py: ConjunctionsRule missing check() method\nE     rules/language_and_grammar/prepositions_rule.py: PrepositionsRule missing check() method\nE     rules/language_and_grammar/pronouns_rule.py: PronounsRule missing check() method\nE     rules/language_and_grammar/spelling_rule.py: SpellingRule missing check() method\nE     rules/language_and_grammar/terminology_rule.py: TerminologyRule missing check() method\nE     rules/language_and_grammar/abbreviations_rule.py: AbbreviationsRule missing check() method\nE     rules/language_and_grammar/adverbs_only_rule.py: AdverbsOnlyRule missing check() method\nE     rules/language_and_grammar/anthropomorphism_rule.py: AnthropomorphismRule missing check() method\nE     rules/language_and_grammar/articles_rule.py: ArticlesRule missing check() method\nE     rules/language_and_grammar/capitalization_rule.py: CapitalizationRule missing check() method\nE   assert 20 == 0\nE    +  where 20 = len(['rules/ambiguity_rule.py: AmbiguityRule missing check() method', 'rules/base_rule.py: BaseRule missing check() method', 'rules/second_person_rule.py: SecondPersonRule missing check() method', 'rules/sentence_length_rule.py: SentenceLengthRule missing check() method', 'rules/audience_and_medium/conversational_style_rule.py: ConversationalStyleRule missing check() method', 'rules/audience_and_medium/llm_consumability_rule.py: LLMConsumabilityRule missing check() method', ...])"
+    },
+    {
+      "test_name": "tests/unit/rules/test_comprehensive_rules.py::TestRuleCategories::test_language_grammar_rules",
+      "message": "tests/unit/rules/test_comprehensive_rules.py:80: in test_language_grammar_rules\n    issues = analyzer.check(passive_text)\n             ^^^^^^^^^^^^^^\nE   AttributeError: 'PassiveVoiceAnalyzer' object has no attribute 'check'",
+      "type": "AssertionError",
+      "traceback": "tests/unit/rules/test_comprehensive_rules.py:80: in test_language_grammar_rules\n    issues = analyzer.check(passive_text)\n             ^^^^^^^^^^^^^^\nE   AttributeError: 'PassiveVoiceAnalyzer' object has no attribute 'check'"
+    },
+    {
+      "test_name": "tests/unit/rules/test_comprehensive_rules.py::TestRuleCategories::test_punctuation_rules",
+      "message": "tests/unit/rules/test_comprehensive_rules.py:90: in test_punctuation_rules\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'CommasRule' object has no attribute 'check'",
+      "type": "AssertionError",
+      "traceback": "tests/unit/rules/test_comprehensive_rules.py:90: in test_punctuation_rules\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'CommasRule' object has no attribute 'check'"
+    },
+    {
+      "test_name": "tests/unit/rules/test_comprehensive_rules.py::TestRuleCategories::test_word_usage_rules",
+      "message": "tests/unit/rules/test_comprehensive_rules.py:99: in test_word_usage_rules\n    assert len(rule_files) > 0\nE   assert 0 > 0\nE    +  where 0 = len([])",
+      "type": "AssertionError",
+      "traceback": "tests/unit/rules/test_comprehensive_rules.py:99: in test_word_usage_rules\n    assert len(rule_files) > 0\nE   assert 0 > 0\nE    +  where 0 = len([])"
+    },
+    {
+      "test_name": "tests/unit/rules/test_comprehensive_rules.py::TestRuleCategories::test_structure_format_rules",
+      "message": "tests/unit/rules/test_comprehensive_rules.py:108: in test_structure_format_rules\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'HeadingsRule' object has no attribute 'check'",
+      "type": "AssertionError",
+      "traceback": "tests/unit/rules/test_comprehensive_rules.py:108: in test_structure_format_rules\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'HeadingsRule' object has no attribute 'check'"
+    },
+    {
+      "test_name": "tests/unit/rules/test_comprehensive_rules.py::TestRuleInterface::test_base_rule_interface",
+      "message": "tests/unit/rules/test_comprehensive_rules.py:132: in test_base_rule_interface\n    rule = BaseRule()\n           ^^^^^^^^^^\nE   TypeError: Can't instantiate abstract class BaseRule without an implementation for abstract methods '_get_rule_type', 'analyze'",
+      "type": "AssertionError",
+      "traceback": "tests/unit/rules/test_comprehensive_rules.py:132: in test_base_rule_interface\n    rule = BaseRule()\n           ^^^^^^^^^^\nE   TypeError: Can't instantiate abstract class BaseRule without an implementation for abstract methods '_get_rule_type', 'analyze'"
+    },
+    {
+      "test_name": "tests/unit/rules/test_comprehensive_rules.py::TestRuleInterface::test_rule_check_returns_list",
+      "message": "tests/unit/rules/test_comprehensive_rules.py:139: in test_rule_check_returns_list\n    rule = BaseRule()\n           ^^^^^^^^^^\nE   TypeError: Can't instantiate abstract class BaseRule without an implementation for abstract methods '_get_rule_type', 'analyze'",
+      "type": "AssertionError",
+      "traceback": "tests/unit/rules/test_comprehensive_rules.py:139: in test_rule_check_returns_list\n    rule = BaseRule()\n           ^^^^^^^^^^\nE   TypeError: Can't instantiate abstract class BaseRule without an implementation for abstract methods '_get_rule_type', 'analyze'"
+    },
+    {
+      "test_name": "tests/unit/rules/test_comprehensive_rules.py::TestRuleInterface::test_rule_handles_empty_text",
+      "message": "tests/unit/rules/test_comprehensive_rules.py:146: in test_rule_handles_empty_text\n    rule = BaseRule()\n           ^^^^^^^^^^\nE   TypeError: Can't instantiate abstract class BaseRule without an implementation for abstract methods '_get_rule_type', 'analyze'",
+      "type": "AssertionError",
+      "traceback": "tests/unit/rules/test_comprehensive_rules.py:146: in test_rule_handles_empty_text\n    rule = BaseRule()\n           ^^^^^^^^^^\nE   TypeError: Can't instantiate abstract class BaseRule without an implementation for abstract methods '_get_rule_type', 'analyze'"
+    },
+    {
+      "test_name": "tests/unit/rules/test_comprehensive_rules.py::TestRuleIntegration::test_multiple_rules_on_same_text",
+      "message": "tests/unit/rules/test_comprehensive_rules.py:167: in test_multiple_rules_on_same_text\n    passive_issues = passive_analyzer.check(text)\n                     ^^^^^^^^^^^^^^^^^^^^^^\nE   AttributeError: 'PassiveVoiceAnalyzer' object has no attribute 'check'",
+      "type": "AssertionError",
+      "traceback": "tests/unit/rules/test_comprehensive_rules.py:167: in test_multiple_rules_on_same_text\n    passive_issues = passive_analyzer.check(text)\n                     ^^^^^^^^^^^^^^^^^^^^^^\nE   AttributeError: 'PassiveVoiceAnalyzer' object has no attribute 'check'"
+    },
+    {
+      "test_name": "tests/unit/rules/test_comprehensive_rules.py::TestRuleIntegration::test_rules_with_different_severities",
+      "message": "tests/unit/rules/test_comprehensive_rules.py:184: in test_rules_with_different_severities\n    issues = analyzer.check(text)\n             ^^^^^^^^^^^^^^\nE   AttributeError: 'PassiveVoiceAnalyzer' object has no attribute 'check'",
+      "type": "AssertionError",
+      "traceback": "tests/unit/rules/test_comprehensive_rules.py:184: in test_rules_with_different_severities\n    issues = analyzer.check(text)\n             ^^^^^^^^^^^^^^\nE   AttributeError: 'PassiveVoiceAnalyzer' object has no attribute 'check'"
+    },
+    {
+      "test_name": "tests/unit/rules/test_grammar_rules.py::TestPassiveVoiceAnalyzer::test_detect_passive_voice",
+      "message": "tests/unit/rules/test_grammar_rules.py:23: in test_detect_passive_voice\n    issues = analyzer.check(text)\n             ^^^^^^^^^^^^^^\nE   AttributeError: 'PassiveVoiceAnalyzer' object has no attribute 'check'",
+      "type": "AssertionError",
+      "traceback": "tests/unit/rules/test_grammar_rules.py:23: in test_detect_passive_voice\n    issues = analyzer.check(text)\n             ^^^^^^^^^^^^^^\nE   AttributeError: 'PassiveVoiceAnalyzer' object has no attribute 'check'"
+    },
+    {
+      "test_name": "tests/unit/rules/test_grammar_rules.py::TestPassiveVoiceAnalyzer::test_active_voice_no_issues",
+      "message": "tests/unit/rules/test_grammar_rules.py:31: in test_active_voice_no_issues\n    issues = analyzer.check(text)\n             ^^^^^^^^^^^^^^\nE   AttributeError: 'PassiveVoiceAnalyzer' object has no attribute 'check'",
+      "type": "AssertionError",
+      "traceback": "tests/unit/rules/test_grammar_rules.py:31: in test_active_voice_no_issues\n    issues = analyzer.check(text)\n             ^^^^^^^^^^^^^^\nE   AttributeError: 'PassiveVoiceAnalyzer' object has no attribute 'check'"
+    },
+    {
+      "test_name": "tests/unit/rules/test_grammar_rules.py::TestArticlesRule::test_missing_article",
+      "message": "tests/unit/rules/test_grammar_rules.py:44: in test_missing_article\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'ArticlesRule' object has no attribute 'check'",
+      "type": "AssertionError",
+      "traceback": "tests/unit/rules/test_grammar_rules.py:44: in test_missing_article\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'ArticlesRule' object has no attribute 'check'"
+    },
+    {
+      "test_name": "tests/unit/rules/test_grammar_rules.py::TestArticlesRule::test_correct_articles",
+      "message": "tests/unit/rules/test_grammar_rules.py:53: in test_correct_articles\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'ArticlesRule' object has no attribute 'check'",
+      "type": "AssertionError",
+      "traceback": "tests/unit/rules/test_grammar_rules.py:53: in test_correct_articles\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'ArticlesRule' object has no attribute 'check'"
+    },
+    {
+      "test_name": "tests/unit/rules/test_grammar_rules.py::TestVerbsRule::test_verb_agreement",
+      "message": "tests/unit/rules/test_grammar_rules.py:66: in test_verb_agreement\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'VerbsRule' object has no attribute 'check'",
+      "type": "AssertionError",
+      "traceback": "tests/unit/rules/test_grammar_rules.py:66: in test_verb_agreement\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'VerbsRule' object has no attribute 'check'"
+    },
+    {
+      "test_name": "tests/unit/rules/test_grammar_rules.py::TestVerbsRule::test_correct_verbs",
+      "message": "tests/unit/rules/test_grammar_rules.py:75: in test_correct_verbs\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'VerbsRule' object has no attribute 'check'",
+      "type": "AssertionError",
+      "traceback": "tests/unit/rules/test_grammar_rules.py:75: in test_correct_verbs\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'VerbsRule' object has no attribute 'check'"
+    },
+    {
+      "test_name": "tests/unit/rules/test_grammar_rules.py::TestPronounsRule::test_pronoun_usage",
+      "message": "tests/unit/rules/test_grammar_rules.py:89: in test_pronoun_usage\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'PronounsRule' object has no attribute 'check'",
+      "type": "AssertionError",
+      "traceback": "tests/unit/rules/test_grammar_rules.py:89: in test_pronoun_usage\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'PronounsRule' object has no attribute 'check'"
+    },
+    {
+      "test_name": "tests/unit/rules/test_grammar_rules.py::TestPronounsRule::test_ambiguous_pronouns",
+      "message": "tests/unit/rules/test_grammar_rules.py:97: in test_ambiguous_pronouns\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'PronounsRule' object has no attribute 'check'",
+      "type": "AssertionError",
+      "traceback": "tests/unit/rules/test_grammar_rules.py:97: in test_ambiguous_pronouns\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'PronounsRule' object has no attribute 'check'"
+    },
+    {
+      "test_name": "tests/unit/rules/test_punctuation_rules.py::TestCommasRule::test_comma_usage",
+      "message": "tests/unit/rules/test_punctuation_rules.py:23: in test_comma_usage\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'CommasRule' object has no attribute 'check'",
+      "type": "AssertionError",
+      "traceback": "tests/unit/rules/test_punctuation_rules.py:23: in test_comma_usage\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'CommasRule' object has no attribute 'check'"
+    },
+    {
+      "test_name": "tests/unit/rules/test_punctuation_rules.py::TestCommasRule::test_missing_comma",
+      "message": "tests/unit/rules/test_punctuation_rules.py:31: in test_missing_comma\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'CommasRule' object has no attribute 'check'",
+      "type": "AssertionError",
+      "traceback": "tests/unit/rules/test_punctuation_rules.py:31: in test_missing_comma\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'CommasRule' object has no attribute 'check'"
+    },
+    {
+      "test_name": "tests/unit/rules/test_punctuation_rules.py::TestPeriodsRule::test_period_usage",
+      "message": "tests/unit/rules/test_punctuation_rules.py:45: in test_period_usage\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'PeriodsRule' object has no attribute 'check'",
+      "type": "AssertionError",
+      "traceback": "tests/unit/rules/test_punctuation_rules.py:45: in test_period_usage\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'PeriodsRule' object has no attribute 'check'"
+    },
+    {
+      "test_name": "tests/unit/rules/test_punctuation_rules.py::TestPeriodsRule::test_missing_period",
+      "message": "tests/unit/rules/test_punctuation_rules.py:53: in test_missing_period\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'PeriodsRule' object has no attribute 'check'",
+      "type": "AssertionError",
+      "traceback": "tests/unit/rules/test_punctuation_rules.py:53: in test_missing_period\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'PeriodsRule' object has no attribute 'check'"
+    },
+    {
+      "test_name": "tests/unit/rules/test_punctuation_rules.py::TestQuotationMarksRule::test_quotation_marks",
+      "message": "tests/unit/rules/test_punctuation_rules.py:67: in test_quotation_marks\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'QuotationMarksRule' object has no attribute 'check'",
+      "type": "AssertionError",
+      "traceback": "tests/unit/rules/test_punctuation_rules.py:67: in test_quotation_marks\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'QuotationMarksRule' object has no attribute 'check'"
+    },
+    {
+      "test_name": "tests/unit/rules/test_punctuation_rules.py::TestQuotationMarksRule::test_mismatched_quotes",
+      "message": "tests/unit/rules/test_punctuation_rules.py:75: in test_mismatched_quotes\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'QuotationMarksRule' object has no attribute 'check'",
+      "type": "AssertionError",
+      "traceback": "tests/unit/rules/test_punctuation_rules.py:75: in test_mismatched_quotes\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'QuotationMarksRule' object has no attribute 'check'"
+    },
+    {
+      "test_name": "tests/unit/rules/test_punctuation_rules.py::TestHyphensRule::test_hyphen_usage",
+      "message": "tests/unit/rules/test_punctuation_rules.py:89: in test_hyphen_usage\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'HyphensRule' object has no attribute 'check'",
+      "type": "AssertionError",
+      "traceback": "tests/unit/rules/test_punctuation_rules.py:89: in test_hyphen_usage\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'HyphensRule' object has no attribute 'check'"
+    },
+    {
+      "test_name": "tests/unit/rules/test_punctuation_rules.py::TestHyphensRule::test_missing_hyphen",
+      "message": "tests/unit/rules/test_punctuation_rules.py:97: in test_missing_hyphen\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'HyphensRule' object has no attribute 'check'",
+      "type": "AssertionError",
+      "traceback": "tests/unit/rules/test_punctuation_rules.py:97: in test_missing_hyphen\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'HyphensRule' object has no attribute 'check'"
+    },
+    {
+      "test_name": "tests/unit/rules/test_style_rules.py::TestSentenceLengthRule::test_long_sentence_detected",
+      "message": "tests/unit/rules/test_style_rules.py:25: in test_long_sentence_detected\n    issues = rule.check(long_text)\n             ^^^^^^^^^^\nE   AttributeError: 'SentenceLengthRule' object has no attribute 'check'",
+      "type": "AssertionError",
+      "traceback": "tests/unit/rules/test_style_rules.py:25: in test_long_sentence_detected\n    issues = rule.check(long_text)\n             ^^^^^^^^^^\nE   AttributeError: 'SentenceLengthRule' object has no attribute 'check'"
+    },
+    {
+      "test_name": "tests/unit/rules/test_style_rules.py::TestSentenceLengthRule::test_short_sentences_ok",
+      "message": "tests/unit/rules/test_style_rules.py:33: in test_short_sentences_ok\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'SentenceLengthRule' object has no attribute 'check'",
+      "type": "AssertionError",
+      "traceback": "tests/unit/rules/test_style_rules.py:33: in test_short_sentences_ok\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'SentenceLengthRule' object has no attribute 'check'"
+    },
+    {
+      "test_name": "tests/unit/rules/test_style_rules.py::TestSecondPersonRule::test_detect_second_person",
+      "message": "tests/unit/rules/test_style_rules.py:46: in test_detect_second_person\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'SecondPersonRule' object has no attribute 'check'",
+      "type": "AssertionError",
+      "traceback": "tests/unit/rules/test_style_rules.py:46: in test_detect_second_person\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'SecondPersonRule' object has no attribute 'check'"
+    },
+    {
+      "test_name": "tests/unit/rules/test_style_rules.py::TestSecondPersonRule::test_third_person_preferred",
+      "message": "tests/unit/rules/test_style_rules.py:55: in test_third_person_preferred\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'SecondPersonRule' object has no attribute 'check'",
+      "type": "AssertionError",
+      "traceback": "tests/unit/rules/test_style_rules.py:55: in test_third_person_preferred\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'SecondPersonRule' object has no attribute 'check'"
+    },
+    {
+      "test_name": "tests/unit/rules/test_style_rules.py::TestHeadingsRule::test_heading_format",
+      "message": "tests/unit/rules/test_style_rules.py:68: in test_heading_format\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'HeadingsRule' object has no attribute 'check'",
+      "type": "AssertionError",
+      "traceback": "tests/unit/rules/test_style_rules.py:68: in test_heading_format\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'HeadingsRule' object has no attribute 'check'"
+    },
+    {
+      "test_name": "tests/unit/rules/test_style_rules.py::TestHeadingsRule::test_improper_heading_hierarchy",
+      "message": "tests/unit/rules/test_style_rules.py:76: in test_improper_heading_hierarchy\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'HeadingsRule' object has no attribute 'check'",
+      "type": "AssertionError",
+      "traceback": "tests/unit/rules/test_style_rules.py:76: in test_improper_heading_hierarchy\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'HeadingsRule' object has no attribute 'check'"
+    },
+    {
+      "test_name": "tests/unit/rules/test_style_rules.py::TestListsRule::test_list_format",
+      "message": "tests/unit/rules/test_style_rules.py:95: in test_list_format\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'ListsRule' object has no attribute 'check'",
+      "type": "AssertionError",
+      "traceback": "tests/unit/rules/test_style_rules.py:95: in test_list_format\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'ListsRule' object has no attribute 'check'"
+    },
+    {
+      "test_name": "tests/unit/rules/test_style_rules.py::TestListsRule::test_inconsistent_list_punctuation",
+      "message": "tests/unit/rules/test_style_rules.py:107: in test_inconsistent_list_punctuation\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'ListsRule' object has no attribute 'check'",
+      "type": "AssertionError",
+      "traceback": "tests/unit/rules/test_style_rules.py:107: in test_inconsistent_list_punctuation\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'ListsRule' object has no attribute 'check'"
+    }
+  ],
+  "test_durations": {
+    "tests/unit/rules/test_base_rule.py::TestBaseRule::test_base_rule_has_check_method": 0.0,
+    "tests/unit/rules/test_base_rule.py::TestBaseRule::test_base_rule_check_returns_list": 0.0,
+    "tests/unit/rules/test_base_rule.py::TestBaseRule::test_base_rule_has_name": 0.0,
+    "tests/unit/rules/test_base_rule.py::TestBaseRule::test_base_rule_has_description": 0.0,
+    "tests/unit/rules/test_base_rule.py::TestRuleInterface::test_rule_returns_error_format": 0.0,
+    "tests/unit/rules/test_base_rule.py::TestRuleInterface::test_rule_handles_empty_text": 0.0,
+    "tests/unit/rules/test_base_rule.py::TestRuleInterface::test_rule_handles_none_text": 0.0,
+    "tests/unit/rules/test_comprehensive_rules.py::TestAllRulesExist::test_all_rules_importable": 0.0,
+    "tests/unit/rules/test_comprehensive_rules.py::TestAllRulesExist::test_all_rules_have_check_method": 0.0,
+    "tests/unit/rules/test_comprehensive_rules.py::TestRuleCategories::test_language_grammar_rules": 0.0,
+    "tests/unit/rules/test_comprehensive_rules.py::TestRuleCategories::test_punctuation_rules": 0.0,
+    "tests/unit/rules/test_comprehensive_rules.py::TestRuleCategories::test_word_usage_rules": 0.0,
+    "tests/unit/rules/test_comprehensive_rules.py::TestRuleCategories::test_structure_format_rules": 0.0,
+    "tests/unit/rules/test_comprehensive_rules.py::TestRuleCategories::test_numbers_measurement_rules": 0.0,
+    "tests/unit/rules/test_comprehensive_rules.py::TestRuleCategories::test_technical_elements_rules": 0.0,
+    "tests/unit/rules/test_comprehensive_rules.py::TestRuleInterface::test_base_rule_interface": 0.0,
+    "tests/unit/rules/test_comprehensive_rules.py::TestRuleInterface::test_rule_check_returns_list": 0.0,
+    "tests/unit/rules/test_comprehensive_rules.py::TestRuleInterface::test_rule_handles_empty_text": 0.0,
+    "tests/unit/rules/test_comprehensive_rules.py::TestRuleIntegration::test_multiple_rules_on_same_text": 0.0,
+    "tests/unit/rules/test_comprehensive_rules.py::TestRuleIntegration::test_rules_with_different_severities": 0.0,
+    "tests/unit/rules/test_grammar_rules.py::TestPassiveVoiceAnalyzer::test_detect_passive_voice": 0.0,
+    "tests/unit/rules/test_grammar_rules.py::TestPassiveVoiceAnalyzer::test_active_voice_no_issues": 0.0,
+    "tests/unit/rules/test_grammar_rules.py::TestArticlesRule::test_missing_article": 0.0,
+    "tests/unit/rules/test_grammar_rules.py::TestArticlesRule::test_correct_articles": 0.0,
+    "tests/unit/rules/test_grammar_rules.py::TestVerbsRule::test_verb_agreement": 0.0,
+    "tests/unit/rules/test_grammar_rules.py::TestVerbsRule::test_correct_verbs": 0.0,
+    "tests/unit/rules/test_grammar_rules.py::TestPronounsRule::test_pronoun_usage": 0.0,
+    "tests/unit/rules/test_grammar_rules.py::TestPronounsRule::test_ambiguous_pronouns": 0.0,
+    "tests/unit/rules/test_punctuation_rules.py::TestCommasRule::test_comma_usage": 0.0,
+    "tests/unit/rules/test_punctuation_rules.py::TestCommasRule::test_missing_comma": 0.0,
+    "tests/unit/rules/test_punctuation_rules.py::TestPeriodsRule::test_period_usage": 0.0,
+    "tests/unit/rules/test_punctuation_rules.py::TestPeriodsRule::test_missing_period": 0.0,
+    "tests/unit/rules/test_punctuation_rules.py::TestQuotationMarksRule::test_quotation_marks": 0.0,
+    "tests/unit/rules/test_punctuation_rules.py::TestQuotationMarksRule::test_mismatched_quotes": 0.0,
+    "tests/unit/rules/test_punctuation_rules.py::TestHyphensRule::test_hyphen_usage": 0.0,
+    "tests/unit/rules/test_punctuation_rules.py::TestHyphensRule::test_missing_hyphen": 0.0,
+    "tests/unit/rules/test_style_rules.py::TestSentenceLengthRule::test_long_sentence_detected": 0.0,
+    "tests/unit/rules/test_style_rules.py::TestSentenceLengthRule::test_short_sentences_ok": 0.0,
+    "tests/unit/rules/test_style_rules.py::TestSecondPersonRule::test_detect_second_person": 0.0,
+    "tests/unit/rules/test_style_rules.py::TestSecondPersonRule::test_third_person_preferred": 0.0,
+    "tests/unit/rules/test_style_rules.py::TestHeadingsRule::test_heading_format": 0.0,
+    "tests/unit/rules/test_style_rules.py::TestHeadingsRule::test_improper_heading_hierarchy": 0.0,
+    "tests/unit/rules/test_style_rules.py::TestListsRule::test_list_format": 0.0,
+    "tests/unit/rules/test_style_rules.py::TestListsRule::test_inconsistent_list_punctuation": 0.0
+  },
+  "categories": {
+    "unit": {
+      "total": 44,
+      "passed": 3,
+      "failed": 41,
+      "skipped": 0,
+      "duration": 11.025602340698242,
+      "tests": [],
+      "passed_tests": [
+        "tests/unit/rules/test_comprehensive_rules.py::TestAllRulesExist::test_all_rules_importable",
+        "tests/unit/rules/test_comprehensive_rules.py::TestRuleCategories::test_numbers_measurement_rules",
+        "tests/unit/rules/test_comprehensive_rules.py::TestRuleCategories::test_technical_elements_rules"
+      ],
+      "failed_tests": [
+        "tests/unit/rules/test_base_rule.py::TestBaseRule::test_base_rule_has_check_method",
+        "tests/unit/rules/test_base_rule.py::TestBaseRule::test_base_rule_check_returns_list",
+        "tests/unit/rules/test_base_rule.py::TestBaseRule::test_base_rule_has_name",
+        "tests/unit/rules/test_base_rule.py::TestBaseRule::test_base_rule_has_description",
+        "tests/unit/rules/test_base_rule.py::TestRuleInterface::test_rule_returns_error_format",
+        "tests/unit/rules/test_base_rule.py::TestRuleInterface::test_rule_handles_empty_text",
+        "tests/unit/rules/test_base_rule.py::TestRuleInterface::test_rule_handles_none_text",
+        "tests/unit/rules/test_comprehensive_rules.py::TestAllRulesExist::test_all_rules_have_check_method",
+        "tests/unit/rules/test_comprehensive_rules.py::TestRuleCategories::test_language_grammar_rules",
+        "tests/unit/rules/test_comprehensive_rules.py::TestRuleCategories::test_punctuation_rules",
+        "tests/unit/rules/test_comprehensive_rules.py::TestRuleCategories::test_word_usage_rules",
+        "tests/unit/rules/test_comprehensive_rules.py::TestRuleCategories::test_structure_format_rules",
+        "tests/unit/rules/test_comprehensive_rules.py::TestRuleInterface::test_base_rule_interface",
+        "tests/unit/rules/test_comprehensive_rules.py::TestRuleInterface::test_rule_check_returns_list",
+        "tests/unit/rules/test_comprehensive_rules.py::TestRuleInterface::test_rule_handles_empty_text",
+        "tests/unit/rules/test_comprehensive_rules.py::TestRuleIntegration::test_multiple_rules_on_same_text",
+        "tests/unit/rules/test_comprehensive_rules.py::TestRuleIntegration::test_rules_with_different_severities",
+        "tests/unit/rules/test_grammar_rules.py::TestPassiveVoiceAnalyzer::test_detect_passive_voice",
+        "tests/unit/rules/test_grammar_rules.py::TestPassiveVoiceAnalyzer::test_active_voice_no_issues",
+        "tests/unit/rules/test_grammar_rules.py::TestArticlesRule::test_missing_article",
+        "tests/unit/rules/test_grammar_rules.py::TestArticlesRule::test_correct_articles",
+        "tests/unit/rules/test_grammar_rules.py::TestVerbsRule::test_verb_agreement",
+        "tests/unit/rules/test_grammar_rules.py::TestVerbsRule::test_correct_verbs",
+        "tests/unit/rules/test_grammar_rules.py::TestPronounsRule::test_pronoun_usage",
+        "tests/unit/rules/test_grammar_rules.py::TestPronounsRule::test_ambiguous_pronouns",
+        "tests/unit/rules/test_punctuation_rules.py::TestCommasRule::test_comma_usage",
+        "tests/unit/rules/test_punctuation_rules.py::TestCommasRule::test_missing_comma",
+        "tests/unit/rules/test_punctuation_rules.py::TestPeriodsRule::test_period_usage",
+        "tests/unit/rules/test_punctuation_rules.py::TestPeriodsRule::test_missing_period",
+        "tests/unit/rules/test_punctuation_rules.py::TestQuotationMarksRule::test_quotation_marks",
+        "tests/unit/rules/test_punctuation_rules.py::TestQuotationMarksRule::test_mismatched_quotes",
+        "tests/unit/rules/test_punctuation_rules.py::TestHyphensRule::test_hyphen_usage",
+        "tests/unit/rules/test_punctuation_rules.py::TestHyphensRule::test_missing_hyphen",
+        "tests/unit/rules/test_style_rules.py::TestSentenceLengthRule::test_long_sentence_detected",
+        "tests/unit/rules/test_style_rules.py::TestSentenceLengthRule::test_short_sentences_ok",
+        "tests/unit/rules/test_style_rules.py::TestSecondPersonRule::test_detect_second_person",
+        "tests/unit/rules/test_style_rules.py::TestSecondPersonRule::test_third_person_preferred",
+        "tests/unit/rules/test_style_rules.py::TestHeadingsRule::test_heading_format",
+        "tests/unit/rules/test_style_rules.py::TestHeadingsRule::test_improper_heading_hierarchy",
+        "tests/unit/rules/test_style_rules.py::TestListsRule::test_list_format",
+        "tests/unit/rules/test_style_rules.py::TestListsRule::test_inconsistent_list_punctuation"
+      ],
+      "failures": [
+        {
+          "test_name": "tests/unit/rules/test_base_rule.py::TestBaseRule::test_base_rule_has_check_method",
+          "message": "tests/unit/rules/test_base_rule.py:16: in test_base_rule_has_check_method\n    rule = BaseRule()\n           ^^^^^^^^^^\nE   TypeError: Can't instantiate abstract class BaseRule without an implementation for abstract methods '_get_rule_type', 'analyze'",
+          "type": "AssertionError",
+          "traceback": "tests/unit/rules/test_base_rule.py:16: in test_base_rule_has_check_method\n    rule = BaseRule()\n           ^^^^^^^^^^\nE   TypeError: Can't instantiate abstract class BaseRule without an implementation for abstract methods '_get_rule_type', 'analyze'"
+        },
+        {
+          "test_name": "tests/unit/rules/test_base_rule.py::TestBaseRule::test_base_rule_check_returns_list",
+          "message": "tests/unit/rules/test_base_rule.py:21: in test_base_rule_check_returns_list\n    rule = BaseRule()\n           ^^^^^^^^^^\nE   TypeError: Can't instantiate abstract class BaseRule without an implementation for abstract methods '_get_rule_type', 'analyze'",
+          "type": "AssertionError",
+          "traceback": "tests/unit/rules/test_base_rule.py:21: in test_base_rule_check_returns_list\n    rule = BaseRule()\n           ^^^^^^^^^^\nE   TypeError: Can't instantiate abstract class BaseRule without an implementation for abstract methods '_get_rule_type', 'analyze'"
+        },
+        {
+          "test_name": "tests/unit/rules/test_base_rule.py::TestBaseRule::test_base_rule_has_name",
+          "message": "tests/unit/rules/test_base_rule.py:28: in test_base_rule_has_name\n    rule = BaseRule()\n           ^^^^^^^^^^\nE   TypeError: Can't instantiate abstract class BaseRule without an implementation for abstract methods '_get_rule_type', 'analyze'",
+          "type": "AssertionError",
+          "traceback": "tests/unit/rules/test_base_rule.py:28: in test_base_rule_has_name\n    rule = BaseRule()\n           ^^^^^^^^^^\nE   TypeError: Can't instantiate abstract class BaseRule without an implementation for abstract methods '_get_rule_type', 'analyze'"
+        },
+        {
+          "test_name": "tests/unit/rules/test_base_rule.py::TestBaseRule::test_base_rule_has_description",
+          "message": "tests/unit/rules/test_base_rule.py:33: in test_base_rule_has_description\n    rule = BaseRule()\n           ^^^^^^^^^^\nE   TypeError: Can't instantiate abstract class BaseRule without an implementation for abstract methods '_get_rule_type', 'analyze'",
+          "type": "AssertionError",
+          "traceback": "tests/unit/rules/test_base_rule.py:33: in test_base_rule_has_description\n    rule = BaseRule()\n           ^^^^^^^^^^\nE   TypeError: Can't instantiate abstract class BaseRule without an implementation for abstract methods '_get_rule_type', 'analyze'"
+        },
+        {
+          "test_name": "tests/unit/rules/test_base_rule.py::TestRuleInterface::test_rule_returns_error_format",
+          "message": "tests/unit/rules/test_base_rule.py:43: in test_rule_returns_error_format\n    rule = BaseRule()\n           ^^^^^^^^^^\nE   TypeError: Can't instantiate abstract class BaseRule without an implementation for abstract methods '_get_rule_type', 'analyze'",
+          "type": "AssertionError",
+          "traceback": "tests/unit/rules/test_base_rule.py:43: in test_rule_returns_error_format\n    rule = BaseRule()\n           ^^^^^^^^^^\nE   TypeError: Can't instantiate abstract class BaseRule without an implementation for abstract methods '_get_rule_type', 'analyze'"
+        },
+        {
+          "test_name": "tests/unit/rules/test_base_rule.py::TestRuleInterface::test_rule_handles_empty_text",
+          "message": "tests/unit/rules/test_base_rule.py:55: in test_rule_handles_empty_text\n    rule = BaseRule()\n           ^^^^^^^^^^\nE   TypeError: Can't instantiate abstract class BaseRule without an implementation for abstract methods '_get_rule_type', 'analyze'",
+          "type": "AssertionError",
+          "traceback": "tests/unit/rules/test_base_rule.py:55: in test_rule_handles_empty_text\n    rule = BaseRule()\n           ^^^^^^^^^^\nE   TypeError: Can't instantiate abstract class BaseRule without an implementation for abstract methods '_get_rule_type', 'analyze'"
+        },
+        {
+          "test_name": "tests/unit/rules/test_base_rule.py::TestRuleInterface::test_rule_handles_none_text",
+          "message": "tests/unit/rules/test_base_rule.py:63: in test_rule_handles_none_text\n    rule = BaseRule()\n           ^^^^^^^^^^\nE   TypeError: Can't instantiate abstract class BaseRule without an implementation for abstract methods '_get_rule_type', 'analyze'",
+          "type": "AssertionError",
+          "traceback": "tests/unit/rules/test_base_rule.py:63: in test_rule_handles_none_text\n    rule = BaseRule()\n           ^^^^^^^^^^\nE   TypeError: Can't instantiate abstract class BaseRule without an implementation for abstract methods '_get_rule_type', 'analyze'"
+        },
+        {
+          "test_name": "tests/unit/rules/test_comprehensive_rules.py::TestAllRulesExist::test_all_rules_have_check_method",
+          "message": "tests/unit/rules/test_comprehensive_rules.py:65: in test_all_rules_have_check_method\n    assert len(errors) == 0, f\"Rules missing check():\\n\" + \"\\n\".join(errors)\nE   AssertionError: Rules missing check():\nE     rules/ambiguity_rule.py: AmbiguityRule missing check() method\nE     rules/base_rule.py: BaseRule missing check() method\nE     rules/second_person_rule.py: SecondPersonRule missing check() method\nE     rules/sentence_length_rule.py: SentenceLengthRule missing check() method\nE     rules/audience_and_medium/conversational_style_rule.py: ConversationalStyleRule missing check() method\nE     rules/audience_and_medium/llm_consumability_rule.py: LLMConsumabilityRule missing check() method\nE     rules/audience_and_medium/base_audience_rule.py: BaseAudienceRule missing check() method\nE     rules/audience_and_medium/global_audiences_rule.py: GlobalAudiencesRule missing check() method\nE     rules/audience_and_medium/tone_rule.py: ToneRule missing check() method\nE     rules/language_and_grammar/base_language_rule.py: BaseLanguageRule missing check() method\nE     rules/language_and_grammar/conjunctions_rule.py: ConjunctionsRule missing check() method\nE     rules/language_and_grammar/prepositions_rule.py: PrepositionsRule missing check() method\nE     rules/language_and_grammar/pronouns_rule.py: PronounsRule missing check() method\nE     rules/language_and_grammar/spelling_rule.py: SpellingRule missing check() method\nE     rules/language_and_grammar/terminology_rule.py: TerminologyRule missing check() method\nE     rules/language_and_grammar/abbreviations_rule.py: AbbreviationsRule missing check() method\nE     rules/language_and_grammar/adverbs_only_rule.py: AdverbsOnlyRule missing check() method\nE     rules/language_and_grammar/anthropomorphism_rule.py: AnthropomorphismRule missing check() method\nE     rules/language_and_grammar/articles_rule.py: ArticlesRule missing check() method\nE     rules/language_and_grammar/capitalization_rule.py: CapitalizationRule missing check() method\nE   assert 20 == 0\nE    +  where 20 = len(['rules/ambiguity_rule.py: AmbiguityRule missing check() method', 'rules/base_rule.py: BaseRule missing check() method', 'rules/second_person_rule.py: SecondPersonRule missing check() method', 'rules/sentence_length_rule.py: SentenceLengthRule missing check() method', 'rules/audience_and_medium/conversational_style_rule.py: ConversationalStyleRule missing check() method', 'rules/audience_and_medium/llm_consumability_rule.py: LLMConsumabilityRule missing check() method', ...])",
+          "type": "AssertionError",
+          "traceback": "tests/unit/rules/test_comprehensive_rules.py:65: in test_all_rules_have_check_method\n    assert len(errors) == 0, f\"Rules missing check():\\n\" + \"\\n\".join(errors)\nE   AssertionError: Rules missing check():\nE     rules/ambiguity_rule.py: AmbiguityRule missing check() method\nE     rules/base_rule.py: BaseRule missing check() method\nE     rules/second_person_rule.py: SecondPersonRule missing check() method\nE     rules/sentence_length_rule.py: SentenceLengthRule missing check() method\nE     rules/audience_and_medium/conversational_style_rule.py: ConversationalStyleRule missing check() method\nE     rules/audience_and_medium/llm_consumability_rule.py: LLMConsumabilityRule missing check() method\nE     rules/audience_and_medium/base_audience_rule.py: BaseAudienceRule missing check() method\nE     rules/audience_and_medium/global_audiences_rule.py: GlobalAudiencesRule missing check() method\nE     rules/audience_and_medium/tone_rule.py: ToneRule missing check() method\nE     rules/language_and_grammar/base_language_rule.py: BaseLanguageRule missing check() method\nE     rules/language_and_grammar/conjunctions_rule.py: ConjunctionsRule missing check() method\nE     rules/language_and_grammar/prepositions_rule.py: PrepositionsRule missing check() method\nE     rules/language_and_grammar/pronouns_rule.py: PronounsRule missing check() method\nE     rules/language_and_grammar/spelling_rule.py: SpellingRule missing check() method\nE     rules/language_and_grammar/terminology_rule.py: TerminologyRule missing check() method\nE     rules/language_and_grammar/abbreviations_rule.py: AbbreviationsRule missing check() method\nE     rules/language_and_grammar/adverbs_only_rule.py: AdverbsOnlyRule missing check() method\nE     rules/language_and_grammar/anthropomorphism_rule.py: AnthropomorphismRule missing check() method\nE     rules/language_and_grammar/articles_rule.py: ArticlesRule missing check() method\nE     rules/language_and_grammar/capitalization_rule.py: CapitalizationRule missing check() method\nE   assert 20 == 0\nE    +  where 20 = len(['rules/ambiguity_rule.py: AmbiguityRule missing check() method', 'rules/base_rule.py: BaseRule missing check() method', 'rules/second_person_rule.py: SecondPersonRule missing check() method', 'rules/sentence_length_rule.py: SentenceLengthRule missing check() method', 'rules/audience_and_medium/conversational_style_rule.py: ConversationalStyleRule missing check() method', 'rules/audience_and_medium/llm_consumability_rule.py: LLMConsumabilityRule missing check() method', ...])"
+        },
+        {
+          "test_name": "tests/unit/rules/test_comprehensive_rules.py::TestRuleCategories::test_language_grammar_rules",
+          "message": "tests/unit/rules/test_comprehensive_rules.py:80: in test_language_grammar_rules\n    issues = analyzer.check(passive_text)\n             ^^^^^^^^^^^^^^\nE   AttributeError: 'PassiveVoiceAnalyzer' object has no attribute 'check'",
+          "type": "AssertionError",
+          "traceback": "tests/unit/rules/test_comprehensive_rules.py:80: in test_language_grammar_rules\n    issues = analyzer.check(passive_text)\n             ^^^^^^^^^^^^^^\nE   AttributeError: 'PassiveVoiceAnalyzer' object has no attribute 'check'"
+        },
+        {
+          "test_name": "tests/unit/rules/test_comprehensive_rules.py::TestRuleCategories::test_punctuation_rules",
+          "message": "tests/unit/rules/test_comprehensive_rules.py:90: in test_punctuation_rules\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'CommasRule' object has no attribute 'check'",
+          "type": "AssertionError",
+          "traceback": "tests/unit/rules/test_comprehensive_rules.py:90: in test_punctuation_rules\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'CommasRule' object has no attribute 'check'"
+        },
+        {
+          "test_name": "tests/unit/rules/test_comprehensive_rules.py::TestRuleCategories::test_word_usage_rules",
+          "message": "tests/unit/rules/test_comprehensive_rules.py:99: in test_word_usage_rules\n    assert len(rule_files) > 0\nE   assert 0 > 0\nE    +  where 0 = len([])",
+          "type": "AssertionError",
+          "traceback": "tests/unit/rules/test_comprehensive_rules.py:99: in test_word_usage_rules\n    assert len(rule_files) > 0\nE   assert 0 > 0\nE    +  where 0 = len([])"
+        },
+        {
+          "test_name": "tests/unit/rules/test_comprehensive_rules.py::TestRuleCategories::test_structure_format_rules",
+          "message": "tests/unit/rules/test_comprehensive_rules.py:108: in test_structure_format_rules\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'HeadingsRule' object has no attribute 'check'",
+          "type": "AssertionError",
+          "traceback": "tests/unit/rules/test_comprehensive_rules.py:108: in test_structure_format_rules\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'HeadingsRule' object has no attribute 'check'"
+        },
+        {
+          "test_name": "tests/unit/rules/test_comprehensive_rules.py::TestRuleInterface::test_base_rule_interface",
+          "message": "tests/unit/rules/test_comprehensive_rules.py:132: in test_base_rule_interface\n    rule = BaseRule()\n           ^^^^^^^^^^\nE   TypeError: Can't instantiate abstract class BaseRule without an implementation for abstract methods '_get_rule_type', 'analyze'",
+          "type": "AssertionError",
+          "traceback": "tests/unit/rules/test_comprehensive_rules.py:132: in test_base_rule_interface\n    rule = BaseRule()\n           ^^^^^^^^^^\nE   TypeError: Can't instantiate abstract class BaseRule without an implementation for abstract methods '_get_rule_type', 'analyze'"
+        },
+        {
+          "test_name": "tests/unit/rules/test_comprehensive_rules.py::TestRuleInterface::test_rule_check_returns_list",
+          "message": "tests/unit/rules/test_comprehensive_rules.py:139: in test_rule_check_returns_list\n    rule = BaseRule()\n           ^^^^^^^^^^\nE   TypeError: Can't instantiate abstract class BaseRule without an implementation for abstract methods '_get_rule_type', 'analyze'",
+          "type": "AssertionError",
+          "traceback": "tests/unit/rules/test_comprehensive_rules.py:139: in test_rule_check_returns_list\n    rule = BaseRule()\n           ^^^^^^^^^^\nE   TypeError: Can't instantiate abstract class BaseRule without an implementation for abstract methods '_get_rule_type', 'analyze'"
+        },
+        {
+          "test_name": "tests/unit/rules/test_comprehensive_rules.py::TestRuleInterface::test_rule_handles_empty_text",
+          "message": "tests/unit/rules/test_comprehensive_rules.py:146: in test_rule_handles_empty_text\n    rule = BaseRule()\n           ^^^^^^^^^^\nE   TypeError: Can't instantiate abstract class BaseRule without an implementation for abstract methods '_get_rule_type', 'analyze'",
+          "type": "AssertionError",
+          "traceback": "tests/unit/rules/test_comprehensive_rules.py:146: in test_rule_handles_empty_text\n    rule = BaseRule()\n           ^^^^^^^^^^\nE   TypeError: Can't instantiate abstract class BaseRule without an implementation for abstract methods '_get_rule_type', 'analyze'"
+        },
+        {
+          "test_name": "tests/unit/rules/test_comprehensive_rules.py::TestRuleIntegration::test_multiple_rules_on_same_text",
+          "message": "tests/unit/rules/test_comprehensive_rules.py:167: in test_multiple_rules_on_same_text\n    passive_issues = passive_analyzer.check(text)\n                     ^^^^^^^^^^^^^^^^^^^^^^\nE   AttributeError: 'PassiveVoiceAnalyzer' object has no attribute 'check'",
+          "type": "AssertionError",
+          "traceback": "tests/unit/rules/test_comprehensive_rules.py:167: in test_multiple_rules_on_same_text\n    passive_issues = passive_analyzer.check(text)\n                     ^^^^^^^^^^^^^^^^^^^^^^\nE   AttributeError: 'PassiveVoiceAnalyzer' object has no attribute 'check'"
+        },
+        {
+          "test_name": "tests/unit/rules/test_comprehensive_rules.py::TestRuleIntegration::test_rules_with_different_severities",
+          "message": "tests/unit/rules/test_comprehensive_rules.py:184: in test_rules_with_different_severities\n    issues = analyzer.check(text)\n             ^^^^^^^^^^^^^^\nE   AttributeError: 'PassiveVoiceAnalyzer' object has no attribute 'check'",
+          "type": "AssertionError",
+          "traceback": "tests/unit/rules/test_comprehensive_rules.py:184: in test_rules_with_different_severities\n    issues = analyzer.check(text)\n             ^^^^^^^^^^^^^^\nE   AttributeError: 'PassiveVoiceAnalyzer' object has no attribute 'check'"
+        },
+        {
+          "test_name": "tests/unit/rules/test_grammar_rules.py::TestPassiveVoiceAnalyzer::test_detect_passive_voice",
+          "message": "tests/unit/rules/test_grammar_rules.py:23: in test_detect_passive_voice\n    issues = analyzer.check(text)\n             ^^^^^^^^^^^^^^\nE   AttributeError: 'PassiveVoiceAnalyzer' object has no attribute 'check'",
+          "type": "AssertionError",
+          "traceback": "tests/unit/rules/test_grammar_rules.py:23: in test_detect_passive_voice\n    issues = analyzer.check(text)\n             ^^^^^^^^^^^^^^\nE   AttributeError: 'PassiveVoiceAnalyzer' object has no attribute 'check'"
+        },
+        {
+          "test_name": "tests/unit/rules/test_grammar_rules.py::TestPassiveVoiceAnalyzer::test_active_voice_no_issues",
+          "message": "tests/unit/rules/test_grammar_rules.py:31: in test_active_voice_no_issues\n    issues = analyzer.check(text)\n             ^^^^^^^^^^^^^^\nE   AttributeError: 'PassiveVoiceAnalyzer' object has no attribute 'check'",
+          "type": "AssertionError",
+          "traceback": "tests/unit/rules/test_grammar_rules.py:31: in test_active_voice_no_issues\n    issues = analyzer.check(text)\n             ^^^^^^^^^^^^^^\nE   AttributeError: 'PassiveVoiceAnalyzer' object has no attribute 'check'"
+        },
+        {
+          "test_name": "tests/unit/rules/test_grammar_rules.py::TestArticlesRule::test_missing_article",
+          "message": "tests/unit/rules/test_grammar_rules.py:44: in test_missing_article\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'ArticlesRule' object has no attribute 'check'",
+          "type": "AssertionError",
+          "traceback": "tests/unit/rules/test_grammar_rules.py:44: in test_missing_article\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'ArticlesRule' object has no attribute 'check'"
+        },
+        {
+          "test_name": "tests/unit/rules/test_grammar_rules.py::TestArticlesRule::test_correct_articles",
+          "message": "tests/unit/rules/test_grammar_rules.py:53: in test_correct_articles\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'ArticlesRule' object has no attribute 'check'",
+          "type": "AssertionError",
+          "traceback": "tests/unit/rules/test_grammar_rules.py:53: in test_correct_articles\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'ArticlesRule' object has no attribute 'check'"
+        },
+        {
+          "test_name": "tests/unit/rules/test_grammar_rules.py::TestVerbsRule::test_verb_agreement",
+          "message": "tests/unit/rules/test_grammar_rules.py:66: in test_verb_agreement\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'VerbsRule' object has no attribute 'check'",
+          "type": "AssertionError",
+          "traceback": "tests/unit/rules/test_grammar_rules.py:66: in test_verb_agreement\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'VerbsRule' object has no attribute 'check'"
+        },
+        {
+          "test_name": "tests/unit/rules/test_grammar_rules.py::TestVerbsRule::test_correct_verbs",
+          "message": "tests/unit/rules/test_grammar_rules.py:75: in test_correct_verbs\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'VerbsRule' object has no attribute 'check'",
+          "type": "AssertionError",
+          "traceback": "tests/unit/rules/test_grammar_rules.py:75: in test_correct_verbs\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'VerbsRule' object has no attribute 'check'"
+        },
+        {
+          "test_name": "tests/unit/rules/test_grammar_rules.py::TestPronounsRule::test_pronoun_usage",
+          "message": "tests/unit/rules/test_grammar_rules.py:89: in test_pronoun_usage\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'PronounsRule' object has no attribute 'check'",
+          "type": "AssertionError",
+          "traceback": "tests/unit/rules/test_grammar_rules.py:89: in test_pronoun_usage\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'PronounsRule' object has no attribute 'check'"
+        },
+        {
+          "test_name": "tests/unit/rules/test_grammar_rules.py::TestPronounsRule::test_ambiguous_pronouns",
+          "message": "tests/unit/rules/test_grammar_rules.py:97: in test_ambiguous_pronouns\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'PronounsRule' object has no attribute 'check'",
+          "type": "AssertionError",
+          "traceback": "tests/unit/rules/test_grammar_rules.py:97: in test_ambiguous_pronouns\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'PronounsRule' object has no attribute 'check'"
+        },
+        {
+          "test_name": "tests/unit/rules/test_punctuation_rules.py::TestCommasRule::test_comma_usage",
+          "message": "tests/unit/rules/test_punctuation_rules.py:23: in test_comma_usage\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'CommasRule' object has no attribute 'check'",
+          "type": "AssertionError",
+          "traceback": "tests/unit/rules/test_punctuation_rules.py:23: in test_comma_usage\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'CommasRule' object has no attribute 'check'"
+        },
+        {
+          "test_name": "tests/unit/rules/test_punctuation_rules.py::TestCommasRule::test_missing_comma",
+          "message": "tests/unit/rules/test_punctuation_rules.py:31: in test_missing_comma\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'CommasRule' object has no attribute 'check'",
+          "type": "AssertionError",
+          "traceback": "tests/unit/rules/test_punctuation_rules.py:31: in test_missing_comma\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'CommasRule' object has no attribute 'check'"
+        },
+        {
+          "test_name": "tests/unit/rules/test_punctuation_rules.py::TestPeriodsRule::test_period_usage",
+          "message": "tests/unit/rules/test_punctuation_rules.py:45: in test_period_usage\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'PeriodsRule' object has no attribute 'check'",
+          "type": "AssertionError",
+          "traceback": "tests/unit/rules/test_punctuation_rules.py:45: in test_period_usage\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'PeriodsRule' object has no attribute 'check'"
+        },
+        {
+          "test_name": "tests/unit/rules/test_punctuation_rules.py::TestPeriodsRule::test_missing_period",
+          "message": "tests/unit/rules/test_punctuation_rules.py:53: in test_missing_period\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'PeriodsRule' object has no attribute 'check'",
+          "type": "AssertionError",
+          "traceback": "tests/unit/rules/test_punctuation_rules.py:53: in test_missing_period\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'PeriodsRule' object has no attribute 'check'"
+        },
+        {
+          "test_name": "tests/unit/rules/test_punctuation_rules.py::TestQuotationMarksRule::test_quotation_marks",
+          "message": "tests/unit/rules/test_punctuation_rules.py:67: in test_quotation_marks\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'QuotationMarksRule' object has no attribute 'check'",
+          "type": "AssertionError",
+          "traceback": "tests/unit/rules/test_punctuation_rules.py:67: in test_quotation_marks\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'QuotationMarksRule' object has no attribute 'check'"
+        },
+        {
+          "test_name": "tests/unit/rules/test_punctuation_rules.py::TestQuotationMarksRule::test_mismatched_quotes",
+          "message": "tests/unit/rules/test_punctuation_rules.py:75: in test_mismatched_quotes\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'QuotationMarksRule' object has no attribute 'check'",
+          "type": "AssertionError",
+          "traceback": "tests/unit/rules/test_punctuation_rules.py:75: in test_mismatched_quotes\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'QuotationMarksRule' object has no attribute 'check'"
+        },
+        {
+          "test_name": "tests/unit/rules/test_punctuation_rules.py::TestHyphensRule::test_hyphen_usage",
+          "message": "tests/unit/rules/test_punctuation_rules.py:89: in test_hyphen_usage\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'HyphensRule' object has no attribute 'check'",
+          "type": "AssertionError",
+          "traceback": "tests/unit/rules/test_punctuation_rules.py:89: in test_hyphen_usage\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'HyphensRule' object has no attribute 'check'"
+        },
+        {
+          "test_name": "tests/unit/rules/test_punctuation_rules.py::TestHyphensRule::test_missing_hyphen",
+          "message": "tests/unit/rules/test_punctuation_rules.py:97: in test_missing_hyphen\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'HyphensRule' object has no attribute 'check'",
+          "type": "AssertionError",
+          "traceback": "tests/unit/rules/test_punctuation_rules.py:97: in test_missing_hyphen\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'HyphensRule' object has no attribute 'check'"
+        },
+        {
+          "test_name": "tests/unit/rules/test_style_rules.py::TestSentenceLengthRule::test_long_sentence_detected",
+          "message": "tests/unit/rules/test_style_rules.py:25: in test_long_sentence_detected\n    issues = rule.check(long_text)\n             ^^^^^^^^^^\nE   AttributeError: 'SentenceLengthRule' object has no attribute 'check'",
+          "type": "AssertionError",
+          "traceback": "tests/unit/rules/test_style_rules.py:25: in test_long_sentence_detected\n    issues = rule.check(long_text)\n             ^^^^^^^^^^\nE   AttributeError: 'SentenceLengthRule' object has no attribute 'check'"
+        },
+        {
+          "test_name": "tests/unit/rules/test_style_rules.py::TestSentenceLengthRule::test_short_sentences_ok",
+          "message": "tests/unit/rules/test_style_rules.py:33: in test_short_sentences_ok\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'SentenceLengthRule' object has no attribute 'check'",
+          "type": "AssertionError",
+          "traceback": "tests/unit/rules/test_style_rules.py:33: in test_short_sentences_ok\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'SentenceLengthRule' object has no attribute 'check'"
+        },
+        {
+          "test_name": "tests/unit/rules/test_style_rules.py::TestSecondPersonRule::test_detect_second_person",
+          "message": "tests/unit/rules/test_style_rules.py:46: in test_detect_second_person\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'SecondPersonRule' object has no attribute 'check'",
+          "type": "AssertionError",
+          "traceback": "tests/unit/rules/test_style_rules.py:46: in test_detect_second_person\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'SecondPersonRule' object has no attribute 'check'"
+        },
+        {
+          "test_name": "tests/unit/rules/test_style_rules.py::TestSecondPersonRule::test_third_person_preferred",
+          "message": "tests/unit/rules/test_style_rules.py:55: in test_third_person_preferred\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'SecondPersonRule' object has no attribute 'check'",
+          "type": "AssertionError",
+          "traceback": "tests/unit/rules/test_style_rules.py:55: in test_third_person_preferred\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'SecondPersonRule' object has no attribute 'check'"
+        },
+        {
+          "test_name": "tests/unit/rules/test_style_rules.py::TestHeadingsRule::test_heading_format",
+          "message": "tests/unit/rules/test_style_rules.py:68: in test_heading_format\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'HeadingsRule' object has no attribute 'check'",
+          "type": "AssertionError",
+          "traceback": "tests/unit/rules/test_style_rules.py:68: in test_heading_format\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'HeadingsRule' object has no attribute 'check'"
+        },
+        {
+          "test_name": "tests/unit/rules/test_style_rules.py::TestHeadingsRule::test_improper_heading_hierarchy",
+          "message": "tests/unit/rules/test_style_rules.py:76: in test_improper_heading_hierarchy\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'HeadingsRule' object has no attribute 'check'",
+          "type": "AssertionError",
+          "traceback": "tests/unit/rules/test_style_rules.py:76: in test_improper_heading_hierarchy\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'HeadingsRule' object has no attribute 'check'"
+        },
+        {
+          "test_name": "tests/unit/rules/test_style_rules.py::TestListsRule::test_list_format",
+          "message": "tests/unit/rules/test_style_rules.py:95: in test_list_format\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'ListsRule' object has no attribute 'check'",
+          "type": "AssertionError",
+          "traceback": "tests/unit/rules/test_style_rules.py:95: in test_list_format\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'ListsRule' object has no attribute 'check'"
+        },
+        {
+          "test_name": "tests/unit/rules/test_style_rules.py::TestListsRule::test_inconsistent_list_punctuation",
+          "message": "tests/unit/rules/test_style_rules.py:107: in test_inconsistent_list_punctuation\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'ListsRule' object has no attribute 'check'",
+          "type": "AssertionError",
+          "traceback": "tests/unit/rules/test_style_rules.py:107: in test_inconsistent_list_punctuation\n    issues = rule.check(text)\n             ^^^^^^^^^^\nE   AttributeError: 'ListsRule' object has no attribute 'check'"
+        }
+      ],
+      "test_durations": {
+        "tests/unit/rules/test_base_rule.py::TestBaseRule::test_base_rule_has_check_method": 0.0,
+        "tests/unit/rules/test_base_rule.py::TestBaseRule::test_base_rule_check_returns_list": 0.0,
+        "tests/unit/rules/test_base_rule.py::TestBaseRule::test_base_rule_has_name": 0.0,
+        "tests/unit/rules/test_base_rule.py::TestBaseRule::test_base_rule_has_description": 0.0,
+        "tests/unit/rules/test_base_rule.py::TestRuleInterface::test_rule_returns_error_format": 0.0,
+        "tests/unit/rules/test_base_rule.py::TestRuleInterface::test_rule_handles_empty_text": 0.0,
+        "tests/unit/rules/test_base_rule.py::TestRuleInterface::test_rule_handles_none_text": 0.0,
+        "tests/unit/rules/test_comprehensive_rules.py::TestAllRulesExist::test_all_rules_importable": 0.0,
+        "tests/unit/rules/test_comprehensive_rules.py::TestAllRulesExist::test_all_rules_have_check_method": 0.0,
+        "tests/unit/rules/test_comprehensive_rules.py::TestRuleCategories::test_language_grammar_rules": 0.0,
+        "tests/unit/rules/test_comprehensive_rules.py::TestRuleCategories::test_punctuation_rules": 0.0,
+        "tests/unit/rules/test_comprehensive_rules.py::TestRuleCategories::test_word_usage_rules": 0.0,
+        "tests/unit/rules/test_comprehensive_rules.py::TestRuleCategories::test_structure_format_rules": 0.0,
+        "tests/unit/rules/test_comprehensive_rules.py::TestRuleCategories::test_numbers_measurement_rules": 0.0,
+        "tests/unit/rules/test_comprehensive_rules.py::TestRuleCategories::test_technical_elements_rules": 0.0,
+        "tests/unit/rules/test_comprehensive_rules.py::TestRuleInterface::test_base_rule_interface": 0.0,
+        "tests/unit/rules/test_comprehensive_rules.py::TestRuleInterface::test_rule_check_returns_list": 0.0,
+        "tests/unit/rules/test_comprehensive_rules.py::TestRuleInterface::test_rule_handles_empty_text": 0.0,
+        "tests/unit/rules/test_comprehensive_rules.py::TestRuleIntegration::test_multiple_rules_on_same_text": 0.0,
+        "tests/unit/rules/test_comprehensive_rules.py::TestRuleIntegration::test_rules_with_different_severities": 0.0,
+        "tests/unit/rules/test_grammar_rules.py::TestPassiveVoiceAnalyzer::test_detect_passive_voice": 0.0,
+        "tests/unit/rules/test_grammar_rules.py::TestPassiveVoiceAnalyzer::test_active_voice_no_issues": 0.0,
+        "tests/unit/rules/test_grammar_rules.py::TestArticlesRule::test_missing_article": 0.0,
+        "tests/unit/rules/test_grammar_rules.py::TestArticlesRule::test_correct_articles": 0.0,
+        "tests/unit/rules/test_grammar_rules.py::TestVerbsRule::test_verb_agreement": 0.0,
+        "tests/unit/rules/test_grammar_rules.py::TestVerbsRule::test_correct_verbs": 0.0,
+        "tests/unit/rules/test_grammar_rules.py::TestPronounsRule::test_pronoun_usage": 0.0,
+        "tests/unit/rules/test_grammar_rules.py::TestPronounsRule::test_ambiguous_pronouns": 0.0,
+        "tests/unit/rules/test_punctuation_rules.py::TestCommasRule::test_comma_usage": 0.0,
+        "tests/unit/rules/test_punctuation_rules.py::TestCommasRule::test_missing_comma": 0.0,
+        "tests/unit/rules/test_punctuation_rules.py::TestPeriodsRule::test_period_usage": 0.0,
+        "tests/unit/rules/test_punctuation_rules.py::TestPeriodsRule::test_missing_period": 0.0,
+        "tests/unit/rules/test_punctuation_rules.py::TestQuotationMarksRule::test_quotation_marks": 0.0,
+        "tests/unit/rules/test_punctuation_rules.py::TestQuotationMarksRule::test_mismatched_quotes": 0.0,
+        "tests/unit/rules/test_punctuation_rules.py::TestHyphensRule::test_hyphen_usage": 0.0,
+        "tests/unit/rules/test_punctuation_rules.py::TestHyphensRule::test_missing_hyphen": 0.0,
+        "tests/unit/rules/test_style_rules.py::TestSentenceLengthRule::test_long_sentence_detected": 0.0,
+        "tests/unit/rules/test_style_rules.py::TestSentenceLengthRule::test_short_sentences_ok": 0.0,
+        "tests/unit/rules/test_style_rules.py::TestSecondPersonRule::test_detect_second_person": 0.0,
+        "tests/unit/rules/test_style_rules.py::TestSecondPersonRule::test_third_person_preferred": 0.0,
+        "tests/unit/rules/test_style_rules.py::TestHeadingsRule::test_heading_format": 0.0,
+        "tests/unit/rules/test_style_rules.py::TestHeadingsRule::test_improper_heading_hierarchy": 0.0,
+        "tests/unit/rules/test_style_rules.py::TestListsRule::test_list_format": 0.0,
+        "tests/unit/rules/test_style_rules.py::TestListsRule::test_inconsistent_list_punctuation": 0.0
+      },
+      "exit_code": 4,
+      "stdout": "\u26a0\ufe0f  Warning: Could not import main app (No module named 'llama_stack_client')\n\u26a0\ufe0f  Creating mock app for testing. Some fixtures may have limited functionality.\n",
+      "stderr": "ERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --cov=. --cov-report=json --cov-report=html:testing_agent/coverage/unit -n auto --timeout=300\n  inifile: /home/gtrivedi/Documents/GitLab/content-editorial-assiatant/pytest.ini\n  rootdir: /home/gtrivedi/Documents/GitLab/content-editorial-assiatant\n\n"
+    },
+    "integration": {
+      "total": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "duration": 0.0,
+      "tests": [],
+      "passed_tests": [],
+      "failed_tests": [],
+      "failures": [],
+      "test_durations": {},
+      "exit_code": 4,
+      "stdout": "\u26a0\ufe0f  Warning: Could not import main app (No module named 'llama_stack_client')\n\u26a0\ufe0f  Creating mock app for testing. Some fixtures may have limited functionality.\n",
+      "stderr": "ERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --cov=. --cov-report=json --cov-report=html:testing_agent/coverage/integration -n auto --timeout=300\n  inifile: /home/gtrivedi/Documents/GitLab/content-editorial-assiatant/pytest.ini\n  rootdir: /home/gtrivedi/Documents/GitLab/content-editorial-assiatant\n\n"
+    },
+    "api": {
+      "total": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "duration": 0.0,
+      "tests": [],
+      "passed_tests": [],
+      "failed_tests": [],
+      "failures": [],
+      "test_durations": {},
+      "exit_code": 4,
+      "stdout": "\u26a0\ufe0f  Warning: Could not import main app (No module named 'llama_stack_client')\n\u26a0\ufe0f  Creating mock app for testing. Some fixtures may have limited functionality.\n",
+      "stderr": "ERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --cov=. --cov-report=json --cov-report=html:testing_agent/coverage/api -n auto --timeout=300\n  inifile: /home/gtrivedi/Documents/GitLab/content-editorial-assiatant/pytest.ini\n  rootdir: /home/gtrivedi/Documents/GitLab/content-editorial-assiatant\n\n"
+    },
+    "database": {
+      "total": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "duration": 0.0,
+      "tests": [],
+      "passed_tests": [],
+      "failed_tests": [],
+      "failures": [],
+      "test_durations": {},
+      "exit_code": 4,
+      "stdout": "\u26a0\ufe0f  Warning: Could not import main app (No module named 'llama_stack_client')\n\u26a0\ufe0f  Creating mock app for testing. Some fixtures may have limited functionality.\n",
+      "stderr": "ERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --cov=. --cov-report=json --cov-report=html:testing_agent/coverage/database -n auto --timeout=300\n  inifile: /home/gtrivedi/Documents/GitLab/content-editorial-assiatant/pytest.ini\n  rootdir: /home/gtrivedi/Documents/GitLab/content-editorial-assiatant\n\n"
+    },
+    "frontend": {
+      "total": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "duration": 0.0,
+      "tests": [],
+      "passed_tests": [],
+      "failed_tests": [],
+      "failures": [],
+      "test_durations": {},
+      "exit_code": 4,
+      "stdout": "\u26a0\ufe0f  Warning: Could not import main app (No module named 'llama_stack_client')\n\u26a0\ufe0f  Creating mock app for testing. Some fixtures may have limited functionality.\n",
+      "stderr": "ERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --cov=. --cov-report=json --cov-report=html:testing_agent/coverage/frontend -n auto --timeout=300\n  inifile: /home/gtrivedi/Documents/GitLab/content-editorial-assiatant/pytest.ini\n  rootdir: /home/gtrivedi/Documents/GitLab/content-editorial-assiatant\n\n"
+    },
+    "ui": {
+      "total": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "duration": 0.0,
+      "tests": [],
+      "passed_tests": [],
+      "failed_tests": [],
+      "failures": [],
+      "test_durations": {},
+      "exit_code": 4,
+      "stdout": "\u26a0\ufe0f  Warning: Could not import main app (No module named 'llama_stack_client')\n\u26a0\ufe0f  Creating mock app for testing. Some fixtures may have limited functionality.\n",
+      "stderr": "ImportError while loading conftest '/home/gtrivedi/Documents/GitLab/content-editorial-assiatant/tests/ui/conftest.py'.\ntests/ui/conftest.py:6: in <module>\n    from playwright.sync_api import sync_playwright, Browser, BrowserContext, Page\nE   ModuleNotFoundError: No module named 'playwright'\n"
+    },
+    "websocket": {
+      "total": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "duration": 0.0,
+      "tests": [],
+      "passed_tests": [],
+      "failed_tests": [],
+      "failures": [],
+      "test_durations": {},
+      "exit_code": 4,
+      "stdout": "\u26a0\ufe0f  Warning: Could not import main app (No module named 'llama_stack_client')\n\u26a0\ufe0f  Creating mock app for testing. Some fixtures may have limited functionality.\n",
+      "stderr": "ERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --cov=. --cov-report=json --cov-report=html:testing_agent/coverage/websocket -n auto --timeout=300\n  inifile: /home/gtrivedi/Documents/GitLab/content-editorial-assiatant/pytest.ini\n  rootdir: /home/gtrivedi/Documents/GitLab/content-editorial-assiatant\n\n"
+    },
+    "validation": {
+      "total": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "duration": 0.0,
+      "tests": [],
+      "passed_tests": [],
+      "failed_tests": [],
+      "failures": [],
+      "test_durations": {},
+      "exit_code": 4,
+      "stdout": "\u26a0\ufe0f  Warning: Could not import main app (No module named 'llama_stack_client')\n\u26a0\ufe0f  Creating mock app for testing. Some fixtures may have limited functionality.\n",
+      "stderr": "ERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --cov=. --cov-report=json --cov-report=html:testing_agent/coverage/validation -n auto --timeout=300\n  inifile: /home/gtrivedi/Documents/GitLab/content-editorial-assiatant/pytest.ini\n  rootdir: /home/gtrivedi/Documents/GitLab/content-editorial-assiatant\n\n"
+    },
+    "performance": {
+      "total": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "duration": 0.0,
+      "tests": [],
+      "passed_tests": [],
+      "failed_tests": [],
+      "failures": [],
+      "test_durations": {},
+      "exit_code": 4,
+      "stdout": "\u26a0\ufe0f  Warning: Could not import main app (No module named 'llama_stack_client')\n\u26a0\ufe0f  Creating mock app for testing. Some fixtures may have limited functionality.\n",
+      "stderr": "ERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --cov=. --cov-report=json --cov-report=html:testing_agent/coverage/performance -n auto --timeout=300\n  inifile: /home/gtrivedi/Documents/GitLab/content-editorial-assiatant/pytest.ini\n  rootdir: /home/gtrivedi/Documents/GitLab/content-editorial-assiatant\n\n"
+    }
+  },
+  "quality_metrics": {
+    "metrics_available": false,
+    "note": "Install validation module for ML quality metrics",
+    "false_positive_rate": null,
+    "user_feedback_trends": null
+  }
+}

@@ -1,8 +1,6 @@
 """
 Assembly Line Rewriter
-Orchestrates the rewriting process using world-class AI multi-shot prompting.
-Simplified architecture with single AI-based processing pipeline.
-Enhanced with intelligent instruction consolidation using validation system.
+Orchestrates the rewriting process using AI multi-shot prompting.
 """
 import logging
 import time
@@ -68,15 +66,22 @@ class AssemblyLineRewriter:
         else:
             logger.info("⚠️ Enhanced validation system not available - using fallback consolidation logic")
         
-        # Performance tracking for world-class AI processing
+        # Performance tracking for AI processing
         self.processing_stats = {
             'blocks_processed': 0,
             'errors_fixed': 0,
             'average_confidence': 0.0,
-            'total_processing_time_ms': 0
+            'total_processing_time_ms': 0,
+            # Error density heuristic metrics
+            'holistic_mode_triggered': 0,
+            'holistic_mode_successful': 0,
+            'high_density_sentences_detected': 0,
+            'max_density_encountered': 0.0,
+            'density_analysis_time_ms': 0,
+            'holistic_vs_surgical_ratio': 0.0
         }
         
-        logger.debug(f"⚡ World-class AI rewriter initialized with shared components")
+        logger.debug(f"⚡ AI rewriter initialized with shared components")
 
     def _sort_errors_by_priority(self, errors: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
@@ -125,8 +130,8 @@ class AssemblyLineRewriter:
 
     def apply_block_level_assembly_line_fixes(self, block_content: str, block_errors: List[Dict[str, Any]], block_type: str, session_id: str = None, block_id: str = None) -> Dict[str, Any]:
         """
-        Apply world-class AI fixes to a single structural block.
-        NOW WITH WORLD-CLASS REAL-TIME PROGRESS TRACKING!
+        Apply AI fixes to a single structural block.
+        NOW WITH REAL-TIME PROGRESS TRACKING!
         
         Args:
             block_content: The content of the specific block to rewrite
@@ -169,8 +174,8 @@ class AssemblyLineRewriter:
             import time
             start_time = time.time()
             
-            print(f"   🏭 Starting world-class assembly line processing")
-            logger.info(f"🏭 World-class assembly line processing: {block_content[:50]}... with {len(block_errors)} errors")
+            print(f"   🏭 Starting assembly line processing")
+            logger.info(f"🏭 assembly line processing: {block_content[:50]}... with {len(block_errors)} errors")
             
             # Lightweight progress tracking initialization
             original_session_id = session_id
@@ -204,7 +209,7 @@ class AssemblyLineRewriter:
             if progress_tracker:
                 progress_tracker.initialize_multi_pass_processing(applicable_stations, total_passes=1)
             
-            # Process through multi-pass assembly line with world-class AI and progress tracking
+            # Process through multi-pass assembly line with AI and progress tracking
             result = self._process_multipass_assembly_line(
                 block_content, 
                 block_errors, 
@@ -241,12 +246,12 @@ class AssemblyLineRewriter:
                     'metrics': progress_tracker.get_performance_metrics()
                 }
             
-            logger.info(f"🏆 World-class assembly line processing complete: {result.get('errors_fixed', 0)}/{len(block_errors)} errors fixed in {processing_time}ms")
+            logger.info(f"🏆 assembly line processing complete: {result.get('errors_fixed', 0)}/{len(block_errors)} errors fixed in {processing_time}ms")
             
             return result
             
         except Exception as e:
-            logger.error(f"World-class AI processing failed: {e}")
+            logger.error(f"AI processing failed: {e}")
             return {
                 'rewritten_text': block_content,
                 'improvements': [],
@@ -255,7 +260,7 @@ class AssemblyLineRewriter:
                 'applicable_stations': [],
                 'block_type': block_type,
                 'processing_method': 'ai_failed',
-                'error': f'World-class AI processing failed: {str(e)}'
+                'error': f'AI processing failed: {str(e)}'
             }
 
     def _get_errors_for_station(self, errors: List[Dict[str, Any]], station: str) -> List[Dict[str, Any]]:
@@ -575,15 +580,15 @@ class AssemblyLineRewriter:
                                        applicable_stations: List[str], block_type: str = "text",
                                        progress_tracker: WorldClassProgressTracker = None) -> Dict[str, Any]:
         """
-        Process text through multi-pass assembly line with world-class AI at each station.
-        NOW WITH WORLD-CLASS REAL-TIME PROGRESS TRACKING!
+        Process text through multi-pass assembly line with AI at each station.
+        NOW WITH REAL-TIME PROGRESS TRACKING!
         
         Args:
             text: Original text to process
             all_errors: All detected errors
             applicable_stations: List of stations to process (in priority order)
             block_type: Type of content block
-            progress_tracker: World-class progress tracking system
+            progress_tracker: progress tracking system
             
         Returns:
             Dictionary with final results and per-pass statistics
@@ -607,7 +612,7 @@ class AssemblyLineRewriter:
         
         # Start progress tracking only if enabled
         if progress_tracker:
-            progress_tracker.start_pass(1, "World-Class AI Processing")
+            progress_tracker.start_pass(1, "AI Processing")
         
         # Process through each station in priority order
         for i, station in enumerate(applicable_stations, 1):
@@ -630,7 +635,7 @@ class AssemblyLineRewriter:
             if progress_tracker:
                 progress_tracker.start_station(station, station_name, len(consolidated_errors))
             
-            # Apply world-class AI for this station's consolidated errors  
+            # Apply AI for this station's consolidated errors  
             station_result = self._apply_world_class_ai_fixes(current_text, consolidated_errors, block_type, station, progress_tracker)
             
             if station_result.get('rewritten_text') and station_result['rewritten_text'] != current_text:
@@ -737,7 +742,7 @@ class AssemblyLineRewriter:
         
         HYBRID APPROACH:
         - Surgical snippet processing for self-contained errors (70-80% faster)
-        - World-class multi-shot prompting for complex contextual errors
+        - multi-shot prompting for complex contextual errors
         - Intelligent error routing based on complexity and span information
         
         Args:
@@ -761,6 +766,41 @@ class AssemblyLineRewriter:
             }
         
         try:
+            # Analyze error density to determine processing strategy
+            density_start_time = time.time()
+            density_analysis = self._analyze_error_density(text, errors)
+            density_time_ms = int((time.time() - density_start_time) * 1000)
+            
+            # Update density analysis metrics
+            self.processing_stats['density_analysis_time_ms'] += density_time_ms
+            self.processing_stats['max_density_encountered'] = max(
+                self.processing_stats['max_density_encountered'],
+                density_analysis['max_density']
+            )
+            self.processing_stats['high_density_sentences_detected'] += len(density_analysis['high_density_sentences'])
+            
+            if density_analysis['needs_holistic_rewrite']:
+                # Use holistic rewriting for high-density error scenarios
+                self.processing_stats['holistic_mode_triggered'] += 1
+                
+                logger.info(f"🚨 HIGH DENSITY DETECTED: {density_analysis['max_density']:.2f} density, {len(density_analysis['high_density_sentences'])} problematic sentences")
+                logger.info(f"🔄 SWITCHING TO HOLISTIC MODE: {len(errors)} errors will be addressed comprehensively")
+                
+                holistic_result = self._apply_holistic_rewrite(text, errors, block_type, density_analysis, progress_tracker)
+                
+                # Track holistic mode success
+                if holistic_result.get('errors_fixed', 0) > 0:
+                    self.processing_stats['holistic_mode_successful'] += 1
+                    logger.info(f"✅ HOLISTIC SUCCESS: Fixed {holistic_result['errors_fixed']} errors with {holistic_result['confidence']:.2f} confidence")
+                else:
+                    logger.warning(f"⚠️ HOLISTIC SUBOPTIMAL: {holistic_result.get('processing_method', 'unknown')} - {holistic_result.get('error', 'no changes')}")
+                
+                return holistic_result
+            
+            # Continue with normal hybrid processing for manageable error density
+            logger.info(f"✅ NORMAL DENSITY: max {density_analysis['max_density']:.2f} - using hybrid surgical/contextual approach")
+            logger.debug(f"📊 Density analysis completed in {density_time_ms}ms - {density_analysis['total_sentences']} sentences analyzed")
+            
             # Route errors to surgical vs contextual processing
             surgical_errors = [e for e in errors if self.surgical_processor.is_surgical_candidate(e)]
             contextual_errors = [e for e in errors if not self.surgical_processor.is_surgical_candidate(e)]
@@ -800,7 +840,7 @@ class AssemblyLineRewriter:
                     )
                     prompt_type = f'station_focused_{station}'
                 elif complexity == 'high' or len(contextual_errors) > 3:
-                    # Comprehensive world-class prompting for complex cases
+                    # Comprehensive prompting for complex cases
                     prompt = self.prompt_generator.create_world_class_multi_shot_prompt(
                         current_text, contextual_errors, block_type
                     )
@@ -944,6 +984,372 @@ class AssemblyLineRewriter:
         """Get analysis of surgical processing coverage for given errors."""
         return self.surgical_processor.get_surgical_coverage_analysis(errors)
     
+    def _analyze_error_density(self, text: str, errors: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Analyze error density per sentence to determine if holistic rewriting is needed.
+        
+        Args:
+            text: Original text being analyzed
+            errors: List of errors to analyze
+            
+        Returns:
+            Dictionary with density analysis results
+        """
+        if not errors or not text or not text.strip():
+            return {
+                'max_density': 0,
+                'high_density_sentences': [],
+                'total_sentences': 0,
+                'needs_holistic_rewrite': False,
+                'analysis_method': 'empty_input'
+            }
+        
+        # Split text into sentences for density analysis
+        sentences = self._split_into_sentences(text)
+        sentence_errors = {}
+        
+        # Group errors by sentence
+        for error in errors:
+            span = error.get('span')
+            if not span or not isinstance(span, (list, tuple)) or len(span) < 2:
+                continue
+                
+            error_start = span[0]
+            sentence_index = self._find_sentence_for_span(error_start, text, sentences)
+            
+            if sentence_index not in sentence_errors:
+                sentence_errors[sentence_index] = []
+            sentence_errors[sentence_index].append(error)
+        
+        # Calculate density for each sentence
+        sentence_densities = {}
+        high_density_sentences = []
+        max_density = 0
+        
+        for sentence_idx, sentence_error_list in sentence_errors.items():
+            # Calculate weighted density (some error types are "heavier")
+            weighted_density = self._calculate_weighted_error_density(sentence_error_list, sentences[sentence_idx] if sentence_idx < len(sentences) else "")
+            sentence_densities[sentence_idx] = weighted_density
+            
+            if weighted_density > max_density:
+                max_density = weighted_density
+            
+            # Check if this sentence exceeds the density threshold
+            if self._exceeds_density_threshold(weighted_density, sentences[sentence_idx] if sentence_idx < len(sentences) else ""):
+                high_density_sentences.append({
+                    'sentence_index': sentence_idx,
+                    'sentence_text': sentences[sentence_idx] if sentence_idx < len(sentences) else "",
+                    'error_count': len(sentence_error_list),
+                    'weighted_density': weighted_density,
+                    'errors': sentence_error_list
+                })
+        
+        # Determine if holistic rewrite is needed
+        needs_holistic = len(high_density_sentences) > 0
+        
+        logger.info(f"🔍 Error density analysis: {len(sentences)} sentences, max density: {max_density:.2f}, {len(high_density_sentences)} high-density sentences")
+        
+        return {
+            'max_density': max_density,
+            'sentence_densities': sentence_densities,
+            'high_density_sentences': high_density_sentences,
+            'total_sentences': len(sentences),
+            'needs_holistic_rewrite': needs_holistic,
+            'analysis_method': 'weighted_sentence_density'
+        }
+    
+    def _split_into_sentences(self, text: str) -> List[str]:
+        """Split text into sentences for density analysis."""
+        import re
+        
+        if not text or not text.strip():
+            return []
+        
+        text = text.strip()
+        
+        # Simple sentence splitting (can be enhanced with spaCy later)
+        # First, let's identify sentence boundaries more carefully
+        sentence_pattern = r'([.!?]+)\s+'
+        parts = re.split(sentence_pattern, text)
+        
+        sentences = []
+        i = 0
+        while i < len(parts):
+            if i == len(parts) - 1:
+                # Last part - might be a sentence without following punctuation split
+                if parts[i].strip():
+                    sentences.append(parts[i].strip())
+                break
+            elif i + 1 < len(parts) and re.match(r'[.!?]+', parts[i + 1]):
+                # This part is followed by punctuation
+                sentence = parts[i].strip() + parts[i + 1]
+                if sentence.strip():
+                    sentences.append(sentence)
+                i += 2
+            else:
+                # This part is not followed by punctuation (shouldn't happen with our pattern)
+                if parts[i].strip():
+                    sentences.append(parts[i].strip())
+                i += 1
+        
+        # Handle case where text doesn't end with punctuation
+        if not re.search(r'[.!?]$', text) and sentences and not re.search(r'[.!?]$', sentences[-1]):
+            # Original text doesn't end with punctuation, so don't add it
+            pass
+        
+        return [s for s in sentences if s.strip()]
+    
+    def _find_sentence_for_span(self, span_start: int, text: str, sentences: List[str]) -> int:
+        """Find which sentence index a character span belongs to."""
+        if not sentences:
+            return 0
+            
+        current_pos = 0
+        for i, sentence in enumerate(sentences):
+            sentence_end = current_pos + len(sentence)
+            if span_start >= current_pos and span_start <= sentence_end:
+                return i
+            current_pos = sentence_end + 1  # Account for space between sentences
+        
+        # Fallback to last sentence if span is beyond text
+        return max(0, len(sentences) - 1)
+    
+    def _calculate_weighted_error_density(self, errors: List[Dict[str, Any]], sentence: str) -> float:
+        """
+        Calculate weighted error density considering error type complexity.
+        
+        Args:
+            errors: List of errors in this sentence
+            sentence: The sentence text for length consideration
+            
+        Returns:
+            Weighted density score
+        """
+        if not errors:
+            return 0.0
+        
+        # Error type weights - some errors are more complex than others
+        error_weights = {
+            # High complexity errors (count as 2+ errors each)
+            'ambiguity': 2.0,
+            'passive_voice': 1.8,
+            'sentence_length': 1.5,
+            'pronouns': 1.5,
+            'subjunctive_mood': 1.5,
+            'verbs': 1.4,
+            
+            # Medium complexity errors  
+            'word_usage_y': 1.2,
+            'legal_claims': 1.3,
+            'headings': 1.1,
+            'tone': 1.2,
+            
+            # Simple errors (count as less than 1 error each)
+            'contractions': 0.5,
+            'possessives': 0.4,
+            'capitalization': 0.4,
+            'abbreviations': 0.3,
+            'prefixes': 0.3,
+            'currency': 0.2,
+        }
+        
+        # Calculate weighted error count
+        weighted_count = 0.0
+        for error in errors:
+            error_type = error.get('type', 'unknown')
+            weight = error_weights.get(error_type, 1.0)  # Default weight is 1.0
+            weighted_count += weight
+        
+        # Consider sentence length - longer sentences can handle more errors
+        sentence_words = len(sentence.split()) if sentence else 10
+        length_factor = max(0.5, min(2.0, sentence_words / 20.0))  # Scale between 0.5x and 2x
+        
+        # Final density = weighted_errors / length_factor
+        density = weighted_count / length_factor
+        
+        logger.debug(f"🔢 Sentence density: {len(errors)} errors (weighted: {weighted_count:.1f}) / {sentence_words} words (factor: {length_factor:.2f}) = {density:.2f}")
+        
+        return density
+    
+    def _exceeds_density_threshold(self, weighted_density: float, sentence: str) -> bool:
+        """
+        Determine if a sentence's error density exceeds the threshold for holistic rewriting.
+        
+        Args:
+            weighted_density: Calculated weighted density score
+            sentence: The sentence text for additional context
+            
+        Returns:
+            True if holistic rewriting should be used for this sentence
+        """
+        # Base threshold
+        base_threshold = 3.0
+        
+        # Adjust threshold based on sentence characteristics
+        sentence_words = len(sentence.split()) if sentence else 10
+        
+        # Very short sentences get lower threshold
+        if sentence_words < 8:
+            adjusted_threshold = base_threshold * 0.7
+        # Very long sentences get higher threshold  
+        elif sentence_words > 25:
+            adjusted_threshold = base_threshold * 1.3
+        else:
+            adjusted_threshold = base_threshold
+        
+        exceeds = weighted_density > adjusted_threshold
+        
+        if exceeds:
+            logger.info(f"🚨 High density detected: {weighted_density:.2f} > {adjusted_threshold:.2f} (sentence: {sentence_words} words)")
+        
+        return exceeds
+
+    def _apply_holistic_rewrite(self, text: str, errors: List[Dict[str, Any]], 
+                               block_type: str, density_analysis: Dict[str, Any],
+                               progress_tracker=None) -> Dict[str, Any]:
+        """
+        Apply holistic rewriting for high error density scenarios.
+        
+        Instead of complex surgical instructions, this uses simplified prompts
+        that give the AI high-level improvement goals, preventing confusion
+        and producing more natural results.
+        
+        Args:
+            text: Original text to rewrite
+            errors: List of all errors detected
+            block_type: Type of content block
+            density_analysis: Results from error density analysis
+            progress_tracker: Progress tracking instance
+            
+        Returns:
+            Dictionary with holistic rewrite results
+        """
+        logger.info(f"🔄 Starting holistic rewrite for {len(density_analysis['high_density_sentences'])} high-density sentences")
+        
+        try:
+            # For now, apply holistic rewrite to the entire text
+            # Future enhancement: could process sentence-by-sentence for mixed scenarios
+            high_density_errors = errors  # All errors for holistic consideration
+            
+            # Create holistic prompt focused on improvement goals rather than detailed instructions
+            prompt = self.prompt_generator.create_holistic_rewrite_prompt(
+                text, high_density_errors, block_type
+            )
+            
+            logger.debug(f"🧠 Sending holistic rewrite prompt for {len(errors)} errors")
+            logger.debug(f"📝 Holistic prompt preview: {prompt[:200]}...")
+            
+            # Generate AI correction using simplified holistic approach
+            ai_result = self.text_generator.generate_text(prompt, text, use_case='holistic_rewrite')
+            
+            if ai_result and ai_result.strip() != text.strip():
+                # Successful holistic rewrite
+                current_text = self.text_processor.clean_generated_text(ai_result, text)
+                
+                # Calculate confidence for holistic approach
+                holistic_confidence = self._calculate_holistic_confidence(
+                    density_analysis, len(errors), ai_result != text
+                )
+                
+                # Generate improvement description
+                improvements = [
+                    f"Holistic rewrite applied to high-density text (density: {density_analysis['max_density']:.2f})",
+                    f"Addressed {len(errors)} errors with comprehensive rewriting approach",
+                ]
+                
+                # Add specific improvement categories based on error types
+                error_types = set(error.get('type', 'unknown') for error in errors)
+                if any(et in ['passive_voice', 'ambiguity', 'verbs'] for et in error_types):
+                    improvements.append("Improved clarity and active voice usage")
+                if any(et in ['sentence_length', 'pronouns'] for et in error_types):
+                    improvements.append("Enhanced sentence structure and clarity")
+                if any(et.startswith('technical_') for et in error_types):
+                    improvements.append("Standardized technical formatting")
+                
+                logger.info(f"✅ Holistic rewrite successful: {len(errors)} errors addressed with comprehensive approach")
+                
+                return {
+                    'rewritten_text': current_text,
+                    'original_text': text,
+                    'errors_fixed': len(errors),  # Assume all errors were addressed holistically
+                    'confidence': holistic_confidence,
+                    'processing_method': 'holistic_rewrite',
+                    'density_analysis': density_analysis,
+                    'improvements': improvements,
+                    'holistic_approach_used': True
+                }
+            else:
+                # Holistic rewrite failed or produced no changes
+                logger.warning(f"⚠️ Holistic rewrite produced no changes for high-density text")
+                
+                return {
+                    'rewritten_text': text,
+                    'original_text': text,
+                    'errors_fixed': 0,
+                    'confidence': 0.2,
+                    'processing_method': 'holistic_no_changes',
+                    'density_analysis': density_analysis,
+                    'error': 'Holistic rewrite produced no improvements',
+                    'holistic_approach_used': True
+                }
+                
+        except Exception as e:
+            logger.error(f"Holistic rewrite failed: {e}")
+            return {
+                'rewritten_text': text,
+                'original_text': text,
+                'errors_fixed': 0,
+                'confidence': 0.0,
+                'processing_method': 'holistic_failed',
+                'density_analysis': density_analysis,
+                'error': f'Holistic rewrite failed: {str(e)}',
+                'holistic_approach_used': True
+            }
+    
+    def _calculate_holistic_confidence(self, density_analysis: Dict[str, Any], 
+                                     error_count: int, rewrite_successful: bool) -> float:
+        """
+        Calculate confidence score for holistic rewriting approach.
+        
+        Args:
+            density_analysis: Results from density analysis
+            error_count: Number of errors addressed
+            rewrite_successful: Whether the rewrite produced changes
+            
+        Returns:
+            Confidence score between 0.0 and 1.0
+        """
+        if not rewrite_successful:
+            return 0.1
+        
+        # Base confidence for holistic approach is typically lower than surgical
+        # but higher than complex multi-instruction prompts for high-density cases
+        base_confidence = 0.82
+        
+        # Boost confidence based on error density (higher density = more justified holistic approach)
+        density_boost = min(0.15, density_analysis.get('max_density', 0) / 10.0)
+        
+        # Boost confidence based on number of errors addressed
+        if error_count <= 3:
+            error_count_boost = 0.0
+        elif error_count <= 6:
+            error_count_boost = 0.05
+        else:
+            error_count_boost = 0.10  # High error count justifies holistic approach
+        
+        # Penalty if only a few high-density sentences (might have been better to handle surgically)
+        high_density_sentences = len(density_analysis.get('high_density_sentences', []))
+        if high_density_sentences == 1:
+            sentence_penalty = 0.05  # Small penalty for single sentence
+        else:
+            sentence_penalty = 0.0
+        
+        final_confidence = base_confidence + density_boost + error_count_boost - sentence_penalty
+        
+        logger.debug(f"🎯 Holistic confidence: base={base_confidence:.2f} + density={density_boost:.2f} + errors={error_count_boost:.2f} - penalty={sentence_penalty:.2f} = {final_confidence:.2f}")
+        
+        return min(0.95, max(0.1, final_confidence))  # Clamp between 0.1 and 0.95
+
     def _calculate_ai_confidence(self, errors: List[Dict[str, Any]], complexity: str, processing_result: Dict[str, Any] = None) -> float:
         """Calculate reward-based confidence score for AI processing."""
         if not errors:
@@ -970,7 +1376,7 @@ class AssemblyLineRewriter:
                 processing_bonus = 1.15 + (surgical_success_rate * 0.05)  # 15-20% bonus
                 logger.debug(f"🎖️ Surgical success reward: {surgical_success_rate:.2f} → {processing_bonus:.3f}x")
             elif 'world_class' in method:
-                processing_bonus = 1.12  # 12% bonus for world-class processing (increased)
+                processing_bonus = 1.12  # 12% bonus for processing (increased)
             elif 'comprehensive' in method:
                 processing_bonus = 1.08  # 8% bonus for comprehensive processing (increased)
             elif 'station_focused' in method:
@@ -1018,22 +1424,97 @@ class AssemblyLineRewriter:
         return min(1.0, final_confidence)
     
     def get_processing_stats(self) -> Dict[str, Any]:
-        """Get performance statistics for the AI processing system."""
+        """Get comprehensive performance statistics including error density heuristic metrics."""
         stats = {
             'blocks_processed': self.processing_stats['blocks_processed'],
             'total_errors_fixed': self.processing_stats['errors_fixed'],
             'total_processing_time_ms': self.processing_stats['total_processing_time_ms'],
-            'average_confidence': self.processing_stats['average_confidence']
+            'average_confidence': self.processing_stats['average_confidence'],
+            
+            # Error density heuristic metrics
+            'holistic_mode_triggered': self.processing_stats['holistic_mode_triggered'],
+            'holistic_mode_successful': self.processing_stats['holistic_mode_successful'],
+            'high_density_sentences_detected': self.processing_stats['high_density_sentences_detected'],
+            'max_density_encountered': self.processing_stats['max_density_encountered'],
+            'density_analysis_time_ms': self.processing_stats['density_analysis_time_ms'],
         }
         
         if stats['blocks_processed'] > 0:
             stats['errors_per_block'] = stats['total_errors_fixed'] / stats['blocks_processed']
             stats['average_processing_time_ms'] = stats['total_processing_time_ms'] / stats['blocks_processed']
+            stats['average_density_analysis_time_ms'] = stats['density_analysis_time_ms'] / stats['blocks_processed']
+            
+            # Holistic mode effectiveness metrics
+            if stats['holistic_mode_triggered'] > 0:
+                stats['holistic_success_rate'] = stats['holistic_mode_successful'] / stats['holistic_mode_triggered']
+                stats['holistic_mode_percentage'] = (stats['holistic_mode_triggered'] / stats['blocks_processed']) * 100
+            else:
+                stats['holistic_success_rate'] = 0.0
+                stats['holistic_mode_percentage'] = 0.0
+                
+            # Calculate holistic vs surgical ratio if we have both
+            surgical_blocks = stats['blocks_processed'] - stats['holistic_mode_triggered']
+            if surgical_blocks > 0:
+                stats['holistic_vs_surgical_ratio'] = stats['holistic_mode_triggered'] / surgical_blocks
+            else:
+                stats['holistic_vs_surgical_ratio'] = float('inf') if stats['holistic_mode_triggered'] > 0 else 0.0
         else:
             stats['errors_per_block'] = 0.0
             stats['average_processing_time_ms'] = 0.0
+            stats['average_density_analysis_time_ms'] = 0.0
+            stats['holistic_success_rate'] = 0.0
+            stats['holistic_mode_percentage'] = 0.0
+            stats['holistic_vs_surgical_ratio'] = 0.0
         
         return stats
+    
+    def get_error_density_insights(self) -> Dict[str, Any]:
+        """
+        Get insights about error density patterns for system optimization.
+        
+        Returns:
+            Dictionary with density analysis insights and recommendations
+        """
+        stats = self.get_processing_stats()
+        
+        insights = {
+            'density_threshold_effectiveness': 'unknown',
+            'holistic_mode_frequency': 'low',
+            'recommendations': [],
+            'system_performance': {}
+        }
+        
+        # Analyze holistic mode frequency
+        if stats['holistic_mode_percentage'] > 20:
+            insights['holistic_mode_frequency'] = 'high'
+            insights['recommendations'].append('Consider raising density thresholds to reduce holistic mode usage')
+        elif stats['holistic_mode_percentage'] > 10:
+            insights['holistic_mode_frequency'] = 'moderate'
+            insights['recommendations'].append('Monitor holistic mode success rate for optimization opportunities')
+        else:
+            insights['holistic_mode_frequency'] = 'low'
+            insights['recommendations'].append('Current density thresholds appear well-tuned')
+        
+        # Analyze effectiveness
+        if stats['holistic_success_rate'] > 0.8:
+            insights['density_threshold_effectiveness'] = 'excellent'
+            insights['recommendations'].append('Holistic mode is highly effective when triggered')
+        elif stats['holistic_success_rate'] > 0.6:
+            insights['density_threshold_effectiveness'] = 'good'
+            insights['recommendations'].append('Consider fine-tuning holistic prompts for better success rate')
+        else:
+            insights['density_threshold_effectiveness'] = 'needs_improvement'
+            insights['recommendations'].append('Review holistic rewrite prompt templates and error density calculations')
+        
+        # Performance insights
+        insights['system_performance'] = {
+            'density_analysis_overhead_ms': stats['average_density_analysis_time_ms'],
+            'max_density_seen': stats['max_density_encountered'],
+            'high_density_detection_rate': stats['high_density_sentences_detected'],
+            'processing_efficiency': 'good' if stats['average_processing_time_ms'] < 2000 else 'needs_optimization'
+        }
+        
+        return insights
 
 
 

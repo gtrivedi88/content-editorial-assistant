@@ -1,6 +1,5 @@
 """
 Prompt Generation Module for the AI Rewriter
-Enhanced with multi-shot prompting and evidence-based instruction templates.
 """
 import logging
 from typing import List, Dict, Any, Optional
@@ -703,6 +702,93 @@ Respond in this EXACT format with no other text before or after:
                 logger.info("💾 Template performance data saved")
             except Exception as e:
                 logger.error(f"Failed to save template performance data: {e}")
+
+    def create_holistic_rewrite_prompt(self, text: str, high_density_errors: List[Dict[str, Any]], 
+                                      block_type: str = "text") -> str:
+        """
+        Create a holistic rewrite prompt for high error density scenarios.
+        
+        Instead of listing every error, this prompt gives high-level goals for sentences
+        that are "too broken" to fix with surgical instructions. This prevents AI
+        confusion and produces more natural, readable results.
+        
+        Args:
+            text: The sentence/text with high error density
+            high_density_errors: List of errors in this high-density text
+            block_type: Type of content block for context
+            
+        Returns:
+            Holistic rewrite prompt focused on overall improvement goals
+        """
+        # Analyze the types of issues to provide focused guidance
+        error_types = [error.get('type', 'unknown') for error in high_density_errors]
+        error_type_counts = {}
+        for error_type in error_types:
+            error_type_counts[error_type] = error_type_counts.get(error_type, 0) + 1
+        
+        # Categorize the main problem areas
+        structural_issues = any(et in ['passive_voice', 'ambiguity', 'pronouns', 'sentence_length', 'verbs'] for et in error_types)
+        grammar_issues = any(et in ['contractions', 'word_usage_y', 'possessives'] for et in error_types)
+        style_issues = any(et in ['tone', 'legal_claims', 'headings'] for et in error_types)
+        technical_issues = any(et.startswith('technical_') for et in error_types)
+        
+        # Create focused improvement goals based on issue patterns
+        improvement_goals = []
+        
+        if structural_issues:
+            improvement_goals.append("• Use active voice and identify clear actors (avoid vague terms like 'system' or 'application')")
+            improvement_goals.append("• Ensure clarity by specifying who does what")
+            
+        if grammar_issues:
+            improvement_goals.append("• Apply proper grammar and expand contractions where appropriate")
+            improvement_goals.append("• Use precise, professional language")
+            
+        if style_issues:
+            improvement_goals.append("• Maintain professional, neutral tone")
+            improvement_goals.append("• Avoid subjective claims and use objective language")
+            
+        if technical_issues:
+            improvement_goals.append("• Format technical elements correctly (code, commands, file paths)")
+            
+        # Add general goals
+        improvement_goals.append("• Keep sentences concise and readable")
+        improvement_goals.append("• Preserve all original meaning and technical accuracy")
+        
+        goals_text = "\n".join(improvement_goals)
+        
+        # Create the holistic prompt
+        system_prompt = (
+            "You are an expert technical editor. The following text contains multiple style and grammar issues "
+            "that need comprehensive improvement. Instead of making small surgical changes, rewrite the text "
+            "holistically to achieve the improvement goals listed below."
+        )
+        
+        # Add context about error density for transparency
+        density_context = f"This text has {len(high_density_errors)} errors across a short span, indicating it needs holistic improvement rather than individual fixes."
+        
+        prompt = f"""{system_prompt}
+
+**Error Density Analysis:**
+{density_context}
+
+**Content Type:** {block_type}
+**Original Text:**
+`{text}`
+
+**Improvement Goals:**
+{goals_text}
+
+**Your Task:**
+Rewrite the text above to achieve all improvement goals while strictly preserving the original meaning. 
+Focus on creating clear, professional, and readable text rather than trying to apply individual corrections.
+
+CRITICAL: Your entire response will be used directly in a document, so it must be valid JSON with no extra text.
+
+Respond in this EXACT format with no other text before or after:
+{{"corrected_text": "your holistically improved text here"}}"""
+        
+        logger.info(f"🔄 Created holistic rewrite prompt for {len(high_density_errors)} high-density errors")
+        return prompt.strip()
 
     def create_simple_rewrite_prompt(self, text: str) -> str:
         """Creates a simple, general-purpose JSON rewrite prompt (used for fallbacks)."""

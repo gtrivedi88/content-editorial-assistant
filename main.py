@@ -1,116 +1,71 @@
 """
-Style Guide Application - Main Entry Point (Simplified Setup)
-A clean, modular Flask application for content analysis and AI-powered rewriting.
-Auto-initializes all dependencies on first run - no separate setup required!
+Content Editorial Assistant - Production Entry Point
+
 """
 
 import os
 import sys
-import subprocess
-import platform
 import logging
-import json
+import signal
+import ssl
 from pathlib import Path
-import requests
-import time
+from llama_stack_client import LlamaStackClient, DefaultHttpxClient
 from app_modules.app_factory import create_app, configure_upload_folder
 from config import Config
 
-# Setup logging for initialization
-logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+# Environment configuration
+LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO').upper()
+ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')
+
+# Logging configuration
+logging.basicConfig(
+    level=getattr(logging, LOG_LEVEL),
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
 logger = logging.getLogger(__name__)
 
-def ensure_setup_complete():
-    """Auto-initialize application on first run or when dependencies are missing."""
-    
-    # Check if setup marker exists
-    setup_marker = Path('.setup_complete')
-    
-    if setup_marker.exists() and check_critical_dependencies():
-        return True  # Setup already complete and dependencies available
-    
-    logger.info("🔧 First-time setup or missing dependencies detected...")
-    logger.info("🚀 Auto-initializing application...")
-    
-    if not run_auto_setup():
-        logger.error("❌ Auto-setup failed. Some features may not work.")
-        return False
-    
-    # Create setup marker
-    setup_marker.touch()
-    logger.info("✅ Setup completed successfully!")
-    return True
+# Global variables
+app = None
+socketio = None
+llama_stack_client = None
 
-def check_critical_dependencies():
-    """Quick check for critical dependencies."""
-    try:
-        import spacy
-        import nltk
-        import textstat
-        
-        # Check if SpaCy model is available
-        try:
-            nlp = spacy.load("en_core_web_sm")
+def setup_llama_stack_client():
+    """Initialize Llama Stack client (pre-hook already validated connectivity)."""
+    global llama_stack_client
+    
+    base_url = os.environ.get('LIGHTRAIL_LLAMA_STACK_BASE_URL')
+    ca_cert_path = os.environ.get('LIGHTRAIL_LLAMA_STACK_TLS_SERVICE_CA_CERT_PATH')
+    
+    if not base_url:
+        if ENVIRONMENT == 'development':
+            logger.info("Development mode: Llama Stack not configured")
             return True
-        except OSError:
-            return False  # SpaCy model missing
-            
-    except ImportError:
-        return False  # Critical packages missing
-
-def run_command(command, description="Running command", timeout=300):
-    """Run a command and handle errors gracefully."""
-    try:
-        logger.info(f"  {description}...")
-        result = subprocess.run(command, shell=True, check=True, capture_output=True, text=True, timeout=timeout)
-        return True
-    except subprocess.TimeoutExpired:
-        logger.warning(f"  ⚠️ Command timed out: {description}")
-        return False
-    except subprocess.CalledProcessError as e:
-        logger.warning(f"  ⚠️ Command failed: {description}")
-        return False
-
-def setup_spacy():
-    """Download SpaCy language models."""
-    logger.info("📥 Setting up SpaCy language models...")
-    
-    # Try small model first (faster)
-    models = ["en_core_web_sm", "en_core_web_md"]
-    
-    for model in models:
-        if run_command(f"{sys.executable} -m spacy download {model}", f"Downloading {model}", timeout=300):
-            return True
-    
-    logger.warning("⚠️ Could not install SpaCy models. Basic text processing will still work.")
-    return True  # Don't fail the entire setup
-
-def setup_nltk():
-    """Download required NLTK data."""
-    logger.info("📥 Setting up NLTK data...")
+        else:
+            logger.error("LIGHTRAIL_LLAMA_STACK_BASE_URL not set")
+            return False
     
     try:
-        import nltk
+        # Setup TLS context
+        ctx = ssl.create_default_context()
+        if ca_cert_path and os.path.exists(ca_cert_path):
+            ctx.load_verify_locations(ca_cert_path)
         
-        # Download required datasets quietly
-        datasets = ['punkt', 'stopwords', 'averaged_perceptron_tagger', 'wordnet', 'omw-1.4']
+        # Initialize client (pre-hook validated connectivity)
+        llama_stack_client = LlamaStackClient(
+            base_url=base_url,
+            http_client=DefaultHttpxClient(verify=ctx)
+        )
         
-        for dataset in datasets:
-            try:
-                nltk.download(dataset, quiet=True)
-            except Exception:
-                pass  # Continue if individual dataset fails
-        
+        logger.info("Llama Stack client ready")
         return True
-                
-    except ImportError:
-        logger.warning("⚠️ NLTK not available. Some text analysis features may be limited.")
-        return True  # Don't fail setup
+        
+    except Exception as e:
+        logger.error(f"Llama Stack client initialization failed: {e}")
+        return False
 
 def create_directories():
-    """Create necessary application directories."""
-    logger.info("📁 Creating application directories...")
-    
+    """Create necessary application directories.""" 
     directories = ["uploads", "logs", "instance", "temp"]
     
     for directory in directories:
@@ -118,106 +73,93 @@ def create_directories():
     
     return True
 
-def check_ollama():
-    """Check Ollama installation and provide guidance."""
-    logger.info("🤖 Checking Ollama installation...")
+def signal_handler(signum, frame):
+    """Handle graceful shutdown signals."""
+    logger.info(f"Received signal {signum}, shutting down gracefully...")
+    if socketio:
+        socketio.stop()
+    sys.exit(0)
+
+def initialize_application():
+    """Initialize the Style Guide AI application."""
+    global app, socketio
+    
+    logger.info("Initializing Style Guide AI...")
+    
+    # Simple initialization (pre-hook handles deployment validation)
+    create_directories()
+    setup_llama_stack_client()
+    
+    # Create Flask application
+    app, socketio = create_app(Config)
+    configure_upload_folder(app)
+    
+    # Add Llama Stack client to app context
+    if llama_stack_client:
+        app.llama_stack_client = llama_stack_client
+    
+    logger.info("Application ready")
+    return True
+
+def main():
+    """Main application entry point."""
+    
+    # Register signal handlers for graceful shutdown
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+    
+    logger.info("=" * 50)
+    logger.info("Style Guide AI - Production Application")
+    logger.info(f"Environment: {ENVIRONMENT}")
+    logger.info(f"Log Level: {LOG_LEVEL}")
+    logger.info("=" * 50)
+    
+    # Initialize application
+    if not initialize_application():
+        logger.error("Application initialization failed")
+        sys.exit(1)
+    
+    # Configuration
+    debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() == 'true' and ENVIRONMENT != 'production'
+    port = int(os.getenv('PORT', 8080))  # Default port 8080 for Lightrail
+    host = os.getenv('HOST', '0.0.0.0')  # Bind to all interfaces for container deployment
+    
+    # Disable debug mode in production
+    if ENVIRONMENT == 'production' and debug_mode:
+        logger.warning("Debug mode disabled in production environment")
+        debug_mode = False
+    
+    logger.info(f"Starting application on {host}:{port}")
+    logger.info(f"Debug mode: {debug_mode}")
+    
+    if ENVIRONMENT == 'production':
+        logger.info("Production mode: Enhanced security and performance settings enabled")
     
     try:
-        result = subprocess.run("ollama --version", shell=True, capture_output=True, text=True)
-        if result.returncode == 0:
-            logger.info("  ✅ Ollama is installed")
-            
-            # Check if service is running and models are available
-            try:
-                response = requests.get("http://localhost:11434/api/tags", timeout=3)
-                if response.status_code == 200:
-                    models = response.json().get('models', [])
-                    if models:
-                        model_names = [m['name'] for m in models]
-                        logger.info(f"  ✅ Available models: {', '.join(model_names[:3])}...")
-                    else:
-                        logger.info("  💡 To enable AI rewriting, install a model:")
-                        logger.info("     ollama pull llama3:8b")
-                else:
-                    logger.info("  💡 Start Ollama service: ollama serve")
-            except requests.exceptions.RequestException:
-                logger.info("  💡 Start Ollama service: ollama serve")
-                
-        else:
-            logger.info("  ⚠️ Ollama not found. AI rewriting features will be limited.")
-            logger.info("  💡 Install from: https://ollama.com")
-            
-    except Exception:
-        logger.info("  ⚠️ Could not check Ollama installation.")
-    
-    return True  # Always succeed - Ollama is optional
-
-def run_auto_setup():
-    """Run automatic setup process."""
-    
-    setup_steps = [
-        ("Setting up SpaCy models", setup_spacy),
-        ("Setting up NLTK data", setup_nltk), 
-        ("Creating directories", create_directories),
-        ("Checking Ollama", check_ollama)
-    ]
-    
-    failed_count = 0
-    
-    for step_name, step_function in setup_steps:
-        try:
-            if not step_function():
-                failed_count += 1
-        except Exception as e:
-            logger.warning(f"  ⚠️ {step_name} failed: {e}")
-            failed_count += 1
-    
-    # Success if most steps passed
-    return failed_count < len(setup_steps) // 2
-
-# Auto-setup check
-ensure_setup_complete()
-
-# Create application using factory pattern
-app, socketio = create_app(Config)
-
-# Configure upload settings
-configure_upload_folder(app)
-
-if __name__ == '__main__':
-    """Run the application in development mode."""
-    try:
-        # Development configuration
-        debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
-        port = int(os.getenv('PORT', 5000))
-        host = os.getenv('HOST', '127.0.0.1')
-        
-        print("🚀 Starting Content Editorial Assistant Application...")
-        print(f"📱 Access the application at: http://{host}:{port}")
-        print("📊 Real-time progress tracking enabled via WebSocket")
-        print("🤖 AI rewriting with Ollama integration ready")
-        print("")
-        print("🔍 DEBUG MODE ENABLED:")
-        print("   📊 API Route /rewrite-block: Comprehensive debug logging")
-        print("   🏭 Assembly Line Rewriter: Debug output enabled")
-        print("   🎯 Progress Tracker: WorldClassProgressTracker debug")
-        print("   📡 WebSocket Handlers: Progress update tracking")
-        print("   🌐 Frontend Console: Real-time progress debug")
-        print("")
-        print("👀 When you click 'Improve Issue', watch for debug output here!")
-        print("=" * 60)
-        
         # Run with SocketIO support
         socketio.run(
             app,
             host=host,
             port=port,
             debug=debug_mode,
-            allow_unsafe_werkzeug=True  # For development only
+            allow_unsafe_werkzeug=debug_mode  # Only allow in debug mode
         )
         
     except KeyboardInterrupt:
-        print("\n👋 Application stopped by user")
+        logger.info("Application stopped by user")
+        sys.exit(0)
     except Exception as e:
-        print(f"❌ Failed to start application: {e}")
-        exit(1) 
+        logger.error(f"Application startup failed: {e}")
+        sys.exit(1)
+
+# Application entry point
+if __name__ == '__main__':
+    main()
+else:
+    # For WSGI deployment (production servers like Gunicorn)
+    if not initialize_application():
+        logger.error("Application initialization failed")
+        raise RuntimeError("Failed to initialize application")
+    
+    # Export app for WSGI server
+    application = app 
