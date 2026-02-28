@@ -19,7 +19,7 @@ textstat>=0.7.0,<1.0.0
 
 # LLM — multi-provider model system (LlamaStack / LightRail)
 tenacity>=9.0.0,<10.0.0
-llama-stack-client==0.2.12
+llama-stack-client==0.3.5
 fire>=0.7.0
 requests>=2.31.0
 

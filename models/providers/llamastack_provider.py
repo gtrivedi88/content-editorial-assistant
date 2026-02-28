@@ -6,7 +6,7 @@ Integrates Llama Stack client with the existing model system.
 import logging
 import os
 import ssl
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Sequence
 
 from llama_stack_client import DefaultHttpxClient, LlamaStackClient
 
@@ -67,6 +67,16 @@ class LlamaStackProvider(BaseModelProvider):
                 "Connected to Llama Stack. Available models: %s",
                 len(model_list)
             )
+
+            # Resolve configured model_id against available models.
+            # The server may require a provider prefix
+            # (e.g. "vllm-inference/models/gemini-2.5-flash")
+            # while the config only specifies a short name
+            # (e.g. "gemini-2.5-flash" or "models/gemini-2.5-flash").
+            self.model_id = self._resolve_model_id(
+                self.model_id, model_list
+            )
+
             self.is_connected = True
             return True
 
@@ -74,6 +84,47 @@ class LlamaStackProvider(BaseModelProvider):
             logger.error("Failed to connect to Llama Stack: %s", exc)
             self.is_connected = False
             return False
+
+    @staticmethod
+    def _resolve_model_id(
+        configured_id: str, model_list: Sequence[object]
+    ) -> str:
+        """Resolve a short model ID against the available model list.
+
+        The LlamaStack server registers models with a provider prefix
+        (e.g. ``vllm-inference/models/gemini-2.5-flash``) while the
+        deployment config may specify a short name like
+        ``gemini-2.5-flash`` or ``models/gemini-2.5-flash``.  This
+        method finds the full identifier by suffix matching.
+
+        Returns the full identifier if a match is found, otherwise
+        returns *configured_id* unchanged.
+        """
+        identifiers = [
+            getattr(m, 'identifier', str(m)) for m in model_list
+        ]
+
+        # Exact match — already fully qualified
+        if configured_id in identifiers:
+            return configured_id
+
+        # Suffix match — find the first model whose identifier ends
+        # with the configured name (preceded by '/')
+        suffix = '/' + configured_id.lstrip('/')
+        for full_id in identifiers:
+            if full_id.endswith(suffix):
+                logger.info(
+                    "Resolved model '%s' -> '%s'",
+                    configured_id, full_id,
+                )
+                return full_id
+
+        logger.warning(
+            "Model '%s' not found in available models: %s",
+            configured_id,
+            [i for i in identifiers if 'gemini' in i.lower()][:5],
+        )
+        return configured_id
 
     def is_available(self) -> bool:
         """Check if Llama Stack is available."""
@@ -91,7 +142,11 @@ class LlamaStackProvider(BaseModelProvider):
             return False
 
     def generate_text(self, prompt: str, **kwargs: object) -> str:
-        """Generate text using Llama Stack."""
+        """Generate text using Llama Stack.
+
+        Uses the OpenAI-compatible ``/v1/chat/completions`` endpoint
+        introduced in llama-stack-client 0.3.x.
+        """
         if not self.is_available():
             raise RuntimeError("Llama Stack is not available")
 
@@ -113,24 +168,22 @@ class LlamaStackProvider(BaseModelProvider):
             max_tokens = kwargs.get('max_tokens', default_max_tokens)
 
             call_kwargs: Dict[str, Any] = {
-                "model_id": self.model_id,
+                "model": self.model_id,
                 "messages": messages,
-                "sampling_params": {
-                    "type": "top_p",
-                    "temperature": temperature,
-                    "top_p": kwargs.get('top_p', 0.9),
-                    "max_tokens": max_tokens,
-                },
+                "temperature": temperature,
+                "top_p": kwargs.get('top_p', 0.9),
+                "max_tokens": max_tokens,
             }
             response_format = kwargs.get('response_format')
             if response_format:
                 call_kwargs["response_format"] = response_format
 
-            response = self.client.inference.chat_completion(**call_kwargs)
+            response = self.client.chat.completions.create(**call_kwargs)
 
-            if (response.completion_message
-                    and response.completion_message.content):
-                result = response.completion_message.content
+            if (response.choices
+                    and response.choices[0].message
+                    and response.choices[0].message.content):
+                result = response.choices[0].message.content
                 logger.debug(
                     "Generated %s characters via Llama Stack", len(result)
                 )
@@ -159,7 +212,8 @@ class LlamaStackProvider(BaseModelProvider):
             try:
                 model_list = list(self.client.models.list())
                 info['available_models'] = [
-                    getattr(m, 'model_id', str(m)) for m in model_list
+                    getattr(m, 'identifier', str(m))
+                    for m in model_list
                 ]
             except OSError as exc:
                 logger.debug("Could not fetch model list: %s", exc)

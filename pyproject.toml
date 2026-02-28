@@ -46,9 +46,7 @@ dependencies = [
     # LLM — MULTI-PROVIDER MODEL SYSTEM
     # ================================
     "tenacity (>=9.0.0,<10.0.0)",
-    "llama-stack-client (==0.2.12)",
-    # requests and fire are required for llama-stack-client but are not in its dependencies list.
-    # See https://github.com/meta-llama/llama-stack-client-python/issues/233
+    "llama-stack-client (==0.3.5)",
     "requests (>=2.31.0)",
     "fire (>=0.7.0)",
 
