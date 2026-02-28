@@ -1,0 +1,219 @@
+# Articles Rule Configuration
+# IBM Style Guide (Page 91): Use 'a' before consonant sounds, 'an' before vowel sounds.
+#
+# HOW TO MAINTAIN:
+# - Add new abbreviations to the appropriate section when discovered
+# - The rule checks this file at startup — no code changes needed
+# - If unsure about pronunciation, test: say the abbreviation aloud.
+#   Does it start with a vowel sound? Add to vowel_sound_abbreviations.
+
+# Abbreviations that START with a vowel SOUND (use "an")
+# These start with vowel sounds when spoken: "ess", "aitch", "eff", "em", "en", "ar", "ex"
+vowel_sound_abbreviations:
+  # S- abbreviations ("ess-...")
+  - sql
+  - sla
+  - sdk
+  - sdn
+  - sku
+  - sme
+  - snmp
+  - sso
+  - svg
+  - smtp
+  - ssl
+  - ssh
+  - ssd
+  - sap
+  - scm
+  - scp
+  - sftp
+  - si
+  - soa
+  - spa
+  - srm
+  - stl
+  # H- abbreviations ("aitch-...")
+  - html
+  - http
+  - https
+  - hpc
+  - hdd
+  - hdfs
+  - ha
+  - hci
+  # F- abbreviations ("eff-...")
+  - ftp
+  - fqdn
+  - fps
+  # M- abbreviations ("em-...")
+  - mri
+  - mpi
+  - mfa
+  - mba
+  - mtu
+  - mvp
+  - mvn
+  # N- abbreviations ("en-...")
+  - nfs
+  - nic
+  - nlp
+  - npm
+  - ntp
+  # R- abbreviations ("ar-...")
+  - rfc
+  - rpm
+  - rpc
+  - rds
+  - rsa
+  - rbac
+  # X- abbreviations ("ex-...")
+  - xml
+  - xss
+  - xdr
+  # A- abbreviations ("ay-...")
+  - api
+  - aws
+  - ami
+  - acl
+  - apm
+  - arm
+  - arn
+  # E- abbreviations ("ee-...")
+  - ems
+  - etl
+  - ebs
+  - ec2
+  - ecr
+  - eks
+  - elb
+  # I- abbreviations ("eye-...")
+  - ide
+  - iam
+  - iops
+  - ip
+  - iso
+  - ieee
+  # O- abbreviations ("oh-...")
+  - os
+  - oci
+  - oop
+  - orm
+  - olap
+  - oltp
+
+# Abbreviations that START with a consonant SOUND (use "a")
+# These start with consonant sounds: "you", "jay", "gee", "bee", "dee", "pee", etc.
+consonant_sound_abbreviations:
+  # U- abbreviations ("you-...")
+  - url
+  - uri
+  - uuid
+  - ui
+  - ux
+  - usb
+  - uml
+  # Y- abbreviations ("why-..." or "yam-...")
+  - yaml
+  # J- abbreviations ("jay-...")
+  - json
+  - jwt
+  - jvm
+  - jdk
+  - jre
+  - jar
+  - jms
+  - jndi
+  - jpa
+  - jdbc
+  - jsx
+  # G- abbreviations ("gee-" or hard g)
+  - gpu
+  - gui
+  - gif
+  - grpc
+  - gcp
+  - gke
+  - gcs
+  # W- abbreviations ("double-you-...")
+  - war
+  - wasm
+  - wsdl
+  # B- abbreviations ("bee-...")
+  - bmp
+  # C- abbreviations ("see-...")
+  - cpu
+  - csv
+  - css
+  - cdn
+  - ci
+  - cd
+  - cli
+  - cni
+  - crd
+  - cri
+  - crm
+  - csi
+  # D- abbreviations ("dee-...")
+  - dns
+  - dhcp
+  - dsl
+  - dba
+  - ddd
+  - ddl
+  - dml
+  # K- abbreviations ("kay-...")
+  - k8s
+  # L- abbreviations ("ell-...")
+  - ldap
+  # P- abbreviations ("pee-...")
+  - pdf
+  - png
+  - php
+  - pci
+  # Q- abbreviations ("queue-...")
+  - qa
+  # T- abbreviations ("tee-...")
+  - tcp
+  - tls
+  - ttl
+  # V- abbreviations ("vee-...")
+  - vm
+  - vpc
+  - vpn
+  - vlan
+  # Others
+  - cidr
+  - cors
+  - rhel
+
+# Regular words that look like they start with a vowel but have a consonant sound
+consonant_sound_words:
+  - user
+  - union
+  - unit
+  - unique
+  - universal
+  - unified
+  - utility
+  - usage
+  - usable
+  - unicorn
+  - uniform
+  - unilateral
+  - unary
+  - ubiquitous
+  - usability
+  - european
+  - one
+  - once
+
+# Regular words that look like they start with a consonant but have a vowel sound
+vowel_sound_words:
+  - hour
+  - honest
+  - honor
+  - heir
+  - herb
+  - homage
+  - hourly

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% set active_page = 'home' %}
+{% block title %}Content Editorial Assistant{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/cea-home.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="pf-v5-c-page__main-section">
+  <div class="cea-home-hero">
+    <h1 class="cea-home-hero__title">Content Editorial Assistant</h1>
+    <p class="cea-home-hero__subtitle">
+      Review your technical writing against the IBM Style Guide.
+      Get inline suggestions, readability scores, and actionable fixes.
+    </p>
+    <a href="{{ url_for('analyze_page') }}" class="pf-v5-c-button pf-m-primary pf-m-lg">
+      <i class="fas fa-pen-nib pf-v5-u-mr-sm"></i> Start Reviewing
+    </a>
+  </div>
+
+  <div class="cea-home-cards">
+    <div class="pf-v5-c-card cea-home-card">
+      <div class="pf-v5-c-card__body">
+        <div class="cea-home-card__icon"><i class="fas fa-spell-check"></i></div>
+        <h3 class="pf-v5-c-title pf-m-lg">Review Content</h3>
+        <p>Paste or upload your document. CEA checks 107 rules across style, grammar,
+        word usage, punctuation, and structure — all deterministic, no LLM guessing.</p>
+        <a href="{{ url_for('analyze_page') }}" class="pf-v5-c-button pf-m-link pf-m-inline">
+          Open Review <i class="fas fa-arrow-right pf-v5-u-ml-sm"></i>
+        </a>
+      </div>
+    </div>
+    <div class="pf-v5-c-card cea-home-card">
+      <div class="pf-v5-c-card__body">
+        <div class="cea-home-card__icon"><i class="fas fa-life-ring"></i></div>
+        <h3 class="pf-v5-c-title pf-m-lg">Get Help</h3>
+        <p>Report issues, request features, or reach out to the team.
+        Your feedback drives improvements to CEA.</p>
+        <a href="{{ url_for('help_support') }}" class="pf-v5-c-button pf-m-link pf-m-inline">
+          Help &amp; Support <i class="fas fa-arrow-right pf-v5-u-ml-sm"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="cea-disclosure">
+    <div class="pf-v5-c-alert pf-m-info pf-m-inline" aria-label="AI disclosure">
+      <div class="pf-v5-c-alert__icon"><i class="fas fa-shield-halved"></i></div>
+      <h4 class="pf-v5-c-alert__title">AI-Assisted Rewriting</h4>
+      <div class="pf-v5-c-alert__description">
+        <p>Style checking uses deterministic rules (no AI). The optional rewriting feature
+        uses a local AI model. All processing happens on internal infrastructure — your
+        content is never sent to external services.</p>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,71 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Virtual environments
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Logs
+*.log
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary files
+temp/
+tmp/
+*.tmp
+
+# Test files
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+junit.xml
+
+# Environment files
+.env
+.env.local
+
+# Runtime data
+data/
+uploads/
+security_reports/
+
+# Legacy codebase (reference only, not deployed)
+legacy/
+
+# Cache
+.cache/
+
+# Documentation and development files
+*.md
+CLAUDE.md
+2022-IT-Root-CA.pem
+
+# Node.js
+node_modules/

@@ -1,0 +1,2912 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="AI-powered technical writing assistant that helps writers review content">
+      
+      
+        <meta name="author" content="CCS AI Team">
+      
+      
+      
+        <link rel="prev" href="..">
+      
+      
+        <link rel="next" href="../getting-started/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+    
+    
+      
+        <title>Training Guide - Content Editorial Assistant</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#ai-assisted-writing-training-guide" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Content Editorial Assistant" class="md-header__button md-logo" aria-label="Content Editorial Assistant" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Content Editorial Assistant
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Training Guide
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://gitlab.cee.redhat.com/ccs-ai/content-editorial-assistant" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitLab
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href=".." class="md-tabs__link">
+          
+  
+  
+  User Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../getting-started/" class="md-tabs__link">
+          
+  
+  
+  Developer Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../architecture/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../how-to-add-new-rule/" class="md-tabs__link">
+          
+  
+  
+  How-To Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../testing-setup/" class="md-tabs__link">
+          
+  
+  
+  Testing
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Content Editorial Assistant" class="md-nav__button md-logo" aria-label="Content Editorial Assistant" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Content Editorial Assistant
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://gitlab.cee.redhat.com/ccs-ai/content-editorial-assistant" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitLab
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training Guide
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#training-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Training overview
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Training overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#training-objectives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Training objectives
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#target-audience" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Target audience
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#estimated-training-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Estimated training time
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#module-1-understanding-ai-assisted-writing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Module 1: Understanding AI-assisted writing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Module 1: Understanding AI-assisted writing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-what-is-ai-assisted-writing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 What is AI-assisted writing?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-how-cea-uses-ai" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 How CEA uses AI
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-ai-limitations-you-must-understand" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 AI limitations you must understand
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#module-2-human-in-the-loop-principle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Module 2: Human-in-the-loop principle
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Module 2: Human-in-the-loop principle">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-what-is-human-in-the-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 What is human-in-the-loop?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-why-human-review-is-essential" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Why human review is essential
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-the-review-process" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 The review process
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#module-3-using-content-editorial-assistant" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Module 3: Using Content Editorial Assistant
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Module 3: Using Content Editorial Assistant">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-accessing-cea" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Accessing CEA
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-input-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Input methods
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.2 Input methods">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#uploading-documents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Uploading documents
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#direct-text-entry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Direct text entry
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-running-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Running analysis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#34-understanding-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.4 Understanding results
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.4 Understanding results">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#error-categories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error categories
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#readability-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Readability metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#35-using-ai-rewrite-feature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.5 Using AI rewrite feature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#36-generating-reports" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.6 Generating reports
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#module-4-best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Module 4: Best practices
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Module 4: Best practices">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-before-using-ai-assistance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Before using AI assistance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-during-ai-assisted-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 During AI-assisted work
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-after-using-ai-assistance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 After using AI assistance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#44-red-flags-to-watch-for" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.4 Red flags to watch for
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#module-5-privacy-and-data-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Module 5: Privacy and data handling
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Module 5: Privacy and data handling">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-what-not-to-enter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 What NOT to enter
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-data-retention-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Data retention policy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-security-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 Security considerations
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#module-6-practical-exercises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Module 6: Practical exercises
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Module 6: Practical exercises">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#exercise-1-basic-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exercise 1: Basic analysis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exercise-2-critical-review" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exercise 2: Critical review
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exercise-3-report-generation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exercise 3: Report generation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#training-completion-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Training completion checklist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-reference-card" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick reference card
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Quick reference card">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-golden-rule" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The golden rule
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-actions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key actions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#support-contacts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Support contacts
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#appendix-training-plan-document" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Appendix: Training plan document
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Appendix: Training plan document">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#training-plan-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Training plan summary
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#learning-outcomes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Learning outcomes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#training-maintenance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Training maintenance
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Developer Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Developer Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../environment-variables/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Environment Variables
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deployment-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../llm-rules-implementation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LLM Rules Implementation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-flow-diagram/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Flow Diagram
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How-To Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    How-To Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how-to-add-new-rule/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a New Rule
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how-to-add-new-ambiguity-detector/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a New Ambiguity Detector
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how-to-add-new-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a New AI Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configure-providers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configure AI Providers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Testing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing-setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI-Powered Testing Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../writing-tests/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Writing Tests
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#training-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Training overview
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Training overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#training-objectives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Training objectives
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#target-audience" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Target audience
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#estimated-training-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Estimated training time
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#module-1-understanding-ai-assisted-writing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Module 1: Understanding AI-assisted writing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Module 1: Understanding AI-assisted writing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-what-is-ai-assisted-writing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 What is AI-assisted writing?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-how-cea-uses-ai" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 How CEA uses AI
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-ai-limitations-you-must-understand" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 AI limitations you must understand
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#module-2-human-in-the-loop-principle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Module 2: Human-in-the-loop principle
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Module 2: Human-in-the-loop principle">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-what-is-human-in-the-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 What is human-in-the-loop?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-why-human-review-is-essential" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Why human review is essential
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-the-review-process" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 The review process
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#module-3-using-content-editorial-assistant" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Module 3: Using Content Editorial Assistant
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Module 3: Using Content Editorial Assistant">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-accessing-cea" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Accessing CEA
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-input-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Input methods
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.2 Input methods">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#uploading-documents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Uploading documents
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#direct-text-entry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Direct text entry
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-running-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Running analysis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#34-understanding-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.4 Understanding results
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.4 Understanding results">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#error-categories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error categories
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#readability-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Readability metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#35-using-ai-rewrite-feature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.5 Using AI rewrite feature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#36-generating-reports" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.6 Generating reports
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#module-4-best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Module 4: Best practices
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Module 4: Best practices">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-before-using-ai-assistance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Before using AI assistance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-during-ai-assisted-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 During AI-assisted work
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-after-using-ai-assistance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 After using AI assistance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#44-red-flags-to-watch-for" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.4 Red flags to watch for
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#module-5-privacy-and-data-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Module 5: Privacy and data handling
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Module 5: Privacy and data handling">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-what-not-to-enter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 What NOT to enter
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-data-retention-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Data retention policy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-security-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 Security considerations
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#module-6-practical-exercises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Module 6: Practical exercises
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Module 6: Practical exercises">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#exercise-1-basic-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exercise 1: Basic analysis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exercise-2-critical-review" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exercise 2: Critical review
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exercise-3-report-generation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exercise 3: Report generation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#training-completion-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Training completion checklist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-reference-card" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick reference card
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Quick reference card">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-golden-rule" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The golden rule
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-actions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key actions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#support-contacts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Support contacts
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#appendix-training-plan-document" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Appendix: Training plan document
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Appendix: Training plan document">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#training-plan-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Training plan summary
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#learning-outcomes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Learning outcomes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#training-maintenance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Training maintenance
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://gitlab.cee.redhat.com/ccs-ai/content-editorial-assistant/-/edit/main/docs/modules/training-guide.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="ai-assisted-writing-training-guide">AI-assisted writing training guide<a class="headerlink" href="#ai-assisted-writing-training-guide" title="Permanent link">&para;</a></h1>
+<p>Table of Contents</p>
+<p>* <a href="#_training_overview">Training overview</a>
+    * <a href="#_training_objectives">Training objectives</a>
+    * <a href="#_target_audience">Target audience</a>
+    * <a href="#_estimated_training_time">Estimated training time</a>
+  * <a href="#_module_1_understanding_ai_assisted_writing">Module 1: Understanding AI-assisted writing</a>
+    * <a href="#_1_1_what_is_ai_assisted_writing">1.1 What is AI-assisted writing?</a>
+    * <a href="#_1_2_how_cea_uses_ai">1.2 How CEA uses AI</a>
+    * <a href="#_1_3_ai_limitations_you_must_understand">1.3 AI limitations you must understand</a>
+  * <a href="#_module_2_human_in_the_loop_principle">Module 2: Human-in-the-loop principle</a>
+    * <a href="#_2_1_what_is_human_in_the_loop">2.1 What is human-in-the-loop?</a>
+    * <a href="#_2_2_why_human_review_is_essential">2.2 Why human review is essential</a>
+    * <a href="#_2_3_the_review_process">2.3 The review process</a>
+  * <a href="#_module_3_using_content_editorial_assistant">Module 3: Using Content Editorial Assistant</a>
+    * <a href="#_3_1_accessing_cea">3.1 Accessing CEA</a>
+    * <a href="#_3_2_input_methods">3.2 Input methods</a>
+      * <a href="#_uploading_documents">Uploading documents</a>
+      * <a href="#_direct_text_entry">Direct text entry</a>
+    * <a href="#_3_3_running_analysis">3.3 Running analysis</a>
+    * <a href="#_3_4_understanding_results">3.4 Understanding results</a>
+      * <a href="#_error_categories">Error categories</a>
+      * <a href="#_readability_metrics">Readability metrics</a>
+    * <a href="#_3_5_using_ai_rewrite_feature">3.5 Using AI rewrite feature</a>
+    * <a href="#_3_6_generating_reports">3.6 Generating reports</a>
+  * <a href="#_module_4_best_practices">Module 4: Best practices</a>
+    * <a href="#_4_1_before_using_ai_assistance">4.1 Before using AI assistance</a>
+    * <a href="#_4_2_during_ai_assisted_work">4.2 During AI-assisted work</a>
+    * <a href="#_4_3_after_using_ai_assistance">4.3 After using AI assistance</a>
+    * <a href="#_4_4_red_flags_to_watch_for">4.4 Red flags to watch for</a>
+  * <a href="#_module_5_privacy_and_data_handling">Module 5: Privacy and data handling</a>
+    * <a href="#_5_1_what_not_to_enter">5.1 What NOT to enter</a>
+    * <a href="#_5_2_data_retention_policy">5.2 Data retention policy</a>
+    * <a href="#_5_3_security_considerations">5.3 Security considerations</a>
+  * <a href="#_module_6_practical_exercises">Module 6: Practical exercises</a>
+    * <a href="#_exercise_1_basic_analysis">Exercise 1: Basic analysis</a>
+    * <a href="#_exercise_2_critical_review">Exercise 2: Critical review</a>
+    * <a href="#_exercise_3_report_generation">Exercise 3: Report generation</a>
+  * <a href="#_training_completion_checklist">Training completion checklist</a>
+  * <a href="#_quick_reference_card">Quick reference card</a>
+    * <a href="#_the_golden_rule">The golden rule</a>
+    * <a href="#_key_actions">Key actions</a>
+    * <a href="#_support_contacts">Support contacts</a>
+  * <a href="#_appendix_training_plan_document">Appendix: Training plan document</a>
+    * <a href="#_training_plan_summary">Training plan summary</a>
+    * <a href="#_learning_outcomes">Learning outcomes</a>
+    * <a href="#_training_maintenance">Training maintenance</a></p>
+<h2 id="training-overview">Training overview<a class="headerlink" href="#training-overview" title="Permanent link">&para;</a></h2>
+<p>This training guide provides comprehensive instruction on using the Content Editorial Assistant (CEA), an AI-powered writing analysis tool. Upon completion, users will understand how to effectively use AI assistance while maintaining human oversight and content quality.</p>
+<h3 id="training-objectives">Training objectives<a class="headerlink" href="#training-objectives" title="Permanent link">&para;</a></h3>
+<p>By the end of this training, you will be able to:</p>
+<p>1. Understand the capabilities and limitations of AI-assisted writing tools</p>
+<p>2. Apply the human-in-the-loop principle to all AI-generated content</p>
+<p>3. Use CEA to analyze and improve technical documentation</p>
+<p>4. Identify and mitigate risks associated with AI-generated content</p>
+<p>5. Follow best practices for reviewing and accepting AI suggestions</p>
+<h3 id="target-audience">Target audience<a class="headerlink" href="#target-audience" title="Permanent link">&para;</a></h3>
+<p>* Technical writers</p>
+<p>* Documentation managers</p>
+<p>* Content reviewers</p>
+<p>* Anyone using CEA for documentation improvement</p>
+<h3 id="estimated-training-time">Estimated training time<a class="headerlink" href="#estimated-training-time" title="Permanent link">&para;</a></h3>
+<p>* <strong>Self-paced learning</strong> : 45-60 minutes</p>
+<p>* <strong>Hands-on exercises</strong> : 30 minutes</p>
+<p>* <strong>Total</strong> : Approximately 1.5 hours</p>
+<hr />
+<h2 id="module-1-understanding-ai-assisted-writing">Module 1: Understanding AI-assisted writing<a class="headerlink" href="#module-1-understanding-ai-assisted-writing" title="Permanent link">&para;</a></h2>
+<h3 id="11-what-is-ai-assisted-writing">1.1 What is AI-assisted writing?<a class="headerlink" href="#11-what-is-ai-assisted-writing" title="Permanent link">&para;</a></h3>
+<p>AI-assisted writing tools use machine learning models to analyze text and provide suggestions for improvement. Unlike traditional spell-checkers, these tools can:</p>
+<p>* Analyze readability and complexity</p>
+<p>* Suggest sentence restructuring</p>
+<p>* Identify ambiguous language</p>
+<p>* Recommend style improvements</p>
+<p>* Generate rewritten content</p>
+<h3 id="12-how-cea-uses-ai">1.2 How CEA uses AI<a class="headerlink" href="#12-how-cea-uses-ai" title="Permanent link">&para;</a></h3>
+<p>Content Editorial Assistant employs AI in several ways:</p>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>How AI is used</th>
+<th>Human review required</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Style analysis</strong></td>
+<td>Rule-based + ML pattern detection</td>
+<td>Yes - verify suggestions</td>
+</tr>
+<tr>
+<td><strong>Readability scoring</strong></td>
+<td>Algorithmic calculations</td>
+<td>Yes - context matters</td>
+</tr>
+<tr>
+<td><strong>Ambiguity detection</strong></td>
+<td>ML-based semantic analysis</td>
+<td>Yes - may have false positives</td>
+</tr>
+<tr>
+<td><strong>Content rewriting</strong></td>
+<td>Large Language Model (LLM) generation</td>
+<td><strong>Critical</strong> - always verify</td>
+</tr>
+</tbody>
+</table>
+<h3 id="13-ai-limitations-you-must-understand">1.3 AI limitations you must understand<a class="headerlink" href="#13-ai-limitations-you-must-understand" title="Permanent link">&para;</a></h3>
+<p>__ |  <strong>AI systems have inherent limitations:</strong></p>
+<p>1. <strong>Hallucinations</strong> : AI may generate plausible-sounding but incorrect information
+  2. <strong>Context blindness</strong> : AI may not understand your product, organization, or domain
+  3. <strong>Bias</strong> : AI training data may introduce unintended biases
+  4. <strong>Inconsistency</strong> : Same input may produce different outputs
+  5. <strong>No true understanding</strong> : AI processes patterns, not meaning</p>
+<p>---|---  </p>
+<hr />
+<h2 id="module-2-human-in-the-loop-principle">Module 2: Human-in-the-loop principle<a class="headerlink" href="#module-2-human-in-the-loop-principle" title="Permanent link">&para;</a></h2>
+<h3 id="21-what-is-human-in-the-loop">2.1 What is human-in-the-loop?<a class="headerlink" href="#21-what-is-human-in-the-loop" title="Permanent link">&para;</a></h3>
+<p>Human-in-the-Loop (HITL) is a design principle ensuring humans maintain oversight and final decision authority over AI-generated content.</p>
+<table>
+<thead>
+<tr>
+<th>__</th>
+<th><strong>ALWAYS REVIEW AI-GENERATED CONTENT PRIOR TO USE</strong> This is not optional. Every piece of AI-generated content MUST be reviewed by a human before publication or use.</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="22-why-human-review-is-essential">2.2 Why human review is essential<a class="headerlink" href="#22-why-human-review-is-essential" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Human review mitigates</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Factual errors</strong></td>
+<td>Humans verify accuracy against source materials</td>
+</tr>
+<tr>
+<td><strong>Inappropriate tone</strong></td>
+<td>Humans ensure content matches organizational voice</td>
+</tr>
+<tr>
+<td><strong>Missing context</strong></td>
+<td>Humans add domain-specific knowledge</td>
+</tr>
+<tr>
+<td><strong>Security/Privacy</strong></td>
+<td>Humans catch sensitive information exposure</td>
+</tr>
+<tr>
+<td><strong>Brand compliance</strong></td>
+<td>Humans ensure adherence to style guides</td>
+</tr>
+</tbody>
+</table>
+<h3 id="23-the-review-process">2.3 The review process<a class="headerlink" href="#23-the-review-process" title="Permanent link">&para;</a></h3>
+<p>Follow this process for ALL AI-generated content:</p>
+<p>1. <strong>Read completely</strong> - Don't skim AI suggestions</p>
+<p>2. <strong>Verify facts</strong> - Cross-reference with authoritative sources</p>
+<p>3. <strong>Check context</strong> - Ensure it fits your document's purpose</p>
+<p>4. <strong>Validate tone</strong> - Confirm appropriate voice and style</p>
+<p>5. <strong>Test accuracy</strong> - For procedures, verify steps work</p>
+<p>6. <strong>Accept/Modify/Reject</strong> - Make deliberate decisions</p>
+<hr />
+<h2 id="module-3-using-content-editorial-assistant">Module 3: Using Content Editorial Assistant<a class="headerlink" href="#module-3-using-content-editorial-assistant" title="Permanent link">&para;</a></h2>
+<h3 id="31-accessing-cea">3.1 Accessing CEA<a class="headerlink" href="#31-accessing-cea" title="Permanent link">&para;</a></h3>
+<p>1. Navigate to the CEA application URL</p>
+<p>2. No login required - sessions are anonymous</p>
+<p>3. Your data is NOT stored after the session ends</p>
+<h3 id="32-input-methods">3.2 Input methods<a class="headerlink" href="#32-input-methods" title="Permanent link">&para;</a></h3>
+<h4 id="uploading-documents">Uploading documents<a class="headerlink" href="#uploading-documents" title="Permanent link">&para;</a></h4>
+<p>Supported formats:</p>
+<p>* PDF (.pdf)</p>
+<p>* Microsoft Word (.docx)</p>
+<p>* Markdown (.md)</p>
+<p>* AsciiDoc (.adoc)</p>
+<p>* DITA XML (.dita, .xml)</p>
+<p>* Plain Text (.txt)</p>
+<h4 id="direct-text-entry">Direct text entry<a class="headerlink" href="#direct-text-entry" title="Permanent link">&para;</a></h4>
+<p>1. Paste or type content into the text area</p>
+<p>2. Useful for quick analysis of snippets</p>
+<p>3. No file size limitations for text input</p>
+<h3 id="33-running-analysis">3.3 Running analysis<a class="headerlink" href="#33-running-analysis" title="Permanent link">&para;</a></h3>
+<p>1. Click the <strong>Analyze</strong> button</p>
+<p>2. Wait for processing (progress shown in real-time)</p>
+<p>3. Review the results dashboard</p>
+<h3 id="34-understanding-results">3.4 Understanding results<a class="headerlink" href="#34-understanding-results" title="Permanent link">&para;</a></h3>
+<h4 id="error-categories">Error categories<a class="headerlink" href="#error-categories" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Severity</th>
+<th>Action required</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Critical</strong></td>
+<td>High</td>
+<td>Must fix before publishing</td>
+</tr>
+<tr>
+<td><strong>Warning</strong></td>
+<td>Medium</td>
+<td>Should address if possible</td>
+</tr>
+<tr>
+<td><strong>Suggestion</strong></td>
+<td>Low</td>
+<td>Optional improvements</td>
+</tr>
+</tbody>
+</table>
+<h4 id="readability-metrics">Readability metrics<a class="headerlink" href="#readability-metrics" title="Permanent link">&para;</a></h4>
+<p>* <strong>Flesch Reading Ease</strong> : Higher = easier (target: 60-70)</p>
+<p>* <strong>Grade level</strong> : Target 9<sup>th</sup>-11<sup>th</sup> grade for technical docs</p>
+<p>* <strong>Gunning Fog Index</strong> : Target &lt; 12 for accessibility</p>
+<h3 id="35-using-ai-rewrite-feature">3.5 Using AI rewrite feature<a class="headerlink" href="#35-using-ai-rewrite-feature" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>__</th>
+<th>The rewrite feature generates NEW content using AI. This content requires thorough human review.</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>1. Locate a content block with issues</p>
+<p>2. Click <strong>Rewrite</strong> button</p>
+<p>3. Watch the two-pass refinement:</p>
+<div class="codehilite"><pre><span></span><code> <span class="k">*</span> Pass 1: Initial AI improvement
+
+ <span class="k">*</span> Pass 2: AI self-refinement
+</code></pre></div>
+
+<p>4. <strong>REVIEW THE OUTPUT CAREFULLY</strong></p>
+<p>5. Choose: Accept / Modify / Reject</p>
+<h3 id="36-generating-reports">3.6 Generating reports<a class="headerlink" href="#36-generating-reports" title="Permanent link">&para;</a></h3>
+<p>CEA can generate PDF reports of your analysis:</p>
+<p>* <strong>Full report</strong> : Comprehensive analysis (8-12 pages)</p>
+<p>* <strong>Executive summary</strong> : Key findings only (2-3 pages)</p>
+<table>
+<thead>
+<tr>
+<th>__</th>
+<th>All PDF reports include the AI disclaimer: "Always review AI-generated content prior to use."</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="module-4-best-practices">Module 4: Best practices<a class="headerlink" href="#module-4-best-practices" title="Permanent link">&para;</a></h2>
+<h3 id="41-before-using-ai-assistance">4.1 Before using AI assistance<a class="headerlink" href="#41-before-using-ai-assistance" title="Permanent link">&para;</a></h3>
+<p><strong>Do:</strong></p>
+<p>* Have a clear goal for your content</p>
+<p>* Prepare source materials for fact-checking</p>
+<p>* Understand your audience and purpose</p>
+<p><strong>Do not:</strong></p>
+<p>* Enter personal or sensitive information</p>
+<p>* Rely solely on AI for accuracy</p>
+<h3 id="42-during-ai-assisted-work">4.2 During AI-assisted work<a class="headerlink" href="#42-during-ai-assisted-work" title="Permanent link">&para;</a></h3>
+<p><strong>Do:</strong></p>
+<p>* Review each suggestion individually</p>
+<p>* Consider context the AI doesn't have</p>
+<p>* Use your domain expertise</p>
+<p>* Document significant AI-suggested changes</p>
+<p><strong>Do not:</strong></p>
+<p>* Accept suggestions blindly</p>
+<p>* Skip the review step</p>
+<h3 id="43-after-using-ai-assistance">4.3 After using AI assistance<a class="headerlink" href="#43-after-using-ai-assistance" title="Permanent link">&para;</a></h3>
+<p><strong>Do:</strong></p>
+<p>* Perform final human review of all content</p>
+<p>* Verify technical accuracy</p>
+<p>* Check for consistency with other documents</p>
+<p>* Follow your team's review/approval process</p>
+<p><strong>Do not:</strong></p>
+<p>* Publish without human verification</p>
+<h3 id="44-red-flags-to-watch-for">4.4 Red flags to watch for<a class="headerlink" href="#44-red-flags-to-watch-for" title="Permanent link">&para;</a></h3>
+<p>Be especially careful when AI suggestions:</p>
+<p>* Include specific numbers, dates, or statistics</p>
+<p>* Reference external sources or links</p>
+<p>* Make claims about product capabilities</p>
+<p>* Include code samples or commands</p>
+<p>* Contradict your source materials</p>
+<hr />
+<h2 id="module-5-privacy-and-data-handling">Module 5: Privacy and data handling<a class="headerlink" href="#module-5-privacy-and-data-handling" title="Permanent link">&para;</a></h2>
+<h3 id="51-what-not-to-enter">5.1 What NOT to enter<a class="headerlink" href="#51-what-not-to-enter" title="Permanent link">&para;</a></h3>
+<p>__ |  <strong>Never enter into CEA:</strong></p>
+<p>* Personal Identifiable Information (PII)
+  * Customer data or account information
+  * Credentials, passwords, or API keys
+  * Confidential business information
+  * Information not intended for AI processing</p>
+<p>---|---  </p>
+<h3 id="52-data-retention-policy">5.2 Data retention policy<a class="headerlink" href="#52-data-retention-policy" title="Permanent link">&para;</a></h3>
+<p>* <strong>Session data</strong> : Deleted when you close the browser</p>
+<p>* <strong>Analysis results</strong> : Not stored after session</p>
+<p>* <strong>Uploaded documents</strong> : Processed in-memory only</p>
+<p>* <strong>AI interactions</strong> : Not used for model training</p>
+<h3 id="53-security-considerations">5.3 Security considerations<a class="headerlink" href="#53-security-considerations" title="Permanent link">&para;</a></h3>
+<p>* CEA runs within the corporate network</p>
+<p>* Content is processed by approved AI providers only</p>
+<p>* No data is shared with external parties</p>
+<p>* Session isolation prevents data leakage</p>
+<hr />
+<h2 id="module-6-practical-exercises">Module 6: Practical exercises<a class="headerlink" href="#module-6-practical-exercises" title="Permanent link">&para;</a></h2>
+<h3 id="exercise-1-basic-analysis">Exercise 1: Basic analysis<a class="headerlink" href="#exercise-1-basic-analysis" title="Permanent link">&para;</a></h3>
+<p>1. Copy a paragraph from existing documentation</p>
+<p>2. Paste into CEA text input</p>
+<p>3. Click Analyze</p>
+<p>4. Review results and identify:</p>
+<div class="codehilite"><pre><span></span><code><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nx">How</span><span class="w"> </span><span class="nx">many</span><span class="w"> </span><span class="nx">issues</span><span class="w"> </span><span class="nx">were</span><span class="w"> </span><span class="nx">found</span><span class="p">?</span>
+
+<span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nx">What</span><span class="w"> </span><span class="k">is</span><span class="w"> </span><span class="nx">the</span><span class="w"> </span><span class="nx">readability</span><span class="w"> </span><span class="nx">score</span><span class="p">?</span>
+
+<span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nx">What</span><span class="err">&#39;</span><span class="nx">s</span><span class="w"> </span><span class="nx">the</span><span class="w"> </span><span class="nx">most</span><span class="w"> </span><span class="nx">common</span><span class="w"> </span><span class="nx">issue</span><span class="w"> </span><span class="k">type</span><span class="p">?</span>
+</code></pre></div>
+
+<h3 id="exercise-2-critical-review">Exercise 2: Critical review<a class="headerlink" href="#exercise-2-critical-review" title="Permanent link">&para;</a></h3>
+<p>1. Use the rewrite feature on a content block</p>
+<p>2. Before accepting, answer:</p>
+<div class="codehilite"><pre><span></span><code> <span class="k">*</span> Is the rewritten content factually accurate?
+
+ <span class="k">*</span> Does it maintain the original meaning?
+
+ <span class="k">*</span> Is the tone appropriate?
+
+ <span class="k">*</span> Would you publish this as-is?
+</code></pre></div>
+
+<h3 id="exercise-3-report-generation">Exercise 3: Report generation<a class="headerlink" href="#exercise-3-report-generation" title="Permanent link">&para;</a></h3>
+<p>1. Run analysis on a document</p>
+<p>2. Generate both Full Report and Executive Summary</p>
+<p>3. Note the AI disclaimer on each page</p>
+<p>4. Identify three actionable items from the report</p>
+<hr />
+<h2 id="training-completion-checklist">Training completion checklist<a class="headerlink" href="#training-completion-checklist" title="Permanent link">&para;</a></h2>
+<p>Before considering this training complete, verify you can answer YES to all:</p>
+<p>* I understand that AI can generate incorrect information (hallucinations)</p>
+<p>* I will ALWAYS review AI-generated content before use</p>
+<p>* I know NOT to enter personal or sensitive information</p>
+<p>* I understand CEA's analysis features and their limitations</p>
+<p>* I can interpret readability scores and error categories</p>
+<p>* I know how to use the rewrite feature responsibly</p>
+<p>* I understand data is not retained after my session</p>
+<p>* I know where to report issues or provide feedback</p>
+<hr />
+<h2 id="quick-reference-card">Quick reference card<a class="headerlink" href="#quick-reference-card" title="Permanent link">&para;</a></h2>
+<h3 id="the-golden-rule">The golden rule<a class="headerlink" href="#the-golden-rule" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>__</th>
+<th><strong>ALWAYS REVIEW AI-GENERATED CONTENT PRIOR TO USE</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="key-actions">Key actions<a class="headerlink" href="#key-actions" title="Permanent link">&para;</a></h3>
+<p>* <strong>Analyze</strong> : Process content for issues</p>
+<p>* <strong>Rewrite</strong> : Generate AI improvements (requires review!)</p>
+<p>* <strong>Full report</strong> : Comprehensive PDF analysis</p>
+<p>* <strong>Summary</strong> : Executive-level PDF overview</p>
+<h3 id="support-contacts">Support contacts<a class="headerlink" href="#support-contacts" title="Permanent link">&para;</a></h3>
+<p>* <strong>Slack</strong> : <a href="https://redhat.enterprise.slack.com/archives/C05EXLSNTD1">#content-editorial-assistant</a></p>
+<p>* <strong>Email</strong> : <a href="mailto:gtrivedi@redhat.com">gtrivedi@redhat.com</a></p>
+<p>* <strong>Issues</strong> : <a href="https://gitlab.cee.redhat.com/ccs-ai/content-editorial-assistant/-/issues">GitLab Issues</a></p>
+<hr />
+<h2 id="appendix-training-plan-document">Appendix: Training plan document<a class="headerlink" href="#appendix-training-plan-document" title="Permanent link">&para;</a></h2>
+<h3 id="training-plan-summary">Training plan summary<a class="headerlink" href="#training-plan-summary" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Training title</strong></td>
+<td>Content Editorial Assistant AI-assisted writing training</td>
+</tr>
+<tr>
+<td><strong>Version</strong></td>
+<td>1.0</td>
+</tr>
+<tr>
+<td><strong>Effective date</strong></td>
+<td>November 2025</td>
+</tr>
+<tr>
+<td><strong>Target audience</strong></td>
+<td>All CEA users (technical writers, documentation teams)</td>
+</tr>
+<tr>
+<td><strong>Delivery method</strong></td>
+<td>Self-paced online training via Antora documentation</td>
+</tr>
+<tr>
+<td><strong>Duration</strong></td>
+<td>1.5 hours (including exercises)</td>
+</tr>
+<tr>
+<td><strong>Prerequisites</strong></td>
+<td>Basic technical writing experience</td>
+</tr>
+<tr>
+<td><strong>Assessment</strong></td>
+<td>Completion checklist (self-assessment)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="learning-outcomes">Learning outcomes<a class="headerlink" href="#learning-outcomes" title="Permanent link">&para;</a></h3>
+<p>Upon completion, learners will demonstrate:</p>
+<p>1. <strong>Knowledge</strong> of AI capabilities and limitations</p>
+<p>2. <strong>Understanding</strong> of human-in-the-loop requirements</p>
+<p>3. <strong>Ability</strong> to use CEA features effectively</p>
+<p>4. <strong>Competence</strong> in reviewing AI-generated content</p>
+<p>5. <strong>Awareness</strong> of privacy and data handling requirements</p>
+<h3 id="training-maintenance">Training maintenance<a class="headerlink" href="#training-maintenance" title="Permanent link">&para;</a></h3>
+<p>This training guide will be reviewed and updated:</p>
+<p>* Quarterly for accuracy</p>
+<p>* When significant features are added</p>
+<p>* When AI policies change</p>
+<p>* Based on user feedback</p>
+<p>Last updated 2025-11-25 17:03:30 +0530 </p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href=".." class="md-footer__link md-footer__link--prev" aria-label="Previous: Home">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Home
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../getting-started/" class="md-footer__link md-footer__link--next" aria-label="Next: Getting Started">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Getting Started
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "search.suggest", "search.highlight", "content.code.copy", "navigation.footer", "content.action.edit"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../search/main.js"></script>
+      
+    
+  </body>
+</html>

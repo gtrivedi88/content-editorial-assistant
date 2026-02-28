@@ -1,0 +1,242 @@
+# Second Person Rule Configuration
+# World-class patterns for role terms and document type awareness
+
+# === CONFIDENCE SETTINGS ===
+confidence:
+  # Minimum confidence to show a suggestion (raised from 0.45 to 0.5)
+  threshold: 0.5
+  
+  # Evidence score ranges
+  high_confidence: 0.8
+  medium_confidence: 0.6
+  low_confidence: 0.5
+
+# === PROTECTED ROLE TERMS ===
+# These specific roles should NEVER suggest "you" replacement
+# because they refer to distinct personas, not the reader
+protected_role_terms:
+  
+  # Technical roles - specific job functions
+  technical_roles:
+    - administrator
+    - admin
+    - administrators
+    - admins
+    - operator
+    - operators
+    - developer
+    - developers
+    - engineer
+    - engineers
+    - architect
+    - architects
+    - analyst
+    - analysts
+    - manager
+    - managers
+    - owner
+    - owners
+    - maintainer
+    - maintainers
+    - contributor
+    - contributors
+    - reviewer
+    - reviewers
+    - approver
+    - approvers
+  
+  # System/access roles
+  system_roles:
+    - superuser
+    - superusers
+    - root
+    - guest
+    - guests
+    - member
+    - members
+    - moderator
+    - moderators
+  
+  # Specialized technical roles
+  specialized_roles:
+    - sysadmin
+    - sysadmins
+    - devops
+    - sre
+    - sres
+    - dba
+    - dbas
+    - secops
+    - netadmin
+    - netadmins
+  
+  # Cloud/platform specific
+  cloud_roles:
+    - tenant
+    - tenants
+    - subscriber
+    - subscribers
+    - consumer
+    - consumers
+    - provider
+    - providers
+
+# === GENERIC TERMS THAT MAY SUGGEST "YOU" ===
+# These are context-dependent and may benefit from direct address
+suggestible_terms:
+  - user
+  - users
+  - customer
+  - customers
+  - person
+  - individual
+  - reader
+
+# === DOCUMENT TYPE PREFERENCES ===
+document_type_preferences:
+  
+  # Document types where THIRD PERSON is preferred
+  # These should NOT flag third-person usage
+  third_person_preferred:
+    - api
+    - api_documentation
+    - api_reference
+    - reference
+    - reference_documentation
+    - specification
+    - spec
+    - technical_specification
+    - architecture
+    - design_document
+    - admin_guide
+    - administrator_guide
+    - developer_guide
+    - developer_documentation
+    - operations_guide
+    - runbook
+    - changelog
+    - release_notes
+  
+  # Document types where SECOND PERSON is preferred
+  # These SHOULD suggest "you" for generic terms
+  second_person_preferred:
+    - user_guide
+    - user_documentation
+    - tutorial
+    - tutorials
+    - how_to
+    - howto
+    - how-to
+    - quickstart
+    - quick_start
+    - getting_started
+    - instructions
+    - guide
+    - walkthrough
+    - onboarding
+
+# === CONTEXT-SPECIFIC RULES ===
+context_rules:
+  
+  # When these words appear near a role term, don't flag
+  role_context_indicators:
+    - role
+    - permission
+    - access
+    - privilege
+    - rights
+    - account
+    - profile
+    - type
+    - kind
+    - category
+  
+  # Technical compound patterns to skip
+  technical_compounds:
+    - user interface
+    - user experience
+    - user story
+    - user journey
+    - user data
+    - user input
+    - user feedback
+    - user action
+    - user session
+    - user token
+    - user id
+    - user name
+    - user account
+    - user profile
+    - user dashboard
+    - user workspace
+    - user workspaces
+    - user namespace
+    - user cluster
+    - user credentials
+    - user directory
+    - user group
+    - user groups
+    - user management
+    - user object
+    - user objects
+    - user registry
+    - user repository
+    - user resource
+    - user resources
+    - user secret
+    - user settings
+    - user table
+    - user volume
+    - end user
+    - root user
+    - admin user
+    - test user
+    - guest user
+    - power user
+    - super user
+    - service user
+
+# === SUGGESTION TEMPLATES ===
+suggestions:
+  
+  high_confidence:
+    - "Replace '{term}' with 'you' for direct user engagement."
+    - "Use 'you' to address the reader directly."
+    - "Address the user personally rather than in third person."
+  
+  medium_confidence:
+    - "Consider replacing '{term}' with 'you' for better engagement."
+    - "Direct address creates more personal communication."
+  
+  low_confidence:
+    - "In user guides, '{term}' could be replaced with 'you' for more direct communication."
+    - "Consider if direct address would improve user experience."
+
+# === EXAMPLES ===
+examples:
+  
+  # Should NOT flag (protected roles)
+  protected:
+    - sentence: "The operator must configure the system."
+      reason: "Operator is a specific role"
+    - sentence: "The administrator should review the logs."
+      reason: "Administrator is a specific role"
+    - sentence: "Developers can use this API endpoint."
+      reason: "Developer is a specific role"
+  
+  # MAY flag (generic terms in user guides)
+  suggestible:
+    - sentence: "Users can click the button."
+      suggestion: "You can click the button."
+      context: "user_guide"
+    - sentence: "The user should save their work."
+      suggestion: "Save your work."
+      context: "tutorial"
+  
+  # Should NOT flag (API/reference docs)
+  api_docs:
+    - sentence: "The user parameter specifies the username."
+      reason: "API documentation - third person is appropriate"
+    - sentence: "Users are authenticated via OAuth."
+      reason: "Reference documentation - third person is appropriate"
+

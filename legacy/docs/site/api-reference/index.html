@@ -1,0 +1,3666 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="AI-powered technical writing assistant that helps writers review content">
+      
+      
+        <meta name="author" content="CCS AI Team">
+      
+      
+      
+        <link rel="prev" href="../getting-started/">
+      
+      
+        <link rel="next" href="../environment-variables/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+    
+    
+      
+        <title>API Reference - Content Editorial Assistant</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#api-reference" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Content Editorial Assistant" class="md-header__button md-logo" aria-label="Content Editorial Assistant" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Content Editorial Assistant
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              API Reference
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://gitlab.cee.redhat.com/ccs-ai/content-editorial-assistant" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitLab
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href=".." class="md-tabs__link">
+          
+  
+  
+  User Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../getting-started/" class="md-tabs__link">
+          
+  
+  
+  Developer Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../architecture/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../how-to-add-new-rule/" class="md-tabs__link">
+          
+  
+  
+  How-To Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../testing-setup/" class="md-tabs__link">
+          
+  
+  
+  Testing
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Content Editorial Assistant" class="md-nav__button md-logo" aria-label="Content Editorial Assistant" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Content Editorial Assistant
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://gitlab.cee.redhat.com/ccs-ai/content-editorial-assistant" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitLab
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../training-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Developer Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Developer Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#authentication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authentication
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#base-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Base configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Base configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#base-url" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Base URL
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#content-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Content types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#common-headers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common headers
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#document-processing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Document processing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Document processing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#upload-document" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Upload document
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Upload document">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-request" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#content-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Content Analysis
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Content Analysis">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#analyze-content" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Analyze Content
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Analyze Content">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request-body" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request Body
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#request-parameters_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ai-rewriting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AI Rewriting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="AI Rewriting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rewrite-block" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rewrite Block
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rewrite Block">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request-body_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request Body
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#refine-content" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Refine Content
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Refine Content">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request-body_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request Body
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#report-generation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Report Generation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Report Generation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#generate-pdf-report" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Generate PDF Report
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Generate PDF Report">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request-body_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request Body
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#user-interface-routes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        User Interface Routes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="User Interface Routes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#home-page" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Home Page
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#analysis-page" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Analysis Page
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-blogs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Create Blogs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#feedback-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Feedback System
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Feedback System">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#submit-feedback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Submit Feedback
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Submit Feedback">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request-body_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request Body
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-feedback-statistics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Feedback Statistics
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Get Feedback Statistics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#response_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-feedback-insights" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Feedback Insights
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#analytics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Analytics
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Analytics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#session-analytics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Session Analytics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rule-analytics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rule Analytics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#model-usage-analytics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Model Usage Analytics
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#health-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Health Check
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Health Check">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#application-health" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Application Health
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Application Health">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#response_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#websocket-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WebSocket API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="WebSocket API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#connection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Connection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Events
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Events">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#client-to-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Client to Server
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#server-to-client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Server to Client
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#error-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error Handling
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Error Handling">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#error-response-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error Response Format
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#common-error-codes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common Error Codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rate-limiting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rate Limiting
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#integration-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Integration Examples
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Integration Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#complete-analysis-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complete Analysis Workflow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#python-integration-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Python Integration Example
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#changelog" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changelog
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Changelog">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#v100-current" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.0.0 (Current)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#upcoming-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Upcoming Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../environment-variables/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Environment Variables
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deployment-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../llm-rules-implementation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LLM Rules Implementation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-flow-diagram/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Flow Diagram
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How-To Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    How-To Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how-to-add-new-rule/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a New Rule
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how-to-add-new-ambiguity-detector/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a New Ambiguity Detector
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how-to-add-new-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a New AI Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configure-providers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configure AI Providers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Testing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing-setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI-Powered Testing Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../writing-tests/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Writing Tests
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#authentication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authentication
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#base-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Base configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Base configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#base-url" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Base URL
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#content-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Content types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#common-headers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common headers
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#document-processing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Document processing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Document processing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#upload-document" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Upload document
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Upload document">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-request" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#content-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Content Analysis
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Content Analysis">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#analyze-content" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Analyze Content
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Analyze Content">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request-body" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request Body
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#request-parameters_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ai-rewriting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AI Rewriting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="AI Rewriting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rewrite-block" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rewrite Block
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rewrite Block">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request-body_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request Body
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#refine-content" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Refine Content
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Refine Content">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request-body_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request Body
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#report-generation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Report Generation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Report Generation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#generate-pdf-report" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Generate PDF Report
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Generate PDF Report">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request-body_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request Body
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#user-interface-routes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        User Interface Routes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="User Interface Routes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#home-page" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Home Page
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#analysis-page" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Analysis Page
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-blogs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Create Blogs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#feedback-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Feedback System
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Feedback System">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#submit-feedback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Submit Feedback
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Submit Feedback">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request-body_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request Body
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-feedback-statistics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Feedback Statistics
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Get Feedback Statistics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#response_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-feedback-insights" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Feedback Insights
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#analytics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Analytics
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Analytics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#session-analytics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Session Analytics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rule-analytics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rule Analytics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#model-usage-analytics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Model Usage Analytics
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#health-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Health Check
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Health Check">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#application-health" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Application Health
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Application Health">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#response_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#websocket-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WebSocket API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="WebSocket API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#connection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Connection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Events
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Events">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#client-to-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Client to Server
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#server-to-client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Server to Client
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#error-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error Handling
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Error Handling">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#error-response-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error Response Format
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#common-error-codes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common Error Codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rate-limiting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rate Limiting
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#integration-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Integration Examples
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Integration Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#complete-analysis-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complete Analysis Workflow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#python-integration-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Python Integration Example
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#changelog" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changelog
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Changelog">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#v100-current" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.0.0 (Current)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#upcoming-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Upcoming Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://gitlab.cee.redhat.com/ccs-ai/content-editorial-assistant/-/edit/main/docs/modules/api-reference.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="api-reference">API reference<a class="headerlink" href="#api-reference" title="Permanent link">&para;</a></h1>
+<table>
+<thead>
+<tr>
+<th>Note</th>
+<th><strong>This documentation is for developers</strong> who want to integrate with the Content Editorial Assistant API or build automation workflows.</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>Content Editorial Assistant provides both REST API and WebSocket interfaces for document analysis, AI-powered rewriting, and real-time communication. This reference covers all available endpoints, request formats, and response structures.</p>
+<h2 id="authentication">Authentication<a class="headerlink" href="#authentication" title="Permanent link">&para;</a></h2>
+<p>Currently, the API does not require authentication. All endpoints are publicly accessible with automatic session management.</p>
+<h2 id="base-configuration">Base configuration<a class="headerlink" href="#base-configuration" title="Permanent link">&para;</a></h2>
+<h3 id="base-url">Base URL<a class="headerlink" href="#base-url" title="Permanent link">&para;</a></h3>
+<p>[code] 
+    <a href="http://localhost:5000">http://localhost:5000</a>
+[/code]</p>
+<h3 id="content-types">Content types<a class="headerlink" href="#content-types" title="Permanent link">&para;</a></h3>
+<p>* <strong>Request</strong> : <code>multipart/form-data</code> for file uploads, <code>application/json</code> for JSON data</p>
+<p>* <strong>Response</strong> : <code>application/json</code></p>
+<h3 id="common-headers">Common headers<a class="headerlink" href="#common-headers" title="Permanent link">&para;</a></h3>
+<p>[code] 
+    Content-Type: application/json
+    Accept: application/json
+[/code]</p>
+<h2 id="document-processing">Document processing<a class="headerlink" href="#document-processing" title="Permanent link">&para;</a></h2>
+<h3 id="upload-document">Upload document<a class="headerlink" href="#upload-document" title="Permanent link">&para;</a></h3>
+<p>Upload and extract text from various document formats.
+[code] 
+    POST /upload
+[/code]</p>
+<h4 id="request-parameters">Request parameters<a class="headerlink" href="#request-parameters" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>file</td>
+<td>File</td>
+<td>Yes</td>
+<td>Document file (PDF, DOCX, Markdown, AsciiDoc, DITA, TXT)</td>
+</tr>
+<tr>
+<td>format_hint</td>
+<td>String</td>
+<td>No</td>
+<td>Override auto-detection: <code>pdf</code>, <code>docx</code>, <code>markdown</code>, <code>asciidoc</code>, <code>dita</code>, <code>txt</code></td>
+</tr>
+</tbody>
+</table>
+<h4 id="example-request">Example request<a class="headerlink" href="#example-request" title="Permanent link">&para;</a></h4>
+<p>[code] 
+    curl -X POST \
+      -F "file=@document.pdf" \
+      -F "format_hint=pdf" \
+      <a href="http://localhost:5000/upload">http://localhost:5000/upload</a>
+[/code]</p>
+<h4 id="response">Response<a class="headerlink" href="#response" title="Permanent link">&para;</a></h4>
+<p>[code] 
+    {
+      "success": true,
+      "filename": "document.pdf",
+      "text": "Extracted document content...",
+      "format": "pdf",
+      "size": 1048576,
+      "pages": 5,
+      "extraction_time": 1.25,
+      "document_id": "doc_12345",
+      "analysis_id": "analysis_67890"
+    }
+[/code]</p>
+<h2 id="content-analysis">Content Analysis<a class="headerlink" href="#content-analysis" title="Permanent link">&para;</a></h2>
+<h3 id="analyze-content">Analyze Content<a class="headerlink" href="#analyze-content" title="Permanent link">&para;</a></h3>
+<p>Perform comprehensive style analysis on text content.
+[code] 
+    POST /analyze
+[/code]</p>
+<h4 id="request-body">Request Body<a class="headerlink" href="#request-body" title="Permanent link">&para;</a></h4>
+<p>[code] 
+    {
+      "content": "Your text content to analyze...",
+      "format_hint": "auto",
+      "content_type": "concept",
+      "session_id": "session_12345",
+      "confidence_threshold": 0.5,
+      "include_confidence_details": true,
+      "document_id": "doc_12345",
+      "analysis_id": "analysis_67890"
+    }
+[/code]</p>
+<h4 id="request-parameters_1">Request parameters<a class="headerlink" href="#request-parameters_1" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>content</td>
+<td>String</td>
+<td>Yes</td>
+<td>Text content to analyze</td>
+</tr>
+<tr>
+<td>format_hint</td>
+<td>String</td>
+<td>No</td>
+<td>Document format hint: <code>auto</code>, <code>markdown</code>, <code>asciidoc</code> (default: <code>auto</code>)</td>
+</tr>
+<tr>
+<td>content_type</td>
+<td>String</td>
+<td>No</td>
+<td>Content classification: <code>concept</code>, <code>procedure</code>, <code>reference</code> (default: <code>concept</code>)</td>
+</tr>
+<tr>
+<td>session_id</td>
+<td>String</td>
+<td>No</td>
+<td>Session identifier for WebSocket progress updates</td>
+</tr>
+<tr>
+<td>confidence_threshold</td>
+<td>Number</td>
+<td>No</td>
+<td>Error confidence threshold (0.0-1.0)</td>
+</tr>
+<tr>
+<td>include_confidence_details</td>
+<td>Boolean</td>
+<td>No</td>
+<td>Include detailed confidence information (default: <code>true</code>)</td>
+</tr>
+<tr>
+<td>document_id</td>
+<td>String</td>
+<td>No</td>
+<td>Database document identifier</td>
+</tr>
+<tr>
+<td>analysis_id</td>
+<td>String</td>
+<td>No</td>
+<td>Database analysis identifier</td>
+</tr>
+</tbody>
+</table>
+<h4 id="response_1">Response<a class="headerlink" href="#response_1" title="Permanent link">&para;</a></h4>
+<p>[code] 
+    {
+      "success": true,
+      "analysis": {
+        "errors": [
+          {
+            "type": "passive_voice",
+            "message": "Consider using active voice",
+            "text": "The system was configured",
+            "suggestion": "We configured the system",
+            "start": 45,
+            "end": 67,
+            "confidence": 0.85,
+            "severity": "medium",
+            "category": "style"
+          }
+        ],
+        "statistics": {
+          "word_count": 250,
+          "sentence_count": 15,
+          "avg_sentence_length": 16.7,
+          "readability_scores": {
+            "flesch_reading_ease": 65.2,
+            "flesch_kincaid_grade": 9.5,
+            "gunning_fog": 10.2,
+            "coleman_liau": 9.8,
+            "automated_readability_index": 9.1
+          },
+          "total_errors": 12,
+          "high_confidence_errors": 8,
+          "medium_confidence_errors": 3,
+          "low_confidence_errors": 1
+        },
+        "modular_compliance": {
+          "module_type": "concept",
+          "compliance_score": 0.85,
+          "missing_elements": [],
+          "recommendations": []
+        },
+        "processing_time": 2.34,
+        "content_type": "concept"
+      },
+      "structural_blocks": [
+        {
+          "id": "block_1",
+          "type": "heading",
+          "content": "Introduction",
+          "level": 1,
+          "errors": []
+        },
+        {
+          "id": "block_2",
+          "type": "paragraph",
+          "content": "This is a paragraph with content...",
+          "errors": [
+            {
+              "type": "sentence_length",
+              "message": "Sentence is too long",
+              "confidence": 0.75
+            }
+          ]
+        }
+      ],
+      "confidence_details": {
+        "confidence_system_available": true,
+        "threshold_range": {
+          "min": 0.0,
+          "max": 1.0,
+          "default": 0.43
+        },
+        "confidence_levels": {
+          "HIGH": {
+            "threshold": 0.7,
+            "description": "High confidence errors - very likely to be correct"
+          },
+          "MEDIUM": {
+            "threshold": 0.5,
+            "description": "Medium confidence errors - likely to be correct"
+          },
+          "LOW": {
+            "threshold": 0.0,
+            "description": "Low confidence errors - may need review"
+          }
+        }
+      },
+      "backward_compatible": true,
+      "session_id": "session_12345"
+    }
+[/code]</p>
+<h2 id="ai-rewriting">AI Rewriting<a class="headerlink" href="#ai-rewriting" title="Permanent link">&para;</a></h2>
+<h3 id="rewrite-block">Rewrite Block<a class="headerlink" href="#rewrite-block" title="Permanent link">&para;</a></h3>
+<p>AI-powered rewriting of individual content blocks.
+[code] 
+    POST /rewrite-block
+[/code]</p>
+<h4 id="request-body_1">Request Body<a class="headerlink" href="#request-body_1" title="Permanent link">&para;</a></h4>
+<p>[code] 
+    {
+      "block_content": "Content to be rewritten...",
+      "block_errors": [
+        {
+          "type": "passive_voice",
+          "message": "Consider using active voice",
+          "confidence": 0.85
+        }
+      ],
+      "block_type": "paragraph",
+      "block_id": "block_2",
+      "session_id": "session_12345"
+    }
+[/code]</p>
+<h4 id="response_2">Response<a class="headerlink" href="#response_2" title="Permanent link">&para;</a></h4>
+<p>[code] 
+    {
+      "success": true,
+      "original_content": "Original block content...",
+      "rewritten_content": "Improved block content...",
+      "errors_fixed": 3,
+      "improvements_made": [
+        {
+          "type": "passive_voice",
+          "description": "Converted to active voice"
+        },
+        {
+          "type": "sentence_structure",
+          "description": "Simplified complex sentences"
+        }
+      ],
+      "confidence_score": 0.89,
+      "applicable_stations": ["grammar", "clarity", "conciseness"],
+      "block_type": "paragraph",
+      "assembly_line_used": true,
+      "block_id": "block_2",
+      "session_id": "session_12345",
+      "processing_time": 3.45
+    }
+[/code]</p>
+<h3 id="refine-content">Refine Content<a class="headerlink" href="#refine-content" title="Permanent link">&para;</a></h3>
+<p>Second-pass AI refinement for enhanced content quality.
+[code] 
+    POST /refine
+[/code]</p>
+<h4 id="request-body_2">Request Body<a class="headerlink" href="#request-body_2" title="Permanent link">&para;</a></h4>
+<p>[code] 
+    {
+      "content": "First-pass rewritten content...",
+      "original_errors": [
+        {
+          "type": "clarity",
+          "message": "Content needs clarification"
+        }
+      ],
+      "first_pass_result": {
+        "rewritten_content": "First pass result...",
+        "improvements_made": []
+      }
+    }
+[/code]</p>
+<h4 id="response_3">Response<a class="headerlink" href="#response_3" title="Permanent link">&para;</a></h4>
+<p>[code] 
+    {
+      "success": true,
+      "original_content": "First-pass content...",
+      "refined_content": "Final refined content...",
+      "total_improvements": 5,
+      "refinement_quality": 0.92,
+      "processing_time": 2.67
+    }
+[/code]</p>
+<h2 id="report-generation">Report Generation<a class="headerlink" href="#report-generation" title="Permanent link">&para;</a></h2>
+<h3 id="generate-pdf-report">Generate PDF Report<a class="headerlink" href="#generate-pdf-report" title="Permanent link">&para;</a></h3>
+<p>Create a comprehensive PDF analysis report.
+[code] 
+    POST /generate-pdf-report
+[/code]</p>
+<h4 id="request-body_3">Request Body<a class="headerlink" href="#request-body_3" title="Permanent link">&para;</a></h4>
+<p>[code] 
+    {
+      "analysis": {
+        "errors": [],
+        "statistics": {},
+        "modular_compliance": {}
+      },
+      "content": "Original document content...",
+      "structural_blocks": []
+    }
+[/code]</p>
+<h4 id="response_4">Response<a class="headerlink" href="#response_4" title="Permanent link">&para;</a></h4>
+<p>Returns a downloadable PDF file with comprehensive analysis results.
+[code] 
+    Content-Type: application/pdf
+    Content-Disposition: attachment; filename="writing_analytics_report_20241215_143022.pdf"
+[/code]</p>
+<h2 id="user-interface-routes">User Interface Routes<a class="headerlink" href="#user-interface-routes" title="Permanent link">&para;</a></h2>
+<h3 id="home-page">Home Page<a class="headerlink" href="#home-page" title="Permanent link">&para;</a></h3>
+<p>[code] 
+    GET /
+[/code]</p>
+<p>Main application interface for document upload and analysis.</p>
+<h3 id="analysis-page">Analysis Page<a class="headerlink" href="#analysis-page" title="Permanent link">&para;</a></h3>
+<p>[code] 
+    GET /analyze
+[/code]</p>
+<p>Dedicated analysis interface page.</p>
+<h3 id="create-blogs">Create Blogs<a class="headerlink" href="#create-blogs" title="Permanent link">&para;</a></h3>
+<p>[code] 
+    GET /create-blogs
+[/code]</p>
+<p>Blog creation interface (experimental feature).</p>
+<h2 id="feedback-system">Feedback System<a class="headerlink" href="#feedback-system" title="Permanent link">&para;</a></h2>
+<h3 id="submit-feedback">Submit Feedback<a class="headerlink" href="#submit-feedback" title="Permanent link">&para;</a></h3>
+<p>[code] 
+    POST /api/feedback
+[/code]</p>
+<h4 id="request-body_4">Request Body<a class="headerlink" href="#request-body_4" title="Permanent link">&para;</a></h4>
+<p>[code] 
+    {
+      "feedback_type": "rule_accuracy",
+      "rule_id": "passive_voice",
+      "error_text": "The system was configured",
+      "user_rating": 4,
+      "user_comment": "Good catch, but suggestion could be better",
+      "context": {
+        "document_type": "technical",
+        "content_length": 250
+      }
+    }
+[/code]</p>
+<h3 id="get-feedback-statistics">Get Feedback Statistics<a class="headerlink" href="#get-feedback-statistics" title="Permanent link">&para;</a></h3>
+<p>[code] 
+    GET /api/feedback/stats
+[/code]</p>
+<h4 id="response_5">Response<a class="headerlink" href="#response_5" title="Permanent link">&para;</a></h4>
+<p>[code] 
+    {
+      "total_feedback": 1250,
+      "average_rating": 4.2,
+      "rule_performance": {
+        "passive_voice": {
+          "total": 300,
+          "average_rating": 4.5
+        }
+      }
+    }
+[/code]</p>
+<h3 id="get-feedback-insights">Get Feedback Insights<a class="headerlink" href="#get-feedback-insights" title="Permanent link">&para;</a></h3>
+<p>[code] 
+    GET /api/feedback/insights
+[/code]</p>
+<p>Returns actionable insights from user feedback data.</p>
+<h2 id="analytics">Analytics<a class="headerlink" href="#analytics" title="Permanent link">&para;</a></h2>
+<h3 id="session-analytics">Session Analytics<a class="headerlink" href="#session-analytics" title="Permanent link">&para;</a></h3>
+<p>[code] 
+    GET /api/analytics/session?session_id=session_12345
+[/code]</p>
+<p>Detailed analytics for a specific session.</p>
+<h3 id="rule-analytics">Rule Analytics<a class="headerlink" href="#rule-analytics" title="Permanent link">&para;</a></h3>
+<p>[code] 
+    GET /api/analytics/rules
+[/code]</p>
+<p>Performance metrics for all style rules.</p>
+<h3 id="model-usage-analytics">Model Usage Analytics<a class="headerlink" href="#model-usage-analytics" title="Permanent link">&para;</a></h3>
+<p>[code] 
+    GET /api/analytics/model-usage
+[/code]</p>
+<p>AI model usage statistics and performance metrics.</p>
+<h2 id="health-check">Health Check<a class="headerlink" href="#health-check" title="Permanent link">&para;</a></h2>
+<h3 id="application-health">Application Health<a class="headerlink" href="#application-health" title="Permanent link">&para;</a></h3>
+<p>[code] 
+    GET /health
+[/code]</p>
+<h4 id="response_6">Response<a class="headerlink" href="#response_6" title="Permanent link">&para;</a></h4>
+<p>[code] 
+    {
+      "status": "healthy",
+      "services": {
+        "document_processor": "available",
+        "style_analyzer": "available",
+        "ai_rewriter": "available",
+        "ollama": "available",
+        "database": "available"
+      },
+      "version": "1.0.0",
+      "uptime": 3600,
+      "timestamp": "2024-01-15T10:30:00Z"
+    }
+[/code]</p>
+<h2 id="websocket-api">WebSocket API<a class="headerlink" href="#websocket-api" title="Permanent link">&para;</a></h2>
+<h3 id="connection">Connection<a class="headerlink" href="#connection" title="Permanent link">&para;</a></h3>
+<p>Connect to the WebSocket endpoint for real-time updates.
+[code] 
+    const socket = io('<a href="http://localhost:5000">http://localhost:5000</a>');
+[/code]</p>
+<h3 id="events">Events<a class="headerlink" href="#events" title="Permanent link">&para;</a></h3>
+<h4 id="client-to-server">Client to Server<a class="headerlink" href="#client-to-server" title="Permanent link">&para;</a></h4>
+<p><strong>join_session</strong>
+[code] 
+    socket.emit('join_session', {
+      session_id: 'session_12345'
+    });
+[/code]</p>
+<p><strong>start_analysis</strong>
+[code] 
+    socket.emit('start_analysis', {
+      content: 'Text to analyze...',
+      options: {
+        content_type: 'concept',
+        confidence_threshold: 0.5
+      }
+    });
+[/code]</p>
+<h4 id="server-to-client">Server to Client<a class="headerlink" href="#server-to-client" title="Permanent link">&para;</a></h4>
+<p><strong>progress</strong>
+[code] 
+    socket.on('progress', (data) =&gt; {
+      console.log('Progress:', data.progress);
+      console.log('Stage:', data.stage);
+      console.log('Message:', data.message);
+    });
+[/code]</p>
+<p><strong>completion</strong>
+[code] 
+    socket.on('completion', (data) =&gt; {
+      console.log('Task completed:', data.success);
+      console.log('Results:', data.data);
+    });
+[/code]</p>
+<p><strong>block_processing_start</strong>
+[code] 
+    socket.on('block_processing_start', (data) =&gt; {
+      console.log('Block processing started:', data.block_id);
+    });
+[/code]</p>
+<p><strong>block_processing_complete</strong>
+[code] 
+    socket.on('block_processing_complete', (data) =&gt; {
+      console.log('Block processing complete:', data.block_id);
+      console.log('Improvements:', data.improvements_made);
+    });
+[/code]</p>
+<h2 id="error-handling">Error Handling<a class="headerlink" href="#error-handling" title="Permanent link">&para;</a></h2>
+<h3 id="error-response-format">Error Response Format<a class="headerlink" href="#error-response-format" title="Permanent link">&para;</a></h3>
+<p>[code] 
+    {
+      "success": false,
+      "error": "Error description",
+      "details": {
+        "error_code": "INVALID_FORMAT",
+        "additional_info": {}
+      },
+      "timestamp": "2024-01-15T10:30:00Z"
+    }
+[/code]</p>
+<h3 id="common-error-codes">Common Error Codes<a class="headerlink" href="#common-error-codes" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>HTTP Status</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>INVALID_FILE_FORMAT</td>
+<td>400</td>
+<td>Unsupported file format</td>
+</tr>
+<tr>
+<td>FILE_TOO_LARGE</td>
+<td>413</td>
+<td>File exceeds 16MB limit</td>
+</tr>
+<tr>
+<td>NO_CONTENT_PROVIDED</td>
+<td>400</td>
+<td>Required content parameter missing</td>
+</tr>
+<tr>
+<td>INVALID_CONTENT_TYPE</td>
+<td>400</td>
+<td>Content type must be: concept, procedure, reference</td>
+</tr>
+<tr>
+<td>BLOCK_ID_REQUIRED</td>
+<td>400</td>
+<td>Block ID required for block operations</td>
+</tr>
+<tr>
+<td>ANALYSIS_FAILED</td>
+<td>500</td>
+<td>Internal error during analysis</td>
+</tr>
+<tr>
+<td>AI_REWRITER_UNAVAILABLE</td>
+<td>503</td>
+<td>AI rewriting service unavailable</td>
+</tr>
+<tr>
+<td>OLLAMA_CONNECTION_ERROR</td>
+<td>503</td>
+<td>Local Ollama service not accessible</td>
+</tr>
+<tr>
+<td>DATABASE_ERROR</td>
+<td>500</td>
+<td>Database operation failed</td>
+</tr>
+</tbody>
+</table>
+<h2 id="rate-limiting">Rate Limiting<a class="headerlink" href="#rate-limiting" title="Permanent link">&para;</a></h2>
+<p>* <strong>File uploads</strong> : 50 requests per minute per IP</p>
+<p>* <strong>API calls</strong> : 200 requests per minute per IP</p>
+<p>* <strong>AI rewriting</strong> : 10 requests per minute per IP</p>
+<p>* <strong>WebSocket connections</strong> : 10 concurrent connections per IP</p>
+<h2 id="integration-examples">Integration Examples<a class="headerlink" href="#integration-examples" title="Permanent link">&para;</a></h2>
+<h3 id="complete-analysis-workflow">Complete Analysis Workflow<a class="headerlink" href="#complete-analysis-workflow" title="Permanent link">&para;</a></h3>
+<p>[code] 
+    // 1. Upload document
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);</p>
+<div class="codehilite"><pre><span></span><code><span class="k">const</span><span class="w"> </span><span class="n">uploadResponse</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">await</span><span class="w"> </span><span class="n">fetch</span><span class="p">(</span><span class="s1">&#39;/upload&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">method</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;POST&#39;</span><span class="p">,</span>
+<span class="w">  </span><span class="n">body</span><span class="p">:</span><span class="w"> </span><span class="n">formData</span>
+<span class="p">});</span>
+
+<span class="k">const</span><span class="w"> </span><span class="n">uploadResult</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">await</span><span class="w"> </span><span class="n">uploadResponse</span><span class="o">.</span><span class="n">json</span><span class="p">();</span>
+
+<span class="o">//</span><span class="w"> </span><span class="mf">2.</span><span class="w"> </span><span class="n">Analyze</span><span class="w"> </span><span class="n">content</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="n">real</span><span class="o">-</span><span class="n">time</span><span class="w"> </span><span class="n">progress</span>
+<span class="k">const</span><span class="w"> </span><span class="n">socket</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">io</span><span class="p">();</span>
+<span class="k">const</span><span class="w"> </span><span class="n">sessionId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;session_&#39;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Date</span><span class="o">.</span><span class="n">now</span><span class="p">();</span>
+
+<span class="n">socket</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="s1">&#39;join_session&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">session_id</span><span class="p">:</span><span class="w"> </span><span class="n">sessionId</span><span class="w"> </span><span class="p">});</span>
+
+<span class="n">socket</span><span class="o">.</span><span class="n">on</span><span class="p">(</span><span class="s1">&#39;progress&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">updateProgressBar</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">progress</span><span class="p">);</span>
+<span class="p">});</span>
+
+<span class="k">const</span><span class="w"> </span><span class="n">analysisResponse</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">await</span><span class="w"> </span><span class="n">fetch</span><span class="p">(</span><span class="s1">&#39;/analyze&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">method</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;POST&#39;</span><span class="p">,</span>
+<span class="w">  </span><span class="n">headers</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="s1">&#39;Content-Type&#39;</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;application/json&#39;</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="n">body</span><span class="p">:</span><span class="w"> </span><span class="n">JSON</span><span class="o">.</span><span class="n">stringify</span><span class="p">({</span>
+<span class="w">    </span><span class="n">content</span><span class="p">:</span><span class="w"> </span><span class="n">uploadResult</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">session_id</span><span class="p">:</span><span class="w"> </span><span class="n">sessionId</span><span class="p">,</span>
+<span class="w">    </span><span class="n">content_type</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;concept&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">confidence_threshold</span><span class="p">:</span><span class="w"> </span><span class="mf">0.5</span>
+<span class="w">  </span><span class="p">})</span>
+<span class="p">});</span>
+
+<span class="k">const</span><span class="w"> </span><span class="n">analysisResult</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">await</span><span class="w"> </span><span class="n">analysisResponse</span><span class="o">.</span><span class="n">json</span><span class="p">();</span>
+
+<span class="o">//</span><span class="w"> </span><span class="mf">3.</span><span class="w"> </span><span class="n">Rewrite</span><span class="w"> </span><span class="n">problematic</span><span class="w"> </span><span class="n">blocks</span>
+<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">block</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">analysisResult</span><span class="o">.</span><span class="n">structural_blocks</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">block</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">length</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">rewriteResponse</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">await</span><span class="w"> </span><span class="n">fetch</span><span class="p">(</span><span class="s1">&#39;/rewrite-block&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">method</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;POST&#39;</span><span class="p">,</span>
+<span class="w">      </span><span class="n">headers</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="s1">&#39;Content-Type&#39;</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;application/json&#39;</span><span class="w"> </span><span class="p">},</span>
+<span class="w">      </span><span class="n">body</span><span class="p">:</span><span class="w"> </span><span class="n">JSON</span><span class="o">.</span><span class="n">stringify</span><span class="p">({</span>
+<span class="w">        </span><span class="n">block_content</span><span class="p">:</span><span class="w"> </span><span class="n">block</span><span class="o">.</span><span class="n">content</span><span class="p">,</span>
+<span class="w">        </span><span class="n">block_errors</span><span class="p">:</span><span class="w"> </span><span class="n">block</span><span class="o">.</span><span class="n">errors</span><span class="p">,</span>
+<span class="w">        </span><span class="n">block_type</span><span class="p">:</span><span class="w"> </span><span class="n">block</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
+<span class="w">        </span><span class="n">block_id</span><span class="p">:</span><span class="w"> </span><span class="n">block</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="n">session_id</span><span class="p">:</span><span class="w"> </span><span class="n">sessionId</span>
+<span class="w">      </span><span class="p">})</span>
+<span class="w">    </span><span class="p">});</span>
+
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">rewriteResult</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">await</span><span class="w"> </span><span class="n">rewriteResponse</span><span class="o">.</span><span class="n">json</span><span class="p">();</span>
+<span class="w">    </span><span class="o">//</span><span class="w"> </span><span class="n">Handle</span><span class="w"> </span><span class="n">rewrite</span><span class="w"> </span><span class="n">result</span><span class="o">...</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="o">//</span><span class="w"> </span><span class="mf">4.</span><span class="w"> </span><span class="n">Generate</span><span class="w"> </span><span class="n">comprehensive</span><span class="w"> </span><span class="n">report</span>
+<span class="k">const</span><span class="w"> </span><span class="n">reportResponse</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">await</span><span class="w"> </span><span class="n">fetch</span><span class="p">(</span><span class="s1">&#39;/generate-pdf-report&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">method</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;POST&#39;</span><span class="p">,</span>
+<span class="w">  </span><span class="n">headers</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="s1">&#39;Content-Type&#39;</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;application/json&#39;</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="n">body</span><span class="p">:</span><span class="w"> </span><span class="n">JSON</span><span class="o">.</span><span class="n">stringify</span><span class="p">({</span>
+<span class="w">    </span><span class="n">analysis</span><span class="p">:</span><span class="w"> </span><span class="n">analysisResult</span><span class="o">.</span><span class="n">analysis</span><span class="p">,</span>
+<span class="w">    </span><span class="n">content</span><span class="p">:</span><span class="w"> </span><span class="n">uploadResult</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">structural_blocks</span><span class="p">:</span><span class="w"> </span><span class="n">analysisResult</span><span class="o">.</span><span class="n">structural_blocks</span>
+<span class="w">  </span><span class="p">})</span>
+<span class="p">});</span>
+
+<span class="o">//</span><span class="w"> </span><span class="n">Download</span><span class="w"> </span><span class="n">PDF</span><span class="w"> </span><span class="n">report</span>
+<span class="k">const</span><span class="w"> </span><span class="n">blob</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">await</span><span class="w"> </span><span class="n">reportResponse</span><span class="o">.</span><span class="n">blob</span><span class="p">();</span>
+<span class="k">const</span><span class="w"> </span><span class="n">url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">window</span><span class="o">.</span><span class="n">URL</span><span class="o">.</span><span class="n">createObjectURL</span><span class="p">(</span><span class="n">blob</span><span class="p">);</span>
+<span class="k">const</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">document</span><span class="o">.</span><span class="n">createElement</span><span class="p">(</span><span class="s1">&#39;a&#39;</span><span class="p">);</span>
+<span class="n">a</span><span class="o">.</span><span class="n">href</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">url</span><span class="p">;</span>
+<span class="n">a</span><span class="o">.</span><span class="n">download</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;analysis_report.pdf&#39;</span><span class="p">;</span>
+<span class="n">a</span><span class="o">.</span><span class="n">click</span><span class="p">();</span>
+</code></pre></div>
+
+<p>[/code]</p>
+<h3 id="python-integration-example">Python Integration Example<a class="headerlink" href="#python-integration-example" title="Permanent link">&para;</a></h3>
+<p>[code] 
+    import requests
+    import json</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Upload and analyze document</span>
+<span class="n">with</span><span class="w"> </span><span class="n">open</span><span class="p">(</span><span class="s1">&#39;document.pdf&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;rb&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">f</span><span class="p">:</span>
+<span class="w">    </span><span class="n">upload_response</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;http://localhost:5000/upload&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="n">files</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;file&#39;</span><span class="p">:</span><span class="w"> </span><span class="n">f</span><span class="p">}</span>
+<span class="w">    </span><span class="p">)</span>
+
+<span class="n">upload_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">upload_response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+
+<span class="c1"># Analyze content</span>
+<span class="n">analysis_response</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+<span class="w">    </span><span class="s1">&#39;http://localhost:5000/analyze&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">json</span><span class="o">=</span><span class="p">{</span>
+<span class="w">        </span><span class="s1">&#39;content&#39;</span><span class="p">:</span><span class="w"> </span><span class="n">upload_data</span><span class="p">[</span><span class="s1">&#39;text&#39;</span><span class="p">],</span>
+<span class="w">        </span><span class="s1">&#39;content_type&#39;</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;procedure&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;confidence_threshold&#39;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.7</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">)</span>
+
+<span class="n">analysis_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">analysis_response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Found {len(analysis_data[&#39;analysis&#39;][&#39;errors&#39;])} issues&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Readability score: {analysis_data[&#39;analysis&#39;][&#39;statistics&#39;][&#39;readability_scores&#39;][&#39;flesch_reading_ease&#39;]}&quot;</span><span class="p">)</span>
+
+<span class="c1"># Rewrite blocks with errors</span>
+<span class="k">for</span><span class="w"> </span><span class="n">block</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">analysis_data</span><span class="p">[</span><span class="s1">&#39;structural_blocks&#39;</span><span class="p">]:</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="n">block</span><span class="p">[</span><span class="s1">&#39;errors&#39;</span><span class="p">]:</span>
+<span class="w">        </span><span class="n">rewrite_response</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+<span class="w">            </span><span class="s1">&#39;http://localhost:5000/rewrite-block&#39;</span><span class="p">,</span>
+<span class="w">            </span><span class="n">json</span><span class="o">=</span><span class="p">{</span>
+<span class="w">                </span><span class="s1">&#39;block_content&#39;</span><span class="p">:</span><span class="w"> </span><span class="n">block</span><span class="p">[</span><span class="s1">&#39;content&#39;</span><span class="p">],</span>
+<span class="w">                </span><span class="s1">&#39;block_errors&#39;</span><span class="p">:</span><span class="w"> </span><span class="n">block</span><span class="p">[</span><span class="s1">&#39;errors&#39;</span><span class="p">],</span>
+<span class="w">                </span><span class="s1">&#39;block_type&#39;</span><span class="p">:</span><span class="w"> </span><span class="n">block</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">],</span>
+<span class="w">                </span><span class="s1">&#39;block_id&#39;</span><span class="p">:</span><span class="w"> </span><span class="n">block</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">)</span>
+
+<span class="w">        </span><span class="n">rewrite_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rewrite_response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="n">rewrite_data</span><span class="p">[</span><span class="s1">&#39;success&#39;</span><span class="p">]:</span>
+<span class="w">            </span><span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Block {block[&#39;id&#39;]} improved: {rewrite_data[&#39;errors_fixed&#39;]} errors fixed&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<p>[/code]</p>
+<h2 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h2>
+<h3 id="v100-current">v1.0.0 (Current)<a class="headerlink" href="#v100-current" title="Permanent link">&para;</a></h3>
+<p>* <strong>Core Features</strong> :</p>
+<div class="codehilite"><pre><span></span><code><span class="k">*</span> Multi-format document processing (PDF, DOCX, Markdown, AsciiDoc, DITA, TXT)
+
+<span class="k">*</span> Comprehensive style analysis with 45+ rules
+
+<span class="k">*</span> AI-powered block-level rewriting with assembly line processing
+
+<span class="k">*</span> Real-time WebSocket progress updates
+
+<span class="k">*</span> Confidence-based error filtering
+
+<span class="k">*</span> PDF report generation
+
+<span class="k">*</span> Database integration for session and feedback management
+</code></pre></div>
+
+<p>* <strong>AI Capabilities</strong> :</p>
+<div class="codehilite"><pre><span></span><code><span class="k">*</span> Local Ollama integration for privacy-first AI
+
+<span class="k">*</span> Two-pass iterative improvement system
+
+<span class="k">*</span> Block-level contextual rewriting
+
+<span class="k">*</span> Confidence scoring for AI improvements
+</code></pre></div>
+
+<p>* <strong>Analysis Features</strong> :</p>
+<div class="codehilite"><pre><span></span><code><span class="o">*</span><span class="w"> </span><span class="nx">Multiple</span><span class="w"> </span><span class="nx">readability</span><span class="w"> </span><span class="nx">metrics</span><span class="w"> </span><span class="p">(</span><span class="nx">Flesch</span><span class="p">,</span><span class="w"> </span><span class="nx">Gunning</span><span class="w"> </span><span class="nx">Fog</span><span class="p">,</span><span class="w"> </span><span class="nx">SMOG</span><span class="p">,</span><span class="w"> </span><span class="nx">etc</span><span class="p">.)</span>
+
+<span class="o">*</span><span class="w"> </span><span class="nx">Structural</span><span class="w"> </span><span class="nx">document</span><span class="w"> </span><span class="nx">parsing</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">format</span><span class="w"> </span><span class="nx">awareness</span>
+
+<span class="o">*</span><span class="w"> </span><span class="nx">Ambiguity</span><span class="w"> </span><span class="nx">detection</span><span class="w"> </span><span class="nx">system</span>
+
+<span class="o">*</span><span class="w"> </span><span class="nx">Modular</span><span class="w"> </span><span class="nx">compliance</span><span class="w"> </span><span class="nx">checking</span>
+
+<span class="o">*</span><span class="w"> </span><span class="nx">Content</span><span class="w"> </span><span class="k">type</span><span class="w"> </span><span class="nx">classification</span><span class="w"> </span><span class="p">(</span><span class="nx">concept</span><span class="p">,</span><span class="w"> </span><span class="nx">procedure</span><span class="p">,</span><span class="w"> </span><span class="nx">reference</span><span class="p">)</span>
+</code></pre></div>
+
+<p>* <strong>Developer Features</strong> :</p>
+<div class="codehilite"><pre><span></span><code><span class="k">*</span> Comprehensive REST API with WebSocket support
+
+<span class="k">*</span> Session-based progress tracking
+
+<span class="k">*</span> Feedback system for continuous improvement
+
+<span class="k">*</span> Analytics endpoints for performance monitoring
+
+<span class="k">*</span> Health check endpoints for monitoring
+</code></pre></div>
+
+<h3 id="upcoming-features">Upcoming Features<a class="headerlink" href="#upcoming-features" title="Permanent link">&para;</a></h3>
+<p>* Custom rule creation API</p>
+<p>* Batch document processing</p>
+<p>* Webhook notifications for long-running operations</p>
+<p>* Enhanced ambiguity resolution suggestions</p>
+<p>* Integration with external style guides</p>
+<p>* Multi-language support</p>
+<p>* Advanced caching for improved performance</p>
+<p>Last updated 2025-11-25 17:06:03 +0530 </p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../getting-started/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Getting Started">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Getting Started
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../environment-variables/" class="md-footer__link md-footer__link--next" aria-label="Next: Environment Variables">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Environment Variables
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "search.suggest", "search.highlight", "content.code.copy", "navigation.footer", "content.action.edit"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../search/main.js"></script>
+      
+    
+  </body>
+</html>

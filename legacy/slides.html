@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Content Editorial Assistant - Executive Review</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Source+Sans+Pro:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1a1a2e;
+            --secondary: #16213e;
+            --accent: #e94560;
+            --accent-light: #ff6b6b;
+            --success: #4ecca3;
+            --warning: #f39c12;
+            --light: #edf2f4;
+            --text: #ffffff;
+            --text-muted: #a8b2c1;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Source Sans Pro', sans-serif;
+            background: var(--primary);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .slide {
+            min-height: 100vh;
+            padding: 60px 80px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .slide::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 80%;
+            height: 150%;
+            background: radial-gradient(circle, rgba(233, 69, 96, 0.08) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .slide-1 {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .slide-1 h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 4.5rem;
+            font-weight: 700;
+            letter-spacing: -2px;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, var(--text) 0%, var(--accent-light) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .slide-1 .subtitle {
+            font-size: 1.5rem;
+            color: var(--text-muted);
+            font-weight: 300;
+            margin-bottom: 50px;
+        }
+
+        .slide-1 .date {
+            font-size: 1.1rem;
+            color: var(--accent);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        .logo-mark {
+            width: 80px;
+            height: 80px;
+            border: 3px solid var(--accent);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 40px;
+            font-family: 'Playfair Display', serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .slide-2 {
+            background: linear-gradient(180deg, var(--secondary) 0%, var(--primary) 100%);
+        }
+
+        .slide-header {
+            margin-bottom: 50px;
+        }
+
+        .slide-header h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.8rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            position: relative;
+            display: inline-block;
+        }
+
+        .slide-header h2::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            width: 60px;
+            height: 4px;
+            background: var(--accent);
+            border-radius: 2px;
+        }
+
+        .slide-header .tagline {
+            color: var(--text-muted);
+            font-size: 1.2rem;
+            margin-top: 15px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 30px;
+            margin-bottom: 60px;
+        }
+
+        .stat-card {
+            background: linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 35px 30px;
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent) 0%, var(--accent-light) 100%);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .stat-number {
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: var(--accent-light);
+            line-height: 1;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-size: 1rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .stat-sublabel {
+            font-size: 0.85rem;
+            color: var(--success);
+            margin-top: 8px;
+        }
+
+        .content-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            flex: 1;
+        }
+
+        .content-box {
+            background: linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 35px;
+        }
+
+        .content-box h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            margin-bottom: 25px;
+            color: var(--accent-light);
+        }
+
+        .issues-list {
+            list-style: none;
+        }
+
+        .issues-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .issues-list li:last-child {
+            border-bottom: none;
+        }
+
+        .issue-name {
+            font-size: 1rem;
+            color: var(--text);
+        }
+
+        .issue-count {
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .feedback-summary {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .feedback-bar {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .feedback-label {
+            width: 100px;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+        }
+
+        .bar-container {
+            flex: 1;
+            height: 30px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .bar-fill {
+            height: 100%;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 15px;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .bar-correct {
+            background: linear-gradient(90deg, var(--success) 0%, #2ecc71 100%);
+            width: 50%;
+        }
+
+        .bar-incorrect {
+            background: linear-gradient(90deg, var(--warning) 0%, #e74c3c 100%);
+            width: 50%;
+        }
+
+        .insights-box {
+            margin-top: 30px;
+            padding: 25px;
+            background: rgba(78, 204, 163, 0.1);
+            border: 1px solid rgba(78, 204, 163, 0.3);
+            border-radius: 15px;
+        }
+
+        .insights-box h4 {
+            color: var(--success);
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        .insights-box ul {
+            list-style: none;
+        }
+
+        .insights-box li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+            color: var(--text-muted);
+        }
+
+        .insights-box li::before {
+            content: '→';
+            position: absolute;
+            left: 0;
+            color: var(--success);
+        }
+
+        .footer {
+            margin-top: auto;
+            padding-top: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .page-indicator {
+            display: flex;
+            gap: 8px;
+        }
+
+        .page-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+        }
+
+        .page-dot.active {
+            background: var(--accent);
+        }
+
+        @media print {
+            .slide {
+                page-break-after: always;
+                page-break-inside: avoid;
+            }
+        }
+
+        .metric-highlight {
+            font-size: 1.3rem;
+            color: var(--success);
+            font-weight: 700;
+        }
+
+        .value-prop {
+            background: linear-gradient(135deg, rgba(233, 69, 96, 0.2) 0%, rgba(233, 69, 96, 0.05) 100%);
+            border: 1px solid rgba(233, 69, 96, 0.3);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 20px;
+        }
+
+        .value-prop h4 {
+            color: var(--accent-light);
+            margin-bottom: 10px;
+        }
+
+        .time-savings {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .big-number {
+            font-size: 4rem;
+            font-weight: 700;
+            color: var(--success);
+            line-height: 1;
+        }
+
+        .time-unit {
+            font-size: 1.5rem;
+            color: var(--text-muted);
+        }
+
+        .slide-3 {
+            background: linear-gradient(180deg, var(--primary) 0%, var(--secondary) 100%);
+        }
+
+        .time-breakdown-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .breakdown-card {
+            background: linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .breakdown-card .sessions-count {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--accent-light);
+            line-height: 1;
+        }
+
+        .breakdown-card .sessions-label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin: 8px 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .breakdown-card .errors-range {
+            font-size: 1.1rem;
+            color: var(--text);
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .breakdown-card .time-saved {
+            font-size: 1.4rem;
+            color: var(--success);
+            font-weight: 700;
+        }
+
+        .breakdown-card .time-saved-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .calculation-box {
+            background: rgba(78, 204, 163, 0.1);
+            border: 1px solid rgba(78, 204, 163, 0.3);
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 20px;
+        }
+
+        .calculation-box h4 {
+            color: var(--success);
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+        }
+
+        .calc-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .calc-row:last-child {
+            border-bottom: none;
+            padding-top: 15px;
+            margin-top: 10px;
+            border-top: 2px solid var(--success);
+        }
+
+        .calc-row .calc-label {
+            color: var(--text-muted);
+        }
+
+        .calc-row .calc-value {
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .calc-row.total .calc-label,
+        .calc-row.total .calc-value {
+            font-size: 1.2rem;
+            color: var(--success);
+        }
+
+        .highlight-stat {
+            display: flex;
+            gap: 40px;
+            margin-top: 30px;
+        }
+
+        .highlight-item {
+            flex: 1;
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(145deg, rgba(233, 69, 96, 0.15) 0%, rgba(233, 69, 96, 0.05) 100%);
+            border-radius: 12px;
+        }
+
+        .highlight-item .value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-light);
+        }
+
+        .highlight-item .label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <!-- SLIDE 1: Title Slide -->
+    <div class="slide slide-1">
+        <div class="logo-mark">CEA</div>
+        <h1>Content Editorial Assistant</h1>
+        <p class="subtitle">AI-Powered Editorial Quality Assurance for Technical Documentation</p>
+        <p class="date">Executive Review • December 2025</p>
+    </div>
+
+    <!-- SLIDE 2: Impact & Metrics -->
+    <div class="slide slide-2">
+        <div class="slide-header">
+            <h2>Impact & Value Delivered</h2>
+            <p class="tagline">Automating style guide compliance to accelerate content production</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number">253</div>
+                <div class="stat-label">Active Sessions</div>
+                <div class="stat-sublabel">Oct - Dec 2025</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">255</div>
+                <div class="stat-label">Documents Analyzed</div>
+                <div class="stat-sublabel">Unique content pieces</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">6,309</div>
+                <div class="stat-label">Style Issues Found</div>
+                <div class="stat-sublabel">~25 issues per document</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">113</div>
+                <div class="stat-label">User Feedback</div>
+                <div class="stat-sublabel">Enabling model improvements</div>
+            </div>
+        </div>
+
+        <div class="content-row">
+            <div class="content-box">
+                <h3>Top Style Issues Detected</h3>
+                <ul class="issues-list">
+                    <li>
+                        <span class="issue-name">Spacing & Formatting</span>
+                        <span class="issue-count">829</span>
+                    </li>
+                    <li>
+                        <span class="issue-name">Ambiguity Detection</span>
+                        <span class="issue-count">458</span>
+                    </li>
+                    <li>
+                        <span class="issue-name">Verb Usage Issues</span>
+                        <span class="issue-count">339</span>
+                    </li>
+                    <li>
+                        <span class="issue-name">Article Usage (a/an/the)</span>
+                        <span class="issue-count">338</span>
+                    </li>
+                    <li>
+                        <span class="issue-name">Technical Commands</span>
+                        <span class="issue-count">227</span>
+                    </li>
+                    <li>
+                        <span class="issue-name">Abbreviation Definitions</span>
+                        <span class="issue-count">196</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="content-box">
+                <h3>User Feedback Analysis</h3>
+                <div class="feedback-summary">
+                    <div class="feedback-bar">
+                        <span class="feedback-label">Correct</span>
+                        <div class="bar-container">
+                            <div class="bar-fill bar-correct" style="width: 50.4%;">57</div>
+                        </div>
+                    </div>
+                    <div class="feedback-bar">
+                        <span class="feedback-label">Incorrect</span>
+                        <div class="bar-container">
+                            <div class="bar-fill bar-incorrect" style="width: 49.6%;">56</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="insights-box">
+                    <h4>🎯 Key Insights from Feedback</h4>
+                    <ul>
+                        <li>Context-awareness improvements needed for SQL commands</li>
+                        <li>Better handling of version numbers (X.Y.Z format)</li>
+                        <li>Recognition of previously defined acronyms</li>
+                        <li>Improved pronoun reference detection</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="value-prop">
+            <h4>📈 Estimated Time Savings</h4>
+            <p>With <span class="metric-highlight">6,309 issues</span> identified automatically, assuming 30 seconds manual review per issue:</p>
+            <div class="time-savings">
+                <span class="big-number">~53</span>
+                <span class="time-unit">hours saved in editorial review time</span>
+            </div>
+        </div>
+
+        <div class="footer">
+            <span>Content Editorial Assistant | Red Hat CCS Team</span>
+            <div class="page-indicator">
+                <span class="page-dot"></span>
+                <span class="page-dot active"></span>
+                <span class="page-dot"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- SLIDE 3: Time Savings Breakdown -->
+    <div class="slide slide-3">
+        <div class="slide-header">
+            <h2>Time Savings Breakdown</h2>
+            <p class="tagline">Detailed analysis of automated issue detection across 232 active sessions</p>
+        </div>
+
+        <div class="time-breakdown-grid">
+            <div class="breakdown-card">
+                <div class="errors-range">1-5 errors</div>
+                <div class="sessions-count">62</div>
+                <div class="sessions-label">sessions</div>
+                <div class="time-saved">1.4 hrs</div>
+                <div class="time-saved-label">saved</div>
+            </div>
+            <div class="breakdown-card">
+                <div class="errors-range">6-10 errors</div>
+                <div class="sessions-count">63</div>
+                <div class="sessions-label">sessions</div>
+                <div class="time-saved">4.3 hrs</div>
+                <div class="time-saved-label">saved</div>
+            </div>
+            <div class="breakdown-card">
+                <div class="errors-range">11-20 errors</div>
+                <div class="sessions-count">45</div>
+                <div class="sessions-label">sessions</div>
+                <div class="time-saved">5.6 hrs</div>
+                <div class="time-saved-label">saved</div>
+            </div>
+            <div class="breakdown-card">
+                <div class="errors-range">21-50 errors</div>
+                <div class="sessions-count">41</div>
+                <div class="sessions-label">sessions</div>
+                <div class="time-saved">10.2 hrs</div>
+                <div class="time-saved-label">saved</div>
+            </div>
+            <div class="breakdown-card">
+                <div class="errors-range">51-100 errors</div>
+                <div class="sessions-count">13</div>
+                <div class="sessions-label">sessions</div>
+                <div class="time-saved">6.7 hrs</div>
+                <div class="time-saved-label">saved</div>
+            </div>
+            <div class="breakdown-card">
+                <div class="errors-range">100+ errors</div>
+                <div class="sessions-count">8</div>
+                <div class="sessions-label">sessions</div>
+                <div class="time-saved">24.5 hrs</div>
+                <div class="time-saved-label">saved</div>
+            </div>
+        </div>
+
+        <div class="content-row">
+            <div class="calculation-box">
+                <h4>📊 Time Savings Calculation</h4>
+                <div class="calc-row">
+                    <span class="calc-label">Total style issues detected</span>
+                    <span class="calc-value">6,309</span>
+                </div>
+                <div class="calc-row">
+                    <span class="calc-label">Manual review time per issue</span>
+                    <span class="calc-value">30 seconds</span>
+                </div>
+                <div class="calc-row">
+                    <span class="calc-label">Total review time (manual)</span>
+                    <span class="calc-value">189,270 seconds</span>
+                </div>
+                <div class="calc-row">
+                    <span class="calc-label">Converted to hours</span>
+                    <span class="calc-value">52.6 hours</span>
+                </div>
+                <div class="calc-row total">
+                    <span class="calc-label">Total Time Saved</span>
+                    <span class="calc-value">~53 hours</span>
+                </div>
+            </div>
+
+            <div class="content-box">
+                <h3>Session Distribution</h3>
+                <ul class="issues-list">
+                    <li>
+                        <span class="issue-name">Sessions with 0 errors</span>
+                        <span class="issue-count">23</span>
+                    </li>
+                    <li>
+                        <span class="issue-name">Average errors per session</span>
+                        <span class="issue-count">24.7</span>
+                    </li>
+                    <li>
+                        <span class="issue-name">Maximum errors in a session</span>
+                        <span class="issue-count">911</span>
+                    </li>
+                    <li>
+                        <span class="issue-name">Sessions with 10+ errors</span>
+                        <span class="issue-count">107</span>
+                    </li>
+                    <li>
+                        <span class="issue-name">Sessions with 50+ errors</span>
+                        <span class="issue-count">21</span>
+                    </li>
+                </ul>
+
+                <div class="highlight-stat">
+                    <div class="highlight-item">
+                        <div class="value">91%</div>
+                        <div class="label">Sessions with issues found</div>
+                    </div>
+                    <div class="highlight-item">
+                        <div class="value">46%</div>
+                        <div class="label">Time saved from large docs</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <span>Content Editorial Assistant | Red Hat CCS Team</span>
+            <div class="page-indicator">
+                <span class="page-dot"></span>
+                <span class="page-dot"></span>
+                <span class="page-dot active"></span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+

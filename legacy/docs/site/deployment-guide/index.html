@@ -1,0 +1,2912 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="AI-powered technical writing assistant that helps writers review content">
+      
+      
+        <meta name="author" content="CCS AI Team">
+      
+      
+      
+        <link rel="prev" href="../environment-variables/">
+      
+      
+        <link rel="next" href="../llm-rules-implementation/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+    
+    
+      
+        <title>Deployment Guide - Content Editorial Assistant</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#deployment-guide" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Content Editorial Assistant" class="md-header__button md-logo" aria-label="Content Editorial Assistant" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Content Editorial Assistant
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Deployment Guide
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://gitlab.cee.redhat.com/ccs-ai/content-editorial-assistant" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitLab
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href=".." class="md-tabs__link">
+          
+  
+  
+  User Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../getting-started/" class="md-tabs__link">
+          
+  
+  
+  Developer Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../architecture/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../how-to-add-new-rule/" class="md-tabs__link">
+          
+  
+  
+  How-To Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../testing-setup/" class="md-tabs__link">
+          
+  
+  
+  Testing
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Content Editorial Assistant" class="md-nav__button md-logo" aria-label="Content Editorial Assistant" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Content Editorial Assistant
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://gitlab.cee.redhat.com/ccs-ai/content-editorial-assistant" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitLab
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../training-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Developer Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Developer Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../environment-variables/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Environment Variables
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment Guide
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deployment-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deployment options
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#local-development-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Local development deployment
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Local development deployment">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick start
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#docker-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docker Deployment
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Docker Deployment">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#build-docker-image" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Build Docker Image
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#docker-compose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docker Compose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dockerfile-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dockerfile Details
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#gitlab-cicd-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GitLab CI/CD Deployment
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="GitLab CI/CD Deployment">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pipeline-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pipeline Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#environment-specific-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment-Specific Deployment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cicd-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CI/CD Variables
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CI/CD Variables">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#required-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Required Variables
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#optional-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Optional Variables
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#security-best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Best Practices
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lightrail-platform-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LightRail Platform Deployment
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="LightRail Platform Deployment">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deployment-process" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deployment Process
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#openshift-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OpenShift Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#monitoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Monitoring
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#production-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Production Checklist
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Production Checklist">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pre-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pre-Deployment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration-review" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration Review
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#monitoring_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Monitoring
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#post-deployment-verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Post-Deployment Verification
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Post-Deployment Verification">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#health-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Health Check
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#smoke-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Smoke Tests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#performance-baseline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Baseline
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#application-wont-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Application Won't Start
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#model-provider-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Model Provider Issues
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#database-connection-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Database Connection Issues
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#high-memory-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        High Memory Usage
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scaling-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scaling Considerations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Scaling Considerations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#horizontal-scaling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Horizontal Scaling
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#vertical-scaling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Vertical Scaling
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#backup-and-recovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backup and Recovery
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Backup and Recovery">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#database-backups" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Database Backups
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#application-state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Application State
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../llm-rules-implementation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LLM Rules Implementation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-flow-diagram/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Flow Diagram
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How-To Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    How-To Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how-to-add-new-rule/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a New Rule
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how-to-add-new-ambiguity-detector/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a New Ambiguity Detector
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how-to-add-new-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a New AI Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configure-providers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configure AI Providers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Testing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing-setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI-Powered Testing Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../writing-tests/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Writing Tests
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deployment-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deployment options
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#local-development-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Local development deployment
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Local development deployment">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick start
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#docker-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docker Deployment
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Docker Deployment">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#build-docker-image" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Build Docker Image
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#docker-compose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docker Compose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dockerfile-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dockerfile Details
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#gitlab-cicd-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GitLab CI/CD Deployment
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="GitLab CI/CD Deployment">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pipeline-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pipeline Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#environment-specific-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment-Specific Deployment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cicd-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CI/CD Variables
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CI/CD Variables">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#required-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Required Variables
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#optional-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Optional Variables
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#security-best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Best Practices
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lightrail-platform-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LightRail Platform Deployment
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="LightRail Platform Deployment">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deployment-process" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deployment Process
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#openshift-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OpenShift Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#monitoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Monitoring
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#production-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Production Checklist
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Production Checklist">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pre-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pre-Deployment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration-review" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration Review
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#monitoring_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Monitoring
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#post-deployment-verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Post-Deployment Verification
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Post-Deployment Verification">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#health-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Health Check
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#smoke-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Smoke Tests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#performance-baseline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Baseline
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#application-wont-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Application Won't Start
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#model-provider-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Model Provider Issues
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#database-connection-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Database Connection Issues
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#high-memory-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        High Memory Usage
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scaling-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scaling Considerations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Scaling Considerations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#horizontal-scaling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Horizontal Scaling
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#vertical-scaling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Vertical Scaling
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#backup-and-recovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backup and Recovery
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Backup and Recovery">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#database-backups" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Database Backups
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#application-state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Application State
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://gitlab.cee.redhat.com/ccs-ai/content-editorial-assistant/-/edit/main/docs/modules/deployment-guide.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="deployment-guide">Deployment guide<a class="headerlink" href="#deployment-guide" title="Permanent link">&para;</a></h1>
+<table>
+<thead>
+<tr>
+<th>Note</th>
+<th><strong>This documentation is for system administrators and DevOps engineers</strong> who are deploying Content Editorial Assistant to production environments. The application is already hosted for general use. This guide is for those who need to deploy their own instance.</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>This guide covers deployment options for the Content Editorial Assistant, from local development to production environments.</p>
+<h2 id="deployment-options">Deployment options<a class="headerlink" href="#deployment-options" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Use Case</th>
+<th>Complexity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Local development</strong></td>
+<td>Testing and development</td>
+<td>Low</td>
+</tr>
+<tr>
+<td><strong>Docker container</strong></td>
+<td>Consistent deployments, any platform</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td><strong>GitLab CI/CD</strong></td>
+<td>Automated deployments on push</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td><strong>LightRail platform</strong></td>
+<td>Enterprise deployment with LlamaStack</td>
+<td>High</td>
+</tr>
+</tbody>
+</table>
+<h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
+<p>* Python 3.12+</p>
+<p>* Git</p>
+<p>* Docker (for container deployment)</p>
+<p>* GitLab account (for CI/CD)</p>
+<p>* LightRail access (for platform deployment)</p>
+<h2 id="local-development-deployment">Local development deployment<a class="headerlink" href="#local-development-deployment" title="Permanent link">&para;</a></h2>
+<h3 id="quick-start">Quick start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h3>
+<p>[code] 
+    # Clone repository
+    git clone <repository-url>
+    cd content-editorial-assiatant</p>
+<div class="codehilite"><pre><span></span><code># Create virtual environment
+python3.12 -m venv venv
+source venv/bin/activate  # Linux/macOS
+# OR
+venv\Scripts\activate     # Windows
+
+# Install dependencies
+pip install --upgrade pip
+pip install -r requirements.txt
+
+# Run application
+python main.py
+</code></pre></div>
+
+<p>[/code]</p>
+<p>Access at: <a href="http://localhost:5000">http://localhost:5000</a></p>
+<h3 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h3>
+<p>Create a <code>.env</code> file in project root:
+[code] 
+    FLASK_DEBUG=true
+    FLASK_ENV=development
+    MODEL_PROVIDER=ollama
+    MODEL_ID=llama3:8b
+    LOG_LEVEL=DEBUG
+[/code]</p>
+<p>See <a href="environment-variables.html">Environment Variables Reference</a> for complete options.</p>
+<h2 id="docker-deployment">Docker Deployment<a class="headerlink" href="#docker-deployment" title="Permanent link">&para;</a></h2>
+<h3 id="build-docker-image">Build Docker Image<a class="headerlink" href="#build-docker-image" title="Permanent link">&para;</a></h3>
+<p>[code] 
+    # Build image
+    docker build -t content-editorial-assistant:latest .</p>
+<div class="codehilite"><pre><span></span><code><span class="gh">#</span> Run container
+docker run -d \
+  --name cea \
+  -p 5000:5000 \
+  -e MODEL_PROVIDER=api \
+  -e BASE_URL=https://api.groq.com/openai/v1 \
+  -e ACCESS_TOKEN=your-api-key \
+  -v $(pwd)/instance:/app/instance \
+  content-editorial-assistant:latest
+</code></pre></div>
+
+<p>[/code]</p>
+<h3 id="docker-compose">Docker Compose<a class="headerlink" href="#docker-compose" title="Permanent link">&para;</a></h3>
+<p>Create <code>docker-compose.yml</code>:
+[code] 
+    version: '3.8'</p>
+<div class="codehilite"><pre><span></span><code><span class="n">services</span><span class="o">:</span>
+<span class="w">  </span><span class="n">cea</span><span class="o">:</span>
+<span class="w">    </span><span class="n">build</span><span class="o">:</span><span class="w"> </span><span class="o">.</span>
+<span class="w">    </span><span class="n">ports</span><span class="o">:</span>
+<span class="w">      </span><span class="o">-</span><span class="w"> </span><span class="s2">&quot;5000:5000&quot;</span>
+<span class="w">    </span><span class="n">environment</span><span class="o">:</span>
+<span class="w">      </span><span class="o">-</span><span class="w"> </span><span class="n">FLASK_ENV</span><span class="o">=</span><span class="n">production</span>
+<span class="w">      </span><span class="o">-</span><span class="w"> </span><span class="n">MODEL_PROVIDER</span><span class="o">=</span><span class="n">api</span>
+<span class="w">      </span><span class="o">-</span><span class="w"> </span><span class="n">BASE_URL</span><span class="o">=</span><span class="n">$</span><span class="o">{</span><span class="n">BASE_URL</span><span class="o">}</span>
+<span class="w">      </span><span class="o">-</span><span class="w"> </span><span class="n">ACCESS_TOKEN</span><span class="o">=</span><span class="n">$</span><span class="o">{</span><span class="n">ACCESS_TOKEN</span><span class="o">}</span>
+<span class="w">      </span><span class="o">-</span><span class="w"> </span><span class="n">DATABASE_URL</span><span class="o">=</span><span class="n">postgresql</span><span class="o">://</span><span class="n">cea</span><span class="o">:</span><span class="n">password</span><span class="err">@</span><span class="n">db</span><span class="o">:</span><span class="mi">5432</span><span class="o">/</span><span class="n">cea</span>
+<span class="w">      </span><span class="o">-</span><span class="w"> </span><span class="n">HOST</span><span class="o">=</span><span class="mf">0.0</span><span class="o">.</span><span class="mf">0.0</span>
+<span class="w">    </span><span class="n">volumes</span><span class="o">:</span>
+<span class="w">      </span><span class="o">-</span><span class="w"> </span><span class="o">./</span><span class="n">instance</span><span class="o">:/</span><span class="n">app</span><span class="o">/</span><span class="n">instance</span>
+<span class="w">      </span><span class="o">-</span><span class="w"> </span><span class="o">./</span><span class="n">logs</span><span class="o">:/</span><span class="n">app</span><span class="o">/</span><span class="n">logs</span>
+<span class="w">    </span><span class="n">depends_on</span><span class="o">:</span>
+<span class="w">      </span><span class="o">-</span><span class="w"> </span><span class="n">db</span>
+<span class="w">    </span><span class="n">restart</span><span class="o">:</span><span class="w"> </span><span class="n">unless</span><span class="o">-</span><span class="n">stopped</span>
+
+<span class="w">  </span><span class="n">db</span><span class="o">:</span>
+<span class="w">    </span><span class="n">image</span><span class="o">:</span><span class="w"> </span><span class="n">postgres</span><span class="o">:</span><span class="mi">15</span>
+<span class="w">    </span><span class="n">environment</span><span class="o">:</span>
+<span class="w">      </span><span class="o">-</span><span class="w"> </span><span class="n">POSTGRES_DB</span><span class="o">=</span><span class="n">cea</span>
+<span class="w">      </span><span class="o">-</span><span class="w"> </span><span class="n">POSTGRES_USER</span><span class="o">=</span><span class="n">cea</span>
+<span class="w">      </span><span class="o">-</span><span class="w"> </span><span class="n">POSTGRES_PASSWORD</span><span class="o">=</span><span class="n">password</span>
+<span class="w">    </span><span class="n">volumes</span><span class="o">:</span>
+<span class="w">      </span><span class="o">-</span><span class="w"> </span><span class="n">postgres_data</span><span class="o">:/</span><span class="n">var</span><span class="sr">/lib/postgresql/</span><span class="n">data</span>
+<span class="w">    </span><span class="n">restart</span><span class="o">:</span><span class="w"> </span><span class="n">unless</span><span class="o">-</span><span class="n">stopped</span>
+
+<span class="n">volumes</span><span class="o">:</span>
+<span class="w">  </span><span class="n">postgres_data</span><span class="o">:</span>
+</code></pre></div>
+
+<p>[/code]</p>
+<p>Run with:
+[code] 
+    docker-compose up -d
+[/code]</p>
+<h3 id="dockerfile-details">Dockerfile Details<a class="headerlink" href="#dockerfile-details" title="Permanent link">&para;</a></h3>
+<p>The project Dockerfile includes:</p>
+<p>* <strong>Base Image</strong> : <code>python:3.12-slim</code></p>
+<p>* <strong>Ruby Integration</strong> : For AsciiDoc processing</p>
+<p>* <strong>Model Preloading</strong> : SpaCy and NLTK data</p>
+<p>* <strong>Health Checks</strong> : Built-in health monitoring</p>
+<p>* <strong>Non-root User</strong> : Security best practice</p>
+<p>Key features:
+[code] 
+    # Multi-layer caching for fast rebuilds
+    # Precomputed embeddings at build time
+    # Offline-first model loading
+    # Gunicorn production server
+[/code]</p>
+<h2 id="gitlab-cicd-deployment">GitLab CI/CD Deployment<a class="headerlink" href="#gitlab-cicd-deployment" title="Permanent link">&para;</a></h2>
+<h3 id="pipeline-configuration">Pipeline Configuration<a class="headerlink" href="#pipeline-configuration" title="Permanent link">&para;</a></h3>
+<p>The project uses GitLab CI/CD with LightRail platform integration.</p>
+<p>Current pipeline (<code>.gitlab-ci.yml</code>):
+[code] 
+    stages:
+      - build
+      - deploy-preview
+      - deploy-qa
+      - deploy-stage
+      - deploy-prod
+      - clean</p>
+<div class="codehilite"><pre><span></span><code><span class="n">variables</span><span class="o">:</span>
+<span class="w">  </span><span class="n">LIGHTRAIL_VERSION</span><span class="o">:</span><span class="w"> </span><span class="mf">1.5</span><span class="o">.</span><span class="mi">0</span>
+<span class="w">  </span><span class="n">LIGHTRAIL_RELEASE_BRANCH</span><span class="o">:</span><span class="w"> </span><span class="n">main</span>
+
+<span class="k">include</span><span class="o">:</span>
+<span class="w">  </span><span class="o">-</span><span class="w"> </span><span class="n">project</span><span class="o">:</span><span class="w"> </span><span class="n">dxp</span><span class="sr">/platforms-pipelines/lightrail-platform/</span><span class="n">lightrail</span>
+<span class="w">    </span><span class="n">ref</span><span class="o">:</span><span class="w"> </span><span class="mf">1.5</span><span class="o">.</span><span class="mi">0</span>
+<span class="w">    </span><span class="n">file</span><span class="o">:</span>
+<span class="w">      </span><span class="o">-</span><span class="w"> </span><span class="n">pipeline</span><span class="o">/</span><span class="n">global</span><span class="o">.</span><span class="na">yaml</span>
+<span class="w">      </span><span class="o">-</span><span class="w"> </span><span class="n">pipeline</span><span class="sr">/stages/build/</span><span class="n">build</span><span class="o">.</span><span class="na">yaml</span>
+<span class="w">      </span><span class="o">-</span><span class="w"> </span><span class="n">pipeline</span><span class="sr">/stages/deploy/</span><span class="n">deploy</span><span class="o">.</span><span class="na">yaml</span>
+<span class="w">      </span><span class="o">-</span><span class="w"> </span><span class="n">pipeline</span><span class="sr">/stages/clean/</span><span class="n">clean</span><span class="o">.</span><span class="na">yaml</span>
+</code></pre></div>
+
+<p>[/code]</p>
+<h3 id="environment-specific-deployment">Environment-Specific Deployment<a class="headerlink" href="#environment-specific-deployment" title="Permanent link">&para;</a></h3>
+<p>Deployments are currently disabled by default:
+[code] 
+    build-release:
+      rules:
+        - when: never
+    deploy-qa:
+      rules:
+        - when: never
+[/code]</p>
+<p><strong>To enable deployments</strong> , modify these rules in <code>.gitlab-ci.yml</code>.</p>
+<h3 id="cicd-variables">CI/CD Variables<a class="headerlink" href="#cicd-variables" title="Permanent link">&para;</a></h3>
+<p>Configure in GitLab at <strong>Settings → CI/CD → Variables</strong> :</p>
+<h4 id="required-variables">Required Variables<a class="headerlink" href="#required-variables" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>MODEL_PROVIDER</code></td>
+<td>Text</td>
+<td>AI provider (<code>ollama</code>, <code>api</code>, <code>llamastack</code>)</td>
+</tr>
+<tr>
+<td><code>BASE_URL</code></td>
+<td>Text</td>
+<td>API endpoint URL</td>
+</tr>
+<tr>
+<td><code>ACCESS_TOKEN</code></td>
+<td>Secret (Masked)</td>
+<td>API authentication token</td>
+</tr>
+<tr>
+<td><code>DATABASE_URL</code></td>
+<td>Secret (Masked)</td>
+<td>Production database connection string</td>
+</tr>
+<tr>
+<td><code>SECRET_KEY</code></td>
+<td>Secret (Masked)</td>
+<td>Flask session encryption key</td>
+</tr>
+</tbody>
+</table>
+<h4 id="optional-variables">Optional Variables<a class="headerlink" href="#optional-variables" title="Permanent link">&para;</a></h4>
+<p>* <code>MODEL_ID</code> - Specific model to use</p>
+<p>* <code>MODEL_TEMPERATURE</code> - Generation temperature</p>
+<p>* <code>LOG_LEVEL</code> - Logging verbosity</p>
+<p>* <code>SENTRY_DSN</code> - Error tracking (if enabled)</p>
+<h3 id="security-best-practices">Security Best Practices<a class="headerlink" href="#security-best-practices" title="Permanent link">&para;</a></h3>
+<p>1. <strong>Mark secrets as Masked</strong> : Hides values in job logs</p>
+<p>2. <strong>Mark production vars as Protected</strong> : Only accessible on protected branches</p>
+<p>3. <strong>Use environment scopes</strong> : Separate dev/staging/prod variables</p>
+<p>4. <strong>Rotate keys regularly</strong> : Update <code>ACCESS_TOKEN</code> periodically</p>
+<h2 id="lightrail-platform-deployment">LightRail Platform Deployment<a class="headerlink" href="#lightrail-platform-deployment" title="Permanent link">&para;</a></h2>
+<p>LightRail is Red Hat's internal platform for deploying AI-powered applications.</p>
+<h3 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h3>
+<p>[code] 
+    ┌─────────────────────────────────────┐
+    │     Content Editorial Assistant      │
+    │            (Your App)                │
+    └──────────────┬──────────────────────┘
+                   │
+                   ▼
+    ┌─────────────────────────────────────┐
+    │          LlamaStack                  │
+    │    (AI Model Serving Layer)         │
+    └──────────────┬──────────────────────┘
+                   │
+                   ▼
+    ┌─────────────────────────────────────┐
+    │        LightRail Platform            │
+    │  (Infrastructure &amp; Orchestration)   │
+    └─────────────────────────────────────┘
+[/code]</p>
+<h3 id="configuration_1">Configuration<a class="headerlink" href="#configuration_1" title="Permanent link">&para;</a></h3>
+<p>LlamaStack configuration in <code>llamastack/config.yaml</code>:
+[code] 
+    # LlamaStack configuration
+    model_id: style_analyzer_model
+    provider: lightrail
+    # Additional LightRail-specific settings
+[/code]</p>
+<p>Environment variables for LlamaStack:
+[code] 
+    MODEL_PROVIDER=llamastack
+    CEA_MODEL_ID=style_analyzer_model
+[/code]</p>
+<h3 id="deployment-process">Deployment Process<a class="headerlink" href="#deployment-process" title="Permanent link">&para;</a></h3>
+<p>1. <strong>Build</strong> : GitLab CI builds Docker image</p>
+<p>2. <strong>Push</strong> : Image pushed to LightRail registry</p>
+<p>3. <strong>Deploy</strong> : LightRail orchestrates deployment</p>
+<p>4. <strong>Health Check</strong> : Automated health verification</p>
+<p>5. <strong>Traffic Routing</strong> : Gradual traffic shift</p>
+<h3 id="openshift-configuration">OpenShift Configuration<a class="headerlink" href="#openshift-configuration" title="Permanent link">&para;</a></h3>
+<p>The project includes OpenShift manifests:</p>
+<p><strong><code>openshift-deployment-patch.yaml</code></strong> : * Persistent volume configuration * Database persistence * Environment variable injection</p>
+<p><strong><code>openshift-route.yaml</code></strong> : * External access configuration * TLS termination * Custom domain support</p>
+<h3 id="monitoring">Monitoring<a class="headerlink" href="#monitoring" title="Permanent link">&para;</a></h3>
+<p>LightRail provides:</p>
+<p>* <strong>Metrics</strong> : Prometheus-based monitoring</p>
+<p>* <strong>Logs</strong> : Centralized log aggregation</p>
+<p>* <strong>Alerts</strong> : Automated alerting on failures</p>
+<p>* <strong>Dashboards</strong> : Real-time performance visualization</p>
+<h2 id="production-checklist">Production Checklist<a class="headerlink" href="#production-checklist" title="Permanent link">&para;</a></h2>
+<h3 id="pre-deployment">Pre-Deployment<a class="headerlink" href="#pre-deployment" title="Permanent link">&para;</a></h3>
+<p>* ❏ <strong>Python version</strong> : 3.12+ verified</p>
+<p>* ❏ <strong>Dependencies</strong> : All installed and tested</p>
+<p>* ❏ <strong>Tests</strong> : All tests passing</p>
+<p>* ❏ <strong>Environment variables</strong> : Configured and validated</p>
+<p>* ❏ <strong>Database</strong> : Migrations applied</p>
+<p>* ❏ <strong>AI models</strong> : Available and tested</p>
+<p>* ❏ <strong>Security</strong> : Secrets not committed</p>
+<h3 id="configuration-review">Configuration Review<a class="headerlink" href="#configuration-review" title="Permanent link">&para;</a></h3>
+<p>* ❏ <strong>SECRET_KEY</strong> : Strong random key set</p>
+<p>* ❏ <strong>DEBUG mode</strong> : Disabled in production</p>
+<p>* ❏ <strong>CORS origins</strong> : Restricted to actual domains</p>
+<p>* ❏ <strong>Database</strong> : Production database configured</p>
+<p>* ❏ <strong>Logging</strong> : Appropriate log level (INFO or WARNING)</p>
+<p>* ❏ <strong>File uploads</strong> : Size limits configured</p>
+<h3 id="performance">Performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h3>
+<p>* ❏ <strong>Gunicorn</strong> : Configured with appropriate workers</p>
+<p>* ❏ <strong>Database pool</strong> : Connection pool sized correctly</p>
+<p>* ❏ <strong>Caching</strong> : Model caching enabled</p>
+<p>* ❏ <strong>Health checks</strong> : Configured and tested</p>
+<h3 id="monitoring_1">Monitoring<a class="headerlink" href="#monitoring_1" title="Permanent link">&para;</a></h3>
+<p>* ❏ <strong>Logging</strong> : Logs aggregated and monitored</p>
+<p>* ❏ <strong>Metrics</strong> : Prometheus metrics exposed</p>
+<p>* ❏ <strong>Alerts</strong> : Critical alerts configured</p>
+<p>* ❏ <strong>Error tracking</strong> : Sentry or similar configured</p>
+<h2 id="post-deployment-verification">Post-Deployment Verification<a class="headerlink" href="#post-deployment-verification" title="Permanent link">&para;</a></h2>
+<h3 id="health-check">Health Check<a class="headerlink" href="#health-check" title="Permanent link">&para;</a></h3>
+<p>[code] 
+    curl <a href="https://your-domain.com/health">https://your-domain.com/health</a></p>
+<div class="codehilite"><pre><span></span><code><span class="gh">#</span> Expected response:
+{
+  &quot;status&quot;: &quot;healthy&quot;,
+  &quot;services&quot;: {
+    &quot;document_processor&quot;: &quot;available&quot;,
+    &quot;style_analyzer&quot;: &quot;available&quot;,
+    &quot;ai_rewriter&quot;: &quot;available&quot;,
+    &quot;database&quot;: &quot;available&quot;
+  }
+}
+</code></pre></div>
+
+<p>[/code]</p>
+<h3 id="smoke-tests">Smoke Tests<a class="headerlink" href="#smoke-tests" title="Permanent link">&para;</a></h3>
+<p>[code] 
+    # Test file upload
+    curl -X POST <a href="https://your-domain.com/upload">https://your-domain.com/upload</a> \
+      -F "file=@test.txt"</p>
+<div class="codehilite"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="nx">Test</span><span class="w"> </span><span class="nx">analysis</span>
+<span class="nx">curl</span><span class="w"> </span><span class="o">-</span><span class="nx">X</span><span class="w"> </span><span class="nx">POST</span><span class="w"> </span><span class="nx">https</span><span class="p">:</span><span class="c1">//your-domain.com/analyze \</span>
+<span class="w">  </span><span class="o">-</span><span class="nx">H</span><span class="w"> </span><span class="s">&quot;Content-Type: application/json&quot;</span><span class="w"> </span>\
+<span class="w">  </span><span class="o">-</span><span class="nx">d</span><span class="w"> </span><span class="err">&#39;</span><span class="p">{</span><span class="s">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Test content&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;content_type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;concept&quot;</span><span class="p">}</span><span class="err">&#39;</span>
+</code></pre></div>
+
+<p>[/code]</p>
+<h3 id="performance-baseline">Performance Baseline<a class="headerlink" href="#performance-baseline" title="Permanent link">&para;</a></h3>
+<p>Monitor these metrics:</p>
+<p>* <strong>Response time</strong> : &lt; 2s for analysis</p>
+<p>* <strong>Memory usage</strong> : Stable under 2GB</p>
+<p>* <strong>CPU usage</strong> : &lt; 70% average</p>
+<p>* <strong>Error rate</strong> : &lt; 1%</p>
+<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
+<h3 id="application-wont-start">Application Won't Start<a class="headerlink" href="#application-wont-start" title="Permanent link">&para;</a></h3>
+<p><strong>Check logs</strong> :
+[code] 
+    # Docker
+    docker logs cea</p>
+<div class="codehilite"><pre><span></span><code># LightRail
+oc logs -f deployment/cea
+
+# Local
+tail -f logs/app.log
+</code></pre></div>
+
+<p>[/code]</p>
+<p><strong>Common issues</strong> :</p>
+<p>* Missing environment variables</p>
+<p>* Database connection failure</p>
+<p>* Port already in use</p>
+<p>* Permission issues</p>
+<h3 id="model-provider-issues">Model Provider Issues<a class="headerlink" href="#model-provider-issues" title="Permanent link">&para;</a></h3>
+<p><strong>Ollama not accessible</strong> :
+[code] 
+    # Verify Ollama is running
+    curl <a href="http://localhost:11434/api/tags">http://localhost:11434/api/tags</a></p>
+<div class="codehilite"><pre><span></span><code># Check firewall rules
+# Ensure network connectivity
+</code></pre></div>
+
+<p>[/code]</p>
+<p><strong>API provider authentication fails</strong> :
+[code] 
+    # Verify API key
+    curl -H "Authorization: Bearer $ACCESS_TOKEN" $BASE_URL/models</p>
+<div class="codehilite"><pre><span></span><code><span class="gh">#</span> Check key permissions
+<span class="gh">#</span> Verify BASE_URL is correct
+</code></pre></div>
+
+<p>[/code]</p>
+<h3 id="database-connection-issues">Database Connection Issues<a class="headerlink" href="#database-connection-issues" title="Permanent link">&para;</a></h3>
+<p><strong>PostgreSQL connection fails</strong> :
+[code] 
+    # Test connection
+    psql "$DATABASE_URL"</p>
+<div class="codehilite"><pre><span></span><code># Check connection string format
+# Verify host, port, credentials
+# Check firewall/security groups
+</code></pre></div>
+
+<p>[/code]</p>
+<h3 id="high-memory-usage">High Memory Usage<a class="headerlink" href="#high-memory-usage" title="Permanent link">&para;</a></h3>
+<p><strong>Solutions</strong> :</p>
+<p>1. Reduce Gunicorn workers: <code>GUNICORN_WORKERS=2</code></p>
+<p>2. Clear cache: Restart application</p>
+<p>3. Check for memory leaks: Use memory profiler</p>
+<p>4. Upgrade instance: More RAM may be needed</p>
+<h2 id="scaling-considerations">Scaling Considerations<a class="headerlink" href="#scaling-considerations" title="Permanent link">&para;</a></h2>
+<h3 id="horizontal-scaling">Horizontal Scaling<a class="headerlink" href="#horizontal-scaling" title="Permanent link">&para;</a></h3>
+<p>For high traffic:</p>
+<p>1. <strong>Multiple instances</strong> : Run behind load balancer</p>
+<p>2. <strong>Stateless design</strong> : Session data in Redis</p>
+<p>3. <strong>External database</strong> : Shared PostgreSQL instance</p>
+<p>4. <strong>Distributed caching</strong> : Redis for model caching</p>
+<h3 id="vertical-scaling">Vertical Scaling<a class="headerlink" href="#vertical-scaling" title="Permanent link">&para;</a></h3>
+<p>Resource recommendations:</p>
+<table>
+<thead>
+<tr>
+<th>Traffic Level</th>
+<th>CPU</th>
+<th>RAM</th>
+<th>Workers</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Low (&lt; 100 req/day)</td>
+<td>1 core</td>
+<td>2 GB</td>
+<td>2</td>
+</tr>
+<tr>
+<td>Medium (&lt; 1000 req/day)</td>
+<td>2 cores</td>
+<td>4 GB</td>
+<td>4</td>
+</tr>
+<tr>
+<td>High (&lt; 10000 req/day)</td>
+<td>4 cores</td>
+<td>8 GB</td>
+<td>8</td>
+</tr>
+<tr>
+<td>Very High (10000+ req/day)</td>
+<td>8+ cores</td>
+<td>16+ GB</td>
+<td>16+</td>
+</tr>
+</tbody>
+</table>
+<h2 id="backup-and-recovery">Backup and Recovery<a class="headerlink" href="#backup-and-recovery" title="Permanent link">&para;</a></h2>
+<h3 id="database-backups">Database Backups<a class="headerlink" href="#database-backups" title="Permanent link">&para;</a></h3>
+<p>[code] 
+    # PostgreSQL backup
+    pg_dump "$DATABASE_URL" &gt; backup_$(date +%Y%m%d).sql</p>
+<div class="codehilite"><pre><span></span><code><span class="gh">#</span> Restore
+psql &quot;$DATABASE_URL&quot; &lt; backup_20240115.sql
+</code></pre></div>
+
+<p>[/code]</p>
+<h3 id="application-state">Application State<a class="headerlink" href="#application-state" title="Permanent link">&para;</a></h3>
+<p>[code] 
+    # Backup instance folder (SQLite database)
+    tar -czf instance_backup.tar.gz instance/</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Backup logs</span>
+<span class="n">tar</span><span class="w"> </span><span class="o">-</span><span class="n">czf</span><span class="w"> </span><span class="n">logs_backup</span><span class="o">.</span><span class="n">tar</span><span class="o">.</span><span class="n">gz</span><span class="w"> </span><span class="n">logs</span><span class="o">/</span>
+
+<span class="c1"># Backup uploaded files</span>
+<span class="n">tar</span><span class="w"> </span><span class="o">-</span><span class="n">czf</span><span class="w"> </span><span class="n">uploads_backup</span><span class="o">.</span><span class="n">tar</span><span class="o">.</span><span class="n">gz</span><span class="w"> </span><span class="n">uploads</span><span class="o">/</span>
+</code></pre></div>
+
+<p>[/code]</p>
+<h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<p>* <a href="environment-variables.html">Environment Variables Reference</a></p>
+<p>* <a href="getting-started.html">Getting Started Guide</a></p>
+<p>* <a href="architecture:architecture.html">System Architecture</a></p>
+<p>Last updated 2026-01-22 23:36:56 +0530 </p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../environment-variables/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Environment Variables">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Environment Variables
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../llm-rules-implementation/" class="md-footer__link md-footer__link--next" aria-label="Next: LLM Rules Implementation">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                LLM Rules Implementation
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "search.suggest", "search.highlight", "content.code.copy", "navigation.footer", "content.action.edit"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../search/main.js"></script>
+      
+    
+  </body>
+</html>

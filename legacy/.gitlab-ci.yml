@@ -1,0 +1,43 @@
+---
+# ============================================================
+# CONTENT EDITORIAL ASSISTANT - MAIN CI/CD PIPELINE
+# ============================================================
+#
+# Includes:
+#   - LightRail Platform (build & deploy)
+#   - Documentation Pipeline
+#   - Testing Pipeline
+#   - Security Scanning Pipeline (Vulnerability Management)
+#
+# Security scanning implements Red Hat Vulnerability Remediation
+# Guidelines with automated scanning on every commit/MR.
+# ============================================================
+
+stages:
+  - build
+  - test
+  - deploy-preview
+  - deploy-qa
+  - deploy-stage
+  - deploy-prod
+  - clean
+
+
+variables:
+  LIGHTRAIL_VERSION: &LIGHTRAIL_VERSION 1.10.0
+  LIGHTRAIL_RELEASE_BRANCH: main
+
+include:
+  # LightRail Platform Pipeline
+  - project: dxp/platforms-pipelines/lightrail-platform/lightrail
+    ref: *LIGHTRAIL_VERSION
+    file:
+      - pipeline/global.yaml
+      - pipeline/stages/build/build.yaml
+      - pipeline/stages/deploy/deploy.yaml
+      - pipeline/stages/clean/clean.yaml
+  # Documentation Pipeline
+  - local: '.gitlab-ci-docs.yml'
+  # Security Scanning Pipeline (Vulnerability Management)
+  - local: '.gitlab-ci-security.yml'
+

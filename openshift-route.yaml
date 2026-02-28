@@ -1,0 +1,47 @@
+---
+# OpenShift Route Configuration for Content Editorial Assistant
+# This file configures extended timeouts for long-running analysis operations
+#
+# Apply with: oc apply -f openshift-route.yaml
+
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: cea-app
+  namespace: cea--runtime-int
+  annotations:
+    # Extended timeout for long-running analysis operations (matches gunicorn 5min timeout)
+    haproxy.router.openshift.io/timeout: 5m
+    
+    # WebSocket connection timeout
+    haproxy.router.openshift.io/timeout-tunnel: 5m
+    
+    # Keep-alive settings to maintain connection
+    haproxy.router.openshift.io/pod-concurrent-connections: "100"
+    
+    # OpenShift managed annotations (do not remove)
+    openshift.io/host.generated: "true"
+    router.openshift.io/haproxy.router: internal
+    
+  labels:
+    app: cea-app
+    app.kubernetes.io/component: cea-app
+    app.kubernetes.io/instance: cea-app
+    app.kubernetes.io/name: cea-app
+    app.kubernetes.io/part-of: cea-app
+    paas.redhat.com/appcode: DOCS-005
+    router: internal
+
+spec:
+  host: cea-app-cea--runtime-int.apps.mpp-e1-preprod.syvu.p1.openshiftapps.com
+  to:
+    kind: Service
+    name: cea-app
+    weight: 100
+  port:
+    targetPort: 8080-tcp
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None
+

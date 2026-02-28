@@ -1,0 +1,190 @@
+= Deleting extensions from a private OpenVSX registry
+
+You can remove extensions from your private OpenVSX registry by using one of the following methods:
+
+* Use the OpenVSX administrator API (recommended).
+* Delete the extension data directly in the PostgreSQL database.
+
+[id="delete-extensions-admin-api"]
+== Deleting an extension by using the OpenVSX administrator API
+
+Use this method to call the administrator API with an administrator user and a personal access token (PAT).
+
+.Prerequisites
+* You must have access to the OpenShift cluster where OpenVSX is deployed (namespace `openvsx`).
+
+.Procedure
+. Add the OpenVSX administrator user and PAT to the database:
++
+Get the PostgreSQL pod name:
++
+[bash,subs="verbatim",options="nowrap"]
+----
+export POSTGRESQL_POD_NAME=$(oc get pods -n openvsx \
+   -o jsonpath="{.items[*].metadata.name}" | tr ' ' '\n' | grep '^postgresql' | head -n 1)
+----
++
+Add the administrator user:
++
+[bash,subs="verbatim",options="nowrap"]
+----
+oc exec -n openvsx "$POSTGRESQL_POD_NAME" -- bash -c \
+   "psql -d openvsx -c \"INSERT INTO user_data (id, login_name, role) VALUES (1002, 'openvsx-admin', 'admin');\""
+----
++
+Add the administrator PAT:
++
+[bash,subs="verbatim",options="nowrap"]
+----
+oc exec -n openvsx "$POSTGRESQL_POD_NAME" -- bash -c \
+   "psql -d openvsx -c \"INSERT INTO personal_access_token (id, user_data, value, active, created_timestamp, accessed_timestamp, description) VALUES (1002, 1002, 'openvsx_admin_token', true, current_timestamp, current_timestamp, 'Admin API Token');\""
+----
++
+**Note:** Use a strong, unique value instead of `openvsx_admin_token` for production. The system passes the PAT in the API request URL.
+
+. To delete an extension and all of its published versions, use the **`curl`** command with the following endpoint:
++
+`POST /admin/api/extension/<publisher>/<extension>/delete`
++
+[bash,subs="verbatim",options="nowrap"]
+----
+curl -X POST \
+  "https://<your-openvsx-server-url>/admin/api/extension/<publisher>/<extension>/delete?token=<your-admin-pat>"
+----
++
+Replace the following placeholders:
+* `_your-openvsx-server-url_`: The URL of your OpenVSX registry.
+* `_publisher_`: The namespace of the extension (for example, `redhat`).
+* `_extension_`: The name of the extension (for example, `vscode-yaml`).
+* `_your-admin-pat_`: The PAT you created for the `openvsx-admin` user.
+
+. To delete a specific version of an extension, send a JSON body in the same `POST` request:
++
+To remove only certain versions and target platforms instead of the entire extension, include an array that specifies a `version` and `targetPlatform` (for example, `linux-x64`, `darwin-arm64`, or `win32-x64`).
++
+[bash,subs="verbatim",options="nowrap"]
+----
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '[{"version": "1.3.0", "targetPlatform": "linux-x64"}]' \
+  "https://<your-openvsx-server-url>/admin/api/extension/<publisher>/<extension>/delete?token=<your-admin-pat>"
+----
++
+Use the same placeholders that are listed in the previous step. You can list multiple version and platform pairs in the JSON array to delete several targets in one request.
+
+[id="delete-extensions-postgres"]
+== Deleting an extension from the PostgreSQL database directly
+
+Use this method to remove extension records and related data directly in the database. Use this method if the administrator API is not available or if you must clean up specific data. If the extension uses local storage, you must also remove its files from the OpenVSX server pod.
+
+.Prerequisites
+* You must have access to the OpenShift cluster where OpenVSX is deployed (namespace `openvsx`).
+* You must know the namespace name and extension name that you want to delete.
+
+.Procedure
+. Open a command prompt in the PostgreSQL pod and connect to the database:
++
+[bash,subs="verbatim",options="nowrap"]
+----
+export POSTGRESQL_POD_NAME=$(oc get pods -n openvsx \
+   -o jsonpath="{.items[*].metadata.name}" | tr ' ' '\n' | grep '^postgresql' | head -n 1)
+oc exec -it $POSTGRESQL_POD_NAME -n openvsx -- /bin/bash
+----
++
+Inside the pod, run the **`psql`** command:
++
+[bash,subs="verbatim",options="nowrap"]
+----
+psql
+----
++
+At the `postgres=#` prompt, connect to the database:
++
+[bash,subs="verbatim",options="nowrap"]
+----
+\c openvsx
+----
++
+You are now connected to the `openvsx` database as the `postgres` user.
+
+. Find the namespace ID and extension ID:
++
+Identify the `namespace` ID (replace `_namespace_name_` with the actual namespace):
++
+[bash,subs="verbatim",options="nowrap"]
+----
+SELECT id, name FROM namespace WHERE name = 'namespace_name';
+----
++
+Identify the extension ID (replace `_namespace_id_` and `_extension_name_` with the values from the previous step):
++
+[bash,subs="verbatim",options="nowrap"]
+----
+SELECT id, name, namespace_id FROM extension WHERE namespace_id = <namespace_id> AND name = 'extension_name';
+----
++
+Note the ID of the extension to use as `_extension_id_` in the next steps.
+
+. Optional: Preview extension versions and file resources:
++
+Preview the versions:
++
+[bash,subs="verbatim",options="nowrap"]
+----
+SELECT id, version, pre_release, semver_pre_release, semver_is_pre_release FROM extension_version WHERE extension_id = <extension_id> ORDER BY timestamp DESC;
+----
++
+Preview the file resources:
++
+[bash,subs="verbatim",options="nowrap"]
+----
+SELECT id, name, type, storage_type FROM file_resource WHERE extension_id = <extension_id> ORDER BY id;
+----
++
+If the `storage_type` value is `local`, you must also remove the extension files from the file system on the OpenVSX server pod.
+
+. Delete the extension from the database:
++
+Run the following commands in a single transaction. Replace `_extension_id_` with the extension ID from step 2.
++
+[bash,subs="verbatim",options="nowrap"]
+----
+BEGIN;
+
+-- 1. Delete all file resources for the extension
+DELETE FROM file_resource WHERE extension_id = <extension_id>;
+
+-- 2. Delete all extension reviews
+DELETE FROM extension_review WHERE extension_id = <extension_id>;
+
+-- 3. Delete all versions of the extension
+DELETE FROM extension_version WHERE extension_id = <extension_id>;
+
+-- 4. Delete the extension entry itself
+DELETE FROM extension WHERE id = <extension_id>;
+
+COMMIT;
+----
++
+**Important:** Run these commands in order within one transaction. Do not skip the **`COMMIT`** command, or the system does not apply the changes.
+
+. If applicable, remove the extension files from local storage:
++
+If the extension used local storage, remove its files from the OpenVSX server pod.
++
+Get the OpenVSX server pod name:
++
+[bash,subs="verbatim",options="nowrap"]
+----
+export OPENVSX_POD_NAME=$(oc get pods -n openvsx -o jsonpath="{.items[*].metadata.name}" | tr ' ' '\n' | grep '^openvsx-server' | head -n 1)
+----
++
+Access the pod and delete the extension folder for the publisher and extension you removed:
++
+[bash,subs="verbatim",options="nowrap"]
+----
+oc exec -it $OPENVSX_POD_NAME -n openvsx -- /bin/bash -c "rm -rf /tmp/extensions/<publisher>/<extension>"
+----
+
+== Related tasks
+* After you remove the extension, refresh your OpenVSX registry to verify that the extension no longer appears in the gallery.

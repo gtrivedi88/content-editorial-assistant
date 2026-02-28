@@ -1,0 +1,92 @@
+# Units of measurement abbreviations organized by category.
+# Used by UnitsOfMeasurementRule to detect missing spaces between numbers and units.
+# IBM Style Guide (p.161): "Place a space between the number and the unit."
+
+length:
+  - mm
+  - cm
+  - m
+  - km
+  - in
+  - ft
+  - yd
+  - mi
+  - nm
+
+weight:
+  - mg
+  - g
+  - kg
+  - oz
+  - lb
+
+volume:
+  - ml
+  - l
+  - gal
+  - qt
+  - pt
+
+time:
+  - ms
+  - ns
+  - hr
+
+frequency:
+  - Hz
+  - kHz
+  - MHz
+  - GHz
+  - THz
+
+data:
+  - KB
+  - MB
+  - GB
+  - TB
+  - PB
+  - Kbit
+  - Mbit
+  - Gbit
+
+network:
+  - bps
+  - kbps
+  - Mbps
+  - Gbps
+
+power:
+  - W
+  - kW
+  - MW
+  - mW
+
+voltage:
+  - V
+  - kV
+  - mV
+
+current:
+  - A
+  - mA
+  - kA
+
+temperature:
+  - K
+
+pressure:
+  - Pa
+  - kPa
+  - MPa
+  - psi
+  - bar
+
+speed:
+  - mph
+  - kph
+
+memory_binary:
+  - KiB
+  - MiB
+  - GiB
+  - TiB

@@ -1,0 +1,40 @@
+# Web framework
+Flask>=3.1.0,<4.0.0
+Flask-Cors>=5.0.0,<6.0.0
+flask-limiter>=3.5,<4.0
+Flask-SocketIO>=5.4.0,<6.0.0
+gunicorn>=23.0.0,<24.0.0
+
+# Config
+python-dotenv>=1.0.0,<2.0.0
+PyYAML>=6.0.0,<7.0.0
+
+# Observability
+python-json-logger>=2.0,<3.0
+
+# NLP
+spacy>=3.7.6,<4.0.0
+en_core_web_md @ https://github.com/explosion/spacy-models/releases/download/en_core_web_md-3.8.0/en_core_web_md-3.8.0-py3-none-any.whl
+textstat>=0.7.0,<1.0.0
+
+# LLM — multi-provider model system (LlamaStack / LightRail)
+tenacity>=9.0.0,<10.0.0
+llama-stack-client==0.2.12
+fire>=0.7.0
+requests>=2.31.0
+
+# Production server
+gevent>=24.2.0,<25.0.0
+
+# File parsing
+PyMuPDF>=1.24.0,<2.0.0
+python-docx>=1.1.0,<2.0.0
+openpyxl>=3.1.0,<4.0.0
+lxml>=5.0.0,<6.0.0
+markdown-it-py>=3.0.0,<4.0.0
+
+# Testing & quality
+pytest>=8.0.0,<9.0.0
+pytest-cov>=6.0.0,<7.0.0
+bandit>=1.8.0,<2.0.0
+flake8>=7.0.0,<8.0.0

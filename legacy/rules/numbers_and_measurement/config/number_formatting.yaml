@@ -1,0 +1,380 @@
+# Number Formatting Configuration
+# Manages thousands separators, decimal formatting, and number presentation
+# Updates can be made without code changes for zero false positives
+
+# Thousands Separator Rules
+thousands_separators:
+  detection_patterns:
+    - pattern: '\b\d{4,}\b'
+      name: "large_number_without_separator"
+      min_digits: 4
+      evidence_base: 0.5
+      description: "Numbers with 4+ digits that lack separators"
+      
+  separator_requirements:
+    four_digits:
+      min_length: 4
+      evidence_base: 0.5
+      severity: "low"
+      example: "5000 → 5,000"
+      context_dependent: true
+      
+    five_digits:
+      min_length: 5
+      evidence_base: 0.6
+      severity: "medium"
+      example: "50000 → 50,000"
+      strongly_recommended: true
+      
+    six_plus_digits:
+      min_length: 6
+      evidence_base: 0.8
+      severity: "medium"
+      example: "500000 → 500,000"
+      required_for_readability: true
+
+  separator_styles:
+    comma:
+      symbol: ","
+      standard: "US/UK"
+      example: "1,234,567"
+      evidence_reduction: -0.3
+      
+    space:
+      symbol: " "
+      standard: "International"
+      example: "1 234 567"
+      evidence_reduction: -0.3
+      
+    period:
+      symbol: "."
+      standard: "European"
+      example: "1.234.567"
+      evidence_reduction: -0.3
+      note: "Can be confusing with decimal point"
+
+# Decimal Formatting Rules
+decimal_formatting:
+  leading_zero_requirements:
+    - pattern: '(?<!\d)\.\d+'
+      name: "missing_leading_zero"
+      example: ".95"
+      evidence_base: 0.8
+      severity: "medium"
+      issue: "Decimal numbers less than 1 should have leading zero"
+      correct_format: "0.95"
+      
+  acceptable_formats:
+    - pattern: '\b0\.\d+\b'
+      name: "proper_leading_zero"
+      example: "0.95"
+      evidence_reduction: -0.5
+      standard_format: true
+
+# Context-Based Evidence Adjustments
+context_adjustments:
+  content_type_modifiers:
+    business:
+      evidence_increase: 0.1
+      readability_priority: true
+      separator_importance: "high"
+      
+    financial:
+      evidence_increase: 0.2
+      precision_required: true
+      separator_mandatory: true
+      leading_zero_mandatory: true
+      
+    technical:
+      evidence_neutral: 0.0
+      context_dependent: true
+      separator_optional_small: true
+      
+    scientific:
+      evidence_decrease: -0.1
+      scientific_notation_acceptable: true
+      separator_less_critical: true
+      
+    legal:
+      evidence_increase: 0.3
+      precision_critical: true
+      unambiguous_required: true
+
+  audience_modifiers:
+    international:
+      evidence_increase: 0.1
+      consistency_important: true
+      
+    domestic:
+      evidence_neutral: 0.0
+      local_conventions_acceptable: true
+      
+    technical:
+      evidence_decrease: -0.1
+      technical_notation_acceptable: true
+
+  document_scope:
+    multiple_large_numbers:
+      consistency_penalty: 0.2
+      separator_mixing_evidence: 0.3
+      
+    single_number:
+      evidence_neutral: 0.0
+
+# Number Categories and Special Rules
+number_categories:
+  financial_amounts:
+    patterns: ["currency symbols", "financial context"]
+    evidence_increase: 0.2
+    separator_mandatory: true
+    precision_critical: true
+    
+  statistical_data:
+    patterns: ["percentage", "ratio", "statistical terms"]
+    evidence_increase: 0.1
+    clarity_important: true
+    
+  measurements:
+    patterns: ["unit abbreviations", "measurement context"]
+    evidence_neutral: 0.0
+    technical_notation_acceptable: true
+    
+  identifiers:
+    patterns: ["ID", "serial number", "part number"]
+    evidence_decrease: -0.5
+    formatting_preserved: true
+    
+  years:
+    patterns: ["(19|20)\\d{2}"]
+    evidence_decrease: -0.8
+    separator_inappropriate: true
+    
+  versions:
+    patterns: ["version", "v\\d", "build"]
+    evidence_decrease: -0.8
+    separator_inappropriate: true
+
+# Detection Configuration
+detection_patterns:
+  thousands_separator:
+    regex: '\b\d{4,}\b'
+    captures: ["full_number"]
+    flags: ["MULTILINE"]
+    
+  leading_decimal:
+    regex: '(?<!\d)\.\d+'
+    captures: ["decimal_part"]
+    flags: ["MULTILINE"]
+
+# Surgical Guard Patterns (contexts to exclude)
+surgical_guards:
+  identifier_contexts:
+    - "id:"
+    - "serial:"
+    - "part number:"
+    - "model:"
+    - "reference:"
+    - "account:"
+    - "order #"
+    
+  version_contexts:
+    - "version"
+    - "v\\d"
+    - "build"
+    - "release"
+    - "revision"
+    
+  year_contexts:
+    - "year (19|20)\\d{2}"
+    - "in (19|20)\\d{2}"
+    - "since (19|20)\\d{2}"
+    - "copyright (19|20)\\d{2}"
+    
+  technical_contexts:
+    - "port"
+    - "address"
+    - "hash"
+    - "checksum"
+    - "timestamp"
+    - "unix time"
+    
+  code_contexts:
+    - "variable"
+    - "constant"
+    - "parameter"
+    - "configuration"
+    - "setting"
+    
+  mathematical_contexts:
+    - "formula"
+    - "equation"
+    - "calculation"
+    - "expression"
+    - "scientific notation"
+
+# Regional Number Format Standards
+regional_standards:
+  us_uk_format:
+    thousands_separator: ","
+    decimal_separator: "."
+    example: "1,234.56"
+    regions: ["US", "UK", "Canada", "Australia"]
+    
+  european_format:
+    thousands_separator: "."
+    decimal_separator: ","
+    example: "1.234,56"
+    regions: ["Germany", "France", "Italy", "Spain"]
+    
+  international_format:
+    thousands_separator: " "
+    decimal_separator: "."
+    example: "1 234.56"
+    standard: "ISO 31-0"
+    recommended_for: "international documents"
+
+# Evidence-Aware Messaging
+messages:
+  thousands_separator:
+    high_evidence:
+      four_digits: "Consider using thousands separator for readability: '{flagged}' → '{formatted}'."
+      five_plus_digits: "Use thousands separator for large numbers: '{flagged}' → '{formatted}'."
+    
+    medium_evidence:
+      four_digits: "Large numbers benefit from thousands separators: '{flagged}'."
+      five_plus_digits: "Consider thousands separator: '{flagged}' → '{formatted}'."
+    
+    low_evidence:
+      four_digits: "Number formatting could be improved: '{flagged}'."
+
+  leading_decimal:
+    high_evidence:
+      missing_zero: "Add leading zero to decimal: '{flagged}' → '0{flagged}'."
+    
+    medium_evidence:
+      missing_zero: "Consider adding leading zero: '{flagged}' → '0{flagged}'."
+    
+    low_evidence:
+      missing_zero: "Decimal formatting could be clearer: '{flagged}'."
+
+# Suggestions Based on Evidence Level
+suggestions:
+  thousands_separator:
+    high_evidence:
+      - "Change '{flagged}' to '{formatted}' for better readability."
+      - "Use consistent thousands separators throughout the document."
+      - "Large numbers are easier to read with separators."
+    
+    medium_evidence:
+      - "Consider formatting as '{formatted}'."
+      - "Add thousands separators for clarity."
+    
+    low_evidence:
+      - "Consider using thousands separators for large numbers."
+
+  leading_decimal:
+    high_evidence:
+      - "Change '{flagged}' to '0{flagged}'."
+      - "Always use leading zero for decimals less than 1."
+      - "Leading zeros prevent misreading decimal values."
+    
+    medium_evidence:
+      - "Consider '0{flagged}' format."
+      - "Add leading zero for clarity."
+    
+    low_evidence:
+      - "Consider adding leading zero to decimals."
+
+# Formatting Rules by Number Size
+size_based_rules:
+  small_numbers:
+    range: "1-999"
+    separator_required: false
+    evidence_base: 0.0
+    
+  medium_numbers:
+    range: "1,000-9,999"
+    separator_optional: true
+    evidence_base: 0.3
+    context_dependent: true
+    
+  large_numbers:
+    range: "10,000-99,999"
+    separator_recommended: true
+    evidence_base: 0.6
+    
+  very_large_numbers:
+    range: "100,000+"
+    separator_required: true
+    evidence_base: 0.8
+    readability_critical: true
+
+# Special Number Types
+special_types:
+  percentages:
+    pattern: '\d+(?:\.\d+)?%'
+    separator_rules: "apply_if_large"
+    decimal_rules: "leading_zero_required"
+    
+  ratios:
+    pattern: '\d+:\d+'
+    separator_rules: "preserve_format"
+    special_handling: true
+    
+  phone_numbers:
+    pattern: '\d{3}-\d{3}-\d{4}'
+    separator_rules: "exclude"
+    identifier_type: true
+    
+  social_security:
+    pattern: '\d{3}-\d{2}-\d{4}'
+    separator_rules: "exclude"
+    identifier_type: true
+    
+  postal_codes:
+    pattern: '\d{5}(-\d{4})?'
+    separator_rules: "exclude"
+    identifier_type: true
+
+# Quality Assurance Rules
+quality_rules:
+  consistency_checks:
+    - check: "mixed_separator_styles"
+      description: "Flag documents mixing different separator styles"
+      evidence_increase: 0.3
+      
+    - check: "inconsistent_decimal_format"
+      description: "Flag inconsistent decimal formatting"
+      evidence_increase: 0.2
+      
+  document_level_patterns:
+    - pattern: "multiple_large_numbers_no_separators"
+      description: "Multiple large numbers without separators"
+      evidence_increase: 0.2
+      
+    - pattern: "financial_context_poor_formatting"
+      description: "Financial amounts with poor formatting"
+      evidence_increase: 0.3
+
+# Accessibility Considerations
+accessibility:
+  screen_reader_clarity:
+    thousands_separators: "Improve number reading for screen readers"
+    leading_zeros: "Prevent misreading of decimal values"
+    
+  cognitive_load:
+    large_number_grouping: "Reduce cognitive load for processing large numbers"
+    consistent_formatting: "Predictable format reduces mental processing"
+
+# International Standards Compliance
+standards_compliance:
+  iso_31_0:
+    name: "ISO 31-0 (Quantities and units)"
+    thousands_separator: "space"
+    decimal_separator: "point"
+    international_recommendation: true
+    
+  locale_specific:
+    description: "Format according to document locale"
+    context_aware: true
+    audience_dependent: true

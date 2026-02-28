@@ -1,0 +1,57 @@
+# Commands configuration for CommandsRule
+# Known command names that should be followed by an identifying noun
+# like 'command', 'utility', 'tool', or 'program'.
+
+known_commands:
+  # Unix/Linux commands
+  - grep
+  - sed
+  - awk
+  - chmod
+  - chown
+  - mkdir
+  - rmdir
+  - wget
+  - curl
+  - rsync
+  - crontab
+  - systemctl
+  - journalctl
+
+  # Git commands
+  - git
+  - clone
+  - commit
+  - rebase
+  - cherry-pick
+
+  # Database commands
+  - db2
+  - db2trc
+  - db2ilist
+  - db2icrt
+  - db2idrop
+  - db2iauto
+  - db2imgr
+  - db2batch
+  - lssrc
+  - mysqldump
+  - psql
+  - mongodump
+
+  # Container/cloud commands
+  - docker
+  - podman
+  - kubectl
+  - helm
+  - terraform
+  - ansible
+
+  # Build/package commands
+  - npm
+  - pip
+  - maven
+  - gradle
+  - cargo
+  - make
+  - cmake

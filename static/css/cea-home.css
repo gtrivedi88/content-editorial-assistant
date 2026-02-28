@@ -1,0 +1,40 @@
+/* ================================================================
+   CEA Home Page
+   ================================================================ */
+
+.cea-home-hero__title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--pf-v5-global--Color--100);
+  margin: 0 0 var(--pf-v5-global--spacer--sm) 0;
+}
+
+.cea-home-hero__subtitle {
+  font-size: var(--pf-v5-global--FontSize--lg);
+  color: var(--pf-v5-global--Color--200);
+  margin: 0 0 var(--pf-v5-global--spacer--xl) 0;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.cea-home-card.pf-v5-c-card {
+  transition: transform var(--cea-transition-speed), box-shadow var(--cea-transition-speed);
+}
+
+.cea-home-card.pf-v5-c-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--cea-shadow-md);
+}
+
+.cea-home-card__icon {
+  font-size: 1.5rem;
+  color: var(--pf-v5-global--primary-color--100);
+  margin-bottom: var(--pf-v5-global--spacer--md);
+}
+
+.cea-disclosure {
+  max-width: 600px;
+  margin: var(--pf-v5-global--spacer--2xl) auto 0;
+  text-align: left;
+}

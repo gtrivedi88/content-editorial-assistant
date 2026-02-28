@@ -1,0 +1,215 @@
+# Spelling Rule Configuration
+# IBM Style Guide (Page 112): Use US English spelling.
+#
+# HOW TO MAINTAIN:
+# - Add new non-US → US spelling pairs below
+# - No code changes needed — just edit this file and restart.
+
+# Non-US to US spelling mappings
+spelling_map:
+  # -our → -or
+  colour: color
+  flavour: flavor
+  behaviour: behavior
+  favour: favor
+  honour: honor
+  humour: humor
+  labour: labor
+  neighbour: neighbor
+  savour: savor
+  vapour: vapor
+  vigour: vigor
+  armour: armor
+  glamour: glamor
+  harbour: harbor
+  rumour: rumor
+  tumour: tumor
+  valour: valor
+  fervour: fervor
+  parlour: parlor
+  rancour: rancor
+  odour: odor
+  rigour: rigor
+  splendour: splendor
+  candour: candor
+  clamour: clamor
+  demeanour: demeanor
+  endeavour: endeavor
+
+  # -re → -er
+  centre: center
+  metre: meter
+  litre: liter
+  fibre: fiber
+  theatre: theater
+  lustre: luster
+  sabre: saber
+  sombre: somber
+  spectre: specter
+  calibre: caliber
+  meagre: meager
+  manoeuvre: maneuver
+
+  # -ise → -ize (verbs)
+  organise: organize
+  analyse: analyze
+  recognise: recognize
+  realise: realize
+  emphasise: emphasize
+  specialise: specialize
+  summarise: summarize
+  maximise: maximize
+  minimise: minimize
+  optimise: optimize
+  customise: customize
+  authorise: authorize
+  characterise: characterize
+  standardise: standardize
+  categorise: categorize
+  prioritise: prioritize
+  visualise: visualize
+  utilise: utilize
+  criticise: criticize
+  apologise: apologize
+  initialise: initialize
+  normalise: normalize
+  synchronise: synchronize
+  serialise: serialize
+  paralyse: paralyze
+  equalise: equalize
+  finalise: finalize
+  centralise: centralize
+  generalise: generalize
+  legalise: legalize
+  localise: localize
+  neutralise: neutralize
+  penalise: penalize
+  stabilise: stabilize
+  trivialise: trivialize
+  digitalise: digitalize
+  containerise: containerize
+  monetise: monetize
+  tokenise: tokenize
+  randomise: randomize
+  harmonise: harmonize
+  memorise: memorize
+  hypothesise: hypothesize
+  modernise: modernize
+  mobilise: mobilize
+  privatise: privatize
+  publicise: publicize
+  legitimise: legitimize
+  revitalise: revitalize
+
+  # -isation → -ization (nouns)
+  organisation: organization
+  authorisation: authorization
+  characterisation: characterization
+  categorisation: categorization
+  customisation: customization
+  centralisation: centralization
+  generalisation: generalization
+  initialisation: initialization
+  localisation: localization
+  normalisation: normalization
+  optimisation: optimization
+  serialisation: serialization
+  specialisation: specialization
+  standardisation: standardization
+  synchronisation: synchronization
+  visualisation: visualization
+  utilisation: utilization
+  containerisation: containerization
+  digitalisation: digitalization
+  tokenisation: tokenization
+  monetisation: monetization
+  modernisation: modernization
+  mobilisation: mobilization
+  privatisation: privatization
+  stabilisation: stabilization
+  virtualisation: virtualization
+  prioritisation: prioritization
+
+  # -ence/-ense
+  defence: defense
+  offence: offense
+  licence: license
+  pretence: pretense
+
+  # -ogue → -og
+  catalogue: catalog
+  dialogue: dialog
+  analogue: analog
+  prologue: prolog
+  epilogue: epilog
+  monologue: monolog
+
+  # -mme → -m
+  programme: program
+  gramme: gram
+  kilogramme: kilogram
+
+  # -lled/-lling → -led/-ling
+  travelling: traveling
+  cancelled: canceled
+  labelled: labeled
+  modelling: modeling
+  signalling: signaling
+  counselling: counseling
+  levelling: leveling
+  marshalling: marshaling
+  panelling: paneling
+  channelling: channeling
+  fuelling: fueling
+  jewellery: jewelry
+  traveller: traveler
+  cancellation: cancelation
+  marvellous: marvelous
+
+  # -l → -ll
+  fulfil: fulfill
+  enrol: enroll
+  skilful: skillful
+  wilful: willful
+  instalment: installment
+  fulfilment: fulfillment
+  enrolment: enrollment
+
+  # Other common pairs
+  grey: gray
+  mould: mold
+  plough: plow
+  cheque: check
+  judgement: judgment
+  acknowledgement: acknowledgment
+  ageing: aging
+  aeroplane: airplane
+  aluminium: aluminum
+  artefact: artifact
+  kerb: curb
+  tyre: tire
+  sulphur: sulfur
+  sceptical: skeptical
+  adaptor: adapter
+  cypher: cipher
+  gaol: jail
+  pyjamas: pajamas
+  connexion: connection
+  enquiry: inquiry
+  storey: story
+  cosy: cozy
+  draughtsman: draftsman
+  behove: behoove
+
+  # Past tense -t → -ed
+  learnt: learned
+  burnt: burned
+  spelt: spelled
+  dreamt: dreamed
+  leapt: leaped
+  smelt: smelted
+  spoilt: spoiled
+  dwelt: dwelled
+
+  # -ce → -se (nouns used as verbs)
+  practise: practice

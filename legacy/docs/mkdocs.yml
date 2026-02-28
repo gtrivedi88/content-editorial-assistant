@@ -1,0 +1,72 @@
+site_name: Content Editorial Assistant
+site_description: AI-powered technical writing assistant that helps writers review content
+site_author: CCS AI Team
+
+# Repository
+repo_url: https://gitlab.cee.redhat.com/ccs-ai/content-editorial-assistant
+repo_name: GitLab
+edit_uri: -/edit/main/docs/modules/
+
+# Documentation directory - converted markdown files
+docs_dir: markdown
+
+# Theme configuration
+theme:
+  name: material
+  palette:
+    primary: red
+    accent: red
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+
+# Navigation structure matching Antora
+nav:
+  - Home: index.md
+  - User Guide:
+      - Overview: index.md
+      - Training Guide: training-guide.md
+  - Developer Guide:
+      - Getting Started: getting-started.md
+      - API Reference: api-reference.md
+      - Environment Variables: environment-variables.md
+      - Deployment Guide: deployment-guide.md
+      - LLM Rules Implementation: llm-rules-implementation.md
+  - Architecture:
+      - System Architecture: architecture.md
+      - Data Flow Diagram: data-flow-diagram.md
+  - How-To Guides:
+      - Add a New Rule: how-to-add-new-rule.md
+      - Add a New Ambiguity Detector: how-to-add-new-ambiguity-detector.md
+      - Add a New AI Model: how-to-add-new-model.md
+      - Configure AI Providers: configure-providers.md
+  - Testing:
+      - Testing Setup: testing-setup.md
+      - AI-Powered Testing Agent: testing-guide.md
+      - Writing Tests: writing-tests.md
+
+# Plugins
+plugins:
+  - techdocs-core
+  - search
+
+# Extensions
+markdown_extensions:
+  - admonition
+  - codehilite
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.tabbed
+  - pymdownx.details
+
+# Extra
+extra:
+  version:
+    provider: mike

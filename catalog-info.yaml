@@ -1,0 +1,51 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: content-editorial-assistant
+  title: Content Editorial Assistant
+  namespace: uxe
+  description: Content Editorial Assistant (CEA) is an AI-powered technical writing assistant that helps writers review content. It features iterative AI rewriting for refining text, comprehensive analysis with multiple readability scores and style issue detection, and multi-format support for various document types.
+  annotations:
+    servicenow.com/appcode: DOCS-005
+    gitlab.com/instance: gitlab.cee.redhat.com
+    gitlab.com/project-slug: ccs-ai/content-editorial-assistant
+    backstage.io/techdocs-ref: dir:./docs
+    jira/project-key: CCSAI
+    sonarqube.org/project-key: ccs-ai_content-editorial-assistant_ed819014-2450-4f3a-baea-571408e42aaa
+    feedback/type: gitlab-issues
+    xeaixway/initiative: XEAIXWAY-10
+  tags:
+    - python
+    - flask
+    - ai
+    - content-analysis
+    - xeaixway
+    - nlp
+    - spacy
+    - compass
+  links:
+    - url: https://docs-assist-preview-16.apps.int.spoke.preprod.us-east-1.aws.paas.redhat.com
+      title: CEA Application (Preview)
+      icon: dashboard
+      type: website
+    - url: https://docs-005-lightrail-argocd.apps.int.spoke.preprod.us-east-1.aws.paas.redhat.com
+      title: ArgoCD (Deployment Dashboard)
+      icon: dashboard
+      type: admin-dashboard
+    - url: https://docs-005-lightrail-argo-workflows.apps.int.spoke.preprod.us-east-1.aws.paas.redhat.com
+      title: Argo Workflows
+      icon: dashboard
+      type: admin-dashboard
+    - url: https://gitlab.cee.redhat.com/ccs-ai/content-editorial-assistant
+      title: GitLab Repository
+      icon: gitlab
+      type: source
+    - url: https://content-editorial-assistant-0f729a.pages.redhat.com/content-editorial-assistant/index.html
+      title: Documentation
+      icon: docs
+      type: documentation
+spec:
+  type: service
+  system: ccs/ccsai
+  lifecycle: pre-production
+  owner: user:redhat/gtrivedi

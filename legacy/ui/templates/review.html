@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% set active_page = 'review' %}
+{% block title %}Review Content — CEA{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/cea-editor.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/cea-issue-panel.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/cea-grammarly.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/cea-report.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="cea-review-layout" id="cea-review-layout">
+
+  <!-- ──── Editor Panel (left) ──── -->
+  <div class="cea-editor-panel" id="cea-editor-panel">
+    <!-- Toolbar -->
+    <div class="cea-editor-toolbar">
+      <div class="cea-toolbar-group">
+        <button class="cea-toolbar-btn" id="cea-upload-btn" type="button" title="Upload file">
+          <i class="fas fa-upload"></i> Upload
+        </button>
+        <select id="cea-content-type" class="cea-content-type-select">
+          <option value="concept">Concept</option>
+          <option value="procedure">Procedure</option>
+          <option value="reference" selected>Reference</option>
+          <option value="assembly">Assembly</option>
+        </select>
+      </div>
+      <div class="cea-toolbar-separator"></div>
+      <div class="cea-toolbar-group">
+        <button class="cea-toolbar-btn" id="cea-reset-btn" type="button">
+          <i class="fas fa-rotate"></i> Reset
+        </button>
+      </div>
+      <span class="cea-toolbar-meta" id="cea-word-count">0 words &middot; 0 characters</span>
+    </div>
+
+    <!-- Editor body -->
+    <div class="cea-editor-area">
+      <div class="cea-editor-wrapper">
+        <!-- Margin labels (positioned absolutely by JS) -->
+        <div class="cea-margin-labels" id="cea-margin-labels"></div>
+
+        <div id="cea-editor"
+             class="cea-editor-content"
+             contenteditable="true"
+             role="textbox"
+             aria-multiline="true"
+             aria-label="Content editor"
+             data-placeholder="Paste your content here, or click Upload to load a file...">
+        </div>
+      </div>
+
+      <!-- Drop zone (hidden by default, shown on drag) -->
+      <div class="cea-dropzone" id="cea-dropzone">
+        <div class="cea-dropzone__icon"><i class="fas fa-cloud-arrow-up"></i></div>
+        <div class="cea-dropzone__text">Drop your file here (PDF, DOCX, MD, ADOC, DITA, XML, TXT)</div>
+      </div>
+    </div>
+
+    <!-- Hidden file input -->
+    <input type="file" id="cea-file-input" hidden
+           accept=".pdf,.docx,.md,.adoc,.dita,.xml,.txt">
+  </div>
+
+  <!-- ──── Issue Panel (right) ──── -->
+  <aside class="cea-issue-panel" id="cea-issue-panel">
+    <!-- Panel header: score ring (rendered by JS, hidden until analysis) -->
+    <div class="cea-issue-panel__header" id="cea-panel-header" style="display:none;"></div>
+
+    <!-- Panel body: group list, checking indicator, or empty state (rendered by JS) -->
+    <div class="cea-issue-panel__body" id="cea-panel-body">
+      <div class="cea-empty-state" id="cea-empty-state">
+        <div class="cea-empty-state__icon"><i class="fas fa-spell-check"></i></div>
+        <h3 class="cea-empty-state__title">Ready to review</h3>
+        <p class="cea-empty-state__body">
+          Paste or upload content to see inline suggestions.
+        </p>
+      </div>
+    </div>
+
+    <!-- Panel footer: report button -->
+    <div class="cea-panel-footer" id="cea-panel-footer" style="display:none;">
+      <button class="cea-report-btn" id="cea-report-btn" type="button">
+        <i class="fas fa-chart-bar"></i> View Full Report
+      </button>
+    </div>
+  </aside>
+</div>
+
+<!-- ──── Report Slide-Over (hidden) ──── -->
+<div class="cea-report-overlay" id="cea-report-overlay"></div>
+<div class="cea-report-slideover" id="cea-report-slideover">
+  <div class="cea-report-slideover__header">
+    <h2 class="pf-v5-c-title pf-m-xl">
+      <i class="fas fa-chart-bar pf-v5-u-mr-sm" style="color:var(--pf-v5-global--primary-color--100)"></i>
+      Detailed Report
+    </h2>
+    <button class="cea-report-close" id="cea-report-close" type="button" aria-label="Close report">
+      <i class="fas fa-xmark"></i>
+    </button>
+  </div>
+  <div class="cea-report-slideover__body" id="cea-report-body">
+    <!-- Rendered by JS -->
+  </div>
+  <div class="cea-report-slideover__footer">
+    <button class="cea-toolbar-btn" id="cea-report-back" type="button">
+      <i class="fas fa-arrow-left"></i> Back to Editor
+    </button>
+    <button class="cea-toolbar-btn primary" id="cea-report-pdf" type="button">
+      <i class="fas fa-file-pdf"></i> Download PDF
+    </button>
+  </div>
+</div>
+{% endblock %}

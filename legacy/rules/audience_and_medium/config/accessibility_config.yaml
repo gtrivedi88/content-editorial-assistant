@@ -1,0 +1,77 @@
+# Accessibility Rule Configuration
+# IBM Style Guide (Page 60): Ensure content is accessible to all users.
+#
+# HOW TO MAINTAIN:
+# - Add new color words or sensory direction terms below
+# - No code changes needed — just edit this file and restart.
+
+# Color words that should not be the ONLY way to convey meaning
+# Rule: "Do not use color as the only way to convey information"
+color_words:
+  - red
+  - green
+  - blue
+  - yellow
+  - orange
+  - purple
+  - pink
+  - black
+  - white
+  - gray
+  - grey
+  - brown
+  - cyan
+  - magenta
+
+# Phrases that reference color to describe UI elements
+# These suggest color is being used as the only indicator
+color_indicator_phrases:
+  - "the red"
+  - "the green"
+  - "the blue"
+  - "the yellow"
+  - "the orange"
+  - "the purple"
+  - "in red"
+  - "in green"
+  - "in blue"
+  - "in yellow"
+  - "shown in red"
+  - "shown in green"
+  - "shown in blue"
+  - "highlighted in red"
+  - "highlighted in green"
+  - "highlighted in blue"
+  - "marked in red"
+  - "marked in green"
+  - "displayed in red"
+  - "displayed in green"
+  - "turns red"
+  - "turns green"
+  - "appears red"
+  - "appears green"
+
+# Sensory-only directional words
+# Rule: "Do not use sensory words like Right, Left, Top, Bottom
+# as the only way to describe location of UI elements"
+sensory_direction_phrases:
+  - "on the right"
+  - "on the left"
+  - "at the top"
+  - "at the bottom"
+  - "in the upper right"
+  - "in the upper left"
+  - "in the lower right"
+  - "in the lower left"
+  - "top right"
+  - "top left"
+  - "bottom right"
+  - "bottom left"
+  - "right side"
+  - "left side"
+  - "right-hand"
+  - "left-hand"
+  - "above the"
+  - "below the"
+  - "to the right of"
+  - "to the left of"

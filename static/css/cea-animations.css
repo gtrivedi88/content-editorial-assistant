@@ -1,0 +1,73 @@
+/* ================================================================
+   CEA Animations & Transitions
+   ================================================================ */
+
+/* Pulse animation for active underline */
+@keyframes cea-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(0, 102, 204, 0.3); }
+  70% { box-shadow: 0 0 0 6px rgba(0, 102, 204, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 102, 204, 0); }
+}
+
+/* Fade in */
+@keyframes cea-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Slide in from right */
+@keyframes cea-slide-in-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+/* Spin for loading */
+@keyframes cea-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Score ring fill animation */
+@keyframes cea-ring-fill {
+  from { stroke-dashoffset: 263.9; }
+}
+
+/* Utility classes */
+.cea-animate-fade-in {
+  animation: cea-fade-in var(--cea-transition-speed) var(--cea-transition-fn) forwards;
+}
+
+.cea-animate-pulse {
+  animation: cea-pulse 0.8s ease 2;
+  border-radius: 3px;
+}
+
+.cea-animate-spin {
+  animation: cea-spin 1s linear infinite;
+}
+
+/* Theme transition */
+.cea-theme-transitioning,
+.cea-theme-transitioning *,
+.cea-theme-transitioning *::before,
+.cea-theme-transitioning *::after {
+  transition: background-color 0.3s ease,
+              color 0.3s ease,
+              border-color 0.3s ease,
+              fill 0.3s ease !important;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .cea-animate-fade-in,
+  .cea-animate-pulse,
+  .cea-animate-spin {
+    animation: none;
+  }
+
+  .cea-theme-transitioning,
+  .cea-theme-transitioning *,
+  .cea-theme-transitioning *::before,
+  .cea-theme-transitioning *::after {
+    transition: none !important;
+  }
+}

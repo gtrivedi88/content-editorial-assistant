@@ -1,0 +1,28 @@
+# Keyboard key names configuration for KeyboardKeysRule
+# Key names that must be capitalized when used with keyboard verbs.
+
+key_names:
+  - enter
+  - return
+  - tab
+  - escape
+  - esc
+  - shift
+  - control
+  - ctrl
+  - alt
+  - delete
+  - del
+  - backspace
+  - insert
+  - ins
+  - home
+  - end
+  - space
+  - spacebar
+  - caps lock
+  - num lock
+  - scroll lock
+  - print screen
+  - page up
+  - page down

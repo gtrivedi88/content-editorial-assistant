@@ -1,0 +1,2342 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="AI-powered technical writing assistant that helps writers review content">
+      
+      
+        <meta name="author" content="CCS AI Team">
+      
+      
+      
+        <link rel="prev" href="../testing-setup/">
+      
+      
+        <link rel="next" href="../writing-tests/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+    
+    
+      
+        <title>AI-Powered Testing Agent - Content Editorial Assistant</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#ai-powered-testing-agent-guide" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Content Editorial Assistant" class="md-header__button md-logo" aria-label="Content Editorial Assistant" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Content Editorial Assistant
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              AI-Powered Testing Agent
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://gitlab.cee.redhat.com/ccs-ai/content-editorial-assistant" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitLab
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href=".." class="md-tabs__link">
+          
+  
+  
+  User Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../getting-started/" class="md-tabs__link">
+          
+  
+  
+  Developer Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../architecture/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../how-to-add-new-rule/" class="md-tabs__link">
+          
+  
+  
+  How-To Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../testing-setup/" class="md-tabs__link">
+          
+  
+  
+  Testing
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Content Editorial Assistant" class="md-nav__button md-logo" aria-label="Content Editorial Assistant" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Content Editorial Assistant
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://gitlab.cee.redhat.com/ccs-ai/content-editorial-assistant" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitLab
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../training-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Developer Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Developer Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../environment-variables/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Environment Variables
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deployment-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../llm-rules-implementation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LLM Rules Implementation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-flow-diagram/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Flow Diagram
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How-To Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    How-To Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how-to-add-new-rule/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a New Rule
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how-to-add-new-ambiguity-detector/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a New Ambiguity Detector
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how-to-add-new-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a New AI Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configure-providers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configure AI Providers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Testing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing-setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI-Powered Testing Agent
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI-Powered Testing Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-the-ai-agent-does" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the AI Agent Does
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What the AI Agent Does">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pattern-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern Detection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#regression-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Regression Detection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#performance-monitoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Monitoring
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#smart-prioritization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Smart Prioritization
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#daily-report-contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Daily Report Contents
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Daily Report Contents">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-executive-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Executive Summary
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-test-results-breakdown" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Test Results Breakdown
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-regressions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Regressions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-performance-trends" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Performance Trends
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-ai-generated-insights" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. AI-Generated Insights
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-prioritized-action-items" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Prioritized Action Items
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#test-coverage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test Coverage
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Test Coverage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#whats-tested" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What's Tested
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#feature-test-mapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Feature-Test Mapping
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-tests-stay-in-sync" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How Tests Stay In Sync
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="How Tests Stay In Sync">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-ci-triggers-on-code-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. CI Triggers on Code Changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-feature-test-mapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Feature-Test Mapping
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-daily-verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Daily Verification
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ai-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AI Configuration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#alerts-and-notifications" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Alerts and Notifications
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Alerts and Notifications">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#alert-triggers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Alert Triggers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configure-notifications" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configure Notifications
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#success-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Success Metrics
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next Steps
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resources
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../writing-tests/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Writing Tests
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-the-ai-agent-does" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the AI Agent Does
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What the AI Agent Does">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pattern-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern Detection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#regression-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Regression Detection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#performance-monitoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Monitoring
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#smart-prioritization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Smart Prioritization
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#daily-report-contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Daily Report Contents
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Daily Report Contents">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-executive-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Executive Summary
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-test-results-breakdown" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Test Results Breakdown
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-regressions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Regressions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-performance-trends" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Performance Trends
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-ai-generated-insights" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. AI-Generated Insights
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-prioritized-action-items" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Prioritized Action Items
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#test-coverage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test Coverage
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Test Coverage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#whats-tested" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What's Tested
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#feature-test-mapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Feature-Test Mapping
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-tests-stay-in-sync" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How Tests Stay In Sync
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="How Tests Stay In Sync">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-ci-triggers-on-code-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. CI Triggers on Code Changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-feature-test-mapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Feature-Test Mapping
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-daily-verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Daily Verification
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ai-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AI Configuration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#alerts-and-notifications" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Alerts and Notifications
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Alerts and Notifications">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#alert-triggers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Alert Triggers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configure-notifications" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configure Notifications
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#success-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Success Metrics
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next Steps
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resources
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://gitlab.cee.redhat.com/ccs-ai/content-editorial-assistant/-/edit/main/docs/modules/testing-guide.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="ai-powered-testing-agent-guide">AI-Powered Testing Agent Guide<a class="headerlink" href="#ai-powered-testing-agent-guide" title="Permanent link">&para;</a></h1>
+<p>Understand how the AI-powered testing agent works and how it helps maintain quality.</p>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>The Content Editorial Assistant uses a <strong>hybrid agent approach</strong> combining:</p>
+<p>* <strong>Simple Agent</strong> (GitLab CI) - Reliable test execution</p>
+<p>* <strong>AI Agent</strong> (Your configured AI) - Intelligent analysis and insights</p>
+<h2 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h2>
+<p>[code] 
+    ┌──────────────────────────────────────────┐
+    │  GitLab CI (Simple Agent)                │
+    │  • Executes all tests daily              │
+    │  • Collects results                      │
+    │  • Stores data                           │
+    └─────────────┬────────────────────────────┘
+                  │
+                  ▼
+    ┌──────────────────────────────────────────┐
+    │  Test Runner                             │
+    │  testing_agent/test_runner.py            │
+    │  • Runs 9 test categories                │
+    │  • Collects metrics                      │
+    └─────────────┬────────────────────────────┘
+                  │
+                  ▼
+    ┌──────────────────────────────────────────┐
+    │  AI Analyzer (Smart Agent)               │
+    │  testing_agent/ai_test_analyzer.py       │
+    │  • Detects patterns                      │
+    │  • Identifies root causes                │
+    │  • Prioritizes issues                    │
+    │  • Generates insights                    │
+    └─────────────┬────────────────────────────┘
+                  │
+                  ▼
+    ┌──────────────────────────────────────────┐
+    │  Report Generator                        │
+    │  testing_agent/report_generator.py       │
+    │  • Creates HTML/PDF reports              │
+    │  • Generates charts                      │
+    │  • Lists action items                    │
+    └──────────────────────────────────────────┘
+[/code]</p>
+<h2 id="what-the-ai-agent-does">What the AI Agent Does<a class="headerlink" href="#what-the-ai-agent-does" title="Permanent link">&para;</a></h2>
+<h3 id="pattern-detection">Pattern Detection<a class="headerlink" href="#pattern-detection" title="Permanent link">&para;</a></h3>
+<p>The AI analyzes test failures to find common patterns:
+[code] 
+    {
+      "test_database_connection": "ConnectionError: pool exhausted",
+      "test_concurrent_access": "ConnectionError: pool exhausted",
+      "test_transaction_rollback": "ConnectionError: pool exhausted"
+    }
+[/code]</p>
+<p><strong>AI Analysis:</strong>
+[code] 
+    🧠 Pattern Detected: 3 tests failing with identical ConnectionError
+    Root Cause: Database connection pool exhaustion
+    Likely Issue: Test fixtures not properly closing connections</p>
+<div class="codehilite"><pre><span></span><code>Recommended Actions:
+1. Add connection cleanup in test teardown (HIGH PRIORITY)
+2. Increase pool size in test config (MEDIUM)
+3. Add connection leak detection (LOW)
+
+Estimated Fix Time: 2 hours
+</code></pre></div>
+
+<p>[/code]</p>
+<h3 id="regression-detection">Regression Detection<a class="headerlink" href="#regression-detection" title="Permanent link">&para;</a></h3>
+<p>Automatically identifies tests that passed yesterday but fail today:
+[code] 
+    🔴 NEW FAILURES (regressions):</p>
+<div class="codehilite"><pre><span></span><code><span class="mf">1.</span><span class="w"> </span><span class="n">test_holistic_rewrite</span>
+<span class="w">   </span><span class="n">Error</span><span class="p">:</span><span class="w"> </span><span class="n">Confidence</span><span class="w"> </span><span class="n">score</span><span class="w"> </span><span class="kr">to</span><span class="n">o</span><span class="w"> </span><span class="n">low</span><span class="w"> </span><span class="p">(</span><span class="mf">0.65</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mf">0.80</span><span class="p">)</span>
+<span class="w">   </span><span class="n">Priority</span><span class="p">:</span><span class="w"> </span><span class="n">HIGH</span>
+<span class="w">   </span><span class="n">Estimate</span><span class="p">:</span><span class="w"> </span><span class="mf">2</span><span class="w"> </span><span class="n">hours</span>
+<span class="w">   </span><span class="n">Action</span><span class="p">:</span><span class="w"> </span><span class="n">Check</span><span class="w"> </span><span class="n">line</span><span class="w"> </span><span class="mf">245</span><span class="w"> </span><span class="n">confidence</span><span class="w"> </span><span class="n">calculation</span>
+</code></pre></div>
+
+<p>[/code]</p>
+<h3 id="performance-monitoring">Performance Monitoring<a class="headerlink" href="#performance-monitoring" title="Permanent link">&para;</a></h3>
+<p>Tracks test execution time over 30 days:
+[code] 
+    Test Duration: ↓ 5.2% faster ✅
+    Average Latency: 1.2s (stable)
+    Slowest Test: test_large_document (45s)</p>
+<div class="codehilite"><pre><span></span><code>⚠️ Alert: test_api_response_time 20% slower
+</code></pre></div>
+
+<p>[/code]</p>
+<h3 id="smart-prioritization">Smart Prioritization<a class="headerlink" href="#smart-prioritization" title="Permanent link">&para;</a></h3>
+<p>AI prioritizes issues based on impact:</p>
+<table>
+<thead>
+<tr>
+<th>Priority</th>
+<th>Issue Type</th>
+<th>Action Needed</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>P1 - HIGH</strong></td>
+<td>Blocking release, new regressions</td>
+<td>Fix today</td>
+</tr>
+<tr>
+<td><strong>P2 - MEDIUM</strong></td>
+<td>Performance degradation</td>
+<td>Fix this week</td>
+</tr>
+<tr>
+<td><strong>P3 - LOW</strong></td>
+<td>Flaky tests, minor issues</td>
+<td>Fix when convenient</td>
+</tr>
+</tbody>
+</table>
+<h2 id="daily-report-contents">Daily Report Contents<a class="headerlink" href="#daily-report-contents" title="Permanent link">&para;</a></h2>
+<p>Every test run generates a comprehensive report:</p>
+<h3 id="1-executive-summary">1. Executive Summary<a class="headerlink" href="#1-executive-summary" title="Permanent link">&para;</a></h3>
+<p>[code] 
+    Status: 🟢 HEALTHY
+    Pass Rate: 96% (382/398 tests)
+    Duration: 4m 32s
+    Health Score: A+ (97.5/100)
+[/code]</p>
+<h3 id="2-test-results-breakdown">2. Test Results Breakdown<a class="headerlink" href="#2-test-results-breakdown" title="Permanent link">&para;</a></h3>
+<p>Interactive pie chart showing:</p>
+<p>* Passed tests (green)</p>
+<p>* Failed tests (red)</p>
+<p>* Skipped tests (yellow)</p>
+<h3 id="3-regressions">3. Regressions<a class="headerlink" href="#3-regressions" title="Permanent link">&para;</a></h3>
+<p>List of tests that previously passed but now fail.</p>
+<h3 id="4-performance-trends">4. Performance Trends<a class="headerlink" href="#4-performance-trends" title="Permanent link">&para;</a></h3>
+<p>30-day chart showing:</p>
+<p>* Test execution time</p>
+<p>* Pass rate trend</p>
+<p>* Performance metrics</p>
+<h3 id="5-ai-generated-insights">5. AI-Generated Insights<a class="headerlink" href="#5-ai-generated-insights" title="Permanent link">&para;</a></h3>
+<p>Intelligent analysis of issues:
+[code] 
+    🧠 5 ISSUES IDENTIFIED:</p>
+<div class="codehilite"><pre><span></span><code>[1] Database connection pool exhaustion
+    → Add cleanup in test teardown
+
+[2] Regex compilation in hot path
+    → Cache compiled patterns
+
+[3] Flaky websocket test needs timeout
+    → Increase timeout from 5s to 10s
+</code></pre></div>
+
+<p>[/code]</p>
+<h3 id="6-prioritized-action-items">6. Prioritized Action Items<a class="headerlink" href="#6-prioritized-action-items" title="Permanent link">&para;</a></h3>
+<p>Clear, actionable steps:
+[code] 
+    ✅ WHAT TO DO TODAY:</p>
+<div class="codehilite"><pre><span></span><code><span class="mf">1.</span><span class="w"> </span><span class="n">Fix</span><span class="w"> </span><span class="n">test_holistic_rewrite</span><span class="w"> </span><span class="p">(</span><span class="n">HIGH</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mf">2</span><span class="n">h</span><span class="p">)</span>
+<span class="w">   </span><span class="err">→</span><span class="w"> </span><span class="n">Check</span><span class="w"> </span><span class="n">line</span><span class="w"> </span><span class="mf">245</span><span class="w"> </span><span class="n">confidence</span><span class="w"> </span><span class="n">calculation</span>
+
+<span class="mf">2.</span><span class="w"> </span><span class="n">Optimize</span><span class="w"> </span><span class="n">SurgicalSnippetProcessor</span><span class="w"> </span><span class="p">(</span><span class="n">MEDIUM</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mf">4</span><span class="n">h</span><span class="p">)</span>
+<span class="w">   </span><span class="err">→</span><span class="w"> </span><span class="n">Profile</span><span class="w"> </span><span class="n">hot</span><span class="w"> </span><span class="n">paths</span><span class="p">,</span><span class="w"> </span><span class="n">cache</span><span class="w"> </span><span class="n">regex</span>
+
+<span class="mf">3.</span><span class="w"> </span><span class="n">Stabilize</span><span class="w"> </span><span class="n">websocket</span><span class="w"> </span><span class="n">test</span><span class="w"> </span><span class="p">(</span><span class="n">LOW</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mf">1</span><span class="n">h</span><span class="p">)</span>
+<span class="w">   </span><span class="err">→</span><span class="w"> </span><span class="n">Increase</span><span class="w"> </span><span class="n">timeout</span><span class="w"> </span><span class="n">configuration</span>
+</code></pre></div>
+
+<p>[/code]</p>
+<h2 id="test-coverage">Test Coverage<a class="headerlink" href="#test-coverage" title="Permanent link">&para;</a></h2>
+<h3 id="whats-tested">What's Tested<a class="headerlink" href="#whats-tested" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Module</th>
+<th>Coverage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ambiguity/</code></td>
+<td>Ambiguity detection rules</td>
+</tr>
+<tr>
+<td><code>app_modules/</code></td>
+<td>API routes, websockets, PDF generation</td>
+</tr>
+<tr>
+<td><code>database/</code></td>
+<td>DAO, models, services</td>
+</tr>
+<tr>
+<td><code>error_consolidation/</code></td>
+<td>Error merging and prioritization</td>
+</tr>
+<tr>
+<td><code>models/</code></td>
+<td>Model factory, manager</td>
+</tr>
+<tr>
+<td><code>rewriter/</code></td>
+<td>Core rewriting engine</td>
+</tr>
+<tr>
+<td><code>style_analyzer/</code></td>
+<td>Style analysis, readability</td>
+</tr>
+<tr>
+<td><code>structural_parsing/</code></td>
+<td>Format detection, parsers</td>
+</tr>
+<tr>
+<td><code>rules/</code></td>
+<td>All 111 editorial rules</td>
+</tr>
+</tbody>
+</table>
+<h3 id="feature-test-mapping">Feature-Test Mapping<a class="headerlink" href="#feature-test-mapping" title="Permanent link">&para;</a></h3>
+<p>Automatically tracks which features have tests:
+[code] 
+    # Check coverage status
+    python -m testing_agent.feature_test_mapper</p>
+<div class="codehilite"><pre><span></span><code><span class="gh">#</span> Output:
+Total Features: 45
+Tested: 38 (84%)
+Missing Tests: 7
+
+⚠️ Untested Features:
+<span class="k">-</span> feature_x in module_y
+<span class="k">-</span> feature_z in module_w
+</code></pre></div>
+
+<p>[/code]</p>
+<h2 id="how-tests-stay-in-sync">How Tests Stay In Sync<a class="headerlink" href="#how-tests-stay-in-sync" title="Permanent link">&para;</a></h2>
+<h3 id="1-ci-triggers-on-code-changes">1. CI Triggers on Code Changes<a class="headerlink" href="#1-ci-triggers-on-code-changes" title="Permanent link">&para;</a></h3>
+<p>[code] 
+    Developer commits → CI runs tests → Reports results
+[/code]</p>
+<h3 id="2-feature-test-mapping">2. Feature-Test Mapping<a class="headerlink" href="#2-feature-test-mapping" title="Permanent link">&para;</a></h3>
+<p>[code] 
+    New feature added → Mapper detects → Alerts "no tests found"
+[/code]</p>
+<h3 id="3-daily-verification">3. Daily Verification<a class="headerlink" href="#3-daily-verification" title="Permanent link">&para;</a></h3>
+<p>[code] 
+    Daily run → Checks all features → Reports coverage gaps
+[/code]</p>
+<h2 id="ai-configuration">AI Configuration<a class="headerlink" href="#ai-configuration" title="Permanent link">&para;</a></h2>
+<p>The testing agent uses your existing AI configuration:
+[code] 
+    # From your .env file
+    MODEL_PROVIDER=api                    # Your provider (api/ollama/llamastack)
+    BASE_URL=<a href="https://your-api-url.com">https://your-api-url.com</a>    # Your API endpoint
+    MODEL_ID=mistralai/Mistral-7B         # Your model
+    ACCESS_TOKEN=your-token               # Your credentials
+    MODEL_TEMPERATURE=0.4                 # Your settings
+[/code]</p>
+<table>
+<thead>
+<tr>
+<th>Tip</th>
+<th>The testing agent automatically detects and uses your configured AI provider. No separate setup needed!</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="alerts-and-notifications">Alerts and Notifications<a class="headerlink" href="#alerts-and-notifications" title="Permanent link">&para;</a></h2>
+<h3 id="alert-triggers">Alert Triggers<a class="headerlink" href="#alert-triggers" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>Level</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Pass rate &lt; 85%</td>
+<td>🔴 CRITICAL</td>
+<td>Immediate fix needed</td>
+</tr>
+<tr>
+<td>New regressions</td>
+<td>🔴 HIGH</td>
+<td>Review before release</td>
+</tr>
+<tr>
+<td>Performance -20%</td>
+<td>🟡 WARNING</td>
+<td>Investigate today</td>
+</tr>
+<tr>
+<td>Flaky tests &gt; 10%</td>
+<td>🟡 WARNING</td>
+<td>Stabilize this week</td>
+</tr>
+</tbody>
+</table>
+<h3 id="configure-notifications">Configure Notifications<a class="headerlink" href="#configure-notifications" title="Permanent link">&para;</a></h3>
+<p>Add to <code>.env</code>:
+[code] 
+    SLACK_WEBHOOK_URL=<a href="https://hooks.slack.com/">https://hooks.slack.com/</a>...
+    EMAIL_RECIPIENTS=<a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#116;&#101;&#97;&#109;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;">&#116;&#101;&#97;&#109;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;</a>
+[/code]</p>
+<h2 id="success-metrics">Success Metrics<a class="headerlink" href="#success-metrics" title="Permanent link">&para;</a></h2>
+<p>A healthy test suite has:</p>
+<p>* ✅ 95%+ pass rate</p>
+<p>* ✅ &lt; 5 minutes execution time</p>
+<p>* ✅ &lt; 5% flaky tests</p>
+<p>* ✅ 80%+ code coverage</p>
+<p>* ✅ Health score: A or A+</p>
+<p>Check your current status:
+[code] 
+    python -m testing_agent.test_runner
+[/code]</p>
+<h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
+<p>* <a href="writing-tests.html">Learn to write new tests</a></p>
+<p>* <a href="testing-setup.html">Setup testing infrastructure</a></p>
+<p>* <a href="ROOT:index.html">Return to documentation home</a></p>
+<h2 id="resources">Resources<a class="headerlink" href="#resources" title="Permanent link">&para;</a></h2>
+<p>* <a href="../../testing_agent/config.py">Testing Configuration Source</a></p>
+<p>* <a href="../../testing_agent/ai_test_analyzer.py">AI Analyzer Source</a></p>
+<p>* <a href="../../pytest.ini">Pytest Configuration</a></p>
+<p>Last updated 2025-12-20 04:32:26 +0530 </p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../testing-setup/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Testing Setup">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Testing Setup
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../writing-tests/" class="md-footer__link md-footer__link--next" aria-label="Next: Writing Tests">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Writing Tests
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "search.suggest", "search.highlight", "content.code.copy", "navigation.footer", "content.action.edit"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../search/main.js"></script>
+      
+    
+  </body>
+</html>

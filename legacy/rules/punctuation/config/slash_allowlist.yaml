@@ -1,0 +1,242 @@
+# Slash Allowlist Configuration
+# World-class patterns for allowed slash terms in technical documentation
+
+# === CONFIGURATION OVERVIEW ===
+# This file defines slash terms that should NOT be flagged as ambiguous.
+# Terms are matched case-insensitively.
+
+# === BUILT-IN ALLOWLIST CATEGORIES ===
+# These are loaded automatically and combined with user-defined terms
+
+built_in_categories:
+  
+  # DevOps / CI/CD
+  devops:
+    - CI/CD
+    - CD/CD
+    - DEV/OPS
+    - GITOPS/CD
+    - DEV/TEST
+    - DEV/PROD
+    - QA/UAT
+    - SIT/UAT
+    - DEBUG/RELEASE
+  
+  # Networking
+  networking:
+    - TCP/IP
+    - UDP/IP
+    - IP/TCP
+    - HTTP/HTTPS
+    - HTTP/2
+    - HTTP/3
+    - IPV4/IPV6
+    - LAN/WAN
+    - DNS/DHCP
+    - SSH/SCP
+    - FTP/SFTP
+    - SSL/TLS
+    - VLAN/VXLAN
+  
+  # I/O and Data
+  io_data:
+    - I/O
+    - INPUT/OUTPUT
+    - R/W
+    - READ/WRITE
+    - STDIN/STDOUT
+    - FIFO/LIFO
+    - ETL/ELT
+    - OLTP/OLAP
+  
+  # Security
+  security:
+    - NBDE/CLEVIS
+    - PKI/CA
+    - SSO/SAML
+    - OAUTH/OIDC
+    - MFA/2FA
+    - IAM/RBAC
+    - IDS/IPS
+    - WAF/RASP
+  
+  # Deployment Patterns
+  deployment:
+    - BLUE/GREEN
+    - CANARY/BLUE
+    - ACTIVE/PASSIVE
+    - ACTIVE/ACTIVE
+    - PRIMARY/SECONDARY
+    - MASTER/SLAVE
+    - LEADER/FOLLOWER
+    - HOT/COLD
+    - HOT/WARM/COLD
+  
+  # Architecture Patterns
+  architecture:
+    - CLIENT/SERVER
+    - FRONTEND/BACKEND
+    - MONOLITH/MICROSERVICES
+    - SYNC/ASYNC
+    - PUSH/PULL
+    - PUB/SUB
+    - REQ/RES
+    - REQUEST/RESPONSE
+    - STATEFUL/STATELESS
+  
+  # Cloud/Container
+  cloud_container:
+    - IAAS/PAAS/SAAS
+    - IAAS/PAAS
+    - PAAS/SAAS
+    - K8S/OCP
+    - VM/CONTAINER
+    - DOCKER/PODMAN
+  
+  # Database
+  database:
+    - SQL/NOSQL
+    - ACID/BASE
+    - CRUD/REST
+    - DDL/DML
+  
+  # Development
+  development:
+    - API/SDK
+    - REST/GRAPHQL
+    - SOAP/REST
+  
+  # Boolean/State
+  boolean_state:
+    - "ON/OFF"
+    - "TRUE/FALSE"
+    - "YES/NO"
+    - ENABLE/DISABLE
+    - START/STOP
+    - UP/DOWN
+    - OPEN/CLOSE
+    - PASS/FAIL
+  
+  # Common Abbreviations
+  abbreviations:
+    - N/A
+    - W/O
+    - C/O
+    - A/C
+    - B/W
+    - P/N
+    - S/N
+    - D/L
+    - U/L
+  
+  # Operating Systems
+  operating_systems:
+    - LINUX/UNIX
+    - WINDOWS/LINUX
+    - MACOS/LINUX
+    - RHEL/CENTOS
+    - DEBIAN/UBUNTU
+  
+  # File Systems/Formats
+  file_systems:
+    - EXT4/XFS
+    - NTFS/FAT32
+    - JSON/YAML
+    - XML/JSON
+    - CSV/TSV
+    - PDF/DOC
+
+# === USER-DEFINED ALLOWLIST ===
+# Add your project-specific slash terms here
+# These will be combined with the built-in allowlist
+
+user_defined_terms:
+  # Example entries (uncomment and modify as needed):
+  # - MYPROJECT/COMPONENT
+  # - CUSTOM/TERM
+  []
+
+# === CONTEXT-SPECIFIC RULES ===
+# Define contexts where slash usage should be more lenient
+
+lenient_contexts:
+  content_types:
+    - technical
+    - api
+    - api_documentation
+    - api_reference
+    - developer
+    - developer_guide
+    - reference
+    - operations
+    - devops
+    - sre
+    - infrastructure
+    - security
+  
+  domains:
+    - software
+    - engineering
+    - technology
+    - devops
+    - sre
+    - web
+    - internet
+    - cloud
+    - networking
+    - security
+    - infosec
+    - kubernetes
+    - openshift
+    - containers
+  
+  audiences:
+    - technical
+    - developer
+    - expert
+    - sysadmin
+    - devops
+    - sre
+
+# === EVIDENCE ADJUSTMENTS ===
+# How much to reduce evidence score for different contexts
+
+evidence_adjustments:
+  technical_content: -0.35
+  api_documentation: -0.40
+  developer_documentation: -0.35
+  security_documentation: -0.35
+  operations_documentation: -0.40
+  technical_audience: -0.20
+  general_audience: +0.15
+
+# === EXAMPLES ===
+# Examples of correct usage that should NOT be flagged
+
+examples:
+  should_not_flag:
+    - sentence: "Configure the CI/CD pipeline."
+      term: "CI/CD"
+      reason: "Standard DevOps term"
+    
+    - sentence: "NBDE/Clevis provides network-bound disk encryption."
+      term: "NBDE/Clevis"
+      reason: "Standard security term"
+    
+    - sentence: "Set up I/O operations for the device."
+      term: "I/O"
+      reason: "Standard computing term"
+    
+    - sentence: "TCP/IP is the foundation of internet communication."
+      term: "TCP/IP"
+      reason: "Standard networking term"
+  
+  may_flag:
+    - sentence: "Choose coffee/tea for the meeting."
+      term: "coffee/tea"
+      reason: "Ambiguous - could be 'coffee or tea' or 'coffee and tea'"
+    
+    - sentence: "The development/testing phase is complete."
+      term: "development/testing"
+      reason: "Could be clearer as 'development and testing' or 'development or testing'"
+

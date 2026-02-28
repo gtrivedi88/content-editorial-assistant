@@ -1,0 +1,37 @@
+# Messages Rule Configuration
+# IBM Style Guide (p. 200-203): Message language guidelines
+#
+# To add new terms, edit this YAML file — no code changes needed.
+
+# Exaggerated adjectives to avoid in messages
+exaggerated_adjectives:
+  catastrophic: "critical"
+  fatal: "unrecoverable"
+  illegal: "invalid"
+  devastating: "significant"
+  horrible: "unexpected"
+  terrible: "unexpected"
+
+# Casual expressions to avoid in messages
+casual_expressions:
+  - "oops"
+  - "sorry"
+  - "whoops"
+  - "oh snap"
+  - "d'oh"
+  - "uh oh"
+  - "yikes"
+  - "my bad"
+
+# Blaming phrases to avoid
+blaming_phrases:
+  - "you failed"
+  - "you entered the wrong"
+  - "your error"
+  - "your mistake"
+  - "you caused"
+  - "you broke"
+
+# Success message phrases to avoid
+success_phrases:
+  - "congratulations"

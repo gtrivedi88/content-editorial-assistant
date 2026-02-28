@@ -1,0 +1,281 @@
+/* ================================================================
+   CEA Grammarly-Style Components
+   Group list, checking indicator, margin labels, group detail
+   ================================================================ */
+
+/* ── Group List ── */
+
+.cea-group-list {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.cea-group-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 14px 20px 6px;
+  color: var(--pf-v5-global--Color--200, #6a6e73);
+}
+
+.cea-group-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--pf-v5-global--Color--100, #151515);
+  border-left: 3px solid transparent;
+  transition: background 0.12s, border-color 0.12s;
+  text-align: left;
+}
+
+.cea-group-row:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.cea-group-row--active {
+  background: rgba(0, 102, 204, 0.05);
+  border-left-color: var(--cea-accent-underline, #0066cc);
+}
+
+.cea-group-row__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.cea-group-row__dot--issues {
+  background: var(--cea-color-issues, #c9190b);
+}
+
+.cea-group-row__dot--clean {
+  background: var(--cea-color-clean, #3e8635);
+}
+
+.cea-group-row__label {
+  flex: 1;
+}
+
+.cea-group-row__count {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pf-v5-global--Color--100, #151515);
+}
+
+.cea-group-row__check {
+  color: var(--cea-color-clean, #3e8635);
+  font-size: 14px;
+}
+
+/* ── Checking Indicator ── */
+
+.cea-checking {
+  padding: 32px 20px;
+}
+
+.cea-checking__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.cea-checking__icon {
+  width: 36px;
+  height: 36px;
+  background: rgba(0, 102, 204, 0.08);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cea-checking__icon i {
+  color: var(--cea-accent-underline, #0066cc);
+  font-size: 16px;
+}
+
+.cea-checking__title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--pf-v5-global--Color--100, #151515);
+}
+
+.cea-checking__subtitle {
+  font-size: 12px;
+  color: var(--pf-v5-global--Color--200, #6a6e73);
+}
+
+.cea-checking__groups {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cea-checking__group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--pf-v5-global--Color--200, #8a8d90);
+  transition: all 0.3s;
+}
+
+.cea-checking__group--active {
+  color: var(--pf-v5-global--Color--100, #151515);
+  background: rgba(0, 102, 204, 0.04);
+  font-weight: 500;
+}
+
+.cea-checking__group--done {
+  color: var(--cea-color-clean, #3e8635);
+}
+
+.cea-checking__group-icon {
+  width: 18px;
+  text-align: center;
+  font-size: 12px;
+}
+
+.cea-checking__group--pending .cea-checking__group-icon {
+  color: var(--pf-v5-global--BorderColor--100, #d2d2d2);
+}
+
+.cea-checking__group--active .cea-checking__group-icon {
+  color: var(--cea-accent-underline, #0066cc);
+}
+
+.cea-checking__group--done .cea-checking__group-icon {
+  color: var(--cea-color-clean, #3e8635);
+}
+
+/* ── Margin Labels ── */
+
+.cea-margin-labels {
+  width: 160px;
+  min-width: 160px;
+  position: relative;
+  padding-right: 12px;
+}
+
+.cea-margin-label {
+  position: absolute;
+  right: 12px;
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--cea-accent-underline, #0066cc);
+  background: var(--pf-v5-global--BackgroundColor--100, #fff);
+  border: 1px solid rgba(0, 102, 204, 0.25);
+  border-radius: 4px;
+  padding: 3px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  max-width: 148px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: var(--cea-shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.06));
+  transition: all 0.15s;
+  display: none; /* hidden until group selected */
+}
+
+.cea-margin-label::after {
+  content: '';
+  position: absolute;
+  right: -8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 1px;
+  background: var(--cea-accent-underline-subtle, rgba(0, 102, 204, 0.3));
+}
+
+.cea-margin-label:hover {
+  background: rgba(0, 102, 204, 0.06);
+  border-color: var(--cea-accent-underline, #0066cc);
+}
+
+.cea-margin-label--active {
+  background: rgba(0, 102, 204, 0.1);
+  border-color: var(--cea-accent-underline, #0066cc);
+  font-weight: 600;
+}
+
+.cea-margin-label.visible {
+  display: block;
+}
+
+/* ── Group Detail (back button + title) ── */
+
+.cea-group-back {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--pf-v5-global--BorderColor--100, #e8e8e8);
+  width: 100%;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--cea-accent-underline, #0066cc);
+  text-align: left;
+  cursor: pointer;
+}
+
+.cea-group-back:hover {
+  background: rgba(0, 102, 204, 0.04);
+}
+
+.cea-group-detail-title {
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--pf-v5-global--Color--100, #151515);
+  border-bottom: 1px solid var(--pf-v5-global--BorderColor--100, #e8e8e8);
+}
+
+/* ── Paste hint toast ── */
+
+.cea-paste-hint {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--pf-v5-global--Color--100, #151515);
+  color: #fff;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  z-index: 200;
+  opacity: 1;
+  transition: opacity 0.4s;
+}
+
+.cea-paste-hint--hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── Fade-in animation for underlines after analysis ── */
+
+@keyframes fadeInUnderline {
+  from { text-decoration-color: transparent; }
+  to { text-decoration-color: var(--cea-accent-underline, #0066cc); }
+}
+
+.cea-underline--animate-in {
+  animation: fadeInUnderline 0.4s ease forwards;
+}

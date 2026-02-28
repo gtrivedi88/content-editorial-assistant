@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Content Editorial Assistant{% endblock %}</title>
+
+  <!-- Anti-flash theme init -->
+  <script>
+    (function() {
+      var s = localStorage.getItem('cea-theme') || 'auto';
+      var d = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      var t = s === 'auto' ? (d ? 'dark' : 'light') : s;
+      document.documentElement.classList.add(t === 'dark' ? 'pf-v5-theme-dark' : 'pf-v5-theme-light');
+    })();
+  </script>
+
+  <!-- PatternFly 5 -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/patternfly.css') }}">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- CEA CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/cea-variables.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/cea-layout.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/cea-theme.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/cea-animations.css') }}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+  {% include "partials/_topnav.html" %}
+
+  <main id="main-content" tabindex="-1">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Socket.IO (global, not ES module) -->
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <!-- App entry point -->
+  <script type="module" src="{{ url_for('static', filename='js/app.js') }}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

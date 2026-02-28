@@ -1,0 +1,150 @@
+# Terminology Rule Configuration
+# IBM Style Guide (Page 113): Use consistent, standardized terms.
+#
+# HOW TO MAINTAIN:
+# - Add new deprecated → preferred term pairs below
+# - No code changes needed — just edit this file and restart.
+
+# Deprecated terms mapped to preferred replacements
+term_map:
+  # IBM Documentation references
+  info center: IBM Documentation
+  infocenter: IBM Documentation
+  knowledge center: IBM Documentation
+
+  # UI terminology
+  dialog box: dialog
+  drop down: dropdown
+  pop up: popup
+  tool bar: toolbar
+  tool tip: tooltip
+  task bar: taskbar
+  check list: checklist
+  deselect: clear
+  switch on: turn on
+  print out: print
+  call up: call
+
+  # Hyphenation corrections (two words → one)
+  e-mail: email
+  un-install: uninstall
+  de-install: uninstall
+  web site: website
+  work station: workstation
+  data base: database
+  on line: online
+  off line: offline
+  time frame: timeframe
+  back end: backend
+  front end: frontend
+  run time: runtime
+  start up: startup
+  shut down: shutdown
+  set up: setup
+  time stamp: timestamp
+  time out: timeout
+  roll back: rollback
+  fail over: failover
+  work around: workaround
+  work flow: workflow
+  work load: workload
+  name space: namespace
+  meta data: metadata
+  data set: dataset
+  log on to: log in to
+  logon: log in
+  end user: user
+  file name: file name
+  sign on: sign in
+  sign off: sign out
+  host name: hostname
+  bugfix: bug fix
+  invokable: invocable
+  segfault: segmentation fault
+
+  # Deprecated technical terms (IBM Style Guide + Red Hat Vale)
+  abort: stop
+  terminate: end
+  kill: stop
+  execute: run
+  depress: press
+  click on: click
+  desire: want
+  utilize: use
+  leverage: use
+  functionality: function
+  in order to: to
+  as to whether: whether
+  at this point in time: now
+  due to the fact that: because
+  in the event that: if
+  with regard to: about
+  prior to: before
+  subsequent to: after
+  in lieu of: instead of
+  in conjunction with: with
+  in the process of: while
+  on a regular basis: regularly
+  at the present time: now
+  for the purpose of: to
+  in the near future: soon
+  has the ability to: can
+  is able to: can
+  in an effort to: to
+  with the exception of: except
+  it is necessary that: must
+  provided that: if
+  in the amount of: for
+  take into consideration: consider
+  make a determination: determine
+  give consideration to: consider
+  have a need for: need
+  is indicative of: indicates
+  has a requirement for: requires
+  in a timely manner: promptly
+  a large number of: many
+  a small number of: few
+  the majority of: most
+  at the conclusion of: after
+  in close proximity to: near
+  on the occasion of: when
+  as a consequence of: because
+  for the duration of: during
+  in the absence of: without
+  with reference to: about
+  in accordance with: per
+
+  # Phrase corrections (Red Hat Vale style guidance)
+  appears: is displayed
+  as well as: and
+  carry on: continue
+  carry out: run, test
+  desired: needed, required
+  destroy: delete
+  destroyed: deleted
+  find out: discover
+  look at: examine
+  spawn: create
+  speed up: accelerate
+  tooling: tool, tools
+  preload: preinstall
+  preloaded: preinstalled
+  sane: accurate, valid, verified
+  illegal: invalid, not allowed
+  entitlement: repository, subscription
+  hashbang: shebang, interpreter directive
+  may: might, can
+  BIOS: firmware
+
+  # Directional and transitional terms (Red Hat Vale style guidance)
+  above: earlier, previous, preceding
+  below: after, later, following
+  once: after, when
+  thus: therefore
+  refer to: see
+  choose: select
+  launch: start, open
+  legacy: existing, traditional
+  translate: convert, transform
+  information on: information about
+  higher version: later version

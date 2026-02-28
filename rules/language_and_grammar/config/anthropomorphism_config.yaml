@@ -1,0 +1,208 @@
+# Anthropomorphism Rule Configuration
+# IBM Style Guide (Page 90): Do not attribute human characteristics to non-human things.
+#
+# HOW TO MAINTAIN:
+# - Add new anthropomorphic verbs to 'anthropomorphic_verbs' when discovered
+# - Add new safe technical verbs to 'safe_technical_verbs' to prevent false positives
+# - Add new software/system terms to 'non_human_indicators'
+# No code changes required — just edit this file and restart.
+
+# Verbs that attribute human qualities to software/systems
+# If a non-human subject uses one of these verbs, it's flagged
+anthropomorphic_verbs:
+  - want
+  - think
+  - know
+  - believe
+  - understand
+  - try
+  - refuse
+  - like
+  - feel
+  - see
+  - remember
+  - forget
+  - assume
+  - consider
+  - hope
+  - wish
+  - prefer
+  - learn
+  - realize
+  - notice
+  - care
+  - worry
+  - fear
+  - expect
+  - need
+  - desire
+  - insist
+  - demand
+  - agree
+  - disagree
+  - argue
+  - claim
+  - ask
+
+# Technical verbs that are SAFE for non-human subjects — never flag these
+safe_technical_verbs:
+  - provide
+  - support
+  - enable
+  - handle
+  - process
+  - manage
+  - run
+  - execute
+  - create
+  - return
+  - send
+  - receive
+  - store
+  - validate
+  - check
+  - monitor
+  - deploy
+  - configure
+  - detect
+  - display
+  - generate
+  - include
+  - contain
+  - require
+  - allow
+  - use
+  - perform
+  - produce
+  - consume
+  - read
+  - write
+  - start
+  - stop
+  - restart
+  - install
+  - update
+  - remove
+  - delete
+  - add
+  - set
+  - get
+  - connect
+  - disconnect
+  - authenticate
+  - authorize
+  - encrypt
+  - decrypt
+  - log
+  - track
+  - report
+  - calculate
+  - load
+  - save
+  - parse
+  - format
+  - convert
+  - transform
+  - schedule
+  - trigger
+  - emit
+  - listen
+  - wait
+  - retry
+  - fail
+  - succeed
+  - pass
+  - reject
+  - accept
+  - deny
+  - route
+  - forward
+  - redirect
+  - replicate
+  - synchronize
+  - ensure
+  - enforce
+  - implement
+  - override
+  - inherit
+  - extend
+  - offer
+  - deliver
+  - serve
+  - host
+  - maintain
+  - operate
+  - negotiate    # "The client negotiates TLS"
+  - respond      # "The server responds with 200"
+  - communicate  # "Services communicate via gRPC"
+  - indicate     # "The flag indicates success"
+  - determine    # "The scheduler determines placement"
+  - identify     # "The scanner identifies vulnerabilities"
+  - predict      # "The model predicts demand"
+  - interpret    # "The parser interprets the query"
+  - evaluate     # "The engine evaluates expressions"
+  - select       # "The algorithm selects the optimal path"
+  - decide       # "The load balancer decides routing"
+  - recognize    # "The system recognizes the pattern"
+  - discover     # "The agent discovers services"
+  - resolve      # "DNS resolves the hostname"
+  - notify       # "The webhook notifies the endpoint"
+
+# Non-human subjects — if these are the subject of an anthropomorphic verb, flag it
+non_human_indicators:
+  - system
+  - software
+  - application
+  - app
+  - program
+  - tool
+  - platform
+  - service
+  - server
+  - client
+  - database
+  - api
+  - module
+  - component
+  - feature
+  - function
+  - method
+  - class
+  - product
+  - solution
+  - framework
+  - library
+  - engine
+  - agent
+  - controller
+  - manager
+  - handler
+  - processor
+  - scheduler
+  - broker
+  - gateway
+  - proxy
+  - driver
+  - adapter
+  - plugin
+  - widget
+  - interface
+  - dashboard
+  - console
+  - terminal
+  - pipeline
+  - workflow
+  - operator
+  - cluster
+  - node
+  - pod
+  - container
+  - image
+  - registry
+  - repository
+  - package
+  - algorithm
+  - model
+  - network
+  - protocol
+  - script

@@ -1,0 +1,285 @@
+# Date and Time Formatting Configuration
+# Manages date patterns, time formats, and international standards
+# Updates can be made without code changes for zero false positives
+
+# Date Format Patterns
+date_formats:
+  problematic_patterns:
+    - pattern: '\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b'
+      name: "ambiguous_numeric_date"
+      example: "12/25/2023"
+      evidence_base: 0.8
+      severity: "medium"
+      issue: "Ambiguous for international audiences"
+      alternatives: ["2023-12-25", "December 25, 2023", "25 December 2023"]
+      regions_confused: ["US vs EU format confusion"]
+    
+    - pattern: '\b\d{1,2}[/-]\d{1,2}[/-]\d{2}\b'
+      name: "short_year_numeric_date"
+      example: "12/25/23"
+      evidence_base: 0.9
+      severity: "high"
+      issue: "Two-digit year is ambiguous"
+      alternatives: ["2023-12-25", "December 25, 2023"]
+      ambiguity_reason: "Could be 1923 or 2023"
+
+  acceptable_patterns:
+    - pattern: '\b\d{4}-\d{2}-\d{2}\b'
+      name: "iso_8601_date"
+      example: "2023-12-25"
+      standard: "ISO 8601"
+      evidence_reduction: -0.5
+      international: true
+      unambiguous: true
+    
+    - pattern: '\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}\b'
+      name: "full_month_date"
+      example: "December 25, 2023"
+      standard: "US written format"
+      evidence_reduction: -0.3
+      clear_format: true
+    
+    - pattern: '\b\d{1,2}\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}\b'
+      name: "day_month_year"
+      example: "25 December 2023"
+      standard: "European written format"
+      evidence_reduction: -0.3
+      clear_format: true
+
+# Time Format Patterns
+time_formats:
+  problematic_patterns:
+    - pattern: '\b(\d{1,2}:\d{2})(AM|PM|am|pm)\b'
+      name: "missing_space_ampm"
+      example: "2:30PM"
+      evidence_base: 0.8
+      severity: "medium"
+      issue: "Missing space before AM/PM"
+      correct_format: "2:30 PM"
+      subtype: "missing_space"
+    
+    - pattern: '\b(\d{1,2}:\d{2})\s?(a\.m\.|p\.m\.|A\.M\.|P\.M\.)\b'
+      name: "periods_in_ampm"
+      example: "2:30 p.m."
+      evidence_base: 0.6
+      severity: "low"
+      issue: "Periods in AM/PM are outdated"
+      correct_format: "2:30 PM"
+      subtype: "periods_in_ampm"
+    
+    - pattern: '\b(\d{1,2}:\d{2})\s?(am|pm)\b'
+      name: "lowercase_ampm"
+      example: "2:30 pm"
+      evidence_base: 0.6
+      severity: "low"
+      issue: "Lowercase AM/PM is less formal"
+      correct_format: "2:30 PM"
+      subtype: "lowercase_ampm"
+
+  acceptable_patterns:
+    - pattern: '\b(\d{1,2}:\d{2})\s+(AM|PM)\b'
+      name: "correct_ampm"
+      example: "2:30 PM"
+      evidence_reduction: -0.5
+      standard_format: true
+    
+    - pattern: '\b([01]?\d|2[0-3]):[0-5]\d\b'
+      name: "24_hour_format"
+      example: "14:30"
+      evidence_reduction: -0.3
+      international_standard: true
+      unambiguous: true
+      note: "24-hour format is internationally clear"
+
+# Context-Based Evidence Adjustments
+context_adjustments:
+  audience_modifiers:
+    international:
+      iso_8601_preference: 0.3
+      ambiguous_penalty: 0.2
+      message_priority: "high"
+    global:
+      iso_8601_preference: 0.3
+      ambiguous_penalty: 0.2
+      message_priority: "high"
+    domestic:
+      ambiguous_penalty: -0.2
+      local_format_acceptable: true
+      message_priority: "low"
+    technical:
+      iso_8601_preference: 0.2
+      precision_required: true
+
+  content_type_modifiers:
+    business:
+      formal_time_required: true
+      evidence_increase: 0.1
+    technical:
+      iso_8601_preferred: true
+      evidence_increase: 0.1
+    legal:
+      unambiguous_required: true
+      evidence_increase: 0.3
+    documentation:
+      consistent_format_required: true
+      evidence_increase: 0.1
+
+  document_scope:
+    multiple_dates:
+      consistency_penalty: 0.2
+      format_mixing_evidence: 0.3
+    single_date:
+      evidence_neutral: 0.0
+
+# Regional Format Preferences
+regional_preferences:
+  us_formats:
+    preferred_date: "MM/DD/YYYY"
+    acceptable_written: "Month DD, YYYY"
+    time_format: "12-hour with AM/PM"
+    
+  european_formats:
+    preferred_date: "DD/MM/YYYY"
+    acceptable_written: "DD Month YYYY"
+    time_format: "24-hour preferred"
+    
+  iso_international:
+    preferred_date: "YYYY-MM-DD"
+    time_format: "24-hour (HH:MM)"
+    unambiguous: true
+    recommended_for: "international, technical, business"
+
+# Detection Configuration
+detection_patterns:
+  numeric_date_regex:
+    pattern: '\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b'
+    captures: ["full_date"]
+    flags: ["MULTILINE"]
+  
+  time_spacing_regex:
+    pattern: '\b(\d{1,2}:\d{2})(AM|PM|am|pm|A\.M\.|P\.M\.|a\.m\.|p\.m\.)\b'
+    captures: ["time_part", "ampm_part"]
+    flags: ["IGNORECASE"]
+
+# Surgical Guard Patterns (contexts to exclude)
+surgical_guards:
+  version_contexts:
+    - "version \d+\.\d+"
+    - "v\d+\.\d+"
+    - "release \d+\.\d+"
+    - "build \d+"
+  
+  technical_contexts:
+    - "timestamp"
+    - "unix time"
+    - "epoch"
+    - "milliseconds"
+    - "api response"
+    - "database field"
+    - "log entry"
+  
+  example_contexts:
+    - "for example"
+    - "e.g."
+    - "such as"
+    - "sample format"
+    - "example output"
+  
+  code_contexts:
+    - "format string"
+    - "date format"
+    - "pattern"
+    - "regex"
+    - "configuration"
+
+# Evidence-Aware Messaging
+messages:
+  date_formats:
+    high_evidence:
+      ambiguous_numeric: "Use unambiguous date format like 'YYYY-MM-DD' or 'Month DD, YYYY' instead of '{flagged}' for international clarity."
+      short_year: "Use four-digit year format to avoid ambiguity: '{flagged}' could refer to multiple centuries."
+    
+    medium_evidence:
+      ambiguous_numeric: "Consider using 'YYYY-MM-DD' format instead of '{flagged}' for international audiences."
+      
+    low_evidence:
+      ambiguous_numeric: "Date format could be clearer for international readers: '{flagged}'."
+
+  time_formats:
+    high_evidence:
+      missing_space: "Add a space before AM/PM: '{flagged}' should be '{time} {ampm}'."
+      periods_format: "Remove periods from AM/PM: '{flagged}' should be '{time} {ampm_clean}'."
+      lowercase_format: "Use uppercase AM/PM: '{flagged}' should be '{time} {ampm_upper}'."
+    
+    medium_evidence:
+      missing_space: "Consider adding space before AM/PM in '{flagged}'."
+      periods_format: "Consider removing periods from AM/PM in '{flagged}'."
+    
+    low_evidence:
+      missing_space: "Time formatting could be improved: '{flagged}'."
+
+# Suggestions Based on Evidence Level
+suggestions:
+  date_formats:
+    high_evidence:
+      - "Use ISO 8601 format: 'YYYY-MM-DD' (e.g., '2023-12-25')."
+      - "Use written format: 'Month DD, YYYY' (e.g., 'December 25, 2023')."
+      - "Avoid numeric formats that are ambiguous internationally."
+    
+    medium_evidence:
+      - "Consider ISO format 'YYYY-MM-DD' for international clarity."
+      - "Use written month names to eliminate ambiguity."
+    
+    low_evidence:
+      - "Consider unambiguous date formats for international audiences."
+
+  time_formats:
+    high_evidence:
+      - "Change '{flagged}' to '{corrected_format}'."
+      - "Use proper spacing and capitalization: '{time} AM/PM'."
+      - "Follow standard time formatting conventions."
+    
+    medium_evidence:
+      - "Consider standard format: '{time} AM/PM'."
+      - "Add space before AM/PM for clarity."
+    
+    low_evidence:
+      - "Consider standard time formatting."
+
+# Internationalization Guidelines
+internationalization:
+  recommended_formats:
+    universal_date: "YYYY-MM-DD"
+    universal_time: "HH:MM (24-hour)"
+    business_date: "Month DD, YYYY"
+    business_time: "H:MM AM/PM"
+  
+  avoid_formats:
+    ambiguous_numeric: ["MM/DD/YY", "DD/MM/YY", "M/D/YY"]
+    unclear_time: ["H.MM", "H,MM", "HhMM"]
+  
+  cultural_considerations:
+    us_audience: "MM/DD/YYYY acceptable, 12-hour time preferred"
+    european_audience: "DD/MM/YYYY acceptable, 24-hour time preferred"
+    asian_audience: "YYYY/MM/DD or YYYY-MM-DD preferred"
+    global_audience: "ISO 8601 strongly recommended"
+
+# Special Cases and Exceptions
+special_cases:
+  historical_dates:
+    evidence_reduction: -0.2
+    reason: "Historical context may justify traditional formats"
+    
+  legal_documents:
+    evidence_increase: 0.3
+    reason: "Legal documents require unambiguous dates"
+    
+  technical_logs:
+    iso_8601_required: true
+    evidence_increase: 0.2
+    reason: "Logs need standardized timestamps"
+    
+  user_interfaces:
+    localization_acceptable: true
+    evidence_reduction: -0.1
+    reason: "UI may use localized formats appropriately"

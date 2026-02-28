@@ -1,0 +1,45 @@
+---
+# OpenShift Deployment Patch to Fix Database and Feedback Persistence
+# This patch ensures both database and feedback files survive pod restarts
+#
+# Changes:
+# 1. Mount PVC to /app/instance for SQLite database persistence  
+# 2. Add FEEDBACK_STORAGE_DIR env var for file-based fallback
+#
+# Apply with: oc patch deployment cea-app -n cea--runtime-int --patch-file openshift-deployment-patch.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cea-app
+  namespace: cea--runtime-int
+spec:
+  template:
+    spec:
+      containers:
+      - name: cea-app
+        env:
+        # Add environment variable for feedback storage directory
+        - name: FEEDBACK_STORAGE_DIR
+          value: "/opt/app-root/src/feedback_data"
+        volumeMounts:
+        # Keep the existing ca-cert mount
+        - mountPath: /etc/ssl/custom-certs
+          name: ca-cert
+        # Mount PVC to /app/instance for database persistence
+        - mountPath: /app/instance
+          name: feedback-storage
+          subPath: instance
+        # Keep feedback_data mount for file-based fallback
+        - mountPath: /opt/app-root/src/feedback_data
+          name: feedback-storage
+          subPath: feedback_data
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: cea-app-ca-cert
+        name: ca-cert
+      - name: feedback-storage
+        persistentVolumeClaim:
+          claimName: cea-feedback-storage
+

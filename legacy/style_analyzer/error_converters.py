@@ -1,0 +1,86 @@
+"""
+Error Conversion Utilities
+Handles conversion between different error formats used in the style analyzer.
+"""
+
+import logging
+from typing import Dict, Any
+
+from .base_types import ErrorDict, AnalysisMethod, create_error
+
+logger = logging.getLogger(__name__)
+
+
+class ErrorConverter:
+    """Utility class for converting between different error formats."""
+    
+    @staticmethod
+    def convert_rules_error(rules_error: Dict[str, Any], block_context: Dict[str, Any] = None) -> ErrorDict:
+        """Convert rules system error to our standardized error format."""
+        try:
+            # Extract information from rules error
+            error_type = rules_error.get('type', 'unknown')
+            subtype = rules_error.get('subtype')  # Preserve subtype for ambiguity errors
+            message = rules_error.get('message', 'Unknown error')
+            suggestions = rules_error.get('suggestions', [])
+            severity = rules_error.get('severity', 'low')
+            sentence = rules_error.get('sentence', '')
+            sentence_index = rules_error.get('sentence_index', -1)
+            
+            # Create standardized error with all fields preserved
+            error_dict = {
+                'type': error_type,
+                'message': message,
+                'suggestions': suggestions,
+                'severity': severity,
+                'confidence': 0.85,  # High confidence for rules-based detection
+                'analysis_method': 'spacy_enhanced'
+            }
+            
+            # Add optional fields if provided
+            if sentence:
+                error_dict['sentence'] = sentence
+            if sentence_index >= 0:
+                error_dict['sentence_index'] = sentence_index
+            if subtype:
+                error_dict['subtype'] = subtype
+            
+            # CRITICAL FIX: Add structural context to error
+            if block_context:
+                error_dict['structural_context'] = block_context
+            
+            # Preserve any additional fields from the original error (including consolidation metadata)
+            for key, value in rules_error.items():
+                if key not in error_dict and key not in ['type', 'subtype', 'message', 'suggestions', 'severity', 'sentence', 'sentence_index']:
+                    error_dict[key] = value
+
+            # Specifically preserve consolidation metadata if present
+            consolidation_fields = ['consolidated_from', 'consolidation_type', 'text_span']
+            for field in consolidation_fields:
+                if field in rules_error:
+                    error_dict[field] = rules_error[field]
+
+            # Standardize IBM Style Guide fields for UI compatibility
+            # Map 'style_guide_citation' to 'ibm_style_reference' if present
+            if 'style_guide_citation' in rules_error and 'ibm_style_reference' not in error_dict:
+                error_dict['ibm_style_reference'] = rules_error['style_guide_citation']
+
+            # Add source field for IBM Style violations
+            if 'ibm_style_reference' in error_dict or 'style_guide_citation' in rules_error:
+                if 'source' not in error_dict:
+                    error_dict['source'] = 'ibm_style_guide'
+                if 'rule_source_type' not in error_dict:
+                    error_dict['rule_source_type'] = 'IBM Style Guide'
+
+            # Add display_name if not present (use type as fallback)
+            if 'display_name' not in error_dict:
+                error_dict['display_name'] = error_dict.get('type', 'unknown')
+            
+            return error_dict
+        except Exception as e:
+            logger.error(f"Error converting rules error: {e}")
+            return create_error(
+                error_type='system',
+                message=f'Error processing rule: {str(e)}',
+                suggestions=['Check rule implementation']
+            ) 

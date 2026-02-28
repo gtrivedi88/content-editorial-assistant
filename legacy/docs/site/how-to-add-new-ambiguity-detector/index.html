@@ -1,0 +1,2531 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="AI-powered technical writing assistant that helps writers review content">
+      
+      
+        <meta name="author" content="CCS AI Team">
+      
+      
+      
+        <link rel="prev" href="../how-to-add-new-rule/">
+      
+      
+        <link rel="next" href="../how-to-add-new-model/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+    
+    
+      
+        <title>Add a New Ambiguity Detector - Content Editorial Assistant</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#how-to-add-a-new-ambiguity-detector-to-content-editorial-assistant" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Content Editorial Assistant" class="md-header__button md-logo" aria-label="Content Editorial Assistant" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Content Editorial Assistant
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Add a New Ambiguity Detector
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://gitlab.cee.redhat.com/ccs-ai/content-editorial-assistant" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitLab
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href=".." class="md-tabs__link">
+          
+  
+  
+  User Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../getting-started/" class="md-tabs__link">
+          
+  
+  
+  Developer Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../architecture/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../how-to-add-new-rule/" class="md-tabs__link">
+          
+  
+  
+  How-To Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../testing-setup/" class="md-tabs__link">
+          
+  
+  
+  Testing
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Content Editorial Assistant" class="md-nav__button md-logo" aria-label="Content Editorial Assistant" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Content Editorial Assistant
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://gitlab.cee.redhat.com/ccs-ai/content-editorial-assistant" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitLab
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../training-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Developer Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Developer Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../environment-variables/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Environment Variables
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deployment-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../llm-rules-implementation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LLM Rules Implementation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-flow-diagram/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Flow Diagram
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How-To Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    How-To Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how-to-add-new-rule/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a New Rule
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a New Ambiguity Detector
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a New Ambiguity Detector
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#understanding-the-ambiguity-detection-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Understanding the Ambiguity Detection System
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Understanding the Ambiguity Detection System">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#system-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        System Architecture
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#existing-ambiguity-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Existing Ambiguity Types
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-by-step-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step-by-Step Implementation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step-by-Step Implementation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-define-your-ambiguity-type" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Define Your Ambiguity Type
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-update-configuration-mappings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Update Configuration Mappings
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-create-your-detector-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Create Your Detector Class
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-update-detector-package" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: Update Detector Package
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-5-register-the-detector" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Register the Detector
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-6-add-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 6: Add Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-7-test-your-detector" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 7: Test Your Detector
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#files-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Files Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Best Practices
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Best Practices">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#detection-logic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Detection Logic
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#common-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common Issues
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#debug-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Debug Mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conclusion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conclusion
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how-to-add-new-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a New AI Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configure-providers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configure AI Providers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Testing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing-setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI-Powered Testing Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../writing-tests/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Writing Tests
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#understanding-the-ambiguity-detection-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Understanding the Ambiguity Detection System
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Understanding the Ambiguity Detection System">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#system-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        System Architecture
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#existing-ambiguity-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Existing Ambiguity Types
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-by-step-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step-by-Step Implementation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step-by-Step Implementation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-define-your-ambiguity-type" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Define Your Ambiguity Type
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-update-configuration-mappings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Update Configuration Mappings
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-create-your-detector-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Create Your Detector Class
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-update-detector-package" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: Update Detector Package
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-5-register-the-detector" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Register the Detector
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-6-add-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 6: Add Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-7-test-your-detector" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 7: Test Your Detector
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#files-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Files Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Best Practices
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Best Practices">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#detection-logic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Detection Logic
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#common-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common Issues
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#debug-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Debug Mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conclusion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conclusion
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://gitlab.cee.redhat.com/ccs-ai/content-editorial-assistant/-/edit/main/docs/modules/how-to-add-new-ambiguity-detector.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="how-to-add-a-new-ambiguity-detector-to-content-editorial-assistant">How to Add a New Ambiguity Detector to Content Editorial Assistant<a class="headerlink" href="#how-to-add-a-new-ambiguity-detector-to-content-editorial-assistant" title="Permanent link">&para;</a></h1>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>This guide provides step-by-step instructions for adding a new ambiguity detector to the Content Editorial Assistant application. The ambiguity detection system uses specialized detectors to identify unclear or ambiguous content in technical writing.</p>
+<p><strong>What You 'll Create:</strong></p>
+<p>* A new detector class implementing your ambiguity detection logic</p>
+<p>* Type definitions for your new ambiguity type</p>
+<p>* Configuration updates to enable the detector</p>
+<p>* Integration with the existing ambiguity detection system</p>
+<h2 id="understanding-the-ambiguity-detection-system">Understanding the Ambiguity Detection System<a class="headerlink" href="#understanding-the-ambiguity-detection-system" title="Permanent link">&para;</a></h2>
+<h3 id="system-architecture">System Architecture<a class="headerlink" href="#system-architecture" title="Permanent link">&para;</a></h3>
+<p>The ambiguity detection system consists of:</p>
+<p>* <strong>AmbiguityType Enum</strong> : Defines all types of ambiguity that can be detected</p>
+<p>* <strong>Base Classes</strong> : <code>AmbiguityDetector</code> base class and <code>BaseAmbiguityRule</code> integration</p>
+<p>* <strong>Specific Detectors</strong> : Individual detector classes for different ambiguity types</p>
+<p>* <strong>Configuration</strong> : YAML configuration for enabling/disabling detectors</p>
+<p>* <strong>Integration</strong> : Automatic discovery and registration system</p>
+<h3 id="existing-ambiguity-types">Existing Ambiguity Types<a class="headerlink" href="#existing-ambiguity-types" title="Permanent link">&para;</a></h3>
+<p>The system currently supports these ambiguity types:</p>
+<p>* <code>MISSING_ACTOR</code>: Passive voice without clear actors</p>
+<p>* <code>AMBIGUOUS_PRONOUN</code>: Pronouns with unclear referents</p>
+<p>* <code>UNCLEAR_SUBJECT</code>: Unclear subject references</p>
+<p>* <code>AMBIGUOUS_MODIFIER</code>: Ambiguous modifier placement</p>
+<p>* <code>VAGUE_QUANTIFIER</code>: Vague quantifiers without context</p>
+<p>* <code>UNCLEAR_TEMPORAL</code>: Unclear temporal references</p>
+<p>* <code>UNSUPPORTED_CLAIMS</code>: Unsupported claims and promises</p>
+<p>* <code>FABRICATION_RISK</code>: Risk of adding unverified information</p>
+<p>* <code>EXCESSIVE_CERTAINTY</code>: Overly strong claims</p>
+<h2 id="step-by-step-implementation">Step-by-Step Implementation<a class="headerlink" href="#step-by-step-implementation" title="Permanent link">&para;</a></h2>
+<h3 id="step-1-define-your-ambiguity-type">Step 1: Define Your Ambiguity Type<a class="headerlink" href="#step-1-define-your-ambiguity-type" title="Permanent link">&para;</a></h3>
+<p>First, add your new ambiguity type to the <code>AmbiguityType</code> enum.</p>
+<p><strong>File:</strong> <code>ambiguity/types.py</code>
+[code] 
+    class AmbiguityType(Enum):
+        """Types of ambiguity that can be detected in technical writing."""</p>
+<div class="codehilite"><pre><span></span><code><span class="w">    </span><span class="err">#</span><span class="w"> </span><span class="o">...</span><span class="w"> </span><span class="nx">existing</span><span class="w"> </span><span class="nx">types</span><span class="w"> </span><span class="o">...</span>
+
+<span class="w">    </span><span class="err">#</span><span class="w"> </span><span class="nx">Add</span><span class="w"> </span><span class="nx">your</span><span class="w"> </span><span class="nx">new</span><span class="w"> </span><span class="k">type</span><span class="w"> </span><span class="nx">here</span>
+<span class="w">    </span><span class="nx">YOUR_NEW_TYPE</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">&quot;your_new_type&quot;</span>
+</code></pre></div>
+
+<p>[/code]</p>
+<p><strong>Example: Adding a "Double Negative" detector</strong>
+[code] 
+    class AmbiguityType(Enum):
+        # ... existing types ...</p>
+<div class="codehilite"><pre><span></span><code>    # Double negatives that create confusion
+    DOUBLE_NEGATIVE = &quot;double_negative&quot;
+</code></pre></div>
+
+<p>[/code]</p>
+<h3 id="step-2-update-configuration-mappings">Step 2: Update Configuration Mappings<a class="headerlink" href="#step-2-update-configuration-mappings" title="Permanent link">&para;</a></h3>
+<p>Update the default configuration mappings in the <code>AmbiguityConfig</code> class.</p>
+<p><strong>File:</strong> <code>ambiguity/types.py</code>
+[code] 
+    def _initialize_defaults(self):
+        """Initialize default configuration."""
+        # Default severity mappings
+        self.severity_mappings = {
+            # ... existing mappings ...
+            AmbiguityType.YOUR_NEW_TYPE: AmbiguitySeverity.MEDIUM,  # Choose appropriate severity
+        }</p>
+<div class="codehilite"><pre><span></span><code>    # Default category mappings
+    self.category_mappings = {
+        # ... existing mappings ...
+        AmbiguityType.YOUR_NEW_TYPE: AmbiguityCategory.SEMANTIC,  # Choose appropriate category
+    }
+</code></pre></div>
+
+<p>[/code]</p>
+<p><strong>Example: Double Negative Configuration</strong>
+[code] 
+    def _initialize_defaults(self):
+        # Default severity mappings
+        self.severity_mappings = {
+            # ... existing mappings ...
+            AmbiguityType.DOUBLE_NEGATIVE: AmbiguitySeverity.MEDIUM,
+        }</p>
+<div class="codehilite"><pre><span></span><code>    # Default category mappings
+    self.category_mappings = {
+        # ... existing mappings ...
+        AmbiguityType.DOUBLE_NEGATIVE: AmbiguityCategory.SEMANTIC,
+    }
+</code></pre></div>
+
+<p>[/code]</p>
+<h3 id="step-3-create-your-detector-class">Step 3: Create Your Detector Class<a class="headerlink" href="#step-3-create-your-detector-class" title="Permanent link">&para;</a></h3>
+<p>Create a new detector file in the <code>ambiguity/detectors/</code> directory.</p>
+<p><strong>File:</strong> <code>ambiguity/detectors/your_detector_name.py</code>
+[code] 
+    """
+    Your Detector Name</p>
+<div class="codehilite"><pre><span></span><code><span class="n">Brief</span> <span class="n">description</span> <span class="n">of</span> <span class="n">what</span> <span class="n">ambiguity</span> <span class="n">this</span> <span class="n">detector</span> <span class="n">identifies</span><span class="o">.</span>
+
+<span class="n">Example</span><span class="p">:</span> <span class="s2">&quot;This is not uncommon&quot;</span> <span class="o">-</span> <span class="n">double</span> <span class="n">negative</span> <span class="n">creates</span> <span class="n">confusion</span><span class="o">.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">from typing import List, Dict, Any, Optional</span>
+<span class="sd">import re</span>
+
+<span class="sd">from ..base_ambiguity_rule import AmbiguityDetector</span>
+<span class="sd">from ..types import (</span>
+<span class="sd">    AmbiguityType, AmbiguityCategory, AmbiguitySeverity,</span>
+<span class="sd">    AmbiguityContext, AmbiguityEvidence, AmbiguityDetection,</span>
+<span class="sd">    ResolutionStrategy, AmbiguityConfig</span>
+<span class="sd">)</span>
+
+
+<span class="sd">class YourDetectorName(AmbiguityDetector):</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">Brief</span> <span class="n">description</span> <span class="n">of</span> <span class="n">what</span> <span class="n">this</span> <span class="n">detector</span> <span class="n">does</span><span class="o">.</span>
+
+    <span class="n">Detailed</span> <span class="n">explanation</span> <span class="n">of</span> <span class="n">the</span> <span class="nb">type</span> <span class="n">of</span> <span class="n">ambiguity</span> <span class="n">this</span> <span class="n">detector</span> <span class="n">identifies</span>
+    <span class="ow">and</span> <span class="n">how</span> <span class="n">it</span> <span class="n">analyzes</span> <span class="n">text</span> <span class="n">to</span> <span class="n">find</span> <span class="n">instances</span> <span class="n">of</span> <span class="n">this</span> <span class="n">ambiguity</span><span class="o">.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">    def __init__(self, config: AmbiguityConfig):</span>
+<span class="sd">        super().__init__(config)</span>
+
+<span class="sd">        # Configuration parameters</span>
+<span class="sd">        self.confidence_threshold = 0.7</span>
+<span class="sd">        self.min_confidence = 0.6</span>
+
+<span class="sd">        # Detection patterns or rules</span>
+<span class="sd">        self.detection_patterns = [</span>
+<span class="sd">            # Add your detection patterns here</span>
+<span class="sd">        ]</span>
+
+<span class="sd">        # Any other initialization needed</span>
+
+<span class="sd">    def detect(self, context: AmbiguityContext, nlp) -&gt; List[AmbiguityDetection]:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">Detect</span> <span class="n">your</span> <span class="n">specific</span> <span class="nb">type</span> <span class="n">of</span> <span class="n">ambiguity</span><span class="o">.</span>
+
+        <span class="n">Args</span><span class="p">:</span>
+            <span class="n">context</span><span class="p">:</span> <span class="n">Sentence</span> <span class="n">context</span> <span class="k">for</span> <span class="n">analysis</span>
+            <span class="n">nlp</span><span class="p">:</span> <span class="n">SpaCy</span> <span class="n">nlp</span> <span class="nb">object</span>
+
+        <span class="n">Returns</span><span class="p">:</span>
+            <span class="n">List</span> <span class="n">of</span> <span class="n">ambiguity</span> <span class="n">detections</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        if not self.enabled:</span>
+<span class="sd">            return []</span>
+
+<span class="sd">        detections = []</span>
+
+<span class="sd">        try:</span>
+<span class="sd">            # Parse the sentence</span>
+<span class="sd">            doc = nlp(context.sentence)</span>
+
+<span class="sd">            # Implement your detection logic here</span>
+<span class="sd">            # Example structure:</span>
+<span class="sd">            for token in doc:</span>
+<span class="sd">                if self._matches_pattern(token, doc):</span>
+<span class="sd">                    detection = self._create_detection(token, doc, context)</span>
+<span class="sd">                    if detection:</span>
+<span class="sd">                        detections.append(detection)</span>
+
+<span class="sd">        except Exception as e:</span>
+<span class="sd">            # Log error but don&#39;t fail</span>
+<span class="sd">            print(f&quot;Error in {self.__class__.__name__}: {e}&quot;)</span>
+
+<span class="sd">        return detections</span>
+
+<span class="sd">    def _matches_pattern(self, token, doc) -&gt; bool:</span>
+<span class="sd">        &quot;&quot;&quot;</span><span class="n">Check</span> <span class="k">if</span> <span class="n">a</span> <span class="n">token</span> <span class="n">matches</span> <span class="n">your</span> <span class="n">detection</span> <span class="n">pattern</span><span class="o">.</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">        # Implement your pattern matching logic</span>
+<span class="s2">        return False</span>
+
+<span class="s2">    def _create_detection(self, token, doc, context: AmbiguityContext) -&gt; Optional[AmbiguityDetection]:</span>
+<span class="s2">        &quot;&quot;&quot;</span><span class="n">Create</span> <span class="n">ambiguity</span> <span class="n">detection</span> <span class="k">for</span> <span class="n">matched</span> <span class="n">pattern</span><span class="o">.</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">        try:</span>
+<span class="s2">            # Calculate confidence</span>
+<span class="s2">            confidence = self._calculate_confidence(token, doc, context)</span>
+
+<span class="s2">            if confidence &lt; self.min_confidence:</span>
+<span class="s2">                return None</span>
+
+<span class="s2">            # Extract evidence</span>
+<span class="s2">            evidence = AmbiguityEvidence(</span>
+<span class="s2">                tokens=[token.text],</span>
+<span class="s2">                linguistic_pattern=f&quot;your_pattern_</span><span class="si">{token.pos_}</span><span class="s2">&quot;,</span>
+<span class="s2">                confidence=confidence,</span>
+<span class="s2">                spacy_features={</span>
+<span class="s2">                    &#39;pos&#39;: token.pos_,</span>
+<span class="s2">                    &#39;lemma&#39;: token.lemma_,</span>
+<span class="s2">                    # Add other relevant features</span>
+<span class="s2">                }</span>
+<span class="s2">            )</span>
+
+<span class="s2">            # Define resolution strategies</span>
+<span class="s2">            resolution_strategies = [</span>
+<span class="s2">                ResolutionStrategy.RESTRUCTURE_SENTENCE,</span>
+<span class="s2">                # Add other appropriate strategies</span>
+<span class="s2">            ]</span>
+
+<span class="s2">            # Generate AI instructions</span>
+<span class="s2">            ai_instructions = [</span>
+<span class="s2">                &quot;Your specific instructions for the AI rewriter&quot;,</span>
+<span class="s2">                &quot;How to resolve this type of ambiguity&quot;</span>
+<span class="s2">            ]</span>
+
+<span class="s2">            # Create detection</span>
+<span class="s2">            detection = AmbiguityDetection(</span>
+<span class="s2">                ambiguity_type=AmbiguityType.YOUR_NEW_TYPE,</span>
+<span class="s2">                category=self.config.get_category(AmbiguityType.YOUR_NEW_TYPE),</span>
+<span class="s2">                severity=self.config.get_severity(AmbiguityType.YOUR_NEW_TYPE),</span>
+<span class="s2">                context=context,</span>
+<span class="s2">                evidence=evidence,</span>
+<span class="s2">                resolution_strategies=resolution_strategies,</span>
+<span class="s2">                ai_instructions=ai_instructions</span>
+<span class="s2">            )</span>
+
+<span class="s2">            return detection</span>
+
+<span class="s2">        except Exception as e:</span>
+<span class="s2">            print(f&quot;Error creating detection: </span><span class="si">{e}</span><span class="s2">&quot;)</span>
+<span class="s2">            return None</span>
+
+<span class="s2">    def _calculate_confidence(self, token, doc, context: AmbiguityContext) -&gt; float:</span>
+<span class="s2">        &quot;&quot;&quot;</span><span class="n">Calculate</span> <span class="n">confidence</span> <span class="n">score</span> <span class="k">for</span> <span class="n">detection</span><span class="o">.</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">        confidence = 0.5  # Base confidence</span>
+
+<span class="s2">        # Add your confidence calculation logic</span>
+<span class="s2">        # Consider factors like:</span>
+<span class="s2">        # - Pattern strength</span>
+<span class="s2">        # - Context clues</span>
+<span class="s2">        # - Sentence structure</span>
+
+<span class="s2">        return min(1.0, max(0.0, confidence))</span>
+</code></pre></div>
+
+<p>[/code]</p>
+<p><strong>Example: Double Negative Detector</strong>
+[code] 
+    """
+    Double Negative Detector</p>
+<div class="codehilite"><pre><span></span><code><span class="n">Detects</span> <span class="n">double</span> <span class="n">negatives</span> <span class="n">that</span> <span class="n">create</span> <span class="n">confusion</span> <span class="n">about</span> <span class="n">the</span> <span class="n">intended</span> <span class="n">meaning</span><span class="o">.</span>
+
+<span class="n">Example</span><span class="p">:</span> <span class="s2">&quot;This is not uncommon&quot;</span> <span class="o">-</span> <span class="n">unclear</span> <span class="k">if</span> <span class="n">it</span> <span class="n">means</span> <span class="s2">&quot;common&quot;</span> <span class="ow">or</span> <span class="s2">&quot;rare&quot;</span><span class="o">.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">from typing import List, Dict, Any, Optional</span>
+<span class="sd">import re</span>
+
+<span class="sd">from ..base_ambiguity_rule import AmbiguityDetector</span>
+<span class="sd">from ..types import (</span>
+<span class="sd">    AmbiguityType, AmbiguityCategory, AmbiguitySeverity,</span>
+<span class="sd">    AmbiguityContext, AmbiguityEvidence, AmbiguityDetection,</span>
+<span class="sd">    ResolutionStrategy, AmbiguityConfig</span>
+<span class="sd">)</span>
+
+
+<span class="sd">class DoubleNegativeDetector(AmbiguityDetector):</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">Detects</span> <span class="n">double</span> <span class="n">negatives</span> <span class="n">that</span> <span class="n">create</span> <span class="n">ambiguity</span><span class="o">.</span>
+
+    <span class="n">Identifies</span> <span class="n">sentences</span> <span class="n">where</span> <span class="n">two</span> <span class="n">negatives</span> <span class="n">are</span> <span class="n">used</span> <span class="n">together</span><span class="p">,</span>
+    <span class="n">potentially</span> <span class="n">creating</span> <span class="n">confusion</span> <span class="n">about</span> <span class="n">the</span> <span class="n">intended</span> <span class="n">meaning</span><span class="o">.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">    def __init__(self, config: AmbiguityConfig):</span>
+<span class="sd">        super().__init__(config)</span>
+<span class="sd">        self.confidence_threshold = 0.7</span>
+<span class="sd">        self.min_confidence = 0.6</span>
+
+<span class="sd">        # Negative words and prefixes</span>
+<span class="sd">        self.negative_words = {</span>
+<span class="sd">            &#39;not&#39;, &#39;no&#39;, &#39;never&#39;, &#39;nothing&#39;, &#39;nobody&#39;, &#39;nowhere&#39;,</span>
+<span class="sd">            &#39;neither&#39;, &#39;none&#39;, &#39;hardly&#39;, &#39;scarcely&#39;, &#39;barely&#39;</span>
+<span class="sd">        }</span>
+
+<span class="sd">        self.negative_prefixes = {</span>
+<span class="sd">            &#39;un&#39;, &#39;in&#39;, &#39;im&#39;, &#39;ir&#39;, &#39;il&#39;, &#39;dis&#39;, &#39;mis&#39;, &#39;non&#39;</span>
+<span class="sd">        }</span>
+
+<span class="sd">    def detect(self, context: AmbiguityContext, nlp) -&gt; List[AmbiguityDetection]:</span>
+<span class="sd">        &quot;&quot;&quot;</span><span class="n">Detect</span> <span class="n">double</span> <span class="n">negatives</span> <span class="ow">in</span> <span class="n">the</span> <span class="n">sentence</span><span class="o">.</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">        if not self.enabled:</span>
+<span class="s2">            return []</span>
+
+<span class="s2">        detections = []</span>
+
+<span class="s2">        try:</span>
+<span class="s2">            doc = nlp(context.sentence)</span>
+
+<span class="s2">            # Find negative words in the sentence</span>
+<span class="s2">            negatives = []</span>
+<span class="s2">            for token in doc:</span>
+<span class="s2">                if self._is_negative(token):</span>
+<span class="s2">                    negatives.append(token)</span>
+
+<span class="s2">            # Check for double negatives</span>
+<span class="s2">            if len(negatives) &gt;= 2:</span>
+<span class="s2">                # Check if they&#39;re close enough to be confusing</span>
+<span class="s2">                for i in range(len(negatives) - 1):</span>
+<span class="s2">                    for j in range(i + 1, len(negatives)):</span>
+<span class="s2">                        if self._forms_double_negative(negatives[i], negatives[j], doc):</span>
+<span class="s2">                            detection = self._create_detection(</span>
+<span class="s2">                                [negatives[i], negatives[j]], doc, context</span>
+<span class="s2">                            )</span>
+<span class="s2">                            if detection:</span>
+<span class="s2">                                detections.append(detection)</span>
+
+<span class="s2">        except Exception as e:</span>
+<span class="s2">            print(f&quot;Error in double negative detection: </span><span class="si">{e}</span><span class="s2">&quot;)</span>
+
+<span class="s2">        return detections</span>
+
+<span class="s2">    def _is_negative(self, token) -&gt; bool:</span>
+<span class="s2">        &quot;&quot;&quot;</span><span class="n">Check</span> <span class="k">if</span> <span class="n">a</span> <span class="n">token</span> <span class="ow">is</span> <span class="n">a</span> <span class="n">negative</span> <span class="n">word</span><span class="o">.</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">        text = token.text.lower()</span>
+<span class="s2">        lemma = token.lemma_.lower()</span>
+
+<span class="s2">        # Check direct negative words</span>
+<span class="s2">        if text in self.negative_words or lemma in self.negative_words:</span>
+<span class="s2">            return True</span>
+
+<span class="s2">        # Check negative prefixes</span>
+<span class="s2">        for prefix in self.negative_prefixes:</span>
+<span class="s2">            if text.startswith(prefix) and len(text) &gt; len(prefix):</span>
+<span class="s2">                return True</span>
+
+<span class="s2">        return False</span>
+
+<span class="s2">    def _forms_double_negative(self, neg1, neg2, doc) -&gt; bool:</span>
+<span class="s2">        &quot;&quot;&quot;</span><span class="n">Check</span> <span class="k">if</span> <span class="n">two</span> <span class="n">negatives</span> <span class="n">form</span> <span class="n">a</span> <span class="n">confusing</span> <span class="n">double</span> <span class="n">negative</span><span class="o">.</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">        # Check distance between negatives</span>
+<span class="s2">        distance = abs(neg1.i - neg2.i)</span>
+
+<span class="s2">        # Close negatives are more likely to be confusing</span>
+<span class="s2">        return distance &lt;= 5</span>
+
+<span class="s2">    def _create_detection(self, negative_tokens, doc, context: AmbiguityContext) -&gt; Optional[AmbiguityDetection]:</span>
+<span class="s2">        &quot;&quot;&quot;</span><span class="n">Create</span> <span class="n">detection</span> <span class="k">for</span> <span class="n">double</span> <span class="n">negative</span><span class="o">.</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">        try:</span>
+<span class="s2">            confidence = self._calculate_confidence(negative_tokens, doc, context)</span>
+
+<span class="s2">            if confidence &lt; self.min_confidence:</span>
+<span class="s2">                return None</span>
+
+<span class="s2">            tokens = [token.text for token in negative_tokens]</span>
+
+<span class="s2">            evidence = AmbiguityEvidence(</span>
+<span class="s2">                tokens=tokens,</span>
+<span class="s2">                linguistic_pattern=&quot;double_negative&quot;,</span>
+<span class="s2">                confidence=confidence,</span>
+<span class="s2">                spacy_features={</span>
+<span class="s2">                    &#39;negative_count&#39;: len(negative_tokens),</span>
+<span class="s2">                    &#39;negative_types&#39;: [token.pos_ for token in negative_tokens]</span>
+<span class="s2">                }</span>
+<span class="s2">            )</span>
+
+<span class="s2">            resolution_strategies = [</span>
+<span class="s2">                ResolutionStrategy.RESTRUCTURE_SENTENCE</span>
+<span class="s2">            ]</span>
+
+<span class="s2">            ai_instructions = [</span>
+<span class="s2">                &quot;Rewrite the sentence to avoid double negatives&quot;,</span>
+<span class="s2">                &quot;Use positive language where possible&quot;,</span>
+<span class="s2">                &quot;Ensure the meaning is clear and unambiguous&quot;</span>
+<span class="s2">            ]</span>
+
+<span class="s2">            detection = AmbiguityDetection(</span>
+<span class="s2">                ambiguity_type=AmbiguityType.DOUBLE_NEGATIVE,</span>
+<span class="s2">                category=self.config.get_category(AmbiguityType.DOUBLE_NEGATIVE),</span>
+<span class="s2">                severity=self.config.get_severity(AmbiguityType.DOUBLE_NEGATIVE),</span>
+<span class="s2">                context=context,</span>
+<span class="s2">                evidence=evidence,</span>
+<span class="s2">                resolution_strategies=resolution_strategies,</span>
+<span class="s2">                ai_instructions=ai_instructions</span>
+<span class="s2">            )</span>
+
+<span class="s2">            return detection</span>
+
+<span class="s2">        except Exception as e:</span>
+<span class="s2">            print(f&quot;Error creating double negative detection: </span><span class="si">{e}</span><span class="s2">&quot;)</span>
+<span class="s2">            return None</span>
+
+<span class="s2">    def _calculate_confidence(self, negative_tokens, doc, context: AmbiguityContext) -&gt; float:</span>
+<span class="s2">        &quot;&quot;&quot;</span><span class="n">Calculate</span> <span class="n">confidence</span> <span class="k">for</span> <span class="n">double</span> <span class="n">negative</span> <span class="n">detection</span><span class="o">.</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">        confidence = 0.6  # Base confidence</span>
+
+<span class="s2">        # More negatives = higher confidence</span>
+<span class="s2">        if len(negative_tokens) &gt; 2:</span>
+<span class="s2">            confidence += 0.2</span>
+
+<span class="s2">        # Close negatives = higher confidence</span>
+<span class="s2">        distances = [abs(negative_tokens[i].i - negative_tokens[i+1].i)</span>
+<span class="s2">                    for i in range(len(negative_tokens)-1)]</span>
+<span class="s2">        avg_distance = sum(distances) / len(distances) if distances else 0</span>
+
+<span class="s2">        if avg_distance &lt;= 3:</span>
+<span class="s2">            confidence += 0.2</span>
+
+<span class="s2">        return min(1.0, max(0.0, confidence))</span>
+</code></pre></div>
+
+<p>[/code]</p>
+<h3 id="step-4-update-detector-package">Step 4: Update Detector Package<a class="headerlink" href="#step-4-update-detector-package" title="Permanent link">&para;</a></h3>
+<p>Add your detector to the package's <code>_init_.py</code> file.</p>
+<p><strong>File:</strong> <code>ambiguity/detectors/_init_.py</code>
+[code] 
+    """
+    Ambiguity Detectors Package
+    """</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># ... existing imports ...</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.your_detector_name</span><span class="w"> </span><span class="kn">import</span> <span class="n">YourDetectorName</span>
+    <span class="n">__all__</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;YourDetectorName&#39;</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="k">pass</span>
+</code></pre></div>
+
+<p>[/code]</p>
+<p><strong>Example: Double Negative Detector</strong>
+[code] 
+    try:
+        from .double_negative_detector import DoubleNegativeDetector
+        <strong>all</strong>.append('DoubleNegativeDetector')
+    except ImportError:
+        pass
+[/code]</p>
+<h3 id="step-5-register-the-detector">Step 5: Register the Detector<a class="headerlink" href="#step-5-register-the-detector" title="Permanent link">&para;</a></h3>
+<p>Update the base ambiguity rule to initialize your detector.</p>
+<p><strong>File:</strong> <code>ambiguity/base_ambiguity_rule.py</code>
+[code] 
+    def _initialize_detectors(self):
+        """Initialize specific ambiguity detectors."""
+        try:
+            # ... existing detector imports ...
+            from .detectors.your_detector_name import YourDetectorName</p>
+<div class="codehilite"><pre><span></span><code>        <span class="c1"># ... existing detector initializations ...</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">detectors</span><span class="p">[</span><span class="s1">&#39;your_detector_key&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">YourDetectorName</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">)</span>
+
+    <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning: Could not import some ambiguity detectors: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">pass</span>
+</code></pre></div>
+
+<p>[/code]</p>
+<p>Also update the <code>_is_detector_enabled</code> method:
+[code] 
+    def _is_detector_enabled(self, detector_type: str) -&gt; bool:
+        """Check if a detector type is enabled."""
+        detector_mappings = {
+            # ... existing mappings ...
+            'your_detector_key': AmbiguityType.YOUR_NEW_TYPE,
+        }</p>
+<div class="codehilite"><pre><span></span><code><span class="w">    </span><span class="nx">ambiguity_type</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">detector_mappings</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="nx">detector_type</span><span class="p">)</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nx">ambiguity_type</span><span class="w"> </span><span class="k">is</span><span class="w"> </span><span class="k">not</span><span class="w"> </span><span class="nx">None</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="kp">self</span><span class="p">.</span><span class="nx">config</span><span class="p">.</span><span class="nx">is_enabled</span><span class="p">(</span><span class="nx">ambiguity_type</span><span class="p">)</span>
+</code></pre></div>
+
+<p>[/code]</p>
+<p><strong>Example: Double Negative Detector Registration</strong>
+[code] 
+    def _initialize_detectors(self):
+        """Initialize specific ambiguity detectors."""
+        try:
+            # ... existing imports ...
+            from .detectors.double_negative_detector import DoubleNegativeDetector</p>
+<div class="codehilite"><pre><span></span><code>        <span class="c1"># ... existing initializations ...</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">detectors</span><span class="p">[</span><span class="s1">&#39;double_negative&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">DoubleNegativeDetector</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">)</span>
+
+    <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning: Could not import some ambiguity detectors: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">pass</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_is_detector_enabled</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">detector_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if a detector type is enabled.&quot;&quot;&quot;</span>
+    <span class="n">detector_mappings</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="c1"># ... existing mappings ...</span>
+        <span class="s1">&#39;double_negative&#39;</span><span class="p">:</span> <span class="n">AmbiguityType</span><span class="o">.</span><span class="n">DOUBLE_NEGATIVE</span><span class="p">,</span>
+    <span class="p">}</span>
+
+    <span class="n">ambiguity_type</span> <span class="o">=</span> <span class="n">detector_mappings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">detector_type</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ambiguity_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">is_enabled</span><span class="p">(</span><span class="n">ambiguity_type</span><span class="p">)</span>
+</code></pre></div>
+
+<p>[/code]</p>
+<h3 id="step-6-add-configuration">Step 6: Add Configuration<a class="headerlink" href="#step-6-add-configuration" title="Permanent link">&para;</a></h3>
+<p>Add configuration for your detector in the YAML configuration file.</p>
+<p><strong>File:</strong> <code>ambiguity/config/ambiguity_types.yaml</code>
+[code] 
+    ambiguity_types:
+      # ... existing types ...</p>
+<div class="codehilite"><pre><span></span><code><span class="w">  </span><span class="nx">your_new_type</span><span class="p">:</span>
+<span class="w">    </span><span class="nx">enabled</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">    </span><span class="nx">category</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;semantic&quot;</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="k">or</span><span class="w"> </span><span class="nx">appropriate</span><span class="w"> </span><span class="nx">category</span>
+<span class="w">    </span><span class="nx">severity</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;medium&quot;</span><span class="w">    </span><span class="err">#</span><span class="w"> </span><span class="k">or</span><span class="w"> </span><span class="nx">appropriate</span><span class="w"> </span><span class="nx">severity</span>
+<span class="w">    </span><span class="nx">confidence_threshold</span><span class="p">:</span><span class="w"> </span><span class="m m-Double">0.7</span>
+<span class="w">    </span><span class="nx">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Brief description of your ambiguity type&quot;</span>
+</code></pre></div>
+
+<p>[/code]</p>
+<p><strong>Example: Double Negative Configuration</strong>
+[code] 
+    ambiguity_types:
+      # ... existing types ...</p>
+<div class="codehilite"><pre><span></span><code>  double_negative:
+    enabled: true
+    category: &quot;semantic&quot;
+    severity: &quot;medium&quot;
+    confidence_threshold: 0.6
+    description: &quot;Double negatives that create confusion&quot;
+</code></pre></div>
+
+<p>[/code]</p>
+<h3 id="step-7-test-your-detector">Step 7: Test Your Detector<a class="headerlink" href="#step-7-test-your-detector" title="Permanent link">&para;</a></h3>
+<p>Create test cases to verify your detector works correctly.</p>
+<p><strong>File:</strong> <code>tests/test_your_detector.py</code> (create if needed)
+[code] 
+    """
+    Tests for Your Detector Name
+    """</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ambiguity.detectors.your_detector_name</span><span class="w"> </span><span class="kn">import</span> <span class="n">YourDetectorName</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ambiguity.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">AmbiguityContext</span><span class="p">,</span> <span class="n">AmbiguityConfig</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">spacy</span>
+
+
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">detector</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create detector instance for testing.&quot;&quot;&quot;</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">AmbiguityConfig</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">YourDetectorName</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+
+
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">nlp</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create SpaCy nlp instance for testing.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">spacy</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;en_core_web_sm&quot;</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_detector_initialization</span><span class="p">(</span><span class="n">detector</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test detector initializes correctly.&quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">detector</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+    <span class="k">assert</span> <span class="n">detector</span><span class="o">.</span><span class="n">enabled</span> <span class="ow">is</span> <span class="kc">True</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_detects_ambiguity</span><span class="p">(</span><span class="n">detector</span><span class="p">,</span> <span class="n">nlp</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test detector finds ambiguity in sample text.&quot;&quot;&quot;</span>
+    <span class="n">context</span> <span class="o">=</span> <span class="n">AmbiguityContext</span><span class="p">(</span>
+        <span class="n">sentence_index</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">sentence</span><span class="o">=</span><span class="s2">&quot;Your test sentence with ambiguity&quot;</span>
+    <span class="p">)</span>
+
+    <span class="n">detections</span> <span class="o">=</span> <span class="n">detector</span><span class="o">.</span><span class="n">detect</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">nlp</span><span class="p">)</span>
+
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">detections</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+    <span class="k">assert</span> <span class="n">detections</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">ambiguity_type</span> <span class="o">==</span> <span class="n">AmbiguityType</span><span class="o">.</span><span class="n">YOUR_NEW_TYPE</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_no_false_positives</span><span class="p">(</span><span class="n">detector</span><span class="p">,</span> <span class="n">nlp</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test detector doesn&#39;t flag clear sentences.&quot;&quot;&quot;</span>
+    <span class="n">context</span> <span class="o">=</span> <span class="n">AmbiguityContext</span><span class="p">(</span>
+        <span class="n">sentence_index</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">sentence</span><span class="o">=</span><span class="s2">&quot;This is a clear sentence with no ambiguity.&quot;</span>
+    <span class="p">)</span>
+
+    <span class="n">detections</span> <span class="o">=</span> <span class="n">detector</span><span class="o">.</span><span class="n">detect</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">nlp</span><span class="p">)</span>
+
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">detections</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
+</code></pre></div>
+
+<p>[/code]</p>
+<h2 id="files-summary">Files Summary<a class="headerlink" href="#files-summary" title="Permanent link">&para;</a></h2>
+<p>When adding a new ambiguity detector, you need to update these files:</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Purpose</th>
+<th>Required</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ambiguity/types.py</code></td>
+<td>Add new ambiguity type enum and configuration</td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code>ambiguity/detectors/your_detector.py</code></td>
+<td>Implement the detector class</td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code>ambiguity/detectors/_init_.py</code></td>
+<td>Register detector in package</td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code>ambiguity/base_ambiguity_rule.py</code></td>
+<td>Initialize and enable detector</td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code>ambiguity/config/ambiguity_types.yaml</code></td>
+<td>Configure detector settings</td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code>tests/test_your_detector.py</code></td>
+<td>Create test cases</td>
+<td>Recommended</td>
+</tr>
+</tbody>
+</table>
+<h2 id="best-practices">Best Practices<a class="headerlink" href="#best-practices" title="Permanent link">&para;</a></h2>
+<h3 id="detection-logic">Detection Logic<a class="headerlink" href="#detection-logic" title="Permanent link">&para;</a></h3>
+<p>* <strong>Be Specific</strong> : Target specific patterns rather than overly broad detection</p>
+<p>* <strong>Use Confidence Scores</strong> : Implement meaningful confidence calculations</p>
+<p>* <strong>Consider Context</strong> : Use surrounding sentences when relevant</p>
+<p>* <strong>Handle Edge Cases</strong> : Account for unusual sentence structures</p>
+<h3 id="performance">Performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h3>
+<p>* <strong>Efficient Patterns</strong> : Use efficient regex and SpaCy operations</p>
+<p>* <strong>Early Returns</strong> : Return early when conditions aren't met</p>
+<p>* <strong>Error Handling</strong> : Gracefully handle parsing errors</p>
+<h3 id="integration">Integration<a class="headerlink" href="#integration" title="Permanent link">&para;</a></h3>
+<p>* <strong>Consistent Naming</strong> : Follow existing naming conventions</p>
+<p>* <strong>Standard Interface</strong> : Implement all required methods</p>
+<p>* <strong>Configuration</strong> : Make behavior configurable through YAML</p>
+<p>* <strong>Documentation</strong> : Include clear docstrings and examples</p>
+<h3 id="testing">Testing<a class="headerlink" href="#testing" title="Permanent link">&para;</a></h3>
+<p>* <strong>Positive Cases</strong> : Test that ambiguity is detected</p>
+<p>* <strong>Negative Cases</strong> : Test that clear text isn't flagged</p>
+<p>* <strong>Edge Cases</strong> : Test unusual sentence structures</p>
+<p>* <strong>Performance</strong> : Test with large documents</p>
+<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
+<h3 id="common-issues">Common Issues<a class="headerlink" href="#common-issues" title="Permanent link">&para;</a></h3>
+<p><strong>Detector Not Found</strong> - Check that the detector is properly imported in <code>_init_.py</code> - Verify the detector class name matches the import</p>
+<p><strong>Detector Not Running</strong> - Ensure the detector is registered in <code>_initialize_detectors</code> - Check that the detector type is enabled in configuration - Verify the detector mapping in <code>_is_detector_enabled</code></p>
+<p><strong>Low Detection Accuracy</strong> - Adjust confidence thresholds - Refine detection patterns - Consider more context information - Review test cases for edge cases</p>
+<p><strong>Performance Issues</strong> - Profile detector performance with large texts - Optimize pattern matching logic - Consider caching frequently used computations</p>
+<h3 id="debug-mode">Debug Mode<a class="headerlink" href="#debug-mode" title="Permanent link">&para;</a></h3>
+<p>Enable debug output to troubleshoot detection issues:
+[code] 
+    # In your detector class
+    def detect(self, context: AmbiguityContext, nlp) -&gt; List[AmbiguityDetection]:
+        if self.debug:
+            print(f"Analyzing: {context.sentence}")</p>
+<div class="codehilite"><pre><span></span><code><span class="w">    </span>#<span class="w"> </span>...<span class="w"> </span><span class="nv">detection</span><span class="w"> </span><span class="nv">logic</span><span class="w"> </span>...
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nv">self</span>.<span class="nv">debug</span><span class="w"> </span><span class="nv">and</span><span class="w"> </span><span class="nv">detections</span>:
+<span class="w">        </span><span class="nv">print</span><span class="ss">(</span><span class="nv">f</span><span class="s2">&quot;Found {len(detections)} detections&quot;</span><span class="ss">)</span>
+
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nv">detections</span>
+</code></pre></div>
+
+<p>[/code]</p>
+<h2 id="conclusion">Conclusion<a class="headerlink" href="#conclusion" title="Permanent link">&para;</a></h2>
+<p>Adding a new ambiguity detector involves:</p>
+<p>1. <strong>Defining the ambiguity type</strong> in the type system</p>
+<p>2. <strong>Implementing detection logic</strong> in a dedicated detector class</p>
+<p>3. <strong>Registering the detector</strong> with the ambiguity system</p>
+<p>4. <strong>Configuring the detector</strong> through YAML settings</p>
+<p>5. <strong>Testing thoroughly</strong> with various text samples</p>
+<p>The modular design makes it straightforward to add new detectors while maintaining system stability and performance. Each detector operates independently, allowing for focused development and testing of specific ambiguity types.</p>
+<p>Last updated 2025-09-22 13:41:04 +0530 </p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../how-to-add-new-rule/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Add a New Rule">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Add a New Rule
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../how-to-add-new-model/" class="md-footer__link md-footer__link--next" aria-label="Next: Add a New AI Model">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Add a New AI Model
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "search.suggest", "search.highlight", "content.code.copy", "navigation.footer", "content.action.edit"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../search/main.js"></script>
+      
+    
+  </body>
+</html>

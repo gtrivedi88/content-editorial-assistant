@@ -1,0 +1,119 @@
+# Claims and Recommendations Rule Configuration
+# IBM Style Guide (Page 279): Do not make unsubstantiated claims.
+#
+# HOW TO MAINTAIN:
+# - Add new claim phrases to the appropriate category below
+# - No code changes needed — just edit this file and restart.
+
+# Unsubstantiated claim phrases that should be flagged
+# Each entry has a phrase and the IBM Style recommendation
+claim_phrases:
+  # Absolute/superlative claims (highest risk)
+  absolute_claims:
+    - phrase: guaranteed
+      suggestion: "Avoid absolute guarantees. Describe specific commitments instead."
+    - phrase: guarantee
+      suggestion: "Avoid absolute guarantees. Describe specific commitments instead."
+    - phrase: guarantees
+      suggestion: "Avoid absolute guarantees. Describe specific commitments instead."
+    - phrase: bulletproof
+      suggestion: "No product is bulletproof. Describe specific security features instead."
+    - phrase: always
+      suggestion: "Avoid absolutes. Use 'typically' or 'in most cases' instead."
+    - phrase: never
+      suggestion: "Avoid absolutes. Use 'rarely' or 'in most cases does not' instead."
+    - phrase: best
+      suggestion: "Avoid superlatives unless substantiated with data."
+    - phrase: fastest
+      suggestion: "Avoid superlatives unless substantiated with data."
+    - phrase: safest
+      suggestion: "Avoid superlatives unless substantiated with data."
+    - phrase: most secure
+      suggestion: "Avoid superlatives unless substantiated with data."
+
+  # Perceived benefit claims (IBM Style p.279)
+  benefit_claims:
+    - phrase: simple to use
+      suggestion: "Avoid subjective claims. Describe specific usability features instead."
+    - phrase: effortless
+      suggestion: "Avoid subjective claims. Users may not find it effortless."
+    - phrase: user-friendly
+      suggestion: "Avoid subjective claims. Describe specific usability features instead."
+    - phrase: easy to use
+      suggestion: "Avoid subjective claims. Describe specific usability features instead."
+    - phrase: easy to understand
+      suggestion: "Avoid subjective claims. Users may not find it easy."
+    - phrase: future-proof
+      suggestion: "No technology is future-proof. Say 'designed for longevity' instead."
+    - phrase: future proof
+      suggestion: "No technology is future-proof. Say 'designed for longevity' instead."
+    - phrase: seamless
+      suggestion: "Avoid subjective claims. Describe specific integration features instead."
+    - phrase: seamlessly
+      suggestion: "Avoid subjective claims. Describe the integration approach instead."
+    - phrase: turnkey
+      suggestion: "Avoid subjective claims. Describe what is included instead."
+    - phrase: out of the box
+      suggestion: "Avoid subjective claims. Describe default capabilities instead."
+    - phrase: out-of-the-box
+      suggestion: "Avoid subjective claims. Describe default capabilities instead."
+    - phrase: plug and play
+      suggestion: "Avoid subjective claims. Describe compatibility features instead."
+
+  # Security claims (IBM Style p.280)
+  security_claims:
+    - phrase: secure
+      suggestion: "Avoid general security claims. Use 'security enhanced' or describe specific security features."
+    - phrase: provides secure functionality
+      suggestion: "Describe specific security features instead of making general claims."
+    - phrase: most secure
+      suggestion: "Avoid security superlatives. Describe specific security certifications."
+    - phrase: completely secure
+      suggestion: "No product is completely secure. Describe specific security measures."
+    - phrase: hack-proof
+      suggestion: "No product is hack-proof. Describe specific security features."
+    - phrase: unhackable
+      suggestion: "No product is unhackable. Describe specific security measures."
+
+  # Environmental claims (IBM Style p.279-280)
+  environmental_claims:
+    - phrase: green
+      suggestion: "Environmental claims need legal approval. Be specific about environmental benefits."
+    - phrase: eco-friendly
+      suggestion: "Environmental claims need legal approval. Be specific about certifications."
+    - phrase: environmentally friendly
+      suggestion: "Environmental claims need legal approval. Be specific about certifications."
+    - phrase: carbon neutral
+      suggestion: "Environmental claims need legal approval and substantiation."
+    - phrase: sustainable
+      suggestion: "Environmental claims need legal approval. Be specific about what is sustainable."
+
+  # Performance claims (IBM Style p.279)
+  performance_claims:
+    - phrase: improves performance
+      suggestion: "Say 'can improve' or 'is designed to improve' performance instead."
+    - phrase: increases performance
+      suggestion: "Say 'can increase' or 'is designed to increase' performance instead."
+    - phrase: boosts performance
+      suggestion: "Say 'can help improve' or 'is designed to improve' performance instead."
+
+  # "Free" claims (IBM Style p.280)
+  free_claims:
+    - phrase: free
+      suggestion: "Use 'at no additional charge' or 'complimentary' instead of 'free'."
+
+  # Best practice claims (IBM Style p.280)
+  best_practice_claims:
+    - phrase: best practice
+      suggestion: "Use 'best practice' with caution. Write more descriptive guidance instead."
+    - phrase: best practices
+      suggestion: "Use 'best practices' with caution. Write more descriptive guidance instead."
+
+  # Recommendation claims (IBM Style p.280)
+  recommendation_claims:
+    - phrase: we recommend
+      suggestion: "Avoid vague recommendations. Describe why the action is beneficial."
+    - phrase: it is recommended
+      suggestion: "Avoid passive recommendations. Describe why the action is beneficial."
+    - phrase: recommended
+      suggestion: "Avoid vague recommendations. Describe why the action is beneficial."

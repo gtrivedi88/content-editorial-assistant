@@ -1,0 +1,26 @@
+# UI Elements configuration for UIElementsRule
+# Verb-to-element mappings based on IBM Style Guide (p.255-273).
+
+# Correct verbs per UI element type
+element_verbs:
+  button: click
+  checkbox: select
+  radio_button: click
+  link: click
+  tab: click
+  menu: click
+  drop_down_list: select
+  list: select
+  list_box: select
+  combo_box: select
+  field: type
+  slider: move
+  switch: set
+  expandable_section: expand
+
+# Food names that should not be used for UI elements
+food_names:
+  hamburger menu: main menu icon
+  kebab icon: options icon
+  kebab menu: options menu
+  toast notification: notification

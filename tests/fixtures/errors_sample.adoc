@@ -1,0 +1,34 @@
+= Configuring the Openshift Container Platform
+:_mod-docs-content-type: PROCEDURE
+
+This document explains how to configure the Openshift Container Platform for production deployments.
+
+The platform is basically a Kubernetes distribution that provides pretty much everything you need for container orchestration.
+
+== Prerequisites
+
+* You don't need prior experience with container platforms.
+* Ensure you have access to the the cluster credentials.
+* Install curl on your local machine before proceeding.
+
+== Procedure
+
+. The server was restarted by the administrator after the initial setup.
+. Create, update and delete resources using the `SELECT` command.
+. Run the following command to verify your installation:
++
+----
+oc login https://api.example.com:6443
+----
+
+. Configure the storage backend for your deployment.
+
+== Verification
+
+The configuration was applied to the London datacenter instances.
+
+Verify that all pods are running and the services are accessible from the external network.
+
+== Additional Resources
+
+For more information, refer to the official documentation and community forums for guidance on advanced configuration options.

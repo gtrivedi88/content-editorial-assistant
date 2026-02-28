@@ -1,0 +1,494 @@
+# Getting started
+
+Note |  **This guide is for developers and contributors** who want to run Content Editorial Assistant locally or contribute to the project. If you just want to use the application, it is already hosted. Contact the team for access.  
+---|---  
+  
+## Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+**Critical requirement:** * Python 3.12 or higher (older versions WILL NOT WORK) * pip (Python package manager) * Git (for source control)
+
+**Optional for enhanced features:** * Ollama (for AI rewriting capabilities) * Ruby + Asciidoctor (for full AsciiDoc support) * Node.js (for documentation building only)
+
+## Super simple setup (just 3 steps!)
+
+### Step 1: Create virtual environment
+
+**Windows:**
+[code] 
+    # Navigate to project folder
+    cd C:\path\to\content-editorial-assistant
+    
+    # Create and activate virtual environment (ensure Python 3.12 is installed)
+    python -m venv venv
+    venv\Scripts\activate
+[/code]
+
+**Linux (Fedora/RHEL-based):**
+[code] 
+    # Update system and install Python 3.12
+    sudo dnf clean all
+    sudo dnf update
+    sudo dnf install python3.12
+    
+    # Navigate to project folder
+    cd ~/path/to/content-editorial-assistant
+    
+    # Create and activate virtual environment
+    python3.12 -m venv venv
+    source venv/bin/activate
+[/code]
+
+**macOS:**
+[code] 
+    # Navigate to project folder
+    cd ~/path/to/content-editorial-assistant
+    
+    # Create and activate virtual environment (ensure Python 3.12 is installed)
+    python3.12 -m venv venv
+    source venv/bin/activate
+[/code]
+
+**You should see`(venv)` at the start of your command prompt**
+
+### Step 2: Install requirements
+[code] 
+    # Upgrade pip first
+    pip install --upgrade pip
+    
+    # Install all Python packages (conflict-free!)
+    pip install -r requirements.txt
+[/code]
+
+### Step 3: Start the application
+[code] 
+    python main.py
+[/code]
+
+**Then visit:** <http://localhost:5000>
+
+**That 's it!** The application will auto-setup everything on first run: * SpaCy language models * NLTK data downloads * Directory creation * Dependency verification * Ollama detection & guidance
+
+## Daily Usage
+
+**Always activate your virtual environment first:**
+
+**Windows:**
+[code] 
+    cd C:\path\to\content-editorial-assistant
+    venv\Scripts\activate
+    python main.py
+[/code]
+
+**Linux/macOS:**
+[code] 
+    cd ~/path/to/content-editorial-assistant
+    source venv/bin/activate
+    python main.py
+[/code]
+
+## AI Features (Optional)
+
+For the best AI rewriting experience, install **Ollama** with our recommended model:
+
+### Windows
+
+  1. Download from: <https://ollama.com/download/windows>
+
+  2. Run installer
+
+  3. Open Command Prompt: `ollama pull llama3:8b`
+
+### macOS
+
+  1. Download from: <https://ollama.com/download/mac>
+
+  2. Install .dmg file
+
+  3. Open Terminal: `ollama pull llama3:8b`
+
+### Linux
+[code] 
+    curl -fsSL https://ollama.com/install.sh | sh
+    ollama pull llama3:8b
+[/code]
+
+**Recommended Model:** * `llama3:8b` \- **Superior writing quality and reasoning (4.7GB)** **Recommended**
+
+**Alternative Models (if needed):** * `llama3.2:3b` \- Good balance of speed and quality (2GB)
+
+**Why llama3:8b?** * Superior writing quality and reasoning capabilities * Excellent for complex technical writing improvements * Better understanding of context and nuance * Optimal performance with our two-pass iterative process
+
+## AsciiDoc Support (Optional)
+
+For **AsciiDoc** document parsing and analysis, install the **asciidoctor** Ruby gem:
+
+### Prerequisites: Ruby Installation
+
+**Windows:** 1\. Download from: <https://rubyinstaller.org/> 2\. Run the installer (includes Ruby + DevKit) 3\. Open Command Prompt and verify: `ruby --version`
+
+**macOS:**
+[code] 
+    # Ruby is usually pre-installed. If not:
+    brew install ruby
+    
+    # Verify installation
+    ruby --version
+[/code]
+
+**Linux:**
+[code] 
+    # Ubuntu/Debian
+    sudo apt-get update
+    sudo apt-get install ruby-full
+    
+    # Fedora/RHEL
+    sudo dnf install ruby ruby-devel
+    
+    # Verify installation
+    ruby --version
+[/code]
+
+### Install Asciidoctor Gem
+[code] 
+    # Install asciidoctor
+    gem install asciidoctor
+    
+    # Or with sudo if needed
+    sudo gem install asciidoctor
+    
+    # Verify installation
+    asciidoctor --version
+[/code]
+
+### Benefits of Asciidoctor
+
+  * **High-Performance Parsing** : Uses persistent Ruby server (15x faster than subprocess)
+
+  * **Full AsciiDoc Support** : Complete parsing of admonitions, tables, includes, etc.
+
+  * **Accurate Structure Analysis** : Proper block-level content analysis
+
+  * **Document Title Detection** : Correctly identifies and displays document titles
+
+**Without Asciidoctor:** * AsciiDoc parsing will be limited to basic text extraction * Document structure analysis may be incomplete * Style analysis won't recognize AsciiDoc-specific elements
+
+## Configuration
+
+### Application Configuration
+
+The main configuration is in `config.py`. Key settings include:
+
+  * **File Upload Configuration** : 16MB max size, multiple format support
+
+  * **Style Guide Rules** : 45+ IBM Style Guide-based rules
+
+  * **Database Integration** : Session and feedback management
+
+  * **Performance Monitoring** : Error rates and processing metrics
+
+  * **Block Processing** : Timeout and batch size configuration
+
+### Using a Different AI Model (Optional)
+
+If you prefer to use a different model than our recommended `llama3:8b`:
+
+**Step 1: Update Configuration** Edit `config.py` and change line 45:
+[code] 
+    # Change this line:
+    OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'llama3:8b')
+    
+    # To your preferred model, for example:
+    OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'llama3.2:3b')
+[/code]
+
+**Step 2: Pull Your Chosen Model**
+[code] 
+    # For llama3.2:3b (faster, smaller)
+    ollama pull llama3.2:3b
+    
+    # Or any other compatible model
+    ollama pull your-chosen-model
+[/code]
+
+**Step 3: Restart the Application**
+[code] 
+    python main.py
+[/code]
+
+## Application Features
+
+### Iterative AI Rewriting
+
+  * **Two-Pass Process** : AI reviews and refines its own output
+
+  * **Local Ollama Integration** : Privacy-first with Llama models
+
+  * **Real-Time Progress** : Watch the AI improvement process step-by-step
+
+  * **Smart Confidence Scoring** : Know how much the AI improved your text
+
+### Comprehensive Analysis
+
+  * **Grade Level Assessment** : Targets 9th-11th grade readability
+
+  * **Multiple Readability Scores** : Flesch, Gunning Fog, SMOG, Coleman-Liau, ARI
+
+  * **Style Issues Detection** : Passive voice, sentence length, wordiness
+
+  * **Technical Writing Metrics** : Custom scoring for documentation
+
+### Multi-Format Support
+
+  * **Text Files** : .txt, .md (Markdown)
+
+  * **Documents** : .docx (Microsoft Word)
+
+  * **Technical Formats** : .adoc (AsciiDoc), .dita (DITA)
+
+  * **PDFs** : Extract and analyze existing documents
+
+  * **Direct Input** : Paste text directly into the interface
+
+### Modern Interface
+
+  * **Real-Time Analysis** : Instant feedback on text quality
+
+  * **Interactive Error Highlighting** : Click to see specific issues
+
+  * **Progress Transparency** : No fake spinners - see actual AI work
+
+  * **Responsive Design** : Works on desktop, tablet, and mobile
+
+## Using Content Editorial Assistant
+
+### 1\. Access the Web Interface
+
+Open your browser to `<http://localhost:5000>`
+
+### 2\. Input Your Content
+
+**Option 1: Upload a Document** * Click "Choose File" and select supported formats: \- PDF, DOCX, Markdown, AsciiDoc, DITA, TXT * Maximum file size: 16MB * The system will automatically extract and prepare text
+
+**Option 2: Direct Text Input** * Paste your text directly into the text area * Perfect for quick analysis of specific content sections
+
+### 3\. Configure Analysis (Optional)
+
+  * **Content Type** : Select concept, procedure, or reference documentation
+
+  * **Confidence Threshold** : Adjust error sensitivity (0.0-1.0)
+
+  * **Format Hint** : Override automatic format detection if needed
+
+### 4\. Analyze Your Content
+
+Click "Analyze" to start comprehensive analysis:
+
+  * **Real-time Progress** : Watch each analysis stage via WebSocket updates
+
+  * **Structural Parsing** : Document blocks are identified and analyzed individually
+
+  * **Rule Application** : 45+ style rules check grammar, punctuation, and structure
+
+  * **Ambiguity Detection** : Specialized detectors find unclear references and risks
+
+  * **Readability Scoring** : Multiple metrics assess reading difficulty
+
+### 5\. Review Analysis Results
+
+The analysis provides detailed feedback:
+
+  * **Error Breakdown** : Categorized by type, severity, and confidence
+
+  * **Block-Level Results** : See issues within document structure context
+
+  * **Statistics Dashboard** : Readability scores, word counts, and improvement metrics
+
+  * **Confidence Details** : Understand error reliability with confidence thresholds
+
+### 6\. AI-Powered Rewriting (Optional)
+
+If Ollama is configured:
+
+  * **Block Rewriting** : Click "Rewrite" on individual blocks with errors
+
+  * **Two-Pass Process** : Watch AI improve and then refine its own suggestions
+
+  * **Progress Tracking** : Real-time updates show AI reasoning and improvements
+
+  * **Quality Scoring** : Confidence metrics show improvement effectiveness
+
+### 7\. Generate Reports
+
+  * **PDF Reports** : Comprehensive analysis reports with all findings
+
+  * **Structured Data** : Export results as JSON for integration with other tools
+
+  * **Progress History** : Track improvements across multiple analysis sessions
+
+## API Integration
+
+### REST API Examples
+
+**Upload and Extract Text:**
+[code] 
+    curl -X POST \
+      -F "file=@document.pdf" \
+      -F "format_hint=pdf" \
+      http://localhost:5000/upload
+[/code]
+
+**Analyze Content:**
+[code] 
+    curl -X POST \
+      -H "Content-Type: application/json" \
+      -d '{
+        "content": "Your text to analyze...",
+        "content_type": "concept",
+        "confidence_threshold": 0.5
+      }' \
+      http://localhost:5000/analyze
+[/code]
+
+**AI Block Rewriting:**
+[code] 
+    curl -X POST \
+      -H "Content-Type: application/json" \
+      -d '{
+        "block_content": "Text to rewrite...",
+        "block_errors": [{"type": "passive_voice", "confidence": 0.8}],
+        "block_type": "paragraph",
+        "block_id": "block_1"
+      }' \
+      http://localhost:5000/rewrite-block
+[/code]
+
+### WebSocket API
+
+Real-time progress updates:
+[code] 
+    const socket = io('http://localhost:5000');
+    
+    // Join a session for targeted updates
+    socket.emit('join_session', { session_id: 'session_123' });
+    
+    // Listen for progress updates
+    socket.on('progress', (data) => {
+        console.log(`Progress: ${data.progress}% - ${data.message}`);
+    });
+    
+    // Listen for completion
+    socket.on('completion', (data) => {
+        console.log('Analysis complete:', data);
+    });
+    
+    // Listen for block processing
+    socket.on('block_processing_start', (data) => {
+        console.log(`Starting rewrite for block: ${data.block_id}`);
+    });
+[/code]
+
+## Troubleshooting
+
+### Quick Fixes
+
+**Python Version Issues:**
+[code] 
+    # CRITICAL: You must use Python 3.12+
+    python3.12 --version  # Should show 3.12.x
+    
+    # Create venv with EXACT Python version
+    python3.12 -m venv venv
+[/code]
+
+**Virtual Environment Issues:**
+[code] 
+    # Always activate venv first (you should see (venv) in prompt)
+    source venv/bin/activate    # Linux/macOS
+    venv\Scripts\activate      # Windows
+    
+    # Verify Python version in venv
+    python --version           # Should show Python 3.12.x
+[/code]
+
+**Package Installation Issues:**
+[code] 
+    # Nuclear option: fresh reinstall
+    rm -rf venv
+    python3.12 -m venv venv
+    source venv/bin/activate
+    pip install --upgrade pip
+    pip install -r requirements.txt --no-cache-dir
+[/code]
+
+**Quick Setup Verification:**
+[code] 
+    # Verify everything is working
+    python -c "import flask, spacy, nltk; print('Core packages OK')"
+    python -c "import spacy; spacy.load('en_core_web_sm'); print('SpaCy model OK')"
+[/code]
+
+**Ollama Connection Issues:**
+[code] 
+    # Check if Ollama is running
+    ollama list
+    
+    # Test model availability
+    ollama run llama3:8b "Hello, test message"
+    
+    # Restart Ollama if needed
+    # Linux:
+    sudo systemctl restart ollama
+    # macOS/Windows: Restart Ollama app
+[/code]
+
+### Log Files
+
+Check application logs in the `logs/` directory:
+
+  * `app.log` \- Main application logs with detailed processing information
+
+  * Error information is also displayed in the console during development
+
+### Getting Help
+
+For comprehensive troubleshooting guidance, the main README.md includes: * Platform-specific installation guides * Dependency resolution steps * Complete setup verification scripts * Common error solutions
+
+## Example Analysis
+
+**Input Text:** > "In order to facilitate the implementation of the new system, it was decided by the team that the best approach would be to utilize a modular architecture."
+
+**AI Analysis Detects:** * Passive voice: "it was decided" * Wordy phrases: "in order to", "utilize" * Long sentence: 25 words (target: 15-20) * Grade level: 14th (target: 9th-11th)
+
+**AI Rewrite (Pass 1):** > "To implement the new system, the team decided to use a modular architecture."
+
+**AI Rewrite (Pass 2 - Final):** > "The team chose a modular architecture to implement the new system."
+
+**Improvements:** * Reduced from 25 to 10 words * Converted to active voice * Removed wordy phrases * Lowered to 9th grade level * Improved clarity and flow
+
+## Next Steps
+
+  * [Explore the Complete System Architecture](<architecture:architecture.html>)
+
+  * [Add Custom Style Rules](<how-to:how-to-add-new-rule.html>)
+
+  * [Create Custom Ambiguity Detectors](<how-to:how-to-add-new-ambiguity-detector.html>)
+
+  * [Integrate New AI Models](<how-to:how-to-add-new-model.html>)
+
+  * [Complete API Documentation](<api-reference.html>)
+
+## Support
+
+For additional help:
+
+  * Review the comprehensive main README.md for detailed setup instructions
+
+  * Check the architecture documentation for system understanding
+
+  * Submit issues via GitLab for bug reports and feature requests
+
+  * Explore the how-to guides for extending the system
+
+Last updated 2025-11-25 17:06:03 +0530 

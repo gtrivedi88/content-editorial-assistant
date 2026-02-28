@@ -1,0 +1,248 @@
+/* ================================================================
+   CEA Issue Panel — Score, Filters, Cards, Progress
+   ================================================================ */
+
+/* ── Score Section ── */
+
+.cea-score-section {
+  padding: var(--pf-v5-global--spacer--lg);
+  text-align: center;
+}
+
+.cea-score-ring {
+  width: 88px;
+  height: 88px;
+  margin: 0 auto var(--pf-v5-global--spacer--sm);
+  position: relative;
+}
+
+.cea-score-ring svg {
+  transform: rotate(-90deg);
+}
+
+.cea-score-ring__bg {
+  fill: none;
+  stroke: var(--pf-v5-global--BorderColor--100);
+  stroke-width: 6;
+}
+
+.cea-score-ring__fill {
+  fill: none;
+  stroke-width: 6;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s ease, stroke 0.3s;
+}
+
+.cea-score-ring__value {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--pf-v5-global--Color--100);
+}
+
+.cea-score-label {
+  font-size: var(--pf-v5-global--FontSize--sm);
+  color: var(--pf-v5-global--Color--200);
+}
+
+/* (Filter chips removed — replaced by group-list in cea-grammarly.css) */
+
+/* ── Resolved Counter ── */
+
+.cea-resolved-counter {
+  text-align: center;
+  padding: var(--pf-v5-global--spacer--sm);
+  font-size: var(--pf-v5-global--FontSize--xs);
+  color: var(--pf-v5-global--Color--200);
+  border-bottom: 1px solid var(--pf-v5-global--BorderColor--100);
+}
+
+.cea-resolved-counter strong {
+  color: var(--pf-v5-global--success-color--100);
+}
+
+/* ── Issue Cards ── */
+
+.cea-issue-card {
+  background: var(--pf-v5-global--BackgroundColor--100);
+  border: 1.5px solid var(--pf-v5-global--BorderColor--100);
+  border-radius: var(--pf-v5-global--BorderRadius--sm);
+  padding: var(--pf-v5-global--spacer--md);
+  margin-bottom: var(--pf-v5-global--spacer--sm);
+  cursor: pointer;
+  transition: border-color var(--cea-transition-speed), box-shadow var(--cea-transition-speed);
+}
+
+.cea-issue-card:hover {
+  border-color: var(--pf-v5-global--Color--200);
+}
+
+.cea-issue-card.cea-issue-card--active {
+  border-color: var(--pf-v5-global--primary-color--100);
+  box-shadow: 0 0 0 1px var(--pf-v5-global--primary-color--100);
+}
+
+.cea-issue-card.cea-issue-card--resolved {
+  opacity: 0.5;
+  border-style: dashed;
+  pointer-events: none;
+}
+
+.cea-issue-card.cea-issue-card--dismissed {
+  display: none;
+}
+
+.cea-issue-card__header {
+  display: flex;
+  align-items: center;
+  gap: var(--pf-v5-global--spacer--sm);
+  margin-bottom: var(--pf-v5-global--spacer--sm);
+}
+
+.cea-issue-type-badge {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: var(--pf-v5-global--BackgroundColor--200, #f0f0f0);
+  color: var(--pf-v5-global--Color--200, #6a6e73);
+}
+
+.cea-issue-card__rule {
+  font-size: var(--pf-v5-global--FontSize--xs);
+  color: var(--pf-v5-global--Color--200);
+}
+
+.cea-issue-card__flagged {
+  font-size: var(--pf-v5-global--FontSize--sm);
+  margin-bottom: var(--pf-v5-global--spacer--xs);
+}
+
+.cea-issue-card__flagged-text {
+  font-weight: 600;
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+  opacity: 0.7;
+}
+
+.cea-issue-card__message {
+  font-size: var(--pf-v5-global--FontSize--sm);
+  color: var(--pf-v5-global--Color--200);
+  line-height: 1.5;
+  margin-bottom: var(--pf-v5-global--spacer--sm);
+}
+
+.cea-issue-card__suggestion {
+  display: flex;
+  align-items: center;
+  gap: var(--pf-v5-global--spacer--sm);
+  padding: var(--pf-v5-global--spacer--sm);
+  background: rgba(56, 132, 0, 0.06);
+  border: 1px solid rgba(56, 132, 0, 0.15);
+  border-radius: var(--pf-v5-global--BorderRadius--sm);
+  margin-bottom: var(--pf-v5-global--spacer--sm);
+}
+
+.cea-issue-card__suggestion-icon {
+  color: var(--pf-v5-global--success-color--100);
+  font-size: var(--pf-v5-global--FontSize--xs);
+  flex-shrink: 0;
+}
+
+.cea-issue-card__suggestion-text {
+  font-size: var(--pf-v5-global--FontSize--sm);
+  font-weight: 600;
+  color: var(--pf-v5-global--success-color--100);
+}
+
+.cea-issue-card__actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* Issue action buttons — match prototype exactly */
+.cea-issue-btn {
+  padding: 5px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: 0.25s ease;
+  line-height: 1.4;
+  background: none;
+}
+
+.cea-issue-btn--accept {
+  background: var(--pf-v5-global--primary-color--100);
+  color: #fff;
+  border-color: var(--pf-v5-global--primary-color--100);
+}
+
+.cea-issue-btn--accept:hover {
+  background: var(--pf-v5-global--primary-color--200, #004080);
+}
+
+.cea-issue-btn--dismiss {
+  border: 1px solid var(--pf-v5-global--BorderColor--100, #e5e7eb);
+  color: var(--pf-v5-global--Color--200);
+  background: none;
+}
+
+.cea-issue-btn--dismiss:hover {
+  border-color: var(--pf-v5-global--Color--200);
+}
+
+.cea-issue-btn--feedback {
+  padding: 5px 8px;
+  color: var(--pf-v5-global--Color--200);
+  border: none;
+  background: none;
+}
+
+.cea-issue-btn--feedback:hover {
+  color: var(--pf-v5-global--Color--100);
+}
+
+.cea-issue-card__citation {
+  font-size: 11px;
+  color: var(--pf-v5-global--Color--200);
+  margin-top: var(--pf-v5-global--spacer--sm);
+  padding-top: var(--pf-v5-global--spacer--sm);
+  border-top: 1px solid var(--pf-v5-global--BorderColor--100);
+}
+
+/* (Progress steps removed — replaced by checking-indicator in cea-grammarly.css) */
+
+/* ── Empty State ── */
+
+.cea-empty-state {
+  padding: var(--pf-v5-global--spacer--3xl) var(--pf-v5-global--spacer--xl);
+  text-align: center;
+}
+
+.cea-empty-state__icon {
+  font-size: 2.5rem;
+  color: var(--pf-v5-global--Color--200);
+  opacity: 0.4;
+  margin-bottom: var(--pf-v5-global--spacer--md);
+}
+
+.cea-empty-state__title {
+  font-size: var(--pf-v5-global--FontSize--lg);
+  font-weight: 600;
+  margin: 0 0 var(--pf-v5-global--spacer--sm) 0;
+  color: var(--pf-v5-global--Color--100);
+}
+
+.cea-empty-state__body {
+  font-size: var(--pf-v5-global--FontSize--sm);
+  color: var(--pf-v5-global--Color--200);
+  margin: 0;
+}

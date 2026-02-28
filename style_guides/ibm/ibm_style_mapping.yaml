@@ -1,0 +1,1704 @@
+# IBM Style Guide Rule Mapping
+# Single source of truth for all IBM Style Guide references
+#
+# BASED ON:
+# Document: ibm-style-documentation.pdf
+#
+# PURPOSE:
+# 1. Prevent hallucinated page numbers
+# 2. Ensure consistency across all rules
+# 3. Enable verification tracking
+# 4. Support UI display of rule sources
+# 5. Link confidence scoring to verification status
+
+version: "2.0"
+last_updated: "2026-01-23"
+source_documents:
+  ibm_style_guide:
+    file: "ibm-style-documentation.pdf"
+    version: "2025 Edition"
+    page_number_type: "print" 
+  red_hat_ssg:
+    url: "https://redhat-documentation.github.io/supplementary-style-guide/"
+    version: "Latest"
+
+# ============================================================================
+# AUDIENCE AND MEDIUM
+# ============================================================================
+audience_and_medium:
+
+  accessibility:
+    rule_id: "accessibility"
+    display_name: "Accessibility"
+    category: "audience_and_medium"
+    severity: "high"
+    ibm_style:
+      topic: "Accessibility"
+      pages: [60]
+      verification_status: "verified"
+      guidance: "Ensure content is perceivable, understandable, operable, and robust."
+
+  ai_assistants:
+    rule_id: "ai_assistants"
+    display_name: "AI Assistants"
+    category: "audience_and_medium"
+    severity: "medium"
+    ibm_style:
+      topic: "AI assistants"
+      pages: [61]
+      verification_status: "verified"
+      guidance: "Follow guidance for writing dialog and prompts for AI assistants."
+
+  conversational_style:
+    rule_id: "conversational_style"
+    display_name: "Conversational Style"
+    category: "audience_and_medium"
+    severity: "medium"
+    ibm_style:
+      topic: "Conversational style"
+      pages: [62]
+      verification_status: "verified"
+      guidance: "Use simple, clear, approachable language appropriate for the content type."
+
+  global_audiences:
+    rule_id: "global_audiences"
+    display_name: "Global Audiences"
+    category: "audience_and_medium"
+    severity: "medium"
+    ibm_style:
+      topic: "Global audiences"
+      pages: [63, 64, 65, 66, 67, 68]
+      verification_status: "verified"
+      guidance: "Avoid slang, jargon, humor, sarcasm, and culture-specific references."
+
+  llms:
+    rule_id: "llms"
+    display_name: "LLM Consumability"
+    category: "audience_and_medium"
+    severity: "medium"
+    ibm_style:
+      topic: "LLMs (Large Language Models)"
+      pages: [69, 70]
+      verification_status: "verified"
+      guidance: "Write content that is consumable by AI models; avoid tiny topics."
+
+  marketing:
+    rule_id: "marketing"
+    display_name: "Marketing Content"
+    category: "audience_and_medium"
+    severity: "low"
+    ibm_style:
+      topic: "Marketing"
+      pages: [71, 72, 73]
+      verification_status: "verified"
+      guidance: "Follow specific exceptions for marketing content regarding tone and punctuation."
+
+  mobile:
+    rule_id: "mobile"
+    display_name: "Mobile Content"
+    category: "audience_and_medium"
+    severity: "medium"
+    ibm_style:
+      topic: "Mobile"
+      pages: [74]
+      verification_status: "verified"
+      guidance: "Use appropriate terminology for actions and gestures on mobile devices."
+
+  red_hat_style:
+    rule_id: "red_hat_style"
+    display_name: "Red Hat vs IBM Style"
+    category: "audience_and_medium"
+    severity: "low"
+    ibm_style:
+      topic: "Red Hat versus IBM conventions for style"
+      pages: [75]
+      verification_status: "verified"
+      guidance: "Note differences in word usage (client vs customer) and admonitions."
+
+  social_media:
+    rule_id: "social_media"
+    display_name: "Social Media"
+    category: "audience_and_medium"
+    severity: "low"
+    ibm_style:
+      topic: "Social media"
+      pages: [76]
+      verification_status: "verified"
+      guidance: "Follow IBM Social Computing Guidelines when endorsing/incorporating social media."
+
+  third_party_tools:
+    rule_id: "third_party_tools"
+    display_name: "Third-Party Tools"
+    category: "audience_and_medium"
+    severity: "high"
+    ibm_style:
+      topic: "Third-party tools"
+      pages: [77]
+      verification_status: "verified"
+      guidance: "Do not use unapproved generative AI tools or tools that expose confidential data."
+
+  tone:
+    rule_id: "tone"
+    display_name: "Tone"
+    category: "audience_and_medium"
+    severity: "medium"
+    ibm_style:
+      topic: "Tone"
+      pages: [78, 79, 80, 81]
+      verification_status: "verified"
+      guidance: "Use a tone appropriate for the subject, goal, and audience (universal and timeless)."
+
+  videos:
+    rule_id: "videos"
+    display_name: "Videos"
+    category: "audience_and_medium"
+    severity: "medium"
+    ibm_style:
+      topic: "Videos"
+      pages: [82, 83]
+      verification_status: "verified"
+      guidance: "Follow guidelines for creating, linking, and embedding videos, including captions."
+
+  obvious_terms:
+    rule_id: "obvious_terms"
+    display_name: "Obvious Terms"
+    category: "audience_and_medium"
+    severity: "medium"
+    ibm_style:
+      topic: "Tone"
+      pages: [78]
+      verification_status: "custom_rule"
+      guidance: "Avoid terms that assume reader knowledge (obviously, simply, just, easily)."
+
+  llm_consumability:
+    rule_id: "llm_consumability"
+    display_name: "LLM Consumability"
+    category: "audience_and_medium"
+    severity: "medium"
+    ibm_style:
+      topic: "LLMs (Large Language Models)"
+      pages: [69, 70]
+      verification_status: "verified"
+      guidance: "Write content that is consumable by AI models; use clear structure and avoid ambiguity."
+
+# ============================================================================
+# LANGUAGE AND GRAMMAR
+# ============================================================================
+language_and_grammar:
+
+  abbreviations:
+    rule_id: "abbreviations"
+    display_name: "Abbreviations"
+    category: "language_and_grammar"
+    severity: "low"
+    ibm_style:
+      topic: "Abbreviations"
+      pages: [84, 85, 86, 87, 88]
+      verification_status: "verified"
+      guidance: "Spell out abbreviations at first occurrence unless commonly known."
+
+  adverbs_only:
+    rule_id: "adverbs_only"
+    display_name: "Adverbs - Only"
+    category: "language_and_grammar"
+    severity: "low"
+    ibm_style:
+      topic: "Adverbs - only"
+      pages: [89]
+      verification_status: "verified"
+      guidance: "Place 'only' immediately before the word or phrase it modifies."
+
+  anthropomorphism:
+    rule_id: "anthropomorphism"
+    display_name: "Anthropomorphism"
+    category: "language_and_grammar"
+    severity: "medium"
+    ibm_style:
+      topic: "Anthropomorphism"
+      pages: [90]
+      verification_status: "verified"
+      guidance: "Do not assign human characteristics to inanimate objects."
+
+  articles:
+    rule_id: "articles"
+    display_name: "Articles"
+    category: "language_and_grammar"
+    severity: "low"
+    ibm_style:
+      topic: "Articles"
+      pages: [91]
+      verification_status: "verified"
+      guidance: "Use 'a' before consonant sounds and 'an' before vowel sounds."
+
+  capitalization:
+    rule_id: "capitalization"
+    display_name: "Capitalization"
+    category: "language_and_grammar"
+    severity: "medium"
+    ibm_style:
+      topic: "Capitalization"
+      pages: [92, 93, 94, 95, 96]
+      verification_status: "verified"
+      guidance: "Use sentence-style capitalization for most elements unless noted otherwise."
+
+  conjunctions:
+    rule_id: "conjunctions"
+    display_name: "Conjunctions"
+    category: "language_and_grammar"
+    severity: "low"
+    ibm_style:
+      topic: "Conjunctions"
+      pages: [101]
+      verification_status: "verified"
+      guidance: "Use coordinating and subordinating conjunctions correctly to avoid ambiguity."
+
+  contractions:
+    rule_id: "contractions"
+    display_name: "Contractions"
+    category: "language_and_grammar"
+    severity: "low"
+    ibm_style:
+      topic: "Contractions"
+      pages: [102]
+      verification_status: "verified"
+      guidance: "Contractions are permitted but must fit the context."
+
+  inclusive_language:
+    rule_id: "inclusive_language"
+    display_name: "Inclusive Language"
+    category: "language_and_grammar"
+    severity: "high"
+    ibm_style:
+      topic: "Inclusive language"
+      pages: [103]
+      verification_status: "verified"
+      guidance: "Avoid bias in terminology; replace non-inclusive terms (e.g., master/slave)."
+
+  plurals:
+    rule_id: "plurals"
+    display_name: "Plurals"
+    category: "language_and_grammar"
+    severity: "low"
+    ibm_style:
+      topic: "Plurals"
+      pages: [104, 105]
+      verification_status: "verified"
+      guidance: "Form plurals correctly for abbreviations, letters, and numbers."
+
+  possessives:
+    rule_id: "possessives"
+    display_name: "Possessives"
+    category: "language_and_grammar"
+    severity: "low"
+    ibm_style:
+      topic: "Possessives"
+      pages: [106]
+      verification_status: "verified"
+      guidance: "Form possessives correctly; use 'your' for assets customized by the user."
+
+  prefixes:
+    rule_id: "prefixes"
+    display_name: "Prefixes"
+    category: "language_and_grammar"
+    severity: "low"
+    ibm_style:
+      topic: "Prefixes"
+      pages: [107]
+      verification_status: "verified"
+      guidance: "Generally, do not hyphenate prefixes unless necessary for clarity."
+
+  prepositions:
+    rule_id: "prepositions"
+    display_name: "Prepositions"
+    category: "language_and_grammar"
+    severity: "low"
+    ibm_style:
+      topic: "Prepositions"
+      pages: [108]
+      verification_status: "verified"
+      guidance: "Avoid using too many prepositions; use 'that' clauses to improve flow."
+
+  pronouns:
+    rule_id: "pronouns"
+    display_name: "Pronouns"
+    category: "language_and_grammar"
+    severity: "medium"
+    ibm_style:
+      topic: "Pronouns"
+      pages: [109, 110, 111]
+      verification_status: "verified"
+      guidance: "Use gender-neutral pronouns; use 'you' for the user; avoid first person."
+
+  spelling:
+    rule_id: "spelling"
+    display_name: "Spelling"
+    category: "language_and_grammar"
+    severity: "low"
+    ibm_style:
+      topic: "Spelling"
+      pages: [112]
+      verification_status: "verified"
+      guidance: "Use US English spelling (e.g., color, behavior, center)."
+
+  terminology:
+    rule_id: "terminology"
+    display_name: "Terminology"
+    category: "language_and_grammar"
+    severity: "medium"
+    ibm_style:
+      topic: "Terminology"
+      pages: [113]
+      verification_status: "verified"
+      guidance: "Use consistent, standardized terms; refer to the IBM Terminology database."
+
+  verbs:
+    rule_id: "verbs"
+    display_name: "Verbs"
+    category: "language_and_grammar"
+    severity: "medium"
+    ibm_style:
+      topic: "Verbs"
+      pages: [113, 114, 115, 116]
+      verification_status: "verified"
+      guidance: "Use active voice and present tense; ensure subject-verb agreement."
+
+  passive_voice:
+    rule_id: "passive_voice"
+    display_name: "Passive Voice"
+    category: "language_and_grammar"
+    severity: "medium"
+    ibm_style:
+      topic: "Voice"
+      pages: [121]
+      verification_status: "verified"
+      guidance: "Use active voice as much as possible. Passive voice is acceptable when the system performs the action or to avoid blaming the user."
+
+  verb_tense:
+    rule_id: "verb_tense"
+    display_name: "Verb Tense"
+    category: "language_and_grammar"
+    severity: "medium"
+    ibm_style:
+      topic: "Tense"
+      pages: [120]
+      verification_status: "verified"
+      guidance: "Write in simple present tense as much as possible. Use past or future tense only when necessary."
+
+  future_tense:
+    rule_id: "future_tense"
+    display_name: "Future Tense"
+    category: "language_and_grammar"
+    severity: "medium"
+    ibm_style:
+      topic: "Tense"
+      pages: [120]
+      verification_status: "verified"
+      guidance: "Avoid future tense (will, will be). Use present tense instead."
+
+  first_person:
+    rule_id: "first_person"
+    display_name: "First Person"
+    category: "language_and_grammar"
+    severity: "medium"
+    ibm_style:
+      topic: "Person"
+      pages: [119]
+      verification_status: "verified"
+      guidance: "Avoid first person pronouns (I, me, my, we, us, our). Focus on the reader, not the writer."
+
+  second_person:
+    rule_id: "second_person"
+    display_name: "Second Person"
+    category: "language_and_grammar"
+    severity: "low"
+    ibm_style:
+      topic: "Person"
+      pages: [119]
+      verification_status: "verified"
+      guidance: "Use second person (you) to focus on the reader. Use imperative mood for instructions."
+
+  sentence_length:
+    rule_id: "sentence_length"
+    display_name: "Sentence Length"
+    category: "language_and_grammar"
+    severity: "medium"
+    ibm_style:
+      topic: "Global audiences (Grammar) / Paragraphs"
+      pages: [66, 206]
+      verification_status: "verified"
+      guidance: "Keep sentences short and focused. Long sentences can be difficult to understand, especially for global audiences."
+
+  wordiness:
+    rule_id: "wordiness"
+    display_name: "Wordiness"
+    category: "language_and_grammar"
+    severity: "low"
+    ibm_style:
+      topic: "Global audiences (Style) / Tone"
+      pages: [64, 79]
+      verification_status: "verified"
+      guidance: "Be succinct. Avoid redundant phrases (e.g., 'at this point in time')."
+
+  nominalization:
+    rule_id: "nominalization"
+    display_name: "Nominalization / Parts of Speech"
+    category: "language_and_grammar"
+    severity: "low"
+    ibm_style:
+      topic: "Global audiences (Grammar)"
+      pages: [66]
+      verification_status: "verified"
+      guidance: "Avoid using verbs as nouns or vice versa. Avoid long noun phrases."
+
+  self_referential_text:
+    rule_id: "self_referential_text"
+    display_name: "Self-Referential Text"
+    category: "structure_and_format"
+    severity: "medium"
+    ibm_style:
+      topic: "Global audiences (Style)"
+      pages: [65]
+      verification_status: "verified"
+      guidance: "Avoid 'This topic describes...'. Focus on the content's purpose or value."
+
+  definitions:
+    rule_id: "definitions"
+    display_name: "Definitions"
+    category: "language_and_grammar"
+    severity: "low"
+    ibm_style:
+      topic: "Definitions"
+      pages: [103]
+      verification_status: "verified"
+      guidance: "Define unfamiliar terms on first use."
+
+  using_clarity:
+    rule_id: "using_clarity"
+    display_name: "Using Clarity"
+    category: "language_and_grammar"
+    severity: "low"
+    ibm_style:
+      topic: "Using"
+      pages: []
+      verification_status: "custom_rule"
+      guidance: "Use 'by using' instead of 'using' after a noun for clarity."
+
+  repeated_words:
+    rule_id: "repeated_words"
+    display_name: "Repeated Words"
+    category: "language_and_grammar"
+    severity: "low"
+    ibm_style:
+      topic: "Global audiences (Grammar)"
+      pages: [66]
+      verification_status: "verified"
+      guidance: "Avoid unintentional word repetition."
+
+
+# ============================================================================
+# PUNCTUATION
+# ============================================================================
+punctuation:
+
+  punctuation_symbols:
+    rule_id: "punctuation_symbols"
+    display_name: "Punctuation and Symbols"
+    category: "punctuation"
+    severity: "low"
+    ibm_style:
+      topic: "Punctuation and symbols"
+      pages: [117, 118, 119, 120]
+      verification_status: "verified"
+      guidance: "General guidance on symbols and special characters."
+
+  colons:
+    rule_id: "colons"
+    display_name: "Colons"
+    category: "punctuation"
+    severity: "low"
+    ibm_style:
+      topic: "Colons"
+      pages: [121]
+      verification_status: "verified"
+      guidance: "Use colons to introduce lists or related info; use lowercase following colon in sentences."
+
+  commas:
+    rule_id: "commas"
+    display_name: "Commas"
+    category: "punctuation"
+    severity: "low"
+    ibm_style:
+      topic: "Commas"
+      pages: [123]
+      verification_status: "verified"
+      guidance: "Use serial commas; use commas for nonrestrictive clauses."
+
+  dashes:
+    rule_id: "dashes"
+    display_name: "Dashes"
+    category: "punctuation"
+    severity: "low"
+    ibm_style:
+      topic: "Dashes"
+      pages: [125]
+      verification_status: "verified"
+      guidance: "Use en dashes for ranges; avoid em dashes in technical content."
+
+  ellipses:
+    rule_id: "ellipses"
+    display_name: "Ellipses"
+    category: "punctuation"
+    severity: "low"
+    ibm_style:
+      topic: "Ellipses"
+      pages: [127]
+      verification_status: "verified"
+      guidance: "Avoid ellipses in text; use correct spacing when used."
+
+  exclamation_points:
+    rule_id: "exclamation_points"
+    display_name: "Exclamation Points"
+    category: "punctuation"
+    severity: "low"
+    ibm_style:
+      topic: "Exclamation points"
+      pages: [128]
+      verification_status: "verified"
+      guidance: "Use sparingly; avoid in technical documentation except for positivity in onboarding."
+
+  hyphens:
+    rule_id: "hyphens"
+    display_name: "Hyphens"
+    category: "punctuation"
+    severity: "low"
+    ibm_style:
+      topic: "Hyphens"
+      pages: [129]
+      verification_status: "verified"
+      guidance: "Use to connect related info; hyphenate compound adjectives before a noun."
+
+  parentheses:
+    rule_id: "parentheses"
+    display_name: "Parentheses"
+    category: "punctuation"
+    severity: "low"
+    ibm_style:
+      topic: "Parentheses"
+      pages: [132]
+      verification_status: "verified"
+      guidance: "Use for abbreviations, symbols, and measurements; avoid for general text."
+
+  periods:
+    rule_id: "periods"
+    display_name: "Periods"
+    category: "punctuation"
+    severity: "low"
+    ibm_style:
+      topic: "Periods"
+      pages: [133]
+      verification_status: "verified"
+      guidance: "One space after a period. Use for file extensions."
+
+  quotation_marks:
+    rule_id: "quotation_marks"
+    display_name: "Quotation Marks"
+    category: "punctuation"
+    severity: "low"
+    ibm_style:
+      topic: "Quotation marks"
+      pages: [136]
+      verification_status: "verified"
+      guidance: "Use double quotes for direct quotes; place periods/commas inside closing quotes."
+
+  semicolons:
+    rule_id: "semicolons"
+    display_name: "Semicolons"
+    category: "punctuation"
+    severity: "low"
+    ibm_style:
+      topic: "Semicolons"
+      pages: [139]
+      verification_status: "verified"
+      guidance: "Use to separate independent clauses or complex series items."
+
+  slashes:
+    rule_id: "slashes"
+    display_name: "Slashes"
+    category: "punctuation"
+    severity: "low"
+    ibm_style:
+      topic: "Slashes"
+      pages: [139]
+      verification_status: "verified"
+      guidance: "Avoid 'and/or'. Use forward slash for path names in documentation generally."
+
+  spacing:
+    rule_id: "spacing"
+    display_name: "Spacing"
+    category: "punctuation"
+    severity: "low"
+    ibm_style:
+      topic: "Punctuation and symbols"
+      pages: [117, 118, 133]
+      verification_status: "verified"
+      guidance: "Use one space after periods. Use appropriate spacing around punctuation marks."
+
+  punctuation_and_symbols:
+    rule_id: "punctuation_and_symbols"
+    display_name: "Punctuation and Symbols"
+    category: "punctuation"
+    severity: "low"
+    ibm_style:
+      topic: "Punctuation and symbols"
+      pages: [117, 118, 119, 120]
+      verification_status: "verified"
+      guidance: "General guidance on correct usage of punctuation marks and special symbols."
+
+  compound_words:
+    rule_id: "compound_words"
+    display_name: "Compound Words"
+    category: "punctuation"
+    severity: "low"
+    ibm_style:
+      topic: "Hyphens"
+      pages: [129]
+      verification_status: "verified"
+      guidance: "Use correct hyphenation for compound words."
+
+  oxford_comma:
+    rule_id: "oxford_comma"
+    display_name: "Oxford Comma"
+    category: "punctuation"
+    severity: "low"
+    ibm_style:
+      topic: "Commas"
+      pages: [123]
+      verification_status: "verified"
+      guidance: "Use the serial (Oxford) comma before 'and'/'or' in a series of three or more items."
+
+# ============================================================================
+# NUMBERS AND MEASUREMENT
+# ============================================================================
+numbers_and_measurement:
+
+  numbers_currency:
+    rule_id: "numbers_currency"
+    display_name: "Currency"
+    category: "numbers_and_measurement"
+    severity: "low"
+    ibm_style:
+      topic: "Currency"
+      pages: [142]
+      verification_status: "verified"
+      guidance: "Use ISO codes (USD, EUR) for international audiences."
+
+  dates_and_times:
+    rule_id: "dates_and_times"
+    display_name: "Dates and Times"
+    category: "numbers_and_measurement"
+    severity: "medium"
+    ibm_style:
+      topic: "Dates and times"
+      pages: [144, 145, 146, 147]
+      verification_status: "verified"
+      guidance: "Use format '14 July 2020'. Avoid all-numeric dates (9/12/2023)."
+
+  numbers_general:
+    rule_id: "numbers_general"
+    display_name: "Numbers"
+    category: "numbers_and_measurement"
+    severity: "low"
+    ibm_style:
+      topic: "Numbers"
+      pages: [150, 151, 152, 153]
+      verification_status: "verified"
+      guidance: "Use commas for thousands; align decimals in columns."
+
+  numerals_vs_words:
+    rule_id: "numerals_vs_words"
+    display_name: "Numerals vs Words"
+    category: "numbers_and_measurement"
+    severity: "low"
+    ibm_style:
+      topic: "Numerals versus words"
+      pages: [157]
+      verification_status: "verified"
+      guidance: "Generally use numerals for all numbers. Words acceptable for < 10."
+
+  mathematical_equations:
+    rule_id: "mathematical_equations"
+    display_name: "Mathematical Equations"
+    category: "numbers_and_measurement"
+    severity: "low"
+    ibm_style:
+      topic: "Mathematical equations"
+      pages: [158]
+      verification_status: "verified"
+      guidance: "Keep simple; avoid using x for multiplication sign."
+
+  phone_numbers:
+    rule_id: "phone_numbers"
+    display_name: "Phone Numbers"
+    category: "numbers_and_measurement"
+    severity: "low"
+    ibm_style:
+      topic: "Phone numbers"
+      pages: [159]
+      verification_status: "verified"
+      guidance: "Use hyphens for US numbers; use international format for global audiences."
+
+  units_of_measurement:
+    rule_id: "units_of_measurement"
+    display_name: "Units of Measurement"
+    category: "numbers_and_measurement"
+    severity: "low"
+    ibm_style:
+      topic: "Units of measurement"
+      pages: [161, 162, 163, 164]
+      verification_status: "verified"
+      guidance: "Use SI units followed by US customary in parentheses. Use a space before unit."
+
+# ============================================================================
+# STRUCTURE AND FORMAT
+# ============================================================================
+structure_and_format:
+
+  books:
+    rule_id: "books"
+    display_name: "Books"
+    category: "structure_and_format"
+    severity: "low"
+    ibm_style:
+      topic: "Books"
+      pages: [168, 169]
+      verification_status: "verified"
+      guidance: "Follow standard sequence (Front matter, Body, Back matter)."
+
+  examples:
+    rule_id: "examples"
+    display_name: "Examples"
+    category: "structure_and_format"
+    severity: "low"
+    ibm_style:
+      topic: "Examples"
+      pages: [175]
+      verification_status: "verified"
+      guidance: "Introduce examples with complete sentences or 'For example'."
+
+  figures:
+    rule_id: "figures"
+    display_name: "Figures"
+    category: "structure_and_format"
+    severity: "medium"
+    ibm_style:
+      topic: "Figures"
+      pages: [176, 177, 178]
+      verification_status: "verified"
+      guidance: "Place captions below figures. Use sentence-style capitalization."
+
+  glossaries:
+    rule_id: "glossaries"
+    display_name: "Glossaries"
+    category: "structure_and_format"
+    severity: "low"
+    ibm_style:
+      topic: "Glossaries"
+      pages: [181]
+      verification_status: "verified"
+      guidance: "Define new or product-specific terms. Alphabetize letter-by-letter."
+
+  headings:
+    rule_id: "headings"
+    display_name: "Headings"
+    category: "structure_and_format"
+    severity: "medium"
+    ibm_style:
+      topic: "Headings"
+      pages: [181, 182, 183]
+      verification_status: "verified"
+      guidance: "Use sentence-style capitalization. Make headings descriptive and task-oriented."
+
+  highlighting:
+    rule_id: "highlighting"
+    display_name: "Highlighting"
+    category: "structure_and_format"
+    severity: "medium"
+    ibm_style:
+      topic: "Highlighting"
+      pages: [184, 185, 186, 187, 188, 189, 190, 191]
+      verification_status: "verified"
+      guidance: "Use bold for UI elements; monospace for code/input; italic for emphasis/titles."
+
+  lists:
+    rule_id: "lists"
+    display_name: "Lists"
+    category: "structure_and_format"
+    severity: "medium"
+    ibm_style:
+      topic: "Lists"
+      pages: [193, 194, 195, 196, 197]
+      verification_status: "verified"
+      guidance: "Use parallel grammatical structure. Introduce with a complete sentence."
+
+  messages:
+    rule_id: "messages"
+    display_name: "Messages"
+    category: "structure_and_format"
+    severity: "medium"
+    ibm_style:
+      topic: "Messages"
+      pages: [200, 201, 202, 203]
+      verification_status: "verified"
+      guidance: "Focus on the problem and solution; avoid blaming the user."
+
+  notes:
+    rule_id: "notes"
+    display_name: "Notes"
+    category: "structure_and_format"
+    severity: "medium"
+    ibm_style:
+      topic: "Notes"
+      pages: [204]
+      verification_status: "verified"
+      guidance: "Use meaningfully labeled notes (Tip, Important) sparingly. Use Danger/Caution for hazards."
+
+  paragraphs:
+    rule_id: "paragraphs"
+    display_name: "Paragraphs"
+    category: "structure_and_format"
+    severity: "low"
+    ibm_style:
+      topic: "Paragraphs"
+      pages: [206]
+      verification_status: "verified"
+      guidance: "Keep paragraphs short and focused on a single idea."
+
+  procedures:
+    rule_id: "procedures"
+    display_name: "Procedures"
+    category: "structure_and_format"
+    severity: "high"
+    ibm_style:
+      topic: "Procedures"
+      pages: [206, 207, 208, 209]
+      verification_status: "verified"
+      guidance: "Number steps. Use imperative verbs. Separate command steps from results."
+
+  tables:
+    rule_id: "tables"
+    display_name: "Tables"
+    category: "structure_and_format"
+    severity: "medium"
+    ibm_style:
+      topic: "Tables"
+      pages: [212, 213, 214, 215]
+      verification_status: "verified"
+      guidance: "Use sentence-style capitalization for headers. Place captions above tables."
+
+  type_size:
+    rule_id: "type_size"
+    display_name: "Type Size"
+    category: "structure_and_format"
+    severity: "low"
+    ibm_style:
+      topic: "Type size"
+      pages: [217]
+      verification_status: "verified"
+      guidance: "Ensure text meets accessibility requirements (min 8pt for print)."
+
+  admonitions:
+    rule_id: "admonitions"
+    display_name: "Admonitions"
+    category: "structure_and_format"
+    severity: "medium"
+    ibm_style:
+      topic: "Notes"
+      pages: [204]
+      verification_status: "verified"
+      guidance: "Use meaningfully labeled notes (Tip, Important, Note, Caution, Warning, Danger) sparingly and appropriately."
+
+  admonition_content:
+    rule_id: "admonition_content"
+    display_name: "Admonition Content"
+    category: "structure_and_format"
+    severity: "medium"
+    ibm_style:
+      topic: "Notes"
+      pages: [204]
+      verification_status: "verified"
+      guidance: "Ensure admonition content is clear, concise, and provides actionable information."
+
+  indentation:
+    rule_id: "indentation"
+    display_name: "Indentation"
+    category: "structure_and_format"
+    severity: "low"
+    ibm_style:
+      topic: "Lists / Code and command examples"
+      pages: [193, 235]
+      verification_status: "verified"
+      guidance: "Use consistent indentation for nested lists and code blocks for clarity."
+
+  list_punctuation:
+    rule_id: "list_punctuation"
+    display_name: "List Punctuation"
+    category: "structure_and_format"
+    severity: "low"
+    ibm_style:
+      topic: "Lists"
+      pages: [193, 194, 195, 196, 197]
+      verification_status: "verified"
+      guidance: "Follow consistent punctuation rules for list items based on their grammatical structure."
+
+  list_consistency:
+    rule_id: "list_consistency"
+    display_name: "List Punctuation Consistency"
+    category: "structure_and_format"
+    severity: "low"
+    ibm_style:
+      topic: "Lists / Punctuation in lists"
+      pages: [197, 198]
+      verification_status: "verified"
+      guidance: "If list items are complete sentences, include a period after each sentence. Be consistent with punctuation across all items in a list."
+
+  list_parallelism:
+    rule_id: "list_parallelism"
+    display_name: "List Parallel Structure"
+    category: "structure_and_format"
+    severity: "medium"
+    ibm_style:
+      topic: "Lists / Wording of list items"
+      pages: [196]
+      verification_status: "verified"
+      guidance: "Use list items that are grammatically parallel. Do not mix passive voice with active voice or declarative sentences with imperative sentences."
+
+# ============================================================================
+# REFERENCES
+# ============================================================================
+references:
+
+  references_citations:
+    rule_id: "references_citations"
+    display_name: "Citations and References"
+    category: "references"
+    severity: "low"
+    ibm_style:
+      topic: "Citations and references"
+      pages: [217, 218, 219, 220, 221]
+      verification_status: "verified"
+      guidance: "Italicize titles of publications. Do not include document numbers in citations."
+
+  footnotes:
+    rule_id: "footnotes"
+    display_name: "Footnotes"
+    category: "references"
+    severity: "low"
+    ibm_style:
+      topic: "Footnotes"
+      pages: [224]
+      verification_status: "verified"
+      guidance: "Avoid footnotes; use only when necessary. Use superscript numerals."
+
+  references_geographic_locations:
+    rule_id: "references_geographic_locations"
+    display_name: "Geographic Locations"
+    category: "references"
+    severity: "low"
+    ibm_style:
+      topic: "Geographic locations"
+      pages: [225]
+      verification_status: "verified"
+      guidance: "Use current terminology (e.g., Türkiye). Avoid abbreviations unless well known."
+
+  references_names_titles:
+    rule_id: "references_names_titles"
+    display_name: "Names and Titles"
+    category: "references"
+    severity: "low"
+    ibm_style:
+      topic: "Names and titles"
+      pages: [228]
+      verification_status: "verified"
+      guidance: "Use headline-style for titles with names; sentence-style for job titles alone."
+
+  references_product_names:
+    rule_id: "references_product_names"
+    display_name: "Product and Service Names"
+    category: "references"
+    severity: "high"
+    ibm_style:
+      topic: "Product and service names"
+      pages: [228, 229, 230]
+      verification_status: "verified"
+      guidance: "Use full official name on first reference. Follow trademark guidelines."
+
+  references_product_versions:
+    rule_id: "references_product_versions"
+    display_name: "Product Versions"
+    category: "references"
+    severity: "medium"
+    ibm_style:
+      topic: "Product versions"
+      pages: [233]
+      verification_status: "verified"
+      guidance: "Do not use 'x' as wildcard (5.x). Write out release details."
+
+  product_names:
+    rule_id: "product_names"
+    display_name: "Product Names"
+    category: "references"
+    severity: "high"
+    ibm_style:
+      topic: "Product and service names"
+      pages: [228, 229, 230]
+      verification_status: "verified"
+      guidance: "Use official product names consistently. Follow trademark guidelines."
+
+# ============================================================================
+# TECHNICAL ELEMENTS
+# ============================================================================
+technical_elements:
+
+  code_and_command_examples:
+    rule_id: "code_and_command_examples"
+    display_name: "Code and Command Examples"
+    category: "technical_elements"
+    severity: "medium"
+    ibm_style:
+      topic: "Code and command examples"
+      pages: [235]
+      verification_status: "verified"
+      guidance: "Introduce examples with complete sentences. Use monospace for code."
+
+  command_line_data_entry:
+    rule_id: "command_line_data_entry"
+    display_name: "Command Line Data Entry"
+    category: "technical_elements"
+    severity: "low"
+    ibm_style:
+      topic: "Command line data entry"
+      pages: [237]
+      verification_status: "verified"
+      guidance: "Use 'type' or 'enter'. Use monospace for user input."
+
+  command_syntax:
+    rule_id: "command_syntax"
+    display_name: "Command Syntax"
+    category: "technical_elements"
+    severity: "medium"
+    ibm_style:
+      topic: "Command syntax"
+      pages: [239]
+      verification_status: "verified"
+      guidance: "Use text for simple syntax; diagrams for complex syntax. Use italics for variables."
+
+  technical_commands:
+    rule_id: "technical_commands"
+    display_name: "Commands"
+    category: "technical_elements"
+    severity: "medium"
+    ibm_style:
+      topic: "Commands"
+      pages: [246]
+      verification_status: "verified"
+      guidance: "Match case-sensitivity of the system. Do not use command names as verbs."
+
+  technical_files_directories:
+    rule_id: "technical_files_directories"
+    display_name: "Files and Directories"
+    category: "technical_elements"
+    severity: "low"
+    ibm_style:
+      topic: "Files and directories"
+      pages: [248]
+      verification_status: "verified"
+      guidance: "Use monospace for file names/paths. Match system case sensitivity."
+
+  technical_keyboard_keys:
+    rule_id: "technical_keyboard_keys"
+    display_name: "Keyboard Keys"
+    category: "technical_elements"
+    severity: "low"
+    ibm_style:
+      topic: "Keyboard keys"
+      pages: [249]
+      verification_status: "verified"
+      guidance: "Use 'press' for function keys; 'type' for text. Capitalize key names (Enter)."
+
+  technical_menus_navigation:
+    rule_id: "technical_menus_navigation"
+    display_name: "Menus and Navigation"
+    category: "technical_elements"
+    severity: "low"
+    ibm_style:
+      topic: "Menus and navigation"
+      pages: [252]
+      verification_status: "verified"
+      guidance: "Use 'menu items' not 'menu choices'. Use '>' with spaces between menu items. Do not document ellipsis from labels."
+
+  technical_code_examples:
+    rule_id: "technical_code_examples"
+    display_name: "Code and Command Examples"
+    category: "technical_elements"
+    severity: "medium"
+    ibm_style:
+      topic: "Code and command examples"
+      pages: [235]
+      verification_status: "verified"
+      guidance: "Inline examples must be part of a complete sentence. Use a complete introductory sentence or 'For example:' before code blocks."
+
+  technical_command_line_entry:
+    rule_id: "technical_command_line_entry"
+    display_name: "Command Line Data Entry"
+    category: "technical_elements"
+    severity: "low"
+    ibm_style:
+      topic: "Command line data entry"
+      pages: [237]
+      verification_status: "verified"
+      guidance: "Use 'type', 'enter', or 'specify' for data entry. Use 'command prompt' for Windows only; 'command line' for other OS."
+
+  technical_command_syntax:
+    rule_id: "technical_command_syntax"
+    display_name: "Command Syntax"
+    category: "technical_elements"
+    severity: "low"
+    ibm_style:
+      topic: "Command syntax"
+      pages: [239]
+      verification_status: "verified"
+      guidance: "Specify the keyword type (command, parameter, option) after the name. Remove spaces in multi-word variable names."
+
+  technical_mouse_buttons:
+    rule_id: "technical_mouse_buttons"
+    display_name: "Mouse Buttons"
+    category: "technical_elements"
+    severity: "low"
+    ibm_style:
+      topic: "Mouse buttons"
+      pages: [253]
+      verification_status: "verified"
+      guidance: "Use 'click', 'right-click', 'double-click'. Do not use 'click on'."
+
+  technical_programming_elements:
+    rule_id: "technical_programming_elements"
+    display_name: "Programming Elements"
+    category: "technical_elements"
+    severity: "low"
+    ibm_style:
+      topic: "Programming elements"
+      pages: [254]
+      verification_status: "verified"
+      guidance: "Use correct capitalization for keywords. Use italics for variables."
+
+  technical_ui_elements:
+    rule_id: "technical_ui_elements"
+    display_name: "UI Elements"
+    category: "technical_elements"
+    severity: "medium"
+    ibm_style:
+      topic: "UI elements"
+      pages: [255, 256, 257, 258, 259, 260, 261, 262, 263, 264, 265, 266, 267, 268, 269, 270, 271, 272, 273]
+      verification_status: "verified"
+      guidance: "Follow specific highlighting and verb usage for each UI element type."
+
+  technical_web_addresses:
+    rule_id: "technical_web_addresses"
+    display_name: "Web, IP, and Email Addresses"
+    category: "technical_elements"
+    severity: "low"
+    ibm_style:
+      topic: "Web, IP, and email addresses"
+      pages: [274]
+      verification_status: "verified"
+      guidance: "Use reserved IP ranges for examples (e.g., 192.0.2.0/24)."
+
+# ============================================================================
+# LEGAL INFORMATION
+# ============================================================================
+legal_information:
+
+  legal_claims:
+    rule_id: "legal_claims"
+    display_name: "Claims and Recommendations"
+    category: "legal_information"
+    severity: "high"
+    ibm_style:
+      topic: "Claims and recommendations"
+      pages: [279]
+      verification_status: "verified"
+      guidance: "Avoid 'best practice' or absolute claims ('fastest', 'easiest')."
+
+  legal_company_names:
+    rule_id: "legal_company_names"
+    display_name: "Company Names"
+    category: "legal_information"
+    severity: "low"
+    ibm_style:
+      topic: "Company names"
+      pages: [280]
+      verification_status: "verified"
+      guidance: "Use full legal names for companies."
+
+  copyright_notices:
+    rule_id: "copyright_notices"
+    display_name: "Copyright Notices"
+    category: "legal_information"
+    severity: "high"
+    ibm_style:
+      topic: "Copyright notices"
+      pages: [281]
+      verification_status: "verified"
+      guidance: "Include correct copyright notice year range."
+
+  legal_personal_information:
+    rule_id: "legal_personal_information"
+    display_name: "Personal Information"
+    category: "legal_information"
+    severity: "high"
+    ibm_style:
+      topic: "Personal information"
+      pages: [282]
+      verification_status: "verified"
+      guidance: "Use fictitious names/data in examples. Add disclaimer."
+
+  republishing_existing_content:
+    rule_id: "republishing_existing_content"
+    display_name: "Republishing Content"
+    category: "legal_information"
+    severity: "high"
+    ibm_style:
+      topic: "Republishing existing content"
+      pages: [283]
+      verification_status: "verified"
+      guidance: "Obtain permission before republishing non-IBM content."
+
+# ============================================================================
+# WORD USAGE
+# ============================================================================
+word_usage:
+  word_usage_list:
+    rule_id: "word_usage_list"
+    display_name: "Word Usage List"
+    category: "word_usage"
+    severity: "medium"
+    ibm_style:
+      topic: "Word usage"
+      pages: [284, 285, 286, 287, 288, 289, 290, 291, 292, 293, 294, 295, 296, 297, 298, 299, 300, 301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 312, 313, 314, 315, 316, 317, 318, 319, 320, 321, 322, 323, 324, 325, 326, 327, 328, 329, 330, 331, 332, 333, 334, 335, 336, 337, 338, 339, 340, 341, 342, 343, 344, 345, 346, 347, 348, 349, 350, 351, 352, 353, 354, 355, 356, 357, 358, 359, 360, 361, 362, 363, 364, 365, 366, 367, 368, 369, 370, 371, 372, 373, 374, 375, 376, 377, 378, 379, 380, 381, 382, 383, 384, 385, 386, 387, 388, 389, 390, 391, 392, 393, 394, 395, 396, 397, 398, 399, 400, 401, 402, 403, 404, 405, 406, 407, 408, 409, 410, 411, 412, 413, 414, 415, 416, 417, 418, 419]
+      verification_status: "verified"
+      guidance: "Consult the A-Z list for preferred, restricted, and prohibited terms."
+
+  # A-Z Individual Word Rules
+  word_usage_a:
+    rule_id: "word_usage_a"
+    display_name: "A Words"
+    category: "word_usage"
+    severity: "medium"
+    ibm_style:
+      topic: "Word usage (A)"
+      pages: [284, 285, 286, 287, 288, 289]
+      verification_status: "verified"
+      guidance: "Words starting with A - check for preferred terms like 'and' vs 'and/or', 'about' vs 'approximately'."
+
+  word_usage_b:
+    rule_id: "word_usage_b"
+    display_name: "B Words"
+    category: "word_usage"
+    severity: "medium"
+    ibm_style:
+      topic: "Word usage (B)"
+      pages: [290, 291, 292, 293]
+      verification_status: "verified"
+      guidance: "Words starting with B - check for preferred terms like 'because' vs 'since'."
+
+  word_usage_c:
+    rule_id: "word_usage_c"
+    display_name: "C Words"
+    category: "word_usage"
+    severity: "medium"
+    ibm_style:
+      topic: "Word usage (C)"
+      pages: [294, 295, 296, 297, 298, 299, 300, 301, 302]
+      verification_status: "verified"
+      guidance: "Words starting with C - check for preferred terms like 'can' vs 'may', 'click' vs 'click on'."
+
+  word_usage_d:
+    rule_id: "word_usage_d"
+    display_name: "D Words"
+    category: "word_usage"
+    severity: "medium"
+    ibm_style:
+      topic: "Word usage (D)"
+      pages: [303, 304, 305, 306, 307, 308]
+      verification_status: "verified"
+      guidance: "Words starting with D - check for preferred terms like 'data' (singular vs plural)."
+
+  word_usage_e:
+    rule_id: "word_usage_e"
+    display_name: "E Words"
+    category: "word_usage"
+    severity: "medium"
+    ibm_style:
+      topic: "Word usage (E)"
+      pages: [309, 310, 311, 312, 313]
+      verification_status: "verified"
+      guidance: "Words starting with E - check for preferred terms like 'enter' vs 'type', 'enable' vs 'allow'."
+
+  word_usage_f:
+    rule_id: "word_usage_f"
+    display_name: "F Words"
+    category: "word_usage"
+    severity: "medium"
+    ibm_style:
+      topic: "Word usage (F)"
+      pages: [314, 315, 316, 317, 318]
+      verification_status: "verified"
+      guidance: "Words starting with F - check for preferred terms like 'for example' vs 'e.g.'."
+
+  word_usage_g:
+    rule_id: "word_usage_g"
+    display_name: "G Words"
+    category: "word_usage"
+    severity: "medium"
+    ibm_style:
+      topic: "Word usage (G)"
+      pages: [319, 320, 321]
+      verification_status: "verified"
+      guidance: "Words starting with G - check for preferred terms."
+
+  word_usage_h:
+    rule_id: "word_usage_h"
+    display_name: "H Words"
+    category: "word_usage"
+    severity: "medium"
+    ibm_style:
+      topic: "Word usage (H)"
+      pages: [322, 323, 324]
+      verification_status: "verified"
+      guidance: "Words starting with H - check for preferred terms like 'hover' vs 'mouse over'."
+
+  word_usage_i:
+    rule_id: "word_usage_i"
+    display_name: "I Words"
+    category: "word_usage"
+    severity: "medium"
+    ibm_style:
+      topic: "Word usage (I)"
+      pages: [325, 326, 327, 328, 329, 330, 331]
+      verification_status: "verified"
+      guidance: "Words starting with I - check for preferred terms like 'if' vs 'when', 'in order to' vs 'to'."
+
+  word_usage_j:
+    rule_id: "word_usage_j"
+    display_name: "J Words"
+    category: "word_usage"
+    severity: "medium"
+    ibm_style:
+      topic: "Word usage (J)"
+      pages: [332]
+      verification_status: "verified"
+      guidance: "Words starting with J - check for preferred terms."
+
+  word_usage_k:
+    rule_id: "word_usage_k"
+    display_name: "K Words"
+    category: "word_usage"
+    severity: "medium"
+    ibm_style:
+      topic: "Word usage (K)"
+      pages: [333]
+      verification_status: "verified"
+      guidance: "Words starting with K - check for preferred terms."
+
+  word_usage_l:
+    rule_id: "word_usage_l"
+    display_name: "L Words"
+    category: "word_usage"
+    severity: "medium"
+    ibm_style:
+      topic: "Word usage (L)"
+      pages: [334, 335, 336, 337]
+      verification_status: "verified"
+      guidance: "Words starting with L - check for preferred terms like 'later' vs 'latter'."
+
+  word_usage_m:
+    rule_id: "word_usage_m"
+    display_name: "M Words"
+    category: "word_usage"
+    severity: "medium"
+    ibm_style:
+      topic: "Word usage (M)"
+      pages: [338, 339, 340, 341, 342]
+      verification_status: "verified"
+      guidance: "Words starting with M - check for preferred terms like 'may' vs 'might', 'master/slave' (avoid)."
+
+  word_usage_n:
+    rule_id: "word_usage_n"
+    display_name: "N Words"
+    category: "word_usage"
+    severity: "medium"
+    ibm_style:
+      topic: "Word usage (N)"
+      pages: [343, 344, 345]
+      verification_status: "verified"
+      guidance: "Words starting with N - check for preferred terms."
+
+  word_usage_o:
+    rule_id: "word_usage_o"
+    display_name: "O Words"
+    category: "word_usage"
+    severity: "medium"
+    ibm_style:
+      topic: "Word usage (O)"
+      pages: [346, 347, 348, 349, 350]
+      verification_status: "verified"
+      guidance: "Words starting with O - check for preferred terms like 'on premise' vs 'on-premises'."
+
+  word_usage_p:
+    rule_id: "word_usage_p"
+    display_name: "P Words"
+    category: "word_usage"
+    severity: "medium"
+    ibm_style:
+      topic: "Word usage (P)"
+      pages: [351, 352, 353, 354, 355, 356, 357, 358]
+      verification_status: "verified"
+      guidance: "Words starting with P - check for preferred terms like 'please' (avoid in instructions)."
+
+  word_usage_q:
+    rule_id: "word_usage_q"
+    display_name: "Q Words"
+    category: "word_usage"
+    severity: "medium"
+    ibm_style:
+      topic: "Word usage (Q)"
+      pages: [359]
+      verification_status: "verified"
+      guidance: "Words starting with Q - check for preferred terms."
+
+  word_usage_r:
+    rule_id: "word_usage_r"
+    display_name: "R Words"
+    category: "word_usage"
+    severity: "medium"
+    ibm_style:
+      topic: "Word usage (R)"
+      pages: [360, 361, 362, 363, 364, 365, 366]
+      verification_status: "verified"
+      guidance: "Words starting with R - check for preferred terms like 'right-click' vs 'right click'."
+
+  word_usage_s:
+    rule_id: "word_usage_s"
+    display_name: "S Words"
+    category: "word_usage"
+    severity: "medium"
+    ibm_style:
+      topic: "Word usage (S)"
+      pages: [367, 368, 369, 370, 371, 372, 373, 374, 375, 376, 377, 378, 379, 380]
+      verification_status: "verified"
+      guidance: "Words starting with S - check for preferred terms like 'since' vs 'because', 'should' (avoid in instructions)."
+
+  word_usage_t:
+    rule_id: "word_usage_t"
+    display_name: "T Words"
+    category: "word_usage"
+    severity: "medium"
+    ibm_style:
+      topic: "Word usage (T)"
+      pages: [381, 382, 383, 384, 385, 386, 387, 388, 389]
+      verification_status: "verified"
+      guidance: "Words starting with T - check for preferred terms like 'that' vs 'which', 'terminate' vs 'kill'."
+
+  word_usage_u:
+    rule_id: "word_usage_u"
+    display_name: "U Words"
+    category: "word_usage"
+    severity: "medium"
+    ibm_style:
+      topic: "Word usage (U)"
+      pages: [390, 391, 392, 393, 394]
+      verification_status: "verified"
+      guidance: "Words starting with U - check for preferred terms like 'use' vs 'utilize', 'user' vs 'customer'."
+
+  word_usage_v:
+    rule_id: "word_usage_v"
+    display_name: "V Words"
+    category: "word_usage"
+    severity: "medium"
+    ibm_style:
+      topic: "Word usage (V)"
+      pages: [395, 396, 397]
+      verification_status: "verified"
+      guidance: "Words starting with V - check for preferred terms."
+
+  word_usage_w:
+    rule_id: "word_usage_w"
+    display_name: "W Words"
+    category: "word_usage"
+    severity: "medium"
+    ibm_style:
+      topic: "Word usage (W)"
+      pages: [398, 399, 400, 401, 402, 403, 404, 405]
+      verification_status: "verified"
+      guidance: "Words starting with W - check for preferred terms like 'when' vs 'if', 'which' vs 'that', 'while' vs 'although'."
+
+  word_usage_x:
+    rule_id: "word_usage_x"
+    display_name: "X Words"
+    category: "word_usage"
+    severity: "medium"
+    ibm_style:
+      topic: "Word usage (X)"
+      pages: [406]
+      verification_status: "verified"
+      guidance: "Words starting with X - check for preferred terms."
+
+  word_usage_y:
+    rule_id: "word_usage_y"
+    display_name: "Y Words"
+    category: "word_usage"
+    severity: "medium"
+    ibm_style:
+      topic: "Word usage (Y)"
+      pages: [407]
+      verification_status: "verified"
+      guidance: "Words starting with Y - check for preferred terms like 'you' (appropriate for user-facing docs)."
+
+  word_usage_z:
+    rule_id: "word_usage_z"
+    display_name: "Z Words"
+    category: "word_usage"
+    severity: "medium"
+    ibm_style:
+      topic: "Word usage (Z)"
+      pages: [408]
+      verification_status: "verified"
+      guidance: "Words starting with Z - check for preferred terms."
+
+  word_usage_special:
+    rule_id: "word_usage_special"
+    display_name: "Special Characters"
+    category: "word_usage"
+    severity: "low"
+    ibm_style:
+      topic: "Punctuation and symbols"
+      pages: [117, 118, 119, 120]
+      verification_status: "verified"
+      guidance: "Special characters usage - refer to Punctuation and symbols section."
+
+  do_not_use:
+    rule_id: "do_not_use"
+    display_name: "Do Not Use Terms"
+    category: "word_usage"
+    severity: "high"
+    ibm_style:
+      topic: "Word usage"
+      pages: [284]
+      verification_status: "verified"
+      guidance: "Avoid words on the do-not-use list."
+
+  simple_words:
+    rule_id: "simple_words"
+    display_name: "Simple Words"
+    category: "word_usage"
+    severity: "low"
+    ibm_style:
+      topic: "Word usage"
+      pages: [284]
+      verification_status: "verified"
+      guidance: "Use simpler alternatives for complex words."
+
+# ============================================================================
+# MODULAR COMPLIANCE (DITA-Specific)
+# ============================================================================
+modular_compliance:
+
+  cross_reference_compliance:
+    rule_id: "cross_reference_compliance"
+    display_name: "Cross-Reference Compliance"
+    category: "modular_compliance"
+    severity: "medium"
+    ibm_style:
+      topic: "not_in_guide"
+      pages: []
+      verification_status: "custom_rule"
+      guidance: "DITA-specific: Ensure cross-references between modules follow modular content guidelines and maintain module independence."
+
+  inter_module_analysis:
+    rule_id: "inter_module_analysis"
+    display_name: "Inter-Module Analysis"
+    category: "modular_compliance"
+    severity: "medium"
+    ibm_style:
+      topic: "not_in_guide"
+      pages: []
+      verification_status: "custom_rule"
+      guidance: "DITA-specific: Analyze dependencies and relationships between modules to ensure proper modular architecture."
+
+  concept_module:
+    rule_id: "concept_module"
+    display_name: "Concept Module Compliance"
+    category: "modular_compliance"
+    severity: "medium"
+    ibm_style:
+      topic: "not_in_guide"
+      pages: []
+      verification_status: "custom_rule"
+      guidance: "DITA-specific: Ensure concept modules follow DITA best practices (explanatory content, no procedures)."
+
+  procedure_module:
+    rule_id: "procedure_module"
+    display_name: "Procedure Module Compliance"
+    category: "modular_compliance"
+    severity: "high"
+    ibm_style:
+      topic: "Procedures"
+      pages: [206, 207, 208, 209]
+      verification_status: "verified"
+      guidance: "DITA-specific: Ensure procedure modules follow task topic structure with numbered steps and imperative verbs."
+
+  reference_module:
+    rule_id: "reference_module"
+    display_name: "Reference Module Compliance"
+    category: "modular_compliance"
+    severity: "medium"
+    ibm_style:
+      topic: "not_in_guide"
+      pages: []
+      verification_status: "custom_rule"
+      guidance: "DITA-specific: Ensure reference modules provide lookup information (tables, lists, parameter descriptions)."
+
+  assembly_module:
+    rule_id: "assembly_module"
+    display_name: "Assembly Module Compliance"
+    category: "modular_compliance"
+    severity: "medium"
+    ibm_style:
+      topic: "not_in_guide"
+      pages: []
+      verification_status: "custom_rule"
+      guidance: "DITA-specific: Ensure assembly modules properly organize and sequence other modules without duplicating content."
+
+  template_compliance:
+    rule_id: "template_compliance"
+    display_name: "Template Compliance"
+    category: "modular_compliance"
+    severity: "high"
+    ibm_style:
+      topic: "not_in_guide"
+      pages: []
+      verification_status: "custom_rule"
+      guidance: "DITA-specific: Ensure content follows approved DITA templates and information architecture patterns."
+
+# ============================================================================
+# VERIFICATION TRACKING
+# ============================================================================
+verification_stats:
+  total_rules: 124
+  verified_rules: 116
+  custom_rules: 8
+  unverified_rules: 0
+  verification_percentage: 94
+  last_verification_sweep: "2026-02-25"
+  last_updated: "2026-02-25"
+  notes: "Added 10 missing rule_id mappings: definitions, using_clarity, repeated_words, compound_words, oxford_comma, do_not_use, simple_words, product_names, obvious_terms, llm_consumability"

@@ -1,0 +1,25 @@
+/* ================================================================
+   CEA Theme — PF5 overrides for dark/light consistency
+   ================================================================ */
+
+/* Dark mode adjustments for custom components */
+.pf-v5-theme-dark .cea-issue-card__suggestion {
+  background: rgba(56, 132, 0, 0.1);
+  border-color: rgba(56, 132, 0, 0.25);
+}
+
+.pf-v5-theme-dark .cea-underline:hover {
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+.pf-v5-theme-dark .cea-underline--active {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.pf-v5-theme-dark .cea-dropzone.cea-dropzone--dragover {
+  background: rgba(0, 102, 204, 0.08);
+}
+
+.pf-v5-theme-dark .cea-report-stat {
+  background: var(--pf-v5-global--BackgroundColor--200);
+}

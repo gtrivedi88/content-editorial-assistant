@@ -1,0 +1,679 @@
+# Abbreviations Configuration
+# Manages lists, patterns, and mappings for abbreviations rule
+# Used by AbbreviationsRule for detecting and correcting abbreviation violations
+
+# Latin abbreviation mappings
+latin_equivalents:
+  'e.g': 'for example'
+  'eg': 'for example'
+  'i.e': 'that is'
+  'ie': 'that is'
+  'etc': 'and so on'
+  'et.c': 'and so on'
+  'et c': 'and so on'
+  'cf': 'compare'
+  'c.f': 'compare'
+  'vs': 'versus'
+  'v.s': 'versus'
+
+# Latin morphological patterns
+latin_patterns:
+  - 'etc'
+  - 'cf'
+  - 'vs'
+  - 'et'
+  - 'al'
+
+# =============================================================================
+# ABBREVIATION EXPANSIONS - Used by AI rewriter to generate correct expansions
+# Format: ABBREV: "Full Expansion Text"
+# =============================================================================
+abbreviation_expansions:
+  # Security and vulnerability management
+  SBOM: "Software Bill of Materials"
+  CVSS: "Common Vulnerability Scoring System"
+  CVE: "Common Vulnerabilities and Exposures"
+  VEX: "Vulnerability Exploitability eXchange"
+  SIEM: "Security Information and Event Management"
+  SOAR: "Security Orchestration, Automation, and Response"
+  IDS: "Intrusion Detection System"
+  IPS: "Intrusion Prevention System"
+  WAF: "Web Application Firewall"
+  DLP: "Data Loss Prevention"
+  XSS: "Cross-Site Scripting"
+  CSRF: "Cross-Site Request Forgery"
+  
+  # Authentication and identity
+  JWT: "JSON Web Token"
+  MFA: "Multi-Factor Authentication"
+  SSO: "Single Sign-On"
+  SAML: "Security Assertion Markup Language"
+  OAUTH: "Open Authorization"
+  OIDC: "OpenID Connect"
+  PKI: "Public Key Infrastructure"
+  TLS: "Transport Layer Security"
+  SSL: "Secure Sockets Layer"
+  MTLS: "Mutual TLS"
+  IAM: "Identity and Access Management"
+  RBAC: "Role-Based Access Control"
+  ACL: "Access Control List"
+  
+  # APIs and development
+  API: "Application Programming Interface"
+  SDK: "Software Development Kit"
+  REST: "Representational State Transfer"
+  SOAP: "Simple Object Access Protocol"
+  CRUD: "Create, Read, Update, Delete"
+  ORM: "Object-Relational Mapping"
+  MVC: "Model-View-Controller"
+  CORS: "Cross-Origin Resource Sharing"
+  AJAX: "Asynchronous JavaScript and XML"
+  DOM: "Document Object Model"
+  SPA: "Single Page Application"
+  PWA: "Progressive Web Application"
+  IDE: "Integrated Development Environment"
+  REPL: "Read-Eval-Print Loop"
+  
+  # DevOps and CI/CD
+  CI: "Continuous Integration"
+  CD: "Continuous Delivery"
+  CICD: "Continuous Integration/Continuous Delivery"
+  IaC: "Infrastructure as Code"
+  SRE: "Site Reliability Engineering"
+  SCM: "Source Control Management"
+  VCS: "Version Control System"
+  
+  # Cloud and infrastructure
+  IAAS: "Infrastructure as a Service"
+  PAAS: "Platform as a Service"
+  SAAS: "Software as a Service"
+  FAAS: "Function as a Service"
+  CAAS: "Container as a Service"
+  VPC: "Virtual Private Cloud"
+  CDN: "Content Delivery Network"
+  VM: "Virtual Machine"
+  
+  # Containers and Kubernetes
+  K8S: "Kubernetes"
+  OCI: "Open Container Initiative"
+  CRI: "Container Runtime Interface"
+  CNI: "Container Network Interface"
+  CSI: "Container Storage Interface"
+  HPA: "Horizontal Pod Autoscaler"
+  PV: "Persistent Volume"
+  PVC: "Persistent Volume Claim"
+  CRD: "Custom Resource Definition"
+  
+  # Networking
+  LAN: "Local Area Network"
+  WAN: "Wide Area Network"
+  VLAN: "Virtual LAN"
+  VPN: "Virtual Private Network"
+  DHCP: "Dynamic Host Configuration Protocol"
+  DNS: "Domain Name System"
+  NAT: "Network Address Translation"
+  TCP: "Transmission Control Protocol"
+  UDP: "User Datagram Protocol"
+  HTTP: "Hypertext Transfer Protocol"
+  HTTPS: "Hypertext Transfer Protocol Secure"
+  FTP: "File Transfer Protocol"
+  SSH: "Secure Shell"
+  SFTP: "SSH File Transfer Protocol"
+  NFS: "Network File System"
+  LDAP: "Lightweight Directory Access Protocol"
+  
+  # Database
+  SQL: "Structured Query Language"
+  NOSQL: "Not Only SQL"
+  RDBMS: "Relational Database Management System"
+  OLTP: "Online Transaction Processing"
+  OLAP: "Online Analytical Processing"
+  ACID: "Atomicity, Consistency, Isolation, Durability"
+  ETL: "Extract, Transform, Load"
+  
+  # Monitoring and observability
+  APM: "Application Performance Monitoring"
+  SLA: "Service Level Agreement"
+  SLO: "Service Level Objective"
+  SLI: "Service Level Indicator"
+  KPI: "Key Performance Indicator"
+  MTTR: "Mean Time To Recovery"
+  MTBF: "Mean Time Between Failures"
+  RTO: "Recovery Time Objective"
+  RPO: "Recovery Point Objective"
+  
+  # Data formats
+  JSON: "JavaScript Object Notation"
+  XML: "Extensible Markup Language"
+  HTML: "Hypertext Markup Language"
+  CSS: "Cascading Style Sheets"
+  YAML: "YAML Ain't Markup Language"
+  CSV: "Comma-Separated Values"
+  PDF: "Portable Document Format"
+  URL: "Uniform Resource Locator"
+  URI: "Uniform Resource Identifier"
+  
+  # Hardware and systems
+  CPU: "Central Processing Unit"
+  GPU: "Graphics Processing Unit"
+  RAM: "Random Access Memory"
+  SSD: "Solid State Drive"
+  HDD: "Hard Disk Drive"
+  USB: "Universal Serial Bus"
+  NIC: "Network Interface Card"
+  BIOS: "Basic Input/Output System"
+  UEFI: "Unified Extensible Firmware Interface"
+  
+  # Operating systems
+  OS: "Operating System"
+  RHEL: "Red Hat Enterprise Linux"
+  POSIX: "Portable Operating System Interface"
+  GUI: "Graphical User Interface"
+  CLI: "Command Line Interface"
+  
+  # Testing
+  TDD: "Test-Driven Development"
+  BDD: "Behavior-Driven Development"
+  UAT: "User Acceptance Testing"
+  QA: "Quality Assurance"
+
+# Common technical acronyms (widely known)
+common_technical_acronyms:
+  - 'API'
+  - 'SDK'
+  - 'HTTP'
+  - 'HTTPS'
+  - 'URL'
+  - 'JSON'
+  - 'XML'
+  - 'HTML'
+  - 'CSS'
+  - 'JS'
+  - 'SQL'
+  - 'TCP'
+  - 'UDP'
+  - 'SSH'
+  - 'FTP'
+  - 'REST'
+  - 'SOAP'
+  - 'CRUD'
+  - 'GUI'
+  - 'CLI'
+  - 'IDE'
+  - 'OS'
+  - 'CPU'
+  - 'GPU'
+  - 'RAM'
+  - 'SSD'
+  - 'HDD'
+  - 'USB'
+  - 'PDF'
+  - 'CSV'
+  - 'SPDX'
+  - 'VEX'
+  - 'SBOM'
+  - 'CVE'
+  - 'CVSS'
+
+# Universally known abbreviations (don't require definition)
+universal_abbreviations:
+  # Core web and internet protocols
+  web_protocols:
+    - 'HTTP'
+    - 'HTTPS'
+    - 'HTML'
+    - 'CSS'
+    - 'XML'
+    - 'JSON'
+    - 'PDF'
+    - 'URL'
+    - 'URI'
+    - 'FTP'
+    - 'SSH'
+    - 'SSL'
+    - 'TLS'
+    - 'TCP'
+    - 'UDP'
+    - 'IP'
+    - 'DNS'
+    - 'DHCP'
+  
+  # Hardware and computing fundamentals
+  hardware:
+    - 'USB'
+    - 'WIFI'
+    - 'GPS'
+    - 'CPU'
+    - 'GPU'
+    - 'RAM'
+    - 'SSD'
+    - 'DVD'
+    - 'CD'
+    - 'ASCII'
+    - 'MAC'
+    - 'IO'
+    - 'OS'
+  
+  # Business and organizational
+  business:
+    - 'SMS'
+    - 'EMAIL'
+    - 'FAQ'
+    - 'CEO'
+    - 'CTO'
+    - 'HR'
+    - 'IT'
+    - 'ID'
+  
+  # Development and APIs
+  development:
+    - 'API'
+    - 'REST'
+    - 'SDK'
+    - 'SQL'
+    - 'CRUD'
+    - 'GUI'
+    - 'CLI'
+    - 'IDE'
+  
+  # DevOps and CI/CD
+  devops:
+    - 'CI'
+    - 'CD'
+    - 'CICD'
+    - 'YAML'
+    - 'YML'
+    - 'GIT'
+    - 'REPO'
+  
+  # Cloud platforms and services
+  cloud:
+    - 'AWS'
+    - 'GCP'
+    - 'AZURE'
+    - 'S3'
+    - 'EC2'
+    - 'VPC'
+    - 'IAM'
+    - 'SQS'
+    - 'SNS'
+    - 'ARN'
+  
+  # Container and orchestration
+  containers:
+    - 'VM'
+    - 'VMS'
+    - 'K8S'
+    - 'PAAS'
+    - 'SAAS'
+    - 'IAAS'
+  
+  # Red Hat / Linux ecosystem
+  redhat:
+    - 'RHEL'
+    - 'RH'
+    - 'RHCOS'
+    - 'RHOCP'
+    - 'OCP'
+    - 'ACM'
+    - 'RHACS'
+  
+  # Security and compliance
+  security:
+    - 'MFA'
+    - 'SSO'
+    - 'RBAC'
+    - 'ACS'
+  
+  # Source control and collaboration
+  source_control:
+    - 'PR'
+    - 'PRS'
+    - 'SCM'
+    - 'VCS'
+  
+  # Build and deployment
+  build_tools:
+    - 'NPM'
+    - 'PIP'
+    - 'JAR'
+    - 'WAR'
+    - 'JIB'
+  
+  # Monitoring and observability
+  monitoring:
+    - 'APM'
+    - 'SLA'
+    - 'SLO'
+  
+  # Data formats and interchange
+  data_formats:
+    - 'CSV'
+    - 'TSV'
+    - 'JPEG'
+    - 'PNG'
+    - 'GIF'
+    - 'SVG'
+    - 'ZIP'
+    - 'TAR'
+    - 'GZ'
+  
+  # Networking and QoS
+  networking:
+    - 'NIC'
+    - 'INGRESS'
+    - 'ETS'
+    - 'ETF'
+    - 'FQ'
+    - 'GRED'
+    - 'HSFC'
+    - 'HTB'
+    - 'MQPRIO'
+    - 'MULTIQ'
+    - 'NETEM'
+    - 'RED'
+    - 'SFQ'
+    - 'TAPRIO'
+    - 'TBF'
+
+# Technical terms for density calculation
+technical_terms:
+  - 'api'
+  - 'sdk'
+  - 'json'
+  - 'xml'
+  - 'http'
+  - 'https'
+  - 'html'
+  - 'css'
+  - 'sql'
+  - 'database'
+  - 'server'
+  - 'client'
+  - 'protocol'
+  - 'framework'
+  - 'library'
+  - 'algorithm'
+  - 'function'
+  - 'method'
+  - 'class'
+  - 'object'
+  - 'interface'
+  - 'deployment'
+  - 'configuration'
+  - 'authentication'
+  - 'authorization'
+
+# Admonition keywords (legitimate uppercase usage)
+admonition_keywords:
+  - 'NOTE'
+  - 'TIP'
+  - 'IMPORTANT'
+  - 'WARNING'
+  - 'CAUTION'
+
+# Command indicators for imperative context detection
+command_indicators:
+  - 'run'
+  - 'execute'
+  - 'install'
+  - 'configure'
+  - 'setup'
+  - 'use'
+
+# Brand context indicators
+brand_indicators:
+  explicit_markers:
+    - 'brand'
+    - 'trademark'
+    - 'registered'
+    - 'patent'
+    - 'proprietary'
+    - 'licensed'
+    - 'inc'
+    - 'ltd'
+    - 'corporation'
+    - 'enterprise'
+  
+  company_names:
+    - 'microsoft'
+    - 'google'
+    - 'apple'
+    - 'ibm'
+    - 'oracle'
+    - 'amazon'
+    - 'adobe'
+  
+  product_descriptors:
+    - 'software'
+    - 'platform'
+    - 'solution'
+    - 'service'
+
+# Semantic action verbs for abbreviations
+semantic_actions:
+  ftp: 'use'
+  sftp: 'use'
+  ssh: 'connect via'
+  telnet: 'connect via'
+  http: 'access via'
+  https: 'access via'
+  default: 'use'
+
+# Evidence thresholds
+evidence_thresholds:
+  min_threshold: 0.1  # Minimum evidence to create error
+  latin_base: 0.5
+  undefined_base: 0.6
+  verb_usage_base: 0.8
+
+# Well-known technical acronyms by domain
+# These are domain-specific and considered universally understood by the target audience
+well_known_technical_acronyms:
+  # Networking and telecommunications
+  networking:
+    - 'EAP'         # Extensible Authentication Protocol
+    - 'TTLS'        # Tunneled Transport Layer Security
+    - 'PEAP'        # Protected Extensible Authentication Protocol
+    - 'RADIUS'      # Remote Authentication Dial-In User Service
+    - 'TACACS'      # Terminal Access Controller Access-Control System
+    - 'EAPOL'       # EAP over LAN
+    - 'LAN'         # Local Area Network
+    - 'WAN'         # Wide Area Network
+    - 'VLAN'        # Virtual LAN
+    - 'VPN'         # Virtual Private Network
+    - 'DHCP'        # Dynamic Host Configuration Protocol
+    - 'NAT'         # Network Address Translation
+    - 'BGP'         # Border Gateway Protocol
+    - 'OSPF'        # Open Shortest Path First
+    - 'MPLS'        # Multiprotocol Label Switching
+    - 'QOS'         # Quality of Service
+    - 'SNMP'        # Simple Network Management Protocol
+    - 'ICMP'        # Internet Control Message Protocol
+    - 'ARP'         # Address Resolution Protocol
+    - 'MTU'         # Maximum Transmission Unit
+    - 'CIDR'        # Classless Inter-Domain Routing
+    - 'IPV4'        # Internet Protocol version 4
+    - 'IPV6'        # Internet Protocol version 6
+    - 'MAC'         # Media Access Control
+    - 'NTP'         # Network Time Protocol
+    - 'VXLAN'       # Virtual Extensible LAN
+    - 'STP'         # Spanning Tree Protocol
+    - 'LACP'        # Link Aggregation Control Protocol
+    - 'LLDP'        # Link Layer Discovery Protocol
+    - 'WIFI'        # Wireless Fidelity
+    - 'WPA'         # Wi-Fi Protected Access
+    - 'WEP'         # Wired Equivalent Privacy
+  
+  # Cloud computing and virtualization
+  cloud:
+    - 'IAAS'        # Infrastructure as a Service
+    - 'PAAS'        # Platform as a Service
+    - 'SAAS'        # Software as a Service
+    - 'FAAS'        # Function as a Service
+    - 'CAAS'        # Container as a Service
+    - 'VM'          # Virtual Machine
+    - 'AMI'         # Amazon Machine Image
+    - 'EBS'         # Elastic Block Store
+    - 'ECS'         # Elastic Container Service
+    - 'EKS'         # Elastic Kubernetes Service
+    - 'RDS'         # Relational Database Service
+    - 'S3'          # Simple Storage Service
+    - 'EC2'         # Elastic Compute Cloud
+    - 'VPC'         # Virtual Private Cloud
+    - 'CDN'         # Content Delivery Network
+    - 'BLOB'        # Binary Large Object
+    - 'BYOL'        # Bring Your Own License
+  
+  # Software development and APIs
+  development:
+    - 'API'         # Application Programming Interface
+    - 'SDK'         # Software Development Kit
+    - 'IDE'         # Integrated Development Environment
+    - 'REST'        # Representational State Transfer
+    - 'SOAP'        # Simple Object Access Protocol
+    - 'CRUD'        # Create, Read, Update, Delete
+    - 'ORM'         # Object-Relational Mapping
+    - 'MVC'         # Model-View-Controller
+    - 'MVP'         # Model-View-Presenter
+    - 'MVVM'        # Model-View-ViewModel
+    - 'JWT'         # JSON Web Token
+    - 'CORS'        # Cross-Origin Resource Sharing
+    - 'AJAX'        # Asynchronous JavaScript and XML
+    - 'DOM'         # Document Object Model
+    - 'SPA'         # Single Page Application
+    - 'PWA'         # Progressive Web App
+    - 'REPL'        # Read-Eval-Print Loop
+    - 'REGEX'       # Regular Expression
+  
+  # DevOps and CI/CD
+  devops:
+    - 'CI'          # Continuous Integration
+    - 'CD'          # Continuous Delivery/Deployment
+    - 'CICD'        # Continuous Integration/Continuous Delivery
+    - 'SCM'         # Source Control Management
+    - 'VCS'         # Version Control System
+    - 'YAML'        # YAML Ain't Markup Language
+    - 'TOML'        # Tom's Obvious Minimal Language
+    - 'IaC'         # Infrastructure as Code
+    - 'GitOps'      # Git Operations
+    - 'SRE'         # Site Reliability Engineering
+  
+  # Container orchestration and microservices
+  containers:
+    - 'K8S'         # Kubernetes
+    - 'OCI'         # Open Container Initiative
+    - 'CRI'         # Container Runtime Interface
+    - 'CNI'         # Container Network Interface
+    - 'CSI'         # Container Storage Interface
+    - 'HPA'         # Horizontal Pod Autoscaler
+    - 'PV'          # Persistent Volume
+    - 'PVC'         # Persistent Volume Claim
+    - 'CRD'         # Custom Resource Definition
+    - 'RBAC'        # Role-Based Access Control
+    - 'PSP'         # Pod Security Policy
+    - 'HELM'        # Package manager for Kubernetes
+  
+  # Security and identity
+  security:
+    - 'MFA'         # Multi-Factor Authentication
+    - 'SSO'         # Single Sign-On
+    - 'SAML'        # Security Assertion Markup Language
+    - 'OAUTH'       # Open Authorization
+    - 'OIDC'        # OpenID Connect
+    - 'PKI'         # Public Key Infrastructure
+    - 'CA'          # Certificate Authority
+    - 'TLS'         # Transport Layer Security
+    - 'SSL'         # Secure Sockets Layer
+    - 'MTLS'        # Mutual TLS
+    - 'HSM'         # Hardware Security Module
+    - 'KMS'         # Key Management Service
+    - 'SIEM'        # Security Information and Event Management
+    - 'IDS'         # Intrusion Detection System
+    - 'IPS'         # Intrusion Prevention System
+    - 'WAF'         # Web Application Firewall
+    - 'DLP'         # Data Loss Prevention
+    - 'XSS'         # Cross-Site Scripting
+    - 'CSRF'        # Cross-Site Request Forgery
+    - 'ACL'         # Access Control List
+    - 'IAM'         # Identity and Access Management
+  
+  # Database and storage
+  database:
+    - 'SQL'         # Structured Query Language
+    - 'NOSQL'       # Not Only SQL
+    - 'RDBMS'       # Relational Database Management System
+    - 'OLTP'        # Online Transaction Processing
+    - 'OLAP'        # Online Analytical Processing
+    - 'ACID'        # Atomicity, Consistency, Isolation, Durability
+    - 'ETL'         # Extract, Transform, Load
+    - 'ELT'         # Extract, Load, Transform
+    - 'BLOB'        # Binary Large Object
+    - 'CLOB'        # Character Large Object
+    - 'DML'         # Data Manipulation Language
+    - 'DDL'         # Data Definition Language
+    - 'ODS'         # Operational Data Store
+  
+  # Monitoring and observability
+  monitoring:
+    - 'APM'         # Application Performance Monitoring
+    - 'SLA'         # Service Level Agreement
+    - 'SLO'         # Service Level Objective
+    - 'SLI'         # Service Level Indicator
+    - 'KPI'         # Key Performance Indicator
+    - 'MTTR'        # Mean Time To Repair
+    - 'MTBF'        # Mean Time Between Failures
+    - 'RTO'         # Recovery Time Objective
+    - 'RPO'         # Recovery Point Objective
+  
+  # Operating systems and Linux
+  linux:
+    - 'RHEL'        # Red Hat Enterprise Linux
+    - 'RHCOS'       # Red Hat CoreOS
+    - 'POSIX'       # Portable Operating System Interface
+    - 'GRUB'        # Grand Unified Bootloader
+    - 'LVM'         # Logical Volume Manager
+    - 'RAID'        # Redundant Array of Independent Disks
+    - 'LUKS'        # Linux Unified Key Setup
+    - 'SELinux'     # Security-Enhanced Linux
+    - 'GNOME'       # GNU Network Object Model Environment (desktop environment)
+    - 'CRON'        # Command Run On
+    - 'BASH'        # Bourne Again Shell
+    - 'SSH'         # Secure Shell
+    - 'SFTP'        # SSH File Transfer Protocol
+    - 'NFS'         # Network File System
+    - 'CIFS'        # Common Internet File System
+    - 'SMB'         # Server Message Block
+    - 'LDAP'        # Lightweight Directory Access Protocol
+  
+  # Messaging and streaming
+  messaging:
+    - 'MQ'          # Message Queue
+    - 'AMQP'        # Advanced Message Queuing Protocol
+    - 'MQTT'        # Message Queuing Telemetry Transport
+    - 'JMS'         # Java Message Service
+    - 'FIFO'        # First In First Out
+    - 'LIFO'        # Last In First Out
+    - 'PUB'         # Publish
+    - 'SUB'         # Subscribe
+  
+  # Testing and quality assurance
+  testing:
+    - 'TDD'         # Test-Driven Development
+    - 'BDD'         # Behavior-Driven Development
+    - 'UAT'         # User Acceptance Testing
+    - 'QA'          # Quality Assurance
+    - 'QC'          # Quality Control
+    - 'ATDD'        # Acceptance Test-Driven Development
+  
+  # Telecommunications and wireless
+  telecom:
+    - 'GSM'         # Global System for Mobile Communications
+    - 'CDMA'        # Code Division Multiple Access
+    - 'LTE'         # Long-Term Evolution
+    - '5G'          # Fifth Generation
+    - 'VOIP'        # Voice over IP
+    - 'SIP'         # Session Initiation Protocol
+    - 'RTP'         # Real-time Transport Protocol
+    - 'PSTN'        # Public Switched Telephone Network
+

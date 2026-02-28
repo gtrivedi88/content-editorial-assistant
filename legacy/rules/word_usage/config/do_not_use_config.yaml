@@ -1,0 +1,44 @@
+# Do Not Use Terms Configuration
+# Terms that should not be used in technical documentation.
+# Each entry has a custom message explaining why.
+# Source: Red Hat Vale DoNotUseTerms + IBM Style Guide.
+
+terms:
+  "and/or":
+    message: "Do not use 'and/or'. Depending on the context, use one of the following constructions: a and b, a or b, or a, b, or both."
+  "basically":
+    message: "Do not use 'basically'. 'Basically' is another term for 'in principle' or 'fundamentally'."
+  "congratulations":
+    message: "Do not use 'congratulations' in technical information."
+  "debuggable":
+    message: "Do not use 'debuggable'. Rephrase the sentence to use the verb or noun debug. For example, change 'rebuild the debuggable version' to 'rebuild the version that can be debugged'."
+  "foo":
+    message: "Do not use 'foo'. This term is technical jargon in code and as shorthand for fubar, an acronym of profanity in code."
+  "fubar":
+    message: "Do not use 'fubar'. This term is an acronym of a profanity that is sometimes used by developers in code."
+  "future-proof":
+    message: "Do not use 'future-proof' in a statement about the benefits, characteristics, or performance of a product or service."
+  "kerberize":
+    message: "Do not use 'kerberize' to refer to applications or services that use Kerberos authentication. Refer to such applications as 'Kerberos-aware' or 'Kerberos-enabled', or rewrite the sentence."
+  "kerberized":
+    message: "Do not use 'kerberized' to refer to applications or services that use Kerberos authentication. Refer to such applications as 'Kerberos-aware' or 'Kerberos-enabled', or rewrite the sentence."
+  "native interface":
+    message: "Do not use 'native interface' to refer to the command line interface for the JBoss EAP management tool."
+  "out of the box":
+    message: "Do not use 'out of the box'. Use text that is suitable for the context and the noun to which this adjective applies."
+  "out-of-the-box":
+    message: "Do not use 'out-of-the-box'. Use text that is suitable for the context and the noun to which this adjective applies."
+  "overhead":
+    message: "Do not use 'overhead'. Use terminology that is more specific. For example, write 'running large queries can increase processor usage'."
+  "please":
+    message: "Do not use 'please' in technical documentation."
+  "quiescent":
+    message: "Do not use 'quiescent'. If a system is, or needs to be inactive, write 'inactive'. If a system is, or needs to be safe, write 'safe'."
+  "resides":
+    message: "Do not use 'resides' if a simpler verb is possible."
+  "respective":
+    message: "Do not use 'respective'. Rewrite to avoid using this word."
+  "respectively":
+    message: "Do not use 'respectively'. Rewrite to avoid using this word."
+  "time-tested":
+    message: "Do not use 'time-tested'. Time-tested implies a claim of suitability or reliability."

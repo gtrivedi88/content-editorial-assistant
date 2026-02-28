@@ -1,0 +1,70 @@
+# Prepositions Rule Configuration
+# IBM Style Guide (Page 108): Omit unnecessary prepositions in phrasal verbs.
+#
+# HOW TO MAINTAIN:
+# - Add new phrasal verbs to flag when discovered in content reviews
+# - Format: verb_lemma → preposition → suggested_replacement
+# - No code changes needed — just edit this file and restart.
+
+# Phrasal verbs where the preposition is unnecessary
+# Format: {verb: {preposition: replacement}}
+unnecessary_phrasal_verbs:
+  click:
+    on: click
+  print:
+    out: print
+  start:
+    up: start
+  shut:
+    down: shut
+  fill:
+    out: fill
+    in: fill
+  call:
+    up: call
+  boot:
+    up: boot
+  close:
+    down: close
+  open:
+    up: open
+  free:
+    up: free
+  finish:
+    up: finish
+  connect:
+    up: connect
+  refer:
+    back: refer
+  return:
+    back: return
+  revert:
+    back: revert
+  repeat:
+    again: repeat
+  continue:
+    on: continue
+  enter:
+    in: enter
+  exit:
+    out: exit
+  lift:
+    up: lift
+  raise:
+    up: raise
+  mount:
+    up: mount
+  add:
+    in: add
+  mix:
+    together: mix
+  merge:
+    together: merge
+  combine:
+    together: combine
+  plan:
+    ahead: plan
+  advance:
+    forward: advance
+  progress:
+    forward: progress

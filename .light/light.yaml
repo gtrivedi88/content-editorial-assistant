@@ -1,0 +1,17 @@
+metadata:
+  cmdb: DOCS-005
+
+health_check:
+  path: /api/v1/health
+
+application:
+  entrypoint: main.sh
+
+hooks:
+  build:
+    containerfile: .light/Containerfile.partial
+
+llama_stack:
+  version: "0.3.5"
+  config:
+    path: llamastack/config.yaml

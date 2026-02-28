@@ -1,0 +1,66 @@
+# Virtual environment
+venv/
+
+# Runtime data
+data/
+
+# Security reports
+security_reports/
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+
+# Environment variables
+.env
+
+# Coverage reports
+coverage.xml
+
+# Cache directories
+.cache/
+.pytest_cache/
+
+# Egg info
+*.egg-info/
+
+# LightRail secrets (all environments)
+.light/*/secrets.env
+legacy/.light/*/secrets.env
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+
+# TLS certificates
+*.pem
+
+# Project instructions (local only)
+CLAUDE.md
+
+# Coverage data
+.coverage
+
+# Legacy environment
+legacy/.env
+legacy/venv/
+legacy/coverage.xml
+legacy/data/
+legacy/security_reports/
+legacy/__pycache__/
+
+# Test artifacts
+junit.xml
+
+# Scratch / planning files
+patch.md
+patch2.md
+plan.md
+plain.txt
+
+# Poetry lock (generated)
+poetry.lock

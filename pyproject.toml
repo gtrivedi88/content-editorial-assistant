@@ -1,0 +1,109 @@
+[project]
+name = "content-editorial-assistant"
+version = "1.0.0"
+description = "Content Editorial Assistant"
+maintainers = [
+    { name = "Gaurav Trivedi", email = "gtrivedi@redhat.com" },
+]
+requires-python = ">=3.12,<4"
+
+dependencies = [
+    # ================================
+    # CORE FRAMEWORK & WEB
+    # ================================
+    "Flask (>=3.1.0,<4.0.0)",
+    "Flask-Cors (>=5.0.0,<6.0.0)",
+    "flask-limiter (>=3.5,<4.0)",
+    "Flask-SocketIO (>=5.4.0,<6.0.0)",
+    "Werkzeug (>=3.0.0,<4.0.0)",
+    "Jinja2 (>=3.1.0,<4.0.0)",
+    "MarkupSafe (>=2.1.0,<3.0.0)",
+    "itsdangerous (>=2.2.0,<3.0.0)",
+
+    # ================================
+    # NLP & TEXT PROCESSING
+    # ================================
+    "spacy (>=3.7.6,<4.0.0)",
+    "spacy-legacy (>=3.0.0,<4.0.0)",
+    "spacy-loggers (>=1.0.0,<2.0.0)",
+    "en_core_web_md @ https://github.com/explosion/spacy-models/releases/download/en_core_web_md-3.8.0/en_core_web_md-3.8.0-py3-none-any.whl",
+    "textstat (>=0.7.0,<1.0.0)",
+
+    # spaCy dependencies
+    "thinc (>=8.2.0,<9.0.0)",
+    "blis (>=1.0.0,<2.0.0)",
+    "catalogue (>=2.0.0,<3.0.0)",
+    "confection (>=0.1.0,<1.0.0)",
+    "cymem (>=2.0.0,<3.0.0)",
+    "murmurhash (>=1.0.0,<2.0.0)",
+    "preshed (>=3.0.0,<4.0.0)",
+    "srsly (>=2.4.0,<3.0.0)",
+    "typer (>=0.12.0,<1.0.0)",
+    "wasabi (>=1.1.0,<2.0.0)",
+    "weasel (>=0.4.0,<1.0.0)",
+
+    # ================================
+    # LLM — MULTI-PROVIDER MODEL SYSTEM
+    # ================================
+    "tenacity (>=9.0.0,<10.0.0)",
+    "llama-stack-client (==0.2.12)",
+    # requests and fire are required for llama-stack-client but are not in its dependencies list.
+    # See https://github.com/meta-llama/llama-stack-client-python/issues/233
+    "requests (>=2.31.0)",
+    "fire (>=0.7.0)",
+
+    # ================================
+    # FILE PROCESSING & PARSING
+    # ================================
+    "PyMuPDF (>=1.24.0,<2.0.0)",
+    "python-docx (>=1.1.0,<2.0.0)",
+    "openpyxl (>=3.1.0,<4.0.0)",
+    "lxml (>=5.0.0,<6.0.0)",
+    "markdown-it-py (>=3.0.0,<4.0.0)",
+
+    # ================================
+    # WEBSOCKETS & REAL-TIME
+    # ================================
+    "python-socketio (>=5.8.0,<6.0.0)",
+    "python-engineio (>=4.7.0,<5.0.0)",
+    "simple-websocket (>=1.0.0,<2.0.0)",
+    "bidict (>=0.23.0,<1.0.0)",
+
+    # ================================
+    # UTILITIES & CORE DEPENDENCIES
+    # ================================
+    "click (>=8.1.0,<9.0.0)",
+    "PyYAML (>=6.0.0,<7.0.0)",
+    "python-dotenv (>=1.0.0,<2.0.0)",
+    "blinker (>=1.6.0,<2.0.0)",
+    "typing_extensions (>=4.8.0,<5.0.0)",
+
+    # ================================
+    # OBSERVABILITY
+    # ================================
+    "python-json-logger (>=2.0,<3.0)",
+
+    # ================================
+    # PRODUCTION SERVER
+    # ================================
+    "gunicorn (>=23.0.0,<24.0.0)",
+    "gevent (>=24.2.0,<25.0.0)",
+]
+
+[dependency-groups]
+test = [
+    # ================================
+    # TESTING
+    # ================================
+    "pytest (>=8.0.0,<9.0.0)",
+    "pytest-cov (>=6.0.0,<7.0.0)",
+    "bandit (>=1.8.0,<2.0.0)",
+    "flake8 (>=7.0.0,<8.0.0)",
+]
+
+[tool.poetry]
+package-mode = false
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

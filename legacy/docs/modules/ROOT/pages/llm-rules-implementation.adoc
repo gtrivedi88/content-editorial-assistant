@@ -1,0 +1,1346 @@
+= LLM-Based Style Rules Implementation Guide
+:toc: left
+:toclevels: 3
+:icons: font
+:source-highlighter: highlight.js
+
+== Overview
+
+This guide explains the hybrid architecture for style checking: **deterministic rules** (coded) for simple pattern matching, and **LLM-based rules** for judgment-intensive checks.
+
+[IMPORTANT]
+====
+This approach reduces maintenance burden by moving complex, context-dependent rules to LLM evaluation while keeping simple word-list rules as fast, coded checks.
+
+**Key Decision**: We DELETE the old coded rules for judgment-intensive checks. No parallel running, no backup. One system to maintain.
+
+**Location**: All LLM rules are in `rules/language_and_grammar/`:
+
+* `llm_style_checker.py` - The Gemini-powered style checker
+* `config/llm_style_rules.yaml` - Rule definitions with IBM Style Guide references
+====
+
+== Files Deleted (Moved to LLM)
+
+The following files have been **deleted** and replaced by LLM-based rules:
+
+=== Language and Grammar Rules (8 files, ~9,211 lines)
+
+[cols="2,1,2"]
+|===
+| File | Lines | Replaced By
+
+| `rules/language_and_grammar/verbs_rule.py`
+| 2,470
+| `passive_voice`, `verb_tense` LLM rules
+
+| `rules/language_and_grammar/passive_voice_analyzer.py`
+| 1,347
+| `passive_voice` LLM rule
+
+| `rules/language_and_grammar/articles_rule.py`
+| 1,239
+| `articles` LLM rule
+
+| `rules/language_and_grammar/pronouns_rule.py`
+| 584
+| `pronouns` LLM rule
+
+| `rules/language_and_grammar/anthropomorphism_rule.py`
+| 482
+| `anthropomorphism` LLM rule
+
+| `rules/language_and_grammar/conjunctions_rule.py`
+| 1,439
+| `conjunctions` LLM rule
+
+| `rules/language_and_grammar/prepositions_rule.py`
+| 1,204
+| `prepositions` LLM rule
+
+| `rules/language_and_grammar/adverbs_only_rule.py`
+| 446
+| `adverbs_only` LLM rule
+|===
+
+=== Ambiguity Module (entire directory, ~4,250 lines)
+
+[cols="2,1,2"]
+|===
+| File | Lines | Replaced By
+
+| `ambiguity/detectors/pronoun_ambiguity_detector.py`
+| 1,937
+| `pronouns` LLM rule
+
+| `ambiguity/detectors/unsupported_claims_detector.py`
+| 790
+| `unsupported_claims` LLM rule
+
+| `ambiguity/detectors/fabrication_risk_detector.py`
+| 1,023
+| `unsupported_claims` LLM rule
+
+| `ambiguity/detectors/missing_actor_detector.py`
+| ~500
+| `passive_voice` LLM rule
+
+| `ambiguity/base_ambiguity_rule.py`
+| 183
+| (deleted)
+
+| `ambiguity/types.py`
+| 296
+| (deleted)
+
+| `ambiguity/__init__.py`
+| 24
+| (deleted)
+
+| `ambiguity/config/*`
+| ~50
+| (deleted)
+|===
+
+**Total lines deleted: ~13,461**
+
+**Total lines added: ~300 (YAML config)**
+
+== Dependency Analysis
+
+Before deleting files, the following dependencies must be updated:
+
+=== 1. rules/language_and_grammar/__init__.py
+
+Remove imports for deleted rules:
+
+[source,python]
+----
+# DELETE THESE IMPORTS:
+from .adverbs_only_rule import AdverbsOnlyRule
+from .anthropomorphism_rule import AnthropomorphismRule
+from .articles_rule import ArticlesRule
+from .conjunctions_rule import ConjunctionsRule
+from .prepositions_rule import PrepositionsRule
+from .pronouns_rule import PronounsRule
+from .verbs_rule import VerbsRule
+
+# DELETE FROM __all__:
+'AdverbsOnlyRule', 'AnthropomorphismRule', 'ArticlesRule',
+'ConjunctionsRule', 'PrepositionsRule', 'PronounsRule', 'VerbsRule'
+----
+
+=== 2. rules/rule_mappings.yaml
+
+Remove or comment out these rules from all block types:
+
+* `verbs`
+* `pronouns`
+* `anthropomorphism`
+* `articles`
+* `prepositions`
+* `adverbs_only`
+* `conjunctions`
+* `ambiguity`
+
+NOTE: These will be handled by LLM rules, not coded rules.
+
+=== 3. rules/ambiguity_rule.py
+
+Delete this file - it's the wrapper that imports from `ambiguity/` module.
+
+=== 4. Config Files to Delete
+
+* `rules/language_and_grammar/config/verbs_config.yaml`
+* `rules/language_and_grammar/config/verbs_corrections.yaml`
+* `rules/language_and_grammar/config/articles_config.yaml`
+* `rules/language_and_grammar/config/articles_phonetics.yaml`
+* `rules/language_and_grammar/config/anthropomorphism_config.yaml`
+* `rules/language_and_grammar/config/anthropomorphism_entities.yaml`
+* `rules/language_and_grammar/config/conjunctions_patterns.yaml`
+* `rules/language_and_grammar/config/adverbs_only_config.yaml`
+* `rules/language_and_grammar/config/prepositions_patterns.yaml` (if exists)
+* `ambiguity/config/ambiguity_types.yaml`
+
+=== 5. Test Files (Archive or Delete)
+
+These test files will no longer work after deletion:
+
+[cols="2,1"]
+|===
+| Test File | Action
+
+| `tests/unit/test_verbs_rule_*.py` (4 files)
+| Archive
+
+| `tests/guards/test_verbs_*.py` (2 files)
+| Archive
+
+| `tests/unit/test_articles_rule*.py` (3 files)
+| Archive
+
+| `tests/unit/test_conjunctions_rule_*.py` (5 files)
+| Archive
+
+| `tests/test_prepositions_rule_refinements.py`
+| Archive
+
+| `tests/guards/test_passive_voice_*.py`
+| Archive
+
+| `tests/unit/test_pronoun_ambiguity_*.py`
+| Archive
+
+| `tests/guards/test_pronoun_*.py` (2 files)
+| Archive
+
+| `tests/unit/test_ambiguity_detection.py`
+| Archive
+
+| `tests/test_fabrication_risk_refinements.py`
+| Archive
+|===
+
+=== 6. Validation Module Reference
+
+File: `validation/multi_pass/pass_validators/morphological_validator.py`
+
+Check and update any direct imports of ambiguity module.
+
+=== 7. Documentation to Update
+
+* `docs/modules/how-to/pages/how-to-add-new-ambiguity-detector.adoc` - Archive or redirect
+* `docs/modules/architecture/pages/architecture.adoc` - Update architecture diagram
+
+== Decision Framework
+
+=== When to Use Coded Rules (Deterministic)
+
+[cols="1,2,2"]
+|===
+| Criteria | Example | Why Deterministic
+
+| Finite word list
+| "colour" → "color"
+| Simple lookup, no context needed
+
+| Binary pattern
+| "URL's" → "URLs"
+| Regex can handle it
+
+| State tracking
+| "Define abbreviation on first use"
+| Stateful but deterministic
+
+| Format checking
+| "I.B.M." → "IBM"
+| Pattern matching
+|===
+
+=== When to Use LLM Rules (Judgment)
+
+[cols="1,2,2"]
+|===
+| Criteria | Example | Why LLM Needed
+
+| Context changes meaning
+| "The file is opened" - passive OK in some contexts
+| Release notes vs procedures differ
+
+| Semantic understanding
+| "it" pronoun - what does it refer to?
+| Needs to understand antecedent
+
+| Style judgment
+| Starting sentence with "And"
+| Sometimes acceptable for emphasis
+
+| Multiple valid options
+| "a" vs "the" article choice
+| Depends on whether item was introduced
+|===
+
+== Rule Classification
+
+=== Language and Grammar Rules
+
+[cols="2,1,1,3"]
+|===
+| Rule | Lines | Type | Rationale
+
+| `spelling_rule.py`
+| 718
+| ✅ CODED
+| Word list: "colour"→"color"
+
+| `inclusive_language_rule.py`
+| 810
+| ✅ CODED
+| Word list: "blacklist"→"blocklist"
+
+| `abbreviations_rule.py`
+| 966
+| ✅ CODED
+| Latin abbrev list + first-use tracking
+
+| `terminology_rule.py`
+| 769
+| ✅ CODED
+| IBM Terminology database lookup
+
+| `prefixes_rule.py`
+| 1048
+| ✅ CODED
+| Word list: "pre-install"→"preinstall"
+
+| `plurals_rule.py`
+| 1514
+| ✅ CODED
+| Pattern: apostrophe in plurals
+
+| `possessives_rule.py`
+| 710
+| ✅ CODED
+| Apostrophe rules
+
+| `verbs_rule.py`
+| 2470
+| 🤖 LLM
+| Passive voice, tense - context dependent
+
+| `passive_voice_analyzer.py`
+| 1347
+| 🤖 LLM
+| When is passive acceptable?
+
+| `articles_rule.py`
+| 1239
+| 🤖 LLM
+| "a" vs "the" - context dependent
+
+| `pronouns_rule.py`
+| 584
+| 🤖 LLM
+| Ambiguous pronoun references
+
+| `anthropomorphism_rule.py`
+| 482
+| 🤖 LLM
+| "system knows" vs "AI learns"
+
+| `conjunctions_rule.py`
+| 1439
+| 🤖 LLM
+| Starting with "And/But" - style judgment
+
+| `prepositions_rule.py`
+| 1204
+| 🤖 LLM
+| Ending with preposition - often fine
+
+| `adverbs_only_rule.py`
+| 446
+| 🤖 LLM
+| "only" placement ambiguity
+|===
+
+== LLM Rule Configuration
+
+=== Rule Definition Format
+
+Create `llm_style_rules.yaml`:
+
+[source,yaml]
+----
+# LLM-Based Style Rules Configuration
+# These rules require contextual judgment and are evaluated by Gemini
+
+version: "1.0"
+model: "gemini-1.5-flash"
+
+rules:
+  # ============================================================
+  # VERBS AND VOICE
+  # ============================================================
+  
+  passive_voice:
+    id: "passive_voice"
+    category: "language_and_grammar"
+    enabled: true
+    severity: "medium"
+    
+    description: |
+      Identifies inappropriate passive voice constructions.
+      Active voice is preferred in technical documentation.
+    
+    ibm_style_reference:
+      pages: [113, 114, 115, 116]
+      section: "Language and grammar > Verbs"
+      summary: |
+        Use active voice in most cases. Passive voice is acceptable when:
+        - The actor is unknown or unimportant
+        - In release notes describing past events
+        - When emphasizing the action over the actor
+    
+    check_prompt: |
+      Is this sentence using passive voice inappropriately?
+      Consider: Is this a procedure (should be active) or a description 
+      where passive might be acceptable?
+    
+    examples:
+      violations:
+        - text: "The file should be opened by the user."
+          context: "procedure step"
+          fix: "Open the file."
+          
+        - text: "The configuration is recommended to be updated."
+          context: "procedure"
+          fix: "Update the configuration."
+          
+      acceptable:
+        - text: "The bug was fixed in version 2.0."
+          context: "release notes"
+          reason: "Passive acceptable in release notes"
+          
+        - text: "The data is stored in the database."
+          context: "description"
+          reason: "Actor (system) is obvious"
+
+  # ============================================================
+  # ARTICLES
+  # ============================================================
+  
+  articles:
+    id: "articles"
+    category: "language_and_grammar"
+    enabled: true
+    severity: "low"
+    
+    description: |
+      Checks for missing, incorrect, or inconsistent article usage (a/an/the).
+    
+    ibm_style_reference:
+      pages: [91, 92]
+      section: "Language and grammar > Articles"
+      summary: |
+        Use "a" before consonant sounds, "an" before vowel sounds.
+        This applies to pronunciation, not spelling:
+        - "an SQL query" (ess-queue-el)
+        - "a URL" (you-are-el)
+        - "an hour" (silent h)
+    
+    check_prompt: |
+      Is the article usage correct in this sentence?
+      Check for:
+      1. Missing articles where needed
+      2. Wrong article (a/an based on sound)
+      3. Unnecessary articles
+    
+    examples:
+      violations:
+        - text: "Deploy pod to the cluster."
+          fix: "Deploy the pod to the cluster."
+          reason: "Missing article before 'pod'"
+          
+        - text: "This is a SQL query."
+          fix: "This is an SQL query."
+          reason: "SQL is pronounced 'ess-queue-el' (vowel sound)"
+          
+      acceptable:
+        - text: "Kubernetes uses pods for deployment."
+          reason: "Generic/plural usage, no article needed"
+
+  # ============================================================
+  # PRONOUNS
+  # ============================================================
+  
+  pronouns:
+    id: "pronouns"
+    category: "language_and_grammar"
+    enabled: true
+    severity: "medium"
+    
+    description: |
+      Identifies ambiguous pronoun references where the antecedent is unclear.
+    
+    ibm_style_reference:
+      pages: [109, 110, 111]
+      section: "Language and grammar > Pronouns"
+      summary: |
+        Ensure pronouns have clear antecedents. "This" and "that" at the 
+        start of sentences should be followed by a noun. Avoid ambiguous 
+        pronoun references.
+    
+    check_prompt: |
+      Does this pronoun have a clear antecedent?
+      Flag if:
+      1. "It" could refer to multiple things
+      2. "This" or "That" starts a sentence without a noun
+      3. The referent is ambiguous
+    
+    examples:
+      violations:
+        - text: "Configure the server and the database. It should be restarted."
+          fix: "Configure the server and the database. The server should be restarted."
+          reason: "'It' could refer to server or database"
+          
+        - text: "This is important for security."
+          fix: "This configuration is important for security."
+          reason: "'This' needs a noun"
+          
+      acceptable:
+        - text: "Create a pod. It runs your application."
+          reason: "Clear single antecedent (pod)"
+
+  # ============================================================
+  # ANTHROPOMORPHISM
+  # ============================================================
+  
+  anthropomorphism:
+    id: "anthropomorphism"
+    category: "language_and_grammar"
+    enabled: true
+    severity: "low"
+    
+    description: |
+      Flags inappropriate attribution of human characteristics to software.
+    
+    ibm_style_reference:
+      pages: [90]
+      section: "Language and grammar > Anthropomorphism"
+      summary: |
+        Do not attribute human characteristics to software or hardware.
+        Write "the system processes" not "the system thinks".
+        Avoid: knows, thinks, wants, sees, remembers, decides.
+    
+    check_prompt: |
+      Does this sentence inappropriately attribute human qualities to software?
+      Note: AI/ML systems CAN "learn" and "predict" - these are technical terms.
+    
+    examples:
+      violations:
+        - text: "The application knows your preferences."
+          fix: "The application stores your preferences."
+          
+        - text: "The system wants you to restart."
+          fix: "The system requires a restart."
+          
+      acceptable:
+        - text: "The AI model learns from the training data."
+          reason: "'Learns' is a valid ML term"
+          
+        - text: "The recommendation engine predicts user behavior."
+          reason: "'Predicts' is a valid ML term"
+
+  # ============================================================
+  # CONJUNCTIONS
+  # ============================================================
+  
+  conjunctions:
+    id: "conjunctions"
+    category: "language_and_grammar"
+    enabled: true
+    severity: "low"
+    
+    description: |
+      Checks for sentences starting with conjunctions and parallel structure issues.
+    
+    ibm_style_reference:
+      pages: [101, 102]
+      section: "Language and grammar > Conjunctions"
+      summary: |
+        It's acceptable to start sentences with "And" or "But" for emphasis,
+        but use sparingly. Ensure parallel structure with coordinating conjunctions.
+    
+    check_prompt: |
+      Is the conjunction usage appropriate here?
+      1. Starting with And/But - is it for emphasis or just lazy writing?
+      2. Is parallel structure maintained?
+    
+    examples:
+      violations:
+        - text: "And then you click the button."
+          fix: "Then click the button."
+          reason: "Unnecessary conjunction in procedure"
+          
+      acceptable:
+        - text: "But this approach has limitations."
+          reason: "Intentional emphasis after contrasting point"
+
+  # ============================================================
+  # PREPOSITIONS
+  # ============================================================
+  
+  prepositions:
+    id: "prepositions"
+    category: "language_and_grammar"
+    enabled: true
+    severity: "low"
+    
+    description: |
+      Checks for awkward prepositional phrases and ending sentences with prepositions.
+    
+    ibm_style_reference:
+      pages: [108, 109]
+      section: "Language and grammar > Prepositions"
+      summary: |
+        It's acceptable to end sentences with prepositions when natural.
+        Avoid excessive prepositional phrases.
+    
+    check_prompt: |
+      Is the preposition usage natural and clear?
+      Ending with a preposition is usually fine in technical docs.
+      Flag only if it sounds awkward or unclear.
+    
+    examples:
+      acceptable:
+        - text: "Select the file you want to work on."
+          reason: "Natural phrasing, ending with preposition is fine"
+          
+        - text: "This is the server the app connects to."
+          reason: "Clear and natural"
+
+  # ============================================================
+  # ADVERBS - ONLY
+  # ============================================================
+  
+  adverbs_only:
+    id: "adverbs_only"
+    category: "language_and_grammar"
+    enabled: true
+    severity: "low"
+    
+    description: |
+      Checks for ambiguous placement of the word "only".
+    
+    ibm_style_reference:
+      pages: [89]
+      section: "Language and grammar > Adverbs - only"
+      summary: |
+        Place "only" immediately before the word or phrase it modifies.
+        Incorrect placement can change meaning.
+    
+    check_prompt: |
+      Is "only" placed correctly to convey the intended meaning?
+      "You can only edit" vs "You can edit only" have different meanings.
+    
+    examples:
+      violations:
+        - text: "You can only edit files in this directory."
+          ambiguity: "Does 'only' modify 'edit' or 'this directory'?"
+          options:
+            - "You can edit only files in this directory."
+            - "You can edit files only in this directory."
+          
+      acceptable:
+        - text: "You only need to restart the service."
+          reason: "Clear meaning - restart is the only required action"
+
+  # ============================================================
+  # UNSUPPORTED CLAIMS (from ambiguity module)
+  # ============================================================
+  
+  unsupported_claims:
+    id: "unsupported_claims"
+    category: "legal_information"
+    enabled: true
+    severity: "high"
+    
+    description: |
+      Detects unsupported claims, promises, and absolute statements that could
+      be legally problematic or misleading.
+    
+    ibm_style_reference:
+      pages: [279, 280]
+      section: "Legal information > Claims and recommendations"
+      summary: |
+        Do not make unsubstantiated claims. Avoid absolute terms like "always"
+        and "never" unless factually accurate. Do not promise specific performance.
+        Use hedging language when appropriate.
+    
+    check_prompt: |
+      Does this text contain unsupported claims or absolute statements?
+      Flag:
+      1. "always", "never", "guarantee", "promise" - unless verifiable
+      2. Performance claims without evidence
+      3. Superlatives like "best", "fastest", "most secure" without qualification
+    
+    examples:
+      violations:
+        - text: "This solution guarantees 100% uptime."
+          fix: "This solution is designed for high availability."
+          reason: "Cannot guarantee 100% uptime"
+          
+        - text: "Our product is the most secure option available."
+          fix: "Our product includes multiple security features."
+          reason: "Unverifiable superlative"
+          
+        - text: "This will never fail."
+          fix: "This is designed to handle common failure scenarios."
+          reason: "Absolute claim"
+          
+      acceptable:
+        - text: "In our tests, the system achieved 99.9% uptime."
+          reason: "Qualified with 'in our tests'"
+          
+        - text: "This feature helps improve performance."
+          reason: "Hedged language ('helps improve')"
+
+  # ============================================================
+  # VERB TENSE (from verbs_rule.py)
+  # ============================================================
+  
+  verb_tense:
+    id: "verb_tense"
+    category: "language_and_grammar"
+    enabled: true
+    severity: "medium"
+    
+    description: |
+      Checks for inappropriate verb tense usage in technical documentation.
+      Procedures should use present tense and imperative mood.
+    
+    ibm_style_reference:
+      pages: [113, 114, 115, 116]
+      section: "Language and grammar > Verbs"
+      summary: |
+        Use present tense for procedures. Use imperative mood for instructions.
+        Future tense ("will") is often unnecessary in technical docs.
+        Past tense is appropriate for release notes and changelogs.
+    
+    check_prompt: |
+      Is the verb tense appropriate for this context?
+      - Procedures: present tense, imperative mood ("Click", not "You will click")
+      - Descriptions: present tense ("The system stores", not "The system will store")
+      - Release notes: past tense is OK ("Fixed", "Added")
+    
+    examples:
+      violations:
+        - text: "You will click the Save button."
+          context: "procedure"
+          fix: "Click the Save button."
+          reason: "Use imperative in procedures"
+          
+        - text: "The system will display an error message."
+          context: "description"
+          fix: "The system displays an error message."
+          reason: "Use present tense for descriptions"
+          
+      acceptable:
+        - text: "Fixed an issue where uploads failed."
+          context: "release notes"
+          reason: "Past tense appropriate for release notes"
+----
+
+== Python Implementation
+
+=== LLM Style Checker
+
+The LLM style checker is at `rules/language_and_grammar/llm_style_checker.py`:
+
+[source,python]
+----
+"""
+LLM Style Checker
+Evaluates content against LLM-based style rules using Gemini.
+"""
+
+import yaml
+import json
+import logging
+from pathlib import Path
+from typing import List, Dict, Any, Optional
+from dataclasses import dataclass, field
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class StyleViolation:
+    """A detected style violation."""
+    rule_id: str
+    text: str
+    sentence: str
+    message: str
+    suggestion: str
+    severity: str
+    confidence: float
+    ibm_style_ref: str = ""
+
+
+@dataclass
+class CheckResult:
+    """Result of checking a document."""
+    violations: List[StyleViolation] = field(default_factory=list)
+    tokens_used: int = 0
+    model: str = ""
+
+
+class LLMStyleChecker:
+    """
+    Checks content against LLM-based style rules.
+    
+    Usage:
+        checker = LLMStyleChecker()
+        result = checker.check(text, context={'doc_type': 'procedure'})
+        for violation in result.violations:
+            print(f"{violation.rule_id}: {violation.message}")
+    """
+    
+    def __init__(
+        self,
+        rules_file: Optional[Path] = None,
+        api_key: Optional[str] = None,
+        model: str = "gemini-1.5-flash"
+    ):
+        """
+        Initialize the checker.
+        
+        Args:
+            rules_file: Path to llm_style_rules.yaml
+            api_key: Gemini API key (or set GEMINI_API_KEY env var)
+            model: Gemini model to use
+        """
+        if rules_file is None:
+            rules_file = Path(__file__).parent / "llm_style_rules.yaml"
+        
+        self.rules = self._load_rules(rules_file)
+        self.model = model
+        self.api_key = api_key or self._get_api_key()
+        
+        logger.info(f"LLMStyleChecker initialized with {len(self.rules)} rules")
+    
+    def _load_rules(self, rules_file: Path) -> Dict[str, Dict]:
+        """Load rules from YAML file."""
+        if not rules_file.exists():
+            raise FileNotFoundError(f"Rules file not found: {rules_file}")
+        
+        with open(rules_file, 'r', encoding='utf-8') as f:
+            data = yaml.safe_load(f)
+        
+        return {
+            rule_id: rule_config
+            for rule_id, rule_config in data.get('rules', {}).items()
+            if rule_config.get('enabled', True)
+        }
+    
+    def _get_api_key(self) -> str:
+        """Get API key from environment."""
+        import os
+        key = os.environ.get('GEMINI_API_KEY', '')
+        if not key:
+            raise ValueError("GEMINI_API_KEY not set")
+        return key
+    
+    def check(
+        self,
+        text: str,
+        context: Optional[Dict[str, Any]] = None,
+        rules: Optional[List[str]] = None
+    ) -> CheckResult:
+        """
+        Check text against LLM style rules.
+        
+        Args:
+            text: The content to check
+            context: Optional context (doc_type, block_type, etc.)
+            rules: Optional list of rule IDs to check (default: all enabled)
+            
+        Returns:
+            CheckResult with violations and metadata
+        """
+        if not text.strip():
+            return CheckResult()
+        
+        context = context or {}
+        
+        # Skip code blocks
+        if context.get('block_type') in ['listing', 'literal', 'code_block']:
+            return CheckResult()
+        
+        # Filter rules
+        rules_to_check = self.rules
+        if rules:
+            rules_to_check = {k: v for k, v in self.rules.items() if k in rules}
+        
+        # Build prompt
+        prompt = self._build_prompt(text, context, rules_to_check)
+        
+        # Call Gemini
+        response = self._call_gemini(prompt)
+        
+        # Parse response
+        violations = self._parse_response(response, text)
+        
+        return CheckResult(
+            violations=violations,
+            tokens_used=len(prompt.split()) + len(response.split()),  # Rough estimate
+            model=self.model
+        )
+    
+    def _build_prompt(
+        self,
+        text: str,
+        context: Dict[str, Any],
+        rules: Dict[str, Dict]
+    ) -> str:
+        """Build the Gemini prompt."""
+        
+        rules_section = []
+        for rule_id, rule in rules.items():
+            rule_text = f"""
+### {rule_id}
+{rule.get('description', '')}
+
+**IBM Style Reference**: {rule.get('ibm_style_reference', {}).get('summary', '')}
+
+**Check**: {rule.get('check_prompt', '')}
+"""
+            rules_section.append(rule_text)
+        
+        context_info = ""
+        if context:
+            context_info = f"""
+## DOCUMENT CONTEXT
+- Document type: {context.get('doc_type', 'unknown')}
+- Block type: {context.get('block_type', 'paragraph')}
+- Section: {context.get('section_title', 'unknown')}
+"""
+        
+        prompt = f"""You are an IBM Style Guide expert reviewing technical documentation.
+
+## TASK
+Review the following text for style violations. Check ONLY the rules listed below.
+Be conservative - only flag clear violations, not borderline cases.
+
+{context_info}
+
+## RULES TO CHECK
+{chr(10).join(rules_section)}
+
+## TEXT TO REVIEW
+```
+{text}
+```
+
+## RESPONSE FORMAT
+Return a JSON array of violations (empty array if none):
+```json
+[
+  {{
+    "rule_id": "passive_voice",
+    "text": "the exact problematic text",
+    "sentence": "the full sentence containing the issue",
+    "message": "brief explanation of the issue",
+    "suggestion": "the corrected text",
+    "severity": "low|medium|high",
+    "confidence": 0.0-1.0
+  }}
+]
+```
+
+IMPORTANT:
+- Only flag clear violations (confidence > 0.7)
+- Consider the document context
+- Return valid JSON only
+- Empty array [] if no violations found
+"""
+        return prompt
+    
+    def _call_gemini(self, prompt: str) -> str:
+        """Call Gemini API."""
+        import requests
+        
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent"
+        
+        headers = {
+            "Content-Type": "application/json",
+        }
+        
+        data = {
+            "contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": {
+                "temperature": 0.1,  # Low temperature for consistency
+                "topP": 0.8,
+                "maxOutputTokens": 2048,
+            }
+        }
+        
+        response = requests.post(
+            f"{url}?key={self.api_key}",
+            headers=headers,
+            json=data,
+            timeout=30
+        )
+        
+        if response.status_code != 200:
+            logger.error(f"Gemini API error: {response.status_code} - {response.text}")
+            return "[]"
+        
+        result = response.json()
+        try:
+            return result['candidates'][0]['content']['parts'][0]['text']
+        except (KeyError, IndexError):
+            logger.error(f"Unexpected Gemini response format: {result}")
+            return "[]"
+    
+    def _parse_response(self, response: str, original_text: str) -> List[StyleViolation]:
+        """Parse Gemini response into violations."""
+        import re
+        
+        # Extract JSON from response
+        json_match = re.search(r'\[[\s\S]*\]', response)
+        if not json_match:
+            return []
+        
+        try:
+            data = json.loads(json_match.group())
+        except json.JSONDecodeError:
+            logger.error(f"Failed to parse Gemini response: {response[:200]}")
+            return []
+        
+        violations = []
+        for item in data:
+            if not isinstance(item, dict):
+                continue
+            
+            # Filter by confidence
+            confidence = item.get('confidence', 0.5)
+            if confidence < 0.7:
+                continue
+            
+            violation = StyleViolation(
+                rule_id=item.get('rule_id', 'unknown'),
+                text=item.get('text', ''),
+                sentence=item.get('sentence', ''),
+                message=item.get('message', ''),
+                suggestion=item.get('suggestion', ''),
+                severity=item.get('severity', 'medium'),
+                confidence=confidence,
+                ibm_style_ref=self.rules.get(item.get('rule_id', ''), {}).get(
+                    'ibm_style_reference', {}
+                ).get('section', '')
+            )
+            violations.append(violation)
+        
+        return violations
+
+
+# Convenience function
+def check_style(text: str, context: Optional[Dict] = None) -> CheckResult:
+    """Quick style check using default configuration."""
+    checker = LLMStyleChecker()
+    return checker.check(text, context)
+----
+
+== Integration with Existing System
+
+=== Hybrid Rule Runner
+
+Modify your main analysis to use both coded and LLM rules:
+
+[source,python]
+----
+"""
+Hybrid Rule Runner
+Combines deterministic coded rules with LLM-based rules.
+"""
+
+from typing import List, Dict, Any
+from llm_rules.llm_style_checker import LLMStyleChecker, CheckResult
+
+# Coded rules (keep these)
+CODED_RULES = [
+    'spelling',
+    'inclusive_language', 
+    'abbreviations',
+    'terminology',
+    'prefixes',
+    'plurals',
+    'possessives',
+]
+
+# LLM rules (new approach)
+LLM_RULES = [
+    'passive_voice',
+    'verb_tense',
+    'articles',
+    'pronouns',
+    'anthropomorphism',
+    'conjunctions',
+    'prepositions',
+    'adverbs_only',
+    'unsupported_claims',
+]
+
+
+class HybridRuleRunner:
+    """Runs both coded and LLM rules."""
+    
+    def __init__(self):
+        self.coded_rules = self._load_coded_rules()
+        self.llm_checker = LLMStyleChecker()
+    
+    def _load_coded_rules(self):
+        """Load deterministic coded rules."""
+        from rules.language_and_grammar import (
+            SpellingRule, InclusiveLanguageRule, AbbreviationsRule,
+            TerminologyRule, PrefixesRule, PluralsRule, PossessivesRule
+        )
+        return {
+            'spelling': SpellingRule(),
+            'inclusive_language': InclusiveLanguageRule(),
+            'abbreviations': AbbreviationsRule(),
+            'terminology': TerminologyRule(),
+            'prefixes': PrefixesRule(),
+            'plurals': PluralsRule(),
+            'possessives': PossessivesRule(),
+        }
+    
+    def analyze(
+        self,
+        text: str,
+        sentences: List[str],
+        nlp,
+        context: Dict = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Run both coded and LLM rules on the text.
+        
+        Args:
+            text: Full text to analyze
+            sentences: List of sentences
+            nlp: SpaCy nlp object
+            context: Block context
+            
+        Returns:
+            Combined list of errors from all rules
+        """
+        errors = []
+        context = context or {}
+        
+        # 1. Run coded rules (fast, deterministic)
+        for rule_id, rule in self.coded_rules.items():
+            try:
+                rule_errors = rule.analyze(text, sentences, nlp, context)
+                errors.extend(rule_errors)
+            except Exception as e:
+                logger.error(f"Error in coded rule {rule_id}: {e}")
+        
+        # 2. Run LLM rules (slower, judgment-based)
+        try:
+            llm_result = self.llm_checker.check(text, context)
+            for violation in llm_result.violations:
+                errors.append({
+                    'type': violation.rule_id,
+                    'message': violation.message,
+                    'sentence': violation.sentence,
+                    'suggestions': [violation.suggestion] if violation.suggestion else [],
+                    'severity': violation.severity,
+                    'evidence_score': violation.confidence,
+                    'flagged_text': violation.text,
+                    'source': 'llm'  # Mark as LLM-generated
+                })
+        except Exception as e:
+            logger.error(f"Error in LLM rules: {e}")
+        
+        return errors
+----
+
+== Token Usage and Cost
+
+=== Estimated Token Usage
+
+[cols="2,1,1,1"]
+|===
+| Component | Input Tokens | Output Tokens | Total
+
+| System prompt + rules
+| ~2,000
+| -
+| 2,000
+
+| Text chunk (avg paragraph)
+| ~300
+| -
+| 300
+
+| Response (violations)
+| -
+| ~500
+| 500
+
+| **Per API call**
+| **~2,300**
+| **~500**
+| **~2,800**
+|===
+
+=== Cost Estimates (Gemini 1.5 Flash)
+
+[cols="1,1,1,1"]
+|===
+| Document Size | API Calls | Total Tokens | Cost (USD)
+
+| Small (10 paragraphs)
+| 10
+| ~28K
+| ~$0.002
+
+| Medium (50 paragraphs)
+| 50
+| ~140K
+| ~$0.01
+
+| Large (200 paragraphs)
+| 200
+| ~560K
+| ~$0.04
+|===
+
+=== Optimization Strategies
+
+1. **Batch paragraphs**: Send 5-10 paragraphs per API call
+2. **Cache results**: Cache violations for unchanged content
+3. **Skip code blocks**: Don't send code to LLM
+4. **Confidence threshold**: Only flag high-confidence violations (>0.7)
+
+== Adding New LLM Rules
+
+To add a new rule, simply add it to `llm_style_rules.yaml`:
+
+[source,yaml]
+----
+  new_rule_name:
+    id: "new_rule_name"
+    category: "language_and_grammar"
+    enabled: true
+    severity: "medium"
+    
+    description: |
+      What this rule checks for.
+    
+    ibm_style_reference:
+      pages: [XX, YY]
+      section: "Section > Subsection"
+      summary: |
+        What the IBM Style Guide says about this.
+    
+    check_prompt: |
+      The specific question to ask the LLM.
+    
+    examples:
+      violations:
+        - text: "example bad text"
+          fix: "example good text"
+      acceptable:
+        - text: "example acceptable text"
+          reason: "why it's acceptable"
+----
+
+No Python code changes required!
+
+== Migration Completed
+
+[NOTE]
+====
+We chose **direct migration** over parallel running. Rationale:
+
+* Parallel running = double maintenance burden
+* Old code would rot and become a source of confusion
+* If LLM fails, we skip judgment rules (graceful degradation), not crash
+====
+
+=== Fallback Strategy
+
+If LLM API is unavailable:
+
+[source,python]
+----
+def check_llm_rules(text, context):
+    try:
+        return llm_checker.check(text, context)
+    except (APIError, Timeout):
+        logger.warning("LLM unavailable, skipping judgment rules")
+        return []  # Skip, don't fail - coded rules still run
+----
+
+== Summary
+
+=== Rule Distribution
+
+[cols="1,1"]
+|===
+| Coded Rules (Keep) | LLM Rules (New)
+
+| spelling
+| passive_voice
+
+| inclusive_language
+| verb_tense
+
+| abbreviations
+| articles
+
+| terminology
+| pronouns
+
+| prefixes
+| anthropomorphism
+
+| plurals
+| conjunctions
+
+| possessives
+| prepositions
+
+| capitalization (partial)
+| adverbs_only
+
+| contractions (detection)
+| unsupported_claims
+|===
+
+=== What We Deleted
+
+[cols="1,1,1"]
+|===
+| Module | Files | Lines Deleted
+
+| `rules/language_and_grammar/`
+| 8 files
+| ~9,211
+
+| `ambiguity/`
+| entire directory
+| ~4,250
+
+| **Total**
+| **12+ files**
+| **~13,461**
+|===
+
+=== Benefits
+
+* **No more 2000+ line Python files** for judgment rules
+* **Rule refinement = YAML edit**, not Python debugging
+* **Writers can understand and modify rules** - no code knowledge needed
+* **LLM has IBM Style Guide knowledge** - better context understanding
+* **Consistent behavior** - LLM applies rules uniformly
+* **One system to maintain** - no parallel codebases
+
+=== Costs
+
+* **LLM dependency** - requires API access
+* **~$0.01-0.05 per document** - Gemini 1.5 Flash pricing
+* **500ms-2s latency** per check (vs 10ms for coded rules)
+
+=== When LLM is Unavailable
+
+Judgment rules are **skipped**, not failed. Coded word-list rules still run.
+This is acceptable because:
+
+* Word-list rules catch the most obvious issues
+* Judgment rules are for nuanced cases
+* Better to skip than crash the system
+

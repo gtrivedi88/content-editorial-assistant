@@ -1,0 +1,188 @@
+# Modular Documentation Reference Guide Rule Mapping
+# Single source of truth for modular documentation standard references
+#
+# BASED ON:
+# Document: Modular Documentation Reference Guide
+#
+# PURPOSE:
+# 1. Map rules to modular documentation standards
+# 2. Ensure content follows concept/procedure/reference structure
+# 3. Support verification tracking
+# 4. Enable UI display of modular doc citations
+
+version: "1.0"
+last_updated: "2026-01-23"
+source_document:
+  name: "Modular Documentation Reference Guide"
+  format: "pdf"
+
+# ============================================================================
+# MODULE TYPES
+# ============================================================================
+module_types:
+
+  concept_module:
+    rule_id: "concept_module"
+    display_name: "Concept Module Structure"
+    category: "module_types"
+    severity: "medium"
+    modular_docs:
+      topic: "Concept modules"
+      section: "concept-module"
+      verification_status: "verified"
+      guidance: "Concept modules explain what and why. They should not include procedures or step-by-step instructions. Start with a brief description of the concept."
+
+  procedure_module:
+    rule_id: "procedure_module"
+    display_name: "Procedure Module Structure"
+    category: "module_types"
+    severity: "high"
+    modular_docs:
+      topic: "Procedure modules"
+      section: "procedure-module"
+      verification_status: "verified"
+      guidance: "Procedure modules describe how to accomplish a task. Use numbered steps with imperative verbs. Include prerequisites and verification steps."
+
+  reference_module:
+    rule_id: "reference_module"
+    display_name: "Reference Module Structure"
+    category: "module_types"
+    severity: "medium"
+    modular_docs:
+      topic: "Reference modules"
+      section: "reference-module"
+      verification_status: "verified"
+      guidance: "Reference modules provide lookup information. Use tables, lists, or parameter descriptions. Do not include procedural steps."
+
+  assembly_module:
+    rule_id: "assembly_module"
+    display_name: "Assembly Structure"
+    category: "module_types"
+    severity: "medium"
+    modular_docs:
+      topic: "Assemblies"
+      section: "assembly"
+      verification_status: "verified"
+      guidance: "Assemblies organize modules into a logical sequence. Include concept, procedure, and reference modules as needed. Do not duplicate content."
+
+# ============================================================================
+# PROCEDURES
+# ============================================================================
+procedures:
+
+  procedures:
+    rule_id: "procedures"
+    display_name: "Procedure Best Practices"
+    category: "procedures"
+    severity: "high"
+    modular_docs:
+      topic: "Writing procedures"
+      section: "procedures"
+      verification_status: "verified"
+      guidance: "Number all steps. Use imperative verbs to start each step. Separate actions from results. Include prerequisites and verification."
+
+  second_person:
+    rule_id: "second_person"
+    display_name: "Imperative Voice in Procedures"
+    category: "procedures"
+    severity: "medium"
+    modular_docs:
+      topic: "Voice and person in procedures"
+      section: "procedures"
+      verification_status: "verified"
+      guidance: "Use imperative mood for procedure steps (Click, Enter, Select). Use second person (you) in explanatory text surrounding steps."
+
+# ============================================================================
+# CONTENT STRUCTURE
+# ============================================================================
+content_structure:
+
+  headings:
+    rule_id: "headings"
+    display_name: "Modular Doc Headings"
+    category: "content_structure"
+    severity: "medium"
+    modular_docs:
+      topic: "Heading conventions for modules"
+      section: "headings"
+      verification_status: "verified"
+      guidance: "Use descriptive, task-oriented headings. Concept headings should be noun-based. Procedure headings should start with a gerund or verb."
+
+  lists:
+    rule_id: "lists"
+    display_name: "Lists in Modular Docs"
+    category: "content_structure"
+    severity: "medium"
+    modular_docs:
+      topic: "List usage in modules"
+      section: "content-structure"
+      verification_status: "verified"
+      guidance: "Use ordered lists for sequential steps. Use unordered lists for non-sequential items. Keep list items parallel in structure."
+
+  prerequisites:
+    rule_id: "prerequisites"
+    display_name: "Prerequisites Section"
+    category: "content_structure"
+    severity: "medium"
+    modular_docs:
+      topic: "Prerequisites in procedure modules"
+      section: "prerequisites"
+      verification_status: "verified"
+      guidance: "List all prerequisites before procedure steps. Use bulleted lists. Each prerequisite should be actionable or verifiable."
+
+  verification_steps:
+    rule_id: "verification_steps"
+    display_name: "Verification Steps"
+    category: "content_structure"
+    severity: "medium"
+    modular_docs:
+      topic: "Verification in procedure modules"
+      section: "verification"
+      verification_status: "verified"
+      guidance: "Include a verification section after procedure steps. Describe how the user can confirm the procedure was successful."
+
+# ============================================================================
+# CONTENT REUSE
+# ============================================================================
+content_reuse:
+
+  cross_references:
+    rule_id: "cross_references"
+    display_name: "Cross-References Between Modules"
+    category: "content_reuse"
+    severity: "medium"
+    modular_docs:
+      topic: "Cross-referencing modules"
+      section: "cross-references"
+      verification_status: "verified"
+      guidance: "Use cross-references to link related modules. Avoid duplicating content across modules. Each module should be self-contained where possible."
+
+  content_reuse:
+    rule_id: "content_reuse"
+    display_name: "Content Reuse Patterns"
+    category: "content_reuse"
+    severity: "low"
+    modular_docs:
+      topic: "Reusing content across assemblies"
+      section: "content-reuse"
+      verification_status: "verified"
+      guidance: "Design modules for reuse across multiple assemblies. Avoid context-specific language that limits reusability."
+
+# ============================================================================
+# CONFIDENCE ADJUSTMENTS
+# ============================================================================
+confidence_adjustments:
+  verified_rule_boost: 0.2
+  unverified_rule_penalty: 0.1
+  modular_structure_boost: 0.15
+
+# ============================================================================
+# VERIFICATION TRACKING
+# ============================================================================
+verification_stats:
+  total_rules: 12
+  verified_rules: 12
+  unverified_rules: 0
+  verification_percentage: 100
+  last_verification_sweep: "2026-01-23"
+  notes: "Initial mapping of modular documentation standards"

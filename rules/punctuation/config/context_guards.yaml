@@ -1,0 +1,435 @@
+# Context Guards Configuration
+# Manages content-type and domain-specific guards for punctuation rules
+# Used by all punctuation rules for context-aware evidence calculation
+
+# Content type specific guards and evidence adjustments
+content_type_guards:
+  # Creative writing contexts
+  creative:
+    description: "Creative writing allows stylistic punctuation choices"
+    punctuation_permissions:
+      ellipses: true
+      exclamation_points: true
+      em_dashes: true
+      informal_quotation_marks: true
+      stylistic_semicolons: true
+      artistic_slashes: true
+    
+    evidence_adjustments:
+      ellipses_rule: -0.8        # Very permissive for ellipses
+      exclamation_points_rule: -0.6  # Permissive for exclamation points
+      dashes_rule: -0.7          # Permissive for em dashes
+      quotation_marks_rule: -0.5 # Somewhat permissive for quotes
+      semicolons_rule: -0.4      # Moderately permissive for semicolons
+      slashes_rule: -0.8         # Very permissive for creative slashes
+    
+    rationale: "Creative content prioritizes artistic expression over strict style rules"
+
+  # Literary writing contexts  
+  literary:
+    description: "Literary writing uses punctuation for narrative effect"
+    punctuation_permissions:
+      ellipses: true
+      exclamation_points: true
+      em_dashes: true
+      dialogue_punctuation: true
+      narrative_semicolons: true
+    
+    evidence_adjustments:
+      ellipses_rule: -0.9        # Very permissive for ellipses
+      exclamation_points_rule: -0.7  # Permissive for exclamation points
+      dashes_rule: -0.8          # Very permissive for em dashes
+      quotation_marks_rule: -0.6 # Permissive for dialogue quotes
+      semicolons_rule: -0.5      # Moderately permissive for semicolons
+    
+    rationale: "Literary content uses punctuation for pacing and emotional effect"
+
+  # Narrative writing contexts
+  narrative:
+    description: "Narrative writing tells stories and may use varied punctuation"
+    punctuation_permissions:
+      storytelling_ellipses: true
+      emotional_exclamation: true
+      dramatic_dashes: true
+      character_dialogue: true
+    
+    evidence_adjustments:
+      ellipses_rule: -0.7        # Permissive for storytelling ellipses
+      exclamation_points_rule: -0.6  # Permissive for emotional content
+      dashes_rule: -0.6          # Permissive for dramatic pauses
+      quotation_marks_rule: -0.5 # Permissive for character speech
+    
+    rationale: "Narrative content uses punctuation to enhance storytelling"
+
+  # Marketing content contexts
+  marketing:
+    description: "Marketing content may use punctuation for persuasive effect"
+    punctuation_permissions:
+      persuasive_exclamation: true
+      brand_quotation_marks: true
+      creative_punctuation: true
+    
+    evidence_adjustments:
+      exclamation_points_rule: -0.5  # Moderately permissive
+      quotation_marks_rule: -0.4 # Moderately permissive for brand terms
+      punctuation_and_symbols_rule: -0.3  # Somewhat permissive for symbols
+      ellipses_rule: -0.4        # Moderately permissive
+    
+    rationale: "Marketing content balances persuasion with professionalism"
+
+  # Legal writing contexts
+  legal:
+    description: "Legal writing requires precise, unambiguous punctuation"
+    punctuation_requirements:
+      precise_comma_usage: true
+      formal_semicolons: true
+      exact_quotation_marks: true
+      unambiguous_punctuation: true
+    
+    evidence_adjustments:
+      commas_rule: 0.2           # More strict comma rules
+      semicolons_rule: -0.3      # Permissive for formal semicolons
+      quotation_marks_rule: 0.1  # Slightly more strict for quotes
+      slashes_rule: 0.3          # Strict against ambiguous slashes
+      periods_rule: -0.2         # Permissive for legal abbreviations
+    
+    rationale: "Legal documents must be precise and unambiguous"
+
+  # Academic writing contexts
+  academic:
+    description: "Academic writing follows scholarly conventions"
+    punctuation_permissions:
+      formal_semicolons: true
+      citation_punctuation: true
+      scholarly_abbreviations: true
+      complex_sentence_structure: true
+    
+    evidence_adjustments:
+      semicolons_rule: -0.4      # Permissive for formal writing
+      quotation_marks_rule: -0.3 # Permissive for citations
+      periods_rule: -0.3         # Permissive for academic abbreviations
+      colons_rule: -0.2          # Somewhat permissive for formal structure
+    
+    rationale: "Academic writing uses formal punctuation conventions"
+
+  # Technical writing contexts
+  technical:
+    description: "Technical writing prioritizes clarity and precision"
+    punctuation_requirements:
+      clear_instructions: true
+      unambiguous_procedures: true
+      precise_terminology: true
+    
+    evidence_adjustments:
+      slashes_rule: -0.2         # Somewhat permissive for technical slashes
+      hyphens_rule: -0.3         # Permissive for technical compounds
+      parentheses_rule: -0.2     # Somewhat permissive for technical notes
+      periods_rule: -0.2         # Permissive for technical abbreviations
+      semicolons_rule: 0.2       # More strict against semicolons
+    
+    rationale: "Technical writing favors clarity over complex punctuation"
+
+  # Business writing contexts
+  business:
+    description: "Business writing balances professionalism with clarity"
+    punctuation_requirements:
+      professional_tone: true
+      clear_communication: true
+      appropriate_formality: true
+    
+    evidence_adjustments:
+      exclamation_points_rule: 0.1   # Slightly more strict
+      ellipses_rule: 0.2         # More strict against ellipses
+      semicolons_rule: 0.1       # Slightly more strict
+      slashes_rule: 0.1          # Slightly more strict for clarity
+    
+    rationale: "Business writing maintains professionalism and clarity"
+
+# Domain-specific guards and adjustments
+domain_guards:
+  # Software development domain
+  software:
+    description: "Software development allows technical punctuation patterns"
+    allowed_patterns:
+      file_paths: true
+      url_protocols: true
+      version_numbers: true
+      compound_technical_terms: true
+      programming_notation: true
+    
+    evidence_adjustments:
+      slashes_rule: -0.4         # Permissive for file paths and URLs
+      hyphens_rule: -0.3         # Permissive for technical compounds
+      periods_rule: -0.3         # Permissive for version numbers
+      parentheses_rule: -0.2     # Permissive for technical annotations
+    
+    specific_protections:
+      - "file/path/structures"
+      - "protocol://url/patterns"
+      - "version.number.formats"
+      - "technical-compound-words"
+
+  # Engineering domain
+  engineering:
+    description: "Engineering allows technical measurement and specification notation"
+    allowed_patterns:
+      measurements: true
+      specifications: true
+      technical_ratios: true
+      compound_descriptors: true
+    
+    evidence_adjustments:
+      slashes_rule: -0.3         # Permissive for ratios and fractions
+      hyphens_rule: -0.4         # Very permissive for technical compounds
+      parentheses_rule: -0.2     # Permissive for specifications
+    
+    specific_protections:
+      - "measurement/unit/ratios"
+      - "engineering-specifications"
+      - "technical-descriptors"
+
+  # Finance domain
+  finance:
+    description: "Finance allows specific financial notation and abbreviations"
+    allowed_patterns:
+      currency_symbols: true
+      financial_ratios: true
+      percentage_notation: true
+      financial_abbreviations: true
+    
+    evidence_adjustments:
+      punctuation_and_symbols_rule: -0.4  # Permissive for financial symbols
+      slashes_rule: -0.2         # Permissive for financial ratios
+      periods_rule: -0.2         # Permissive for financial abbreviations
+    
+    specific_protections:
+      - "currency/$symbols"
+      - "financial/ratios"
+      - "percentage%notation"
+
+  # Medical domain
+  medical:
+    description: "Medical writing allows clinical notation and abbreviations"
+    allowed_patterns:
+      medical_abbreviations: true
+      dosage_notation: true
+      clinical_ratios: true
+      medical_terminology: true
+    
+    evidence_adjustments:
+      periods_rule: -0.4         # Very permissive for medical abbreviations
+      slashes_rule: -0.3         # Permissive for dosage ratios
+      parentheses_rule: -0.2     # Permissive for clinical notes
+    
+    specific_protections:
+      - "medical.abbreviations"
+      - "dosage/ratio/notation"
+      - "clinical-terminology"
+
+  # Legal domain
+  legal:
+    description: "Legal writing requires precise punctuation but allows legal notation"
+    allowed_patterns:
+      legal_citations: true
+      case_references: true
+      legal_abbreviations: true
+      formal_punctuation: true
+    
+    evidence_adjustments:
+      semicolons_rule: -0.3      # Permissive for formal legal writing
+      periods_rule: -0.3         # Permissive for legal abbreviations
+      quotation_marks_rule: -0.2 # Permissive for legal citations
+      slashes_rule: 0.2          # Strict against ambiguous usage
+    
+    specific_protections:
+      - "legal.citations"
+      - "case/reference/notation"
+      - "statute.abbreviations"
+
+  # Academic domain
+  academic:
+    description: "Academic writing follows scholarly conventions and citation formats"
+    allowed_patterns:
+      academic_citations: true
+      scholarly_abbreviations: true
+      formal_punctuation: true
+      research_notation: true
+    
+    evidence_adjustments:
+      periods_rule: -0.3         # Permissive for academic abbreviations
+      quotation_marks_rule: -0.3 # Permissive for academic citations
+      semicolons_rule: -0.4      # Permissive for scholarly writing
+      parentheses_rule: -0.2     # Permissive for citations
+    
+    specific_protections:
+      - "academic.citations"
+      - "research/reference/notation"
+      - "scholarly.abbreviations"
+
+# Block type specific guards
+block_type_guards:
+  # Code-related blocks
+  code_block:
+    evidence_adjustments:
+      all_punctuation_rules: -1.0  # Complete protection for code blocks
+    rationale: "Code blocks have their own syntax rules"
+
+  literal_block:
+    evidence_adjustments:
+      all_punctuation_rules: -1.0  # Complete protection for literal blocks
+    rationale: "Literal blocks preserve exact formatting"
+
+  inline_code:
+    evidence_adjustments:
+      all_punctuation_rules: -0.8  # Strong protection for inline code
+    rationale: "Inline code may contain punctuation as syntax"
+
+  # Quote-related blocks
+  quote:
+    evidence_adjustments:
+      quotation_marks_rule: -0.6  # Permissive for quote formatting
+      ellipses_rule: -0.5         # Permissive for quote ellipses
+      exclamation_points_rule: -0.4  # Permissive for quoted exclamations
+    rationale: "Quotes preserve original punctuation"
+
+  blockquote:
+    evidence_adjustments:
+      quotation_marks_rule: -0.6  # Permissive for blockquote formatting
+      ellipses_rule: -0.5         # Permissive for blockquote ellipses
+    rationale: "Blockquotes preserve original formatting"
+
+  # Reference-related blocks
+  citation:
+    evidence_adjustments:
+      periods_rule: -0.7          # Very permissive for citation abbreviations
+      quotation_marks_rule: -0.5  # Permissive for cited titles
+      semicolons_rule: -0.4       # Permissive for citation formatting
+    rationale: "Citations follow specific academic formats"
+
+  bibliography:
+    evidence_adjustments:
+      periods_rule: -0.7          # Very permissive for bibliography abbreviations
+      semicolons_rule: -0.5       # Permissive for bibliography formatting
+    rationale: "Bibliographies use specific formatting conventions"
+
+  footnote:
+    evidence_adjustments:
+      periods_rule: -0.4          # Permissive for footnote abbreviations
+      parentheses_rule: -0.3      # Permissive for footnote formatting
+    rationale: "Footnotes may use abbreviated formats"
+
+  # Structure-related blocks
+  heading:
+    evidence_adjustments:
+      semicolons_rule: 0.3        # More strict in headings
+      ellipses_rule: 0.2          # Somewhat more strict in headings
+    rationale: "Headings should be clear and direct"
+
+  title:
+    evidence_adjustments:
+      semicolons_rule: 0.3        # More strict in titles
+      ellipses_rule: 0.2          # Somewhat more strict in titles
+    rationale: "Titles should be clear and direct"
+
+  # List-related blocks
+  list_item:
+    evidence_adjustments:
+      semicolons_rule: -0.2       # Somewhat permissive for complex lists
+    rationale: "List items may use semicolons for complex separation"
+
+  # Table-related blocks
+  table_cell:
+    evidence_adjustments:
+      abbreviations: -0.3         # Permissive for table abbreviations
+      symbols: -0.2               # Somewhat permissive for table symbols
+    rationale: "Tables may use abbreviated formats for space"
+
+# Audience-specific adjustments
+audience_guards:
+  # Expert technical audiences
+  expert:
+    description: "Expert audiences can handle complex punctuation"
+    evidence_adjustments:
+      all_rules: -0.2             # Generally more permissive
+    rationale: "Expert audiences understand technical conventions"
+
+  # Developer audiences
+  developer:
+    description: "Developer audiences understand technical notation"
+    evidence_adjustments:
+      slashes_rule: -0.3          # Permissive for technical slashes
+      hyphens_rule: -0.2          # Permissive for technical compounds
+      periods_rule: -0.2          # Permissive for technical abbreviations
+    rationale: "Developers understand technical punctuation patterns"
+
+  # General audiences
+  general:
+    description: "General audiences need clear, simple punctuation"
+    evidence_adjustments:
+      semicolons_rule: 0.2        # More strict for general clarity
+      ellipses_rule: 0.1          # Slightly more strict
+    rationale: "General audiences benefit from simple, clear punctuation"
+
+  # Beginner audiences
+  beginner:
+    description: "Beginner audiences need very clear punctuation"
+    evidence_adjustments:
+      semicolons_rule: 0.3        # More strict for clarity
+      ellipses_rule: 0.2          # More strict for clarity
+      complex_punctuation: 0.2   # Generally more strict
+    rationale: "Beginners need clear, unambiguous punctuation"
+
+# Combined context effects
+context_combinations:
+  # When multiple contexts apply, use most restrictive
+  resolution_strategy: "most_restrictive"
+  
+  # Special combinations that override general rules
+  special_combinations:
+    creative_technical:
+      description: "Creative content about technical topics"
+      resolution: "balance_creativity_and_clarity"
+      adjustments:
+        ellipses_rule: -0.4       # Moderate permission for creative ellipses
+        technical_terms: -0.3     # Permit technical terminology
+    
+    legal_technical:
+      description: "Legal documents about technical topics"
+      resolution: "prioritize_legal_precision"
+      adjustments:
+        slashes_rule: 0.2         # Strict against ambiguous slashes
+        technical_abbreviations: -0.2  # Permit necessary technical terms
+    
+    academic_technical:
+      description: "Academic writing about technical topics"
+      resolution: "balance_formality_and_technical_clarity"
+      adjustments:
+        semicolons_rule: -0.3     # Permit formal academic semicolons
+        technical_compounds: -0.3  # Permit technical hyphenation
+
+# Feedback learning integration
+feedback_integration:
+  # How user feedback affects context guards
+  learning_patterns:
+    user_acceptance_patterns:
+      - "Track which contexts users consistently accept punctuation"
+      - "Adjust evidence based on user feedback patterns"
+      - "Learn domain-specific user preferences"
+    
+    user_rejection_patterns:
+      - "Track which contexts users consistently reject punctuation"
+      - "Increase evidence for consistently rejected patterns"
+      - "Learn audience-specific preferences"
+
+# Performance optimization
+optimization:
+  # Caching strategies for context evaluation
+  caching:
+    context_evaluation: true
+    domain_detection: true
+    audience_classification: true
+  
+  # Pre-compilation of context patterns
+  precompilation:
+    guard_patterns: true
+    evidence_adjustments: true

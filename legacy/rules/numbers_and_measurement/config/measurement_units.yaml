@@ -1,0 +1,597 @@
+# Measurement Units Configuration
+# Manages unit patterns and spacing requirements
+# Updates can be made without code changes for zero false positives
+
+# Unit Categories with Comprehensive Patterns
+unit_categories:
+  length:
+    name: "Length and Distance"
+    evidence_base: 0.8
+    units:
+      - unit: "mm"
+        name: "millimeter"
+        standard: "metric"
+        evidence_base: 0.8
+      - unit: "cm"
+        name: "centimeter"
+        standard: "metric"
+        evidence_base: 0.8
+      - unit: "m"
+        name: "meter"
+        standard: "metric"
+        evidence_base: 0.7  # Lower due to potential 'm' ambiguity
+      - unit: "km"
+        name: "kilometer"
+        standard: "metric"
+        evidence_base: 0.8
+      - unit: "in"
+        name: "inch"
+        standard: "imperial"
+        evidence_base: 0.9
+      - unit: "ft"
+        name: "foot"
+        standard: "imperial"
+        evidence_base: 0.8
+      - unit: "yd"
+        name: "yard"
+        standard: "imperial"
+        evidence_base: 0.8
+      - unit: "mi"
+        name: "mile"
+        standard: "imperial"
+        evidence_base: 0.8
+      - unit: "nm"
+        name: "nanometer"
+        standard: "metric"
+        evidence_base: 0.9
+      - unit: "μm"
+        name: "micrometer"
+        standard: "metric"
+        evidence_base: 0.9
+      - unit: "pm"
+        name: "picometer"
+        standard: "metric"
+        evidence_base: 0.9
+
+  weight:
+    name: "Weight and Mass"
+    evidence_base: 0.8
+    units:
+      - unit: "mg"
+        name: "milligram"
+        standard: "metric"
+        evidence_base: 0.8
+      - unit: "g"
+        name: "gram"
+        standard: "metric"
+        evidence_base: 0.7  # Common abbreviation
+      - unit: "kg"
+        name: "kilogram"
+        standard: "metric"
+        evidence_base: 0.8
+      - unit: "oz"
+        name: "ounce"
+        standard: "imperial"
+        evidence_base: 0.8
+      - unit: "lb"
+        name: "pound"
+        standard: "imperial"
+        evidence_base: 0.8
+      - unit: "ton"
+        name: "ton"
+        standard: "both"
+        evidence_base: 0.7
+      - unit: "ng"
+        name: "nanogram"
+        standard: "metric"
+        evidence_base: 0.9
+      - unit: "μg"
+        name: "microgram"
+        standard: "metric"
+        evidence_base: 0.9
+
+  volume:
+    name: "Volume and Capacity"
+    evidence_base: 0.8
+    units:
+      - unit: "ml"
+        name: "milliliter"
+        standard: "metric"
+        evidence_base: 0.8
+      - unit: "l"
+        name: "liter"
+        standard: "metric"
+        evidence_base: 0.7  # Single letter can be ambiguous
+      - unit: "gal"
+        name: "gallon"
+        standard: "imperial"
+        evidence_base: 0.8
+      - unit: "qt"
+        name: "quart"
+        standard: "imperial"
+        evidence_base: 0.8
+      - unit: "pt"
+        name: "pint"
+        standard: "imperial"
+        evidence_base: 0.7  # Could be confused with 'point'
+      - unit: "fl oz"
+        name: "fluid ounce"
+        standard: "imperial"
+        evidence_base: 0.9
+      - unit: "μl"
+        name: "microliter"
+        standard: "metric"
+        evidence_base: 0.9
+      - unit: "nl"
+        name: "nanoliter"
+        standard: "metric"
+        evidence_base: 0.9
+
+  time:
+    name: "Time Duration"
+    evidence_base: 0.7  # Time units often acceptable without spaces
+    units:
+      - unit: "ms"
+        name: "millisecond"
+        standard: "metric"
+        evidence_base: 0.6  # Common in tech contexts
+      - unit: "s"
+        name: "second"
+        standard: "metric"
+        evidence_base: 0.5  # Very common, often acceptable
+      - unit: "min"
+        name: "minute"
+        standard: "common"
+        evidence_base: 0.7
+      - unit: "hr"
+        name: "hour"
+        standard: "common"
+        evidence_base: 0.7
+      - unit: "h"
+        name: "hour"
+        standard: "metric"
+        evidence_base: 0.6
+      - unit: "ns"
+        name: "nanosecond"
+        standard: "metric"
+        evidence_base: 0.8
+      - unit: "μs"
+        name: "microsecond"
+        standard: "metric"
+        evidence_base: 0.8
+      - unit: "ps"
+        name: "picosecond"
+        standard: "metric"
+        evidence_base: 0.9
+
+  frequency:
+    name: "Frequency"
+    evidence_base: 0.8
+    units:
+      - unit: "Hz"
+        name: "hertz"
+        standard: "metric"
+        evidence_base: 0.8
+      - unit: "kHz"
+        name: "kilohertz"
+        standard: "metric"
+        evidence_base: 0.8
+      - unit: "MHz"
+        name: "megahertz"
+        standard: "metric"
+        evidence_base: 0.8
+      - unit: "GHz"
+        name: "gigahertz"
+        standard: "metric"
+        evidence_base: 0.8
+      - unit: "THz"
+        name: "terahertz"
+        standard: "metric"
+        evidence_base: 0.9
+      - unit: "PHz"
+        name: "petahertz"
+        standard: "metric"
+        evidence_base: 0.9
+
+  data:
+    name: "Data Storage"
+    evidence_base: 0.9  # Critical for tech accuracy
+    units:
+      - unit: "B"
+        name: "byte"
+        standard: "digital"
+        evidence_base: 0.8
+      - unit: "KB"
+        name: "kilobyte"
+        standard: "digital"
+        evidence_base: 0.9
+      - unit: "MB"
+        name: "megabyte"
+        standard: "digital"
+        evidence_base: 0.9
+      - unit: "GB"
+        name: "gigabyte"
+        standard: "digital"
+        evidence_base: 0.9
+      - unit: "TB"
+        name: "terabyte"
+        standard: "digital"
+        evidence_base: 0.9
+      - unit: "PB"
+        name: "petabyte"
+        standard: "digital"
+        evidence_base: 0.9
+      - unit: "EB"
+        name: "exabyte"
+        standard: "digital"
+        evidence_base: 0.9
+      - unit: "ZB"
+        name: "zettabyte"
+        standard: "digital"
+        evidence_base: 0.9
+      - unit: "YB"
+        name: "yottabyte"
+        standard: "digital"
+        evidence_base: 0.9
+      - unit: "bit"
+        name: "bit"
+        standard: "digital"
+        evidence_base: 0.7
+      - unit: "kbit"
+        name: "kilobit"
+        standard: "digital"
+        evidence_base: 0.8
+      - unit: "Mbit"
+        name: "megabit"
+        standard: "digital"
+        evidence_base: 0.8
+      - unit: "Gbit"
+        name: "gigabit"
+        standard: "digital"
+        evidence_base: 0.8
+
+  network:
+    name: "Network Speed"
+    evidence_base: 0.9  # Critical for tech specifications
+    units:
+      - unit: "bps"
+        name: "bits per second"
+        standard: "digital"
+        evidence_base: 0.8
+      - unit: "kbps"
+        name: "kilobits per second"
+        standard: "digital"
+        evidence_base: 0.9
+      - unit: "Mbps"
+        name: "megabits per second"
+        standard: "digital"
+        evidence_base: 0.9
+      - unit: "Gbps"
+        name: "gigabits per second"
+        standard: "digital"
+        evidence_base: 0.9
+      - unit: "Tbps"
+        name: "terabits per second"
+        standard: "digital"
+        evidence_base: 0.9
+
+  power:
+    name: "Power and Energy"
+    evidence_base: 0.8
+    units:
+      - unit: "W"
+        name: "watt"
+        standard: "metric"
+        evidence_base: 0.8
+      - unit: "kW"
+        name: "kilowatt"
+        standard: "metric"
+        evidence_base: 0.8
+      - unit: "MW"
+        name: "megawatt"
+        standard: "metric"
+        evidence_base: 0.8
+      - unit: "mW"
+        name: "milliwatt"
+        standard: "metric"
+        evidence_base: 0.8
+      - unit: "μW"
+        name: "microwatt"
+        standard: "metric"
+        evidence_base: 0.9
+      - unit: "nW"
+        name: "nanowatt"
+        standard: "metric"
+        evidence_base: 0.9
+
+  voltage:
+    name: "Voltage"
+    evidence_base: 0.8
+    units:
+      - unit: "V"
+        name: "volt"
+        standard: "metric"
+        evidence_base: 0.8
+      - unit: "kV"
+        name: "kilovolt"
+        standard: "metric"
+        evidence_base: 0.8
+      - unit: "mV"
+        name: "millivolt"
+        standard: "metric"
+        evidence_base: 0.8
+      - unit: "μV"
+        name: "microvolt"
+        standard: "metric"
+        evidence_base: 0.9
+
+  current:
+    name: "Electric Current"
+    evidence_base: 0.8
+    units:
+      - unit: "A"
+        name: "ampere"
+        standard: "metric"
+        evidence_base: 0.7  # Single letter can be ambiguous
+      - unit: "mA"
+        name: "milliampere"
+        standard: "metric"
+        evidence_base: 0.8
+      - unit: "kA"
+        name: "kiloampere"
+        standard: "metric"
+        evidence_base: 0.8
+      - unit: "μA"
+        name: "microampere"
+        standard: "metric"
+        evidence_base: 0.9
+      - unit: "nA"
+        name: "nanoampere"
+        standard: "metric"
+        evidence_base: 0.9
+
+  temperature:
+    name: "Temperature"
+    evidence_base: 0.8
+    units:
+      - unit: "C"
+        name: "Celsius"
+        standard: "metric"
+        evidence_base: 0.7
+      - unit: "°C"
+        name: "Celsius with symbol"
+        standard: "metric"
+        evidence_base: 0.8
+      - unit: "F"
+        name: "Fahrenheit"
+        standard: "imperial"
+        evidence_base: 0.7
+      - unit: "°F"
+        name: "Fahrenheit with symbol"
+        standard: "imperial"
+        evidence_base: 0.8
+      - unit: "K"
+        name: "Kelvin"
+        standard: "metric"
+        evidence_base: 0.8
+
+  pressure:
+    name: "Pressure"
+    evidence_base: 0.8
+    units:
+      - unit: "Pa"
+        name: "pascal"
+        standard: "metric"
+        evidence_base: 0.8
+      - unit: "kPa"
+        name: "kilopascal"
+        standard: "metric"
+        evidence_base: 0.8
+      - unit: "MPa"
+        name: "megapascal"
+        standard: "metric"
+        evidence_base: 0.8
+      - unit: "psi"
+        name: "pounds per square inch"
+        standard: "imperial"
+        evidence_base: 0.8
+      - unit: "bar"
+        name: "bar"
+        standard: "metric"
+        evidence_base: 0.7
+      - unit: "atm"
+        name: "atmosphere"
+        standard: "common"
+        evidence_base: 0.7
+      - unit: "mmHg"
+        name: "millimeters of mercury"
+        standard: "medical"
+        evidence_base: 0.8
+
+  speed:
+    name: "Speed and Velocity"
+    evidence_base: 0.8
+    units:
+      - unit: "mph"
+        name: "miles per hour"
+        standard: "imperial"
+        evidence_base: 0.8
+      - unit: "kph"
+        name: "kilometers per hour"
+        standard: "metric"
+        evidence_base: 0.8
+      - unit: "fps"
+        name: "feet per second"
+        standard: "imperial"
+        evidence_base: 0.8
+      - unit: "mps"
+        name: "meters per second"
+        standard: "metric"
+        evidence_base: 0.8
+      - unit: "kmh"
+        name: "kilometers per hour"
+        standard: "metric"
+        evidence_base: 0.8
+      - unit: "ms"
+        name: "meters per second"
+        standard: "metric"
+        evidence_base: 0.6  # Could be confused with milliseconds
+
+  angle:
+    name: "Angle"
+    evidence_base: 0.8
+    units:
+      - unit: "deg"
+        name: "degree"
+        standard: "common"
+        evidence_base: 0.8
+      - unit: "°"
+        name: "degree symbol"
+        standard: "common"
+        evidence_base: 0.8
+      - unit: "rad"
+        name: "radian"
+        standard: "metric"
+        evidence_base: 0.8
+
+  percentage:
+    name: "Percentage"
+    evidence_base: 0.7
+    units:
+      - unit: "%"
+        name: "percent"
+        standard: "common"
+        evidence_base: 0.6  # Often acceptable without space
+
+  rotation:
+    name: "Rotational Speed"
+    evidence_base: 0.8
+    units:
+      - unit: "rpm"
+        name: "revolutions per minute"
+        standard: "common"
+        evidence_base: 0.8
+      - unit: "rps"
+        name: "revolutions per second"
+        standard: "common"
+        evidence_base: 0.8
+
+  memory_extended:
+    name: "Binary Memory Units"
+    evidence_base: 0.9
+    units:
+      - unit: "kiB"
+        name: "kibibyte"
+        standard: "binary"
+        evidence_base: 0.9
+      - unit: "MiB"
+        name: "mebibyte"
+        standard: "binary"
+        evidence_base: 0.9
+      - unit: "GiB"
+        name: "gibibyte"
+        standard: "binary"
+        evidence_base: 0.9
+      - unit: "TiB"
+        name: "tebibyte"
+        standard: "binary"
+        evidence_base: 0.9
+
+# Detection Pattern Configuration
+detection_patterns:
+  no_space_pattern:
+    description: "Numbers without spaces before units"
+    regex: '\b(\d+(?:\.\d+)?)({units_regex})\b'
+    flags: "IGNORECASE"
+    example: "25MB"
+    issue_type: "missing_space"
+
+# Context-Based Evidence Adjustments
+context_adjustments:
+  content_type_modifiers:
+    technical:
+      evidence_increase: 0.1
+      requires_precision: true
+    scientific:
+      evidence_increase: 0.1
+      requires_precision: true
+    engineering:
+      evidence_increase: 0.1
+      requires_precision: true
+    medical:
+      evidence_increase: 0.2
+      requires_precision: true
+    general:
+      evidence_neutral: 0.0
+      standard_formatting: true
+
+  domain_specific:
+    data_storage:
+      categories: ["data", "memory_extended"]
+      evidence_increase: 0.2
+      critical_accuracy: true
+    networking:
+      categories: ["network", "frequency"]
+      evidence_increase: 0.2
+      critical_accuracy: true
+    electrical:
+      categories: ["power", "voltage", "current"]
+      evidence_increase: 0.1
+      precision_required: true
+
+# Surgical Guard Patterns (contexts to exclude)
+surgical_guards:
+  code_contexts:
+    - "api specification"
+    - "json schema"
+    - "configuration file"
+    - "parameter list"
+    - "variable name"
+  
+  technical_identifiers:
+    - "model number"
+    - "part number"
+    - "serial number"
+    - "product code"
+    - "specification"
+
+# Evidence-Aware Messaging
+messages:
+  high_evidence:
+    missing_space: "Add a space between the number and unit: '{flagged}' should be '{number} {unit}'."
+  
+  medium_evidence:
+    missing_space: "Consider adding a space between '{number}' and '{unit}' for better readability."
+  
+  low_evidence:
+    missing_space: "Unit formatting could be improved: '{flagged}'."
+
+# Suggestions Based on Evidence Level and Unit Category
+suggestions:
+  missing_space:
+    high_evidence:
+      - "Change '{flagged}' to '{number} {unit}'."
+      - "Use a space between numbers and units for clarity."
+      - "Follow international standards for unit spacing."
+    medium_evidence:
+      - "Consider '{number} {unit}' format."
+      - "Add space for better readability."
+    low_evidence:
+      - "Consider adding space between number and unit."
+
+# Special Cases and Exceptions
+special_cases:
+  percentage_exception:
+    unit: "%"
+    evidence_reduction: -0.3
+    reason: "Percentage symbol commonly attached to number"
+  
+  degree_symbol_exception:
+    unit: "°"
+    evidence_reduction: -0.2
+    reason: "Degree symbol often attached in informal contexts"
+  
+  time_units_relaxed:
+    units: ["ms", "s", "min", "h"]
+    evidence_reduction: -0.2
+    reason: "Time units often acceptable without spaces in technical contexts"

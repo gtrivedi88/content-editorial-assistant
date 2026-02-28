@@ -1,0 +1,11 @@
+# LLM Consumability Rule Configuration
+# IBM Style Guide (Page 69): Write content consumable by LLMs.
+#
+# HOW TO MAINTAIN:
+# - Adjust thresholds below as LLM capabilities evolve
+# - No code changes needed — just edit this file and restart.
+
+# Minimum number of sentences per content block
+# IBM Style Guide: "Avoid tiny topics (approximately 5 or fewer sentences)"
+# Content with too few sentences lacks context for RAG retrieval
+min_sentences_per_topic: 5

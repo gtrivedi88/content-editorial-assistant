@@ -1,0 +1,582 @@
+"""
+Data Access Objects (DAO) for Style Guide AI
+Provides high-level database operations with proper error handling.
+"""
+
+import logging
+import uuid
+from datetime import datetime, timedelta, timezone
+from typing import List, Optional, Dict, Any, Tuple
+from sqlalchemy.exc import SQLAlchemyError
+
+from database import db
+from database.models import (
+    UserSession, Document, DocumentBlock, AnalysisSession,
+    StyleRule, RuleViolation, UserFeedback, PerformanceMetric,
+    ProcessingStatus, SessionStatus, FeedbackType, DocumentStatus,
+    SeverityLevel, BlockType
+)
+
+logger = logging.getLogger(__name__)
+
+class BaseDAO:
+    """Base DAO with common functionality."""
+    
+    @staticmethod
+    def generate_id() -> str:
+        """Generate a unique ID."""
+        return str(uuid.uuid4())
+    
+    @staticmethod
+    def handle_db_error(operation: str):
+        """Decorator for handling database errors."""
+        def decorator(func):
+            def wrapper(*args, **kwargs):
+                try:
+                    return func(*args, **kwargs)
+                except SQLAlchemyError as e:
+                    logger.error(f"Database error in {operation}: {e}")
+                    db.session.rollback()
+                    raise
+                except Exception as e:
+                    logger.error(f"Unexpected error in {operation}: {e}")
+                    db.session.rollback()
+                    raise
+            return wrapper
+        return decorator
+
+class SessionDAO(BaseDAO):
+    """DAO for user session operations."""
+    
+    @staticmethod
+    @BaseDAO.handle_db_error("create_session")
+    def create_session(user_agent: str = None, ip_hash: str = None) -> UserSession:
+        """Create a new user session."""
+        session = UserSession(
+            session_id=BaseDAO.generate_id(),
+            user_agent=user_agent,
+            ip_hash=ip_hash,
+            status=SessionStatus.ACTIVE
+        )
+        db.session.add(session)
+        db.session.commit()
+        logger.info(f"Created session: {session.session_id}")
+        return session
+    
+    @staticmethod
+    @BaseDAO.handle_db_error("get_session")
+    def get_session(session_id: str) -> Optional[UserSession]:
+        """Get session by ID."""
+        return UserSession.query.filter_by(session_id=session_id).first()
+    
+    @staticmethod
+    @BaseDAO.handle_db_error("update_session_status")
+    def update_session_status(session_id: str, status: SessionStatus) -> bool:
+        """Update session status."""
+        session = UserSession.query.filter_by(session_id=session_id).first()
+        if session:
+            session.status = status
+            session.updated_at = datetime.now(timezone.utc)
+            db.session.commit()
+            return True
+        return False
+    
+    @staticmethod
+    @BaseDAO.handle_db_error("get_active_sessions")
+    def get_active_sessions(limit: int = 100) -> List[UserSession]:
+        """Get active sessions with optional limit."""
+        return UserSession.query.filter_by(status=SessionStatus.ACTIVE).limit(limit).all()
+    
+    @staticmethod
+    @BaseDAO.handle_db_error("cleanup_expired_sessions")
+    def cleanup_expired_sessions(hours_old: int = 24) -> int:
+        """Clean up expired sessions."""
+        cutoff_time = datetime.now(timezone.utc) - timedelta(hours=hours_old)
+        expired_sessions = UserSession.query.filter(
+            UserSession.updated_at < cutoff_time,
+            UserSession.status == SessionStatus.ACTIVE
+        ).all()
+        
+        count = 0
+        for session in expired_sessions:
+            session.status = SessionStatus.EXPIRED
+            count += 1
+        
+        if count > 0:
+            db.session.commit()
+            logger.info(f"Expired {count} old sessions")
+        
+        return count
+
+class DocumentDAO(BaseDAO):
+    """DAO for document operations."""
+    
+    @staticmethod
+    @BaseDAO.handle_db_error("store_document")
+    def store_document(
+        session_id: str,
+        filename: str,
+        content: str,
+        content_type: str = None,
+        document_format: str = None,
+        file_size: int = None
+    ) -> Document:
+        """Store a new document."""
+        document = Document(
+            session_id=session_id,
+            document_id=BaseDAO.generate_id(),
+            filename=filename,
+            content_type=content_type,
+            file_size=file_size,
+            original_content=content,
+            extracted_text=content,  # For now, same as original
+            document_format=document_format,
+            processing_status=DocumentStatus.PROCESSED
+        )
+        db.session.add(document)
+        db.session.commit()
+        logger.info(f"Stored document: {document.document_id}")
+        return document
+    
+    @staticmethod
+    @BaseDAO.handle_db_error("get_document")
+    def get_document(document_id: str) -> Optional[Document]:
+        """Get document by ID."""
+        return Document.query.filter_by(document_id=document_id).first()
+    
+    @staticmethod
+    @BaseDAO.handle_db_error("get_session_documents")
+    def get_session_documents(session_id: str) -> List[Document]:
+        """Get all documents for a session."""
+        return Document.query.filter_by(session_id=session_id).order_by(Document.created_at.desc()).all()
+    
+    @staticmethod
+    @BaseDAO.handle_db_error("update_document_status")
+    def update_document_status(document_id: str, status: DocumentStatus) -> bool:
+        """Update document processing status."""
+        document = Document.query.filter_by(document_id=document_id).first()
+        if document:
+            document.processing_status = status
+            if status == DocumentStatus.PROCESSED:
+                document.processed_at = datetime.now(timezone.utc)
+            db.session.commit()
+            return True
+        return False
+
+class BlockDAO(BaseDAO):
+    """DAO for document block operations."""
+    
+    @staticmethod
+    @BaseDAO.handle_db_error("store_blocks")
+    def store_blocks(document_id: str, blocks: List[Dict[str, Any]]) -> List[DocumentBlock]:
+        """Store document blocks."""
+        db_blocks = []
+        for i, block_data in enumerate(blocks):
+            # Convert string type to enum
+            block_type_str = block_data.get('type', 'paragraph').upper()
+            block_type = getattr(BlockType, block_type_str, BlockType.PARAGRAPH)
+            
+            block = DocumentBlock(
+                document_id=document_id,
+                block_id=f"{document_id}_block_{i}",
+                block_type=block_type,
+                block_order=i,
+                content=block_data['content']
+            )
+            db_blocks.append(block)
+        
+        db.session.add_all(db_blocks)
+        db.session.commit()
+        logger.info(f"Stored {len(db_blocks)} blocks for document {document_id}")
+        return db_blocks
+    
+    @staticmethod
+    @BaseDAO.handle_db_error("get_document_blocks")
+    def get_document_blocks(document_id: str) -> List[DocumentBlock]:
+        """Get all blocks for a document."""
+        return DocumentBlock.query.filter_by(document_id=document_id).order_by(DocumentBlock.block_order).all()
+    
+    @staticmethod
+    @BaseDAO.handle_db_error("get_block")
+    def get_block(block_id: str) -> Optional[DocumentBlock]:
+        """Get a specific block by ID."""
+        return DocumentBlock.query.filter_by(block_id=block_id).first()
+
+class AnalysisDAO(BaseDAO):
+    """DAO for analysis operations."""
+    
+    @staticmethod
+    @BaseDAO.handle_db_error("create_analysis_session")
+    def create_analysis_session(
+        session_id: str,
+        document_id: str,
+        content_type: str = None
+    ) -> AnalysisSession:
+        """Create a new analysis session."""
+        analysis = AnalysisSession(
+            session_id=session_id,
+            document_id=document_id,
+            analysis_id=BaseDAO.generate_id(),
+            content_type=content_type,
+            status=ProcessingStatus.PENDING
+        )
+        db.session.add(analysis)
+        db.session.commit()
+        logger.info(f"Created analysis session: {analysis.analysis_id}")
+        return analysis
+    
+    @staticmethod
+    @BaseDAO.handle_db_error("get_analysis_session")
+    def get_analysis_session(analysis_id: str) -> Optional[AnalysisSession]:
+        """Get analysis session by ID."""
+        return AnalysisSession.query.filter_by(analysis_id=analysis_id).first()
+    
+    @staticmethod
+    @BaseDAO.handle_db_error("update_analysis_status")
+    def update_analysis_status(
+        analysis_id: str,
+        status: ProcessingStatus,
+        total_errors: int = None,
+        total_blocks: int = None,
+        processing_time: float = None
+    ) -> bool:
+        """Update analysis session status."""
+        analysis = AnalysisSession.query.filter_by(analysis_id=analysis_id).first()
+        if analysis:
+            analysis.status = status
+            if status == ProcessingStatus.COMPLETED:
+                analysis.completed_at = datetime.now(timezone.utc)
+            if total_errors is not None:
+                analysis.total_errors_found = total_errors
+            if total_blocks is not None:
+                analysis.total_blocks_analyzed = total_blocks
+            # Processing time can be calculated from started_at and completed_at if needed
+            
+            db.session.commit()
+            return True
+        return False
+    
+    @staticmethod
+    @BaseDAO.handle_db_error("get_session_analyses")
+    def get_session_analyses(session_id: str) -> List[AnalysisSession]:
+        """Get all analysis sessions for a user session."""
+        return AnalysisSession.query.filter_by(session_id=session_id).order_by(AnalysisSession.started_at.desc()).all()
+
+class StyleRuleDAO(BaseDAO):
+    """DAO for style rule operations."""
+    
+    @staticmethod
+    @BaseDAO.handle_db_error("create_rule")
+    def create_rule(
+        rule_id: str,
+        rule_name: str,
+        rule_category: str,
+        description: str = None,
+        severity = SeverityLevel.MEDIUM
+    ) -> StyleRule:
+        """Create a new style rule."""
+        rule = StyleRule(
+            rule_id=rule_id,
+            rule_name=rule_name,
+            rule_category=rule_category,
+            description=description,
+            severity=severity
+        )
+        db.session.add(rule)
+        db.session.commit()
+        logger.info(f"Created style rule: {rule_id}")
+        return rule
+    
+    @staticmethod
+    @BaseDAO.handle_db_error("get_rule")
+    def get_rule(rule_id: str) -> Optional[StyleRule]:
+        """Get rule by ID."""
+        return StyleRule.query.filter_by(rule_id=rule_id).first()
+    
+    @staticmethod
+    @BaseDAO.handle_db_error("get_enabled_rules")
+    def get_enabled_rules() -> List[StyleRule]:
+        """Get all enabled rules."""
+        return StyleRule.query.filter_by(is_enabled=True).all()
+    
+    @staticmethod
+    @BaseDAO.handle_db_error("get_rules_by_category")
+    def get_rules_by_category(category: str) -> List[StyleRule]:
+        """Get rules by category."""
+        return StyleRule.query.filter_by(rule_category=category, is_enabled=True).all()
+
+class ViolationDAO(BaseDAO):
+    """DAO for rule violation operations."""
+    
+    @staticmethod
+    @BaseDAO.handle_db_error("store_violations")
+    def store_violations(
+        analysis_id: str,
+        document_id: str,
+        violations: List[Dict[str, Any]]
+    ) -> List[RuleViolation]:
+        """Store rule violations."""
+        db_violations = []
+        for violation_data in violations:
+            violation = RuleViolation(
+                analysis_id=analysis_id,
+                document_id=document_id,
+                block_id=violation_data.get('block_id'),
+                violation_id=BaseDAO.generate_id(),
+                rule_id=violation_data['rule_id'],
+                error_text=violation_data['error_text'],
+                error_message=violation_data['error_message'],
+                error_position=violation_data['error_position'],
+                end_position=violation_data.get('end_position'),
+                line_number=violation_data.get('line_number'),
+                column_number=violation_data.get('column_number'),
+                severity=SeverityLevel(violation_data.get('severity')) if violation_data.get('severity') else None,
+                confidence_score=violation_data.get('confidence_score', 0.5),
+                suggestion=violation_data.get('suggestion'),
+                context_before=violation_data.get('context_before'),
+                context_after=violation_data.get('context_after'),
+                rule_metadata=violation_data.get('metadata')
+            )
+            db_violations.append(violation)
+        
+        db.session.add_all(db_violations)
+        db.session.commit()
+        logger.info(f"Stored {len(db_violations)} violations for analysis {analysis_id}")
+        return db_violations
+    
+    @staticmethod
+    @BaseDAO.handle_db_error("get_analysis_violations")
+    def get_analysis_violations(analysis_id: str) -> List[RuleViolation]:
+        """Get all violations for an analysis."""
+        return RuleViolation.query.filter_by(analysis_id=analysis_id).all()
+    
+    @staticmethod
+    @BaseDAO.handle_db_error("get_violation")
+    def get_violation(violation_id: str) -> Optional[RuleViolation]:
+        """Get violation by ID."""
+        return RuleViolation.query.filter_by(violation_id=violation_id).first()
+    
+    @staticmethod
+    @BaseDAO.handle_db_error("get_rule_violations")
+    def get_rule_violations(rule_id: str, limit: int = 100) -> List[RuleViolation]:
+        """Get violations for a specific rule."""
+        return RuleViolation.query.filter_by(rule_id=rule_id).limit(limit).all()
+
+class FeedbackDAO(BaseDAO):
+    """DAO for feedback operations."""
+    
+    @staticmethod
+    @BaseDAO.handle_db_error("store_feedback")
+    def store_feedback(
+        session_id: str,
+        violation_id: str,
+        feedback_data: Dict[str, Any]
+    ) -> UserFeedback:
+        """Store user feedback with content for rule improvement."""
+        feedback = UserFeedback(
+            feedback_id=BaseDAO.generate_id(),
+            session_id=session_id,
+            violation_id=violation_id,
+            error_type=feedback_data['error_type'],
+            error_message=feedback_data['error_message'],
+            feedback_type=FeedbackType(feedback_data['feedback_type']),
+            confidence_score=feedback_data.get('confidence_score', 0.5),
+            user_reason=feedback_data.get('user_reason'),
+            # Content fields for rule improvement
+            error_text=feedback_data.get('error_text'),
+            context_before=feedback_data.get('context_before'),
+            context_after=feedback_data.get('context_after'),
+            suggestion=feedback_data.get('suggestion'),
+            rule_id=feedback_data.get('rule_id')
+        )
+        db.session.add(feedback)
+        db.session.commit()
+        logger.info(f"Stored feedback: {feedback.feedback_id} for rule: {feedback.rule_id}")
+        return feedback
+    
+    @staticmethod
+    @BaseDAO.handle_db_error("get_session_feedback")
+    def get_session_feedback(session_id: str) -> List[UserFeedback]:
+        """Get all feedback for a session."""
+        return UserFeedback.query.filter_by(session_id=session_id).order_by(UserFeedback.timestamp.desc()).all()
+    
+    @staticmethod
+    @BaseDAO.handle_db_error("get_feedback_by_type")
+    def get_feedback_by_type(feedback_type: str, limit: int = 100) -> List[UserFeedback]:
+        """Get feedback by type (correct/incorrect/partially_correct) for rule improvement."""
+        return UserFeedback.query.filter_by(
+            feedback_type=FeedbackType(feedback_type)
+        ).order_by(UserFeedback.timestamp.desc()).limit(limit).all()
+    
+    @staticmethod
+    @BaseDAO.handle_db_error("get_incorrect_feedback_for_rule")
+    def get_incorrect_feedback_for_rule(rule_id: str, limit: int = 100) -> List[UserFeedback]:
+        """Get all incorrect feedback for a specific rule - useful for rule improvement."""
+        return UserFeedback.query.filter_by(
+            rule_id=rule_id,
+            feedback_type=FeedbackType.INCORRECT
+        ).order_by(UserFeedback.timestamp.desc()).limit(limit).all()
+    
+    @staticmethod
+    @BaseDAO.handle_db_error("get_correct_feedback_for_rule")
+    def get_correct_feedback_for_rule(rule_id: str, limit: int = 100) -> List[UserFeedback]:
+        """Get all correct feedback for a specific rule - useful for validation."""
+        return UserFeedback.query.filter_by(
+            rule_id=rule_id,
+            feedback_type=FeedbackType.CORRECT
+        ).order_by(UserFeedback.timestamp.desc()).limit(limit).all()
+    
+    @staticmethod
+    @BaseDAO.handle_db_error("get_rule_feedback_summary")
+    def get_rule_feedback_summary() -> List[Dict[str, Any]]:
+        """Get feedback summary by rule for identifying problematic rules."""
+        from sqlalchemy import func
+        
+        results = db.session.query(
+            UserFeedback.rule_id,
+            UserFeedback.error_type,
+            UserFeedback.feedback_type,
+            func.count(UserFeedback.id).label('count')
+        ).filter(
+            UserFeedback.rule_id.isnot(None)
+        ).group_by(
+            UserFeedback.rule_id,
+            UserFeedback.error_type,
+            UserFeedback.feedback_type
+        ).all()
+        
+        return [
+            {
+                'rule_id': r.rule_id,
+                'error_type': r.error_type,
+                'feedback_type': r.feedback_type.value if r.feedback_type else None,
+                'count': r.count
+            }
+            for r in results
+        ]
+    
+    @staticmethod
+    @BaseDAO.handle_db_error("get_violation_feedback")
+    def get_violation_feedback(violation_id: str) -> List[UserFeedback]:
+        """Get all feedback for a specific violation."""
+        return UserFeedback.query.filter_by(violation_id=violation_id).all()
+    
+    @staticmethod
+    @BaseDAO.handle_db_error("get_existing_feedback")
+    def get_existing_feedback(session_id: str, violation_id: str) -> UserFeedback:
+        """Get existing feedback for a specific session and violation."""
+        return UserFeedback.query.filter_by(
+            session_id=session_id, 
+            violation_id=violation_id
+        ).first()
+    
+    @staticmethod
+    @BaseDAO.handle_db_error("update_feedback")
+    def update_feedback(
+        session_id: str,
+        violation_id: str,
+        feedback_data: Dict[str, Any]
+    ) -> UserFeedback:
+        """Update existing feedback or create new one."""
+        existing_feedback = FeedbackDAO.get_existing_feedback(session_id, violation_id)
+        
+        if existing_feedback:
+            # Update existing feedback
+            existing_feedback.feedback_type = FeedbackType(feedback_data['feedback_type'])
+            existing_feedback.confidence_score = feedback_data.get('confidence_score', 0.5)
+            existing_feedback.user_reason = feedback_data.get('user_reason')
+            existing_feedback.timestamp = datetime.now(timezone.utc)  # Update timestamp
+                
+            db.session.commit()
+            logger.info(f"Updated existing feedback: {existing_feedback.feedback_id}")
+            return existing_feedback
+        else:
+            # Create new feedback if none exists
+            return FeedbackDAO.store_feedback(session_id, violation_id, feedback_data)
+    
+    @staticmethod
+    @BaseDAO.handle_db_error("delete_feedback")
+    def delete_feedback(session_id: str, violation_id: str) -> bool:
+        """Delete feedback for a specific session and violation."""
+        existing_feedback = FeedbackDAO.get_existing_feedback(session_id, violation_id)
+        
+        if existing_feedback:
+            db.session.delete(existing_feedback)
+            db.session.commit()
+            logger.info(f"Deleted feedback: {existing_feedback.feedback_id}")
+            return True
+        
+        return False
+    
+    @staticmethod
+    @BaseDAO.handle_db_error("get_rule_feedback_stats")
+    def get_rule_feedback_stats(rule_id: str) -> Dict[str, Any]:
+        """Get feedback statistics for a rule."""
+        # Join violations and feedback to get rule-specific feedback
+        feedback_query = db.session.query(UserFeedback).join(
+            RuleViolation, UserFeedback.violation_id == RuleViolation.violation_id
+        ).filter(RuleViolation.rule_id == rule_id)
+        
+        feedback_list = feedback_query.all()
+        
+        if not feedback_list:
+            return {'total': 0, 'correct': 0, 'incorrect': 0, 'partially_correct': 0, 'accuracy_rate': 0.0}
+        
+        total = len(feedback_list)
+        correct = len([f for f in feedback_list if f.feedback_type == FeedbackType.CORRECT])
+        incorrect = len([f for f in feedback_list if f.feedback_type == FeedbackType.INCORRECT])
+        partially_correct = len([f for f in feedback_list if f.feedback_type == FeedbackType.PARTIALLY_CORRECT])
+        
+        return {
+            'total': total,
+            'correct': correct,
+            'incorrect': incorrect,
+            'partially_correct': partially_correct,
+            'accuracy_rate': correct / total if total > 0 else 0.0
+        }
+
+class PerformanceDAO(BaseDAO):
+    """DAO for performance metrics."""
+    
+    @staticmethod
+    @BaseDAO.handle_db_error("record_metric")
+    def record_metric(
+        metric_type: str,
+        metric_name: str,
+        metric_value: float,
+        metric_unit: str = None
+    ) -> PerformanceMetric:
+        """Record a performance metric."""
+        metric = PerformanceMetric(
+            metric_type=metric_type,
+            metric_name=metric_name,
+            metric_value=metric_value,
+            metric_unit=metric_unit
+        )
+        db.session.add(metric)
+        db.session.commit()
+        return metric
+    
+    @staticmethod
+    @BaseDAO.handle_db_error("get_metrics")
+    def get_metrics(
+        metric_type: str = None,
+        session_id: str = None,
+        hours_back: int = 24,
+        limit: int = 1000
+    ) -> List[PerformanceMetric]:
+        """Get performance metrics with filters."""
+        query = PerformanceMetric.query
+        
+        if metric_type:
+            query = query.filter_by(metric_type=metric_type)
+        if session_id:
+            query = query.filter_by(session_id=session_id)
+        
+        # Filter by time
+        cutoff_time = datetime.now(timezone.utc) - timedelta(hours=hours_back)
+        query = query.filter(PerformanceMetric.recorded_at >= cutoff_time)
+        
+        return query.order_by(PerformanceMetric.recorded_at.desc()).limit(limit).all()
+
+# ModelUsageDAO removed - redundant with RewriteDAO functionality

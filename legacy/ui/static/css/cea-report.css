@@ -1,0 +1,87 @@
+/* ================================================================
+   CEA Report — Slide-over panel content styling
+   ================================================================ */
+
+.cea-report-section {
+  margin-bottom: var(--pf-v5-global--spacer--2xl);
+}
+
+.cea-report-section__title {
+  font-size: var(--pf-v5-global--FontSize--sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--pf-v5-global--Color--200);
+  margin: 0 0 var(--pf-v5-global--spacer--md) 0;
+}
+
+.cea-report-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--pf-v5-global--spacer--md);
+}
+
+.cea-report-stat {
+  padding: var(--pf-v5-global--spacer--md);
+  border: 1px solid var(--pf-v5-global--BorderColor--100);
+  border-radius: var(--pf-v5-global--BorderRadius--sm);
+  border-left: 3px solid var(--pf-v5-global--primary-color--100);
+}
+
+.cea-report-stat__value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--pf-v5-global--Color--100);
+  margin-bottom: 2px;
+}
+
+.cea-report-stat__label {
+  font-size: var(--pf-v5-global--FontSize--xs);
+  color: var(--pf-v5-global--Color--200);
+  line-height: 1.4;
+}
+
+/* Stat variants */
+.cea-report-stat--danger { border-left-color: var(--cea-color-issues, #c9190b); }
+.cea-report-stat--danger .cea-report-stat__value { color: var(--cea-color-issues, #c9190b); }
+
+.cea-report-stat--warning { border-left-color: var(--pf-v5-global--warning-color--100); }
+
+.cea-report-stat--success { border-left-color: var(--pf-v5-global--success-color--100); }
+.cea-report-stat--success .cea-report-stat__value { color: var(--pf-v5-global--success-color--100); }
+
+/* Breakdown table */
+.cea-report-breakdown {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.cea-report-breakdown td {
+  padding: var(--pf-v5-global--spacer--sm) var(--pf-v5-global--spacer--md);
+  border-bottom: 1px solid var(--pf-v5-global--BorderColor--100);
+  font-size: var(--pf-v5-global--FontSize--sm);
+}
+
+.cea-report-breakdown td:first-child {
+  font-weight: 500;
+  color: var(--pf-v5-global--Color--100);
+}
+
+.cea-report-breakdown td:last-child {
+  text-align: right;
+  font-weight: 600;
+}
+
+.cea-report-breakdown__bar {
+  display: inline-block;
+  height: 6px;
+  border-radius: 3px;
+  margin-right: var(--pf-v5-global--spacer--sm);
+  vertical-align: middle;
+}
+
+@media (max-width: 480px) {
+  .cea-report-grid {
+    grid-template-columns: 1fr;
+  }
+}

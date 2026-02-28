@@ -1,0 +1,258 @@
+# Legitimate Abbreviations Configuration
+# Manages abbreviations that should not be flagged by punctuation rules
+# Used by periods_rule.py, slashes_rule.py, and related punctuation rules
+
+# Time-related abbreviations
+time_abbreviations:
+  # 12-hour time format
+  am_pm:
+    - phrase: "A.M."
+      variants: ["A.M", "AM", "a.m.", "a.m", "am"]
+      evidence_reduction: 1.0  # Complete evidence elimination
+      context: "time_notation"
+    - phrase: "P.M."
+      variants: ["P.M", "PM", "p.m.", "p.m", "pm"]
+      evidence_reduction: 1.0
+      context: "time_notation"
+  
+  # Time zones and periods
+  temporal:
+    - phrase: "24/7"
+      evidence_reduction: 1.0
+      context: "availability_notation"
+    - phrase: "365/24/7"
+      evidence_reduction: 1.0
+      context: "availability_notation"
+
+# Geographical and postal abbreviations
+geographical_abbreviations:
+  # Countries and regions
+  countries:
+    - phrase: "U.S."
+      variants: ["U.S", "US", "USA", "U.S.A.", "U.S.A"]
+      evidence_reduction: 1.0
+      context: "geographical_notation"
+    - phrase: "U.K."
+      variants: ["U.K", "UK"]
+      evidence_reduction: 1.0
+      context: "geographical_notation"
+    - phrase: "E.U."
+      variants: ["E.U", "EU"]
+      evidence_reduction: 1.0
+      context: "geographical_notation"
+  
+  # Postal and addressing
+  postal:
+    - phrase: "P.O."
+      variants: ["P.O", "PO"]
+      evidence_reduction: 1.0
+      context: "postal_notation"
+      full_form: "Post Office"
+    - phrase: "P.O. Box"
+      variants: ["P.O Box", "PO Box", "P.O. BOX"]
+      evidence_reduction: 1.0
+      context: "postal_notation"
+
+# Personal and professional titles
+title_abbreviations:
+  # Academic and professional titles
+  academic:
+    - phrase: "Dr."
+      variants: ["Dr", "DR"]
+      evidence_reduction: 1.0
+      context: "title_notation"
+      full_form: "Doctor"
+    - phrase: "Prof."
+      variants: ["Prof", "PROF"]
+      evidence_reduction: 1.0
+      context: "title_notation"
+      full_form: "Professor"
+  
+  # Social titles
+  social:
+    - phrase: "Mr."
+      variants: ["Mr", "MR"]
+      evidence_reduction: 1.0
+      context: "title_notation"
+      full_form: "Mister"
+    - phrase: "Mrs."
+      variants: ["Mrs", "MRS"]
+      evidence_reduction: 1.0
+      context: "title_notation"
+      full_form: "Missus"
+    - phrase: "Ms."
+      variants: ["Ms", "MS"]
+      evidence_reduction: 1.0
+      context: "title_notation"
+      full_form: "Miss"
+    - phrase: "Miss"
+      evidence_reduction: 1.0
+      context: "title_notation"
+
+# Technical abbreviations with slashes
+technical_abbreviations:
+  # Input/Output and system terms
+  system_terms:
+    - phrase: "I/O"
+      variants: ["i/o", "input/output", "Input/Output", "INPUT/OUTPUT"]
+      evidence_reduction: 1.0
+      context: "technical_notation"
+      full_form: "Input/Output"
+    - phrase: "TCP/IP"
+      variants: ["tcp/ip", "Tcp/Ip", "TCP/ip", "tcp/IP"]
+      evidence_reduction: 1.0
+      context: "network_protocol"
+      full_form: "Transmission Control Protocol/Internet Protocol"
+    - phrase: "HTTP/HTTPS"
+      variants: ["http/https", "Http/Https", "HTTP/https", "http/HTTPS"]
+      evidence_reduction: 1.0
+      context: "web_protocol"
+      full_form: "HyperText Transfer Protocol/Secure"
+    - phrase: "SSL/TLS"
+      variants: ["ssl/tls", "Ssl/Tls", "SSL/tls", "ssl/TLS"]
+      evidence_reduction: 1.0
+      context: "security_protocol"
+      full_form: "Secure Sockets Layer/Transport Layer Security"
+  
+  # Common business abbreviations with slashes
+  business_terms:
+    - phrase: "w/o"
+      variants: ["w/out", "W/O", "W/OUT"]
+      evidence_reduction: 1.0
+      context: "business_abbreviation"
+      full_form: "without"
+    - phrase: "c/o"
+      variants: ["C/O", "C/o"]
+      evidence_reduction: 1.0
+      context: "business_abbreviation"
+      full_form: "care of"
+    - phrase: "a/c"
+      variants: ["A/C", "A/c"]
+      evidence_reduction: 1.0
+      context: "business_abbreviation"
+      full_form: "account"
+    - phrase: "n/a"
+      variants: ["N/A", "N/a", "n.a.", "N.A."]
+      evidence_reduction: 1.0
+      context: "not_applicable"
+      full_form: "not applicable"
+
+# Academic and reference abbreviations
+academic_abbreviations:
+  # Latin abbreviations (commonly used in academic writing)
+  latin_terms:
+    - phrase: "etc."
+      variants: ["etc", "ETC", "ETC."]
+      evidence_reduction: 0.8  # Some style guides discourage "etc."
+      context: "latin_abbreviation"
+      full_form: "et cetera"
+    - phrase: "e.g."
+      variants: ["e.g", "E.G.", "E.G"]
+      evidence_reduction: 0.9
+      context: "latin_abbreviation"
+      full_form: "exempli gratia"
+    - phrase: "i.e."
+      variants: ["i.e", "I.E.", "I.E"]
+      evidence_reduction: 0.9
+      context: "latin_abbreviation"
+      full_form: "id est"
+    - phrase: "cf."
+      variants: ["cf", "CF", "CF."]
+      evidence_reduction: 1.0
+      context: "latin_abbreviation"
+      full_form: "confer"
+    - phrase: "vs."
+      variants: ["vs", "v.", "v", "VS", "VS."]
+      evidence_reduction: 1.0
+      context: "comparison"
+      full_form: "versus"
+
+# Units of measurement with slashes
+measurement_abbreviations:
+  # Speed and rate units
+  speed_units:
+    - phrase: "km/h"
+      variants: ["kmh", "KM/H", "Km/h", "km/hr", "kph"]
+      evidence_reduction: 1.0
+      context: "speed_measurement"
+      full_form: "kilometers per hour"
+    - phrase: "mph"
+      variants: ["MPH", "m.p.h.", "M.P.H."]
+      evidence_reduction: 1.0
+      context: "speed_measurement"
+      full_form: "miles per hour"
+    - phrase: "fps"
+      variants: ["FPS", "f.p.s.", "F.P.S."]
+      evidence_reduction: 1.0
+      context: "rate_measurement"
+      full_form: "frames per second"
+    - phrase: "rpm"
+      variants: ["RPM", "r.p.m.", "R.P.M."]
+      evidence_reduction: 1.0
+      context: "rate_measurement"
+      full_form: "revolutions per minute"
+    - phrase: "bpm"
+      variants: ["BPM", "b.p.m.", "B.P.M."]
+      evidence_reduction: 1.0
+      context: "rate_measurement"
+      full_form: "beats per minute"
+
+# Domain-specific legitimate abbreviations
+domain_specific:
+  # Legal and formal contexts
+  legal:
+    - phrase: "et al."
+      variants: ["et al", "ET AL.", "ET AL"]
+      evidence_reduction: 1.0
+      context: "legal_citation"
+      full_form: "et alii"
+    - phrase: "ibid."
+      variants: ["ibid", "IBID", "IBID."]
+      evidence_reduction: 1.0
+      context: "legal_citation"
+      full_form: "ibidem"
+  
+  # Medical and scientific
+  medical:
+    - phrase: "mg/kg"
+      evidence_reduction: 1.0
+      context: "medical_dosage"
+      full_form: "milligrams per kilogram"
+    - phrase: "ml/min"
+      evidence_reduction: 1.0
+      context: "medical_measurement"
+      full_form: "milliliters per minute"
+
+# Context-specific evidence adjustments
+context_adjustments:
+  # When these abbreviations appear in specific contexts
+  content_type_modifiers:
+    academic:
+      evidence_multiplier: 0.5  # More permissive for academic content
+    legal:
+      evidence_multiplier: 0.3  # Very permissive for legal content
+    technical:
+      evidence_multiplier: 0.4  # Permissive for technical content
+    business:
+      evidence_multiplier: 0.6  # Moderately permissive for business content
+  
+  block_type_modifiers:
+    citation: 0.0  # No evidence reduction in citations
+    reference: 0.0  # No evidence reduction in references
+    footnote: 0.1  # Minimal evidence in footnotes
+    bibliography: 0.0  # No evidence reduction in bibliography
+
+# Feedback learning patterns
+feedback_patterns:
+  # Abbreviations users commonly accept
+  user_accepted:
+    - "CEO/CTO"
+    - "AM/PM"
+    - "24/7/365"
+    - "R&D"
+  
+  # Abbreviations users commonly flag as problematic
+  user_flagged:
+    - "and/or"  # Users prefer explicit choice
+    - "he/she"  # Users prefer inclusive language
+    - "his/her" # Users prefer inclusive language

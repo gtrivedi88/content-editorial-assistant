@@ -1,0 +1,392 @@
+# Writing Tests
+
+Learn how to write effective tests for the Content Editorial Assistant.
+
+## Test Organization
+[code] 
+    tests/
+    ├── unit/               # Individual component tests
+    │   ├── test_rewriter.py
+    │   ├── test_style_analyzer.py
+    │   ├── rules/          # Rule-specific tests
+    │   └── test_*.py
+    │
+    ├── integration/        # Multi-component tests
+    │   ├── test_metadata_api.py
+    │   ├── test_block_rewrite.py
+    │   └── test_*.py
+    │
+    ├── api/               # API endpoint tests
+    ├── database/          # Database operation tests
+    ├── frontend/          # Frontend component tests
+    ├── ui/                # Browser automation tests
+    ├── websocket/         # WebSocket tests
+    ├── validation/        # Validation system tests
+    └── performance/       # Speed benchmarks
+[/code]
+
+## Unit Test Examples
+
+### Basic Unit Test
+[code] 
+    import pytest
+    from mymodule import MyFeature
+    
+    @pytest.mark.unit
+    def test_my_feature():
+        """Test that MyFeature works correctly."""
+        feature = MyFeature()
+        result = feature.process("input")
+        assert result == "expected_output"
+[/code]
+
+### Testing with Fixtures
+[code] 
+    @pytest.fixture
+    def sample_text():
+        """Provide sample text for testing."""
+        return "This is a sample sentence for testing."
+    
+    @pytest.mark.unit
+    def test_style_analysis(sample_text):
+        """Test style analyzer with fixture."""
+        from style_analyzer import StyleAnalyzer
+    
+        analyzer = StyleAnalyzer()
+        result = analyzer.analyze(sample_text)
+    
+        assert 'readability_score' in result
+        assert result['readability_score'] > 0
+[/code]
+
+### Testing Exceptions
+[code] 
+    @pytest.mark.unit
+    def test_invalid_input_raises_error():
+        """Test that invalid input raises appropriate error."""
+        from mymodule import process_document
+    
+        with pytest.raises(ValueError, match="Invalid document format"):
+            process_document(None)
+[/code]
+
+## Integration Test Examples
+
+### API Integration Test
+[code] 
+    @pytest.mark.integration
+    def test_complete_workflow(client, db):
+        """Test end-to-end analysis workflow."""
+        # Upload document
+        with open('test_doc.txt', 'rb') as f:
+            response = client.post('/upload',
+                                  data={'file': f},
+                                  content_type='multipart/form-data')
+    
+        assert response.status_code == 200
+        doc_id = response.json['document_id']
+    
+        # Analyze document
+        response = client.post(f'/analyze/{doc_id}')
+        assert response.status_code == 200
+        assert 'errors' in response.json
+        assert 'suggestions' in response.json
+[/code]
+
+### Database Integration Test
+[code] 
+    @pytest.mark.database
+    def test_database_transaction(db_service):
+        """Test database transaction handling."""
+        # Create record
+        record_id = db_service.create_feedback({
+            'content': 'Test feedback',
+            'rating': 5
+        })
+    
+        # Verify created
+        record = db_service.get_feedback(record_id)
+        assert record is not None
+        assert record['rating'] == 5
+    
+        # Update record
+        db_service.update_feedback(record_id, {'rating': 4})
+        updated = db_service.get_feedback(record_id)
+        assert updated['rating'] == 4
+[/code]
+
+## UI Test Examples
+
+### Browser Automation with Playwright
+[code] 
+    @pytest.mark.ui
+    def test_ui_interaction(page):
+        """Test user interface with Playwright."""
+        # Navigate to app
+        page.goto("http://localhost:5000")
+    
+        # Enter text
+        page.fill("textarea#content", "Sample text to analyze")
+    
+        # Click analyze button
+        page.click("button#analyze")
+    
+        # Wait for results
+        page.wait_for_selector(".results", timeout=5000)
+    
+        # Verify results displayed
+        assert page.is_visible(".results")
+        assert page.is_visible(".error-list")
+[/code]
+
+### Testing Form Submission
+[code] 
+    @pytest.mark.ui
+    def test_form_submission(page):
+        """Test form submission and validation."""
+        page.goto("http://localhost:5000")
+    
+        # Fill form
+        page.fill("input#email", "test@example.com")
+        page.fill("textarea#content", "Test content")
+    
+        # Submit
+        page.click("button[type='submit']")
+    
+        # Check success message
+        success = page.locator(".alert-success")
+        expect(success).to_be_visible()
+[/code]
+
+## Performance Test Examples
+
+### Benchmark Test
+[code] 
+    @pytest.mark.performance
+    def test_rewriter_performance(benchmark):
+        """Benchmark rewriter performance."""
+        from rewriter import DocumentRewriter
+    
+        rewriter = DocumentRewriter()
+        sample_text = "This is a test sentence. " * 100
+    
+        # Run benchmark
+        result = benchmark(rewriter.rewrite, sample_text)
+    
+        # Verify it completed
+        assert result is not None
+        assert len(result) > 0
+[/code]
+
+### Load Test
+[code] 
+    @pytest.mark.performance
+    def test_concurrent_requests():
+        """Test system under concurrent load."""
+        import concurrent.futures
+        import requests
+    
+        def make_request():
+            response = requests.post('http://localhost:5000/analyze',
+                                    json={'text': 'Test content'})
+            return response.status_code == 200
+    
+        # Run 50 concurrent requests
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+            futures = [executor.submit(make_request) for _ in range(50)]
+            results = [f.result() for f in futures]
+    
+        # At least 95% should succeed
+        success_rate = sum(results) / len(results)
+        assert success_rate >= 0.95
+[/code]
+
+## WebSocket Test Examples
+[code] 
+    @pytest.mark.websocket
+    def test_websocket_connection(websocket_client):
+        """Test WebSocket real-time communication."""
+        # Connect
+        ws = websocket_client('/ws/progress')
+    
+        # Send message
+        ws.send_json({'action': 'start_analysis', 'doc_id': '123'})
+    
+        # Receive progress updates
+        message = ws.receive_json(timeout=5)
+        assert message['type'] == 'progress'
+        assert 'percent' in message
+    
+        # Close connection
+        ws.close()
+[/code]
+
+## Best Practices
+
+### DO ✅
+
+  * **Write tests for new features immediately**
+[code] # Good: Test written alongside feature
+        def new_feature():
+            pass
+        
+        def test_new_feature():
+            result = new_feature()
+            assert result is not None
+[/code]
+
+  * **Keep tests independent**
+[code] # Good: Each test is independent
+        def test_feature_a():
+            result_a = feature_a()
+            assert result_a == "expected"
+        
+        def test_feature_b():
+            result_b = feature_b()
+            assert result_b == "expected"
+[/code]
+
+  * **Use clear, descriptive names**
+[code] # Good: Name describes what is being tested
+        def test_rewriter_handles_long_sentences():
+            pass
+        
+        def test_style_analyzer_detects_passive_voice():
+            pass
+[/code]
+
+  * **Mock external dependencies**
+[code] # Good: Mock external API
+        @patch('requests.get')
+        def test_api_call(mock_get):
+            mock_get.return_value.json.return_value = {'data': 'test'}
+            result = fetch_data()
+            assert result == {'data': 'test'}
+[/code]
+
+### DON'T ❌
+
+  * **Skip writing tests "for now"**
+[code] # Bad: No test for new feature
+        def new_feature():
+            pass
+        # TODO: Write tests later (never happens)
+[/code]
+
+  * **Have tests depend on each other**
+[code] # Bad: test_b depends on test_a running first
+        def test_a():
+            global shared_data
+            shared_data = create_data()
+        
+        def test_b():
+            use_data(shared_data)  # Breaks if test_a doesn't run first
+[/code]
+
+  * **Use vague names**
+[code] # Bad: Unclear what is being tested
+        def test_1():
+            pass
+        
+        def test_something():
+            pass
+[/code]
+
+  * **Test external APIs directly**
+[code] # Bad: Direct call to external API
+        def test_weather():
+            response = requests.get('https://api.weather.com/...')  # Flaky!
+            assert response.status_code == 200
+[/code]
+
+## Common Patterns
+
+### Parametrized Tests
+
+Test multiple inputs efficiently:
+[code] 
+    @pytest.mark.parametrize("input,expected", [
+        ("short", True),
+        ("This is a very long sentence that exceeds limits", False),
+        ("", True),
+    ])
+    def test_sentence_length(input, expected):
+        """Test sentence length validation."""
+        result = is_sentence_acceptable(input)
+        assert result == expected
+[/code]
+
+### Fixture Factories
+
+Create reusable test data:
+[code] 
+    @pytest.fixture
+    def make_document():
+        """Factory for creating test documents."""
+        def _make(title="Test", content="Content"):
+            return {
+                'title': title,
+                'content': content,
+                'created': datetime.now()
+            }
+        return _make
+    
+    def test_with_factory(make_document):
+        """Use fixture factory."""
+        doc1 = make_document(title="Doc 1")
+        doc2 = make_document(title="Doc 2", content="Different content")
+    
+        assert doc1['title'] != doc2['title']
+[/code]
+
+### Temporary Files
+[code] 
+    import tempfile
+    from pathlib import Path
+    
+    def test_file_processing():
+        """Test with temporary file."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            test_file = Path(tmpdir) / "test.txt"
+            test_file.write_text("Test content")
+    
+            result = process_file(test_file)
+            assert result is not None
+        # tmpdir automatically cleaned up
+[/code]
+
+## Running Your Tests
+[code] 
+    # Run specific test
+    pytest tests/unit/test_rewriter.py::test_my_feature -v
+    
+    # Run all tests in a file
+    pytest tests/unit/test_rewriter.py -v
+    
+    # Run tests matching a pattern
+    pytest -k "rewriter" -v
+    
+    # Run with coverage
+    pytest tests/unit/ --cov=rewriter --cov-report=html
+    
+    # Run in parallel
+    pytest tests/ -n auto
+[/code]
+
+## Next Steps
+
+  * [Learn about AI-powered analysis](<testing-guide.html>)
+
+  * [Set up testing infrastructure](<testing-setup.html>)
+
+  * [Return to documentation home](<ROOT:index.html>)
+
+## Resources
+
+  * [Pytest Documentation](<https://docs.pytest.org/>)
+
+  * [Playwright Documentation](<https://playwright.dev/python/>)
+
+  * [Shared Test Fixtures](<../../tests/conftest.py>)
+
+Last updated 2025-11-24 22:49:07 +0530 

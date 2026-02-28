@@ -1,0 +1,28 @@
+# Date and time format patterns for DatesAndTimesRule.
+# IBM Style Guide p.144: "Do not use an all-numeric representation."
+# IBM Style Guide p.144: Use "14 July 2020" format for static text.
+
+# All-numeric date formats that are ambiguous internationally.
+# Matches patterns like 12/25/2023, 12-25-2023, 02.12.2023
+ambiguous_date:
+  pattern: '\b\d{1,2}[/.\-]\d{1,2}[/.\-]\d{2,4}\b'
+  message: "Avoid ambiguous date format '{found}'. Use 'day month year' format (e.g., '2 December 2021')."
+  severity: medium
+  style_guide_citation: "IBM Style Guide p.144"
+
+# ISO 8601 dates (YYYY-MM-DD) are acceptable; used to exclude from flagging.
+iso_8601:
+  pattern: '\b\d{4}-\d{2}-\d{2}\b'
+
+# Version numbers (e.g., 1.2.3) should not be flagged as dates.
+version_number:
+  pattern: '\b\d+\.\d+\.\d+\b'
+
+# Incorrect AM/PM formats: dot separator, missing space, periods, lowercase.
+# Correct format: "11:30 AM" (colon separator, space before, uppercase, no periods).
+incorrect_ampm:
+  pattern: '\b\d{1,2}[.:]\d{2}\s*[AaPp]\.?[Mm]\.?\b'
+  correct_ampm: '\b\d{1,2}:\d{2}\s[AP]M\b'
+  message: "Use correct time format: '{found}' should use colon separator, uppercase AM/PM with a space (e.g., '11:30 AM')."
+  severity: medium
+  style_guide_citation: "IBM Style Guide p.144"

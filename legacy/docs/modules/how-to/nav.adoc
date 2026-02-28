@@ -1,0 +1,10 @@
+.How-to guides
+* xref:how-to-add-new-rule.adoc[Add a new rule]
+* xref:how-to-add-new-ambiguity-detector.adoc[Add a new ambiguity detector]
+* xref:how-to-add-new-model.adoc[Add a new AI model]
+* xref:configure-providers.adoc[Configure AI providers]
+
+.Testing
+* xref:testing-setup.adoc[Testing setup]
+* xref:testing-guide.adoc[AI-powered testing agent]
+* xref:writing-tests.adoc[Writing tests]

@@ -1,0 +1,181 @@
+# Spacing Rule Configuration
+# Comprehensive patterns for spacing issue detection with evidence-based scoring
+
+spacing_violations:
+  
+  # === DOUBLE SPACES ===
+  double_spaces:
+    pattern: "(\\S)\\s{2,}(\\S)"
+    evidence: 0.9
+    severity: "medium"
+    message: "Multiple consecutive spaces detected between words"
+    description: "Modern style guides prefer single spaces between words"
+    
+  # === MISSING SPACES AFTER PUNCTUATION ===
+  missing_space_after_period:
+    pattern: "\\.(\\w)"
+    evidence: 0.8
+    severity: "medium" 
+    message: "Missing space after period"
+    description: "Add space after periods for proper sentence separation"
+    
+  missing_space_after_comma:
+    pattern: ",(\\w)"
+    evidence: 0.8
+    severity: "medium"
+    message: "Missing space after comma"
+    description: "Add space after commas for proper clause separation"
+    
+  missing_space_after_colon:
+    pattern: ":(\\w)"
+    evidence: 0.7
+    severity: "medium"
+    message: "Missing space after colon"
+    description: "Add space after colons in most contexts"
+    
+  # === SPACES BEFORE PUNCTUATION ===
+  space_before_punctuation:
+    pattern: "\\s+([,.;:!?])"
+    evidence: 0.7
+    severity: "medium"
+    message: "Unnecessary space before punctuation"
+    description: "Remove spaces before punctuation marks"
+    
+  # === TRAILING WHITESPACE ===
+  trailing_spaces:
+    pattern: "\\s+$"
+    evidence: 0.6
+    severity: "low"
+    message: "Trailing spaces at end of line"
+    description: "Remove unnecessary whitespace at line endings"
+    
+  # === INDENTATION ISSUES ===
+  mixed_indentation:
+    pattern: "^(\\t+ +| +\\t+)"
+    evidence: 0.7
+    severity: "medium"
+    message: "Mixed tabs and spaces in indentation"
+    description: "Use consistent indentation (either tabs or spaces)"
+    
+  odd_indentation:
+    pattern: "^( {1}[^ ]| {3}[^ ]| {5}[^ ]| {7}[^ ])"
+    evidence: 0.5
+    severity: "low"
+    message: "Unusual indentation spacing"
+    description: "Use standard indentation levels (2, 4, or 8 spaces)"
+    
+  excessive_indentation:
+    pattern: "^( {9,})(\\S)"
+    evidence: 0.6
+    severity: "low"
+    message: "Excessive indentation detected"
+    description: "Consider reducing indentation depth"
+
+# === CONTEXT EXCEPTIONS ===
+# Contexts where spacing rules should be more permissive or skipped entirely
+
+context_exceptions:
+  
+  # Code contexts - very permissive
+  code_blocks: -0.8
+  inline_code: -0.8
+  literal_block: -0.8
+  
+  # Technical contexts - moderately permissive  
+  technical_commands: -0.6
+  file_paths: -0.7
+  urls: -0.8
+  version_numbers: -0.5
+  
+  # Table contexts - spacing may be intentional for alignment
+  table_cells: -0.4
+  table_headers: -0.4
+  
+  # Creative contexts - more flexible spacing allowed
+  poetry: -0.6
+  verse: -0.6
+  creative_writing: -0.4
+  
+  # Quote contexts - preserve original spacing
+  blockquotes: -0.7
+  citations: -0.6
+  
+  # List contexts - varied indentation expected
+  list_items: -0.2
+  nested_lists: -0.3
+
+# === EVIDENCE ADJUSTMENTS ===
+# Fine-tune evidence scoring based on specific conditions
+
+evidence_adjustments:
+  
+  # Punctuation-specific adjustments
+  abbreviations:
+    period_in_abbreviation: -0.6  # "U.S.A." is acceptable
+    time_format_colon: -0.7       # "12:30" is acceptable
+    ratio_colon: -0.5             # "16:9" is acceptable
+    file_extension: -0.8          # ".py" is acceptable
+    
+  # Alignment patterns
+  intentional_alignment:
+    multiple_space_groups: -0.4   # Tables or forms might align with spaces
+    column_alignment: -0.5        # Tabular data alignment
+    
+  # Document structure
+  markdown_formatting:
+    double_space_linebreak: -0.4  # Markdown uses double space for <br>
+    
+  # Content quality indicators
+  high_quality_document:
+    consistent_formatting: 0.1    # Well-formatted docs should fix spacing
+    professional_context: 0.1    # Professional docs need good spacing
+
+# === SUGGESTION TEMPLATES ===
+# Context-aware suggestion templates
+
+suggestion_templates:
+  
+  double_spaces:
+    high_confidence: "Replace multiple spaces with single space"
+    medium_confidence: "Consider using single spaces between words"
+    low_confidence: "Review spacing between words"
+    
+  missing_space_after_period:
+    high_confidence: "Add space after period for proper sentence separation"
+    medium_confidence: "Consider adding space after period"
+    low_confidence: "Review spacing after periods"
+    
+  missing_space_after_comma:
+    high_confidence: "Add space after comma for better readability"
+    medium_confidence: "Consider adding space after comma"
+    low_confidence: "Review comma spacing"
+    
+  trailing_spaces:
+    high_confidence: "Remove trailing spaces at line end"
+    medium_confidence: "Consider removing trailing whitespace"
+    low_confidence: "Review line ending whitespace"
+    
+  mixed_indentation:
+    high_confidence: "Use consistent indentation (tabs or spaces)"
+    medium_confidence: "Consider standardizing indentation"
+    low_confidence: "Review indentation consistency"
+
+# === SEVERITY MAPPINGS ===
+# Map evidence scores to appropriate severity levels
+
+severity_mappings:
+  evidence_thresholds:
+    high_severity: 0.8    # Clear violations
+    medium_severity: 0.6  # Likely violations  
+    low_severity: 0.3     # Possible violations
+    
+  context_severity_adjustments:
+    headings: 0.1         # Headings are highly visible
+    first_paragraph: 0.1  # First impressions matter
+    user_facing: 0.1      # User documentation should be clean
+    
+# === PERFORMANCE SETTINGS ===
+performance:
+  max_matches_per_pattern: 50  # Limit matches to avoid performance issues
+  skip_large_code_blocks: true # Skip analysis of very large code blocks
+  cache_pattern_results: true  # Cache regex compilation results

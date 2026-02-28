@@ -1,0 +1,475 @@
+# Plurals Corrections Configuration
+# Manages incorrect plural forms and their corrections
+# Used by PluralsRule for detecting and correcting improper pluralization
+
+# Special category: Uncountable technical nouns that require careful handling
+uncountable_technical_nouns:
+  # These nouns are inherently uncountable in modern technical usage
+  # The rule should NEVER suggest archaic singular forms
+  data:
+    correct_plural_form: "data"  # data is already the correct form
+    incorrect_forms: ["datas"]   # flag these as errors
+    never_suggest: ["datum"]     # never suggest this archaic singular
+    explanation: "data is uncountable in technical contexts; never use 'datum' or 'datas'"
+    usage_examples:
+      correct: 
+        - "The data shows a clear trend"
+        - "This data is accurate"
+        - "All data has been processed"
+      incorrect:
+        - "These datas show..."  # flag this
+        - "The datum indicates..." # don't suggest this
+
+# Special category: Proper nouns ending in 's' that are NOT plurals
+# These are legitimate singular proper nouns that should never be flagged as plurals
+proper_nouns_ending_in_s:
+  # Technology/Platform names
+  kubernetes:
+    type: "technology_platform"
+    explanation: "Kubernetes is a proper noun for the container orchestration platform"
+    usage_examples:
+      correct:
+        - "Kubernetes cluster"
+        - "Deploy to Kubernetes"
+        - "Kubernetes configuration"
+      never_suggest: ["kubernete", "kubernetis"]
+    
+  jenkins:
+    type: "technology_platform" 
+    explanation: "Jenkins is a proper noun for the automation server"
+    usage_examples:
+      correct:
+        - "Jenkins pipeline"
+        - "Configure Jenkins"
+        - "Jenkins build server"
+      never_suggest: ["jenkin"]
+    
+  prometheus:
+    type: "technology_platform"
+    explanation: "Prometheus is a proper noun for the monitoring system"
+    usage_examples:
+      correct:
+        - "Prometheus metrics"
+        - "Configure Prometheus"
+        - "Prometheus monitoring"
+      never_suggest: ["prometheou", "promethe"]
+  
+  wordpress:
+    type: "technology_platform"
+    explanation: "WordPress is a proper noun for the content management system"
+    usage_examples:
+      correct:
+        - "WordPress site"
+        - "WordPress installation" 
+        - "WordPress themes"
+      never_suggest: ["wordpres"]
+  
+  express:
+    type: "technology_framework"
+    explanation: "Express is a proper noun for the Node.js web framework"
+    usage_examples:
+      correct:
+        - "Express application"
+        - "Express middleware"
+        - "Express server"
+      never_suggest: ["expres"]
+  
+  gitops:
+    type: "devops_methodology"
+    explanation: "GitOps is a proper noun for the DevOps methodology using Git as source of truth"
+    usage_examples:
+      correct:
+        - "gitops-template directory"
+        - "GitOps workflow"
+        - "GitOps deployment"
+        - "GitOps approach"
+      never_suggest: ["gitop"]
+    linguistic_basis: "GitOps = Git + Operations; the 's' is part of 'Ops', not a plural marker"
+    objective_truth: "GitOps is a singular proper noun per CNCF and industry usage"
+    false_negative_risk: "zero - 'gitop' is not a word, no legitimate plural to miss"
+    inversion_test: "passed - guard only applies to exact term 'gitops', not similar words"
+  
+  devops:
+    type: "devops_methodology"
+    explanation: "DevOps is a proper noun for the software development methodology"
+    usage_examples:
+      correct:
+        - "DevOps practices"
+        - "DevOps team"
+        - "DevOps pipeline"
+      never_suggest: ["devop"]
+    linguistic_basis: "DevOps = Development + Operations; the 's' is part of 'Ops', not a plural marker"
+  
+  acs:
+    type: "security_product"
+    explanation: "ACS is an acronym for Advanced Cluster Security (RHACS)"
+    usage_examples:
+      correct:
+        - "ACS scans"
+        - "Enable ACS"
+        - "ACS integration"
+        - "RHACS configuration"
+      never_suggest: ["ac"]
+    linguistic_basis: "ACS is an acronym (Advanced Cluster Security); the 's' is part of 'Security', not a plural marker"
+    objective_truth: "ACS/RHACS is a singular proper noun for Red Hat's security product"
+    false_negative_risk: "zero - 'ac' is not a word, no legitimate plural to miss"
+    inversion_test: "passed - guard only applies to exact acronym 'acs'"
+  
+  rhacs:
+    type: "security_product"
+    explanation: "RHACS is an acronym for Red Hat Advanced Cluster Security"
+    usage_examples:
+      correct:
+        - "RHACS scans"
+        - "RHACS policies"
+        - "Enable RHACS"
+      never_suggest: ["rhac"]
+    linguistic_basis: "RHACS is an acronym; the 's' is part of 'Security', not a plural marker"
+
+  # Business/Organization names
+  ibm:
+    type: "company"
+    explanation: "IBM is a proper noun for the technology company"
+    usage_examples:
+      correct:
+        - "IBM guidelines"
+        - "IBM products"
+        - "IBM services" 
+      never_suggest: []
+  
+  # Geographic locations
+  wales:
+    type: "geographic"
+    explanation: "Wales is a proper noun for the country"
+    usage_examples:
+      correct:
+        - "Wales region"
+        - "Visit Wales"
+        - "Wales government"
+      never_suggest: ["wale"]
+  
+  # Add more as needed - this list can be extended without code changes
+
+# Legitimate plural subjects that should not be flagged as plural adjective errors
+# These are words that are correctly used as plural subjects of verbs
+legitimate_plural_subjects:
+  # Common business and organizational entities that are legitimately plural subjects
+  common_business_entities:
+    - "enterprises"     # Original case: "enterprises move to the cloud"
+    - "companies"
+    - "organizations" 
+    - "businesses"
+    - "corporations"
+    - "startups"
+    - "teams"
+    - "groups"
+    - "departments"
+    - "divisions"
+    - "users"
+    - "customers"
+    - "clients" 
+    - "employees"
+    - "members"
+    - "partners"
+    - "vendors"
+    - "suppliers"
+    - "developers"
+    - "engineers"
+    - "administrators"
+    - "managers"
+    - "leaders"
+    - "executives"
+    
+  # System and technical entities that are legitimately plural subjects  
+  technical_entities:
+    - "systems"
+    - "servers"
+    - "applications"
+    - "services"
+    - "processes"
+    - "threads"
+    - "connections"
+    - "databases"
+    - "tables"
+    - "records"
+    - "files"
+    - "directories"
+    - "repositories"
+    - "modules"
+    - "components"
+    - "packages"
+    - "libraries"
+    - "frameworks"
+    - "platforms"
+    - "networks"
+    - "devices"
+    - "machines"
+    - "instances"
+    - "containers"
+    - "clusters"
+    
+  # Verbs that commonly take plural subjects
+  verbs_expecting_plural_subjects:
+    - "move"            # Original case: "enterprises move"
+    - "operate"
+    - "function"
+    - "work"
+    - "collaborate"
+    - "communicate"
+    - "interact"
+    - "connect"
+    - "access"
+    - "process"
+    - "handle"
+    - "manage"
+    - "control"
+    - "monitor"
+    - "execute"
+    - "run"
+    - "start"
+    - "stop"
+    - "restart"
+    - "scale"
+    - "deploy"
+    - "migrate"
+    - "synchronize"
+    - "replicate"
+    - "backup"
+    - "restore"
+    - "validate"
+    - "verify"
+    - "analyze"
+    - "generate"
+    - "create"
+    - "update"
+    - "delete"
+    - "modify"
+    - "configure"
+    - "maintain"
+    - "support"
+    - "enable"
+    - "disable"
+    - "require"
+    - "provide"
+    - "offer"
+    - "deliver"
+    - "ensure"
+    - "guarantee"
+
+# Traditional incorrect plural forms and their correct alternatives
+incorrect_plurals:
+  # Regular uncountable nouns
+  uncountable_nouns:
+    informations:
+      correct_form: "information"
+      type: "uncountable"
+      explanation: "information is uncountable"
+      examples:
+        incorrect: "Several informations were provided"
+        correct: "Several pieces of information were provided"
+    
+    softwares:
+      correct_form: "software"
+      type: "uncountable"
+      explanation: "software is uncountable"
+      examples:
+        incorrect: "Many softwares are available"
+        correct: "Many software packages are available"
+    
+    hardwares:
+      correct_form: "hardware"
+      type: "uncountable"
+      explanation: "hardware is uncountable"
+      examples:
+        incorrect: "Different hardwares support this"
+        correct: "Different hardware components support this"
+    
+    equipments:
+      correct_form: "equipment"
+      type: "uncountable"
+      explanation: "equipment is uncountable"
+      examples:
+        incorrect: "All equipments are ready"
+        correct: "All equipment is ready"
+    
+    researches:
+      correct_form: "research"
+      type: "uncountable"
+      explanation: "research is uncountable; use 'research studies' for plural"
+      examples:
+        incorrect: "Multiple researches indicate..."
+        correct: "Multiple research studies indicate..."
+    
+    advices:
+      correct_form: "advice"
+      type: "uncountable"
+      explanation: "advice is uncountable; use 'pieces of advice' for plural"
+      examples:
+        incorrect: "He gave me several advices"
+        correct: "He gave me several pieces of advice"
+    
+    knowledges:
+      correct_form: "knowledge"
+      type: "uncountable"
+      explanation: "knowledge is uncountable"
+      examples:
+        incorrect: "Different knowledges are required"
+        correct: "Different types of knowledge are required"
+    
+    feedbacks:
+      correct_form: "feedback"
+      type: "uncountable"
+      explanation: "feedback is uncountable; use 'feedback items' for plural"
+      examples:
+        incorrect: "We received many feedbacks"
+        correct: "We received much feedback"
+    
+    trainings:
+      correct_form: "training"
+      type: "uncountable"
+      explanation: "training is uncountable; use 'training sessions' for plural"
+      examples:
+        incorrect: "Several trainings are scheduled"
+        correct: "Several training sessions are scheduled"
+    
+    documentations:
+      correct_form: "documentation"
+      type: "uncountable"
+      explanation: "documentation is uncountable"
+      examples:
+        incorrect: "Update all documentations"
+        correct: "Update all documentation"
+
+  # Incorrect plural formations
+  wrong_formations:
+    processers:
+      correct_form: "processors"
+      type: "wrong_formation"
+      explanation: "correct plural of processor"
+      examples:
+        incorrect: "Multiple processers handle the task"
+        correct: "Multiple processors handle the task"
+
+# Parenthetical (s) patterns to avoid
+parenthetical_s_patterns:
+  discouraged:
+    - "user(s)"
+    - "file(s)"
+    - "option(s)"
+    - "parameter(s)"
+    - "setting(s)"
+    - "value(s)"
+    - "directory(ies)"
+    - "variable(s)"
+    - "property(ies)"
+  
+  alternatives:
+    "user(s)":
+      - "users"
+      - "a user"
+      - "one or more users"
+    "file(s)":
+      - "files"
+      - "a file"
+      - "multiple files"
+    "option(s)":
+      - "options"
+      - "an option"
+      - "available options"
+
+# Exceptions where (s) might be acceptable
+exceptions:
+  technical_documentation:
+    - "parameter(s) in the config file"
+    - "property(s) defined in the schema"
+  
+  context_conditions:
+    - short_forms_in_tables
+    - space_constrained_ui
+    - established_terminology
+
+# Plural adjective issues
+plural_adjectives:
+  # Nouns incorrectly used as adjectives in plural form
+  incorrect_usage:
+    systems_administrator: "system administrator"
+    networks_topology: "network topology"
+    databases_management: "database management"
+    servers_monitoring: "server monitoring"
+    users_interface: "user interface"
+    
+  # Acceptable technical compound terms where plural modifiers are correct
+  acceptable_compounds:
+    # Common technical interface terms
+    - "settings panel"
+    - "settings menu" 
+    - "settings dialog"
+    - "settings page"
+    - "settings window"
+    - "settings screen"
+    - "settings configuration"
+    
+    # Administrative and system terms
+    - "systems engineering"
+    - "systems administrator"
+    - "systems analysis"
+    - "operations research"
+    - "services architecture"
+    - "services management"
+    - "resources management"
+    - "tools development"
+    - "tools configuration"
+    - "applications development"
+    - "applications server"
+    - "applications deployment"
+    - "networks architecture"
+    - "databases administration"
+    
+    # Script and automation terms
+    - "updates script"        # Original case: "updates script" is acceptable
+    - "updates process"
+    - "updates management"
+    - "backups script"
+    - "backups process" 
+    - "exports utility"
+    - "imports process"
+    - "migrations script"
+    - "deployments pipeline"
+    - "configurations management"
+    - "installations guide"
+    - "upgrades process"
+    
+    # User interface terms
+    - "users guide"
+    - "users manual"
+    - "graphics settings"
+    - "permissions management"
+    - "credentials storage"
+    - "preferences panel"
+    - "notifications system"
+    - "alerts configuration"
+    - "logs analysis"
+    - "reports generation"
+    - "metrics collection"
+    - "analytics dashboard"
+    
+    # DevOps and CI/CD pipeline terms
+    - "pipelines repository"     # Repository containing pipeline definitions
+    - "pipelines directory"      # Directory containing pipeline files
+    - "pipelines configuration"  # Configuration for pipelines
+    - "templates repository"     # Repository containing templates
+    - "templates directory"      # Directory containing templates
+    - "workflows repository"     # Repository containing workflows
+    - "workflows directory"      # Directory containing workflow files
+    - "builds pipeline"          # Pipeline for builds
+    - "deployments pipeline"     # Already listed above but including for completeness
+    - "tasks directory"          # Directory containing tasks
+    - "scripts directory"        # Directory containing scripts
+    - "artifacts repository"     # Repository for storing artifacts
+    - "containers registry"      # Registry for containers
+
+# Evidence scoring guidelines
+evidence_levels:
+  high: 0.9  # Clear grammar errors (datas, informations)
+  medium: 0.7  # Parenthetical (s) patterns
+  low: 0.3  # Plural adjectives in technical contexts

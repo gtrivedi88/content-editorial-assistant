@@ -1,0 +1,226 @@
+# Inclusive Language Terms Configuration
+# Manages non-inclusive terms and their inclusive alternatives
+# Used by InclusiveLanguageRule for promoting inclusive communication
+
+# Non-inclusive terms categorized by type
+non_inclusive_terms:
+  # Technical terms with problematic historical associations
+  technical_terms:
+    whitelist:
+      replacement: "allowlist"
+      category: "technical"
+      severity_level: "medium"
+      description: "access control terminology"
+      examples:
+        incorrect: "Add the domain to the whitelist"
+        correct: "Add the domain to the allowlist"
+      alternatives: ["allowlist", "approved list", "permitted list"]
+    
+    blacklist:
+      replacement: "blocklist"
+      category: "technical"
+      severity_level: "medium"
+      description: "access control terminology"
+      examples:
+        incorrect: "The IP is on the blacklist"
+        correct: "The IP is on the blocklist"
+      alternatives: ["blocklist", "denied list", "blocked list"]
+    
+    master:
+      replacement: "primary, main, or controller"
+      category: "technical"
+      severity_level: "high"
+      description: "hierarchical system terminology"
+      examples:
+        incorrect: "The master server controls the slaves"
+        correct: "The primary server controls the replicas"
+      alternatives: ["primary", "main", "controller", "parent"]
+      context_note: "Acceptable in 'master's degree' or 'master copy' contexts"
+    
+    slave:
+      replacement: "secondary, replica, or agent"
+      category: "technical"
+      severity_level: "high"
+      description: "hierarchical system terminology"
+      examples:
+        incorrect: "Configure the slave databases"
+        correct: "Configure the replica databases"
+      alternatives: ["replica", "secondary", "worker", "agent", "follower"]
+
+  # Gendered language
+  gendered_language:
+    man-hours:
+      replacement: "person-hours or work-hours"
+      category: "gendered"
+      severity_level: "medium"
+      description: "gendered work measurement"
+      examples:
+        incorrect: "The project requires 40 man-hours"
+        correct: "The project requires 40 person-hours"
+      alternatives: ["person-hours", "work-hours", "labor-hours"]
+    
+    "man hours":
+      replacement: "person-hours or work-hours"
+      category: "gendered"
+      severity_level: "medium"
+      description: "gendered work measurement"
+      examples:
+        incorrect: "Estimate the man hours needed"
+        correct: "Estimate the person-hours needed"
+      alternatives: ["person-hours", "work-hours", "effort-hours"]
+    
+    manned:
+      replacement: "staffed, operated, or crewed"
+      category: "gendered"
+      severity_level: "medium"
+      description: "gendered operation terminology"
+      examples:
+        incorrect: "The help desk is manned 24/7"
+        correct: "The help desk is staffed 24/7"
+      alternatives: ["staffed", "operated", "crewed", "managed"]
+    
+    manpower:
+      replacement: "workforce, personnel, or staff"
+      category: "gendered"
+      severity_level: "medium"
+      description: "gendered workforce terminology"
+      examples:
+        incorrect: "We need more manpower for this project"
+        correct: "We need more personnel for this project"
+      alternatives: ["workforce", "personnel", "staff", "human resources"]
+
+  # Ableist language
+  ableist_language:
+    "sanity check":
+      replacement: "coherence check, confirmation, or validation"
+      category: "ableist"
+      severity_level: "medium"
+      description: "mental health terminology"
+      examples:
+        incorrect: "Let's do a sanity check on the results"
+        correct: "Let's do a validation check on the results"
+      alternatives: ["validation check", "coherence check", "verification", "review"]
+    
+    "sanity test":
+      replacement: "smoke test, basic test, or validation test"
+      category: "ableist"
+      severity_level: "medium"
+      description: "mental health terminology"
+      examples:
+        incorrect: "Run a sanity test first"
+        correct: "Run a smoke test first"
+      alternatives: ["smoke test", "basic test", "validation test", "quick test"]
+    
+    crazy:
+      replacement: "unexpected, unusual, or surprising"
+      category: "ableist"
+      severity_level: "low"
+      description: "mental health terminology"
+      examples:
+        incorrect: "The system is acting crazy"
+        correct: "The system is behaving unexpectedly"
+      alternatives: ["unexpected", "unusual", "erratic", "unpredictable"]
+    
+    insane:
+      replacement: "extreme, incredible, or remarkable"
+      category: "ableist"
+      severity_level: "medium"
+      description: "mental health terminology"
+      examples:
+        incorrect: "The performance improvement is insane"
+        correct: "The performance improvement is remarkable"
+      alternatives: ["remarkable", "incredible", "extreme", "outstanding"]
+
+  # Dismissive or derogatory language
+  dismissive_language:
+    dummy:
+      replacement: "placeholder, sample, or example"
+      category: "dismissive"
+      severity_level: "medium"
+      description: "dismissive or derogatory terminology"
+      examples:
+        incorrect: "Even a dummy user can understand this"
+        correct: "Even a novice user can understand this"
+      alternatives: ["placeholder", "sample", "example", "test", "novice"]
+    
+    stupid:
+      replacement: "simple, basic, or straightforward"
+      category: "dismissive"
+      severity_level: "high"
+      description: "dismissive or derogatory terminology"
+      examples:
+        incorrect: "Don't make stupid mistakes"
+        correct: "Avoid common mistakes"
+      alternatives: ["simple", "basic", "common", "avoidable"]
+    
+    idiot:
+      replacement: "user, person, or individual"
+      category: "dismissive"
+      severity_level: "high"
+      description: "derogatory terminology"
+      examples:
+        incorrect: "Any idiot can figure this out"
+        correct: "Anyone can figure this out"
+      alternatives: ["anyone", "user", "person", "individual"]
+
+  # Cultural and religious terms
+  cultural_terms:
+    "grandfathered":
+      replacement: "legacy, inherited, or pre-existing"
+      category: "cultural"
+      severity_level: "low"
+      description: "potentially exclusionary historical reference"
+      examples:
+        incorrect: "These settings are grandfathered in"
+        correct: "These settings are legacy configurations"
+      alternatives: ["legacy", "inherited", "pre-existing", "carried forward"]
+
+# Context-aware exceptions
+acceptable_contexts:
+  # Terms that may be acceptable in specific contexts
+  educational:
+    - "master class"
+    - "master's degree"
+    - "master copy"
+  
+  historical:
+    - "master document"
+    - "original master"
+  
+  technical_specifications:
+    - "master clock"
+    - "master key"
+  
+  # Phrases that are established terminology
+  established_phrases:
+    - "machine learning"
+    - "artificial intelligence"
+    - "smart phone"
+
+# Evidence scoring guidelines
+evidence_levels:
+  high: 0.9      # Clear violations (slave, master in technical contexts)
+  medium: 0.7    # Common problematic terms (whitelist, blacklist, dummy)
+  low: 0.5       # Context-dependent terms (crazy, grandfathered)
+
+# Context modifiers
+context_adjustments:
+  educational_content: -0.1
+  historical_content: -0.2
+  technical_specification: -0.1
+  user_facing_content: +0.2
+  beginner_audience: +0.1
+
+# Replacement strategies
+replacement_strategies:
+  direct_replacement:
+    description: "Simple one-to-one replacement"
+    examples: ["whitelist → allowlist", "blacklist → blocklist"]
+  
+  contextual_replacement:
+    description: "Replacement depends on context"
+    examples: ["master → primary/main/controller depending on context"]
+  
+  phrase_restructuring:
+    description: "Rewrite the entire phrase"
+    examples: ["even a dummy can → anyone can", "sanity check → validation"]

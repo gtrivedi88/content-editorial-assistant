@@ -1,0 +1,2940 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="AI-powered technical writing assistant that helps writers review content">
+      
+      
+        <meta name="author" content="CCS AI Team">
+      
+      
+      
+        <link rel="prev" href="../how-to-add-new-ambiguity-detector/">
+      
+      
+        <link rel="next" href="../configure-providers/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+    
+    
+      
+        <title>Add a New AI Model - Content Editorial Assistant</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#how-to-add-a-new-ai-model-to-content-editorial-assistant" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Content Editorial Assistant" class="md-header__button md-logo" aria-label="Content Editorial Assistant" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Content Editorial Assistant
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Add a New AI Model
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://gitlab.cee.redhat.com/ccs-ai/content-editorial-assistant" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitLab
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href=".." class="md-tabs__link">
+          
+  
+  
+  User Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../getting-started/" class="md-tabs__link">
+          
+  
+  
+  Developer Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../architecture/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../how-to-add-new-rule/" class="md-tabs__link">
+          
+  
+  
+  How-To Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../testing-setup/" class="md-tabs__link">
+          
+  
+  
+  Testing
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Content Editorial Assistant" class="md-nav__button md-logo" aria-label="Content Editorial Assistant" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Content Editorial Assistant
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://gitlab.cee.redhat.com/ccs-ai/content-editorial-assistant" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitLab
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../training-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Developer Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Developer Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../environment-variables/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Environment Variables
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deployment-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../llm-rules-implementation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LLM Rules Implementation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-flow-diagram/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Flow Diagram
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How-To Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    How-To Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how-to-add-new-rule/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a New Rule
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how-to-add-new-ambiguity-detector/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a New Ambiguity Detector
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a New AI Model
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a New AI Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#understanding-the-model-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Understanding the Model Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Understanding the Model Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#model-integration-layers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Model Integration Layers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#current-model-support" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Current Model Support
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-by-step-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step-by-Step Implementation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step-by-Step Implementation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-update-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Update Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-update-model-manager" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Update Model Manager
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-add-text-generation-support" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Add Text Generation Support
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-update-rewriter-core" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: Update Rewriter Core
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-5-update-application-factory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Update Application Factory
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-6-update-health-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 6: Update Health Check
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-7-add-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 7: Add Dependencies
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-8-add-environment-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 8: Add Environment Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#model-specific-implementation-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Model-Specific Implementation Examples
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Model-Specific Implementation Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ollama-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ollama Model
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#api-based-model-eg-anthropic-cohere-etc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API-Based Model (e.g., Anthropic, Cohere, etc.)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#local-transformers-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Local Transformers Model
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#files-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Files Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Best Practices
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Best Practices">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#model-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Model Integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing-your-model-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing Your Model Integration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Testing Your Model Integration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#basic-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Basic Testing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#integration-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Integration Testing
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#common-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common Issues
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#debug-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Debug Mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conclusion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conclusion
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configure-providers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configure AI Providers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Testing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing-setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI-Powered Testing Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../writing-tests/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Writing Tests
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#understanding-the-model-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Understanding the Model Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Understanding the Model Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#model-integration-layers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Model Integration Layers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#current-model-support" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Current Model Support
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-by-step-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step-by-Step Implementation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step-by-Step Implementation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-update-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Update Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-update-model-manager" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Update Model Manager
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-add-text-generation-support" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Add Text Generation Support
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-update-rewriter-core" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: Update Rewriter Core
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-5-update-application-factory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Update Application Factory
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-6-update-health-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 6: Update Health Check
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-7-add-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 7: Add Dependencies
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-8-add-environment-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 8: Add Environment Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#model-specific-implementation-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Model-Specific Implementation Examples
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Model-Specific Implementation Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ollama-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ollama Model
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#api-based-model-eg-anthropic-cohere-etc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API-Based Model (e.g., Anthropic, Cohere, etc.)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#local-transformers-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Local Transformers Model
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#files-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Files Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Best Practices
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Best Practices">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#model-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Model Integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing-your-model-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing Your Model Integration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Testing Your Model Integration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#basic-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Basic Testing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#integration-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Integration Testing
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#common-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common Issues
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#debug-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Debug Mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conclusion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conclusion
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://gitlab.cee.redhat.com/ccs-ai/content-editorial-assistant/-/edit/main/docs/modules/how-to-add-new-model.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="how-to-add-a-new-ai-model-to-content-editorial-assistant">How to Add a New AI Model to Content Editorial Assistant<a class="headerlink" href="#how-to-add-a-new-ai-model-to-content-editorial-assistant" title="Permanent link">&para;</a></h1>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>This guide provides step-by-step instructions for adding new AI models to the Content Editorial Assistant application. The system supports multiple model types and integration patterns, making it flexible for different AI backends.</p>
+<p><strong>Supported Model Types:</strong></p>
+<p>* <strong>Ollama Models</strong> : Local LLM serving (recommended for privacy and performance)</p>
+<p>* <strong>Hugging Face Models</strong> : Transformers library integration</p>
+<p>* <strong>OpenAI Models</strong> : API-based integration</p>
+<p>* <strong>Custom Models</strong> : Extensible architecture for other providers</p>
+<h2 id="understanding-the-model-architecture">Understanding the Model Architecture<a class="headerlink" href="#understanding-the-model-architecture" title="Permanent link">&para;</a></h2>
+<h3 id="model-integration-layers">Model Integration Layers<a class="headerlink" href="#model-integration-layers" title="Permanent link">&para;</a></h3>
+<p>The Content Editorial Assistant uses a layered architecture for model integration:
+[code] 
+    ┌─────────────────────────────────────────┐
+    │           Application Layer              │
+    │        (app.py, app_factory.py)         │
+    ├─────────────────────────────────────────┤
+    │          Configuration Layer            │
+    │            (src/config.py)              │
+    ├─────────────────────────────────────────┤
+    │           Rewriter Core                 │
+    │          (rewriter/core.py)             │
+    ├─────────────────────────────────────────┤
+    │    Model Management &amp; Text Generation   │
+    │   (rewriter/models.py, generators.py)   │
+    ├─────────────────────────────────────────┤
+    │        Prompt &amp; Processing              │
+    │ (rewriter/prompts.py, processors.py)    │
+    └─────────────────────────────────────────┘
+[/code]</p>
+<h3 id="current-model-support">Current Model Support<a class="headerlink" href="#current-model-support" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Model Type</th>
+<th>Integration Method</th>
+<th>Local/Remote</th>
+<th>Configuration</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ollama</td>
+<td>HTTP API calls to local server</td>
+<td>Local</td>
+<td>URL, model name, timeout</td>
+</tr>
+<tr>
+<td>Hugging Face</td>
+<td>Transformers library pipeline</td>
+<td>Local</td>
+<td>Model name, cache directory</td>
+</tr>
+<tr>
+<td>OpenAI</td>
+<td>API key and HTTP requests</td>
+<td>Remote</td>
+<td>API key, model name</td>
+</tr>
+<tr>
+<td>Custom</td>
+<td>Extensible interface</td>
+<td>Either</td>
+<td>Provider-specific</td>
+</tr>
+</tbody>
+</table>
+<h2 id="step-by-step-implementation">Step-by-Step Implementation<a class="headerlink" href="#step-by-step-implementation" title="Permanent link">&para;</a></h2>
+<h3 id="step-1-update-configuration">Step 1: Update Configuration<a class="headerlink" href="#step-1-update-configuration" title="Permanent link">&para;</a></h3>
+<p>Add your new model configuration to the main config file.</p>
+<p><strong>File:</strong> <code>src/config.py</code>
+[code] 
+    class Config:
+        """Application configuration class."""</p>
+<div class="codehilite"><pre><span></span><code><span class="w">    </span><span class="err">#</span><span class="w"> </span><span class="o">...</span><span class="w"> </span><span class="nx">existing</span><span class="w"> </span><span class="nx">configuration</span><span class="w"> </span><span class="o">...</span>
+
+<span class="w">    </span><span class="err">#</span><span class="w"> </span><span class="nx">Your</span><span class="w"> </span><span class="nx">New</span><span class="w"> </span><span class="nx">Model</span><span class="w"> </span><span class="nx">Configuration</span>
+<span class="w">    </span><span class="nx">YOUR_MODEL_TYPE</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">os</span><span class="p">.</span><span class="nx">environ</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="err">&#39;</span><span class="nx">YOUR_MODEL_TYPE</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="nx">your_provider</span><span class="err">&#39;</span><span class="p">)</span>
+<span class="w">    </span><span class="nx">YOUR_MODEL_NAME</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">os</span><span class="p">.</span><span class="nx">environ</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="err">&#39;</span><span class="nx">YOUR_MODEL_NAME</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="nx">your</span><span class="o">-</span><span class="nx">model</span><span class="o">-</span><span class="nx">name</span><span class="err">&#39;</span><span class="p">)</span>
+<span class="w">    </span><span class="nx">YOUR_MODEL_API_KEY</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">os</span><span class="p">.</span><span class="nx">environ</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="err">&#39;</span><span class="nx">YOUR_MODEL_API_KEY</span><span class="err">&#39;</span><span class="p">)</span>
+<span class="w">    </span><span class="nx">YOUR_MODEL_BASE_URL</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">os</span><span class="p">.</span><span class="nx">environ</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="err">&#39;</span><span class="nx">YOUR_MODEL_BASE_URL</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="nx">https</span><span class="p">:</span><span class="c1">//api.yourprovider.com&#39;)</span>
+<span class="w">    </span><span class="nx">YOUR_MODEL_TIMEOUT</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">int</span><span class="p">(</span><span class="nx">os</span><span class="p">.</span><span class="nx">environ</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="err">&#39;</span><span class="nx">YOUR_MODEL_TIMEOUT</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="mi">30</span><span class="err">&#39;</span><span class="p">))</span>
+
+<span class="w">    </span><span class="err">@</span><span class="nx">classmethod</span>
+<span class="w">    </span><span class="nx">def</span><span class="w"> </span><span class="nx">get_ai_config</span><span class="p">(</span><span class="nx">cls</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nx">Dict</span><span class="p">[</span><span class="nx">str</span><span class="p">,</span><span class="w"> </span><span class="nx">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="s">&quot;&quot;&quot;Get AI model configuration based on current settings.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="nx">config</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="err">&#39;</span><span class="nx">model_type</span><span class="err">&#39;</span><span class="p">:</span><span class="w"> </span><span class="nx">cls</span><span class="p">.</span><span class="nx">AI_MODEL_TYPE</span><span class="p">,</span>
+<span class="w">            </span><span class="err">&#39;</span><span class="nx">use_ollama</span><span class="err">&#39;</span><span class="p">:</span><span class="w"> </span><span class="nx">cls</span><span class="p">.</span><span class="nx">AI_MODEL_TYPE</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="err">&#39;</span><span class="nx">ollama</span><span class="err">&#39;</span><span class="p">,</span>
+<span class="w">            </span><span class="err">&#39;</span><span class="nx">ollama_model</span><span class="err">&#39;</span><span class="p">:</span><span class="w"> </span><span class="nx">cls</span><span class="p">.</span><span class="nx">OLLAMA_MODEL</span><span class="p">,</span>
+<span class="w">            </span><span class="err">&#39;</span><span class="nx">ollama_url</span><span class="err">&#39;</span><span class="p">:</span><span class="w"> </span><span class="nx">f</span><span class="s">&quot;{cls.OLLAMA_BASE_URL}/api/generate&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="err">&#39;</span><span class="nx">ollama_timeout</span><span class="err">&#39;</span><span class="p">:</span><span class="w"> </span><span class="nx">cls</span><span class="p">.</span><span class="nx">OLLAMA_TIMEOUT</span><span class="p">,</span>
+<span class="w">            </span><span class="err">&#39;</span><span class="nx">hf_model_name</span><span class="err">&#39;</span><span class="p">:</span><span class="w"> </span><span class="nx">cls</span><span class="p">.</span><span class="nx">HF_MODEL_NAME</span><span class="p">,</span>
+<span class="w">            </span><span class="err">&#39;</span><span class="nx">hf_cache_dir</span><span class="err">&#39;</span><span class="p">:</span><span class="w"> </span><span class="nx">cls</span><span class="p">.</span><span class="nx">HF_CACHE_DIR</span><span class="p">,</span>
+
+<span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="nx">Add</span><span class="w"> </span><span class="nx">your</span><span class="w"> </span><span class="nx">model</span><span class="w"> </span><span class="nx">configuration</span>
+<span class="w">            </span><span class="err">&#39;</span><span class="nx">use_your_model</span><span class="err">&#39;</span><span class="p">:</span><span class="w"> </span><span class="nx">cls</span><span class="p">.</span><span class="nx">AI_MODEL_TYPE</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="err">&#39;</span><span class="nx">your_provider</span><span class="err">&#39;</span><span class="p">,</span>
+<span class="w">            </span><span class="err">&#39;</span><span class="nx">your_model_name</span><span class="err">&#39;</span><span class="p">:</span><span class="w"> </span><span class="nx">cls</span><span class="p">.</span><span class="nx">YOUR_MODEL_NAME</span><span class="p">,</span>
+<span class="w">            </span><span class="err">&#39;</span><span class="nx">your_model_api_key</span><span class="err">&#39;</span><span class="p">:</span><span class="w"> </span><span class="nx">cls</span><span class="p">.</span><span class="nx">YOUR_MODEL_API_KEY</span><span class="p">,</span>
+<span class="w">            </span><span class="err">&#39;</span><span class="nx">your_model_base_url</span><span class="err">&#39;</span><span class="p">:</span><span class="w"> </span><span class="nx">cls</span><span class="p">.</span><span class="nx">YOUR_MODEL_BASE_URL</span><span class="p">,</span>
+<span class="w">            </span><span class="err">&#39;</span><span class="nx">your_model_timeout</span><span class="err">&#39;</span><span class="p">:</span><span class="w"> </span><span class="nx">cls</span><span class="p">.</span><span class="nx">YOUR_MODEL_TIMEOUT</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">config</span>
+
+<span class="w">    </span><span class="err">@</span><span class="nx">classmethod</span>
+<span class="w">    </span><span class="nx">def</span><span class="w"> </span><span class="nx">is_your_model_enabled</span><span class="p">(</span><span class="nx">cls</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="kt">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="s">&quot;&quot;&quot;Check if your model is configured as the AI model.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">cls</span><span class="p">.</span><span class="nx">AI_MODEL_TYPE</span><span class="p">.</span><span class="nx">lower</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="err">&#39;</span><span class="nx">your_provider</span><span class="err">&#39;</span>
+</code></pre></div>
+
+<p>[/code]</p>
+<p><strong>Example: Adding Anthropic Claude Support</strong>
+[code] 
+    class Config:
+        # ... existing configuration ...</p>
+<div class="codehilite"><pre><span></span><code><span class="w">    </span><span class="err">#</span><span class="w"> </span><span class="n">Anthropic</span><span class="w"> </span><span class="n">Claude</span><span class="w"> </span><span class="n">Configuration</span>
+<span class="w">    </span><span class="n">ANTHROPIC_API_KEY</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">os</span><span class="p">.</span><span class="n">environ</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="s1">&#39;ANTHROPIC_API_KEY&#39;</span><span class="p">)</span>
+<span class="w">    </span><span class="n">ANTHROPIC_MODEL</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">os</span><span class="p">.</span><span class="n">environ</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="s1">&#39;ANTHROPIC_MODEL&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;claude-3-sonnet-20240229&#39;</span><span class="p">)</span>
+<span class="w">    </span><span class="n">ANTHROPIC_BASE_URL</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">os</span><span class="p">.</span><span class="n">environ</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="s1">&#39;ANTHROPIC_BASE_URL&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;https://api.anthropic.com&#39;</span><span class="p">)</span>
+<span class="w">    </span><span class="n">ANTHROPIC_TIMEOUT</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">int</span><span class="p">(</span><span class="n">os</span><span class="p">.</span><span class="n">environ</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="s1">&#39;ANTHROPIC_TIMEOUT&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;30&#39;</span><span class="p">))</span>
+
+<span class="w">    </span><span class="nv">@classmethod</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">get_ai_config</span><span class="p">(</span><span class="n">cls</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Dict</span><span class="o">[</span><span class="n">str, Any</span><span class="o">]</span><span class="err">:</span>
+<span class="w">        </span><span class="n">config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">{</span>
+<span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="n">existing</span><span class="w"> </span><span class="n">config</span><span class="w"> </span><span class="p">...</span>
+
+<span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="k">Add</span><span class="w"> </span><span class="n">Anthropic</span><span class="w"> </span><span class="n">configuration</span>
+<span class="w">            </span><span class="s1">&#39;use_anthropic&#39;</span><span class="err">:</span><span class="w"> </span><span class="n">cls</span><span class="p">.</span><span class="n">AI_MODEL_TYPE</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s1">&#39;anthropic&#39;</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">&#39;anthropic_model&#39;</span><span class="err">:</span><span class="w"> </span><span class="n">cls</span><span class="p">.</span><span class="n">ANTHROPIC_MODEL</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">&#39;anthropic_api_key&#39;</span><span class="err">:</span><span class="w"> </span><span class="n">cls</span><span class="p">.</span><span class="n">ANTHROPIC_API_KEY</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">&#39;anthropic_base_url&#39;</span><span class="err">:</span><span class="w"> </span><span class="n">cls</span><span class="p">.</span><span class="n">ANTHROPIC_BASE_URL</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">&#39;anthropic_timeout&#39;</span><span class="err">:</span><span class="w"> </span><span class="n">cls</span><span class="p">.</span><span class="n">ANTHROPIC_TIMEOUT</span>
+<span class="w">        </span><span class="err">}</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">config</span>
+
+<span class="w">    </span><span class="nv">@classmethod</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">is_anthropic_enabled</span><span class="p">(</span><span class="n">cls</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nl">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="ss">&quot;&quot;&quot;Check if Anthropic is configured as the AI model.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">cls</span><span class="p">.</span><span class="n">AI_MODEL_TYPE</span><span class="p">.</span><span class="nf">lower</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s1">&#39;anthropic&#39;</span>
+</code></pre></div>
+
+<p>[/code]</p>
+<h3 id="step-2-update-model-manager">Step 2: Update Model Manager<a class="headerlink" href="#step-2-update-model-manager" title="Permanent link">&para;</a></h3>
+<p>Extend the model manager to support your new model type.</p>
+<p><strong>File:</strong> <code>rewriter/models.py</code>
+[code] 
+    class ModelManager:
+        """Manages AI model initialization and connectivity."""</p>
+<div class="codehilite"><pre><span></span><code><span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">__init__</span><span class="p">(</span><span class="kr">self</span><span class="p">,</span><span class="w"> </span><span class="n">model_name</span><span class="o">:</span><span class="w"> </span><span class="n">str</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;microsoft/DialoGPT-medium&quot;</span><span class="p">,</span>
+<span class="w">                 </span><span class="n">use_ollama</span><span class="o">:</span><span class="w"> </span><span class="n">bool</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kr">False</span><span class="p">,</span><span class="w"> </span><span class="n">ollama_model</span><span class="o">:</span><span class="w"> </span><span class="n">str</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;llama3:8b&quot;</span><span class="p">,</span>
+<span class="w">                 </span><span class="n">use_your_model</span><span class="o">:</span><span class="w"> </span><span class="n">bool</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kr">False</span><span class="p">,</span><span class="w"> </span><span class="n">your_model_name</span><span class="o">:</span><span class="w"> </span><span class="n">str</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;your-model&quot;</span><span class="p">)</span><span class="o">:</span>
+<span class="w">        </span><span class="s">&quot;&quot;&quot;Initialize the model manager.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="kr">self</span><span class="p">.</span><span class="n">model_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">model_name</span>
+<span class="w">        </span><span class="kr">self</span><span class="p">.</span><span class="n">use_ollama</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">use_ollama</span>
+<span class="w">        </span><span class="kr">self</span><span class="p">.</span><span class="n">ollama_model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ollama_model</span>
+<span class="w">        </span><span class="kr">self</span><span class="p">.</span><span class="n">ollama_url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;http://localhost:11434/api/generate&quot;</span>
+
+<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="n">Add</span><span class="w"> </span><span class="n">your</span><span class="w"> </span><span class="n">model</span><span class="w"> </span><span class="n">properties</span>
+<span class="w">        </span><span class="kr">self</span><span class="p">.</span><span class="n">use_your_model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">use_your_model</span>
+<span class="w">        </span><span class="kr">self</span><span class="p">.</span><span class="n">your_model_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">your_model_name</span>
+<span class="w">        </span><span class="kr">self</span><span class="p">.</span><span class="n">your_model_client</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">None</span>
+
+<span class="w">        </span><span class="kr">self</span><span class="p">.</span><span class="n">model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">None</span>
+<span class="w">        </span><span class="kr">self</span><span class="p">.</span><span class="n">tokenizer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">None</span>
+<span class="w">        </span><span class="kr">self</span><span class="p">.</span><span class="n">generator</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">None</span>
+
+<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="n">Initialize</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">appropriate</span><span class="w"> </span><span class="n">model</span>
+<span class="w">        </span><span class="nf">if</span><span class="w"> </span><span class="n">use_ollama</span><span class="o">:</span>
+<span class="w">            </span><span class="kr">self</span><span class="p">.</span><span class="n">_test_ollama_connection</span><span class="p">()</span>
+<span class="w">        </span><span class="n">elif</span><span class="w"> </span><span class="n">use_your_model</span><span class="o">:</span>
+<span class="w">            </span><span class="kr">self</span><span class="p">.</span><span class="n">_initialize_your_model</span><span class="p">()</span>
+<span class="w">        </span><span class="n">else</span><span class="o">:</span>
+<span class="w">            </span><span class="kr">self</span><span class="p">.</span><span class="n">_initialize_hf_model</span><span class="p">()</span>
+
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">_initialize_your_model</span><span class="p">(</span><span class="kr">self</span><span class="p">)</span><span class="o">:</span>
+<span class="w">        </span><span class="s">&quot;&quot;&quot;Initialize your custom model.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="n">try</span><span class="o">:</span>
+<span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="n">Add</span><span class="w"> </span><span class="n">your</span><span class="w"> </span><span class="n">model</span><span class="w"> </span><span class="n">initialization</span><span class="w"> </span><span class="n">logic</span><span class="w"> </span><span class="n">here</span>
+<span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="n">Example</span><span class="w"> </span><span class="n">for</span><span class="w"> </span><span class="n">API</span><span class="o">-</span><span class="n">based</span><span class="w"> </span><span class="n">models</span><span class="o">:</span>
+<span class="w">            </span><span class="n">from</span><span class="w"> </span><span class="n">src</span><span class="p">.</span><span class="n">config</span><span class="w"> </span><span class="kr">import</span><span class="w"> </span><span class="n">Config</span>
+
+<span class="w">            </span><span class="n">api_key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Config</span><span class="p">.</span><span class="n">YOUR_MODEL_API_KEY</span>
+<span class="w">            </span><span class="nf">if</span><span class="w"> </span><span class="kr">not</span><span class="w"> </span><span class="n">api_key</span><span class="o">:</span>
+<span class="w">                </span><span class="n">logger</span><span class="p">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&quot;Your model API key not provided&quot;</span><span class="p">)</span>
+<span class="w">                </span><span class="kr">self</span><span class="p">.</span><span class="n">use_your_model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kr">False</span>
+<span class="w">                </span><span class="kr">return</span>
+
+<span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="n">Initialize</span><span class="w"> </span><span class="n">your</span><span class="w"> </span><span class="n">model</span><span class="w"> </span><span class="n">client</span>
+<span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="kr">self</span><span class="p">.</span><span class="n">your_model_client</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">YourModelClient</span><span class="p">(</span>
+<span class="w">            </span><span class="err">#</span><span class="w">     </span><span class="n">api_key</span><span class="o">=</span><span class="n">api_key</span><span class="p">,</span>
+<span class="w">            </span><span class="err">#</span><span class="w">     </span><span class="n">model</span><span class="o">=</span><span class="kr">self</span><span class="p">.</span><span class="n">your_model_name</span><span class="p">,</span>
+<span class="w">            </span><span class="err">#</span><span class="w">     </span><span class="n">base_url</span><span class="o">=</span><span class="n">Config</span><span class="p">.</span><span class="n">YOUR_MODEL_BASE_URL</span>
+<span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="p">)</span>
+
+<span class="w">            </span><span class="n">logger</span><span class="p">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s">&quot;✅ Your model initialized successfully: {self.your_model_name}&quot;</span><span class="p">)</span>
+
+<span class="w">        </span><span class="kr">except</span><span class="w"> </span><span class="n">Exception</span><span class="w"> </span><span class="kr">as</span><span class="w"> </span><span class="n">e</span><span class="o">:</span>
+<span class="w">            </span><span class="n">logger</span><span class="p">.</span><span class="nf">error</span><span class="p">(</span><span class="n">f</span><span class="s">&quot;❌ Failed to initialize your model: {e}&quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="kr">self</span><span class="p">.</span><span class="n">your_model_client</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">None</span>
+<span class="w">            </span><span class="kr">self</span><span class="p">.</span><span class="n">use_your_model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kr">False</span>
+
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">is_available</span><span class="p">(</span><span class="kr">self</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">bool</span><span class="o">:</span>
+<span class="w">        </span><span class="s">&quot;&quot;&quot;Check if any model is available for use.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="nf">if</span><span class="w"> </span><span class="kr">self</span><span class="p">.</span><span class="n">use_ollama</span><span class="o">:</span>
+<span class="w">            </span><span class="kr">return</span><span class="w"> </span><span class="kr">True</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="n">Ollama</span><span class="w"> </span><span class="n">connection</span><span class="w"> </span><span class="n">was</span><span class="w"> </span><span class="n">tested</span><span class="w"> </span><span class="kr">in</span><span class="w"> </span><span class="n">init</span>
+<span class="w">        </span><span class="n">elif</span><span class="w"> </span><span class="kr">self</span><span class="p">.</span><span class="n">use_your_model</span><span class="o">:</span>
+<span class="w">            </span><span class="kr">return</span><span class="w"> </span><span class="kr">self</span><span class="p">.</span><span class="n">your_model_client</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="kr">not</span><span class="w"> </span><span class="n">None</span>
+<span class="w">        </span><span class="kr">return</span><span class="w"> </span><span class="kr">self</span><span class="p">.</span><span class="n">generator</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="kr">not</span><span class="w"> </span><span class="n">None</span>
+
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">get_model_info</span><span class="p">(</span><span class="kr">self</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">dict</span><span class="o">:</span>
+<span class="w">        </span><span class="s">&quot;&quot;&quot;Get information about the current model setup.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="kr">return</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="s">&#39;use_ollama&#39;</span><span class="o">:</span><span class="w"> </span><span class="kr">self</span><span class="p">.</span><span class="n">use_ollama</span><span class="p">,</span>
+<span class="w">            </span><span class="s">&#39;ollama_model&#39;</span><span class="o">:</span><span class="w"> </span><span class="kr">self</span><span class="p">.</span><span class="n">ollama_model</span><span class="w"> </span><span class="nf">if</span><span class="w"> </span><span class="kr">self</span><span class="p">.</span><span class="n">use_ollama</span><span class="w"> </span><span class="n">else</span><span class="w"> </span><span class="n">None</span><span class="p">,</span>
+<span class="w">            </span><span class="s">&#39;hf_model&#39;</span><span class="o">:</span><span class="w"> </span><span class="kr">self</span><span class="p">.</span><span class="n">model_name</span><span class="w"> </span><span class="nf">if</span><span class="w"> </span><span class="kr">not</span><span class="w"> </span><span class="kr">self</span><span class="p">.</span><span class="n">use_ollama</span><span class="w"> </span><span class="kr">and</span><span class="w"> </span><span class="kr">not</span><span class="w"> </span><span class="kr">self</span><span class="p">.</span><span class="n">use_your_model</span><span class="w"> </span><span class="n">else</span><span class="w"> </span><span class="n">None</span><span class="p">,</span>
+<span class="w">            </span><span class="s">&#39;hf_available&#39;</span><span class="o">:</span><span class="w"> </span><span class="n">HF_AVAILABLE</span><span class="p">,</span>
+<span class="w">            </span><span class="s">&#39;use_your_model&#39;</span><span class="o">:</span><span class="w"> </span><span class="kr">self</span><span class="p">.</span><span class="n">use_your_model</span><span class="p">,</span>
+<span class="w">            </span><span class="s">&#39;your_model_name&#39;</span><span class="o">:</span><span class="w"> </span><span class="kr">self</span><span class="p">.</span><span class="n">your_model_name</span><span class="w"> </span><span class="nf">if</span><span class="w"> </span><span class="kr">self</span><span class="p">.</span><span class="n">use_your_model</span><span class="w"> </span><span class="n">else</span><span class="w"> </span><span class="n">None</span><span class="p">,</span>
+<span class="w">            </span><span class="s">&#39;is_available&#39;</span><span class="o">:</span><span class="w"> </span><span class="kr">self</span><span class="p">.</span><span class="n">is_available</span><span class="p">()</span>
+<span class="w">        </span><span class="p">}</span>
+</code></pre></div>
+
+<p>[/code]</p>
+<p><strong>Example: Anthropic Claude Integration</strong>
+[code] 
+    try:
+        import anthropic
+        ANTHROPIC_AVAILABLE = True
+    except ImportError:
+        ANTHROPIC_AVAILABLE = False</p>
+<div class="codehilite"><pre><span></span><code><span class="kd">class</span><span class="w"> </span><span class="nx">ModelManager</span><span class="p">:</span>
+<span class="w">    </span><span class="nx">def</span><span class="w"> </span><span class="nx">__init__</span><span class="p">(</span><span class="kp">self</span><span class="p">,</span><span class="w"> </span><span class="nx">model_name</span><span class="p">:</span><span class="w"> </span><span class="nx">str</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">&quot;microsoft/DialoGPT-medium&quot;</span><span class="p">,</span>
+<span class="w">                 </span><span class="nx">use_ollama</span><span class="p">:</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">False</span><span class="p">,</span><span class="w"> </span><span class="nx">ollama_model</span><span class="p">:</span><span class="w"> </span><span class="nx">str</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">&quot;llama3:8b&quot;</span><span class="p">,</span>
+<span class="w">                 </span><span class="nx">use_anthropic</span><span class="p">:</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">False</span><span class="p">,</span><span class="w"> </span><span class="nx">anthropic_model</span><span class="p">:</span><span class="w"> </span><span class="nx">str</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">&quot;claude-3-sonnet-20240229&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="o">...</span><span class="w"> </span><span class="nx">existing</span><span class="w"> </span><span class="nx">initialization</span><span class="w"> </span><span class="o">...</span>
+
+<span class="w">        </span><span class="kp">self</span><span class="p">.</span><span class="nx">use_anthropic</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">use_anthropic</span>
+<span class="w">        </span><span class="kp">self</span><span class="p">.</span><span class="nx">anthropic_model</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">anthropic_model</span>
+<span class="w">        </span><span class="kp">self</span><span class="p">.</span><span class="nx">anthropic_client</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">None</span>
+
+<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="nx">Initialize</span><span class="w"> </span><span class="nx">the</span><span class="w"> </span><span class="nx">appropriate</span><span class="w"> </span><span class="nx">model</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="nx">use_ollama</span><span class="p">:</span>
+<span class="w">            </span><span class="kp">self</span><span class="p">.</span><span class="nx">_test_ollama_connection</span><span class="p">()</span>
+<span class="w">        </span><span class="nx">elif</span><span class="w"> </span><span class="nx">use_anthropic</span><span class="p">:</span>
+<span class="w">            </span><span class="kp">self</span><span class="p">.</span><span class="nx">_initialize_anthropic_model</span><span class="p">()</span>
+<span class="w">        </span><span class="k">else</span><span class="p">:</span>
+<span class="w">            </span><span class="kp">self</span><span class="p">.</span><span class="nx">_initialize_hf_model</span><span class="p">()</span>
+
+<span class="w">    </span><span class="nx">def</span><span class="w"> </span><span class="nx">_initialize_anthropic_model</span><span class="p">(</span><span class="kp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="s">&quot;&quot;&quot;Initialize Anthropic Claude model.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="k">not</span><span class="w"> </span><span class="nx">ANTHROPIC_AVAILABLE</span><span class="p">:</span>
+<span class="w">            </span><span class="nx">logger</span><span class="p">.</span><span class="nx">warning</span><span class="p">(</span><span class="s">&quot;Anthropic library not available. Install with: pip install anthropic&quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="kp">self</span><span class="p">.</span><span class="nx">use_anthropic</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">False</span>
+<span class="w">            </span><span class="k">return</span>
+
+<span class="w">        </span><span class="nx">try</span><span class="p">:</span>
+<span class="w">            </span><span class="nx">from</span><span class="w"> </span><span class="nx">src</span><span class="p">.</span><span class="nx">config</span><span class="w"> </span><span class="kn">import</span><span class="w"> </span><span class="nx">Config</span>
+
+<span class="w">            </span><span class="nx">api_key</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Config</span><span class="p">.</span><span class="nx">ANTHROPIC_API_KEY</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="k">not</span><span class="w"> </span><span class="nx">api_key</span><span class="p">:</span>
+<span class="w">                </span><span class="nx">logger</span><span class="p">.</span><span class="nx">warning</span><span class="p">(</span><span class="s">&quot;Anthropic API key not provided&quot;</span><span class="p">)</span>
+<span class="w">                </span><span class="kp">self</span><span class="p">.</span><span class="nx">use_anthropic</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">False</span>
+<span class="w">                </span><span class="k">return</span>
+
+<span class="w">            </span><span class="kp">self</span><span class="p">.</span><span class="nx">anthropic_client</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">anthropic</span><span class="p">.</span><span class="nx">Anthropic</span><span class="p">(</span>
+<span class="w">                </span><span class="nx">api_key</span><span class="p">=</span><span class="nx">api_key</span><span class="p">,</span>
+<span class="w">                </span><span class="nx">base_url</span><span class="p">=</span><span class="nx">Config</span><span class="p">.</span><span class="nx">ANTHROPIC_BASE_URL</span>
+<span class="w">            </span><span class="p">)</span>
+
+<span class="w">            </span><span class="nx">logger</span><span class="p">.</span><span class="nx">info</span><span class="p">(</span><span class="nx">f</span><span class="s">&quot;✅ Anthropic model initialized successfully: {self.anthropic_model}&quot;</span><span class="p">)</span>
+
+<span class="w">        </span><span class="nx">except</span><span class="w"> </span><span class="nx">Exception</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nx">e</span><span class="p">:</span>
+<span class="w">            </span><span class="nx">logger</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="nx">f</span><span class="s">&quot;❌ Failed to initialize Anthropic model: {e}&quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="kp">self</span><span class="p">.</span><span class="nx">anthropic_client</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">None</span>
+<span class="w">            </span><span class="kp">self</span><span class="p">.</span><span class="nx">use_anthropic</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">False</span>
+</code></pre></div>
+
+<p>[/code]</p>
+<h3 id="step-3-add-text-generation-support">Step 3: Add Text Generation Support<a class="headerlink" href="#step-3-add-text-generation-support" title="Permanent link">&para;</a></h3>
+<p>Extend the text generator to support your new model.</p>
+<p><strong>File:</strong> <code>rewriter/generators.py</code>
+[code] 
+    class TextGenerator:
+        """Handles AI text generation using various models."""</p>
+<div class="codehilite"><pre><span></span><code>    def generate_with_your_model(self, prompt: str, original_text: str) -&gt; str:
+        &quot;&quot;&quot;Generate rewritten text using your custom model.&quot;&quot;&quot;
+        if not self.model_manager.your_model_client:
+            logger.warning(&quot;Your model not available for generation&quot;)
+            return original_text
+
+        try:
+            # Implement your model&#39;s generation logic
+            # Example for API-based models:
+            response = self.model_manager.your_model_client.generate(
+                prompt=prompt,
+                max_tokens=512,
+                temperature=0.4,
+                # Add other parameters as needed
+            )
+
+            # Extract generated text from response
+            generated_text = response.get(&#39;text&#39;, &#39;&#39;).strip()
+
+            logger.info(f&quot;Generated text with your model: {len(generated_text)} characters&quot;)
+
+            return generated_text if generated_text else original_text
+
+        except Exception as e:
+            logger.error(f&quot;Your model generation failed: {e}&quot;)
+            return original_text
+
+    def generate_text(self, prompt: str, original_text: str) -&gt; str:
+        &quot;&quot;&quot;
+        Generate text using the available model.
+
+        Args:
+            prompt: The prompt to use for generation
+            original_text: Original text as fallback
+
+        Returns:
+            Generated text or original text if generation fails
+        &quot;&quot;&quot;
+        if self.model_manager.use_ollama:
+            return self.generate_with_ollama(prompt, original_text)
+        elif self.model_manager.use_your_model:
+            return self.generate_with_your_model(prompt, original_text)
+        else:
+            return self.generate_with_hf_model(prompt, original_text)
+
+    def is_available(self) -&gt; bool:
+        &quot;&quot;&quot;Check if text generation is available.&quot;&quot;&quot;
+        return self.model_manager.is_available()
+
+    def get_model_info(self) -&gt; Dict[str, Any]:
+        &quot;&quot;&quot;Get information about the current generation setup.&quot;&quot;&quot;
+        return {
+            **self.model_manager.get_model_info(),
+            &#39;generation_available&#39;: self.is_available()
+        }
+</code></pre></div>
+
+<p>[/code]</p>
+<p><strong>Example: Anthropic Claude Generation</strong>
+[code] 
+    class TextGenerator:
+        def generate_with_anthropic(self, prompt: str, original_text: str) -&gt; str:
+            """Generate rewritten text using Anthropic Claude."""
+            if not self.model_manager.anthropic_client:
+                logger.warning("Anthropic model not available for generation")
+                return original_text</p>
+<div class="codehilite"><pre><span></span><code><span class="w">        </span><span class="n">try</span><span class="o">:</span>
+<span class="w">            </span><span class="n">response</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kr">self</span><span class="p">.</span><span class="n">model_manager</span><span class="p">.</span><span class="n">anthropic_client</span><span class="p">.</span><span class="n">messages</span><span class="p">.</span><span class="n">create</span><span class="p">(</span>
+<span class="w">                </span><span class="n">model</span><span class="o">=</span><span class="kr">self</span><span class="p">.</span><span class="n">model_manager</span><span class="p">.</span><span class="n">anthropic_model</span><span class="p">,</span>
+<span class="w">                </span><span class="n">max_tokens</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>
+<span class="w">                </span><span class="n">temperature</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span>
+<span class="w">                </span><span class="n">messages</span><span class="o">=</span><span class="p">[</span>
+<span class="w">                    </span><span class="p">{</span>
+<span class="w">                        </span><span class="s">&quot;role&quot;</span><span class="o">:</span><span class="w"> </span><span class="s">&quot;user&quot;</span><span class="p">,</span>
+<span class="w">                        </span><span class="s">&quot;content&quot;</span><span class="o">:</span><span class="w"> </span><span class="n">prompt</span>
+<span class="w">                    </span><span class="p">}</span>
+<span class="w">                </span><span class="p">]</span>
+<span class="w">            </span><span class="p">)</span>
+
+<span class="w">            </span><span class="n">generated_text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">response</span><span class="p">.</span><span class="n">content</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">text</span><span class="p">.</span><span class="n">strip</span><span class="p">()</span>
+
+<span class="w">            </span><span class="n">logger</span><span class="p">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s">&quot;Generated text with Anthropic: {len(generated_text)} characters&quot;</span><span class="p">)</span>
+
+<span class="w">            </span><span class="kr">return</span><span class="w"> </span><span class="n">generated_text</span><span class="w"> </span><span class="nf">if</span><span class="w"> </span><span class="n">generated_text</span><span class="w"> </span><span class="n">else</span><span class="w"> </span><span class="n">original_text</span>
+
+<span class="w">        </span><span class="kr">except</span><span class="w"> </span><span class="n">Exception</span><span class="w"> </span><span class="kr">as</span><span class="w"> </span><span class="n">e</span><span class="o">:</span>
+<span class="w">            </span><span class="n">logger</span><span class="p">.</span><span class="nf">error</span><span class="p">(</span><span class="n">f</span><span class="s">&quot;Anthropic generation failed: {e}&quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="kr">return</span><span class="w"> </span><span class="n">original_text</span>
+
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">generate_text</span><span class="p">(</span><span class="kr">self</span><span class="p">,</span><span class="w"> </span><span class="n">prompt</span><span class="o">:</span><span class="w"> </span><span class="n">str</span><span class="p">,</span><span class="w"> </span><span class="n">original_text</span><span class="o">:</span><span class="w"> </span><span class="n">str</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">str</span><span class="o">:</span>
+<span class="w">        </span><span class="nf">if</span><span class="w"> </span><span class="kr">self</span><span class="p">.</span><span class="n">model_manager</span><span class="p">.</span><span class="n">use_ollama</span><span class="o">:</span>
+<span class="w">            </span><span class="kr">return</span><span class="w"> </span><span class="kr">self</span><span class="p">.</span><span class="n">generate_with_ollama</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span><span class="w"> </span><span class="n">original_text</span><span class="p">)</span>
+<span class="w">        </span><span class="n">elif</span><span class="w"> </span><span class="kr">self</span><span class="p">.</span><span class="n">model_manager</span><span class="p">.</span><span class="n">use_anthropic</span><span class="o">:</span>
+<span class="w">            </span><span class="kr">return</span><span class="w"> </span><span class="kr">self</span><span class="p">.</span><span class="n">generate_with_anthropic</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span><span class="w"> </span><span class="n">original_text</span><span class="p">)</span>
+<span class="w">        </span><span class="n">else</span><span class="o">:</span>
+<span class="w">            </span><span class="kr">return</span><span class="w"> </span><span class="kr">self</span><span class="p">.</span><span class="n">generate_with_hf_model</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span><span class="w"> </span><span class="n">original_text</span><span class="p">)</span>
+</code></pre></div>
+
+<p>[/code]</p>
+<h3 id="step-4-update-rewriter-core">Step 4: Update Rewriter Core<a class="headerlink" href="#step-4-update-rewriter-core" title="Permanent link">&para;</a></h3>
+<p>Update the AI rewriter core to initialize with your new model.</p>
+<p><strong>File:</strong> <code>rewriter/core.py</code>
+[code] 
+    class AIRewriter:
+        """Main AI Rewriter class that orchestrates the rewriting process."""</p>
+<div class="codehilite"><pre><span></span><code>    def __init__(self, model_name: str = &quot;microsoft/DialoGPT-medium&quot;,
+                 use_ollama: bool = False, ollama_model: str = &quot;llama3:8b&quot;,
+                 use_your_model: bool = False, your_model_name: str = &quot;your-model&quot;,
+                 progress_callback=None):
+        &quot;&quot;&quot;Initialize the AI rewriter with all components.&quot;&quot;&quot;
+        self.progress_callback = progress_callback
+
+        # Initialize all components
+        self.model_manager = ModelManager(
+            model_name, use_ollama, ollama_model,
+            use_your_model, your_model_name
+        )
+        self.prompt_generator = PromptGenerator(
+            style_guide=&#39;ibm_style&#39;,
+            use_ollama=use_ollama or use_your_model  # API-based models often work with similar prompts
+        )
+        self.text_generator = TextGenerator(self.model_manager)
+        self.text_processor = TextProcessor()
+        self.evaluator = RewriteEvaluator()
+
+        logger.info(f&quot;✅ AIRewriter initialized with {len(self._get_available_components())} components&quot;)
+</code></pre></div>
+
+<p>[/code]</p>
+<p><strong>Example: Anthropic Claude Integration</strong>
+[code] 
+    class AIRewriter:
+        def <strong>init</strong>(self, model_name: str = "microsoft/DialoGPT-medium",
+                     use_ollama: bool = False, ollama_model: str = "llama3:8b",
+                     use_anthropic: bool = False, anthropic_model: str = "claude-3-sonnet-20240229",
+                     progress_callback=None):
+            """Initialize the AI rewriter with all components."""
+            self.progress_callback = progress_callback</p>
+<div class="codehilite"><pre><span></span><code><span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="nx">Initialize</span><span class="w"> </span><span class="nx">all</span><span class="w"> </span><span class="nx">components</span>
+<span class="w">        </span><span class="kp">self</span><span class="p">.</span><span class="nx">model_manager</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">ModelManager</span><span class="p">(</span>
+<span class="w">            </span><span class="nx">model_name</span><span class="p">,</span><span class="w"> </span><span class="nx">use_ollama</span><span class="p">,</span><span class="w"> </span><span class="nx">ollama_model</span><span class="p">,</span>
+<span class="w">            </span><span class="nx">use_anthropic</span><span class="p">,</span><span class="w"> </span><span class="nx">anthropic_model</span>
+<span class="w">        </span><span class="p">)</span>
+<span class="w">        </span><span class="kp">self</span><span class="p">.</span><span class="nx">prompt_generator</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">PromptGenerator</span><span class="p">(</span>
+<span class="w">            </span><span class="nx">style_guide</span><span class="p">=</span><span class="err">&#39;</span><span class="nx">ibm_style</span><span class="err">&#39;</span><span class="p">,</span>
+<span class="w">            </span><span class="nx">use_ollama</span><span class="p">=</span><span class="nx">use_ollama</span><span class="w"> </span><span class="k">or</span><span class="w"> </span><span class="nx">use_anthropic</span>
+<span class="w">        </span><span class="p">)</span>
+<span class="w">        </span><span class="kp">self</span><span class="p">.</span><span class="nx">text_generator</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">TextGenerator</span><span class="p">(</span><span class="kp">self</span><span class="p">.</span><span class="nx">model_manager</span><span class="p">)</span>
+<span class="w">        </span><span class="kp">self</span><span class="p">.</span><span class="nx">text_processor</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">TextProcessor</span><span class="p">()</span>
+<span class="w">        </span><span class="kp">self</span><span class="p">.</span><span class="nx">evaluator</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">RewriteEvaluator</span><span class="p">()</span>
+
+<span class="w">        </span><span class="nx">model_type</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">&quot;Anthropic Claude&quot;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="nx">use_anthropic</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">(</span><span class="s">&quot;Ollama&quot;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="nx">use_ollama</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s">&quot;HuggingFace&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="nx">logger</span><span class="p">.</span><span class="nx">info</span><span class="p">(</span><span class="nx">f</span><span class="s">&quot;✅ AIRewriter initialized with {model_type} model&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<p>[/code]</p>
+<h3 id="step-5-update-application-factory">Step 5: Update Application Factory<a class="headerlink" href="#step-5-update-application-factory" title="Permanent link">&para;</a></h3>
+<p>Update the application factory to initialize your model based on configuration.</p>
+<p><strong>File:</strong> <code>app_modules/app_factory.py</code>
+[code] 
+    def initialize_services():
+        """Initialize all services with fallback mechanisms."""
+        services = {
+            'document_processor': None,
+            'style_analyzer': None,
+            'ai_rewriter': None,
+            'document_processor_available': False,
+            'style_analyzer_available': False,
+            'ai_rewriter_available': False
+        }</p>
+<div class="codehilite"><pre><span></span><code>    <span class="c1"># ... existing initialization ...</span>
+
+    <span class="c1"># Initialize AI Rewriter</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">rewriter</span><span class="w"> </span><span class="kn">import</span> <span class="n">AIRewriter</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">src.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">Config</span>
+
+        <span class="c1"># Get AI configuration</span>
+        <span class="n">ai_config</span> <span class="o">=</span> <span class="n">Config</span><span class="o">.</span><span class="n">get_ai_config</span><span class="p">()</span>
+
+        <span class="c1"># Initialize with proper configuration</span>
+        <span class="n">services</span><span class="p">[</span><span class="s1">&#39;ai_rewriter&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">AIRewriter</span><span class="p">(</span>
+            <span class="n">model_name</span><span class="o">=</span><span class="n">ai_config</span><span class="p">[</span><span class="s1">&#39;hf_model_name&#39;</span><span class="p">],</span>
+            <span class="n">use_ollama</span><span class="o">=</span><span class="n">ai_config</span><span class="p">[</span><span class="s1">&#39;use_ollama&#39;</span><span class="p">],</span>
+            <span class="n">ollama_model</span><span class="o">=</span><span class="n">ai_config</span><span class="p">[</span><span class="s1">&#39;ollama_model&#39;</span><span class="p">],</span>
+            <span class="n">use_your_model</span><span class="o">=</span><span class="n">ai_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;use_your_model&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
+            <span class="n">your_model_name</span><span class="o">=</span><span class="n">ai_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;your_model_name&#39;</span><span class="p">,</span> <span class="s1">&#39;your-model&#39;</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">services</span><span class="p">[</span><span class="s1">&#39;ai_rewriter_available&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;✅ AIRewriter imported successfully&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Log model type</span>
+        <span class="k">if</span> <span class="n">ai_config</span><span class="p">[</span><span class="s1">&#39;use_ollama&#39;</span><span class="p">]:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;AI Model: Ollama (</span><span class="si">{</span><span class="n">ai_config</span><span class="p">[</span><span class="s1">&#39;ollama_model&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">ai_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;use_your_model&#39;</span><span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;AI Model: Your Model (</span><span class="si">{</span><span class="n">ai_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;your_model_name&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;AI Model: HuggingFace&quot;</span><span class="p">)</span>
+
+    <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">services</span><span class="p">[</span><span class="s1">&#39;ai_rewriter&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">SimpleAIRewriter</span><span class="p">()</span>
+        <span class="n">services</span><span class="p">[</span><span class="s1">&#39;ai_rewriter_available&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;⚠️ AI rewriter not available - </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">services</span>
+</code></pre></div>
+
+<p>[/code]</p>
+<p><strong>Example: Anthropic Claude in Application Factory</strong>
+[code] 
+    def initialize_services():
+        # ... existing initialization ...</p>
+<div class="codehilite"><pre><span></span><code>    <span class="c1"># Initialize AI Rewriter</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">rewriter</span><span class="w"> </span><span class="kn">import</span> <span class="n">AIRewriter</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">src.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">Config</span>
+
+        <span class="c1"># Get AI configuration</span>
+        <span class="n">ai_config</span> <span class="o">=</span> <span class="n">Config</span><span class="o">.</span><span class="n">get_ai_config</span><span class="p">()</span>
+
+        <span class="c1"># Initialize with proper configuration</span>
+        <span class="n">services</span><span class="p">[</span><span class="s1">&#39;ai_rewriter&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">AIRewriter</span><span class="p">(</span>
+            <span class="n">model_name</span><span class="o">=</span><span class="n">ai_config</span><span class="p">[</span><span class="s1">&#39;hf_model_name&#39;</span><span class="p">],</span>
+            <span class="n">use_ollama</span><span class="o">=</span><span class="n">ai_config</span><span class="p">[</span><span class="s1">&#39;use_ollama&#39;</span><span class="p">],</span>
+            <span class="n">ollama_model</span><span class="o">=</span><span class="n">ai_config</span><span class="p">[</span><span class="s1">&#39;ollama_model&#39;</span><span class="p">],</span>
+            <span class="n">use_anthropic</span><span class="o">=</span><span class="n">ai_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;use_anthropic&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
+            <span class="n">anthropic_model</span><span class="o">=</span><span class="n">ai_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;anthropic_model&#39;</span><span class="p">,</span> <span class="s1">&#39;claude-3-sonnet-20240229&#39;</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">services</span><span class="p">[</span><span class="s1">&#39;ai_rewriter_available&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;✅ AIRewriter imported successfully&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Log model type</span>
+        <span class="k">if</span> <span class="n">ai_config</span><span class="p">[</span><span class="s1">&#39;use_ollama&#39;</span><span class="p">]:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;AI Model: Ollama (</span><span class="si">{</span><span class="n">ai_config</span><span class="p">[</span><span class="s1">&#39;ollama_model&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">ai_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;use_anthropic&#39;</span><span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;AI Model: Anthropic Claude (</span><span class="si">{</span><span class="n">ai_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;anthropic_model&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;AI Model: HuggingFace&quot;</span><span class="p">)</span>
+
+    <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">services</span><span class="p">[</span><span class="s1">&#39;ai_rewriter&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">SimpleAIRewriter</span><span class="p">()</span>
+        <span class="n">services</span><span class="p">[</span><span class="s1">&#39;ai_rewriter_available&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;⚠️ AI rewriter not available - </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">services</span>
+</code></pre></div>
+
+<p>[/code]</p>
+<h3 id="step-6-update-health-check">Step 6: Update Health Check<a class="headerlink" href="#step-6-update-health-check" title="Permanent link">&para;</a></h3>
+<p>Update the health check endpoint to include your new model status.</p>
+<p><strong>File:</strong> <code>app_modules/api_routes.py</code>
+[code] 
+    @app.route('/health')
+    def health_check():
+        """Health check endpoint to verify service status."""
+        try:
+            # ... existing health checks ...</p>
+<div class="codehilite"><pre><span></span><code>        <span class="c1"># Check your model status</span>
+        <span class="n">your_model_status</span> <span class="o">=</span> <span class="s2">&quot;not_configured&quot;</span>
+        <span class="k">if</span> <span class="n">Config</span><span class="o">.</span><span class="n">is_your_model_enabled</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c1"># Add your model health check logic</span>
+                <span class="c1"># Example for API-based models:</span>
+                <span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+                <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">Config</span><span class="o">.</span><span class="n">YOUR_MODEL_BASE_URL</span><span class="si">}</span><span class="s2">/health&quot;</span><span class="p">,</span>
+                                      <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;Authorization&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Bearer </span><span class="si">{</span><span class="n">Config</span><span class="o">.</span><span class="n">YOUR_MODEL_API_KEY</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">},</span>
+                                      <span class="n">timeout</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span><span class="p">:</span>
+                    <span class="n">your_model_status</span> <span class="o">=</span> <span class="s2">&quot;available&quot;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">your_model_status</span> <span class="o">=</span> <span class="s2">&quot;service_unavailable&quot;</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">your_model_status</span> <span class="o">=</span> <span class="s2">&quot;connection_failed&quot;</span>
+
+        <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span>
+            <span class="s1">&#39;status&#39;</span><span class="p">:</span> <span class="s1">&#39;healthy&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;timestamp&#39;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+            <span class="s1">&#39;version&#39;</span><span class="p">:</span> <span class="s1">&#39;2.0.0&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;ai_model_type&#39;</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">Config</span><span class="p">,</span> <span class="s1">&#39;AI_MODEL_TYPE&#39;</span><span class="p">,</span> <span class="s1">&#39;unknown&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;ollama_status&#39;</span><span class="p">:</span> <span class="n">ollama_status</span><span class="p">,</span>
+            <span class="s1">&#39;your_model_status&#39;</span><span class="p">:</span> <span class="n">your_model_status</span><span class="p">,</span>
+            <span class="s1">&#39;services&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;document_processor&#39;</span><span class="p">:</span> <span class="n">document_processor_status</span><span class="p">,</span>
+                <span class="s1">&#39;style_analyzer&#39;</span><span class="p">:</span> <span class="n">style_analyzer_status</span><span class="p">,</span>
+                <span class="s1">&#39;ai_rewriter&#39;</span><span class="p">:</span> <span class="n">ai_rewriter_status</span><span class="p">,</span>
+                <span class="s1">&#39;ollama&#39;</span><span class="p">:</span> <span class="n">ollama_status</span><span class="p">,</span>
+                <span class="s1">&#39;your_model&#39;</span><span class="p">:</span> <span class="n">your_model_status</span>
+            <span class="p">}</span>
+        <span class="p">}),</span> <span class="mi">200</span>
+
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Health check failed: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span>
+            <span class="s1">&#39;status&#39;</span><span class="p">:</span> <span class="s1">&#39;unhealthy&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;error&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
+            <span class="s1">&#39;timestamp&#39;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
+        <span class="p">}),</span> <span class="mi">500</span>
+</code></pre></div>
+
+<p>[/code]</p>
+<h3 id="step-7-add-dependencies">Step 7: Add Dependencies<a class="headerlink" href="#step-7-add-dependencies" title="Permanent link">&para;</a></h3>
+<p>Update the requirements file to include your new model dependencies.</p>
+<p><strong>File:</strong> <code>requirements.txt</code>
+[code] 
+    # ... existing requirements ...</p>
+<div class="codehilite"><pre><span></span><code># Your Model Integration
+your-model-client&gt;=1.0.0,&lt;2.0.0
+</code></pre></div>
+
+<p>[/code]</p>
+<p><strong>Example: Anthropic Claude Dependencies</strong>
+[code] 
+    # ... existing requirements ...</p>
+<div class="codehilite"><pre><span></span><code># Anthropic Claude Integration
+anthropic&gt;=0.17.0,&lt;1.0.0
+</code></pre></div>
+
+<p>[/code]</p>
+<h3 id="step-8-add-environment-configuration">Step 8: Add Environment Configuration<a class="headerlink" href="#step-8-add-environment-configuration" title="Permanent link">&para;</a></h3>
+<p>Create environment variable examples for your new model.</p>
+<p><strong>File:</strong> <code>.env.example</code> (create if doesn't exist)
+[code] 
+    # Flask Configuration
+    SECRET_KEY=your-secret-key-here
+    FLASK_DEBUG=False</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># AI Model Configuration</span>
+<span class="n">AI_MODEL_TYPE</span><span class="o">=</span><span class="n">ollama</span><span class="w">  </span><span class="c1"># Options: ollama, huggingface, openai, your_provider</span>
+<span class="n">AI_MODEL_NAME</span><span class="o">=</span><span class="n">microsoft</span><span class="o">/</span><span class="n">DialoGPT</span><span class="o">-</span><span class="n">medium</span>
+<span class="n">AI_TEMPERATURE</span><span class="o">=</span><span class="mf">0.7</span>
+
+<span class="c1"># Ollama Configuration</span>
+<span class="n">OLLAMA_BASE_URL</span><span class="o">=</span><span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">localhost</span><span class="p">:</span><span class="mi">11434</span>
+<span class="n">OLLAMA_MODEL</span><span class="o">=</span><span class="n">llama3</span><span class="p">:</span><span class="mi">8</span><span class="n">b</span>
+<span class="n">OLLAMA_TIMEOUT</span><span class="o">=</span><span class="mi">60</span>
+
+<span class="c1"># Hugging Face Configuration</span>
+<span class="n">HF_MODEL_NAME</span><span class="o">=</span><span class="n">microsoft</span><span class="o">/</span><span class="n">DialoGPT</span><span class="o">-</span><span class="n">medium</span>
+<span class="n">HF_CACHE_DIR</span><span class="o">=./</span><span class="n">models</span>
+
+<span class="c1"># OpenAI Configuration</span>
+<span class="n">OPENAI_API_KEY</span><span class="o">=</span><span class="n">your</span><span class="o">-</span><span class="n">openai</span><span class="o">-</span><span class="n">api</span><span class="o">-</span><span class="n">key</span>
+
+<span class="c1"># Your Model Configuration</span>
+<span class="n">YOUR_MODEL_API_KEY</span><span class="o">=</span><span class="n">your</span><span class="o">-</span><span class="n">api</span><span class="o">-</span><span class="n">key</span><span class="o">-</span><span class="n">here</span>
+<span class="n">YOUR_MODEL_NAME</span><span class="o">=</span><span class="n">your</span><span class="o">-</span><span class="n">model</span><span class="o">-</span><span class="n">name</span>
+<span class="n">YOUR_MODEL_BASE_URL</span><span class="o">=</span><span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">api</span><span class="o">.</span><span class="n">yourprovider</span><span class="o">.</span><span class="n">com</span>
+<span class="n">YOUR_MODEL_TIMEOUT</span><span class="o">=</span><span class="mi">30</span>
+
+<span class="c1"># SpaCy Configuration</span>
+<span class="n">SPACY_MODEL</span><span class="o">=</span><span class="n">en_core_web_sm</span>
+
+<span class="c1"># File Upload Configuration</span>
+<span class="n">MAX_CONTENT_LENGTH</span><span class="o">=</span><span class="mi">16777216</span><span class="w">  </span><span class="c1"># 16MB</span>
+<span class="n">UPLOAD_FOLDER</span><span class="o">=</span><span class="n">uploads</span>
+</code></pre></div>
+
+<p>[/code]</p>
+<p><strong>Example: Anthropic Claude Environment Variables</strong>
+[code] 
+    # Anthropic Configuration
+    ANTHROPIC_API_KEY=your-anthropic-api-key
+    ANTHROPIC_MODEL=claude-3-sonnet-20240229
+    ANTHROPIC_BASE_URL=<a href="https://api.anthropic.com">https://api.anthropic.com</a>
+    ANTHROPIC_TIMEOUT=30
+[/code]</p>
+<h2 id="model-specific-implementation-examples">Model-Specific Implementation Examples<a class="headerlink" href="#model-specific-implementation-examples" title="Permanent link">&para;</a></h2>
+<h3 id="ollama-model">Ollama Model<a class="headerlink" href="#ollama-model" title="Permanent link">&para;</a></h3>
+<p>For adding a new Ollama model (easiest option):</p>
+<p>1. <strong>Pull the model</strong> : <code>ollama pull your-model-name</code></p>
+<p>2. <strong>Update configuration</strong> : <code>bash export AI_MODEL_TYPE=ollama export OLLAMA_MODEL=your-model-name</code></p>
+<p>3. <strong>No code changes needed</strong> - the existing Ollama integration will work</p>
+<h3 id="api-based-model-eg-anthropic-cohere-etc">API-Based Model (e.g., Anthropic, Cohere, etc.)<a class="headerlink" href="#api-based-model-eg-anthropic-cohere-etc" title="Permanent link">&para;</a></h3>
+<p>[code] 
+    # In rewriter/generators.py
+    def generate_with_api_model(self, prompt: str, original_text: str) -&gt; str:
+        """Generate text using API-based model."""
+        try:
+            headers = {
+                'Authorization': f'Bearer {self.api_key}',
+                'Content-Type': 'application/json'
+            }</p>
+<div class="codehilite"><pre><span></span><code><span class="w">        </span><span class="n">payload</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="s1">&#39;model&#39;</span><span class="p">:</span><span class="w"> </span><span class="bp">self</span><span class="o">.</span><span class="n">model_name</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">&#39;messages&#39;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="s1">&#39;role&#39;</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;user&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;content&#39;</span><span class="p">:</span><span class="w"> </span><span class="n">prompt</span><span class="p">}],</span>
+<span class="w">            </span><span class="s1">&#39;max_tokens&#39;</span><span class="p">:</span><span class="w"> </span><span class="mi">512</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">&#39;temperature&#39;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.4</span>
+<span class="w">        </span><span class="p">}</span>
+
+<span class="w">        </span><span class="n">response</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+<span class="w">            </span><span class="n">f</span><span class="s2">&quot;{self.base_url}/v1/chat/completions&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span>
+<span class="w">            </span><span class="n">json</span><span class="o">=</span><span class="n">payload</span><span class="p">,</span>
+<span class="w">            </span><span class="n">timeout</span><span class="o">=</span><span class="mi">30</span>
+<span class="w">        </span><span class="p">)</span>
+
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">200</span><span class="p">:</span>
+<span class="w">            </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;choices&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;message&#39;</span><span class="p">][</span><span class="s1">&#39;content&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+<span class="w">        </span><span class="k">else</span><span class="p">:</span>
+<span class="w">            </span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;API error: {response.status_code}&quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="n">original_text</span>
+
+<span class="w">    </span><span class="n">except</span><span class="w"> </span><span class="n">Exception</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">e</span><span class="p">:</span>
+<span class="w">        </span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;API generation failed: {e}&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">original_text</span>
+</code></pre></div>
+
+<p>[/code]</p>
+<h3 id="local-transformers-model">Local Transformers Model<a class="headerlink" href="#local-transformers-model" title="Permanent link">&para;</a></h3>
+<p>[code] 
+    # In rewriter/models.py
+    def _initialize_custom_hf_model(self):
+        """Initialize a custom Hugging Face model."""
+        try:
+            from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline</p>
+<div class="codehilite"><pre><span></span><code>        # Load custom model
+        tokenizer = AutoTokenizer.from_pretrained(self.custom_model_name)
+        model = AutoModelForCausalLM.from_pretrained(self.custom_model_name)
+
+        if tokenizer.pad_token is None:
+            tokenizer.pad_token = tokenizer.eos_token
+
+        self.custom_generator = pipeline(
+            &quot;text-generation&quot;,
+            model=model,
+            tokenizer=tokenizer,
+            max_length=512,
+            temperature=0.7,
+            do_sample=True
+        )
+
+        logger.info(f&quot;✅ Custom model initialized: {self.custom_model_name}&quot;)
+
+    except Exception as e:
+        logger.error(f&quot;❌ Failed to initialize custom model: {e}&quot;)
+        self.custom_generator = None
+</code></pre></div>
+
+<p>[/code]</p>
+<h2 id="files-summary">Files Summary<a class="headerlink" href="#files-summary" title="Permanent link">&para;</a></h2>
+<p>When adding a new model, you need to update these files:</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Purpose</th>
+<th>Required</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>src/config.py</code></td>
+<td>Add configuration variables and methods</td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code>rewriter/models.py</code></td>
+<td>Add model initialization and management</td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code>rewriter/generators.py</code></td>
+<td>Add text generation implementation</td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code>rewriter/core.py</code></td>
+<td>Update constructor parameters</td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code>app_modules/app_factory.py</code></td>
+<td>Update service initialization</td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code>app_modules/api_routes.py</code></td>
+<td>Update health check endpoint</td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code>requirements.txt</code></td>
+<td>Add model dependencies</td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code>.env.example</code></td>
+<td>Document environment variables</td>
+<td>Recommended</td>
+</tr>
+</tbody>
+</table>
+<h2 id="best-practices">Best Practices<a class="headerlink" href="#best-practices" title="Permanent link">&para;</a></h2>
+<h3 id="model-integration">Model Integration<a class="headerlink" href="#model-integration" title="Permanent link">&para;</a></h3>
+<p>* <strong>Follow the Existing Pattern</strong> : Use the same parameter passing and initialization structure</p>
+<p>* <strong>Add Health Checks</strong> : Implement proper health checking for your model</p>
+<p>* <strong>Error Handling</strong> : Gracefully handle model failures with fallbacks</p>
+<p>* <strong>Logging</strong> : Add comprehensive logging for debugging</p>
+<h3 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h3>
+<p>* <strong>Environment Variables</strong> : Use environment variables for all configuration</p>
+<p>* <strong>Defaults</strong> : Provide sensible defaults for development</p>
+<p>* <strong>Validation</strong> : Validate configuration on startup</p>
+<p>* <strong>Documentation</strong> : Document all new environment variables</p>
+<h3 id="performance">Performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h3>
+<p>* <strong>Lazy Loading</strong> : Initialize models only when needed</p>
+<p>* <strong>Connection Pooling</strong> : Reuse connections for API-based models</p>
+<p>* <strong>Timeouts</strong> : Set appropriate timeouts for all external calls</p>
+<p>* <strong>Caching</strong> : Cache model responses when appropriate</p>
+<h3 id="security">Security<a class="headerlink" href="#security" title="Permanent link">&para;</a></h3>
+<p>* <strong>API Keys</strong> : Never hardcode API keys in source code</p>
+<p>* <strong>Environment Variables</strong> : Use secure environment variable management</p>
+<p>* <strong>Rate Limiting</strong> : Implement rate limiting for API calls</p>
+<p>* <strong>Input Validation</strong> : Validate all inputs before sending to models</p>
+<h2 id="testing-your-model-integration">Testing Your Model Integration<a class="headerlink" href="#testing-your-model-integration" title="Permanent link">&para;</a></h2>
+<h3 id="basic-testing">Basic Testing<a class="headerlink" href="#basic-testing" title="Permanent link">&para;</a></h3>
+<p>1. <strong>Configuration Test</strong> : <code>bash # Set environment variables export AI_MODEL_TYPE=your_provider export YOUR_MODEL_API_KEY=your-key
+[code] # Start application
+         python app.py</code>
+[/code]</p>
+<p>2. <strong>Health Check Test</strong> : <code>bash curl &lt;http://localhost:5000/health&gt;</code></p>
+<p>3. <strong>Model Generation Test</strong> : <code>bash curl -X POST &lt;http://localhost:5000/rewrite&gt; \ -H "Content-Type: application/json" \ -d '{"content":"This is a test sentence.","errors":[]}'</code></p>
+<h3 id="integration-testing">Integration Testing<a class="headerlink" href="#integration-testing" title="Permanent link">&para;</a></h3>
+<p>[code] 
+    # tests/test_your_model.py
+    import pytest
+    from rewriter import AIRewriter
+    from src.config import Config</p>
+<div class="codehilite"><pre><span></span><code>def test_your_model_initialization():
+    &quot;&quot;&quot;Test your model initializes correctly.&quot;&quot;&quot;
+    rewriter = AIRewriter(
+        use_your_model=True,
+        your_model_name=&quot;test-model&quot;
+    )
+
+    assert rewriter.model_manager.use_your_model is True
+    assert rewriter.text_generator.is_available()
+
+def test_your_model_generation():
+    &quot;&quot;&quot;Test your model generates text.&quot;&quot;&quot;
+    rewriter = AIRewriter(use_your_model=True)
+
+    result = rewriter.rewrite(
+        content=&quot;This is a test sentence.&quot;,
+        errors=[],
+        context=&quot;sentence&quot;
+    )
+
+    assert &#39;rewritten_text&#39; in result
+    assert result[&#39;confidence&#39;] &gt; 0.0
+</code></pre></div>
+
+<p>[/code]</p>
+<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
+<h3 id="common-issues">Common Issues<a class="headerlink" href="#common-issues" title="Permanent link">&para;</a></h3>
+<p><strong>Model Not Loading</strong> - Check API key and credentials - Verify network connectivity - Check model name and availability - Review error logs for specific issues</p>
+<p><strong>Generation Failures</strong> - Check prompt format compatibility - Verify token limits and parameters - Test with simpler inputs first - Check model-specific requirements</p>
+<p><strong>Performance Issues</strong> - Monitor response times and latency - Consider model size and complexity - Implement caching strategies - Use appropriate timeout values</p>
+<p><strong>Configuration Issues</strong> - Verify environment variables are set - Check configuration file syntax - Ensure all required dependencies are installed - Validate configuration values</p>
+<h3 id="debug-mode">Debug Mode<a class="headerlink" href="#debug-mode" title="Permanent link">&para;</a></h3>
+<p>Enable debug logging to troubleshoot issues:
+[code] 
+    # In your model implementation
+    import logging
+    logging.getLogger('your_model').setLevel(logging.DEBUG)</p>
+<div class="codehilite"><pre><span></span><code><span class="cp"># In rewriter/generators.py</span>
+<span class="n">def</span><span class="w"> </span><span class="n">generate_with_your_model</span><span class="p">(</span><span class="kr">self</span><span class="p">,</span><span class="w"> </span><span class="n">prompt</span><span class="o">:</span><span class="w"> </span><span class="n">str</span><span class="p">,</span><span class="w"> </span><span class="n">original_text</span><span class="o">:</span><span class="w"> </span><span class="n">str</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">str</span><span class="o">:</span>
+<span class="w">    </span><span class="n">logger</span><span class="p">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s">&quot;Generating with your model: {self.model_name}&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="n">logger</span><span class="p">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s">&quot;Prompt length: {len(prompt)} characters&quot;</span><span class="p">)</span>
+
+<span class="w">    </span><span class="err">#</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="n">generation</span><span class="w"> </span><span class="n">logic</span><span class="w"> </span><span class="p">...</span>
+
+<span class="w">    </span><span class="n">logger</span><span class="p">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s">&quot;Generated text length: {len(generated_text)} characters&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="kr">return</span><span class="w"> </span><span class="n">generated_text</span>
+</code></pre></div>
+
+<p>[/code]</p>
+<h2 id="conclusion">Conclusion<a class="headerlink" href="#conclusion" title="Permanent link">&para;</a></h2>
+<p>Adding a new model to Content Editorial Assistant involves:</p>
+<p>1. <strong>Configuration setup</strong> for environment variables and model parameters</p>
+<p>2. <strong>Model management</strong> integration for initialization and health checking</p>
+<p>3. <strong>Text generation</strong> implementation for your specific model API</p>
+<p>4. <strong>Application integration</strong> through the factory pattern and core rewriter</p>
+<p>5. <strong>Health monitoring</strong> and error handling for production use</p>
+<p>The modular architecture makes it straightforward to add new models while maintaining compatibility with existing functionality. Each model type can have its own specific implementation while sharing common interfaces and fallback mechanisms.</p>
+<p>The system is designed to be model-agnostic, allowing you to integrate virtually any text generation model that can accept prompts and return text responses.</p>
+<p>Last updated 2025-09-22 13:41:04 +0530 </p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../how-to-add-new-ambiguity-detector/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Add a New Ambiguity Detector">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Add a New Ambiguity Detector
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../configure-providers/" class="md-footer__link md-footer__link--next" aria-label="Next: Configure AI Providers">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Configure AI Providers
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "search.suggest", "search.highlight", "content.code.copy", "navigation.footer", "content.action.edit"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../search/main.js"></script>
+      
+    
+  </body>
+</html>

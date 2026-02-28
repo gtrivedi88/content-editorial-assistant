@@ -1,0 +1,2819 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="AI-powered technical writing assistant that helps writers review content">
+      
+      
+        <meta name="author" content="CCS AI Team">
+      
+      
+      
+        <link rel="prev" href="../how-to-add-new-model/">
+      
+      
+        <link rel="next" href="../testing-setup/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+    
+    
+      
+        <title>Configure AI Providers - Content Editorial Assistant</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#how-to-configure-ai-model-providers" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Content Editorial Assistant" class="md-header__button md-logo" aria-label="Content Editorial Assistant" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Content Editorial Assistant
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Configure AI Providers
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://gitlab.cee.redhat.com/ccs-ai/content-editorial-assistant" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitLab
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href=".." class="md-tabs__link">
+          
+  
+  
+  User Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../getting-started/" class="md-tabs__link">
+          
+  
+  
+  Developer Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../architecture/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../how-to-add-new-rule/" class="md-tabs__link">
+          
+  
+  
+  How-To Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../testing-setup/" class="md-tabs__link">
+          
+  
+  
+  Testing
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Content Editorial Assistant" class="md-nav__button md-logo" aria-label="Content Editorial Assistant" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Content Editorial Assistant
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://gitlab.cee.redhat.com/ccs-ai/content-editorial-assistant" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitLab
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../training-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Developer Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Developer Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../environment-variables/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Environment Variables
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deployment-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../llm-rules-implementation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LLM Rules Implementation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-flow-diagram/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Flow Diagram
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How-To Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    How-To Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how-to-add-new-rule/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a New Rule
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how-to-add-new-ambiguity-detector/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a New Ambiguity Detector
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how-to-add-new-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a New AI Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configure AI Providers
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configure AI Providers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#supported-providers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Supported Providers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ollama-local-llm-serving" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ollama (Local LLM Serving)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Ollama (Local LLM Serving)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-choose-ollama" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why Choose Ollama?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pull-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pull Models
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#start-ollama-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Start Ollama Server
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#api-providers-cloud-based" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API Providers (Cloud-based)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="API Providers (Cloud-based)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#supported-api-providers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Supported API Providers
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Supported API Providers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#groq-recommended-for-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Groq (Recommended for API)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#huggingface-inference-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HuggingFace Inference API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#openai" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OpenAI
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-openai-compatible-apis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom OpenAI-Compatible APIs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#api-provider-configuration-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API Provider Configuration Reference
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testing-api-connection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing API Connection
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#llamastack-lightrail-platform" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LlamaStack (LightRail Platform)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="LlamaStack (LightRail Platform)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#overview_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-llamastack" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why LlamaStack?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#llamastack-configuration-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LlamaStack Configuration File
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testing_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#switching-between-providers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Switching Between Providers
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Switching Between Providers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#runtime-provider-switch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Runtime Provider Switch
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#environment-based-selection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment-Based Selection
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#model-parameters-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Model Parameters Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Model Parameters Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#temperature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Temperature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#max-tokens" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Max Tokens
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#top-p-sampling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Top-P Sampling
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#top-k-sampling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Top-K Sampling
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ollama-connection-failed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ollama Connection Failed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#api-authentication-failed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API Authentication Failed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#model-not-found" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Model Not Found
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#timeout-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Timeout Errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-optimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Optimization
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Performance Optimization">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#model-selection-guide" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Model Selection Guide
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#caching-recommendations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Caching Recommendations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#resource-requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resource Requirements
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Best Practices
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Testing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing-setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI-Powered Testing Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../writing-tests/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Writing Tests
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#supported-providers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Supported Providers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ollama-local-llm-serving" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ollama (Local LLM Serving)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Ollama (Local LLM Serving)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-choose-ollama" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why Choose Ollama?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pull-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pull Models
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#start-ollama-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Start Ollama Server
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#api-providers-cloud-based" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API Providers (Cloud-based)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="API Providers (Cloud-based)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#supported-api-providers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Supported API Providers
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Supported API Providers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#groq-recommended-for-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Groq (Recommended for API)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#huggingface-inference-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HuggingFace Inference API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#openai" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OpenAI
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-openai-compatible-apis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom OpenAI-Compatible APIs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#api-provider-configuration-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API Provider Configuration Reference
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testing-api-connection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing API Connection
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#llamastack-lightrail-platform" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LlamaStack (LightRail Platform)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="LlamaStack (LightRail Platform)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#overview_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-llamastack" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why LlamaStack?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#llamastack-configuration-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LlamaStack Configuration File
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testing_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#switching-between-providers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Switching Between Providers
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Switching Between Providers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#runtime-provider-switch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Runtime Provider Switch
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#environment-based-selection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment-Based Selection
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#model-parameters-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Model Parameters Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Model Parameters Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#temperature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Temperature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#max-tokens" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Max Tokens
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#top-p-sampling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Top-P Sampling
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#top-k-sampling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Top-K Sampling
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ollama-connection-failed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ollama Connection Failed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#api-authentication-failed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API Authentication Failed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#model-not-found" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Model Not Found
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#timeout-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Timeout Errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-optimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Optimization
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Performance Optimization">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#model-selection-guide" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Model Selection Guide
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#caching-recommendations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Caching Recommendations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#resource-requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resource Requirements
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Best Practices
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://gitlab.cee.redhat.com/ccs-ai/content-editorial-assistant/-/edit/main/docs/modules/configure-providers.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="how-to-configure-ai-model-providers">How to Configure AI Model Providers<a class="headerlink" href="#how-to-configure-ai-model-providers" title="Permanent link">&para;</a></h1>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>Content Editorial Assistant supports multiple AI model providers for flexibility and choice. This guide shows you how to configure each provider.</p>
+<h2 id="supported-providers">Supported Providers<a class="headerlink" href="#supported-providers" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Provider</th>
+<th>Best For</th>
+<th>Requirements</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Ollama</strong></td>
+<td>Privacy-first local deployment</td>
+<td>Ollama installed locally</td>
+</tr>
+<tr>
+<td><strong>API Providers</strong></td>
+<td>Cloud-based inference, no local setup</td>
+<td>API key from supported provider</td>
+</tr>
+<tr>
+<td><strong>LlamaStack</strong></td>
+<td>Enterprise deployment on LightRail</td>
+<td>LightRail platform access</td>
+</tr>
+</tbody>
+</table>
+<h2 id="ollama-local-llm-serving">Ollama (Local LLM Serving)<a class="headerlink" href="#ollama-local-llm-serving" title="Permanent link">&para;</a></h2>
+<h3 id="why-choose-ollama">Why Choose Ollama?<a class="headerlink" href="#why-choose-ollama" title="Permanent link">&para;</a></h3>
+<p>* ✅ <strong>Privacy</strong> : Models run entirely on your machine</p>
+<p>* ✅ <strong>No API costs</strong> : Free after initial setup</p>
+<p>* ✅ <strong>Fast</strong> : No network latency</p>
+<p>* ✅ <strong>Offline</strong> : Works without internet</p>
+<h3 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h3>
+<p><strong>Linux</strong> :
+[code] 
+    curl -fsSL <a href="https://ollama.com/install.sh">https://ollama.com/install.sh</a> | sh
+[/code]</p>
+<p><strong>macOS</strong> :
+[code] 
+    # Download from <a href="https://ollama.com/download/mac">https://ollama.com/download/mac</a>
+    # Or with Homebrew:
+    brew install ollama
+[/code]</p>
+<p><strong>Windows</strong> : Download installer from <a href="https://ollama.com/download/windows">https://ollama.com/download/windows</a></p>
+<h3 id="pull-models">Pull Models<a class="headerlink" href="#pull-models" title="Permanent link">&para;</a></h3>
+<p>[code] 
+    # Recommended: llama3:8b (superior quality)
+    ollama pull llama3:8b</p>
+<div class="codehilite"><pre><span></span><code># Alternative: llama3.2:3b (faster, smaller)
+ollama pull llama3.2:3b
+
+# List available models
+ollama list
+</code></pre></div>
+
+<p>[/code]</p>
+<h3 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h3>
+<p>Create <code>.env</code> file:
+[code] 
+    MODEL_PROVIDER=ollama
+    BASE_URL=<a href="http://localhost:11434">http://localhost:11434</a>
+    MODEL_ID=llama3:8b
+    TIMEOUT=60
+    MODEL_TEMPERATURE=0.4
+    MODEL_MAX_TOKENS=3072
+[/code]</p>
+<h3 id="start-ollama-server">Start Ollama Server<a class="headerlink" href="#start-ollama-server" title="Permanent link">&para;</a></h3>
+<p>[code] 
+    # Start server
+    ollama serve</p>
+<div class="codehilite"><pre><span></span><code># Verify it&#39;s running
+curl http://localhost:11434/api/tags
+</code></pre></div>
+
+<p>[/code]</p>
+<h3 id="testing">Testing<a class="headerlink" href="#testing" title="Permanent link">&para;</a></h3>
+<p>[code] 
+    # Test from command line
+    ollama run llama3:8b "Rewrite this text to be clearer: The system was configured."</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Test from Python</span>
+<span class="n">python</span> <span class="o">-</span><span class="n">c</span> <span class="s2">&quot;from models import ModelManager; print(ModelManager().get_status())&quot;</span>
+</code></pre></div>
+
+<p>[/code]</p>
+<h2 id="api-providers-cloud-based">API Providers (Cloud-based)<a class="headerlink" href="#api-providers-cloud-based" title="Permanent link">&para;</a></h2>
+<h3 id="supported-api-providers">Supported API Providers<a class="headerlink" href="#supported-api-providers" title="Permanent link">&para;</a></h3>
+<h4 id="groq-recommended-for-api">Groq (Recommended for API)<a class="headerlink" href="#groq-recommended-for-api" title="Permanent link">&para;</a></h4>
+<p><strong>Why Groq?</strong> * Fastest inference speed * Free tier available * Llama 3 70B model access</p>
+<p><strong>Setup</strong> :</p>
+<p>1. Get API key: <a href="https://console.groq.com/keys">https://console.groq.com/keys</a></p>
+<p>2. Configure:</p>
+<p>[code] 
+    MODEL_PROVIDER=api
+    BASE_URL=<a href="https://api.groq.com/openai/v1">https://api.groq.com/openai/v1</a>
+    MODEL_ID=llama3-70b-8192
+    ACCESS_TOKEN=gsk_your_api_key_here
+    TIMEOUT=60
+[/code]</p>
+<h4 id="huggingface-inference-api">HuggingFace Inference API<a class="headerlink" href="#huggingface-inference-api" title="Permanent link">&para;</a></h4>
+<p><strong>Why HuggingFace?</strong> * Wide model selection * Free tier available * Community models</p>
+<p><strong>Setup</strong> :</p>
+<p>1. Get API key: <a href="https://huggingface.co/settings/tokens">https://huggingface.co/settings/tokens</a></p>
+<p>2. Configure:</p>
+<p>[code] 
+    MODEL_PROVIDER=api
+    BASE_URL=<a href="https://api-inference.huggingface.co/models">https://api-inference.huggingface.co/models</a>
+    MODEL_ID=meta-llama/Llama-3-8b-hf
+    ACCESS_TOKEN=hf_your_api_key_here
+    TIMEOUT=120
+[/code]</p>
+<h4 id="openai">OpenAI<a class="headerlink" href="#openai" title="Permanent link">&para;</a></h4>
+<p><strong>Why OpenAI?</strong> * High-quality models (GPT-4) * Reliable API * Advanced features</p>
+<p><strong>Setup</strong> :</p>
+<p>1. Get API key: <a href="https://platform.openai.com/api-keys">https://platform.openai.com/api-keys</a></p>
+<p>2. Configure:</p>
+<p>[code] 
+    MODEL_PROVIDER=api
+    BASE_URL=<a href="https://api.openai.com/v1">https://api.openai.com/v1</a>
+    MODEL_ID=gpt-4
+    ACCESS_TOKEN=sk_your_api_key_here
+    TIMEOUT=60
+[/code]</p>
+<h4 id="custom-openai-compatible-apis">Custom OpenAI-Compatible APIs<a class="headerlink" href="#custom-openai-compatible-apis" title="Permanent link">&para;</a></h4>
+<p>Any OpenAI-compatible API endpoint works:
+[code] 
+    MODEL_PROVIDER=api
+    BASE_URL=<a href="https://your-custom-api.com/v1">https://your-custom-api.com/v1</a>
+    MODEL_ID=your-model-name
+    ACCESS_TOKEN=your_api_key
+    CERT_PATH=/path/to/certificate.pem  # Optional for self-signed certs
+    TIMEOUT=60
+[/code]</p>
+<h3 id="api-provider-configuration-reference">API Provider Configuration Reference<a class="headerlink" href="#api-provider-configuration-reference" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>MODEL_PROVIDER</code></td>
+<td>✅ Yes</td>
+<td>Set to <code>api</code></td>
+</tr>
+<tr>
+<td><code>BASE_URL</code></td>
+<td>✅ Yes</td>
+<td>API endpoint URL</td>
+</tr>
+<tr>
+<td><code>MODEL_ID</code></td>
+<td>✅ Yes</td>
+<td>Model identifier</td>
+</tr>
+<tr>
+<td><code>ACCESS_TOKEN</code></td>
+<td>✅ Yes</td>
+<td>API authentication key</td>
+</tr>
+<tr>
+<td><code>CERT_PATH</code></td>
+<td>⚠️ Optional</td>
+<td>Certificate path for custom APIs</td>
+</tr>
+<tr>
+<td><code>TIMEOUT</code></td>
+<td>⚠️ Optional</td>
+<td>Request timeout (default: 60s)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="testing-api-connection">Testing API Connection<a class="headerlink" href="#testing-api-connection" title="Permanent link">&para;</a></h3>
+<p>[code] 
+    # Test API connectivity
+    curl -H "Authorization: Bearer $ACCESS_TOKEN" \
+         -H "Content-Type: application/json" \
+         -d '{"model": "'"$MODEL_ID"'", "messages": [{"role": "user", "content": "Hello"}]}' \
+         "$BASE_URL/chat/completions"</p>
+<div class="codehilite"><pre><span></span><code><span class="gh">#</span> Test from Python
+python -m models.test_models
+</code></pre></div>
+
+<p>[/code]</p>
+<h2 id="llamastack-lightrail-platform">LlamaStack (LightRail Platform)<a class="headerlink" href="#llamastack-lightrail-platform" title="Permanent link">&para;</a></h2>
+<h3 id="overview_1">Overview<a class="headerlink" href="#overview_1" title="Permanent link">&para;</a></h3>
+<p>LlamaStack provides enterprise-grade AI model serving on Red Hat's LightRail platform.</p>
+<h3 id="why-llamastack">Why LlamaStack?<a class="headerlink" href="#why-llamastack" title="Permanent link">&para;</a></h3>
+<p>* ✅ <strong>Enterprise security</strong> : SOC 2 compliant</p>
+<p>* ✅ <strong>Managed infrastructure</strong> : No server management</p>
+<p>* ✅ <strong>Integrated monitoring</strong> : Built-in observability</p>
+<p>* ✅ <strong>Scalable</strong> : Auto-scaling based on load</p>
+<h3 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h3>
+<p>* Access to LightRail platform</p>
+<p>* Model deployed on LlamaStack</p>
+<p>* Model ID assigned by platform team</p>
+<h3 id="configuration_1">Configuration<a class="headerlink" href="#configuration_1" title="Permanent link">&para;</a></h3>
+<p>[code] 
+    MODEL_PROVIDER=llamastack
+    CEA_MODEL_ID=style_analyzer_model  # Your model ID
+[/code]</p>
+<p><strong>Note</strong> : LlamaStack configuration is simplified because authentication and endpoints are managed by the platform.</p>
+<h3 id="llamastack-configuration-file">LlamaStack Configuration File<a class="headerlink" href="#llamastack-configuration-file" title="Permanent link">&para;</a></h3>
+<p>Additional settings in <code>llamastack/config.yaml</code>:
+[code] 
+    model_id: style_analyzer_model
+    provider: lightrail
+    # Additional platform-specific settings
+[/code]</p>
+<h3 id="integration">Integration<a class="headerlink" href="#integration" title="Permanent link">&para;</a></h3>
+<p>The application automatically integrates with LlamaStack when deployed to LightRail:
+[code] 
+    # In main.py
+    from llama_stack_client import LlamaStackClient</p>
+<div class="codehilite"><pre><span></span><code><span class="gh">#</span> Setup LlamaStack client
+setup_llama_stack_client()
+
+<span class="gh">#</span> Client is automatically injected into app context
+if llama_stack_client:
+    app.llama_stack_client = llama_stack_client
+</code></pre></div>
+
+<p>[/code]</p>
+<h3 id="testing_1">Testing<a class="headerlink" href="#testing_1" title="Permanent link">&para;</a></h3>
+<p>[code] 
+    # Verify LlamaStack connectivity
+    python -c "from models import ModelManager; print(ModelManager().health_check())"
+[/code]</p>
+<h2 id="switching-between-providers">Switching Between Providers<a class="headerlink" href="#switching-between-providers" title="Permanent link">&para;</a></h2>
+<h3 id="runtime-provider-switch">Runtime Provider Switch<a class="headerlink" href="#runtime-provider-switch" title="Permanent link">&para;</a></h3>
+<p>You can switch providers programmatically:
+[code] 
+    from models import ModelManager</p>
+<div class="codehilite"><pre><span></span><code>manager = ModelManager()
+
+<span class="gh">#</span> Switch to Ollama
+manager.switch_provider(&#39;ollama&#39;, {
+    &#39;base_url&#39;: &#39;http://localhost:11434&#39;,
+    &#39;model&#39;: &#39;llama3:8b&#39;
+})
+
+<span class="gh">#</span> Switch to API provider
+manager.switch_provider(&#39;api&#39;, {
+    &#39;base_url&#39;: &#39;https://api.groq.com/openai/v1&#39;,
+    &#39;model&#39;: &#39;llama3-70b-8192&#39;,
+    &#39;api_key&#39;: &#39;your-key-here&#39;
+})
+</code></pre></div>
+
+<p>[/code]</p>
+<h3 id="environment-based-selection">Environment-Based Selection<a class="headerlink" href="#environment-based-selection" title="Permanent link">&para;</a></h3>
+<p>Use different <code>.env</code> files for different environments:
+[code] 
+    # .env.development (local Ollama)
+    MODEL_PROVIDER=ollama
+    MODEL_ID=llama3:8b</p>
+<div class="codehilite"><pre><span></span><code><span class="gh">#</span> .env.staging (Groq API)
+MODEL_PROVIDER=api
+BASE_URL=https://api.groq.com/openai/v1
+MODEL_ID=llama3-70b-8192
+
+<span class="gh">#</span> .env.production (LlamaStack)
+MODEL_PROVIDER=llamastack
+CEA_MODEL_ID=style_analyzer_model
+</code></pre></div>
+
+<p>[/code]</p>
+<p>Load appropriate file:
+[code] 
+    # Development
+    ln -sf .env.development .env</p>
+<div class="codehilite"><pre><span></span><code># Staging
+ln -sf .env.staging .env
+
+# Production
+ln -sf .env.production .env
+</code></pre></div>
+
+<p>[/code]</p>
+<h2 id="model-parameters-configuration">Model Parameters Configuration<a class="headerlink" href="#model-parameters-configuration" title="Permanent link">&para;</a></h2>
+<h3 id="temperature">Temperature<a class="headerlink" href="#temperature" title="Permanent link">&para;</a></h3>
+<p>Controls randomness (0.0 = deterministic, 1.0 = creative):
+[code] 
+    MODEL_TEMPERATURE=0.4  # Recommended for technical writing
+[/code]</p>
+<p>* <strong>0.1-0.3</strong> : Very focused, minimal creativity</p>
+<p>* <strong>0.4-0.6</strong> : Balanced (recommended)</p>
+<p>* <strong>0.7-0.9</strong> : More creative, less predictable</p>
+<h3 id="max-tokens">Max Tokens<a class="headerlink" href="#max-tokens" title="Permanent link">&para;</a></h3>
+<p>Maximum generation length:
+[code] 
+    MODEL_MAX_TOKENS=3072  # Default, suitable for most content
+[/code]</p>
+<h3 id="top-p-sampling">Top-P Sampling<a class="headerlink" href="#top-p-sampling" title="Permanent link">&para;</a></h3>
+<p>Nucleus sampling parameter (0.0-1.0):
+[code] 
+    MODEL_TOP_P=0.7  # Recommended
+[/code]</p>
+<h3 id="top-k-sampling">Top-K Sampling<a class="headerlink" href="#top-k-sampling" title="Permanent link">&para;</a></h3>
+<p>Limits to top K tokens:
+[code] 
+    MODEL_TOP_K=20  # Recommended
+[/code]</p>
+<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
+<h3 id="ollama-connection-failed">Ollama Connection Failed<a class="headerlink" href="#ollama-connection-failed" title="Permanent link">&para;</a></h3>
+<p><strong>Error</strong> : <code>Connection refused</code> to <code>localhost:11434</code></p>
+<p><strong>Solutions</strong> :</p>
+<p>1. Verify Ollama is running:
+[code] ps aux | grep ollama
+         curl <a href="http://localhost:11434/api/tags">http://localhost:11434/api/tags</a>
+[/code]</p>
+<p>2. Start Ollama server:
+[code] ollama serve
+[/code]</p>
+<p>3. Check firewall rules</p>
+<h3 id="api-authentication-failed">API Authentication Failed<a class="headerlink" href="#api-authentication-failed" title="Permanent link">&para;</a></h3>
+<p><strong>Error</strong> : <code>401 Unauthorized</code></p>
+<p><strong>Solutions</strong> :</p>
+<p>1. Verify API key:
+[code] echo $ACCESS_TOKEN
+[/code]</p>
+<p>2. Check key permissions in provider dashboard</p>
+<p>3. Regenerate key if expired</p>
+<h3 id="model-not-found">Model Not Found<a class="headerlink" href="#model-not-found" title="Permanent link">&para;</a></h3>
+<p><strong>Error</strong> : <code>Model 'xyz' not found</code></p>
+<p><strong>Solutions</strong> :</p>
+<p>1. List available models:
+[code] # Ollama
+         ollama list</p>
+<div class="codehilite"><pre><span></span><code>     # API providers
+     curl -H &quot;Authorization: Bearer $ACCESS_TOKEN&quot; $BASE_URL/models
+</code></pre></div>
+
+<p>[/code]</p>
+<p>2. Pull/select correct model</p>
+<p>3. Check MODEL_ID spelling</p>
+<h3 id="timeout-errors">Timeout Errors<a class="headerlink" href="#timeout-errors" title="Permanent link">&para;</a></h3>
+<p><strong>Error</strong> : Request timeout after 60s</p>
+<p><strong>Solutions</strong> :</p>
+<p>1. Increase timeout:
+[code] TIMEOUT=120
+[/code]</p>
+<p>2. Use faster model</p>
+<p>3. Reduce MAX_TOKENS</p>
+<h2 id="performance-optimization">Performance Optimization<a class="headerlink" href="#performance-optimization" title="Permanent link">&para;</a></h2>
+<h3 id="model-selection-guide">Model Selection Guide<a class="headerlink" href="#model-selection-guide" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Speed</th>
+<th>Quality</th>
+<th>Size</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>llama3.2:1b</code></td>
+<td>⚡⚡⚡ Very Fast</td>
+<td>⭐⭐ Basic</td>
+<td>1.3GB</td>
+</tr>
+<tr>
+<td><code>llama3.2:3b</code></td>
+<td>⚡⚡ Fast</td>
+<td>⭐⭐⭐ Good</td>
+<td>2GB</td>
+</tr>
+<tr>
+<td><code>llama3:8b</code></td>
+<td>⚡ Moderate</td>
+<td>⭐⭐⭐⭐ Excellent</td>
+<td>4.7GB</td>
+</tr>
+<tr>
+<td><code>llama3-70b-8192</code> (API)</td>
+<td>⚡⚡⚡ Fast (cloud)</td>
+<td>⭐⭐⭐⭐⭐ Superior</td>
+<td>Cloud</td>
+</tr>
+</tbody>
+</table>
+<h3 id="caching-recommendations">Caching Recommendations<a class="headerlink" href="#caching-recommendations" title="Permanent link">&para;</a></h3>
+<p>Enable model caching for faster responses:
+[code] 
+    # Ollama keeps models in memory
+    # API providers cache at their end
+    # Application caches model connections
+[/code]</p>
+<h3 id="resource-requirements">Resource Requirements<a class="headerlink" href="#resource-requirements" title="Permanent link">&para;</a></h3>
+<p><strong>Ollama Local Deployment</strong> :</p>
+<p>* llama3:8b: 8GB RAM minimum</p>
+<p>* llama3.2:3b: 4GB RAM minimum</p>
+<p>* GPU: Optional but recommended</p>
+<p><strong>API Providers</strong> :</p>
+<p>* No local resources needed</p>
+<p>* Network bandwidth important</p>
+<h2 id="best-practices">Best Practices<a class="headerlink" href="#best-practices" title="Permanent link">&para;</a></h2>
+<p>1. <strong>Use Ollama for development</strong> : Fast iteration, no API costs</p>
+<p>2. <strong>Use API providers for production</strong> : Reliable, scalable</p>
+<p>3. <strong>Test before switching</strong> : Validate provider works in your environment</p>
+<p>4. <strong>Monitor API usage</strong> : Track costs and quotas</p>
+<p>5. <strong>Set appropriate timeouts</strong> : Balance speed vs reliability</p>
+<p>6. <strong>Keep models updated</strong> : <code>ollama pull &lt;model&gt;</code> regularly</p>
+<h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<p>* <a href="ROOT:environment-variables.html">Environment Variables Reference</a></p>
+<p>* <a href="ROOT:getting-started.html">Getting Started Guide</a></p>
+<p>* <a href="ROOT:deployment-guide.html">Deployment Guide</a></p>
+<p>* <a href="../../models/README.md">Models Module Documentation</a></p>
+<p>Last updated 2025-11-25 12:56:47 +0530 </p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../how-to-add-new-model/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Add a New AI Model">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Add a New AI Model
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../testing-setup/" class="md-footer__link md-footer__link--next" aria-label="Next: Testing Setup">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Testing Setup
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "search.suggest", "search.highlight", "content.code.copy", "navigation.footer", "content.action.edit"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../search/main.js"></script>
+      
+    
+  </body>
+</html>

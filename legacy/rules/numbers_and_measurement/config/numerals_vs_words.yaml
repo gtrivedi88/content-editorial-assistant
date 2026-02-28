@@ -1,0 +1,302 @@
+# Numerals vs Words Configuration
+# Manages consistency rules for number representation
+# Updates can be made without code changes for zero false positives
+
+# Number Word Patterns
+number_words:
+  single_digit_words:
+    - word: "one"
+      numeral: "1"
+      evidence_base: 0.6
+    - word: "two"
+      numeral: "2"
+      evidence_base: 0.6
+    - word: "three"
+      numeral: "3"
+      evidence_base: 0.6
+    - word: "four"
+      numeral: "4"
+      evidence_base: 0.6
+    - word: "five"
+      numeral: "5"
+      evidence_base: 0.6
+    - word: "six"
+      numeral: "6"
+      evidence_base: 0.6
+    - word: "seven"
+      numeral: "7"
+      evidence_base: 0.6
+    - word: "eight"
+      numeral: "8"
+      evidence_base: 0.6
+    - word: "nine"
+      numeral: "9"
+      evidence_base: 0.6
+
+  numeral_patterns:
+    - pattern: '\b[1-9]\b'
+      description: "Single digit numerals"
+      evidence_base: 0.6
+
+# Style Consistency Rules
+consistency_rules:
+  mixed_usage_detection:
+    evidence_base: 0.6
+    description: "Flag when both numerals and words are used for numbers under 10"
+    requires_both_styles: true
+    
+  sentence_start_rule:
+    evidence_increase: 0.3
+    description: "Numbers at sentence start should be spelled out"
+    applies_to: "numerals"
+    
+  technical_context_preference:
+    style_preference: "numerals"
+    evidence_adjustment: -0.1
+    content_types: ["technical", "scientific", "engineering"]
+    
+  formal_context_preference:
+    style_preference: "consistency"
+    evidence_adjustment: 0.1
+    content_types: ["business", "professional", "legal"]
+
+# Context-Based Evidence Adjustments
+context_adjustments:
+  content_type_modifiers:
+    technical:
+      numeral_preference: true
+      evidence_decrease_for_numerals: 0.2
+      description: "Technical content often prefers numerals"
+      
+    scientific:
+      numeral_preference: true
+      evidence_decrease_for_numerals: 0.2
+      description: "Scientific content uses numerals for precision"
+      
+    business:
+      consistency_priority: true
+      evidence_increase: 0.1
+      description: "Business documents need consistency"
+      
+    creative:
+      word_preference: true
+      evidence_decrease_for_words: 0.1
+      description: "Creative writing often uses words"
+      
+    legal:
+      consistency_critical: true
+      evidence_increase: 0.2
+      description: "Legal documents require consistent formatting"
+
+  sentence_position_modifiers:
+    sentence_start:
+      word_preference: true
+      numeral_penalty: 0.3
+      description: "Spell out numbers at sentence beginnings"
+      
+    mid_sentence:
+      context_dependent: true
+      evidence_neutral: 0.0
+
+  surrounding_context:
+    age_expressions:
+      evidence_decrease: 0.3
+      examples: ["five years old", "eight-year-old"]
+      description: "Age expressions commonly use words"
+      
+    time_expressions:
+      evidence_decrease: 0.3
+      examples: ["five minutes", "eight hours"]
+      description: "Time expressions often use words"
+      
+    measurement_context:
+      numeral_preference: true
+      evidence_decrease_for_numerals: 0.2
+      description: "Measurements typically use numerals"
+
+# Detection Patterns
+detection_patterns:
+  word_patterns:
+    regex: '\b(one|two|three|four|five|six|seven|eight|nine)\b'
+    flags: ["IGNORECASE"]
+    captures: ["number_word"]
+    
+  numeral_patterns:
+    regex: '\b[1-9]\b'
+    captures: ["numeral"]
+
+# Surgical Guard Patterns (contexts to exclude)
+surgical_guards:
+  version_contexts:
+    - "version"
+    - "v\\d"
+    - "chapter"
+    - "section"
+    - "step"
+    - "part"
+    - "phase"
+    - "level"
+    - "grade"
+    
+  identifier_contexts:
+    - "room"
+    - "apartment"
+    - "unit"
+    - "building"
+    - "floor"
+    - "gate"
+    - "platform"
+    
+  ordinal_contexts:
+    - "first"
+    - "second"
+    - "third"
+    - "1st"
+    - "2nd"
+    - "3rd"
+    
+  code_contexts:
+    - "variable"
+    - "constant"
+    - "parameter"
+    - "function"
+    - "method"
+    
+  title_contexts:
+    - "title"
+    - "heading"
+    - "chapter"
+    - "section"
+
+# Style Guide Rules
+style_rules:
+  under_ten_rule:
+    description: "Numbers under 10 should be consistent within document"
+    applies_to: [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    consistency_required: true
+    
+  sentence_start_rule:
+    description: "Always spell out numbers at the beginning of sentences"
+    override_numeral_preference: true
+    evidence_increase: 0.3
+    
+  technical_exception:
+    description: "Technical measurements and specifications can use numerals"
+    applies_to_content: ["technical", "scientific"]
+    evidence_decrease: 0.2
+
+# Evidence-Aware Messaging
+messages:
+  consistency:
+    high_evidence:
+      mixed_usage: "Use consistent number formatting throughout the document."
+      sentence_start: "Spell out numbers at the beginning of sentences: '{flagged}' should be written as a word."
+    
+    medium_evidence:
+      mixed_usage: "Consider consistent formatting for numbers under 10 across the document."
+      sentence_start: "Consider spelling out '{flagged}' at the sentence start."
+    
+    low_evidence:
+      mixed_usage: "Number formatting could be more consistent: '{flagged}'."
+
+# Suggestions Based on Evidence Level and Context
+suggestions:
+  numerals_to_words:
+    high_evidence:
+      - "Change '{flagged}' to '{word_equivalent}'."
+      - "Spell out single-digit numbers for consistency."
+      - "Use words for numbers at sentence beginnings."
+    
+    medium_evidence:
+      - "Consider '{word_equivalent}' for consistency."
+      - "Spell out numbers at sentence start."
+    
+    low_evidence:
+      - "Consider spelling out single-digit numbers."
+
+  words_to_numerals:
+    high_evidence:
+      - "Change '{flagged}' to '{numeral_equivalent}' for technical consistency."
+      - "Use numerals for measurements and technical specifications."
+    
+    medium_evidence:
+      - "Consider '{numeral_equivalent}' in technical contexts."
+      - "Use numerals for precision in measurements."
+    
+    low_evidence:
+      - "Consider using numerals for technical content."
+
+# Special Cases and Exceptions
+special_cases:
+  ages:
+    pattern: "(\\d+|one|two|three|four|five|six|seven|eight|nine)\\s*(year|month|day)s?\\s*(old|age)"
+    evidence_reduction: 0.3
+    description: "Age expressions often use words appropriately"
+    
+  time_durations:
+    pattern: "(\\d+|one|two|three|four|five|six|seven|eight|nine)\\s*(minute|hour|day|week|month|year)s?"
+    evidence_reduction: 0.3
+    description: "Time expressions commonly use words"
+    
+  common_phrases:
+    patterns:
+      - "one or two"
+      - "two or three"
+      - "three or four"
+      - "one of the"
+      - "two of them"
+    evidence_reduction: 0.4
+    description: "Common idiomatic expressions"
+    
+  measurements_with_units:
+    pattern: "(\\d+)\\s*(kg|lb|cm|in|ft|m|km|ml|l|gal)"
+    evidence_reduction: 0.2
+    description: "Measurements typically use numerals"
+
+# Document-Level Analysis
+document_analysis:
+  style_consistency:
+    threshold_for_mixed: 2
+    description: "Flag inconsistency when both styles appear"
+    evidence_multiplier: 1.0
+    
+  dominant_style_detection:
+    minimum_occurrences: 3
+    percentage_threshold: 60
+    description: "Detect if document has clear style preference"
+
+# Industry-Specific Guidelines
+industry_guidelines:
+  technical_writing:
+    preference: "numerals"
+    rationale: "Precision and brevity"
+    evidence_adjustment: -0.2
+    
+  marketing_copy:
+    preference: "words_for_small"
+    rationale: "Readability and flow"
+    evidence_adjustment: 0.1
+    
+  academic_writing:
+    preference: "words_below_ten"
+    rationale: "Formal writing conventions"
+    evidence_adjustment: 0.1
+    
+  journalism:
+    preference: "words_below_ten"
+    rationale: "AP Style guidelines"
+    evidence_adjustment: 0.1
+
+# Quality Metrics
+quality_metrics:
+  consistency_score:
+    calculation: "percentage_of_consistent_usage"
+    target: 90
+    
+  readability_impact:
+    measurement: "cognitive_load_assessment"
+    factors: ["mixed_styles", "context_appropriateness"]
+    
+  style_guide_compliance:
+    measurement: "adherence_to_chosen_style"
+    factors: ["sentence_start_rule", "technical_context_rule"]

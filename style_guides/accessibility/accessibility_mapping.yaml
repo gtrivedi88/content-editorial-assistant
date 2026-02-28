@@ -1,0 +1,181 @@
+# Accessibility Guidelines Rule Mapping
+# Single source of truth for accessibility-related style references
+#
+# BASED ON:
+# Document: Getting Started with Accessibility for Writers
+# Also references: WCAG 2.1, Section 508 compliance
+#
+# PURPOSE:
+# 1. Map rules to accessibility best practices
+# 2. Ensure content meets accessibility standards
+# 3. Support verification tracking
+# 4. Enable UI display of accessibility citations
+
+version: "1.0"
+last_updated: "2026-01-23"
+source_document:
+  name: "Getting Started with Accessibility for Writers"
+  format: "markdown"
+  standards_referenced:
+    - "WCAG 2.1"
+    - "Section 508"
+
+# ============================================================================
+# INCLUSIVE LANGUAGE
+# ============================================================================
+inclusive_language:
+
+  inclusive_language:
+    rule_id: "inclusive_language"
+    display_name: "Inclusive Language for Accessibility"
+    category: "inclusive_language"
+    severity: "high"
+    accessibility:
+      topic: "Inclusive and people-first language"
+      section: "inclusive-language"
+      verification_status: "verified"
+      guidance: "Use people-first language (person with a disability, not disabled person). Avoid ableist terms like 'lame', 'crippled', 'blind spot'."
+
+  inclusive_disability_terms:
+    rule_id: "inclusive_disability_terms"
+    display_name: "Disability Terminology"
+    category: "inclusive_language"
+    severity: "high"
+    accessibility:
+      topic: "Disability and accessibility terminology"
+      section: "inclusive-language"
+      verification_status: "verified"
+      guidance: "Avoid terms like 'handicapped', 'suffers from', 'confined to'. Use 'accessible' instead of 'handicapped-accessible'."
+
+  inclusive_sensory_language:
+    rule_id: "inclusive_sensory_language"
+    display_name: "Sensory-Neutral Language"
+    category: "inclusive_language"
+    severity: "medium"
+    accessibility:
+      topic: "Sensory-neutral language"
+      section: "inclusive-language"
+      verification_status: "verified"
+      guidance: "Avoid relying solely on sensory cues. Instead of 'see the red text above', use 'refer to the warning message in the previous section'."
+
+# ============================================================================
+# CONTENT STRUCTURE
+# ============================================================================
+content_structure:
+
+  headings:
+    rule_id: "headings"
+    display_name: "Accessible Heading Structure"
+    category: "content_structure"
+    severity: "high"
+    accessibility:
+      topic: "Heading hierarchy for screen readers"
+      section: "content-structure"
+      verification_status: "verified"
+      guidance: "Use a logical heading hierarchy (h1, h2, h3) without skipping levels. Headings must be descriptive enough to make sense out of context."
+
+  capitalization:
+    rule_id: "capitalization"
+    display_name: "Accessible Capitalization"
+    category: "content_structure"
+    severity: "medium"
+    accessibility:
+      topic: "Capitalization and screen readers"
+      section: "content-structure"
+      verification_status: "verified"
+      guidance: "Avoid all-caps text as screen readers may read it letter by letter. Use CSS text-transform if visual capitalization is needed."
+
+  lists:
+    rule_id: "lists"
+    display_name: "Accessible Lists"
+    category: "content_structure"
+    severity: "medium"
+    accessibility:
+      topic: "Lists and assistive technology"
+      section: "content-structure"
+      verification_status: "verified"
+      guidance: "Use proper list markup. Screen readers announce the number of list items, helping users understand content scope."
+
+  tables:
+    rule_id: "tables"
+    display_name: "Accessible Tables"
+    category: "content_structure"
+    severity: "high"
+    accessibility:
+      topic: "Table accessibility"
+      section: "content-structure"
+      verification_status: "verified"
+      guidance: "Include table headers. Avoid merged cells. Provide a caption or summary. Do not use tables for layout purposes."
+
+# ============================================================================
+# IMAGES AND MEDIA
+# ============================================================================
+images_and_media:
+
+  alt_text:
+    rule_id: "alt_text"
+    display_name: "Alternative Text"
+    category: "images_and_media"
+    severity: "high"
+    accessibility:
+      topic: "Alt text for images"
+      section: "images-and-media"
+      verification_status: "verified"
+      guidance: "All informative images must have descriptive alt text. Decorative images should have empty alt attributes. Complex images need long descriptions."
+
+  color_contrast:
+    rule_id: "color_contrast"
+    display_name: "Color Contrast and Meaning"
+    category: "images_and_media"
+    severity: "high"
+    accessibility:
+      topic: "Color usage and contrast"
+      section: "images-and-media"
+      verification_status: "verified"
+      guidance: "Do not use color as the only means of conveying information. Ensure minimum 4.5:1 contrast ratio for normal text, 3:1 for large text."
+
+# ============================================================================
+# LINKS AND NAVIGATION
+# ============================================================================
+links_and_navigation:
+
+  link_text:
+    rule_id: "link_text"
+    display_name: "Descriptive Link Text"
+    category: "links_and_navigation"
+    severity: "high"
+    accessibility:
+      topic: "Link text and accessibility"
+      section: "links-and-navigation"
+      verification_status: "verified"
+      guidance: "Use descriptive link text. Avoid 'click here' or 'read more'. Link text must make sense out of context for screen reader users."
+
+  accessibility:
+    rule_id: "accessibility"
+    display_name: "General Accessibility"
+    category: "links_and_navigation"
+    severity: "high"
+    accessibility:
+      topic: "General accessibility guidelines"
+      section: "general"
+      verification_status: "verified"
+      guidance: "Content must be perceivable, operable, understandable, and robust (POUR principles from WCAG 2.1)."
+
+# ============================================================================
+# CONFIDENCE ADJUSTMENTS
+# ============================================================================
+confidence_adjustments:
+  verified_rule_boost: 0.2
+  unverified_rule_penalty: 0.1
+  accessibility_critical_boost: 0.25
+
+# ============================================================================
+# VERIFICATION TRACKING
+# ============================================================================
+verification_stats:
+  total_rules: 11
+  verified_rules: 11
+  unverified_rules: 0
+  verification_percentage: 100
+  last_verification_sweep: "2026-01-23"
+  notes: "Initial mapping of accessibility guidelines"

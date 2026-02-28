@@ -1,0 +1,141 @@
+/* ================================================================
+   CEA Citations — Popover tooltip styles for style guide excerpts
+   ================================================================ */
+
+.cea-citation-popover {
+  position: absolute;
+  z-index: 1050;
+  max-width: 400px;
+  background: var(--pf-v5-global--BackgroundColor--100, #fff);
+  border: 1px solid var(--pf-v5-global--BorderColor--100, #d2d2d2);
+  border-radius: 8px;
+  box-shadow: var(--cea-shadow-lg);
+  padding: 0;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity var(--cea-transition-speed) var(--cea-transition-fn),
+              transform var(--cea-transition-speed) var(--cea-transition-fn);
+  pointer-events: none;
+}
+
+.cea-citation-popover--visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* Arrow */
+.cea-citation-popover::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 24px;
+  width: 12px;
+  height: 12px;
+  background: var(--pf-v5-global--BackgroundColor--100, #fff);
+  border-top: 1px solid var(--pf-v5-global--BorderColor--100, #d2d2d2);
+  border-left: 1px solid var(--pf-v5-global--BorderColor--100, #d2d2d2);
+  transform: rotate(45deg);
+}
+
+.cea-citation-popover__header {
+  padding: 12px 16px 8px;
+  border-bottom: 1px solid var(--pf-v5-global--BorderColor--100, #d2d2d2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cea-citation-popover__guide-name {
+  font-weight: var(--pf-v5-global--FontWeight--bold, 700);
+  font-size: var(--pf-v5-global--FontSize--sm, 0.875rem);
+  color: var(--pf-v5-global--Color--100, #151515);
+}
+
+.cea-citation-popover__topic {
+  font-size: var(--pf-v5-global--FontSize--sm, 0.875rem);
+  color: var(--pf-v5-global--Color--200, #6a6e73);
+}
+
+.cea-citation-popover__body {
+  padding: 12px 16px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.cea-citation-popover__excerpt {
+  font-size: var(--pf-v5-global--FontSize--sm, 0.875rem);
+  line-height: 1.6;
+  color: var(--pf-v5-global--Color--100, #151515);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.cea-citation-popover__footer {
+  padding: 8px 16px 12px;
+  border-top: 1px solid var(--pf-v5-global--BorderColor--100, #d2d2d2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cea-citation-popover__page-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: var(--pf-v5-global--palette--blue-50, #e7f1fa);
+  color: var(--pf-v5-global--primary-color--100, #06c);
+  border-radius: 12px;
+  font-size: var(--pf-v5-global--FontSize--xs, 0.75rem);
+  font-weight: var(--pf-v5-global--FontWeight--bold, 700);
+}
+
+.cea-citation-popover__close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: var(--pf-v5-global--Color--200, #6a6e73);
+  font-size: var(--pf-v5-global--FontSize--md, 1rem);
+  line-height: 1;
+  border-radius: 4px;
+}
+
+.cea-citation-popover__close:hover {
+  color: var(--pf-v5-global--Color--100, #151515);
+  background: var(--pf-v5-global--BackgroundColor--200, #f0f0f0);
+}
+
+.cea-citation-popover__close:focus-visible {
+  outline: 2px solid var(--pf-v5-global--primary-color--100, #06c);
+  outline-offset: 2px;
+}
+
+/* Citation link in issue card */
+.cea-citation-link {
+  cursor: pointer;
+  color: var(--pf-v5-global--link--Color, #06c);
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  font-size: var(--pf-v5-global--FontSize--sm, 0.875rem);
+}
+
+.cea-citation-link:hover {
+  text-decoration-style: solid;
+}
+
+.cea-citation-link:focus-visible {
+  outline: 2px solid var(--pf-v5-global--primary-color--100, #06c);
+  outline-offset: 2px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .cea-citation-popover {
+    transition: none;
+  }
+}

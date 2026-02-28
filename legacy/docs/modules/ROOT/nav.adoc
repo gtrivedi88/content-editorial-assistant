@@ -1,0 +1,9 @@
+.User guide
+* xref:index.adoc[Overview]
+* xref:training-guide.adoc[Training guide]
+
+.Developer guide
+* xref:getting-started.adoc[Getting started]
+* xref:api-reference.adoc[API reference]
+* xref:environment-variables.adoc[Environment variables]
+* xref:deployment-guide.adoc[Deployment guide]

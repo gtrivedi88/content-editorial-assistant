@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% set active_page = 'help' %}
+{% block title %}Help &amp; Support — CEA{% endblock %}
+
+{% block content %}
+<section class="pf-v5-c-page__main-section">
+  <div style="max-width:720px; margin:0 auto; padding:var(--pf-v5-global--spacer--xl);">
+    <h1 class="pf-v5-c-title pf-m-2xl pf-v5-u-mb-lg">Help &amp; Support</h1>
+
+    <div class="pf-v5-c-card pf-v5-u-mb-lg">
+      <div class="pf-v5-c-card__title"><h2 class="pf-v5-c-title pf-m-lg">Provide Feedback</h2></div>
+      <div class="pf-v5-c-card__body">
+        <p>When reviewing content, use the thumbs-up/thumbs-down buttons on each issue card
+        to tell us if a suggestion was helpful. This data improves rule accuracy over time.</p>
+      </div>
+    </div>
+
+    <div class="pf-v5-c-card pf-v5-u-mb-lg">
+      <div class="pf-v5-c-card__title"><h2 class="pf-v5-c-title pf-m-lg">Report Issues</h2></div>
+      <div class="pf-v5-c-card__body">
+        <p>Found a bug or have a feature request? Open an issue in our GitLab repository.</p>
+        <p class="pf-v5-u-mt-md">
+          <strong>UI bugs:</strong> Include the browser console output and a screenshot.<br>
+          <strong>False positives:</strong> Include the flagged text and the rule type.
+        </p>
+      </div>
+    </div>
+
+    <div class="pf-v5-c-card pf-v5-u-mb-lg">
+      <div class="pf-v5-c-card__title"><h2 class="pf-v5-c-title pf-m-lg">Contact the Team</h2></div>
+      <div class="pf-v5-c-card__body">
+        <p>Reach out via Slack or email for questions, feature discussions, or integration support.</p>
+      </div>
+    </div>
+
+    <div class="pf-v5-c-card">
+      <div class="pf-v5-c-card__title"><h2 class="pf-v5-c-title pf-m-lg">About CEA</h2></div>
+      <div class="pf-v5-c-card__body">
+        <p>CEA checks your technical writing against 107 deterministic rules based on the
+        IBM Style Guide. All style checking is rules-based (no LLM). The optional
+        AI rewriting feature uses a local model for privacy.</p>
+        <p class="pf-v5-u-mt-md">
+          <strong>Supported formats:</strong> AsciiDoc, Markdown, DITA/XML, PDF, DOCX, plain text
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

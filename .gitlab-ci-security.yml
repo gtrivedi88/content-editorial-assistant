@@ -1,0 +1,325 @@
+
+# ============================================================
+# SECURITY SCANNING CI/CD PIPELINE
+# Content Editorial Assistant - Vulnerability Management
+# ============================================================
+#
+# Implements security scanning per Red Hat Vulnerability
+# Remediation Guidelines (InfoSec)
+#
+# Remediation Timelines:
+#   - Catastrophic: 48 hours
+#   - Critical: 14 days
+#   - Important: 30 days
+#   - Medium: 60 days
+#   - Low: 90 days
+# ============================================================
+variables:
+  PYTHON_VERSION: "3.12"
+  SECURITY_REPORTS_DIR: "security_reports"
+  # Use Red Hat UBI Python image to avoid Docker Hub rate limits
+  PYTHON_IMAGE: "registry.access.redhat.com/ubi9/python-312:latest"
+  # Use GitHub Container Registry for Trivy to avoid Docker Hub rate limits
+  TRIVY_IMAGE: "ghcr.io/aquasecurity/trivy:latest"
+  # Use GitHub Container Registry for SonarQube scanner
+  SONAR_IMAGE: "registry.access.redhat.com/ubi9/openjdk-17:latest"
+# ============================================================
+# TESTING STAGE
+# ============================================================
+# Run unit tests and generate coverage report for SonarQube
+unit-tests:
+  stage: test
+  image: ${PYTHON_IMAGE}
+  before_script:
+    - pip install --quiet -r requirements.txt
+  script:
+    - echo "Running unit tests with coverage..."
+    - pytest
+    - echo "Tests completed"
+  artifacts:
+    expire_in: 7 days
+    paths:
+      - coverage.xml
+      - .coverage
+    reports:
+      junit: junit.xml
+    when: always
+  coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_MERGE_REQUEST_ID
+  tags:
+    - itup-alm-x86
+  allow_failure: false
+
+# ============================================================
+# SECURITY SCANNING STAGE
+# ============================================================
+# Python dependency vulnerability scanning
+dependency-scan:
+  stage: test
+  image: ${PYTHON_IMAGE}
+  before_script:
+    - pip install --quiet pip-audit safety bandit
+    - mkdir -p ${SECURITY_REPORTS_DIR}
+  script:
+    - echo "Scanning Python dependencies for vulnerabilities..."
+    # pip-audit checks against PyPI advisory database
+    - pip-audit -r requirements.txt --format json --output ${SECURITY_REPORTS_DIR}/pip_audit_report.json || true
+    - pip-audit -r requirements.txt --format columns || true
+    # safety checks against Safety DB
+    - safety check -r requirements.txt --json > ${SECURITY_REPORTS_DIR}/safety_report.json || true
+    - safety check -r requirements.txt || true
+    - echo "Dependency scan completed"
+  artifacts:
+    expire_in: 90 days
+    paths:
+      - ${SECURITY_REPORTS_DIR}/
+    reports:
+      # GitLab dependency scanning report format
+      dependency_scanning: ${SECURITY_REPORTS_DIR}/pip_audit_report.json
+    when: always
+  rules:
+    # Run on main branch
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    # Run on schedule (daily vulnerability scan)
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $SCHEDULED_JOB == "security_scan"
+    # Run when dependencies change
+    - changes:
+        - requirements.txt
+        - pyproject.toml
+        - poetry.lock
+  tags:
+    - itup-alm-x86
+  allow_failure: false
+# SonarQube Corporate SAST Analysis
+# Requires CI/CD Variables: SONAR_TOKEN, REDHAT_ROOT_CA (File type)
+sonarqube-sast:
+  stage: test
+  needs:
+    - job: unit-tests
+      artifacts: true
+  image:
+    name: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/sonarsource/sonar-scanner-cli:latest
+    entrypoint: [""]
+  variables:
+    SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"
+    # CRITICAL: Fetch full history so git diff works
+    GIT_DEPTH: "0"
+    SONAR_HOST_URL: "https://sonarqube.corp.redhat.com"
+    KUBERNETES_MEMORY_REQUEST: "7Gi"
+    KUBERNETES_MEMORY_LIMIT: "8Gi"
+  before_script:
+    - mkdir -p "${SONAR_USER_HOME}/_tmp"
+    - export SCANNER_JAVA_HOME=$(java -XshowSettings:properties -version 2>&1 > /dev/null | grep 'java.home' | awk '{print $3}')
+    - cp "$SCANNER_JAVA_HOME/lib/security/cacerts" "${SONAR_USER_HOME}/cacerts"
+    - chmod 644 "${SONAR_USER_HOME}/cacerts"
+    - |
+      if [ -f "$REDHAT_ROOT_CA" ]; then
+        $SCANNER_JAVA_HOME/bin/keytool -import -trustcacerts -keystore "${SONAR_USER_HOME}/cacerts" -storepass changeit -noprompt -alias redhat-it-root -file "$REDHAT_ROOT_CA"
+      fi
+  script:
+    - |
+      # 1. Calculate changed files safely
+      if [ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]; then
+        # Check if there is a previous commit to compare to
+        if git rev-parse HEAD~1 >/dev/null 2>&1; then
+          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD | grep '\.py$' | paste -sd "," -)
+        else
+          echo "First commit or no history; scanning all files."
+          CHANGED_FILES=""
+        fi
+      else
+        # On feature branches, compare against origin/main
+        git fetch origin main
+        CHANGED_FILES=$(git diff --name-only origin/main...HEAD | grep '\.py$' | paste -sd "," -)
+      fi
+
+      echo "Files to analyze: ${CHANGED_FILES:-'All files (default)'}"
+
+      INCLUSION_PARAM=""
+      if [ -n "$CHANGED_FILES" ]; then
+        INCLUSION_PARAM="-Dsonar.inclusions=$CHANGED_FILES"
+      fi
+
+      # 2. Use 6GB Heap to stay under the 8GB Runner limit
+      export SONAR_SCANNER_OPTS="-Xmx6g -Djavax.net.ssl.trustStore=${SONAR_USER_HOME}/cacerts -Djavax.net.ssl.trustStorePassword=changeit -Djava.io.tmpdir=${SONAR_USER_HOME}/_tmp"
+
+      sonar-scanner \
+        -Dsonar.host.url="${SONAR_HOST_URL}" \
+        -Dsonar.token="${SONAR_TOKEN}" \
+        -Dsonar.projectKey="ccs-ai_content-editorial-assistant_ed819014-2450-4f3a-baea-571408e42aaa" \
+        -Dsonar.scanner.skipJreProvisioning=true \
+        -Dsonar.working.directory="${SONAR_USER_HOME}/.work" \
+        -Dsonar.userHome="${SONAR_USER_HOME}" \
+        -Dsonar.python.enableTypeHierarchy=false \
+        -Dsonar.python.ignoreTypeShed=true \
+        -Dsonar.scm.disabled=true \
+        $INCLUSION_PARAM
+  tags:
+    - itup-alm-x86
+  allow_failure: true
+# Static Application Security Testing (SAST) - Bandit/Semgrep
+sast-scan:
+  stage: test
+  image: ${PYTHON_IMAGE}
+  before_script:
+    - pip install --quiet bandit semgrep
+    - mkdir -p ${SECURITY_REPORTS_DIR}
+  script:
+    - echo "Running Static Application Security Testing..."
+    # Bandit - Python security linter
+    - bandit -r . -f json -o ${SECURITY_REPORTS_DIR}/bandit_report.json --exclude './venv,./tests,./docs,./.cache' || true
+    - bandit -r . -f txt --exclude './venv,./tests,./docs,./.cache' || true
+    # Semgrep - Multi-language SAST
+    - semgrep --config=auto --json --output=${SECURITY_REPORTS_DIR}/semgrep_report.json . || true
+    - echo "SAST scan completed"
+  artifacts:
+    expire_in: 90 days
+    paths:
+      - ${SECURITY_REPORTS_DIR}/
+    reports:
+      sast: ${SECURITY_REPORTS_DIR}/bandit_report.json
+    when: always
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $SCHEDULED_JOB == "security_scan"
+    - changes:
+        - "**/*.py"
+  tags:
+    - itup-alm-x86
+  allow_failure: false
+# Secret detection scan
+secret-detection:
+  stage: test
+  image: ${PYTHON_IMAGE}
+  before_script:
+    - pip install --quiet detect-secrets trufflehog
+    - mkdir -p ${SECURITY_REPORTS_DIR}
+  script:
+    - echo "Scanning for exposed secrets..."
+    # detect-secrets scan
+    - detect-secrets scan --all-files --exclude-files '\.lock$|\.pkl$|venv/|\.cache/' > ${SECURITY_REPORTS_DIR}/detect_secrets_report.json || true
+    - echo "Secret detection completed"
+  artifacts:
+    expire_in: 90 days
+    paths:
+      - ${SECURITY_REPORTS_DIR}/
+    when: always
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  tags:
+    - itup-alm-x86
+  allow_failure: true
+# Filesystem vulnerability scanning
+container-scan:
+  stage: test
+  image:
+    name: ${TRIVY_IMAGE}
+    entrypoint: [""]
+  variables:
+    TRIVY_NO_PROGRESS: "true"
+    TRIVY_CACHE_DIR: ".trivycache/"
+  before_script:
+    - mkdir -p ${SECURITY_REPORTS_DIR}
+  script:
+    - echo "Scanning project filesystem for vulnerabilities..."
+    # Scan filesystem for vulnerabilities
+    - trivy fs --format json --output ${SECURITY_REPORTS_DIR}/trivy_fs_report.json --scanners vuln,secret,misconfig . || true
+    - trivy fs --scanners vuln . || true
+    - echo "Filesystem scan completed"
+  artifacts:
+    expire_in: 90 days
+    paths:
+      - ${SECURITY_REPORTS_DIR}/
+    reports:
+      container_scanning: ${SECURITY_REPORTS_DIR}/trivy_fs_report.json
+    when: always
+  cache:
+    paths:
+      - .trivycache/
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $SCHEDULED_JOB == "security_scan"
+    - changes:
+        - requirements.txt
+        - pyproject.toml
+  tags:
+    - itup-alm-x86
+  allow_failure: true
+# License compliance check
+license-scan:
+  stage: test
+  image: ${PYTHON_IMAGE}
+  before_script:
+    - pip install --quiet pip-licenses
+    - mkdir -p ${SECURITY_REPORTS_DIR}
+  script:
+    - echo "Checking dependency licenses..."
+    - pip install -r requirements.txt --quiet
+    - pip-licenses --format=json --output-file=${SECURITY_REPORTS_DIR}/licenses_report.json || true
+    - pip-licenses --format=markdown --output-file=${SECURITY_REPORTS_DIR}/licenses_report.md || true
+    - pip-licenses
+    - echo "License scan completed"
+  artifacts:
+    expire_in: 90 days
+    paths:
+      - ${SECURITY_REPORTS_DIR}/
+    when: always
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $SCHEDULED_JOB == "security_scan"
+  tags:
+    - itup-alm-x86
+  allow_failure: true
+# Security summary report
+security-summary:
+  stage: deploy-preview
+  image: ${PYTHON_IMAGE}
+  needs:
+    - job: dependency-scan
+      optional: true
+    - job: sast-scan
+      optional: true
+    - job: secret-detection
+      optional: true
+    - job: container-scan
+      optional: true
+    - job: license-scan
+      optional: true
+  script:
+    - echo "Generating Security Summary Report..."
+    - |
+      echo "# Security Scan Summary" > ${SECURITY_REPORTS_DIR}/SECURITY_SUMMARY.md
+      echo "Date: $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> ${SECURITY_REPORTS_DIR}/SECURITY_SUMMARY.md
+      echo "Branch: ${CI_COMMIT_BRANCH}" >> ${SECURITY_REPORTS_DIR}/SECURITY_SUMMARY.md
+      echo "Commit: ${CI_COMMIT_SHA}" >> ${SECURITY_REPORTS_DIR}/SECURITY_SUMMARY.md
+      echo "" >> ${SECURITY_REPORTS_DIR}/SECURITY_SUMMARY.md
+      echo "## Scan Results" >> ${SECURITY_REPORTS_DIR}/SECURITY_SUMMARY.md
+      echo "| Scanner | Status |" >> ${SECURITY_REPORTS_DIR}/SECURITY_SUMMARY.md
+      echo "|---------|--------|" >> ${SECURITY_REPORTS_DIR}/SECURITY_SUMMARY.md
+      echo "| Dependency Scan (pip-audit) | $(test -f ${SECURITY_REPORTS_DIR}/pip_audit_report.json && echo 'Complete' || echo 'Not Run') |" >> ${SECURITY_REPORTS_DIR}/SECURITY_SUMMARY.md
+      echo "| SAST (Bandit) | $(test -f ${SECURITY_REPORTS_DIR}/bandit_report.json && echo 'Complete' || echo 'Not Run') |" >> ${SECURITY_REPORTS_DIR}/SECURITY_SUMMARY.md
+      echo "| Secret Detection | $(test -f ${SECURITY_REPORTS_DIR}/detect_secrets_report.json && echo 'Complete' || echo 'Not Run') |" >> ${SECURITY_REPORTS_DIR}/SECURITY_SUMMARY.md
+      echo "| Container Scan (Trivy) | $(test -f ${SECURITY_REPORTS_DIR}/trivy_fs_report.json && echo 'Complete' || echo 'Not Run') |" >> ${SECURITY_REPORTS_DIR}/SECURITY_SUMMARY.md
+      echo "| License Compliance | $(test -f ${SECURITY_REPORTS_DIR}/licenses_report.json && echo 'Complete' || echo 'Not Run') |" >> ${SECURITY_REPORTS_DIR}/SECURITY_SUMMARY.md
+      echo "" >> ${SECURITY_REPORTS_DIR}/SECURITY_SUMMARY.md
+      echo "## Remediation Timeline (per InfoSec Guidelines)" >> ${SECURITY_REPORTS_DIR}/SECURITY_SUMMARY.md
+      echo "- Catastrophic: 48 hours" >> ${SECURITY_REPORTS_DIR}/SECURITY_SUMMARY.md
+      echo "- Critical: 14 days" >> ${SECURITY_REPORTS_DIR}/SECURITY_SUMMARY.md
+      echo "- Important: 30 days" >> ${SECURITY_REPORTS_DIR}/SECURITY_SUMMARY.md
+      echo "- Medium: 60 days" >> ${SECURITY_REPORTS_DIR}/SECURITY_SUMMARY.md
+      echo "- Low: 90 days" >> ${SECURITY_REPORTS_DIR}/SECURITY_SUMMARY.md
+    - cat ${SECURITY_REPORTS_DIR}/SECURITY_SUMMARY.md
+    - echo "Security summary generated"
+  artifacts:
+    expire_in: 90 days
+    paths:
+      - ${SECURITY_REPORTS_DIR}/
+    when: always
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $SCHEDULED_JOB == "security_scan"
+  tags:
+    - itup-alm-x86
+  allow_failure: true

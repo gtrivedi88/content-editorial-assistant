@@ -1,0 +1,155 @@
+/* ================================================================
+   CEA Suggestions — Suggestion panel with diff highlights
+   ================================================================ */
+
+.cea-suggestion-panel {
+  background: var(--pf-v5-global--BackgroundColor--100, #fff);
+  border: 1px solid var(--pf-v5-global--BorderColor--100, #d2d2d2);
+  border-radius: 8px;
+  box-shadow: var(--cea-shadow-md);
+  margin: 8px 0;
+  overflow: hidden;
+  transition: max-height var(--cea-transition-speed) var(--cea-transition-fn);
+}
+
+.cea-suggestion-panel__header {
+  padding: 10px 16px;
+  background: var(--pf-v5-global--BackgroundColor--200, #f0f0f0);
+  border-bottom: 1px solid var(--pf-v5-global--BorderColor--100, #d2d2d2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: var(--pf-v5-global--FontWeight--bold, 700);
+  font-size: var(--pf-v5-global--FontSize--sm, 0.875rem);
+  color: var(--pf-v5-global--Color--100, #151515);
+}
+
+.cea-suggestion-panel__body {
+  padding: 12px 16px;
+}
+
+/* Diff highlight colors */
+.cea-suggestion-original {
+  background: var(--pf-v5-global--palette--red-50, #faeae8);
+  border-left: 3px solid var(--pf-v5-global--danger-color--100, #c9190b);
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  font-size: var(--pf-v5-global--FontSize--sm, 0.875rem);
+  line-height: 1.6;
+  color: var(--pf-v5-global--Color--100, #151515);
+}
+
+.cea-suggestion-original__label {
+  display: block;
+  font-weight: var(--pf-v5-global--FontWeight--bold, 700);
+  font-size: var(--pf-v5-global--FontSize--xs, 0.75rem);
+  color: var(--pf-v5-global--danger-color--100, #c9190b);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cea-suggestion-rewrite {
+  background: var(--pf-v5-global--palette--green-50, #e9f5e8);
+  border-left: 3px solid var(--pf-v5-global--success-color--100, #3e8635);
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin-bottom: 12px;
+  font-size: var(--pf-v5-global--FontSize--sm, 0.875rem);
+  line-height: 1.6;
+  color: var(--pf-v5-global--Color--100, #151515);
+}
+
+.cea-suggestion-rewrite__label {
+  display: block;
+  font-weight: var(--pf-v5-global--FontWeight--bold, 700);
+  font-size: var(--pf-v5-global--FontSize--xs, 0.75rem);
+  color: var(--pf-v5-global--success-color--100, #3e8635);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cea-suggestion-panel__actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.cea-suggestion-apply-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: var(--pf-v5-global--primary-color--100, #06c);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: var(--pf-v5-global--FontSize--sm, 0.875rem);
+  font-weight: var(--pf-v5-global--FontWeight--bold, 700);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.cea-suggestion-apply-btn:hover {
+  background: var(--pf-v5-global--primary-color--200, #004080);
+}
+
+.cea-suggestion-apply-btn:focus-visible {
+  outline: 2px solid var(--pf-v5-global--primary-color--100, #06c);
+  outline-offset: 2px;
+}
+
+.cea-suggestion-apply-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Loading spinner */
+.cea-suggestion-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  gap: 10px;
+  color: var(--pf-v5-global--Color--200, #6a6e73);
+  font-size: var(--pf-v5-global--FontSize--sm, 0.875rem);
+}
+
+.cea-suggestion-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--pf-v5-global--BorderColor--100, #d2d2d2);
+  border-top-color: var(--pf-v5-global--primary-color--100, #06c);
+  border-radius: 50%;
+  animation: cea-spin 0.8s linear infinite;
+}
+
+@keyframes cea-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Error state */
+.cea-suggestion-error {
+  padding: 12px 16px;
+  color: var(--pf-v5-global--danger-color--100, #c9190b);
+  font-size: var(--pf-v5-global--FontSize--sm, 0.875rem);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .cea-suggestion-panel {
+    transition: none;
+  }
+
+  .cea-suggestion-spinner {
+    animation: none;
+  }
+}

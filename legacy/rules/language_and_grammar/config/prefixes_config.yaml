@@ -1,0 +1,121 @@
+# Prefixes Rule Configuration
+# IBM Style Guide (Page 108): Close prefixes without hyphens unless exceptions apply.
+#
+# HOW TO MAINTAIN:
+# - Add established technical terms that should KEEP their hyphen below
+# - No code changes needed — just edit this file and restart.
+
+# Standard technical terms that correctly keep their hyphen.
+# These are industry-established compounds where removing the hyphen
+# would be incorrect or change meaning.
+standard_hyphenated_terms:
+  # in- prefix compounds
+  - in-memory
+  - in-line
+  - in-place
+  - in-process
+  - in-band
+  - in-flight
+  - in-house
+  - in-depth
+  - in-network
+  - in-service
+  - in-stream
+  - in-tree
+  - in-cluster
+  - in-scope
+  # out- prefix compounds
+  - out-of-tree
+  - out-of-band
+  - out-of-scope
+  - out-of-cluster
+  # off/on prefix compounds
+  - off-heap
+  - off-cluster
+  - off-site
+  - off-premises
+  - on-premises
+  - on-prem
+  - on-site
+  - on-disk
+  - on-demand
+  # co- prefix compounds
+  - co-location
+  - co-processor
+  - co-author
+  - co-exist
+  # re- prefix compounds
+  - re-entry
+  - re-create
+  - re-examine
+  - re-emerge
+  - re-elect
+  - re-enter
+  - re-establish
+  - re-evaluate
+  - re-use
+  # non- prefix compounds
+  - non-blocking
+  - non-root
+  - non-production
+  - non-trivial
+  - non-zero
+  - non-null
+  - non-empty
+  - non-standard
+  - non-functional
+  - non-deterministic
+  - non-repudiation
+  - non-volatile
+  # multi- prefix compounds
+  - multi-tenant
+  - multi-cloud
+  - multi-region
+  - multi-core
+  - multi-cluster
+  - multi-node
+  - multi-user
+  - multi-site
+  - multi-factor
+  - multi-threaded
+  - multi-modal
+  - multi-arch
+  # sub- prefix compounds
+  - sub-directory
+  - sub-command
+  - sub-resource
+  - sub-domain
+  # inter- prefix compounds
+  - inter-process
+  - inter-node
+  - inter-cluster
+  - inter-service
+  # pre- prefix compounds
+  - pre-built
+  - pre-configured
+  - pre-defined
+  - pre-existing
+  - pre-release
+  - pre-production
+  - pre-commit
+  # post- prefix compounds
+  - post-mortem
+  - post-deployment
+  - post-installation
+  # read/write compounds
+  - read-only
+  - write-only
+  - read-write
+  # cross- prefix compounds
+  - cross-platform
+  - cross-region
+  - cross-cluster
+  - cross-site
+  - cross-origin
+  - cross-reference
+  # anti- prefix compounds
+  - anti-pattern
+  - anti-affinity
+  # over/under prefix compounds
+  - over-provisioned
+  - under-provisioned

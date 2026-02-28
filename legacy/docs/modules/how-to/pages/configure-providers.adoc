@@ -1,0 +1,546 @@
+= How to Configure AI Model Providers
+:source-highlighter: highlightjs
+
+== Overview
+
+Content Editorial Assistant supports multiple AI model providers for flexibility and choice. This guide shows you how to configure each provider.
+
+== Supported Providers
+
+[cols="1,2,2"]
+|===
+|Provider |Best For |Requirements
+
+|**Ollama**
+|Privacy-first local deployment
+|Ollama installed locally
+
+|**API Providers**
+|Cloud-based inference, no local setup
+|API key from supported provider
+
+|**LlamaStack**
+|Enterprise deployment on LightRail
+|LightRail platform access
+|===
+
+== Ollama (Local LLM Serving)
+
+=== Why Choose Ollama?
+
+* ✅ **Privacy**: Models run entirely on your machine
+* ✅ **No API costs**: Free after initial setup
+* ✅ **Fast**: No network latency
+* ✅ **Offline**: Works without internet
+
+=== Installation
+
+**Linux**:
+[source,bash]
+----
+curl -fsSL https://ollama.com/install.sh | sh
+----
+
+**macOS**:
+[source,bash]
+----
+# Download from https://ollama.com/download/mac
+# Or with Homebrew:
+brew install ollama
+----
+
+**Windows**:
+Download installer from https://ollama.com/download/windows
+
+=== Pull Models
+
+[source,bash]
+----
+# Recommended: llama3:8b (superior quality)
+ollama pull llama3:8b
+
+# Alternative: llama3.2:3b (faster, smaller)
+ollama pull llama3.2:3b
+
+# List available models
+ollama list
+----
+
+=== Configuration
+
+Create `.env` file:
+
+[source,bash]
+----
+MODEL_PROVIDER=ollama
+BASE_URL=http://localhost:11434
+MODEL_ID=llama3:8b
+TIMEOUT=60
+MODEL_TEMPERATURE=0.4
+MODEL_MAX_TOKENS=3072
+----
+
+=== Start Ollama Server
+
+[source,bash]
+----
+# Start server
+ollama serve
+
+# Verify it's running
+curl http://localhost:11434/api/tags
+----
+
+=== Testing
+
+[source,bash]
+----
+# Test from command line
+ollama run llama3:8b "Rewrite this text to be clearer: The system was configured."
+
+# Test from Python
+python -c "from models import ModelManager; print(ModelManager().get_status())"
+----
+
+== API Providers (Cloud-based)
+
+=== Supported API Providers
+
+==== Groq (Recommended for API)
+
+**Why Groq?**
+* Fastest inference speed
+* Free tier available
+* Llama 3 70B model access
+
+**Setup**:
+
+1. Get API key: https://console.groq.com/keys
+2. Configure:
+
+[source,bash]
+----
+MODEL_PROVIDER=api
+BASE_URL=https://api.groq.com/openai/v1
+MODEL_ID=llama3-70b-8192
+ACCESS_TOKEN=gsk_your_api_key_here
+TIMEOUT=60
+----
+
+==== HuggingFace Inference API
+
+**Why HuggingFace?**
+* Wide model selection
+* Free tier available
+* Community models
+
+**Setup**:
+
+1. Get API key: https://huggingface.co/settings/tokens
+2. Configure:
+
+[source,bash]
+----
+MODEL_PROVIDER=api
+BASE_URL=https://api-inference.huggingface.co/models
+MODEL_ID=meta-llama/Llama-3-8b-hf
+ACCESS_TOKEN=hf_your_api_key_here
+TIMEOUT=120
+----
+
+==== OpenAI
+
+**Why OpenAI?**
+* High-quality models (GPT-4)
+* Reliable API
+* Advanced features
+
+**Setup**:
+
+1. Get API key: https://platform.openai.com/api-keys
+2. Configure:
+
+[source,bash]
+----
+MODEL_PROVIDER=api
+BASE_URL=https://api.openai.com/v1
+MODEL_ID=gpt-4
+ACCESS_TOKEN=sk_your_api_key_here
+TIMEOUT=60
+----
+
+==== Custom OpenAI-Compatible APIs
+
+Any OpenAI-compatible API endpoint works:
+
+[source,bash]
+----
+MODEL_PROVIDER=api
+BASE_URL=https://your-custom-api.com/v1
+MODEL_ID=your-model-name
+ACCESS_TOKEN=your_api_key
+CERT_PATH=/path/to/certificate.pem  # Optional for self-signed certs
+TIMEOUT=60
+----
+
+=== API Provider Configuration Reference
+
+[cols="2,1,3"]
+|===
+|Variable |Required |Description
+
+|`MODEL_PROVIDER`
+|✅ Yes
+|Set to `api`
+
+|`BASE_URL`
+|✅ Yes
+|API endpoint URL
+
+|`MODEL_ID`
+|✅ Yes
+|Model identifier
+
+|`ACCESS_TOKEN`
+|✅ Yes
+|API authentication key
+
+|`CERT_PATH`
+|⚠️ Optional
+|Certificate path for custom APIs
+
+|`TIMEOUT`
+|⚠️ Optional
+|Request timeout (default: 60s)
+|===
+
+=== Testing API Connection
+
+[source,bash]
+----
+# Test API connectivity
+curl -H "Authorization: Bearer $ACCESS_TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{"model": "'"$MODEL_ID"'", "messages": [{"role": "user", "content": "Hello"}]}' \
+     "$BASE_URL/chat/completions"
+
+# Test from Python
+python -m models.test_models
+----
+
+== LlamaStack (LightRail Platform)
+
+=== Overview
+
+LlamaStack provides enterprise-grade AI model serving on Red Hat's LightRail platform.
+
+=== Why LlamaStack?
+
+* ✅ **Enterprise security**: SOC 2 compliant
+* ✅ **Managed infrastructure**: No server management
+* ✅ **Integrated monitoring**: Built-in observability
+* ✅ **Scalable**: Auto-scaling based on load
+
+=== Prerequisites
+
+* Access to LightRail platform
+* Model deployed on LlamaStack
+* Model ID assigned by platform team
+
+=== Configuration
+
+[source,bash]
+----
+MODEL_PROVIDER=llamastack
+CEA_MODEL_ID=style_analyzer_model  # Your model ID
+----
+
+**Note**: LlamaStack configuration is simplified because authentication and endpoints are managed by the platform.
+
+=== LlamaStack Configuration File
+
+Additional settings in `llamastack/config.yaml`:
+
+[source,yaml]
+----
+model_id: style_analyzer_model
+provider: lightrail
+# Additional platform-specific settings
+----
+
+=== Integration
+
+The application automatically integrates with LlamaStack when deployed to LightRail:
+
+[source,python]
+----
+# In main.py
+from llama_stack_client import LlamaStackClient
+
+# Setup LlamaStack client
+setup_llama_stack_client()
+
+# Client is automatically injected into app context
+if llama_stack_client:
+    app.llama_stack_client = llama_stack_client
+----
+
+=== Testing
+
+[source,bash]
+----
+# Verify LlamaStack connectivity
+python -c "from models import ModelManager; print(ModelManager().health_check())"
+----
+
+== Switching Between Providers
+
+=== Runtime Provider Switch
+
+You can switch providers programmatically:
+
+[source,python]
+----
+from models import ModelManager
+
+manager = ModelManager()
+
+# Switch to Ollama
+manager.switch_provider('ollama', {
+    'base_url': 'http://localhost:11434',
+    'model': 'llama3:8b'
+})
+
+# Switch to API provider
+manager.switch_provider('api', {
+    'base_url': 'https://api.groq.com/openai/v1',
+    'model': 'llama3-70b-8192',
+    'api_key': 'your-key-here'
+})
+----
+
+=== Environment-Based Selection
+
+Use different `.env` files for different environments:
+
+[source,bash]
+----
+# .env.development (local Ollama)
+MODEL_PROVIDER=ollama
+MODEL_ID=llama3:8b
+
+# .env.staging (Groq API)
+MODEL_PROVIDER=api
+BASE_URL=https://api.groq.com/openai/v1
+MODEL_ID=llama3-70b-8192
+
+# .env.production (LlamaStack)
+MODEL_PROVIDER=llamastack
+CEA_MODEL_ID=style_analyzer_model
+----
+
+Load appropriate file:
+
+[source,bash]
+----
+# Development
+ln -sf .env.development .env
+
+# Staging
+ln -sf .env.staging .env
+
+# Production
+ln -sf .env.production .env
+----
+
+== Model Parameters Configuration
+
+=== Temperature
+
+Controls randomness (0.0 = deterministic, 1.0 = creative):
+
+[source,bash]
+----
+MODEL_TEMPERATURE=0.4  # Recommended for technical writing
+----
+
+* **0.1-0.3**: Very focused, minimal creativity
+* **0.4-0.6**: Balanced (recommended)
+* **0.7-0.9**: More creative, less predictable
+
+=== Max Tokens
+
+Maximum generation length:
+
+[source,bash]
+----
+MODEL_MAX_TOKENS=3072  # Default, suitable for most content
+----
+
+=== Top-P Sampling
+
+Nucleus sampling parameter (0.0-1.0):
+
+[source,bash]
+----
+MODEL_TOP_P=0.7  # Recommended
+----
+
+=== Top-K Sampling
+
+Limits to top K tokens:
+
+[source,bash]
+----
+MODEL_TOP_K=20  # Recommended
+----
+
+== Troubleshooting
+
+=== Ollama Connection Failed
+
+**Error**: `Connection refused` to `localhost:11434`
+
+**Solutions**:
+
+. Verify Ollama is running:
++
+[source,bash]
+----
+ps aux | grep ollama
+curl http://localhost:11434/api/tags
+----
+
+. Start Ollama server:
++
+[source,bash]
+----
+ollama serve
+----
+
+. Check firewall rules
+
+=== API Authentication Failed
+
+**Error**: `401 Unauthorized`
+
+**Solutions**:
+
+. Verify API key:
++
+[source,bash]
+----
+echo $ACCESS_TOKEN
+----
+
+. Check key permissions in provider dashboard
+
+. Regenerate key if expired
+
+=== Model Not Found
+
+**Error**: `Model 'xyz' not found`
+
+**Solutions**:
+
+. List available models:
++
+[source,bash]
+----
+# Ollama
+ollama list
+
+# API providers
+curl -H "Authorization: Bearer $ACCESS_TOKEN" $BASE_URL/models
+----
+
+. Pull/select correct model
+
+. Check MODEL_ID spelling
+
+=== Timeout Errors
+
+**Error**: Request timeout after 60s
+
+**Solutions**:
+
+. Increase timeout:
++
+[source,bash]
+----
+TIMEOUT=120
+----
+
+. Use faster model
+
+. Reduce MAX_TOKENS
+
+== Performance Optimization
+
+=== Model Selection Guide
+
+[cols="1,2,2,1"]
+|===
+|Model |Speed |Quality |Size
+
+|`llama3.2:1b`
+|⚡⚡⚡ Very Fast
+|⭐⭐ Basic
+|1.3GB
+
+|`llama3.2:3b`
+|⚡⚡ Fast
+|⭐⭐⭐ Good
+|2GB
+
+|`llama3:8b`
+|⚡ Moderate
+|⭐⭐⭐⭐ Excellent
+|4.7GB
+
+|`llama3-70b-8192` (API)
+|⚡⚡⚡ Fast (cloud)
+|⭐⭐⭐⭐⭐ Superior
+|Cloud
+|===
+
+=== Caching Recommendations
+
+Enable model caching for faster responses:
+
+[source,bash]
+----
+# Ollama keeps models in memory
+# API providers cache at their end
+# Application caches model connections
+----
+
+=== Resource Requirements
+
+**Ollama Local Deployment**:
+
+* llama3:8b: 8GB RAM minimum
+* llama3.2:3b: 4GB RAM minimum
+* GPU: Optional but recommended
+
+**API Providers**:
+
+* No local resources needed
+* Network bandwidth important
+
+== Best Practices
+
+1. **Use Ollama for development**: Fast iteration, no API costs
+2. **Use API providers for production**: Reliable, scalable
+3. **Test before switching**: Validate provider works in your environment
+4. **Monitor API usage**: Track costs and quotas
+5. **Set appropriate timeouts**: Balance speed vs reliability
+6. **Keep models updated**: `ollama pull <model>` regularly
+
+== See Also
+
+* xref:ROOT:environment-variables.adoc[Environment Variables Reference]
+* xref:ROOT:getting-started.adoc[Getting Started Guide]
+* xref:ROOT:deployment-guide.adoc[Deployment Guide]
+* link:../../models/README.md[Models Module Documentation]
+

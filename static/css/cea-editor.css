@@ -1,0 +1,455 @@
+/* ================================================================
+   CEA Editor — toolbar, contenteditable, underlines, dropzone
+   Matches prototype index.html exactly.
+   ================================================================ */
+
+/* ── Toolbar ── */
+
+.cea-editor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 24px;
+  border-bottom: 1px solid var(--pf-v5-global--BorderColor--100, #e5e7eb);
+  background: var(--pf-v5-global--BackgroundColor--200, #f9fafb);
+  flex-shrink: 0;
+}
+
+.cea-toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cea-toolbar-separator {
+  width: 1px;
+  height: 24px;
+  background: var(--pf-v5-global--BorderColor--100, #e5e7eb);
+  margin: 0 4px;
+}
+
+.cea-toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--pf-v5-global--BorderColor--100, #e5e7eb);
+  border-radius: 6px;
+  background: var(--pf-v5-global--BackgroundColor--100, #fff);
+  color: var(--pf-v5-global--Color--100);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: var(--cea-transition-speed, 0.25s) var(--cea-transition-fn, ease);
+  line-height: 1.4;
+}
+
+.cea-toolbar-btn:hover {
+  border-color: var(--pf-v5-global--primary-color--100);
+  color: var(--pf-v5-global--primary-color--100);
+}
+
+.cea-toolbar-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cea-toolbar-btn:disabled:hover {
+  border-color: var(--pf-v5-global--BorderColor--100, #e5e7eb);
+  color: var(--pf-v5-global--Color--100);
+}
+
+.cea-toolbar-btn.primary {
+  background: var(--pf-v5-global--primary-color--100);
+  color: #fff;
+  border-color: var(--pf-v5-global--primary-color--100);
+  font-weight: 600;
+}
+
+.cea-toolbar-btn.primary:hover {
+  background: var(--pf-v5-global--primary-color--200, #004080);
+}
+
+.cea-toolbar-btn.primary:disabled {
+  opacity: 0.5;
+}
+
+.cea-toolbar-btn.primary:disabled:hover {
+  background: var(--pf-v5-global--primary-color--100);
+}
+
+.cea-toolbar-meta {
+  font-size: 12px;
+  color: var(--pf-v5-global--Color--200);
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.cea-content-type-select {
+  padding: 5px 10px;
+  border: 1px solid var(--pf-v5-global--BorderColor--100, #e5e7eb);
+  border-radius: 6px;
+  background: var(--pf-v5-global--BackgroundColor--100, #fff);
+  color: var(--pf-v5-global--Color--100);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* ── Editor Area ── */
+
+.cea-editor-area {
+  flex: 1;
+  overflow-y: auto;
+  position: relative;
+}
+
+.cea-editor-wrapper {
+  display: flex;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 24px;
+  min-height: 100%;
+}
+
+.cea-editor-content {
+  flex: 1;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--pf-v5-global--Color--100);
+  outline: none;
+  min-height: 400px;
+}
+
+/* Markup mode: monospace display for raw AsciiDoc/Markdown/DITA */
+.cea-editor-content--markup {
+  font-family: 'Red Hat Mono', 'Liberation Mono', 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  color: var(--pf-v5-global--Color--100);
+  background: var(--pf-v5-global--BackgroundColor--200, #f5f5f5);
+  padding: 16px;
+  border-radius: 6px;
+}
+
+/* Placeholder via ::before when empty */
+.cea-editor-content:empty::before {
+  content: attr(data-placeholder);
+  color: var(--pf-v5-global--Color--200);
+  pointer-events: none;
+  font-style: italic;
+}
+
+/*
+ * Override PF5 CSS resets inside the editor.
+ * PF5 sets: h1-h6 { font-size: 100%; font-weight: normal }
+ *           ul { list-style: none }
+ *           all elements { padding: 0; margin: 0 }
+ * We restore proper document formatting with explicit values.
+ */
+
+.cea-editor-content h1 {
+  font-size: 2em;
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 32px 0 16px 0;
+}
+
+.cea-editor-content h2 {
+  font-size: 1.5em;
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 28px 0 12px 0;
+}
+
+.cea-editor-content h3 {
+  font-size: 1.25em;
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 24px 0 10px 0;
+}
+
+.cea-editor-content h4 {
+  font-size: 1.1em;
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 20px 0 8px 0;
+}
+
+.cea-editor-content h5,
+.cea-editor-content h6 {
+  font-size: 1em;
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 16px 0 8px 0;
+}
+
+.cea-editor-content h1:first-child,
+.cea-editor-content h2:first-child,
+.cea-editor-content h3:first-child,
+.cea-editor-content h4:first-child {
+  margin-top: 0;
+}
+
+.cea-editor-content p {
+  margin: 0 0 16px 0;
+}
+
+/* Lists — override PF5 list-style:none reset */
+.cea-editor-content ul {
+  list-style-type: disc;
+  margin: 0 0 16px 0;
+  padding-left: 28px;
+}
+
+.cea-editor-content ol {
+  list-style-type: decimal;
+  margin: 0 0 16px 0;
+  padding-left: 28px;
+}
+
+.cea-editor-content li {
+  margin-bottom: 8px;
+  display: list-item;
+}
+
+.cea-editor-content ul ul {
+  list-style-type: circle;
+  margin-top: 6px;
+  margin-bottom: 6px;
+}
+
+.cea-editor-content ul ul ul {
+  list-style-type: square;
+}
+
+.cea-editor-content ol ol {
+  list-style-type: lower-alpha;
+  margin-top: 6px;
+  margin-bottom: 6px;
+}
+
+/* Links */
+.cea-editor-content a {
+  color: var(--pf-v5-global--primary-color--100, #06c);
+  text-decoration: underline;
+}
+
+.cea-editor-content a:hover {
+  color: var(--pf-v5-global--primary-color--200, #004080);
+}
+
+/* Horizontal rule */
+.cea-editor-content hr {
+  border: none;
+  border-top: 1px solid var(--pf-v5-global--BorderColor--100, #d2d2d2);
+  margin: 24px 0;
+}
+
+/* Blockquote */
+.cea-editor-content blockquote {
+  border-left: 3px solid var(--pf-v5-global--BorderColor--100, #d2d2d2);
+  padding-left: 16px;
+  margin: 0 0 16px 0;
+  color: var(--pf-v5-global--Color--200);
+}
+
+/* Inline code */
+.cea-editor-content code {
+  font-family: 'Red Hat Mono', 'Liberation Mono', monospace;
+  font-size: 0.9em;
+  background: var(--pf-v5-global--BackgroundColor--200, #f0f0f0);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+/* Code block */
+.cea-editor-content pre {
+  font-family: 'Red Hat Mono', 'Liberation Mono', monospace;
+  font-size: 0.9em;
+  background: var(--pf-v5-global--BackgroundColor--200, #f0f0f0);
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin: 0 0 16px 0;
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+
+/* Bold / italic — override PF5 font-weight resets */
+.cea-editor-content strong,
+.cea-editor-content b {
+  font-weight: 700;
+}
+
+.cea-editor-content em,
+.cea-editor-content i:not(.fas):not(.fa-solid):not(.far):not(.fab) {
+  font-style: italic;
+}
+
+/* Tables */
+.cea-editor-content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0 0 16px 0;
+}
+
+.cea-editor-content th,
+.cea-editor-content td {
+  border: 1px solid var(--pf-v5-global--BorderColor--100, #d2d2d2);
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.cea-editor-content th {
+  font-weight: 600;
+  background: var(--pf-v5-global--BackgroundColor--200, #f0f0f0);
+}
+
+/* Definition lists */
+.cea-editor-content dl {
+  margin: 0 0 16px 0;
+}
+
+.cea-editor-content dt {
+  font-weight: 600;
+  margin-top: 8px;
+}
+
+.cea-editor-content dd {
+  margin-left: 24px;
+  margin-bottom: 4px;
+}
+
+/* ── Inline Underlines (single-color solid) ── */
+
+.cea-underline {
+  text-decoration: underline solid var(--cea-accent-underline, #0066cc) 2px;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  border-radius: 2px;
+  padding: 1px 0;
+  position: relative;
+  transition: background 0.2s;
+}
+
+/* Hover */
+.cea-underline:hover { background: rgba(0, 102, 204, 0.08); }
+
+/* Active/selected */
+.cea-underline--active { background: rgba(0, 102, 204, 0.12); }
+
+/* Resolved */
+.cea-underline--resolved {
+  text-decoration: none;
+  background: rgba(56, 132, 0, 0.08);
+}
+
+/* Dismissed */
+.cea-underline--dismissed {
+  text-decoration: none;
+  opacity: 0.5;
+}
+
+/* Filtered out */
+.cea-underline--filtered {
+  text-decoration: none;
+  background: none;
+  cursor: default;
+}
+
+/* ── Code Block Regions ── */
+
+.cea-code-region {
+  font-family: 'Red Hat Mono', 'Fira Code', monospace;
+  background-color: var(--pf-v5-global--BackgroundColor--200, #f0f0f0);
+  border-radius: 3px;
+  padding: 2px 0;
+  display: inline;
+}
+
+/* ── Upload Drop Zone ── */
+
+.cea-dropzone {
+  border: 2px dashed var(--pf-v5-global--BorderColor--100, #e5e7eb);
+  border-radius: 8px;
+  padding: 48px;
+  text-align: center;
+  transition: border-color 0.25s, background 0.25s;
+  display: none;
+}
+
+.cea-dropzone.cea-dropzone--active {
+  display: block;
+}
+
+.cea-dropzone.cea-dropzone--dragover {
+  border-color: var(--pf-v5-global--primary-color--100);
+  background: rgba(0, 102, 204, 0.04);
+}
+
+.cea-dropzone__icon {
+  font-size: 2rem;
+  color: var(--pf-v5-global--Color--200);
+  margin-bottom: 12px;
+}
+
+.cea-dropzone__text {
+  font-size: 13px;
+  color: var(--pf-v5-global--Color--200);
+}
+
+/* ── Report close button ── */
+
+.cea-report-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: var(--pf-v5-global--Color--200);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: 0.25s;
+}
+
+.cea-report-close:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--pf-v5-global--Color--100);
+}
+
+/* ── Report footer buttons ── */
+
+.cea-report-slideover__footer .cea-toolbar-btn {
+  flex: 1;
+  justify-content: center;
+}
+
+/* ── Responsive ── */
+
+@media (max-width: 992px) {
+  .cea-editor-wrapper {
+    padding: 24px 16px;
+  }
+
+  .cea-margin-labels {
+    width: 120px;
+    min-width: 120px;
+  }
+}
+
+@media (max-width: 768px) {
+  .cea-editor-wrapper {
+    padding: 16px 12px;
+  }
+
+  .cea-margin-labels {
+    display: none;
+  }
+
+  .cea-editor-toolbar {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+}

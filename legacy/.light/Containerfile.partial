@@ -1,0 +1,6 @@
+# Partial Containerfile for Lightrail build hook
+
+RUN dnf install -y ruby ruby-devel && \
+    gem install asciidoctor && \
+    dnf clean all
+

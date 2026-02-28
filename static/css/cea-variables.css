@@ -1,0 +1,34 @@
+/* ================================================================
+   CEA Custom Properties — Extending PatternFly 5 Variables
+   ================================================================ */
+
+:root {
+  /* Layout */
+  --cea-masthead-height: 56px;
+  --cea-issue-panel-width: 360px;
+  --cea-editor-max-width: 780px;
+  --cea-transition-speed: 0.25s;
+  --cea-transition-fn: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Accent colors (single-color underlines, Grammarly-style) */
+  --cea-accent-underline: #0066cc;
+  --cea-accent-underline-subtle: rgba(0, 102, 204, 0.3);
+  --cea-color-issues: #c9190b;
+  --cea-color-clean: #3e8635;
+  --cea-color-readability: var(--pf-v5-global--Color--200);
+
+  /* Score ring */
+  --cea-score-excellent: var(--pf-v5-global--success-color--100);
+  --cea-score-good: var(--pf-v5-global--primary-color--100);
+  --cea-score-fair: var(--pf-v5-global--warning-color--100);
+  --cea-score-poor: var(--pf-v5-global--danger-color--100);
+
+  /* Underline */
+  --cea-underline-thickness: 2px;
+  --cea-underline-offset: 3px;
+
+  /* Shadows */
+  --cea-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --cea-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --cea-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+}

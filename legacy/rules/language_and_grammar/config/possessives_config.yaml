@@ -1,0 +1,12 @@
+# Possessives Rule Configuration
+# IBM Style Guide (Page 106): Do not use possessive 's with abbreviations or product names.
+#
+# HOW TO MAINTAIN:
+# - Add brand names that are allowed to use possessive form below
+# - No code changes needed — just edit this file and restart.
+
+# Brand names that are exceptions to the no-possessive rule
+# These are company/brand abbreviations where possessive 's is
+# widely accepted in marketing and business writing.
+brand_exceptions:
+  - IBM

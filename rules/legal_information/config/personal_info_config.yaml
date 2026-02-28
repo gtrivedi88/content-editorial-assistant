@@ -1,0 +1,16 @@
+# Personal Information Rule Configuration
+# IBM Style Guide (Page 282): Use culturally neutral naming terminology.
+#
+# HOW TO MAINTAIN:
+# - Add new non-inclusive → inclusive term pairs below
+# - No code changes needed — just edit this file and restart.
+
+# Terms that should be replaced with culturally neutral alternatives
+# IBM Style: Use "given name" and "surname" instead of culturally specific terms
+term_map:
+  first name: given name
+  last name: surname
+  christian name: given name
+  maiden name: birth name
+  forename: given name
+  family name: surname

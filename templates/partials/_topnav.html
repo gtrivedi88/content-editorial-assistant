@@ -1,0 +1,21 @@
+<header class="cea-masthead" id="cea-masthead">
+  <a class="cea-logo" href="{{ url_for('index') }}">
+    <div class="cea-logo-icon"><i class="fas fa-pen-nib"></i></div>
+    Content Editorial Assistant
+  </a>
+  <nav>
+    <ul class="cea-nav">
+      <li><a href="{{ url_for('index') }}" {% if active_page == 'home' %}class="active"{% endif %}>Home</a></li>
+      <li><a href="{{ url_for('analyze_page') }}" {% if active_page == 'review' %}class="active"{% endif %}>Review</a></li>
+      <li><a href="{{ url_for('help_support') }}" {% if active_page == 'help' %}class="active"{% endif %}>Help &amp; Support</a></li>
+    </ul>
+  </nav>
+  <div class="cea-masthead-actions">
+    <button class="cea-masthead-btn" id="cea-theme-toggle" type="button" aria-label="Toggle dark mode">
+      <i class="fas fa-circle-half-stroke" id="cea-theme-icon"></i>
+    </button>
+    <button class="cea-masthead-btn" id="cea-health-btn" type="button" aria-label="System health">
+      <i class="fas fa-heart-pulse"></i> <span class="cea-health-label" id="cea-health-label">Healthy</span>
+    </button>
+  </div>
+</header>

@@ -1,0 +1,40 @@
+# Geographic Locations Configuration
+# IBM Style Guide (p. 225-227)
+
+# Outdated geographic terms -> preferred current terms
+# "Use current terminology. Many cities and countries have changed names."
+outdated_terms:
+  "Bombay": "Mumbai"
+  "Calcutta": "Kolkata"
+  "Madras": "Chennai"
+  "Ceylon": "Sri Lanka"
+  "Burma": "Myanmar"
+  "Siam": "Thailand"
+  "Persia": "Iran"
+  "Rhodesia": "Zimbabwe"
+  "Peking": "Beijing"
+  "Canton": "Guangzhou"
+  "Formosa": "Taiwan"
+  "Saigon": "Ho Chi Minh City"
+  "Far East": "East Asia"
+  "the Orient": "East Asia"
+  "Near East": "Middle East"
+
+# Ambiguous geographic terms to avoid (p. 225)
+# "Use neutral and unambiguous geographical terms."
+ambiguous_terms:
+  "Asian": "Specify the region, such as 'Southeast Asian' or 'East Asian'."
+  "East Coast": "Specify the location, such as 'the eastern United States'."
+  "West Coast": "Specify the location, such as 'the western United States'."
+
+# Geographic terms used incorrectly (p. 225)
+# "Do not use 'state' to refer to a province or territory.
+#  Do not use 'country' for a region that is not a country."
+misused_geo_terms:
+  "state":
+    wrong_context: ["Canada", "Australia"]
+    correct_term: "province"
+    message: "Use 'province' instead of 'state' when referring to Canadian or Australian divisions."
+  "country":
+    wrong_context: ["Africa", "Asia", "Europe"]
+    message: "Africa, Asia, and Europe are continents, not countries. Be specific."
