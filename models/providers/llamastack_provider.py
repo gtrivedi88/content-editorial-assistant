@@ -174,6 +174,9 @@ class LlamaStackProvider(BaseModelProvider):
                 "top_p": kwargs.get('top_p', 0.9),
                 "max_tokens": max_tokens,
             }
+            seed = kwargs.get('seed')
+            if seed is not None:
+                call_kwargs["seed"] = seed
             response_format = kwargs.get('response_format')
             if response_format:
                 call_kwargs["response_format"] = response_format

@@ -263,7 +263,9 @@ def build_granular_prompt(
         "list punctuation (trailing commas/semicolons).\n\n"
         "SKIP (standard technical writing): 'placeholder' text, CLI tool "
         "names inside backticks, imperative verb at start of procedure steps, "
-        "technical jargon in appropriate context.\n\n"
+        "technical jargon in appropriate context.\n"
+        "SKIP: content inside triple-backtick code blocks — "
+        "code examples are context, not prose to edit.\n\n"
         "Flag all clear violations of the style guide rules provided. "
         "When a pattern clearly violates a rule, flag it regardless of "
         "severity — the scoring engine handles severity weighting. Only skip "
@@ -333,7 +335,9 @@ def build_global_prompt(
         "on visual cues (color, position, shape).\n\n"
         "SKIP: step numbering in procedures — the rendering engine handles "
         "sequential numbering automatically. Do not flag step order, restart, "
-        "or numbering issues.\n\n"
+        "or numbering issues.\n"
+        "SKIP: content inside triple-backtick code blocks — "
+        "code examples are context, not prose to edit.\n\n"
         "Respond with a JSON array. Each object:\n"
         '{"flagged_text":"exact span","message":"explanation",'
         '"suggestions":["fix"],"severity":"low|medium|high",'

@@ -144,6 +144,28 @@ class TestAnalyzeBlock:
         result = client.analyze_block("Some text.", ["Some text."], [])
         assert result == []
 
+    @patch("app.llm.client._get_model_manager")
+    @patch("app.llm.client.Config")
+    def test_seed_passed_to_model_manager(
+        self, mock_config: MagicMock, mock_get_mm: MagicMock,
+    ) -> None:
+        """Seed from Config is forwarded to generate_text kwargs."""
+        mock_config.LLM_ENABLED = True
+        mock_config.LLM_MAX_CONCURRENT = 5
+        mock_config.MODEL_ANALYSIS_TEMPERATURE = 0.1
+        mock_config.MODEL_SEED = 42
+        mock_config.LLM_CONFIDENCE_THRESHOLD = 0.8
+
+        mock_get_mm.return_value = _make_mock_model_manager(
+            available=True, generate_return="[]",
+        )
+
+        client = LLMClient()
+        client.analyze_block("Test text.", ["Test text."], [])
+
+        call_kwargs = mock_get_mm.return_value.generate_text.call_args
+        assert call_kwargs[1].get("seed") == 42
+
 
 # ---------------------------------------------------------------------------
 # LLMClient.analyze_global

@@ -63,9 +63,9 @@ class Config:
     LLM_ENABLED: bool = os.environ.get("LLM_ENABLED", "True").lower() in ("true", "1", "yes")
     MODEL_PROVIDER: str = os.environ.get("MODEL_PROVIDER", "llamastack")
     MODEL_TEMPERATURE: float = float(os.environ.get("MODEL_TEMPERATURE", "0.4"))
-    MODEL_ANALYSIS_TEMPERATURE: float = float(os.environ.get("MODEL_ANALYSIS_TEMPERATURE", "0.1"))
+    MODEL_ANALYSIS_TEMPERATURE: float = float(os.environ.get("MODEL_ANALYSIS_TEMPERATURE", "0.0"))
     MODEL_SUGGESTION_TEMPERATURE: float = float(os.environ.get("MODEL_SUGGESTION_TEMPERATURE", "0.2"))
-    MODEL_SEED: int | None = int(os.environ["MODEL_SEED"]) if os.environ.get("MODEL_SEED") else None
+    MODEL_SEED: int | None = int(os.environ.get("MODEL_SEED", "42"))
     MODEL_MAX_TOKENS: int = int(os.environ.get("MODEL_MAX_TOKENS", "3072"))
     LLM_MAX_CONCURRENT: int = int(os.environ.get("LLM_MAX_CONCURRENT", "5"))
     LLM_GLOBAL_PASS_MAX_WORDS: int = int(os.environ.get("LLM_GLOBAL_PASS_MAX_WORDS", "5000"))

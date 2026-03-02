@@ -231,6 +231,10 @@ class APIProvider(BaseModelProvider):
         if response_format:
             payload["response_format"] = response_format
 
+        seed = params.get('seed')
+        if seed is not None:
+            payload["seed"] = seed
+
         return endpoint, payload
 
     def _get_timeout_for_use_case(self, use_case: object) -> int:

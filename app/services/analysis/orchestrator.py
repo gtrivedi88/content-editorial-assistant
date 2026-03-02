@@ -1694,7 +1694,9 @@ def _collect_block_results(
     """Collect results from completed block futures.
 
     Emits per-block ``stage_progress`` events when a progress context
-    is provided, enabling a live counter on the frontend.
+    is provided, enabling a live counter on the frontend.  Results are
+    sorted by block index before returning so that deduplication
+    ordering is deterministic regardless of thread completion timing.
 
     Args:
         futures: Mapping of Future objects to block indices.
@@ -1704,17 +1706,18 @@ def _collect_block_results(
             the done counter (incremental analysis).
 
     Returns:
-        Combined list of raw issue dicts.
+        Combined list of raw issue dicts, ordered by block index.
     """
-    all_results: list[dict[str, Any]] = []
+    indexed_results: list[tuple[int, list[dict[str, Any]]]] = []
     blocks_done = cached_offset
     for future in as_completed(futures):
         block_idx = futures[future]
+        block_issues: list[dict[str, Any]] = []
         try:
-            results = future.result()
-            all_results.extend(results)
+            block_issues = future.result()
         except (ConnectionError, TimeoutError, RuntimeError) as exc:
             logger.warning("Block %d analysis failed: %s", block_idx, exc)
+        indexed_results.append((block_idx, block_issues))
         blocks_done += 1
         if progress_context:
             _emit_event(
@@ -1728,6 +1731,11 @@ def _collect_block_results(
                     "blocks_total": progress_context["blocks_total"],
                 },
             )
+    # Sort by block index for deterministic dedup ordering
+    indexed_results.sort(key=lambda x: x[0])
+    all_results: list[dict[str, Any]] = []
+    for _, issues in indexed_results:
+        all_results.extend(issues)
     return all_results
 
 

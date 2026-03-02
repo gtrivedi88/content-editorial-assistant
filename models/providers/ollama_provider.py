@@ -123,20 +123,25 @@ class OllamaProvider(BaseModelProvider):
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": prompt})
 
+        options: Dict[str, Any] = {
+            "temperature": params['temperature'],
+            "top_p": params['top_p'],
+            "top_k": params['top_k'],
+            "num_predict": params['max_tokens'],
+            "stop": [
+                "\n\nOriginal:", "\n\nRewrite:",
+                "###", "---", "\n\n\n",
+            ],
+        }
+        seed = params.get('seed')
+        if seed is not None:
+            options["seed"] = seed
+
         payload: Dict[str, Any] = {
             "model": self.config['model'],
             "messages": messages,
             "stream": False,
-            "options": {
-                "temperature": params['temperature'],
-                "top_p": params['top_p'],
-                "top_k": params['top_k'],
-                "num_predict": params['max_tokens'],
-                "stop": [
-                    "\n\nOriginal:", "\n\nRewrite:",
-                    "###", "---", "\n\n\n",
-                ],
-            },
+            "options": options,
         }
 
         return self._send_chat_request(payload)
