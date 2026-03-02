@@ -73,19 +73,19 @@ function extractReplacement(suggestion, flaggedText) {
     if (!suggestion) return '';
 
     // Pattern: "Change 'X' to 'Y'" or "Change 'X' to 'Y'."
-    let m = suggestion.match(/[Cc]hange\s+'[^']+'\s+to\s+'([^']+)'/);
+    let m = suggestion.match(/[Cc]hange\s+['"`][^'"`]+['"`]\s+to\s+['"`]([^'"`]+)['"`]/);
     if (m) return m[1];
 
     // Pattern: "Change to 'Y'" (no source term)
-    m = suggestion.match(/[Cc]hange\s+to\s+'([^']+)'/);
+    m = suggestion.match(/[Cc]hange\s+to\s+['"`]([^'"`]+)['"`]/);
     if (m) return m[1];
 
     // Pattern: "Use 'Y' instead of 'X'"
-    m = suggestion.match(/[Uu]se\s+'([^']+)'\s+instead/);
+    m = suggestion.match(/[Uu]se\s+['"`]([^'"`]+)['"`]\s+instead/);
     if (m) return m[1];
 
     // Pattern: "Replace 'X' with 'Y'" or "Replace with 'Y'"
-    m = suggestion.match(/[Rr]eplace(?:\s+'[^']+')?\s+with\s+'([^']+)'/);
+    m = suggestion.match(/[Rr]eplace(?:\s+['"`][^'"`]+['"`])?\s+with\s+['"`]([^'"`]+)['"`]/);
     if (m) return m[1];
 
     // Detect instruction-style suggestions that are NOT direct replacements.
@@ -108,17 +108,60 @@ function extractReplacement(suggestion, flaggedText) {
  */
 function _isInstruction(suggestion, flaggedText) {
     // Instructions typically start with imperative verbs
-    if (/^(Rewrite|Consider|Rephrase|Restructure|Break|Combine|Simplify|Avoid)\b/i.test(suggestion)) {
+    if (/^(Rewrite|Consider|Rephrase|Restructure|Replace|Remove|Break|Combine|Simplify|Avoid|Insert|Add|Move|Split|Write|Do not|Ensure|Verify|Check)\b/i.test(suggestion)) {
         return true;
     }
 
     // Suggestions significantly longer than the flagged text are likely instructions
     const flaggedLen = (flaggedText || '').length;
-    if (suggestion.length > 80 && suggestion.length > flaggedLen * 3) {
+    if (suggestion.length > 50 && suggestion.length > flaggedLen * 3) {
         return true;
     }
 
     return false;
+}
+
+/**
+ * Extract a concrete replacement from an issue message string.
+ * Many rule messages embed the alternative as a quoted term
+ * (e.g., "Use 'inactive' instead of 'disabled'").
+ * Returns the extracted text with case matching, or empty string.
+ */
+function _extractFromMessage(message, flaggedText) {
+    if (!message) return '';
+
+    // "Use 'Y' instead"
+    let m = message.match(/(?<!\bnot )(?<!\bnot\s)[Uu]se\s+['"`]([^'"`]+)['"`]/);
+    if (m) return _matchCase(m[1], flaggedText);
+
+    // "Change to 'Y'" or "Change 'X' to 'Y'"
+    m = message.match(/[Cc]hange\s+(?:['"`][^'"`]+['"`]\s+)?to\s+['"`]([^'"`]+)['"`]/);
+    if (m) return _matchCase(m[1], flaggedText);
+
+    // "Replace with 'Y'" or "Replace 'X' with 'Y'"
+    m = message.match(/[Rr]eplace\s+(?:['"`][^'"`]+['"`]\s+)?with\s+['"`]([^'"`]+)['"`]/);
+    if (m) return _matchCase(m[1], flaggedText);
+
+    // "Write 'Y'"
+    m = message.match(/[Ww]rite\s+['"`]([^'"`]+)['"`]/);
+    if (m) return _matchCase(m[1], flaggedText);
+
+    // "Refer to ... as 'Y'"
+    m = message.match(/[Rr]efer\s+to\s+\S+\s+\S+\s+as\s+['"`]([^'"`]+)['"`]/);
+    if (m) return _matchCase(m[1], flaggedText);
+
+    return '';
+}
+
+/**
+ * Capitalize replacement if flagged text starts uppercase.
+ */
+function _matchCase(replacement, flaggedText) {
+    if (flaggedText && flaggedText[0] === flaggedText[0].toUpperCase()
+        && flaggedText[0] !== flaggedText[0].toLowerCase() && replacement) {
+        return replacement[0].toUpperCase() + replacement.slice(1);
+    }
+    return replacement;
 }
 
 /**
@@ -299,6 +342,49 @@ async function _autoFetchSuggestion(error, editorEl, card, container, existingAc
     if (!card.isConnected) return;
 
     if (!result || result.error) {
+        // Try fallback: use suggestions from the error response
+        if (result && result.suggestions && result.suggestions.length > 0 && !existingAcceptBtn) {
+            const fallbackSugg = result.suggestions[0];
+            const fallbackText = extractReplacement(fallbackSugg, error.flagged_text);
+            if (fallbackText) {
+                container.innerHTML = '';
+                const fallbackBtn = createElement('button', {
+                    className: 'cea-issue-btn cea-issue-btn--accept',
+                    textContent: 'Accept',
+                    'aria-label': `Accept suggestion for: ${escapeHtml(error.flagged_text || '')}`,
+                    onClick: (e) => {
+                        e.stopPropagation();
+                        replaceUnderlineText(editorEl, error.id, fallbackText);
+                        acceptSuggestion(error.id);
+                    },
+                });
+                if (actionsEl) {
+                    actionsEl.insertBefore(fallbackBtn, actionsEl.firstChild);
+                }
+                return;
+            }
+        }
+        // Fallback 2: extract replacement from issue message text
+        if (!existingAcceptBtn && error.message) {
+            const msgText = _extractFromMessage(error.message, error.flagged_text);
+            if (msgText) {
+                container.innerHTML = '';
+                const msgBtn = createElement('button', {
+                    className: 'cea-issue-btn cea-issue-btn--accept',
+                    textContent: 'Accept',
+                    'aria-label': `Accept suggestion for: ${escapeHtml(error.flagged_text || '')}`,
+                    onClick: (e) => {
+                        e.stopPropagation();
+                        replaceUnderlineText(editorEl, error.id, msgText);
+                        acceptSuggestion(error.id);
+                    },
+                });
+                if (actionsEl) {
+                    actionsEl.insertBefore(msgBtn, actionsEl.firstChild);
+                }
+                return;
+            }
+        }
         // Silently remove spinner, keep deterministic suggestion
         container.innerHTML = '';
         return;

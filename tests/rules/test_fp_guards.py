@@ -876,3 +876,93 @@ class TestSpatialReferenceCoverage:
         assert len(below_issues) >= 1, (
             "'see below' is a positional reference and should be flagged"
         )
+
+
+# ===================================================================
+# DoNotUseTermsRule — suggestion coverage (Fix 1)
+# ===================================================================
+
+
+class TestDoNotUseTermsSuggestions:
+    """Verify do_not_use_terms_rule generates suggestions for all terms."""
+
+    def test_kerberize_has_change_suggestions(self, nlp: spacy.language.Language) -> None:
+        """'kerberize' should produce Change-style suggestions with alternatives."""
+        from rules.word_usage.do_not_use_terms_rule import DoNotUseTermsRule
+
+        rule = DoNotUseTermsRule()
+        text = "You must kerberize the application."
+        doc = nlp(text)
+        sentences = [sent.text for sent in doc.sents]
+
+        result: List[Dict[str, Any]] = rule.analyze(
+            text, sentences, nlp=nlp, spacy_doc=doc,
+        )
+
+        assert len(result) >= 1, "'kerberize' should be flagged"
+        suggestions = result[0].get("suggestions", [])
+        assert len(suggestions) >= 1, "'kerberize' should have suggestions"
+        assert any("Kerberos-aware" in s for s in suggestions), (
+            f"Suggestions should include 'Kerberos-aware': {suggestions}"
+        )
+
+    def test_please_has_instruction_suggestion(self, nlp: spacy.language.Language) -> None:
+        """'please' has no alternatives and should get an instruction-style suggestion."""
+        from rules.word_usage.do_not_use_terms_rule import DoNotUseTermsRule
+
+        rule = DoNotUseTermsRule()
+        text = "Please restart the service."
+        doc = nlp(text)
+        sentences = [sent.text for sent in doc.sents]
+
+        result: List[Dict[str, Any]] = rule.analyze(
+            text, sentences, nlp=nlp, spacy_doc=doc,
+        )
+
+        assert len(result) >= 1, "'please' should be flagged"
+        suggestions = result[0].get("suggestions", [])
+        assert len(suggestions) >= 1, "'please' should have at least one suggestion"
+        assert suggestions[0].startswith("Rewrite"), (
+            f"'please' should get instruction-style suggestion: {suggestions}"
+        )
+
+    def test_resides_case_matching(self, nlp: spacy.language.Language) -> None:
+        """'Resides' at sentence start should produce case-matched suggestions."""
+        from rules.word_usage.do_not_use_terms_rule import DoNotUseTermsRule
+
+        rule = DoNotUseTermsRule()
+        text = "Resides in the default namespace."
+        doc = nlp(text)
+        sentences = [sent.text for sent in doc.sents]
+
+        result: List[Dict[str, Any]] = rule.analyze(
+            text, sentences, nlp=nlp, spacy_doc=doc,
+        )
+
+        assert len(result) >= 1, "'Resides' should be flagged"
+        suggestions = result[0].get("suggestions", [])
+        # The replacement 'is in' should be case-matched to 'Is in'
+        assert any("Is in" in s for s in suggestions), (
+            f"Case matching should capitalize 'is in' to 'Is in': {suggestions}"
+        )
+
+    def test_quiescent_has_alternatives(self, nlp: spacy.language.Language) -> None:
+        """'quiescent' should produce suggestions with alternatives."""
+        from rules.word_usage.do_not_use_terms_rule import DoNotUseTermsRule
+
+        rule = DoNotUseTermsRule()
+        text = "The system is quiescent."
+        doc = nlp(text)
+        sentences = [sent.text for sent in doc.sents]
+
+        result: List[Dict[str, Any]] = rule.analyze(
+            text, sentences, nlp=nlp, spacy_doc=doc,
+        )
+
+        assert len(result) >= 1, "'quiescent' should be flagged"
+        suggestions = result[0].get("suggestions", [])
+        assert len(suggestions) == 2, (
+            f"'quiescent' should have 2 alternatives (inactive, safe): {suggestions}"
+        )
+        assert any("inactive" in s for s in suggestions)
+        assert any("safe" in s for s in suggestions)

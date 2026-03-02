@@ -21,8 +21,10 @@ from app.models.schemas import (
     ScoreResponse,
 )
 from app.services.suggestions.engine import (
+    _extract_alternative_from_message,
     _is_instruction_suggestion,
     _is_simple_replacement,
+    _match_case_engine,
     get_suggestion,
 )
 
@@ -385,10 +387,21 @@ class TestIsInstructionSuggestion:
         "Consider rephrasing for clarity.",
         "Rephrase to avoid passive construction.",
         "Restructure the paragraph.",
+        "Replace 'the previous step' with a specific reference.",
+        "Remove bold markup: use `curl` instead of **`curl`**.",
         "Break the sentence into shorter ones.",
         "Combine these two sentences.",
         "Simplify the wording.",
         "Avoid contractions in technical writing.",
+        "Insert a space between the punctuation and the next word.",
+        "Add a comma before 'and' in a series of three or more items.",
+        "Move the punctuation mark inside the quotes.",
+        "Split into two or more shorter sentences.",
+        "Write 'backup' without the hyphen.",
+        "Do not use abbreviations in headings.",
+        "Ensure consistent capitalization throughout.",
+        "Verify that the link text is descriptive.",
+        "Check the spelling of technical terms.",
         "Make the sentence more concise.",
         "Use a gerund instead of a noun clause.",
     ])
@@ -464,3 +477,258 @@ class TestIsSimpleReplacement:
             suggestions=["option A", "option B"],
         )
         assert _is_simple_replacement(issue) is False
+
+
+class TestExtractAlternativeFromMessage:
+    """Tests for _extract_alternative_from_message() message parsing (Fix 3)."""
+
+    def test_use_pattern(self) -> None:
+        """Extracts alternative from \"Use 'X' instead\" pattern."""
+        result = _extract_alternative_from_message("Use 'inactive' instead of 'quiescent'.")
+        assert result == "inactive"
+
+    def test_change_to_pattern(self) -> None:
+        """Extracts alternative from \"Change to 'X'\" pattern."""
+        result = _extract_alternative_from_message("Change to 'is in' for better readability.")
+        assert result == "is in"
+
+    def test_replace_with_pattern(self) -> None:
+        """Extracts alternative from \"Replace with 'X'\" pattern."""
+        result = _extract_alternative_from_message("Replace with 'Kerberos-aware' in this context.")
+        assert result == "Kerberos-aware"
+
+    def test_refer_to_as_pattern(self) -> None:
+        """Extracts alternative from \"Refer to ... as 'X'\" pattern."""
+        result = _extract_alternative_from_message(
+            "Refer to such applications as 'Kerberos-enabled'."
+        )
+        assert result == "Kerberos-enabled"
+
+    def test_no_alternative_returns_none(self) -> None:
+        """Messages without quoted alternatives return None."""
+        result = _extract_alternative_from_message(
+            "Do not use 'please' in technical documentation."
+        )
+        assert result is None
+
+    def test_empty_message_returns_none(self) -> None:
+        """Empty message returns None."""
+        result = _extract_alternative_from_message("")
+        assert result is None
+
+    def test_backtick_use_pattern(self) -> None:
+        """Extracts alternative from backtick-quoted 'Use `X` instead' pattern."""
+        result = _extract_alternative_from_message(
+            "Remove bold markup: use `curl` instead of **`curl`**."
+        )
+        assert result == "curl"
+
+    def test_backtick_change_to_pattern(self) -> None:
+        """Extracts alternative from backtick-quoted 'Change to `X`' pattern."""
+        result = _extract_alternative_from_message("Change to `oc` for the CLI tool.")
+        assert result == "oc"
+
+    def test_backtick_replace_with_pattern(self) -> None:
+        """Extracts alternative from backtick-quoted 'Replace with `X`' pattern."""
+        result = _extract_alternative_from_message("Replace with `kubectl` in this context.")
+        assert result == "kubectl"
+
+
+class TestMatchCaseEngine:
+    """Tests for _match_case_engine() case matching (Fix 3)."""
+
+    def test_uppercase_flagged_capitalizes_replacement(self) -> None:
+        """Replacement is capitalized when flagged text starts uppercase."""
+        result = _match_case_engine("is in", "Resides")
+        assert result == "Is in"
+
+    def test_lowercase_flagged_preserves_replacement(self) -> None:
+        """Replacement is unchanged when flagged text starts lowercase."""
+        result = _match_case_engine("is in", "resides")
+        assert result == "is in"
+
+    def test_empty_flagged_preserves_replacement(self) -> None:
+        """Empty flagged text does not modify replacement."""
+        result = _match_case_engine("is in", "")
+        assert result == "is in"
+
+    def test_empty_replacement_returns_empty(self) -> None:
+        """Empty replacement returns empty string."""
+        result = _match_case_engine("", "Resides")
+        assert result == ""
+
+
+class TestLlmUnavailableFallback:
+    """Tests for LLM-unavailable fallback path with message extraction (Fix 3)."""
+
+    @patch("app.services.suggestions.engine.LLMClient")
+    def test_fallback_extracts_from_message(
+        self, mock_llm_cls: MagicMock, app: Flask,
+    ) -> None:
+        """When LLM is unavailable and suggestions empty, extract from message.
+
+        Issues whose messages contain quoted alternatives should get a
+        rewritten_text response even without LLM access.
+        """
+        mock_client = MagicMock()
+        mock_client.is_available.return_value = False
+        mock_llm_cls.return_value = mock_client
+
+        issue = _make_issue(
+            issue_id="issue-fallback",
+            source="deterministic",
+            suggestions=[],
+            flagged_text="quiescent",
+            message="Do not use 'quiescent'. Use 'inactive' instead.",
+        )
+        response = _make_response([issue])
+
+        with app.app_context():
+            from app.services.session.store import get_session_store
+
+            store = get_session_store()
+            session_id = store.create_session(response)
+
+            result = get_suggestion(session_id, "issue-fallback")
+
+        assert "rewritten_text" in result
+        assert result["rewritten_text"] == "inactive"
+        assert result["confidence"] == pytest.approx(0.7)
+
+    @patch("app.services.suggestions.engine.LLMClient")
+    def test_fallback_case_matches_uppercase(
+        self, mock_llm_cls: MagicMock, app: Flask,
+    ) -> None:
+        """Fallback applies case matching when flagged text is uppercase.
+
+        Extracted alternative should be capitalized to match the
+        original flagged text.
+        """
+        mock_client = MagicMock()
+        mock_client.is_available.return_value = False
+        mock_llm_cls.return_value = mock_client
+
+        issue = _make_issue(
+            issue_id="issue-case-fallback",
+            source="deterministic",
+            suggestions=[],
+            flagged_text="Resides",
+            message="Do not use 'resides'. Use 'is in' instead.",
+        )
+        response = _make_response([issue])
+
+        with app.app_context():
+            from app.services.session.store import get_session_store
+
+            store = get_session_store()
+            session_id = store.create_session(response)
+
+            result = get_suggestion(session_id, "issue-case-fallback")
+
+        assert "rewritten_text" in result
+        assert result["rewritten_text"] == "Is in"
+
+    @patch("app.services.suggestions.engine.LLMClient")
+    def test_fallback_no_alternative_returns_error(
+        self, mock_llm_cls: MagicMock, app: Flask,
+    ) -> None:
+        """When no alternative can be extracted, return error with suggestions.
+
+        Messages without quoted alternatives should fall through to the
+        standard error response.
+        """
+        mock_client = MagicMock()
+        mock_client.is_available.return_value = False
+        mock_llm_cls.return_value = mock_client
+
+        issue = _make_issue(
+            issue_id="issue-no-alt",
+            source="deterministic",
+            suggestions=[],
+            flagged_text="please",
+            message="Do not use 'please' in technical documentation.",
+        )
+        response = _make_response([issue])
+
+        with app.app_context():
+            from app.services.session.store import get_session_store
+
+            store = get_session_store()
+            session_id = store.create_session(response)
+
+            result = get_suggestion(session_id, "issue-no-alt")
+
+        assert "error" in result
+
+
+class TestLlmCallFailFallback:
+    """Tests for LLM-call-failed fallback with message extraction."""
+
+    @patch("app.services.suggestions.engine.LLMClient")
+    def test_llm_fail_extracts_from_message(
+        self, mock_llm_cls: MagicMock, app: Flask,
+    ) -> None:
+        """When LLM is available but suggest fails, extract from message.
+
+        The engine should try _extract_alternative_from_message() before
+        returning the raw error dict.
+        """
+        mock_client = MagicMock()
+        mock_client.is_available.return_value = True
+        mock_client.suggest.return_value = {"error": "LLM returned empty response"}
+        mock_llm_cls.return_value = mock_client
+
+        issue = _make_issue(
+            issue_id="issue-llm-fail",
+            source="deterministic",
+            suggestions=["Rewrite to avoid using 'quiescent'."],
+            flagged_text="quiescent",
+            message="Do not use 'quiescent'. Use 'inactive' instead.",
+        )
+        response = _make_response([issue])
+
+        with app.app_context():
+            from app.services.session.store import get_session_store
+
+            store = get_session_store()
+            session_id = store.create_session(response)
+
+            result = get_suggestion(session_id, "issue-llm-fail")
+
+        assert "rewritten_text" in result
+        assert result["rewritten_text"] == "inactive"
+        assert result["confidence"] == pytest.approx(0.7)
+
+    @patch("app.services.suggestions.engine.LLMClient")
+    def test_llm_fail_no_alternative_returns_error(
+        self, mock_llm_cls: MagicMock, app: Flask,
+    ) -> None:
+        """When LLM fails and message has no alternative, return error dict.
+
+        Messages without quoted alternatives should fall through to the
+        standard error response with suggestions list.
+        """
+        mock_client = MagicMock()
+        mock_client.is_available.return_value = True
+        mock_client.suggest.return_value = {"error": "LLM timeout"}
+        mock_llm_cls.return_value = mock_client
+
+        issue = _make_issue(
+            issue_id="issue-llm-fail-noalt",
+            source="deterministic",
+            suggestions=["Rewrite in active voice"],
+            flagged_text="was restarted",
+            message="Consider using active voice.",
+        )
+        response = _make_response([issue])
+
+        with app.app_context():
+            from app.services.session.store import get_session_store
+
+            store = get_session_store()
+            session_id = store.create_session(response)
+
+            result = get_suggestion(session_id, "issue-llm-fail-noalt")
+
+        assert "error" in result
+        assert "suggestions" in result

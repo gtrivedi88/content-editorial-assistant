@@ -14,7 +14,52 @@ from .base_word_usage_rule import BaseWordUsageRule
 _SKIP_BLOCKS = frozenset(['code_block', 'listing', 'literal', 'inline_code'])
 
 
-def _load_config() -> Dict[str, Dict[str, str]]:
+def _match_case(replacement: str, original: str) -> str:
+    """Match the case of a replacement to the original text.
+
+    If the original starts with an uppercase letter, capitalise the
+    first character of the replacement so sentence-initial terms
+    keep correct casing (e.g. ``Resides`` → ``Is in``).
+
+    Args:
+        replacement: The lowercase alternative text.
+        original: The matched text from the document.
+
+    Returns:
+        Case-adjusted replacement string.
+    """
+    if original and original[0].isupper() and replacement:
+        return replacement[0].upper() + replacement[1:]
+    return replacement
+
+
+def _build_suggestions(info: Dict[str, Any], found: str) -> List[str]:
+    """Build a suggestion list from YAML config alternatives.
+
+    Terms with an ``alternatives`` list produce ``"Change 'X' to 'Y'"``
+    suggestions that the frontend's ``extractReplacement()`` can parse
+    for immediate Accept buttons.  Terms without alternatives produce
+    an instruction-style fallback that routes to the LLM auto-fetch.
+
+    Args:
+        info: Term config dict with ``message`` and optional ``alternatives``.
+        found: The exact matched text from the document.
+
+    Returns:
+        Non-empty list of suggestion strings.
+    """
+    alternatives = info.get('alternatives', [])
+    if not isinstance(alternatives, list):
+        alternatives = []
+    if not alternatives:
+        return [f"Rewrite to avoid using '{found}'."]
+    return [
+        f"Change '{found}' to '{_match_case(alt, found)}'"
+        for alt in alternatives
+    ]
+
+
+def _load_config() -> Dict[str, Dict[str, Any]]:
     """Load do-not-use terms map from YAML config."""
     config_path = os.path.join(
         os.path.dirname(__file__), 'config', 'do_not_use_config.yaml',
@@ -27,7 +72,7 @@ def _load_config() -> Dict[str, Dict[str, str]]:
         return {}
 
 
-_TERM_MAP = _load_config()
+_TERM_MAP: Dict[str, Dict[str, Any]] = _load_config()
 
 
 class DoNotUseTermsRule(BaseWordUsageRule):
@@ -63,7 +108,7 @@ class DoNotUseTermsRule(BaseWordUsageRule):
                         sentence=sent.text,
                         sentence_index=i,
                         message=info['message'],
-                        suggestions=[],
+                        suggestions=_build_suggestions(info, found),
                         severity='high',
                         text=text,
                         context=context,

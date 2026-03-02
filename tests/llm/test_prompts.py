@@ -14,6 +14,7 @@ from app.llm.prompts import (
     _format_acronym_section,
     _format_examples_section,
     _select_examples,
+    build_global_prompt,
     build_granular_prompt,
     build_suggestion_prompt,
 )
@@ -337,3 +338,69 @@ class TestBuildSuggestionPrompt:
             {},
         )
         assert "## Examples" not in user_prompt
+
+
+# ---------------------------------------------------------------------------
+# Suggestion mandate in prompts (Fix 2)
+# ---------------------------------------------------------------------------
+
+
+class TestSuggestionMandate:
+    """Verify granular and global prompts mandate non-empty suggestions."""
+
+    def test_granular_prompt_mandates_suggestions(self) -> None:
+        """Granular prompt system message requires non-empty suggestions."""
+        system_prompt, _ = build_granular_prompt(
+            "Test text.", ["Test text."], [],
+        )
+        assert "suggestions must contain" in system_prompt, (
+            "Granular prompt should mandate non-empty suggestions"
+        )
+        assert "Do not leave" in system_prompt
+        assert "suggestions empty" in system_prompt
+
+    def test_granular_prompt_scope_constraint(self) -> None:
+        """Granular prompt includes scope constraint for suggestions."""
+        system_prompt, _ = build_granular_prompt(
+            "Test text.", ["Test text."], [],
+        )
+        assert "scoped to the flagged_text" in system_prompt, (
+            "Granular prompt should scope suggestions to flagged_text span"
+        )
+
+    def test_global_prompt_mandates_suggestions(self) -> None:
+        """Global prompt system message requires non-empty suggestions."""
+        system_prompt, _ = build_global_prompt(
+            "Test document text.", "concept", [],
+        )
+        assert "suggestions must contain" in system_prompt, (
+            "Global prompt should mandate non-empty suggestions"
+        )
+        assert "Do not leave" in system_prompt
+
+    def test_global_prompt_scope_constraint(self) -> None:
+        """Global prompt includes scope constraint for suggestions."""
+        system_prompt, _ = build_global_prompt(
+            "Test document text.", "concept", [],
+        )
+        assert "scoped to the flagged_text" in system_prompt, (
+            "Global prompt should scope suggestions to flagged_text span"
+        )
+
+    def test_granular_prompt_uses_corrected_text_format(self) -> None:
+        """Granular prompt uses 'corrected text' not 'fix' in format example."""
+        system_prompt, _ = build_granular_prompt(
+            "Test text.", ["Test text."], [],
+        )
+        assert '"corrected text"' in system_prompt, (
+            "Granular prompt should use 'corrected text' in format example"
+        )
+
+    def test_global_prompt_uses_corrected_text_format(self) -> None:
+        """Global prompt uses 'corrected text' not 'fix' in format example."""
+        system_prompt, _ = build_global_prompt(
+            "Test document text.", "concept", [],
+        )
+        assert '"corrected text"' in system_prompt, (
+            "Global prompt should use 'corrected text' in format example"
+        )

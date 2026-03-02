@@ -362,6 +362,48 @@ class TestParseSuggestionResponse:
         result = parse_suggestion_response(raw)
         assert result["confidence"] == 0.8
 
+    def test_alternate_key_suggestion(self) -> None:
+        """Accepts 'suggestion' as alternate key for rewritten_text."""
+        raw = json.dumps({
+            "suggestion": "Click the button.",
+            "explanation": "Removed 'on'.",
+            "confidence": 0.9,
+        })
+        result = parse_suggestion_response(raw)
+        assert result["rewritten_text"] == "Click the button."
+        assert "error" not in result
+
+    def test_alternate_key_rewrite(self) -> None:
+        """Accepts 'rewrite' as alternate key for rewritten_text."""
+        raw = json.dumps({
+            "rewrite": "Enter the data.",
+            "explanation": "Changed verb.",
+        })
+        result = parse_suggestion_response(raw)
+        assert result["rewritten_text"] == "Enter the data."
+        assert "error" not in result
+
+    def test_alternate_key_corrected_text(self) -> None:
+        """Accepts 'corrected_text' as alternate key for rewritten_text."""
+        raw = json.dumps({
+            "corrected_text": "The server restarts.",
+            "explanation": "Active voice.",
+            "confidence": 0.85,
+        })
+        result = parse_suggestion_response(raw)
+        assert result["rewritten_text"] == "The server restarts."
+        assert "error" not in result
+
+    def test_primary_key_preferred_over_alternate(self) -> None:
+        """When both rewritten_text and an alternate key exist, primary wins."""
+        raw = json.dumps({
+            "rewritten_text": "Primary text.",
+            "suggestion": "Alternate text.",
+            "explanation": "Test.",
+        })
+        result = parse_suggestion_response(raw)
+        assert result["rewritten_text"] == "Primary text."
+
 
 # ---------------------------------------------------------------------------
 # parse_judge_response

@@ -388,7 +388,12 @@ def _validate_suggestion(parsed: Any) -> dict:
         logger.warning("LLM suggestion response is not a dict")
         return {"error": "Invalid suggestion format"}
 
-    rewritten = parsed.get("rewritten_text")
+    rewritten = (
+        parsed.get("rewritten_text")
+        or parsed.get("suggestion")
+        or parsed.get("rewrite")
+        or parsed.get("corrected_text")
+    )
     if not rewritten:
         logger.warning("LLM suggestion missing rewritten_text")
         return {"error": "No rewritten text in suggestion"}

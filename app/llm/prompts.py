@@ -274,9 +274,14 @@ def build_granular_prompt(
         
         "Respond with a JSON array. Each object:\n"
         '{"flagged_text":"exact span","message":"explanation",'
-        '"suggestions":["fix"],"severity":"low|medium|high",'
+        '"suggestions":["corrected text"],"severity":"low|medium|high",'
         '"category":"style|grammar|punctuation|structure|audience",'
         '"sentence":"full sentence","sentence_index":0,"confidence":0.8}\n\n'
+        "IMPORTANT: suggestions must contain at least one concrete "
+        "replacement for the flagged_text. Provide the corrected version "
+        "of the flagged span that fixes the issue. Do not leave "
+        "suggestions empty. Keep suggestions scoped to the flagged_text "
+        "span only — do not rewrite surrounding text.\n\n"
         "No issues → []. Return ONLY JSON, no additional text."
     )
 
@@ -340,9 +345,14 @@ def build_global_prompt(
         "code examples are context, not prose to edit.\n\n"
         "Respond with a JSON array. Each object:\n"
         '{"flagged_text":"exact span","message":"explanation",'
-        '"suggestions":["fix"],"severity":"low|medium|high",'
+        '"suggestions":["corrected text"],"severity":"low|medium|high",'
         '"category":"style|grammar|punctuation|structure|audience",'
         '"sentence":"passage","sentence_index":0,"confidence":0.8}\n\n'
+        "IMPORTANT: suggestions must contain at least one concrete "
+        "replacement for the flagged_text. Provide the corrected version "
+        "of the flagged span that fixes the issue. Do not leave "
+        "suggestions empty. Keep suggestions scoped to the flagged_text "
+        "span only — do not rewrite surrounding text.\n\n"
         "No issues → []. Return ONLY JSON, no additional text."
     )
 

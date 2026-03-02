@@ -174,9 +174,10 @@ class LlamaStackProvider(BaseModelProvider):
                 "top_p": kwargs.get('top_p', 0.9),
                 "max_tokens": max_tokens,
             }
-            seed = kwargs.get('seed')
-            if seed is not None:
-                call_kwargs["seed"] = seed
+            # Note: 'seed' is intentionally not forwarded.  The Gemini API
+            # does not support the 'seed' parameter and rejects it with
+            # 400 "Unknown name 'seed'".  Determinism is achieved via
+            # temperature=0.0 instead.
             response_format = kwargs.get('response_format')
             if response_format:
                 call_kwargs["response_format"] = response_format

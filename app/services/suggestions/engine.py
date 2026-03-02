@@ -11,6 +11,7 @@ Usage:
 """
 
 import logging
+import re
 from typing import Optional
 
 from app.llm.client import LLMClient
@@ -107,8 +108,10 @@ def _is_simple_replacement(issue: IssueResponse) -> bool:
 
 
 _INSTRUCTION_PREFIXES = (
-    "rewrite", "consider", "rephrase", "restructure", "break",
-    "combine", "simplify", "avoid", "make the", "use a ",
+    "rewrite", "consider", "rephrase", "restructure", "replace",
+    "remove", "break", "combine", "simplify", "avoid", "insert",
+    "add", "move", "split", "write", "do not", "ensure", "verify",
+    "check", "make the", "use a ",
 )
 
 
@@ -130,6 +133,46 @@ def _is_instruction_suggestion(suggestion: str) -> bool:
         if lower.startswith(prefix):
             return True
     return False
+
+
+_CHANGE_TO_RE = re.compile(
+    r"(?:(?<!\bnot )(?<!\bnot\s)[Uu]se|[Cc]hange\s+to|[Rr]eplace\s+with|"
+    r"[Rr]efer\s+to\s+\S+\s+\S+\s+as|[Ww]rite)\s+['\"`]([^'\"`]+)['\"`]",
+)
+
+
+def _extract_alternative_from_message(message: str) -> Optional[str]:
+    """Extract a concrete alternative from an issue message.
+
+    Many rule messages embed the alternative as a quoted term
+    (e.g. ``Use 'inactive' instead``).  This function extracts the
+    first such quoted alternative.
+
+    Args:
+        message: The issue's human-readable message.
+
+    Returns:
+        The extracted alternative text, or ``None`` if not found.
+    """
+    match = _CHANGE_TO_RE.search(message)
+    if match:
+        return match.group(1)
+    return None
+
+
+def _match_case_engine(replacement: str, flagged_text: str) -> str:
+    """Capitalise replacement if the flagged text starts uppercase.
+
+    Args:
+        replacement: The extracted alternative.
+        flagged_text: The original flagged text from the issue.
+
+    Returns:
+        Case-adjusted replacement string.
+    """
+    if flagged_text and flagged_text[0].isupper() and replacement:
+        return replacement[0].upper() + replacement[1:]
+    return replacement
 
 
 def _build_deterministic_suggestion(issue: IssueResponse) -> dict:
@@ -172,9 +215,19 @@ def _request_llm_suggestion(issue: IssueResponse, response: AnalyzeResponse) -> 
 
     if not client.is_available():
         logger.info("LLM not available; returning deterministic suggestions for issue %s", issue.id)
+        suggestions = list(issue.suggestions)
+        if not suggestions:
+            extracted = _extract_alternative_from_message(issue.message)
+            if extracted:
+                adjusted = _match_case_engine(extracted, issue.flagged_text)
+                return {
+                    "rewritten_text": adjusted,
+                    "explanation": issue.message,
+                    "confidence": 0.7,
+                }
         return {
             "error": "LLM not available",
-            "suggestions": list(issue.suggestions),
+            "suggestions": suggestions,
         }
 
     context_sentences = _extract_context_sentences(issue, response)
@@ -190,6 +243,15 @@ def _request_llm_suggestion(issue: IssueResponse, response: AnalyzeResponse) -> 
 
     if "error" in result:
         logger.warning("LLM suggestion failed for issue %s: %s", issue.id, result.get("error"))
+        # Try extracting a concrete alternative from the issue message
+        extracted = _extract_alternative_from_message(issue.message)
+        if extracted:
+            adjusted = _match_case_engine(extracted, issue.flagged_text)
+            return {
+                "rewritten_text": adjusted,
+                "explanation": issue.message,
+                "confidence": 0.7,
+            }
         return {
             "error": result.get("error", "LLM request failed"),
             "suggestions": list(issue.suggestions),

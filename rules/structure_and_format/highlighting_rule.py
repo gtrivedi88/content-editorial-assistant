@@ -150,10 +150,11 @@ class HighlightingRule(BaseStructureRule):
         """
         bold_code_ranges = context.get("bold_code_ranges", [])
         for c_start, c_end, fmt, code_text in bold_code_ranges:
-            # Use code_text as flagged_text, not text[c_start:c_end].
-            # The content-tier text has backticks preserved (`curl`),
-            # and _is_technical_content() would suppress backtick-wrapped
-            # text — defeating the purpose of this check.
+            # Use the full wrapper as flagged_text (e.g., **`curl`**)
+            # so the underline covers the entire markup pattern.
+            # _is_technical_content() won't suppress this because it
+            # starts with *, not backtick. The suggestion is a direct
+            # replacement (`curl`) enabling instant Accept.
             sent_idx = 0
             sentence = text  # fallback
             for i, s in enumerate(sentences):
@@ -170,14 +171,11 @@ class HighlightingRule(BaseStructureRule):
                     f"Do not apply {fmt} formatting to inline code "
                     f"'{code_text}'. Use monospace (backtick) formatting only."
                 ),
-                suggestions=[
-                    f"Remove {fmt} markup: use `{code_text}` instead of "
-                    f"{wrapper}`{code_text}`{wrapper}.",
-                ],
+                suggestions=[f"`{code_text}`"],
                 severity='low',
                 text=text,
                 context=context,
-                flagged_text=code_text,
+                flagged_text=f"{wrapper}`{code_text}`{wrapper}",
                 span=(c_start, c_end),
             )
             if error:

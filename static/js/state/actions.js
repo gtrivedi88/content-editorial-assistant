@@ -151,6 +151,7 @@ export function selectError(errorId) {
 
 /**
  * Accept a suggestion — replace text inline.
+ * Updates qualityScore from the backend's recalculated score.
  */
 export function acceptSuggestion(errorId) {
     const { errors, resolvedErrors, filteredErrors, sessionId } = store.getState();
@@ -167,9 +168,14 @@ export function acceptSuggestion(errorId) {
         selectedErrorId: null,
     });
 
-    // Notify backend
+    // Notify backend and update score from response
     if (sessionId) {
-        acceptIssue(sessionId, errorId).catch((err) => {
+        acceptIssue(sessionId, errorId).then((result) => {
+            if (result && result.score != null) {
+                const score = typeof result.score === 'object' ? result.score.score : result.score;
+                store.setState({ qualityScore: score });
+            }
+        }).catch((err) => {
             console.error('[Actions] Accept issue notification failed:', err);
         });
     }
@@ -177,6 +183,7 @@ export function acceptSuggestion(errorId) {
 
 /**
  * Dismiss an error — remove underline and card.
+ * Updates qualityScore from the backend's recalculated score.
  */
 export function dismissError(errorId) {
     const { dismissedErrors, errors, filteredErrors, sessionId } = store.getState();
@@ -193,9 +200,14 @@ export function dismissError(errorId) {
         selectedErrorId: null,
     });
 
-    // Notify backend
+    // Notify backend and update score from response
     if (sessionId) {
-        dismissIssue(sessionId, errorId).catch((err) => {
+        dismissIssue(sessionId, errorId).then((result) => {
+            if (result && result.score != null) {
+                const score = typeof result.score === 'object' ? result.score.score : result.score;
+                store.setState({ qualityScore: score });
+            }
+        }).catch((err) => {
             console.error('[Actions] Dismiss issue notification failed:', err);
         });
     }

@@ -20,8 +20,14 @@ terms:
     message: "Do not use 'future-proof' in a statement about the benefits, characteristics, or performance of a product or service."
   "kerberize":
     message: "Do not use 'kerberize' to refer to applications or services that use Kerberos authentication. Refer to such applications as 'Kerberos-aware' or 'Kerberos-enabled', or rewrite the sentence."
+    alternatives:
+      - "Kerberos-aware"
+      - "Kerberos-enabled"
   "kerberized":
     message: "Do not use 'kerberized' to refer to applications or services that use Kerberos authentication. Refer to such applications as 'Kerberos-aware' or 'Kerberos-enabled', or rewrite the sentence."
+    alternatives:
+      - "Kerberos-aware"
+      - "Kerberos-enabled"
   "native interface":
     message: "Do not use 'native interface' to refer to the command line interface for the JBoss EAP management tool."
   "out of the box":
@@ -34,8 +40,14 @@ terms:
     message: "Do not use 'please' in technical documentation."
   "quiescent":
     message: "Do not use 'quiescent'. If a system is, or needs to be inactive, write 'inactive'. If a system is, or needs to be safe, write 'safe'."
+    alternatives:
+      - "inactive"
+      - "safe"
   "resides":
     message: "Do not use 'resides' if a simpler verb is possible."
+    alternatives:
+      - "is in"
+      - "is located in"
   "respective":
     message: "Do not use 'respective'. Rewrite to avoid using this word."
   "respectively":

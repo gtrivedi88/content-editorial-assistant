@@ -135,6 +135,18 @@ class APIProvider(BaseModelProvider):
             'Authorization': 'Bearer %s' % self.config['api_key'],
         }
 
+    def _is_gemini_api(self) -> bool:
+        """Check if the configured API endpoint is Google Gemini.
+
+        Gemini's OpenAI-compatible endpoint does not support the
+        ``seed`` parameter, so it must be excluded from payloads.
+
+        Returns:
+            True if the base_url points to generativelanguage.googleapis.com.
+        """
+        base_url = self.config.get('base_url', '')
+        return 'generativelanguage.googleapis.com' in base_url
+
     def is_available(self) -> bool:
         """Check if the API provider and model are available."""
         if not self.is_connected:
@@ -232,7 +244,7 @@ class APIProvider(BaseModelProvider):
             payload["response_format"] = response_format
 
         seed = params.get('seed')
-        if seed is not None:
+        if seed is not None and not self._is_gemini_api():
             payload["seed"] = seed
 
         return endpoint, payload
