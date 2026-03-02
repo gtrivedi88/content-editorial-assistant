@@ -1,8 +1,7 @@
 /**
- * Checking Indicator — Grammarly-style "Checking your content..." per-group checklist.
- * Shows all 11 IBM Style Guide groups sweeping from pending → active → done.
- * Stays visible throughout the entire analysis pipeline (deterministic + LLM)
- * and only hides when analysisStatus transitions to 'complete'.
+ * Checking Indicator — Real-time progress driven by Socket.IO stage_progress events.
+ * Shows all 11 IBM Style Guide groups, then AI Analysis and Global Review phases.
+ * Progress is driven by backend events, not timer-based animation.
  */
 
 import { getAllGroups, getGroupMeta } from '../shared/style-guide-groups.js';
@@ -14,6 +13,8 @@ export class CheckingIndicator {
         this._store = store;
         this._el = null;
         this._groups = getAllGroups();
+        this._aiRow = null;
+        this._globalRow = null;
 
         store.subscribe('analysisStatus', (status) => {
             if (status === 'analyzing') {
@@ -21,6 +22,10 @@ export class CheckingIndicator {
             } else {
                 this._hide();
             }
+        });
+
+        store.subscribe('stageProgress', (data) => {
+            if (data) this._onStageProgress(data);
         });
     }
 
@@ -47,17 +52,17 @@ export class CheckingIndicator {
         header.appendChild(info);
         wrapper.appendChild(header);
 
-        // Group rows
+        // Group rows — start all as active (spinning) since deterministic runs fast
         const groupsContainer = createElement('div', { className: 'cea-checking__groups' });
         for (const groupKey of this._groups) {
             const meta = getGroupMeta(groupKey);
             const row = createElement('div', {
-                className: 'cea-checking__group cea-checking__group--pending',
+                className: 'cea-checking__group cea-checking__group--active',
                 dataset: { group: groupKey },
             });
             row.appendChild(createElement('span', {
                 className: 'cea-checking__group-icon',
-                innerHTML: '<i class="fas fa-circle" style="font-size:6px"></i>',
+                innerHTML: '<i class="fas fa-spinner fa-spin"></i>',
             }));
             row.appendChild(createElement('span', { textContent: meta.label }));
             groupsContainer.appendChild(row);
@@ -65,10 +70,9 @@ export class CheckingIndicator {
         wrapper.appendChild(groupsContainer);
 
         this._el = wrapper;
+        this._aiRow = null;
+        this._globalRow = null;
         this._container.insertBefore(wrapper, this._container.firstChild);
-
-        // Start sweep animation
-        this._startSweep();
     }
 
     _hide() {
@@ -76,55 +80,58 @@ export class CheckingIndicator {
             this._el.remove();
             this._el = null;
         }
-        if (this._sweepTimer) {
-            clearTimeout(this._sweepTimer);
-            this._sweepTimer = null;
+        this._aiRow = null;
+        this._globalRow = null;
+    }
+
+    /**
+     * Handle stage_progress events from the backend.
+     * Transitions the UI through deterministic → AI Analysis → Global Review.
+     */
+    _onStageProgress(data) {
+        if (!this._el) return;
+
+        if (data.phase === 'deterministic' && data.status === 'done') {
+            this._markAllGroupsDone();
+            this._showAiPhase(data.blocks_total);
+        } else if (data.phase === 'llm_granular') {
+            if (data.status === 'started') {
+                this._markAllGroupsDone();
+                this._showAiPhase(data.blocks_total);
+            } else if (data.status === 'progress') {
+                this._updateAiProgress(data.blocks_done, data.blocks_total);
+            } else if (data.status === 'done') {
+                this._markAiDone();
+                this._showGlobalPhase();
+            }
+        } else if (data.phase === 'llm_global') {
+            if (data.status === 'started') {
+                this._markAiDone();
+                this._showGlobalPhase();
+            } else if (data.status === 'done') {
+                this._markGlobalDone();
+            }
         }
     }
 
     /**
-     * Sweep through groups with a timed animation, independent of backend progress.
-     * Each group transitions: pending → active (spinner) → done (check).
-     * After all groups complete, shows an AI analysis phase with a spinner.
+     * Mark all style guide group rows as done (checkmark).
      */
-    _startSweep() {
+    _markAllGroupsDone() {
         if (!this._el) return;
-        const rows = this._el.querySelectorAll('.cea-checking__group');
-        let idx = 0;
-
-        const next = () => {
-            if (!this._el) return;
-
-            // Mark previous as done
-            if (idx > 0 && rows[idx - 1]) {
-                rows[idx - 1].className = 'cea-checking__group cea-checking__group--done';
-                rows[idx - 1].querySelector('.cea-checking__group-icon').innerHTML =
-                    '<i class="fas fa-check"></i>';
-            }
-
-            // Mark current as active
-            if (idx < rows.length) {
-                rows[idx].className = 'cea-checking__group cea-checking__group--active';
-                rows[idx].querySelector('.cea-checking__group-icon').innerHTML =
-                    '<i class="fas fa-spinner fa-spin"></i>';
-                idx++;
-                this._sweepTimer = setTimeout(next, 350);
-            } else {
-                // All style groups done — show AI analysis phase
-                this._showAiPhase();
-            }
-        };
-
-        next();
+        const rows = this._el.querySelectorAll('.cea-checking__group[data-group]');
+        for (const row of rows) {
+            row.className = 'cea-checking__group cea-checking__group--done';
+            row.querySelector('.cea-checking__group-icon').innerHTML =
+                '<i class="fas fa-check"></i>';
+        }
     }
 
     /**
-     * Show the AI analysis phase after style checks complete.
-     * Updates the header and adds a spinner row that stays active
-     * until _hide() removes the entire indicator.
+     * Show the AI analysis phase row with block count.
      */
-    _showAiPhase() {
-        if (!this._el) return;
+    _showAiPhase(blocksTotal) {
+        if (!this._el || this._aiRow) return;
 
         const subtitle = this._el.querySelector('.cea-checking__subtitle');
         if (subtitle) {
@@ -133,6 +140,9 @@ export class CheckingIndicator {
 
         const groupsContainer = this._el.querySelector('.cea-checking__groups');
         if (groupsContainer) {
+            const label = blocksTotal
+                ? `AI-powered analysis (${blocksTotal} blocks)`
+                : 'AI-powered analysis';
             const aiRow = createElement('div', {
                 className: 'cea-checking__group cea-checking__group--active',
             });
@@ -140,8 +150,68 @@ export class CheckingIndicator {
                 className: 'cea-checking__group-icon',
                 innerHTML: '<i class="fas fa-spinner fa-spin"></i>',
             }));
-            aiRow.appendChild(createElement('span', { textContent: 'AI-powered analysis' }));
+            aiRow.appendChild(createElement('span', { textContent: label }));
             groupsContainer.appendChild(aiRow);
+            this._aiRow = aiRow;
+        }
+    }
+
+    /**
+     * Update the AI analysis row with per-block progress.
+     */
+    _updateAiProgress(blocksDone, blocksTotal) {
+        if (!this._aiRow) return;
+        const label = this._aiRow.querySelector('span:last-child');
+        if (label) {
+            label.textContent = `AI-powered analysis (${blocksDone}/${blocksTotal} blocks)`;
+        }
+    }
+
+    /**
+     * Mark the AI analysis row as done.
+     */
+    _markAiDone() {
+        if (this._aiRow) {
+            this._aiRow.className = 'cea-checking__group cea-checking__group--done';
+            this._aiRow.querySelector('.cea-checking__group-icon').innerHTML =
+                '<i class="fas fa-check"></i>';
+        }
+    }
+
+    /**
+     * Show the Global Review phase row.
+     */
+    _showGlobalPhase() {
+        if (!this._el || this._globalRow) return;
+
+        const subtitle = this._el.querySelector('.cea-checking__subtitle');
+        if (subtitle) {
+            subtitle.textContent = 'Running global review';
+        }
+
+        const groupsContainer = this._el.querySelector('.cea-checking__groups');
+        if (groupsContainer) {
+            const globalRow = createElement('div', {
+                className: 'cea-checking__group cea-checking__group--active',
+            });
+            globalRow.appendChild(createElement('span', {
+                className: 'cea-checking__group-icon',
+                innerHTML: '<i class="fas fa-spinner fa-spin"></i>',
+            }));
+            globalRow.appendChild(createElement('span', { textContent: 'Global review' }));
+            groupsContainer.appendChild(globalRow);
+            this._globalRow = globalRow;
+        }
+    }
+
+    /**
+     * Mark the Global Review row as done.
+     */
+    _markGlobalDone() {
+        if (this._globalRow) {
+            this._globalRow.className = 'cea-checking__group cea-checking__group--done';
+            this._globalRow.querySelector('.cea-checking__group-icon').innerHTML =
+                '<i class="fas fa-check"></i>';
         }
     }
 }

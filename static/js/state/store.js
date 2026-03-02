@@ -30,6 +30,7 @@ class Store {
             // Progress
             progressSteps: [],
             progressPercent: 0,
+            stageProgress: null,
 
             // Session
             sessionId: null,

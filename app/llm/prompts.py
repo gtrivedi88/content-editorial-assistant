@@ -258,15 +258,17 @@ def build_granular_prompt(
         "the reader complete the task, "
         "anthropomorphism (attributing human actions to software/"
         "systems — e.g. 'the system wants' or 'the system applies'), "
-        "SKIP (deterministic rules handle these): word substitutions, "
-        "spelling, banned terms, number formatting, known punctuation.\n\n"
-        "SKIP (standard technical writing): 'placeholder' text, CLI/code "
-        "references, imperative instructions, product names, short procedure "
-        "steps, technical jargon, colons introducing lists/steps/code blocks, "
-        "state-of-being constructions (is installed, is configured, was fixed, "
-        "was added, was detected).\n\n"
-        "Be conservative: only flag clear improvements. If in doubt, "
-        "don't flag. Fewer high-quality issues are better than many marginal ones.\n\n"
+        "SKIP (deterministic rules handle these reliably): spelling errors, "
+        "product name casing, number formatting (numerals vs words), "
+        "list punctuation (trailing commas/semicolons).\n\n"
+        "SKIP (standard technical writing): 'placeholder' text, CLI tool "
+        "names inside backticks, imperative verb at start of procedure steps, "
+        "technical jargon in appropriate context.\n\n"
+        "Flag all clear violations of the style guide rules provided. "
+        "When a pattern clearly violates a rule, flag it regardless of "
+        "severity — the scoring engine handles severity weighting. Only skip "
+        "when the text is genuinely ambiguous or when an alternative reading "
+        "makes the usage correct.\n\n"
         
         "Respond with a JSON array. Each object:\n"
         '{"flagged_text":"exact span","message":"explanation",'
@@ -296,6 +298,7 @@ def build_global_prompt(
     full_text: str,
     content_type: str,
     style_guide_excerpts: list[dict],
+    document_outline: str | None = None,
 ) -> tuple[str, str]:
     """Build a full-document global analysis prompt.
 
@@ -308,18 +311,29 @@ def build_global_prompt(
         content_type: Modular documentation type
             (concept/procedure/reference/assembly).
         style_guide_excerpts: Relevant style guide excerpts.
+        document_outline: Optional document heading outline for
+            structural awareness.
 
     Returns:
         Tuple of (system_prompt, user_prompt).
     """
     excerpt_section = _format_excerpt_section(style_guide_excerpts)
+    outline_section = _format_document_outline(document_outline)
 
     system_prompt = (
         "Technical documentation editor. Global document review.\n\n"
         "CHECK: (1) tone consistency — voice shifts, (2) flow — abrupt "
         "topic changes, missing transitions, (3) minimalism — unnecessary "
         "background or excessive detail, (4) wordiness — sections that "
-        "could be more concise, (5) audience — inconsistent technical level.\n\n"
+        "could be more concise, (5) audience — inconsistent technical level, "
+        "(6) document structure — verify modular docs patterns "
+        "(procedure needs Prerequisites/Procedure/Verification sections; "
+        "concept needs clear topic sentence; reference needs consistent "
+        "format), (7) accessibility — instructions should not rely solely "
+        "on visual cues (color, position, shape).\n\n"
+        "SKIP: step numbering in procedures — the rendering engine handles "
+        "sequential numbering automatically. Do not flag step order, restart, "
+        "or numbering issues.\n\n"
         "Respond with a JSON array. Each object:\n"
         '{"flagged_text":"exact span","message":"explanation",'
         '"suggestions":["fix"],"severity":"low|medium|high",'
@@ -330,6 +344,7 @@ def build_global_prompt(
 
     user_prompt = (
         f"## Document Type: {content_type}\n\n"
+        f"{outline_section}"
         f"{excerpt_section}"
         "## Document\n\n"
         f"```\n{full_text}\n```"

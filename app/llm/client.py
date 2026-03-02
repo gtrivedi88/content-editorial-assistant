@@ -139,16 +139,18 @@ class LLMClient:
         full_text: str,
         content_type: str,
         style_guide_excerpts: list[dict],
+        document_outline: str | None = None,
     ) -> list[dict]:
         """Run global document-level analysis via the LLM.
 
-        Checks tone consistency, flow, minimalism, and wordiness
-        across the entire document.
+        Checks tone consistency, flow, minimalism, wordiness,
+        structure, and accessibility across the entire document.
 
         Args:
             full_text: Full document text.
             content_type: Modular documentation type (concept/procedure/etc.).
             style_guide_excerpts: Relevant style guide excerpt dicts.
+            document_outline: Compact heading outline for structural review.
 
         Returns:
             List of issue dicts with ``source="llm"``, or empty list
@@ -159,6 +161,7 @@ class LLMClient:
 
         system_prompt, user_prompt = build_global_prompt(
             full_text, content_type, style_guide_excerpts,
+            document_outline=document_outline,
         )
         return self._safe_analysis_call(user_prompt, system_prompt=system_prompt)
 
@@ -388,6 +391,7 @@ def analyze_global(
     text: str,
     content_type: str,
     style_guide_excerpts: list[dict] | None = None,
+    document_outline: str | None = None,
 ) -> list[dict]:
     """Module-level wrapper for full-document LLM analysis.
 
@@ -397,11 +401,15 @@ def analyze_global(
         text: Full document text.
         content_type: Modular documentation type.
         style_guide_excerpts: Relevant style guide excerpt dicts.
+        document_outline: Compact heading outline for structural review.
 
     Returns:
         List of issue dicts from the LLM, or empty list.
     """
-    return _get_client().analyze_global(text, content_type, style_guide_excerpts or [])
+    return _get_client().analyze_global(
+        text, content_type, style_guide_excerpts or [],
+        document_outline=document_outline,
+    )
 
 
 def judge_issues(

@@ -28,6 +28,9 @@ from app.services.analysis.merger import (
     merge,
 )
 
+# Note: _find_category_for_span was removed — span dedup is now
+# category-agnostic (any overlap = duplicate).
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -162,16 +165,16 @@ class TestDeduplicateLlmIssues:
         result = _deduplicate_llm_issues([issue_a, issue_b])
         assert len(result) == 1
 
-    def test_text_dedup_different_source_kept(self) -> None:
-        """LLM issues from different sources with identical text are both kept.
+    def test_text_dedup_different_source_exact_match_deduped(self) -> None:
+        """LLM issues from different sources with identical text are deduped.
 
-        This is the 4H fix: source-aware composite keys ensure global and
-        granular issues with the same flagged_text survive dedup.
+        Cross-source exact text matching ensures granular and global issues
+        with the same flagged_text are collapsed to avoid duplicate cards.
         """
         granular = _make_issue(source="granular", flagged_text="utilize")
         global_issue = _make_issue(source="global", flagged_text="utilize")
         result = _deduplicate_llm_issues([granular, global_issue])
-        assert len(result) == 2
+        assert len(result) == 1
 
     def test_span_overlap_dedup_above_80_percent(self) -> None:
         """Two same-source LLM issues with >80% span overlap are deduped."""
@@ -222,7 +225,7 @@ class TestDeduplicateLlmIssues:
 class TestIsSpanDuplicate:
     """Tests for span-based duplicate detection."""
 
-    def test_full_overlap_same_category(self) -> None:
+    def test_full_overlap_is_duplicate(self) -> None:
         """An LLM issue fully contained within a det span is a duplicate."""
         det = _make_issue(category=IssueCategory.STYLE, span=[100, 200])
         llm = _make_issue(
@@ -231,9 +234,9 @@ class TestIsSpanDuplicate:
             span=[120, 180],
         )
         det_spans = _extract_valid_spans([det])
-        assert _is_span_duplicate(llm, det_spans, [det]) is True
+        assert _is_span_duplicate(llm, det_spans) is True
 
-    def test_partial_overlap_same_category(self) -> None:
+    def test_partial_overlap_is_duplicate(self) -> None:
         """An LLM issue partially overlapping a det span is a duplicate."""
         det = _make_issue(category=IssueCategory.GRAMMAR, span=[100, 150])
         llm = _make_issue(
@@ -242,21 +245,21 @@ class TestIsSpanDuplicate:
             span=[130, 200],
         )
         det_spans = _extract_valid_spans([det])
-        assert _is_span_duplicate(llm, det_spans, [det]) is True
+        assert _is_span_duplicate(llm, det_spans) is True
 
     def test_no_overlap(self) -> None:
         """Non-overlapping spans are not duplicates."""
         det = _make_issue(span=[100, 150])
         llm = _make_issue(source="llm", span=[200, 250])
         det_spans = _extract_valid_spans([det])
-        assert _is_span_duplicate(llm, det_spans, [det]) is False
+        assert _is_span_duplicate(llm, det_spans) is False
 
     def test_adjacent_spans_no_overlap(self) -> None:
         """Spans that are exactly adjacent (no shared character) are not duplicates."""
         det = _make_issue(span=[100, 150])
         llm = _make_issue(source="llm", span=[150, 200])
         det_spans = _extract_valid_spans([det])
-        assert _is_span_duplicate(llm, det_spans, [det]) is False
+        assert _is_span_duplicate(llm, det_spans) is False
 
 
 # ---------------------------------------------------------------------------
@@ -286,7 +289,7 @@ class TestIsDuplicate:
         )
         det_spans = _extract_valid_spans([det])
         accepted_texts = _extract_flagged_texts([det])
-        result = _is_duplicate(llm, det_spans, accepted_texts, [det])
+        result = _is_duplicate(llm, det_spans, accepted_texts)
         # Span overlap exists, so it should be a duplicate
         assert result is True
 
@@ -300,7 +303,7 @@ class TestIsDuplicate:
         )
         det_spans = _extract_valid_spans([det])
         accepted_texts = _extract_flagged_texts([det])
-        result = _is_duplicate(llm, det_spans, accepted_texts, [det])
+        result = _is_duplicate(llm, det_spans, accepted_texts)
         assert result is True
 
     def test_text_fallback_no_match(self) -> None:
@@ -313,24 +316,23 @@ class TestIsDuplicate:
         )
         det_spans = _extract_valid_spans([det])
         accepted_texts = _extract_flagged_texts([det])
-        result = _is_duplicate(llm, det_spans, accepted_texts, [det])
+        result = _is_duplicate(llm, det_spans, accepted_texts)
         assert result is False
 
 
 # ---------------------------------------------------------------------------
-# Category-aware partial overlap (4A fix)
+# Category-agnostic span overlap (replaces 4A category-aware logic)
 # ---------------------------------------------------------------------------
 
 
-class TestCategoryAwareOverlap:
-    """Tests for category-aware span overlap handling."""
+class TestSpanOverlapDedup:
+    """Tests for span overlap deduplication (category-agnostic)."""
 
-    def test_different_categories_kept_despite_overlap(self) -> None:
-        """Overlapping spans with different categories are not duplicates.
+    def test_different_categories_deduped_on_overlap(self) -> None:
+        """Overlapping spans with different categories are now duplicates.
 
-        This is the 4A fix: category-aware partial overlap ensures that
-        a STYLE issue and a GRAMMAR issue on the same text span are both
-        retained since they flag different editorial concerns.
+        Any overlap between an LLM issue and an existing issue means the
+        same text is already flagged — duplicate cards are user-hostile.
         """
         det = _make_issue(
             category=IssueCategory.STYLE,
@@ -346,8 +348,8 @@ class TestCategoryAwareOverlap:
             span=[100, 127],
         )
         det_spans = _extract_valid_spans([det])
-        result = _is_span_duplicate(llm, det_spans, [det])
-        assert result is False
+        result = _is_span_duplicate(llm, det_spans)
+        assert result is True
 
     def test_same_category_with_overlap_is_duplicate(self) -> None:
         """Overlapping spans with the same category are duplicates."""
@@ -361,18 +363,17 @@ class TestCategoryAwareOverlap:
             span=[110, 160],
         )
         det_spans = _extract_valid_spans([det])
-        result = _is_span_duplicate(llm, det_spans, [det])
+        result = _is_span_duplicate(llm, det_spans)
         assert result is True
 
     def test_unknown_category_with_overlap_is_duplicate(self) -> None:
         """When either category is None, overlapping spans are duplicates."""
         det = _make_issue(span=[100, 150])
-        # Remove category attribute to simulate unknown
         det.category = None
         llm = _make_issue(source="llm", span=[110, 160])
         llm.category = None
         det_spans = _extract_valid_spans([det])
-        result = _is_span_duplicate(llm, det_spans, [det])
+        result = _is_span_duplicate(llm, det_spans)
         assert result is True
 
 
@@ -554,14 +555,11 @@ class TestSortOrder:
 class TestGlobalGranularCoexistence:
     """Tests for global and granular LLM issue coexistence through merge."""
 
-    def test_global_and_granular_same_text_survive_llm_dedup(self) -> None:
-        """Global and granular issues with identical flagged_text but different
-        source values both survive _deduplicate_llm_issues.
+    def test_global_and_granular_same_text_deduped(self) -> None:
+        """Global and granular issues with identical flagged_text are deduped.
 
-        The source-aware composite key ensures that global and granular
-        passes are not collapsed by text matching within the LLM-to-LLM
-        dedup stage. This test uses [0, 0] span for global (typical for
-        full-document analysis) so span-based dedup does not apply.
+        Cross-source exact text matching collapses duplicate cards —
+        the same text flagged by both passes produces a single issue.
         """
         granular = _make_issue(
             source="granular",
@@ -582,10 +580,8 @@ class TestGlobalGranularCoexistence:
             rule_name="llm_audience",
         )
         result = _deduplicate_llm_issues([granular, global_issue])
-        assert len(result) == 2
-        sources = {r.source for r in result}
-        assert "granular" in sources
-        assert "global" in sources
+        assert len(result) == 1
+        assert result[0].source == "granular"
 
     def test_global_and_granular_different_text_both_survive_merge(self) -> None:
         """Global and granular issues with different flagged_text both survive

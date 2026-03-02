@@ -68,6 +68,12 @@ export function initSocketClient(store) {
         });
     });
 
+    // Stage progress — drives the checking indicator phases
+    socket.on('stage_progress', (data) => {
+        if (data.session_id && data.session_id !== store.get('sessionId')) return;
+        store.setState({ stageProgress: data });
+    });
+
     // Phase 1: Deterministic rules complete — logged only, no UI update
     socket.on('deterministic_complete', (data) => {
         if (data.session_id !== store.get('sessionId')) return;

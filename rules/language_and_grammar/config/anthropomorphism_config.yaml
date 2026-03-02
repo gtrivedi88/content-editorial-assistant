@@ -43,6 +43,21 @@ anthropomorphic_verbs:
   - argue
   - claim
   - ask
+  # Verbs that imply cognitive agency — anthropomorphic for non-human subjects
+  - pass
+  - decide
+  - recognize
+  - predict
+  - select
+  - determine
+  - identify
+  - interpret
+  - evaluate
+  - discover
+  - negotiate
+  - notify
+  - resolve
+  - indicate
 
 # Technical verbs that are SAFE for non-human subjects — never flag these
 safe_technical_verbs:
@@ -111,7 +126,6 @@ safe_technical_verbs:
   - retry
   - fail
   - succeed
-  - pass
   - reject
   - accept
   - deny
@@ -132,21 +146,8 @@ safe_technical_verbs:
   - host
   - maintain
   - operate
-  - negotiate    # "The client negotiates TLS"
-  - respond      # "The server responds with 200"
-  - communicate  # "Services communicate via gRPC"
-  - indicate     # "The flag indicates success"
-  - determine    # "The scheduler determines placement"
-  - identify     # "The scanner identifies vulnerabilities"
-  - predict      # "The model predicts demand"
-  - interpret    # "The parser interprets the query"
-  - evaluate     # "The engine evaluates expressions"
-  - select       # "The algorithm selects the optimal path"
-  - decide       # "The load balancer decides routing"
-  - recognize    # "The system recognizes the pattern"
-  - discover     # "The agent discovers services"
-  - resolve      # "DNS resolves the hostname"
-  - notify       # "The webhook notifies the endpoint"
+  - respond    
+  - communicate
 
 # Non-human subjects — if these are the subject of an anthropomorphic verb, flag it
 non_human_indicators:

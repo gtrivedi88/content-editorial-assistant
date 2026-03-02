@@ -243,14 +243,15 @@ class TestFormatExamplesSection:
 class TestBuildGranularPrompt:
     """Tests for build_granular_prompt() with new parameters."""
 
-    def test_includes_state_of_being_shields(self) -> None:
-        """Prompt includes state-of-being shields in the constraints."""
+    def test_includes_skip_and_flag_guidance(self) -> None:
+        """Prompt includes narrowed SKIP list and objective flagging guidance."""
         system_prompt, user_prompt = build_granular_prompt(
             "Test text.", ["Test text."], [],
         )
         combined = system_prompt + user_prompt
-        assert "State-of-being" in combined or "state-of-being" in combined
-        assert "is installed" in combined or "is configured" in combined
+        assert "SKIP" in combined
+        assert "spelling" in combined.lower()
+        assert "flag all clear violations" in combined.lower()
 
     def test_includes_content_type_guidance(self) -> None:
         """Prompt includes content-type-specific guidance."""

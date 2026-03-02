@@ -675,3 +675,204 @@ class TestHighlightingRuleBoldCode:
         assert bold_code_issues == [], (
             f"Bold around non-code should not trigger Check 3: {bold_code_issues}"
         )
+
+
+# ===================================================================
+# CEA Perfection Plan — Rule coverage tests
+# ===================================================================
+
+
+class TestAnthropomorphismCoverage:
+    """Verify anthropomorphism rule catches verbs removed from safe_technical_verbs."""
+
+    def test_system_passes_flagged(self, nlp: spacy.language.Language) -> None:
+        """'The system passes the request' should be flagged as anthropomorphism."""
+        from rules.language_and_grammar.anthropomorphism_rule import AnthropomorphismRule
+
+        rule = AnthropomorphismRule()
+        text = "The system passes the request to the backend."
+        doc = nlp(text)
+        sentences = [sent.text for sent in doc.sents]
+
+        result: List[Dict[str, Any]] = rule.analyze(
+            text, sentences, nlp=nlp, spacy_doc=doc,
+        )
+
+        anthro_issues = [
+            e for e in result
+            if "anthropomorphism" in e.get("message", "").lower()
+            or "cannot" in e.get("message", "").lower()
+        ]
+        assert len(anthro_issues) >= 1, (
+            "'The system passes' is anthropomorphic and should be flagged"
+        )
+
+    def test_system_decides_flagged(self, nlp: spacy.language.Language) -> None:
+        """'The system decides the routing path' should be flagged."""
+        from rules.language_and_grammar.anthropomorphism_rule import AnthropomorphismRule
+
+        rule = AnthropomorphismRule()
+        text = "The system decides the routing path."
+        doc = nlp(text)
+        sentences = [sent.text for sent in doc.sents]
+
+        result: List[Dict[str, Any]] = rule.analyze(
+            text, sentences, nlp=nlp, spacy_doc=doc,
+        )
+
+        assert len(result) >= 1, (
+            "'The system decides' is anthropomorphic and should be flagged"
+        )
+
+    def test_safe_verb_provide_not_flagged(self, nlp: spacy.language.Language) -> None:
+        """'The system provides access' uses a safe technical verb — not flagged."""
+        from rules.language_and_grammar.anthropomorphism_rule import AnthropomorphismRule
+
+        rule = AnthropomorphismRule()
+        text = "The system provides access to the dashboard."
+        doc = nlp(text)
+        sentences = [sent.text for sent in doc.sents]
+
+        result: List[Dict[str, Any]] = rule.analyze(
+            text, sentences, nlp=nlp, spacy_doc=doc,
+        )
+
+        assert result == [], (
+            f"'provides' is a safe technical verb and should not be flagged: {result}"
+        )
+
+
+class TestPassiveVoiceCoverage:
+    """Verify passive voice rule catches verbs removed from _STATE_OF_BEING_LEMMAS."""
+
+    def test_are_listed_flagged_in_procedure(self, nlp: spacy.language.Language) -> None:
+        """'are listed' should be flagged in procedure content type."""
+        from rules.language_and_grammar.verbs_rule import VerbsRule
+
+        rule = VerbsRule()
+        text = "The options are listed in the table below."
+        doc = nlp(text)
+        sentences = [sent.text for sent in doc.sents]
+        context: Dict[str, Any] = {"content_type": "procedure"}
+
+        result: List[Dict[str, Any]] = rule.analyze(
+            text, sentences, nlp=nlp, context=context, spacy_doc=doc,
+        )
+
+        passive_issues = [e for e in result if "passive" in e.get("message", "").lower()]
+        assert len(passive_issues) >= 1, (
+            "'are listed' should be flagged as passive voice in procedure context"
+        )
+
+    def test_are_listed_not_flagged_in_reference(self, nlp: spacy.language.Language) -> None:
+        """'are listed' should NOT be flagged in reference content type."""
+        from rules.language_and_grammar.verbs_rule import VerbsRule
+
+        rule = VerbsRule()
+        text = "The options are listed in the table below."
+        doc = nlp(text)
+        sentences = [sent.text for sent in doc.sents]
+        context: Dict[str, Any] = {"content_type": "reference"}
+
+        result: List[Dict[str, Any]] = rule.analyze(
+            text, sentences, nlp=nlp, context=context, spacy_doc=doc,
+        )
+
+        passive_issues = [e for e in result if "passive" in e.get("message", "").lower()]
+        assert passive_issues == [], (
+            f"'are listed' should be acceptable in reference context: {passive_issues}"
+        )
+
+    def test_is_installed_still_exempt(self, nlp: spacy.language.Language) -> None:
+        """'is installed' should still be exempt — 'install' remains in _STATE_OF_BEING_LEMMAS."""
+        from rules.language_and_grammar.verbs_rule import VerbsRule
+
+        rule = VerbsRule()
+        text = "Red Hat OpenShift is installed on the cluster."
+        doc = nlp(text)
+        sentences = [sent.text for sent in doc.sents]
+
+        result: List[Dict[str, Any]] = rule.analyze(
+            text, sentences, nlp=nlp, spacy_doc=doc,
+        )
+
+        passive_issues = [e for e in result if "passive" in e.get("message", "").lower()]
+        assert passive_issues == [], (
+            f"'is installed' is a state-of-being pattern and should not be flagged: {passive_issues}"
+        )
+
+
+class TestSpatialReferenceCoverage:
+    """Verify spatial reference rule catches positional references no longer exempted."""
+
+    def test_see_above_flagged(self) -> None:
+        """'see above' should now be flagged as a positional reference."""
+        from rules.structure_and_format.self_referential_text_rule import SelfReferentialTextRule
+
+        rule = SelfReferentialTextRule()
+        text = "For more details, see above."
+        sentences = [text]
+
+        result: List[Dict[str, Any]] = rule.analyze(text, sentences)
+
+        above_issues = [
+            e for e in result
+            if "above" in e.get("flagged_text", "").lower()
+        ]
+        assert len(above_issues) >= 1, (
+            "'see above' is a positional reference and should be flagged"
+        )
+
+    def test_described_above_flagged(self) -> None:
+        """'described above' should now be flagged as a positional reference."""
+        from rules.structure_and_format.self_referential_text_rule import SelfReferentialTextRule
+
+        rule = SelfReferentialTextRule()
+        text = "See the configuration described above."
+        sentences = [text]
+
+        result: List[Dict[str, Any]] = rule.analyze(text, sentences)
+
+        above_issues = [
+            e for e in result
+            if "above" in e.get("flagged_text", "").lower()
+        ]
+        assert len(above_issues) >= 1, (
+            "'described above' is a positional reference and should be flagged"
+        )
+
+    def test_degrees_above_zero_not_flagged(self) -> None:
+        """'20 degrees above zero' should NOT be flagged — non-positional context."""
+        from rules.structure_and_format.self_referential_text_rule import SelfReferentialTextRule
+
+        rule = SelfReferentialTextRule()
+        text = "The temperature rose to 20 degrees above zero."
+        sentences = [text]
+
+        result: List[Dict[str, Any]] = rule.analyze(text, sentences)
+
+        above_issues = [
+            e for e in result
+            if "above" in e.get("flagged_text", "").lower()
+        ]
+        assert above_issues == [], (
+            f"'degrees above zero' is non-positional and should not be flagged: {above_issues}"
+        )
+
+    def test_see_below_flagged(self) -> None:
+        """'see below' should now be flagged as a positional reference."""
+        from rules.structure_and_format.self_referential_text_rule import SelfReferentialTextRule
+
+        rule = SelfReferentialTextRule()
+        text = "See the instructions below."
+        sentences = [text]
+
+        result: List[Dict[str, Any]] = rule.analyze(text, sentences)
+
+        below_issues = [
+            e for e in result
+            if "below" in e.get("flagged_text", "").lower()
+        ]
+        assert len(below_issues) >= 1, (
+            "'see below' is a positional reference and should be flagged"
+        )

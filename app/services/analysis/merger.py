@@ -67,7 +67,7 @@ def merge(
         if issue.confidence < confidence_threshold:
             skipped_confidence += 1
             continue
-        if _is_duplicate(issue, det_spans, accepted_texts, accepted):
+        if _is_duplicate(issue, det_spans, accepted_texts):
             skipped_overlap += 1
             continue
         # SK-15: demote cross-block spans (disable Accept button)
@@ -149,8 +149,9 @@ def _composite_text_matches_any(
 ) -> bool:
     """Check if a (source, text) composite key matches any seen key.
 
-    Only matches within the same source, so global and granular issues
-    with identical text are kept as separate entries.
+    Exact text matches are cross-source — if granular and global flag
+    the same text, the duplicate is removed.  Word-overlap matching
+    remains source-aware to prevent fuzzy cross-source false matches.
 
     Args:
         normalized: Lowercase, stripped candidate text.
@@ -158,14 +159,16 @@ def _composite_text_matches_any(
         seen_keys: Set of previously seen (source, text) tuples.
 
     Returns:
-        True if a match is found within the same source.
+        True if a match is found.
     """
     for seen_source, seen_text in seen_keys:
-        if seen_source != source:
-            continue
+        # Exact text match across all sources
         if normalized == seen_text:
             return True
-        if _words_overlap(_to_words(normalized), _to_words(seen_text)):
+        # Fuzzy word-overlap only within the same source
+        if seen_source == source and _words_overlap(
+            _to_words(normalized), _to_words(seen_text),
+        ):
             return True
     return False
 
@@ -207,7 +210,6 @@ def _is_duplicate(
     issue: IssueResponse,
     det_spans: list[list[int]],
     accepted_texts: set[str],
-    accepted_issues: list[IssueResponse] | None = None,
 ) -> bool:
     """Check whether an LLM issue duplicates an already-accepted issue.
 
@@ -219,14 +221,13 @@ def _is_duplicate(
         issue: The candidate LLM issue.
         det_spans: Valid spans from deterministic issues.
         accepted_texts: Normalized flagged texts of all accepted issues.
-        accepted_issues: Full list of accepted issues for category checks.
 
     Returns:
         True if the issue is a duplicate.
     """
     if _has_valid_span(issue.span):
         # Span check is authoritative when spans exist
-        return _is_span_duplicate(issue, det_spans, accepted_issues)
+        return _is_span_duplicate(issue, det_spans)
     # Fallback to text matching for spanless issues
     return _text_matches_any(_normalize_text(issue.flagged_text), accepted_texts)
 
@@ -234,66 +235,33 @@ def _is_duplicate(
 def _is_span_duplicate(
     issue: IssueResponse,
     det_spans: list[list[int]],
-    accepted_issues: list[IssueResponse] | None,
 ) -> bool:
-    """Check span-based duplication with category-aware overlap.
+    """Check span-based duplication — any overlap is a duplicate.
 
-    For any overlap (full containment or partial), the categories of
-    both issues are compared.  When the categories differ, the issues
-    are kept as separate entries.  Only same-category (or unknown
-    category) overlaps are treated as duplicates.
+    When an LLM issue overlaps an existing issue on any span,
+    it is treated as a duplicate regardless of category.  The
+    deterministic issue already flags the problem; duplicate
+    cards from different categories are user-hostile.
 
     Args:
         issue: The candidate LLM issue with a valid span.
-        det_spans: Valid spans from deterministic issues.
-        accepted_issues: Accepted issues for category comparison.
+        det_spans: Valid spans from accepted issues.
 
     Returns:
         True if the issue should be treated as a duplicate.
     """
     llm_start, llm_end = issue.span[0], issue.span[1]
-    llm_category = getattr(issue, "category", None)
 
     for det_span in det_spans:
         if len(det_span) < 2:
             continue
         d_start, d_end = det_span[0], det_span[1]
 
-        # No overlap at all — skip
-        if not (llm_start < d_end and d_start < llm_end):
-            continue
-
-        # SK-5: category-aware overlap — different categories kept
-        det_cat = _find_category_for_span(det_span, accepted_issues)
-        if det_cat and llm_category and det_cat != llm_category:
-            continue  # Different category — not a duplicate
-
-        # Same category or unknown category with overlap — duplicate
-        return True
+        # Any overlap → duplicate
+        if llm_start < d_end and d_start < llm_end:
+            return True
 
     return False
-
-
-def _find_category_for_span(
-    span: list[int],
-    issues: list[IssueResponse] | None,
-) -> str | None:
-    """Find the category of the issue that owns a specific span.
-
-    Args:
-        span: The [start, end] span to look up.
-        issues: List of issues to search.
-
-    Returns:
-        Category string, or None if not found.
-    """
-    if not issues:
-        return None
-    for iss in issues:
-        if iss.span and len(iss.span) >= 2:
-            if iss.span[0] == span[0] and iss.span[1] == span[1]:
-                return getattr(iss, "category", None)
-    return None
 
 
 # ---------------------------------------------------------------------------

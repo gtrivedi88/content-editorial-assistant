@@ -35,14 +35,12 @@ _BELOW_RE = re.compile(r'\bbelow\b', re.IGNORECASE)
 # Non-positional contexts for "above" — skip these
 _ABOVE_SAFE = re.compile(
     r'(degrees?\s+above|above\s+zero|rise\s+above|above\s+average|'
-    r'above\s+and\s+beyond|over\s+and\s+above|above\s+all|'
-    r'see\s+above|described\s+above|mentioned\s+above|noted\s+above)',
+    r'above\s+and\s+beyond|over\s+and\s+above|above\s+all)',
     re.IGNORECASE,
 )
 # Non-positional contexts for "below" — skip these
 _BELOW_SAFE = re.compile(
-    r'(degrees?\s+below|below\s+zero|fall\s+below|below\s+average|'
-    r'see\s+below|described\s+below|mentioned\s+below|noted\s+below)',
+    r'(degrees?\s+below|below\s+zero|fall\s+below|below\s+average)',
     re.IGNORECASE,
 )
 

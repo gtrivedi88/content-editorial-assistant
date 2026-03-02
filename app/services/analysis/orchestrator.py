@@ -206,6 +206,11 @@ def analyze(
         "score": score.to_dict(),
         "report": report.to_dict(),
     })
+    _emit_event(socket_sid, "stage_progress", {
+        "session_id": session_id,
+        "phase": "deterministic",
+        "status": "done",
+    })
 
     # Determine whether LLM phases should run
     llm_enabled = Config.LLM_ENABLED and analyze_block is not None
@@ -320,24 +325,47 @@ def _run_llm_phases(
     doc_outline = _build_document_outline(prep.get("blocks", []))
 
     # Phase 2: LLM granular (per-block)
+    blocks_total = len(prep.get("blocks", []))
     if not _is_cancelled(session_id):
         logger.debug("Starting granular phase")
+        _emit_event(socket_sid, "stage_progress", {
+            "session_id": session_id,
+            "phase": "llm_granular",
+            "status": "started",
+            "blocks_total": blocks_total,
+        })
         llm_issues = _run_llm_granular(
             session_id, socket_sid, prep, content_type, acronym_context,
             style_guide_excerpts=excerpts,
             document_outline=doc_outline,
         )
         logger.debug("Granular produced %d issues", len(llm_issues))
+        _emit_event(socket_sid, "stage_progress", {
+            "session_id": session_id,
+            "phase": "llm_granular",
+            "status": "done",
+        })
 
     # Phase 3: LLM global (full-document)
     if not _is_cancelled(session_id):
         logger.debug("Starting global phase")
+        _emit_event(socket_sid, "stage_progress", {
+            "session_id": session_id,
+            "phase": "llm_global",
+            "status": "started",
+        })
         global_issues = _run_llm_global(
             session_id, socket_sid, prep, content_type,
             style_guide_excerpts=excerpts,
+            document_outline=doc_outline,
         )
         logger.debug("Global produced %d issues", len(global_issues))
         llm_issues.extend(global_issues)
+        _emit_event(socket_sid, "stage_progress", {
+            "session_id": session_id,
+            "phase": "llm_global",
+            "status": "done",
+        })
 
     # Phase 2C: LLM judge self-correction (optional)
     if not _is_cancelled(session_id) and llm_issues and Config.LLM_JUDGE_ENABLED:
@@ -848,11 +876,17 @@ def _run_llm_granular(
     try:
         if analyze_block is not None:
             text_blocks, resolve_text, remap_offset = _resolve_llm_text_sources(prep)
+            progress_ctx = {
+                "socket_sid": socket_sid,
+                "session_id": session_id,
+                "blocks_total": len(text_blocks),
+            }
             results = _run_incremental_blocks(
                 session_id, text_blocks, prep["sentences"],
                 content_type, acronym_context,
                 style_guide_excerpts=style_guide_excerpts,
                 document_outline=document_outline,
+                progress_context=progress_ctx,
             )
             issues = _parse_llm_results(results, "llm_granular", resolve_text)
             for i, iss in enumerate(issues):
@@ -895,6 +929,7 @@ def _run_incremental_blocks(
     acronym_context: dict[str, str] | None = None,
     style_guide_excerpts: list[dict] | None = None,
     document_outline: str | None = None,
+    progress_context: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     """Analyze blocks incrementally, skipping unchanged ones.
 
@@ -930,6 +965,7 @@ def _run_incremental_blocks(
             blocks, sentences, content_type, acronym_context,
             style_guide_excerpts=style_guide_excerpts,
             document_outline=document_outline,
+            progress_context=progress_context,
         )
         _store_block_data(
             session_id, block_hashes, blocks, results,
@@ -959,6 +995,7 @@ def _run_incremental_blocks(
         changed_blocks, sentences, content_type, acronym_context,
         style_guide_excerpts=style_guide_excerpts,
         document_outline=document_outline,
+        progress_context=progress_context,
     )
 
     # Build per-block issue mapping for changed blocks
@@ -1041,11 +1078,13 @@ def _run_llm_global(
     prep: dict[str, Any],
     content_type: str,
     style_guide_excerpts: list[dict] | None = None,
+    document_outline: str | None = None,
 ) -> list[IssueResponse]:
     """Run the LLM global (full-document) analysis pass.
 
     Sends the full document text (lite-markers Markdown when available)
-    to the LLM for tone, flow, minimalism, and audience checks.
+    to the LLM for tone, flow, minimalism, wordiness, audience,
+    structure, and accessibility checks.
 
     Args:
         session_id: Analysis session identifier.
@@ -1053,6 +1092,7 @@ def _run_llm_global(
         prep: Preprocessed text data.
         content_type: Modular documentation type.
         style_guide_excerpts: Relevant style guide excerpt dicts.
+        document_outline: Compact heading outline for structural review.
 
     Returns:
         List of LLM-detected issues, empty on failure or skip.
@@ -1075,6 +1115,7 @@ def _run_llm_global(
             results = analyze_global(
                 global_text, content_type,
                 style_guide_excerpts=style_guide_excerpts,
+                document_outline=document_outline,
             )
             issues = _parse_llm_results(results, "llm_global", global_text)
             for i, iss in enumerate(issues):
@@ -1474,6 +1515,7 @@ def _analyze_blocks(
     acronym_context: dict[str, str] | None = None,
     style_guide_excerpts: list[dict] | None = None,
     document_outline: str | None = None,
+    progress_context: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     """Run LLM analysis on blocks, using parallelism when beneficial.
 
@@ -1487,6 +1529,8 @@ def _analyze_blocks(
         acronym_context: Known acronym definitions from the document.
         style_guide_excerpts: Relevant style guide excerpt dicts.
         document_outline: Compact heading outline of the full document.
+        progress_context: Optional dict with socket_sid, session_id,
+            blocks_total for per-block progress events.
 
     Returns:
         Combined list of raw issue dicts from all blocks.
@@ -1511,6 +1555,7 @@ def _analyze_blocks(
         blocks, content_type, acronym_context,
         style_guide_excerpts=style_guide_excerpts,
         document_outline=document_outline,
+        progress_context=progress_context,
     )
 
 
@@ -1520,6 +1565,7 @@ def _analyze_blocks_parallel(
     acronym_context: dict[str, str] | None = None,
     style_guide_excerpts: list[dict] | None = None,
     document_outline: str | None = None,
+    progress_context: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     """Execute multiple block analyses concurrently.
 
@@ -1534,6 +1580,7 @@ def _analyze_blocks_parallel(
         acronym_context: Known acronym definitions from the document.
         style_guide_excerpts: Relevant style guide excerpt dicts.
         document_outline: Compact heading outline of the full document.
+        progress_context: Optional dict for per-block progress events.
 
     Returns:
         Combined list of raw issue dicts from all successful blocks.
@@ -1550,7 +1597,11 @@ def _analyze_blocks_parallel(
             style_guide_excerpts=style_guide_excerpts,
             document_outline=document_outline,
         )
-        new_results = _collect_block_results(futures)
+        # Account for cached blocks in progress counter
+        cached_offset = len(cached_results) if progress_context else 0
+        new_results = _collect_block_results(
+            futures, progress_context, cached_offset,
+        )
 
     return cached_results + new_results
 
@@ -1635,16 +1686,28 @@ def _analyze_and_cache_block(
     return results
 
 
-def _collect_block_results(futures: dict[Any, int]) -> list[dict[str, Any]]:
+def _collect_block_results(
+    futures: dict[Any, int],
+    progress_context: dict[str, Any] | None = None,
+    cached_offset: int = 0,
+) -> list[dict[str, Any]]:
     """Collect results from completed block futures.
+
+    Emits per-block ``stage_progress`` events when a progress context
+    is provided, enabling a live counter on the frontend.
 
     Args:
         futures: Mapping of Future objects to block indices.
+        progress_context: Optional dict with socket_sid, session_id,
+            blocks_total for progress events.
+        cached_offset: Number of already-cached blocks to add to
+            the done counter (incremental analysis).
 
     Returns:
         Combined list of raw issue dicts.
     """
     all_results: list[dict[str, Any]] = []
+    blocks_done = cached_offset
     for future in as_completed(futures):
         block_idx = futures[future]
         try:
@@ -1652,6 +1715,19 @@ def _collect_block_results(futures: dict[Any, int]) -> list[dict[str, Any]]:
             all_results.extend(results)
         except (ConnectionError, TimeoutError, RuntimeError) as exc:
             logger.warning("Block %d analysis failed: %s", block_idx, exc)
+        blocks_done += 1
+        if progress_context:
+            _emit_event(
+                progress_context["socket_sid"],
+                "stage_progress",
+                {
+                    "session_id": progress_context["session_id"],
+                    "phase": "llm_granular",
+                    "status": "progress",
+                    "blocks_done": blocks_done,
+                    "blocks_total": progress_context["blocks_total"],
+                },
+            )
     return all_results
 
 

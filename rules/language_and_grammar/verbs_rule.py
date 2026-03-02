@@ -16,7 +16,7 @@ _STATE_OF_BEING_LEMMAS: frozenset = frozenset({
     # Vale PassiveVoice exceptions
     'deprecate', 'display', 'import', 'interest', 'support', 'test', 'trust',
     # State-of-being location/storage
-    'install', 'store', 'locate', 'deploy', 'host', 'mount', 'place',
+    'install', 'instal', 'store', 'locate', 'deploy', 'host', 'mount', 'place',
     # State-of-being status
     'configure', 'enable', 'disable', 'activate', 'deactivate',
     'distribute', 'license', 'certify',
@@ -24,8 +24,12 @@ _STATE_OF_BEING_LEMMAS: frozenset = frozenset({
     'detect', 'discover', 'find', 'determine', 'observe',
     # Release notes patterns
     'fix', 'add', 'remove', 'resolve', 'address', 'update',
-    # Technical passive (common in docs)
-    'define', 'describe', 'document', 'specify', 'list', 'include',
+})
+
+# Action verbs where passive is acceptable in reference docs and release notes
+# but should be flagged in procedures and concepts.
+_REFERENCE_OK_PASSIVE: frozenset = frozenset({
+    'list', 'describe', 'document', 'specify', 'define', 'include',
     'associate', 'relate', 'connect', 'link', 'bind', 'map',
 })
 
@@ -56,6 +60,21 @@ class VerbsRule(BaseLanguageRule):
 
     # --- Passive voice: SpaCy marks auxpass dependency ---
 
+    @staticmethod
+    def _is_passive_exempt(sent_text: str, main_verb, context: Optional[Dict]) -> bool:
+        """Check whether passive voice is acceptable for this verb in context."""
+        if sent_text.lower().startswith(('error:', 'warning:', 'caution:', 'note:', 'important:')):
+            return True
+        if context and context.get('block_type') in ['dlist', 'description_list']:
+            return True
+        if main_verb.lemma_ in _STATE_OF_BEING_LEMMAS:
+            return True
+        if main_verb.lemma_ in _REFERENCE_OK_PASSIVE:
+            content_type = context.get('content_type') if context else None
+            if content_type in ('reference', 'release_notes'):
+                return True
+        return False
+
     def _check_passive_voice(self, sent, sent_index: int, text: str, context: Optional[Dict] = None) -> List[Dict[str, Any]]:
         errors = []
         for token in sent:
@@ -63,17 +82,9 @@ class VerbsRule(BaseLanguageRule):
                 continue
 
             main_verb = token.head
-            # Guard: error messages — passive is acceptable
             sent_text = sent.text.strip()
-            if sent_text.lower().startswith(('error:', 'warning:', 'caution:', 'note:', 'important:')):
-                continue
 
-            # Guard: glossary definitions (state-of-being descriptions)
-            if context and context.get('block_type') in ['dlist', 'description_list']:
-                continue
-
-            # Guard: "is required", "is recommended" — standard technical phrasing
-            if main_verb.lemma_ in _STATE_OF_BEING_LEMMAS:
+            if self._is_passive_exempt(sent_text, main_verb, context):
                 continue
 
             suggestion = self._suggest_active(sent, main_verb)

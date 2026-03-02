@@ -39,6 +39,7 @@ export async function analyzeContent() {
         resolvedErrors: new Set(),
         progressSteps: [],
         progressPercent: 0,
+        stageProgress: null,
         qualityScore: 0,
         errorMessage: null,
     });

@@ -220,14 +220,16 @@ def _gather_lookups(
     seen: set[tuple[str, Optional[str]]] = set()
     lookups: list[tuple[str, Optional[str], int]] = []
 
-    # Category-triggered lookups, weighted by issue count
-    for category, count in category_counts.items():
-        guide_list = _CATEGORY_TO_GUIDES.get(category, [])
+    # Always include ALL category lookups so the LLM has full style
+    # guide context.  Issue count still drives priority ordering.
+    for category, guide_list in _CATEGORY_TO_GUIDES.items():
+        count = category_counts.get(category, 0)
+        priority = max(count, 1)  # baseline 1 even for zero-issue categories
         for rule_type, hint in guide_list:
             key = (rule_type, hint)
             if key not in seen:
                 seen.add(key)
-                lookups.append((rule_type, hint, count))
+                lookups.append((rule_type, hint, priority))
 
     # Content-type lookups always included with baseline priority
     content_guides = _CONTENT_TYPE_GUIDES.get(content_type, [])
