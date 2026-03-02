@@ -1,0 +1,296 @@
+= Hybrid analysis architecture
+:toc: left
+:toclevels: 3
+:icons: font
+
+== Overview
+
+Content Editorial Assistant uses a hybrid architecture for style checking: **111 deterministic rules** for reliable pattern matching, and **LLM-based analysis** for context-dependent judgment. This document explains how the two systems work together.
+
+== Architecture summary
+
+[source]
+----
+┌──────────────────────────────────────────────────┐
+│                   Orchestrator                     │
+│           (app/services/analysis/orchestrator.py)  │
+├──────────┬─────────────────────┬─────────────────┤
+│ Phase 1  │      Phase 2        │     Phase 3      │
+│Determin. │   LLM Granular      │   LLM Global     │
+│ Rules    │   (per-block)       │   (full-doc)     │
+├──────────┼─────────────────────┼─────────────────┤
+│ ~0.5-1s  │ 5 concurrent blocks │ docs < 5K words  │
+│ 111 rules│ chunk size 6000     │ 7 concerns       │
+│ 0 FPs    │ overlap 3 sentences │ tone/flow/struct  │
+└──────────┴─────────────────────┴─────────────────┘
+                      │
+                      ▼
+          ┌──────────────────────┐
+          │       Merger          │
+          │ (dedup + reconcile)   │
+          └──────────────────────┘
+                      │
+                      ▼
+          ┌──────────────────────┐
+          │       Scorer          │
+          │ S = max(30, 100-Σ…)  │
+          └──────────────────────┘
+----
+
+== Phase 1: Deterministic rules
+
+=== What they are
+
+111 coded rules organized in `rules/` with FP-hardened guards. Each rule is a Python class extending `BaseRule` in `rules/base_rule.py`.
+
+=== Rule categories
+
+[cols="1,1,2"]
+|===
+|Category |Directory |Examples
+
+|Language & Grammar
+|`rules/language_and_grammar/`
+|Passive voice, verb tense, anthropomorphism, spelling, terminology, abbreviations, inclusive language
+
+|Punctuation
+|`rules/punctuation/`
+|Possessives, plurals, list punctuation, list consistency, contractions
+
+|Structure & Format
+|`rules/structure_and_format/`
+|Sentence length, heading levels, highlighting, definitions, command syntax
+
+|Audience & Medium
+|`rules/audience_and_medium/`
+|Accessibility, self-referential text, geographic locations, company names
+
+|Modular Compliance
+|`rules/modular_compliance/`
+|Concept, procedure, reference module validation (7 rules pending structural parsing port)
+|===
+
+=== FP hardening
+
+Rules use 5 defensive mechanisms to achieve zero false positives:
+
+1. **Negative lookaheads** in regex patterns
+2. **Per-rule exception whitelists** (e.g., `_STATE_OF_BEING_LEMMAS`, `_KNOWN_ACRONYMS`)
+3. **Scope/context guards** (block type, content type, quoted-text exclusion)
+4. **Proximity constraints** (e.g., 5-word window for geographic terms)
+5. **YAML-driven config** for safe verbs, phrasal verbs, and vocabulary lists
+
+If a deterministic rule cannot be 100% certain, it does not fire — ambiguous cases are left to the LLM.
+
+=== Block-type assignment
+
+`rules/rule_mappings.yaml` maps which rules run on which block types (paragraph, heading, list_item_ordered, list_item_unordered, etc.).
+
+=== Inline code protection
+
+`_compute_content_code_ranges()` in the orchestrator pre-computes backtick ranges from `block.inline_content` + `block.char_map`. All rules use `in_code_range()` from `base_rule.py` to skip content inside inline code — zero false positives on code content.
+
+== Phase 2: LLM granular analysis
+
+=== What it does
+
+Per-block AI analysis using the configured LLM provider. Each text block is sent to the LLM with:
+
+* Style guide excerpts (selected by `excerpt_selector.py`)
+* Document outline for context
+* Content-type guidance (procedure/concept/reference/release_notes)
+* SKIP list for patterns deterministic rules handle reliably
+
+=== Processing
+
+* **Concurrency**: Up to `LLM_MAX_CONCURRENT` (default: 5) blocks in parallel via `ThreadPoolExecutor`
+* **Chunk size**: 6000 characters with 3-sentence overlap
+* **Rate limiting**: `tenacity` exponential backoff on 429 errors
+* **Fallback**: Per-block fallback to deterministic-only on LLM exhaustion
+* **Progress**: `stage_progress` WebSocket events emitted per-block
+
+=== LLM categories
+
+The LLM prompt allows 5 categories: `style`, `grammar`, `punctuation`, `structure`, `audience`. These map to `llm_*` rule names (`llm_style`, `llm_grammar`, etc.) and then to IBM Style Guide groups on the frontend.
+
+=== SKIP list
+
+The granular prompt SKIP list is narrowly scoped to patterns deterministic rules handle reliably:
+
+* Spelling, product name casing, number formatting
+* List punctuation, placeholder text
+* CLI tool names in backticks
+* Imperative verbs at step starts
+* Content inside triple-backtick code blocks
+
+The SKIP list does NOT skip state-of-being constructions, word substitutions, or short procedure steps — preventing double blind spots.
+
+== Phase 3: LLM global analysis
+
+=== What it does
+
+Full-document review for cross-block concerns. Only runs for documents under `LLM_GLOBAL_PASS_MAX_WORDS` (default: 5000 words).
+
+=== 7 concerns checked
+
+1. Tone consistency
+2. Flow and transitions
+3. Minimalism
+4. Wordiness
+5. Audience level
+6. Document structure (modular docs patterns)
+7. Accessibility (no visual-only cues)
+
+=== SKIP list
+
+The global prompt has a separate SKIP for step numbering in procedures — the rendering engine handles sequential numbering automatically.
+
+== Merger
+
+`merger.merge()` in `app/services/analysis/merger.py` reconciles results from all three phases using four strategies:
+
+1. **LLM-to-LLM text dedup**: Cross-source exact matching (same text from granular + global = duplicate) and source-aware fuzzy matching (word-overlap only within same source)
+2. **Span-based overlap dedup**: >80% overlap of shorter span = duplicate
+3. **Category-agnostic span overlap with deterministic**: Any overlap = duplicate, regardless of category
+4. **Word-level text matching fallback**: For spanless `[0,0]` issues
+
+Cross-block boundary detection includes code blocks — issues spanning boundaries are demoted (suggestions cleared).
+
+== Ordering determinism
+
+`_collect_block_results()` sorts results by block index after `as_completed()` collection. This ensures deterministic dedup ordering regardless of thread completion timing — the same blocks always produce the same dedup survivors.
+
+== Scorer
+
+Quality score formula:
+
+`S = max(30, 100 - Σ(W_i × M_i) / (1 + log10(N_w / 100)))`
+
+Where:
+
+* `W` = severity weight (HIGH:3, MEDIUM:2, LOW:1)
+* `M` = category multiplier (GRAMMAR:1.5 highest, PUNCTUATION:0.8 lowest)
+* `N_w` = word count
+
+Labels: 90+ Excellent, 75–89 Good, 60–74 Needs Work, <60 Poor.
+
+== Suggestion pipeline
+
+Three-tier pipeline in `app/services/suggestions/engine.py`:
+
+1. **Session cache**: Check if suggestion was already generated
+2. **Deterministic replacement**: If the issue has a single non-instruction suggestion, return it directly
+3. **LLM rewrite**: Context-aware rewrite with the full sentence/block context
+
+Instruction-style suggestions (imperative prefixes like "Rewrite...", "Consider...") route to the LLM instead of being returned as-is.
+
+== LLM variance reduction
+
+Three mechanisms reduce variance across analysis sessions:
+
+1. **Temperature**: Analysis uses `MODEL_ANALYSIS_TEMPERATURE=0.0` (greedy decoding)
+2. **Seed**: `MODEL_SEED=42` passed to all three providers (API, Ollama, LlamaStack) — best-effort per provider
+3. **Block ordering**: Results sorted by block index before dedup — eliminates thread-timing variance
+
+Full determinism is not achievable with generative LLMs, but these measures provide significant consistency.
+
+== Decision framework
+
+=== When to use deterministic rules
+
+[cols="1,2"]
+|===
+|Criteria |Example
+
+|Finite word list
+|"colour" → "color"
+
+|Binary pattern
+|"URL's" → "URLs"
+
+|State tracking
+|"Define abbreviation on first use"
+
+|Format checking
+|"I.B.M." → "IBM"
+
+|100% confidence possible
+|Pattern is unambiguous
+|===
+
+=== When to rely on LLM
+
+[cols="1,2"]
+|===
+|Criteria |Example
+
+|Context changes meaning
+|"was configured" — passive OK in release notes, not in procedures
+
+|Semantic understanding
+|"it" pronoun — what does it refer to?
+
+|Cross-sentence judgment
+|Tone inconsistency, flow issues
+
+|Multiple valid options
+|"a" vs "the" article choice
+|===
+
+== Key files
+
+[cols="2,3"]
+|===
+|File |Role
+
+|`app/services/analysis/orchestrator.py`
+|Three-phase pipeline coordinator
+
+|`app/services/analysis/deterministic.py`
+|Rule execution + normalization
+
+|`app/services/analysis/merger.py`
+|Deduplicates deterministic + LLM issues
+
+|`app/services/analysis/scorer.py`
+|Penalty-based quality score
+
+|`app/services/analysis/preprocessor.py`
+|Markup cleaning, SpaCy, stats, lite-markers
+
+|`app/llm/client.py`
+|LLM client (uses `models.ModelManager`)
+
+|`app/llm/prompts.py`
+|Granular and global prompt construction
+
+|`app/llm/parser.py`
+|LLM response parsing + normalization
+
+|`app/llm/excerpt_selector.py`
+|Style guide excerpt selection for LLM context
+
+|`app/services/suggestions/engine.py`
+|Three-tier suggestion pipeline
+
+|`rules/base_rule.py`
+|Base class + `in_code_range()`
+
+|`rules/rule_mappings.yaml`
+|Block-type → rule assignments
+
+|`models/providers/api_provider.py`
+|OpenAI-compatible API provider
+
+|`models/providers/ollama_provider.py`
+|Ollama local provider
+
+|`models/providers/llamastack_provider.py`
+|LlamaStack provider
+|===
+
+== See also
+
+* xref:architecture:architecture.adoc[System Architecture]
+* xref:api-reference.adoc[API Reference]
+* xref:how-to:how-to-add-new-rule.adoc[Add a New Rule]

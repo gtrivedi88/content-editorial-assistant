@@ -1,0 +1,255 @@
+= Writing tests
+:navtitle: Writing tests
+
+== Overview
+
+This guide covers how to write tests for CEA. Tests use pytest and mirror the `app/` structure. All external dependencies are mocked — tests run without network access or GPU.
+
+== Test file naming
+
+* Test files: `test_*.py` (matches SonarQube `sonar.test.inclusions` pattern)
+* Test classes: `TestFeatureName`
+* Test methods: `test_specific_behavior`
+
+== Writing rule tests
+
+=== Basic rule test
+
+[source,python]
+----
+"""Tests for my_rule."""
+
+import pytest
+
+
+class TestMyRule:
+    """Tests for MyRule."""
+
+    def test_detects_pattern(self, app):
+        """Verify the rule flags the target pattern."""
+        from rules.language_and_grammar.my_rule import MyRule
+
+        rule = MyRule()
+        text = "The system can understand user intent."
+        sentences = ["The system can understand user intent."]
+
+        errors = rule.analyze(text, sentences)
+
+        assert len(errors) == 1
+        assert errors[0]["type"] == "my_rule"
+        assert "understand" in errors[0]["flagged_text"]
+----
+
+=== Testing with context
+
+[source,python]
+----
+def test_respects_block_type(self, app):
+    """Verify rule skips code blocks."""
+    from rules.language_and_grammar.my_rule import MyRule
+
+    rule = MyRule()
+    text = "The system can understand user intent."
+    sentences = [text]
+    context = {"block_type": "code_block"}
+
+    errors = rule.analyze(text, sentences, context=context)
+
+    assert len(errors) == 0
+
+
+def test_respects_inline_code_ranges(self, app):
+    """Verify rule skips inline code content."""
+    from rules.language_and_grammar.my_rule import MyRule
+
+    rule = MyRule()
+    text = "Run the understand command."
+    sentences = [text]
+    context = {"inline_code_ranges": [(8, 18)]}
+
+    errors = rule.analyze(text, sentences, context=context)
+
+    assert len(errors) == 0
+
+
+def test_content_type_aware(self, app):
+    """Verify rule behavior varies by content type."""
+    from rules.language_and_grammar.my_rule import MyRule
+
+    rule = MyRule()
+    text = "Values are listed in the table."
+    sentences = [text]
+
+    # Should flag in concept docs
+    errors_concept = rule.analyze(text, sentences,
+                                  context={"content_type": "concept"})
+    # May skip in reference docs
+    errors_ref = rule.analyze(text, sentences,
+                              context={"content_type": "reference"})
+
+    assert len(errors_concept) >= len(errors_ref)
+----
+
+== Writing API tests
+
+=== Endpoint test
+
+[source,python]
+----
+def test_analyze_returns_issues(self, client):
+    """Test the analyze endpoint returns issues."""
+    response = client.post("/api/v1/analyze", json={
+        "content": "The system was configured by the admin.",
+        "content_type": "concept",
+    })
+    data = response.get_json()
+
+    assert response.status_code == 200
+    assert data["success"] is True
+    assert isinstance(data["issues"], list)
+    assert "score" in data
+
+
+def test_analyze_rejects_empty_content(self, client):
+    """Test validation for empty content."""
+    response = client.post("/api/v1/analyze", json={
+        "content": "",
+    })
+
+    assert response.status_code == 400
+----
+
+=== Session-dependent test
+
+[source,python]
+----
+def test_dismiss_issue(self, client, session_with_issues):
+    """Test dismissing an issue."""
+    ids = session_with_issues
+    response = client.post(
+        f"/api/v1/issues/{ids['issue_id_1']}/dismiss",
+        json={"session_id": ids["session_id"]},
+    )
+    data = response.get_json()
+
+    assert response.status_code == 200
+    assert data["success"] is True
+----
+
+== Writing service tests
+
+=== Merger test
+
+[source,python]
+----
+from app.services.analysis.merger import merge
+
+
+def test_dedup_same_span(self):
+    """Test that overlapping spans are deduplicated."""
+    deterministic = [{
+        "type": "passive_voice",
+        "flagged_text": "was configured",
+        "span": [15, 29],
+        "source": "deterministic",
+    }]
+    llm = [{
+        "type": "llm_grammar",
+        "flagged_text": "was configured",
+        "span": [15, 29],
+        "source": "llm_granular",
+    }]
+
+    result = merge(deterministic, llm, [])
+
+    # LLM issue should be deduplicated (deterministic wins)
+    assert len(result) == 1
+    assert result[0]["source"] == "deterministic"
+----
+
+=== Scorer test
+
+[source,python]
+----
+from app.services.analysis.scorer import calculate_score
+
+
+def test_no_issues_scores_100(self):
+    """Test perfect score with no issues."""
+    score, label = calculate_score([], word_count=100)
+    assert score == 100
+    assert label == "Excellent"
+----
+
+== Writing LLM tests
+
+=== Parser test
+
+[source,python]
+----
+from app.llm.parser import parse_analysis_response
+
+
+def test_parse_valid_json(self):
+    """Test parsing a valid LLM response."""
+    response = '''```json
+    [{"category": "grammar", "flagged_text": "was done",
+      "message": "Use active voice.", "severity": "medium",
+      "suggestion": "Complete the task."}]
+    ```'''
+
+    issues = parse_analysis_response(response)
+
+    assert len(issues) == 1
+    assert issues[0]["flagged_text"] == "was done"
+----
+
+== Best practices
+
+=== Do
+
+* Use the `app` fixture for all tests that import application code
+* Use `mock_spacy` and `mock_llm` fixtures (auto-applied via conftest)
+* Test both positive detection AND negative cases (no false positives)
+* Test edge cases: empty input, single character, very long text
+* Keep tests independent — no shared mutable state between tests
+* Use descriptive test names: `test_skips_inline_code` not `test_1`
+
+=== Do not
+
+* Make network calls in tests
+* Depend on SpaCy model being installed
+* Modify global state without cleanup
+* Use `time.sleep()` — mock time-dependent behavior
+* Import from `conftest.py` directly — use fixtures
+
+== Fixture reference
+
+[cols="1,2"]
+|===
+|Fixture |What it provides
+
+|`app`
+|Flask app with `TESTING=True`, `LLM_ENABLED=False`, in-memory feedback DB
+
+|`client`
+|Flask test client (`app.test_client()`)
+
+|`mock_spacy`
+|Patched SpaCy returning mock Doc with `.sents`, `.text`, token attributes
+
+|`mock_llm`
+|Patched LLMClient with `is_available()` returning `False`
+
+|`sample_text`
+|Multi-sentence string with known style issues
+
+|`session_with_issues`
+|Dict with `session_id`, `issue_id_1`, `issue_id_2` pre-populated in session store
+|===
+
+== See also
+
+* xref:testing-setup.adoc[Testing Setup]
+* xref:testing-guide.adoc[Testing Guide]
+* xref:how-to-add-new-rule.adoc[Add a New Rule]

@@ -1,0 +1,37 @@
+site:
+  title: Content Editorial Assistant Documentation
+  url: https://your-gitlab-pages-url.com
+  start_page: content-editorial-assistant::index.adoc
+
+content:
+  sources:
+  - url: ../
+    branches: HEAD
+    edit_url: 'https://gitlab.cee.redhat.com/ccs-ai/content-editorial-assistant/-/blob/main/{path}'
+    start_path: docs
+
+ui:
+  bundle:
+    url: https://gitlab.com/antora/antora-ui-default/-/jobs/artifacts/master/raw/build/ui-bundle.zip?job=bundle-stable
+    snapshot: true
+  supplemental_files: ./antora-lunr-ui
+
+antora:
+  extensions:
+  - '@antora/lunr-extension'
+
+runtime:
+  log:
+    failure_level: error
+
+asciidoc:
+  extensions:
+  - asciidoctor-kroki
+  attributes:
+    kroki-server-url: https://kroki.io
+    kroki-fetch-diagram: true
+    page-mermaid: true
+    experimental: true
+
+output:
+  dir: ./dist

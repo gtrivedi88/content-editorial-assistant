@@ -81,23 +81,4 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Health check (all pages with health button)
-    const healthLabel = document.getElementById('cea-health-label');
-    if (healthLabel) {
-        fetch('/api/v1/health')
-            .then((r) => r.json())
-            .then((data) => {
-                if (data.status === 'ok') {
-                    healthLabel.textContent = 'Healthy';
-                    healthLabel.style.color = '#388400';
-                } else {
-                    healthLabel.textContent = 'Degraded';
-                    healthLabel.style.color = '#f0ab00';
-                }
-            })
-            .catch(() => {
-                healthLabel.textContent = 'Offline';
-                healthLabel.style.color = '#c9190b';
-            });
-    }
 });

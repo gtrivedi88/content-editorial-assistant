@@ -1,0 +1,382 @@
+= Add a new rule
+:source-highlighter: highlightjs
+
+== Overview
+
+This guide provides step-by-step instructions for adding a new deterministic rule to CEA. The rule system uses automatic discovery, so adding a rule requires creating a Python class, updating configuration, and adding tests.
+
+=== What you will create
+
+* A new rule class inheriting from `BaseRule`
+* Block-type mappings in `rule_mappings.yaml`
+* An IBM Style mapping entry in `ibm_style_mapping.yaml`
+* Tests in `tests/rules/`
+
+== Understanding the rule system
+
+=== Rule categories
+
+Rules are organized into category directories under `rules/`:
+
+[cols="1,2,2"]
+|===
+|Category |Directory |Examples
+
+|Language & Grammar
+|`rules/language_and_grammar/`
+|Passive voice, anthropomorphism, terminology
+
+|Punctuation
+|`rules/punctuation/`
+|Possessives, list punctuation, periods
+
+|Structure & Format
+|`rules/structure_and_format/`
+|Sentence length, headings, definitions
+
+|Audience & Medium
+|`rules/audience_and_medium/`
+|Accessibility, self-referential text
+
+|Modular Compliance
+|`rules/modular_compliance/`
+|Module structure validation
+|===
+
+=== Rule discovery
+
+The `RulesRegistry` in `rules/__init__.py` automatically discovers rules:
+
+1. Scans `rules/` directories up to 4 levels deep
+2. Finds files ending with `_rule.py`
+3. Instantiates classes inheriting from `BaseRule`
+4. Registers rules by their `_get_rule_type()` return value
+
+No manual registration is needed.
+
+=== Rule execution flow
+
+[source]
+----
+Orchestrator
+    │
+    ▼
+RulesRegistry.analyze(text, sentences, block_type, context)
+    │
+    ├── Filter rules by block_type (via rule_mappings.yaml)
+    ├── Pass context dict: inline_code_ranges, bold_code_ranges, etc.
+    │
+    ▼
+YourRule.analyze(text, sentences, nlp, context, spacy_doc)
+    │
+    └── Returns list of error dicts
+----
+
+== Step-by-step guide
+
+=== Step 1: Choose category and location
+
+Decide which category fits your rule and create the file:
+
+[source,bash]
+----
+# Example: a new punctuation rule
+touch rules/punctuation/my_new_rule.py
+----
+
+=== Step 2: Implement the rule class
+
+Every rule must:
+
+* Inherit from `BaseRule` (imported from `rules.base_rule`)
+* Implement `_get_rule_type()` returning a unique string identifier
+* Implement `analyze()` returning a list of error dicts
+
+[source,python]
+----
+"""My new rule — checks for a specific pattern."""
+
+import re
+from typing import Any
+
+from rules.base_rule import BaseRule, in_code_range
+
+# Compile regex patterns at module level
+_MY_PATTERN = re.compile(r'\bexample\s+pattern\b', re.IGNORECASE)
+
+# Exceptions that should not be flagged
+_EXCEPTIONS = frozenset({"example pattern override"})
+
+# Block types to skip entirely
+_SKIP_BLOCKS = frozenset({
+    "code_block", "listing", "literal", "pass",
+})
+
+
+class MyNewRule(BaseRule):
+    """Flag instances of a specific pattern."""
+
+    def _get_rule_type(self) -> str:
+        return "my_new_rule"
+
+    def analyze(
+        self,
+        text: str,
+        sentences: list[str],
+        nlp: Any = None,
+        context: dict[str, Any] | None = None,
+        spacy_doc: Any = None,
+    ) -> list[dict[str, Any]]:
+        """Analyze text for the pattern.
+
+        Args:
+            text: Full block text (stripped of inline markup).
+            sentences: Pre-split sentences from the preprocessor.
+            nlp: SpaCy language model (may be None).
+            context: Dict with block_type, inline_code_ranges, etc.
+            spacy_doc: Pre-processed SpaCy Doc (may be None).
+
+        Returns:
+            List of error dicts.
+        """
+        context = context or {}
+
+        # Skip non-prose block types
+        if context.get("block_type") in _SKIP_BLOCKS:
+            return []
+
+        code_ranges = context.get("inline_code_ranges", [])
+        errors: list[dict[str, Any]] = []
+
+        for idx, sentence in enumerate(sentences):
+            sent_start = text.find(sentence)
+            if sent_start < 0:
+                continue
+
+            for match in _MY_PATTERN.finditer(sentence):
+                found = match.group()
+                abs_pos = sent_start + match.start()
+
+                # Skip content inside inline code
+                if in_code_range(abs_pos, code_ranges):
+                    continue
+
+                # Skip known exceptions
+                if found.lower() in _EXCEPTIONS:
+                    continue
+
+                error = self._create_error(
+                    sentence=sentence,
+                    sentence_index=idx,
+                    message="Avoid this pattern. Use alternative instead.",
+                    suggestions=["alternative pattern"],
+                    severity="medium",
+                    text=text,
+                    context=context,
+                    flagged_text=found,
+                    span=(match.start(), match.end()),
+                )
+                # _create_error returns None if flagged text is
+                # in exceptions or is technical content (URL, path, etc.)
+                if error is not None:
+                    errors.append(error)
+
+        return errors
+----
+
+=== Step 3: Add block-type mappings
+
+Edit `rules/rule_mappings.yaml` to specify which block types your rule applies to:
+
+[source,yaml]
+----
+# In the appropriate block type section:
+paragraph:
+  - my_new_rule
+  # ... other rules
+
+heading:
+  - my_new_rule
+
+list_item_ordered:
+  - my_new_rule
+
+list_item_unordered:
+  - my_new_rule
+----
+
+=== Step 4: Add IBM Style mapping
+
+Edit `style_guides/ibm/ibm_style_mapping.yaml` to add a citation:
+
+[source,yaml]
+----
+my_new_rule:
+  topic: "Your Topic"
+  page: "42-43"
+  excerpt: "Brief excerpt from the style guide explaining the rule."
+----
+
+This citation is automatically appended to error messages.
+
+=== Step 5: Write tests
+
+Create a test file in `tests/rules/`:
+
+[source,python]
+----
+"""Tests for my_new_rule."""
+
+import pytest
+
+
+class TestMyNewRule:
+    """Tests for MyNewRule."""
+
+    def test_detects_pattern(self, app):
+        """Verify the rule flags the target pattern."""
+        from rules.punctuation.my_new_rule import MyNewRule
+
+        rule = MyNewRule()
+        text = "This has an example pattern in it."
+        sentences = ["This has an example pattern in it."]
+
+        errors = rule.analyze(text, sentences)
+
+        assert len(errors) == 1
+        assert errors[0]["flagged_text"] == "example pattern"
+
+    def test_skips_code_blocks(self, app):
+        """Verify the rule skips code block content."""
+        from rules.punctuation.my_new_rule import MyNewRule
+
+        rule = MyNewRule()
+        text = "example pattern"
+        sentences = ["example pattern"]
+        context = {"block_type": "code_block"}
+
+        errors = rule.analyze(text, sentences, context=context)
+
+        assert len(errors) == 0
+
+    def test_skips_inline_code(self, app):
+        """Verify the rule skips inline code ranges."""
+        from rules.punctuation.my_new_rule import MyNewRule
+
+        rule = MyNewRule()
+        text = "Use the example pattern command."
+        sentences = ["Use the example pattern command."]
+        context = {"inline_code_ranges": [(8, 23)]}
+
+        errors = rule.analyze(text, sentences, context=context)
+
+        assert len(errors) == 0
+
+    def test_skips_exceptions(self, app):
+        """Verify known exceptions are not flagged."""
+        from rules.punctuation.my_new_rule import MyNewRule
+
+        rule = MyNewRule()
+        text = "The example pattern override is fine."
+        sentences = ["The example pattern override is fine."]
+
+        errors = rule.analyze(text, sentences)
+
+        assert len(errors) == 0
+----
+
+Run the tests:
+
+[source,bash]
+----
+python -m pytest tests/rules/test_my_new_rule.py -v
+----
+
+=== Step 6: Run FP guard tests
+
+After adding your rule, verify no false positives are introduced:
+
+[source,bash]
+----
+python -m pytest tests/rules/test_fp_guards.py -v
+----
+
+== Key patterns
+
+=== The `_create_error()` method
+
+Always use `_create_error()` to construct error dicts. It provides automatic filtering:
+
+* Returns `None` if `flagged_text` matches global or rule-specific exceptions
+* Returns `None` if `flagged_text` is technical content (URLs, file paths, code identifiers)
+* Auto-appends IBM Style citation if configured
+
+Always check `if error is not None` before appending.
+
+=== Inline code protection
+
+Use `in_code_range()` from `rules.base_rule` to skip content inside backtick ranges:
+
+[source,python]
+----
+from rules.base_rule import in_code_range
+
+code_ranges = context.get("inline_code_ranges", [])
+if in_code_range(absolute_position, code_ranges):
+    continue  # Skip — inside inline code
+----
+
+=== YAML-driven configuration
+
+For rules with word lists or vocabulary mappings, use a YAML config file:
+
+[source]
+----
+rules/language_and_grammar/config/my_config.yaml
+----
+
+Load it in your rule's `__init__`:
+
+[source,python]
+----
+import yaml
+from pathlib import Path
+
+class MyRule(BaseRule):
+    def __init__(self) -> None:
+        super().__init__()
+        config_path = Path(__file__).parent / "config" / "my_config.yaml"
+        with open(config_path) as f:
+            self._config = yaml.safe_load(f)
+----
+
+=== Content-type awareness
+
+Some rules should behave differently based on content type (concept, procedure, reference, release_notes):
+
+[source,python]
+----
+content_type = context.get("content_type", "")
+if content_type in ("reference", "release_notes"):
+    # Apply relaxed rules for reference content
+    pass
+----
+
+== FP hardening checklist
+
+Before submitting your rule, verify:
+
+- [ ] Rule skips `code_block`, `listing`, `literal`, and `pass` block types
+- [ ] Rule uses `in_code_range()` to skip inline code content
+- [ ] Rule uses `_create_error()` (not raw dict construction)
+- [ ] Rule has exception whitelists for known safe patterns
+- [ ] Regex patterns use negative lookaheads where needed
+- [ ] Tests cover: detection, code block skip, inline code skip, exceptions
+- [ ] `test_fp_guards.py` still passes
+- [ ] Full test suite passes: `python -m pytest tests/ -v`
+
+== See also
+
+* xref:ROOT:llm-rules-implementation.adoc[Hybrid Analysis Architecture]
+* xref:architecture:architecture.adoc[System Architecture]
+* xref:testing-guide.adoc[Testing Guide]

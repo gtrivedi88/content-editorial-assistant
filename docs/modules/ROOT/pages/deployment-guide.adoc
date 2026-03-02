@@ -1,0 +1,301 @@
+= Deployment guide
+:description: Production deployment guide for Content Editorial Assistant
+:keywords: deployment, production, lightrail, openshift
+
+[NOTE]
+====
+**This documentation is for system administrators and DevOps engineers** who are deploying Content Editorial Assistant to production environments.
+
+The application is already hosted for general use. This guide is for those who need to deploy their own instance.
+====
+
+== Overview
+
+This guide covers deployment options for the Content Editorial Assistant, from local development to production on the LightRail platform.
+
+== Deployment options
+
+[cols="1,2,2"]
+|===
+|Method |Use case |Complexity
+
+|**Local development**
+|Testing and development
+|Low
+
+|**LightRail platform**
+|Enterprise deployment with LlamaStack
+|Medium
+|===
+
+== Prerequisites
+
+* Python 3.12+
+* Git
+* LightRail access (for platform deployment)
+* Ruby + Asciidoctor (optional, for AsciiDoc HTML rendering)
+
+== Local development deployment
+
+=== Quick start
+
+[source,bash]
+----
+# Clone repository
+git clone <repository-url>
+cd content-editorial-assistant
+
+# Create virtual environment
+python3.12 -m venv venv
+source venv/bin/activate
+
+# Install dependencies
+pip install --upgrade pip
+pip install -r requirements.txt
+
+# Run application
+python main.py
+----
+
+Access at: http://localhost:8000
+
+=== Production server
+
+[source,bash]
+----
+make run-prod
+----
+
+This runs Gunicorn via `gunicorn.conf.py` with gevent workers, preload, and configurable timeout.
+
+=== Configuration
+
+Create a `.env` file in the project root:
+
+[source,bash]
+----
+MODEL_PROVIDER=ollama
+BASE_URL=http://localhost:11434
+MODEL_ID=llama3:8b
+MODEL_ANALYSIS_TEMPERATURE=0.0
+MODEL_SEED=42
+----
+
+See xref:environment-variables.adoc[Environment Variables Reference] for the full list.
+
+== LightRail platform deployment
+
+LightRail is Red Hat's internal platform for deploying AI-powered applications.
+
+=== Architecture
+
+[source]
+----
+┌─────────────────────────────────────┐
+│     Content Editorial Assistant      │
+│         (Flask + gevent)            │
+└──────────────┬──────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────┐
+│          LlamaStack                  │
+│    (AI Model Serving Layer)         │
+└──────────────┬──────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────┐
+│        LightRail Platform            │
+│  (Infrastructure & Orchestration)   │
+└─────────────────────────────────────┘
+----
+
+=== Dependency management
+
+CEA uses a dual-manifest pattern:
+
+* `requirements.txt` — local development (`pip install -r requirements.txt`)
+* `pyproject.toml` — LightRail deployment (poetry backend, auto-generates `poetry.lock`)
+
+Both files list the same dependencies with matching version ranges (`>=x,<y`). Never use exact pins (`==`) except for `llama-stack-client` — version ranges allow pip to resolve pre-built wheels for the target Python version.
+
+=== Container configuration
+
+`Containerfile.partial` adds extra packages (e.g., Ruby/Asciidoctor) to the platform-managed container. No custom Dockerfile is used — LightRail manages the base image.
+
+=== Entrypoint
+
+`main.sh` is the LightRail entrypoint, which runs `exec gunicorn` with the configuration from `gunicorn.conf.py`.
+
+=== LlamaStack configuration
+
+Environment variables for LlamaStack:
+
+[source,bash]
+----
+MODEL_PROVIDER=llamastack
+CEA_MODEL_ID=style_analyzer_model
+----
+
+LlamaStack server configuration files are in the `llamastack/` directory.
+
+=== CI/CD pipeline
+
+The project uses GitLab CI/CD with LightRail platform integration.
+
+[source,yaml]
+----
+# .gitlab-ci.yml
+stages:
+  - build
+  - test
+  - deploy-preview
+  - deploy-qa
+  - deploy-stage
+  - deploy-prod
+  - clean
+
+variables:
+  LIGHTRAIL_VERSION: &LIGHTRAIL_VERSION 1.10.0
+  LIGHTRAIL_RELEASE_BRANCH: main
+
+include:
+  # LightRail Platform Pipeline
+  - project: dxp/platforms-pipelines/lightrail-platform/lightrail
+    ref: *LIGHTRAIL_VERSION
+    file:
+      - pipeline/global.yaml
+      - pipeline/stages/build/build.yaml
+      - pipeline/stages/deploy/deploy.yaml
+      - pipeline/stages/clean/clean.yaml
+  # Security Scanning Pipeline
+  - local: '.gitlab-ci-security.yml'
+  # Documentation Pipeline (Antora)
+  - local: '.gitlab-ci-docs.yml'
+----
+
+=== CI/CD variables
+
+Configure in GitLab at **Settings → CI/CD → Variables**:
+
+==== Required variables
+
+[cols="2,1,3"]
+|===
+|Variable |Type |Description
+
+|`MODEL_PROVIDER`
+|Text
+|AI provider (`llamastack`, `api`, `ollama`)
+
+|`SECRET_KEY`
+|Secret (Masked)
+|Flask session encryption key
+
+|`ACCESS_TOKEN`
+|Secret (Masked)
+|API authentication token (for API provider)
+|===
+
+==== Optional variables
+
+* `MODEL_ID` — specific model to use
+* `MODEL_ANALYSIS_TEMPERATURE` — analysis temperature (default: 0.0)
+* `MODEL_SEED` — reproducibility seed (default: 42)
+* `CORS_ORIGINS` — allowed origins (default: `*`)
+* `LOG_FORMAT` — `text` or `json`
+
+=== Feedback persistence
+
+Feedback is stored in SQLite on a persistent volume claim (PVC) at `/app/data/feedback.db`. If the PVC is unavailable, it falls back to in-memory SQLite (`:memory:`).
+
+[source,bash]
+----
+FEEDBACK_DB_PATH=/app/data/feedback.db
+FEEDBACK_PERSISTENT=True
+----
+
+== Production checklist
+
+=== Pre-deployment
+
+- [ ] **Python version**: 3.12+ verified
+- [ ] **Dependencies**: All installed and tested
+- [ ] **Tests**: All 389 tests passing (`make test`)
+- [ ] **Environment variables**: Configured and validated
+- [ ] **LLM provider**: Available and tested
+- [ ] **Security**: Secrets not committed, `SECRET_KEY` set
+
+=== Configuration review
+
+- [ ] **`SECRET_KEY`**: Strong random key set (not auto-generated)
+- [ ] **`CORS_ORIGINS`**: Restricted to actual domains (not `*`)
+- [ ] **`RATE_LIMIT_ENABLED`**: Enabled for production (`True`)
+- [ ] **`LOG_FORMAT`**: Set to `json` for structured logging
+- [ ] **`FEEDBACK_PERSISTENT`**: Set to `True` with valid PVC path
+
+=== Performance
+
+- [ ] **Gunicorn**: Workers configured in `gunicorn.conf.py` (gevent)
+- [ ] **LLM concurrency**: `LLM_MAX_CONCURRENT=5` (default, adjust per deployment)
+- [ ] **Health check**: `GET /api/v1/health` returns healthy
+
+=== Post-deployment verification
+
+==== Health check
+
+[source,bash]
+----
+curl https://your-domain.com/api/v1/health
+----
+
+==== Smoke test
+
+[source,bash]
+----
+# Test analysis
+curl -X POST https://your-domain.com/api/v1/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"content": "The system was configured by the administrator.", "content_type": "concept"}'
+----
+
+== Security best practices
+
+1. **Mark secrets as Masked**: Hides values in CI/CD job logs
+2. **Mark production vars as Protected**: Only accessible on protected branches
+3. **Use environment scopes**: Separate dev/staging/prod variables
+4. **Rotate keys regularly**: Update `ACCESS_TOKEN` and `SECRET_KEY` periodically
+5. **Restrict CORS**: Set `CORS_ORIGINS` to specific domains
+
+== Troubleshooting
+
+=== Application won't start
+
+[source,bash]
+----
+# Check LightRail logs
+oc logs -f deployment/cea
+
+# Common issues:
+# - Missing environment variables
+# - LLM provider unreachable
+# - Port conflict
+----
+
+=== LLM provider issues
+
+[source,bash]
+----
+# Verify API provider
+curl -H "Authorization: Bearer $ACCESS_TOKEN" $BASE_URL/models
+
+# Check LlamaStack
+# Verify CEA_MODEL_ID is deployed
+----
+
+If the LLM provider is unavailable, CEA continues to serve — deterministic rules still run. LLM results return empty lists.
+
+== See also
+
+* xref:environment-variables.adoc[Environment Variables Reference]
+* xref:getting-started.adoc[Getting Started Guide]
+* xref:architecture:architecture.adoc[System Architecture]

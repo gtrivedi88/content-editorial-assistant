@@ -1,0 +1,85 @@
+# ============================================================
+# DOCUMENTATION PIPELINE (Refreshed Cache Version)
+# ============================================================
+
+variables:
+  NODE_VERSION: "18"
+  DOCS_DIR: "docs"
+  NODE_IMAGE: "registry.access.redhat.com/ubi9/nodejs-18:latest"
+  ALPINE_IMAGE: "registry.access.redhat.com/ubi9-minimal:latest"
+
+# Change the cache key by adding a suffix (v2) to force a fresh start
+cache:
+  key: "v2-cache-$CI_COMMIT_REF_SLUG"
+  paths:
+    - docs/.npm/
+
+# ============================================================
+# DOCUMENTATION JOBS
+# ============================================================
+
+build-docs:
+  stage: build
+  image: ${NODE_IMAGE}
+  allow_failure: true
+  before_script:
+    - cd $DOCS_DIR
+    # NUCLEAR OPTION: Manually remove any existing node_modules 
+    # to prevent the permission error before npm even starts.
+    - rm -rf node_modules
+    - mkdir -p .npm
+    - npm ci --cache .npm --prefer-offline
+  script:
+    - echo "Building Content Editorial Assistant documentation..."
+    - npx antora --fetch antora-playbook.yml
+    - echo "✅ Documentation build completed"
+  artifacts:
+    expire_in: 1 hour
+    paths:
+      - docs/dist/
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  tags:
+    - itup-alm-x86
+
+docs-quality-check:
+  stage: build
+  image: ${NODE_IMAGE}
+  allow_failure: true
+  before_script:
+    - cd $DOCS_DIR
+    - rm -rf node_modules
+    - mkdir -p .npm
+    - npm ci --cache .npm --prefer-offline
+  script:
+    - echo "Running documentation quality checks..."
+    - node -e "require('js-yaml').load(require('fs').readFileSync('antora-playbook.yml', 'utf8'))" && echo "✅ YAML valid"
+    - test -f "modules/ROOT/pages/index.adoc" && echo "✅ Main index exists"
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  tags:
+    - itup-alm-x86
+
+pages:
+  stage: deploy-prod
+  image: ${ALPINE_IMAGE}
+  script:
+    - echo "Publishing to GitLab Pages..."
+    - rm -rf public
+    - mkdir public
+    - cp -r docs/dist/* public/
+    - '[ -f slides.html ] && cp slides.html public/'
+    - 'echo "📖 Available at: $CI_PAGES_URL"'
+  artifacts:
+    expire_in: 30 days
+    paths:
+      - public
+  environment:
+    name: docs-production
+    url: $CI_PAGES_URL
+  dependencies:
+    - build-docs
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  tags:
+    - itup-alm-x86

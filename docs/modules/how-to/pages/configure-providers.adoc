@@ -1,0 +1,228 @@
+= Configure AI providers
+:source-highlighter: highlightjs
+
+== Overview
+
+Content Editorial Assistant supports three AI model providers. This guide covers configuration for each.
+
+[cols="1,2,2"]
+|===
+|Provider |Best for |Requirements
+
+|**Ollama**
+|Local development, privacy-first deployment
+|Ollama installed locally
+
+|**API**
+|Cloud-based inference (Groq, OpenAI-compatible)
+|API key from provider
+
+|**LlamaStack**
+|Enterprise deployment on LightRail
+|LightRail platform access
+|===
+
+== Ollama (local LLM)
+
+=== Installation
+
+[source,bash]
+----
+# Linux
+curl -fsSL https://ollama.com/install.sh | sh
+
+# macOS
+brew install ollama
+----
+
+=== Pull a model
+
+[source,bash]
+----
+ollama pull llama3:8b
+----
+
+=== Configuration
+
+[source,bash]
+----
+# .env
+MODEL_PROVIDER=ollama
+BASE_URL=http://localhost:11434
+MODEL_ID=llama3:8b
+MODEL_ANALYSIS_TEMPERATURE=0.0
+MODEL_SEED=42
+----
+
+=== Verify
+
+[source,bash]
+----
+# Check Ollama is running
+curl http://localhost:11434/api/tags
+
+# Start CEA
+python main.py
+
+# Check health
+curl http://localhost:8000/api/v1/health
+----
+
+== API provider (OpenAI-compatible)
+
+Works with any OpenAI-compatible API endpoint: Groq, HuggingFace Inference, OpenAI, vLLM, etc.
+
+=== Configuration
+
+[source,bash]
+----
+# .env
+MODEL_PROVIDER=api
+BASE_URL=https://api.groq.com/openai/v1
+MODEL_ID=llama3-70b-8192
+ACCESS_TOKEN=your-api-key-here
+CERT_PATH=true
+----
+
+=== Provider-specific examples
+
+==== Groq
+
+[source,bash]
+----
+MODEL_PROVIDER=api
+BASE_URL=https://api.groq.com/openai/v1
+MODEL_ID=llama3-70b-8192
+ACCESS_TOKEN=gsk_your_key_here
+----
+
+==== HuggingFace Inference
+
+[source,bash]
+----
+MODEL_PROVIDER=api
+BASE_URL=https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-70B-Instruct/v1
+MODEL_ID=meta-llama/Meta-Llama-3-70B-Instruct
+ACCESS_TOKEN=hf_your_key_here
+----
+
+==== Self-hosted vLLM
+
+[source,bash]
+----
+MODEL_PROVIDER=api
+BASE_URL=http://localhost:8080/v1
+MODEL_ID=your-model-name
+----
+
+== LlamaStack (LightRail)
+
+LlamaStack is Red Hat's model serving layer used with the LightRail platform.
+
+=== Configuration
+
+[source,bash]
+----
+# .env
+MODEL_PROVIDER=llamastack
+CEA_MODEL_ID=style_analyzer_model
+----
+
+The LlamaStack server URL is configured through the LightRail platform, not via `BASE_URL`. Configuration files are in the `llamastack/` directory.
+
+== Common settings
+
+These settings apply to all providers:
+
+[source,bash]
+----
+# Analysis temperature (greedy decoding for consistency)
+MODEL_ANALYSIS_TEMPERATURE=0.0
+
+# Suggestion temperature (slightly creative)
+MODEL_SUGGESTION_TEMPERATURE=0.2
+
+# Reproducibility seed (best-effort per provider)
+MODEL_SEED=42
+
+# Maximum output tokens per generation
+MODEL_MAX_TOKENS=3072
+
+# Max concurrent LLM requests
+LLM_MAX_CONCURRENT=5
+
+# Word-count ceiling for global LLM pass
+LLM_GLOBAL_PASS_MAX_WORDS=5000
+
+# Token budget for style guide excerpts
+LLM_EXCERPT_BUDGET_MAX=8000
+----
+
+== Deterministic-only mode
+
+To run CEA without any LLM provider (deterministic rules only):
+
+[source,bash]
+----
+LLM_ENABLED=False
+----
+
+All 111 deterministic rules still run. LLM-based analysis (granular and global) is skipped. The suggestion engine falls back to deterministic replacements only.
+
+== Proxy configuration
+
+For outbound API calls through a proxy:
+
+[source,bash]
+----
+HTTPS_PROXY=http://proxy.example.com:8080
+HTTP_PROXY=http://proxy.example.com:8080
+NO_PROXY=localhost,127.0.0.1
+----
+
+== Troubleshooting
+
+=== Provider unavailable
+
+[source,bash]
+----
+# Check health endpoint
+curl http://localhost:8000/api/v1/health
+
+# Expected response when provider is down:
+# {"status": "healthy", "llm_available": false, ...}
+----
+
+CEA continues to serve when the LLM provider is unavailable. Deterministic rules still run; LLM results return empty lists.
+
+=== Ollama connection refused
+
+[source,bash]
+----
+# Verify Ollama is running
+systemctl status ollama    # Linux
+brew services info ollama  # macOS
+
+# Start if needed
+ollama serve
+----
+
+=== API rate limiting (429 errors)
+
+CEA uses `tenacity` exponential backoff on 429 errors. If rate limiting persists:
+
+* Reduce `LLM_MAX_CONCURRENT` (e.g., from 5 to 2)
+* Check your API provider's rate limits
+* Consider using a local Ollama instance
+
+=== Slow responses
+
+* Reduce `LLM_GLOBAL_PASS_MAX_WORDS` to skip global analysis on large docs
+* Reduce `LLM_EXCERPT_BUDGET_MAX` to send fewer excerpts
+* Use a faster model (e.g., `llama3:8b` instead of `llama3:70b`)
+
+== See also
+
+* xref:ROOT:environment-variables.adoc[Environment Variables Reference]
+* xref:how-to-add-new-model.adoc[Add a New AI Model Provider]
+* xref:ROOT:deployment-guide.adoc[Deployment Guide]

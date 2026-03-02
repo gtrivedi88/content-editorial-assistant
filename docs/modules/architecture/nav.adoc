@@ -1,0 +1,3 @@
+.Architecture
+* xref:architecture.adoc[System architecture]
+* xref:data-flow-diagram.adoc[Data flow diagram]

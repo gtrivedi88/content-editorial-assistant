@@ -1,0 +1,129 @@
+<link rel="stylesheet" href="{{uiRootPath}}/css/main.css">
+
+{{! Mermaid support for Antora }}
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Mermaid
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'default',
+      securityLevel: 'loose',
+      themeVariables: {
+        primaryColor: '#0066cc',
+        primaryTextColor: '#ffffff',
+        primaryBorderColor: '#0066cc',
+        lineColor: '#333333',
+        secondaryColor: '#f0f0f0',
+        tertiaryColor: '#ffffff'
+      },
+      flowchart: {
+        htmlLabels: true,
+        curve: 'basis'
+      }
+    });
+    
+    // Find mermaid diagrams - check multiple possible selectors
+    const selectors = [
+      '.listingblock.mermaid pre',
+      '.literalblock pre',
+      '.listingblock .content pre',
+      'pre.highlight code',
+      'pre code',
+      '.listingblock pre'
+    ];
+    
+    let diagramContainers = [];
+    selectors.forEach(function(selector) {
+      document.querySelectorAll(selector).forEach(function(el) {
+        if (!diagramContainers.includes(el)) {
+          diagramContainers.push(el);
+        }
+      });
+    });
+    
+    diagramContainers.forEach(function(element, index) {
+      const content = element.textContent || element.innerText;
+      
+      // Check if this is a mermaid diagram
+      const trimmedContent = content.trim();
+      const isMermaidDiagram = trimmedContent.startsWith('graph ') || 
+                              trimmedContent.startsWith('sequenceDiagram') || 
+                              trimmedContent.startsWith('flowchart ') ||
+                              trimmedContent.startsWith('flowchart\n') ||
+                              trimmedContent.startsWith('classDiagram') ||
+                              trimmedContent.startsWith('stateDiagram') ||
+                              trimmedContent.startsWith('journey') ||
+                              trimmedContent.startsWith('gantt') ||
+                              trimmedContent.startsWith('pie') ||
+                              trimmedContent.startsWith('gitGraph') ||
+                              trimmedContent.startsWith('erDiagram') ||
+                              trimmedContent.startsWith('mindmap');
+      
+      if (isMermaidDiagram) {
+        const graphDefinition = trimmedContent;
+        const graphId = 'mermaid-diagram-' + index;
+        
+        // Create a container for the rendered diagram
+        const container = document.createElement('div');
+        container.className = 'mermaid-container';
+        
+        // Find the parent block to replace
+        let parentBlock = element.closest('.listingblock') || element.closest('.literalblock') || element.parentNode;
+        
+        // Render the diagram
+        mermaid.render(graphId, graphDefinition).then(function(result) {
+          container.innerHTML = result.svg;
+          if (parentBlock && parentBlock.parentNode) {
+            parentBlock.parentNode.replaceChild(container, parentBlock);
+          }
+        }).catch(function(error) {
+          console.error('Mermaid rendering error:', error);
+          container.innerHTML = '<div class="mermaid-error">Diagram could not be rendered</div><pre>' + graphDefinition + '</pre>';
+          if (parentBlock && parentBlock.parentNode) {
+            parentBlock.parentNode.replaceChild(container, parentBlock);
+          }
+        });
+      }
+    });
+  });
+</script>
+
+{{! Mermaid CSS }}
+<style>
+  .mermaid-container {
+    text-align: center;
+    margin: 1.5rem 0;
+    padding: 1.5rem;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    overflow-x: auto;
+  }
+  
+  .mermaid-container svg {
+    max-width: 100%;
+    height: auto;
+  }
+  
+  .mermaid-error {
+    color: #dc3545;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+  }
+  
+  /* Improve diagram readability */
+  .mermaid-container .node rect,
+  .mermaid-container .node circle,
+  .mermaid-container .node ellipse {
+    fill: #f9f9f9;
+    stroke: #333;
+    stroke-width: 1px;
+  }
+  
+  .mermaid-container .edgeLabel {
+    background-color: #ffffff;
+    padding: 2px 4px;
+    border-radius: 2px;
+  }
+</style>

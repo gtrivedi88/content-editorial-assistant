@@ -1,0 +1,205 @@
+= Testing guide
+:navtitle: Testing guide
+
+== Overview
+
+CEA uses pytest for all testing. The test suite contains 389 tests organized by component, with shared fixtures for Flask app, SpaCy mocks, and LLM mocks. All tests run without network access.
+
+== Test categories
+
+[cols="2,1,3"]
+|===
+|Test file |Count |What it tests
+
+|`test_merger.py`
+|55
+|Issue merge, span overlap dedup, cross-source text dedup, category-agnostic span overlap, cross-block boundary demotion, repeated error survival
+
+|`test_fp_guards.py`
+|40
+|FP guard mechanisms across 10 rules + highlighting bold+code detection + anthropomorphism coverage + passive voice content-type guards + spatial reference patterns
+
+|`test_orchestrator_spans.py`
+|37
+|`_find_flagged_in_text` (multi-strategy), `_compute_content_code_ranges`, `_compute_bold_code_ranges`, `_strip_lite_markers`, `_strip_markdown_inline`, fuzzy threshold, sentinel handling
+
+|`test_parser.py`
+|32
+|`parse_analysis_response` (valid, fenced, truncated, empty), `parse_suggestion_response`, `parse_judge_response`, `_normalize_issue_fields`
+
+|`test_suggestion_engine.py`
+|28
+|Cache hit, session not found, simple replacement, instruction routing, LLM fallback, `_is_instruction_suggestion` detection
+
+|`test_session_store.py`
+|15
+|CRUD, TTL expiration, score recalculation, suggestion cache, cancellation, concurrent access
+
+|`test_client.py`
+|11
+|`is_available`, `analyze_block`, `analyze_global`, `suggest`, `judge_issues`, retry on ConnectionError, seed passthrough
+
+|`test_asciidoc_parser.py`
+|10
+|Headings, lists, code blocks, admonitions, `char_map`, `inline_content` preservation, `start_pos`/`end_pos` alignment
+
+|`test_feedback_store.py`
+|8
+|Store/retrieve, stats, in-memory fallback, thread safety
+
+|`test_xml_parser.py`
+|7
+|Basic parsing, `_element_text` no synthetic spaces, malformed XML handling
+
+|`test_dita_parser.py`
+|6
+|Basic parsing, `_element_text` no synthetic spaces, `char_map` alignment
+
+|`test_suggestions_api.py`
+|6
+|Validation, session not found, deterministic/LLM suggestions
+
+|`test_error_handlers.py`
+|6
+|400/404/413/500 JSON responses, browser asset 404 suppression
+
+|`test_citations_api.py`
+|4
+|Known/unknown rule, response fields
+|===
+
+== Testing patterns
+
+=== Mocking SpaCy
+
+The `mock_spacy` fixture patches SpaCy to return mock documents. Tests never load the actual `en_core_web_md` model:
+
+[source,python]
+----
+def test_my_feature(self, app, mock_spacy):
+    """Test with mocked SpaCy."""
+    # mock_spacy is auto-applied via conftest.py
+    # SpaCy calls return mock Doc objects
+    pass
+----
+
+=== Mocking the LLM
+
+The `mock_llm` fixture patches `LLMClient.is_available()` to return `False`. This forces deterministic-only mode:
+
+[source,python]
+----
+def test_deterministic_only(self, app, mock_llm):
+    """Test with LLM disabled."""
+    # Analysis returns only deterministic results
+    pass
+----
+
+=== Testing rules directly
+
+Rules can be tested in isolation by importing and calling `analyze()`:
+
+[source,python]
+----
+def test_rule_detects_issue(self, app):
+    """Test a specific rule."""
+    from rules.punctuation.periods_rule import PeriodsRule
+
+    rule = PeriodsRule()
+    text = "I.B.M. is a company."
+    sentences = ["I.B.M. is a company."]
+
+    errors = rule.analyze(text, sentences)
+
+    assert len(errors) >= 1
+    assert errors[0]["type"] == "periods"
+----
+
+=== Testing API endpoints
+
+Use the `client` fixture for HTTP requests:
+
+[source,python]
+----
+def test_analyze_endpoint(self, client):
+    """Test the analyze API."""
+    response = client.post("/api/v1/analyze", json={
+        "content": "The system was configured.",
+        "content_type": "concept",
+    })
+    data = response.get_json()
+
+    assert response.status_code == 200
+    assert data["success"] is True
+    assert "issues" in data
+----
+
+=== Testing with sessions
+
+Use `session_with_issues` for tests that need pre-populated session data:
+
+[source,python]
+----
+def test_accept_issue(self, client, session_with_issues):
+    """Test accepting an issue."""
+    ids = session_with_issues
+    response = client.post(
+        f"/api/v1/issues/{ids['issue_id_1']}/accept",
+        json={"session_id": ids["session_id"]},
+    )
+    assert response.status_code == 200
+----
+
+== What to test when
+
+[cols="1,2"]
+|===
+|Change |Tests to run
+
+|New deterministic rule
+|`test_fp_guards.py` + new rule-specific tests
+
+|Rule YAML config change
+|`test_fp_guards.py`
+
+|LLM prompt change
+|`test_prompts.py`
+
+|Merger logic change
+|`test_merger.py`
+
+|Span mapping change
+|`test_orchestrator_spans.py`
+
+|API endpoint change
+|Relevant `test_*_api.py`
+
+|Parser change
+|Relevant `test_*_parser.py`
+
+|Any change
+|Full suite: `make test`
+|===
+
+== CI/CD integration
+
+Tests run in the GitLab CI/CD pipeline:
+
+[source,yaml]
+----
+# .gitlab-ci.yml test stage
+test:
+  stage: test
+  script:
+    - pip install -r requirements.txt
+    - python -m pytest tests/ -v --junitxml=test-results.xml
+  artifacts:
+    reports:
+      junit: test-results.xml
+----
+
+== See also
+
+* xref:testing-setup.adoc[Testing Setup]
+* xref:writing-tests.adoc[Writing Tests]
+* xref:how-to-add-new-rule.adoc[Add a New Rule]

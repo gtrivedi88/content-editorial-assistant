@@ -1,0 +1,221 @@
+/* ================================================================
+   CEA Docs & Help Pages
+   ================================================================ */
+
+/* ── Page container ── */
+
+.cea-docs-page {
+  overflow-y: auto;
+  height: calc(100vh - var(--cea-masthead-height));
+}
+
+.cea-docs-container {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: var(--pf-v5-global--spacer--xl) var(--pf-v5-global--spacer--xl)
+           var(--pf-v5-global--spacer--3xl);
+}
+
+/* ── Titles ── */
+
+.cea-docs-title {
+  margin-bottom: var(--pf-v5-global--spacer--lg);
+}
+
+.cea-docs-section-title {
+  margin-top: var(--pf-v5-global--spacer--2xl);
+  margin-bottom: var(--pf-v5-global--spacer--md);
+  padding-top: var(--pf-v5-global--spacer--lg);
+  border-top: 1px solid var(--pf-v5-global--BorderColor--100);
+}
+
+/* ── Alerts ── */
+
+.cea-docs-alert {
+  margin-bottom: var(--pf-v5-global--spacer--md);
+}
+
+/* ── Table of contents ── */
+
+.cea-docs-toc {
+  background: var(--pf-v5-global--BackgroundColor--200);
+  border: 1px solid var(--pf-v5-global--BorderColor--100);
+  border-radius: 8px;
+  padding: var(--pf-v5-global--spacer--md) var(--pf-v5-global--spacer--lg);
+  margin-bottom: var(--pf-v5-global--spacer--xl);
+}
+
+.cea-docs-toc h2 {
+  margin-bottom: var(--pf-v5-global--spacer--sm);
+}
+
+.cea-docs-toc ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+
+.cea-docs-toc a {
+  color: var(--pf-v5-global--link--Color);
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.cea-docs-toc a:hover {
+  text-decoration: underline;
+}
+
+/* ── Lists ── */
+
+.cea-docs-list {
+  padding-left: 20px;
+  margin-bottom: var(--pf-v5-global--spacer--md);
+  line-height: 1.7;
+}
+
+.cea-docs-list li {
+  margin-bottom: 4px;
+}
+
+/* ── Code blocks ── */
+
+.cea-docs-code {
+  background: var(--pf-v5-global--BackgroundColor--dark-100, #151515);
+  color: #e6e6e6;
+  border-radius: 6px;
+  padding: var(--pf-v5-global--spacer--md) var(--pf-v5-global--spacer--lg);
+  overflow-x: auto;
+  font-size: 13px;
+  line-height: 1.6;
+  margin-bottom: var(--pf-v5-global--spacer--lg);
+}
+
+.cea-docs-code code {
+  font-family: 'Red Hat Mono', 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* ── Tables ── */
+
+.cea-docs-table {
+  margin-bottom: var(--pf-v5-global--spacer--lg);
+  width: 100%;
+}
+
+.cea-docs-table th {
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.cea-docs-table code {
+  background: var(--pf-v5-global--BackgroundColor--200);
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 13px;
+}
+
+/* ── Two-column layout ── */
+
+.cea-docs-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--pf-v5-global--spacer--lg);
+  margin-bottom: var(--pf-v5-global--spacer--lg);
+}
+
+@media (max-width: 600px) {
+  .cea-docs-two-col {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Checklist ── */
+
+.cea-docs-checklist li {
+  list-style: none;
+  position: relative;
+  padding-left: 24px;
+}
+
+.cea-docs-checklist li::before {
+  content: '\f0c8';
+  font-family: 'Font Awesome 6 Free';
+  font-weight: 400;
+  position: absolute;
+  left: 0;
+  color: var(--pf-v5-global--BorderColor--100);
+}
+
+/* ── Help page cards ── */
+
+.cea-help-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--pf-v5-global--spacer--md);
+  margin-bottom: var(--pf-v5-global--spacer--xl);
+}
+
+.cea-help-card {
+  border-radius: 8px;
+}
+
+.cea-help-card__icon {
+  color: var(--pf-v5-global--primary-color--100);
+  margin-right: 8px;
+}
+
+.cea-help-list {
+  padding-left: 20px;
+  margin-top: var(--pf-v5-global--spacer--sm);
+  line-height: 1.7;
+}
+
+.cea-help-list li {
+  margin-bottom: 4px;
+}
+
+.cea-help-link {
+  margin-top: var(--pf-v5-global--spacer--md);
+}
+
+.cea-help-link a {
+  color: var(--pf-v5-global--link--Color);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.cea-help-link a:hover {
+  text-decoration: underline;
+}
+
+.cea-help-contact-table {
+  width: 100%;
+  margin-top: var(--pf-v5-global--spacer--sm);
+}
+
+.cea-help-contact-table td {
+  padding: 6px 12px 6px 0;
+  vertical-align: top;
+}
+
+.cea-help-contact-table a {
+  color: var(--pf-v5-global--link--Color);
+  text-decoration: none;
+}
+
+.cea-help-contact-table a:hover {
+  text-decoration: underline;
+}
+
+/* ── Utility colors ── */
+
+.cea-text-success {
+  color: var(--pf-v5-global--success-color--100, #388400);
+}
+
+.cea-text-danger {
+  color: var(--pf-v5-global--danger-color--100, #c9190b);
+}

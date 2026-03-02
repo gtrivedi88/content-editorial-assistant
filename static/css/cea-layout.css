@@ -42,6 +42,16 @@
   font-size: 14px;
 }
 
+.cea-version-badge {
+  font-size: 10px;
+  font-weight: 500;
+  background: #383838;
+  padding: 1px 6px;
+  border-radius: 4px;
+  letter-spacing: 0;
+  color: #fff;
+}
+
 .cea-nav {
   display: flex;
   gap: 4px;
@@ -92,11 +102,6 @@
 .cea-masthead-btn:hover {
   background: rgba(255, 255, 255, 0.08);
   color: #fff;
-}
-
-.cea-health-label {
-  color: #388400;
-  font-weight: 500;
 }
 
 /* ── Review Page Layout ── */

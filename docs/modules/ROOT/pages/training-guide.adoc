@@ -1,0 +1,423 @@
+= AI-assisted writing training guide
+:toc: left
+:toclevels: 3
+:icons: font
+
+== Training overview
+
+This training guide provides comprehensive instruction on using the Content Editorial Assistant (CEA), an AI-powered writing analysis tool. Upon completion, users will understand how to effectively use AI assistance while maintaining human oversight and content quality.
+
+=== Training objectives
+
+By the end of this training, you will be able to:
+
+. Understand the capabilities and limitations of AI-assisted writing tools
+. Apply the human-in-the-loop principle to all AI-generated content
+. Use CEA to analyze and improve technical documentation
+. Identify and mitigate risks associated with AI-generated content
+. Follow best practices for reviewing and accepting AI suggestions
+
+=== Target audience
+
+* Technical writers
+* Documentation managers
+* Content reviewers
+* Anyone using CEA for documentation improvement
+
+=== Estimated training time
+
+* **Self-paced learning**: 45–60 minutes
+* **Hands-on exercises**: 30 minutes
+* **Total**: Approximately 1.5 hours
+
+---
+
+== Module 1: Understanding AI-assisted writing
+
+=== 1.1 What is AI-assisted writing?
+
+AI-assisted writing tools use machine learning models to analyze text and provide suggestions for improvement. Unlike traditional spell-checkers, these tools can:
+
+* Analyze style guide compliance across multiple standards
+* Suggest sentence restructuring
+* Detect context-dependent issues
+* Recommend style improvements
+* Generate rewrite suggestions
+
+=== 1.2 How CEA uses AI
+
+Content Editorial Assistant employs a hybrid approach — deterministic rules for reliable pattern matching, and LLM-based analysis for context-dependent judgment:
+
+[cols="1,2,1"]
+|===
+|Feature |How it works |Human review required
+
+|**Deterministic rules (111)**
+|Coded pattern matching against IBM Style Guide, Red Hat Supplementary Guide, accessibility, modular docs, and minimalism
+|Yes — context may vary
+
+|**LLM granular analysis**
+|Per-block AI analysis for context-dependent style issues
+|Yes — may have false positives
+
+|**LLM global analysis**
+|Full-document review for tone, flow, structure, and consistency
+|Yes — suggestions are advisory
+
+|**AI suggestions**
+|LLM-powered rewrite suggestions for detected issues
+|**Critical** — always verify
+
+|**Quality scoring**
+|Penalty-based score (30–100) with severity weights
+|Yes — context matters
+|===
+
+=== 1.3 AI limitations you must understand
+
+[IMPORTANT]
+====
+**AI systems have inherent limitations:**
+
+. **Hallucinations**: AI may generate plausible-sounding but incorrect information
+. **Context blindness**: AI may not understand your product, organization, or domain
+. **Bias**: AI training data may introduce unintended biases
+. **Variance**: Same input may produce slightly different outputs across sessions
+. **No true understanding**: AI processes patterns, not meaning
+====
+
+---
+
+== Module 2: Human-in-the-loop principle
+
+=== 2.1 What is human-in-the-loop?
+
+Human-in-the-Loop (HITL) is a design principle ensuring humans maintain oversight and final decision authority over AI-generated content.
+
+[WARNING]
+====
+**ALWAYS REVIEW AI-GENERATED CONTENT PRIOR TO USE**
+
+This is not optional. Every piece of AI-generated content MUST be reviewed by a human before publication or use.
+====
+
+=== 2.2 Why human review is essential
+
+[cols="1,2"]
+|===
+|Risk |Human review mitigates
+
+|**Factual errors**
+|Humans verify accuracy against source materials
+
+|**Inappropriate tone**
+|Humans ensure content matches organizational voice
+
+|**Missing context**
+|Humans add domain-specific knowledge
+
+|**Security/Privacy**
+|Humans catch sensitive information exposure
+
+|**Brand compliance**
+|Humans ensure adherence to style guides
+|===
+
+=== 2.3 The review process
+
+Follow this process for ALL AI-generated content:
+
+. **Read completely** — do not skim AI suggestions
+. **Verify facts** — cross-reference with authoritative sources
+. **Check context** — ensure it fits your document's purpose
+. **Validate tone** — confirm appropriate voice and style
+. **Test accuracy** — for procedures, verify steps work
+. **Accept/Modify/Reject** — make deliberate decisions
+
+---
+
+== Module 3: Using Content Editorial Assistant
+
+=== 3.1 Accessing CEA
+
+. Navigate to the CEA application URL
+. No login required — sessions are anonymous
+. Your data is NOT stored after the session ends
+
+=== 3.2 Input methods
+
+==== Uploading documents
+
+Supported formats:
+
+* PDF (.pdf)
+* Microsoft Word (.docx)
+* Markdown (.md)
+* AsciiDoc (.adoc)
+* DITA XML (.dita, .xml)
+* Plain Text (.txt)
+
+==== Direct text entry
+
+. Paste or type content into the editor
+. Useful for quick analysis of snippets
+
+=== 3.3 Running analysis
+
+. Select the content type (concept, procedure, reference, release notes) or leave as auto-detect
+. Click the **Analyze** button
+. Watch real-time progress through three phases:
+  * Deterministic rules (~0.5–1s)
+  * AI-powered block analysis (per-block progress counter)
+  * Global document review
+. Review the results in the issue panel
+
+=== 3.4 Understanding results
+
+==== Issue categories
+
+Issues are grouped by IBM Style Guide category:
+
+* **Language and Grammar**: Passive voice, verb tense, anthropomorphism, etc.
+* **Punctuation**: List punctuation, possessives, plurals
+* **Structure and Format**: Heading levels, sentence length, definitions
+* **Audience and Medium**: Accessibility, self-referential text, geographic locations
+
+==== Quality score
+
+CEA calculates a penalty-based quality score:
+
+* **90–100**: Excellent
+* **75–89**: Good
+* **60–74**: Needs Work
+* **Below 60**: Poor
+
+=== 3.5 Using AI suggestions
+
+[CAUTION]
+====
+The suggestion feature generates content using AI. This content requires thorough human review.
+====
+
+. Click an issue card to expand it
+. Click **Suggest** to request an AI-powered rewrite
+. **REVIEW THE OUTPUT CAREFULLY**
+. Choose: **Accept** (apply to editor) or dismiss the issue
+
+=== 3.6 Report panel
+
+CEA provides a slide-over report panel with:
+
+* Summary of findings by category
+* Issue counts and severity breakdown
+* Quality score
+
+---
+
+== Module 4: Best practices
+
+=== 4.1 Before using AI assistance
+
+*Do:*
+
+* Have a clear goal for your content
+* Prepare source materials for fact-checking
+* Understand your audience and purpose
+
+*Do not:*
+
+* Enter personal or sensitive information
+* Rely solely on AI for accuracy
+
+=== 4.2 During AI-assisted work
+
+*Do:*
+
+* Review each suggestion individually
+* Consider context the AI does not have
+* Use your domain expertise
+* Document significant AI-suggested changes
+
+*Do not:*
+
+* Accept suggestions blindly
+* Skip the review step
+
+=== 4.3 After using AI assistance
+
+*Do:*
+
+* Perform final human review of all content
+* Verify technical accuracy
+* Check for consistency with other documents
+* Follow your team's review/approval process
+
+*Do not:*
+
+* Publish without human verification
+
+=== 4.4 Red flags to watch for
+
+Be especially careful when AI suggestions:
+
+* Include specific numbers, dates, or statistics
+* Reference external sources or links
+* Make claims about product capabilities
+* Include code samples or commands
+* Contradict your source materials
+
+---
+
+== Module 5: Privacy and data handling
+
+=== 5.1 What NOT to enter
+
+[IMPORTANT]
+====
+**Never enter into CEA:**
+
+* Personal Identifiable Information (PII)
+* Customer data or account information
+* Credentials, passwords, or API keys
+* Confidential business information
+* Information not intended for AI processing
+====
+
+=== 5.2 Data retention policy
+
+* **Session data**: Deleted when you close the browser (TTL-based expiration)
+* **Analysis results**: Not stored after session
+* **Uploaded documents**: Processed in-memory only
+* **AI interactions**: Not used for model training
+* **Feedback votes**: Stored in SQLite for rule improvement (no content retained)
+
+=== 5.3 Security considerations
+
+* CEA runs within the corporate network
+* Content is processed by approved AI providers only
+* No data is shared with external parties
+* Session isolation prevents data leakage
+
+---
+
+== Module 6: Practical exercises
+
+=== Exercise 1: Basic analysis
+
+. Copy a paragraph from existing documentation
+. Paste into the CEA editor
+. Click **Analyze**
+. Review results and identify:
+   * How many issues were found?
+   * What is the quality score?
+   * What is the most common issue type?
+
+=== Exercise 2: Critical review
+
+. Click an issue card and request a suggestion
+. Before accepting, answer:
+   * Is the suggested text factually accurate?
+   * Does it maintain the original meaning?
+   * Is the tone appropriate?
+   * Would you publish this as-is?
+
+=== Exercise 3: Provide feedback
+
+. Use the thumbs-up/thumbs-down buttons on issue cards
+. Rate at least 5 issues to understand the feedback system
+. Note: your feedback directly improves CEA's accuracy
+
+---
+
+== Training completion checklist
+
+Before considering this training complete, verify you can answer YES to all:
+
+[%interactive]
+* [ ] I understand that AI can generate incorrect information (hallucinations)
+* [ ] I will ALWAYS review AI-generated content before use
+* [ ] I know NOT to enter personal or sensitive information
+* [ ] I understand CEA's analysis features and their limitations
+* [ ] I can interpret the quality score and issue categories
+* [ ] I know how to use the suggestion feature responsibly
+* [ ] I understand data is not retained after my session
+* [ ] I know where to report issues or provide feedback
+
+---
+
+== Quick reference card
+
+=== The golden rule
+
+[WARNING]
+====
+**ALWAYS REVIEW AI-GENERATED CONTENT PRIOR TO USE**
+====
+
+=== Key actions
+
+* **Analyze**: Run three-phase analysis on your content
+* **Suggest**: Get AI-powered rewrite for a detected issue
+* **Accept**: Apply a suggestion to the editor
+* **Dismiss**: Remove an issue you disagree with
+* **Feedback**: Rate issues with thumbs-up/thumbs-down
+
+=== Support contacts
+
+* **Slack**: https://redhat.enterprise.slack.com/archives/C05EXLSNTD1[#content-editorial-assistant^]
+* **Email**: mailto:gtrivedi@redhat.com[gtrivedi@redhat.com]
+* **Issues**: https://gitlab.cee.redhat.com/ccs-ai/content-editorial-assistant/-/issues[GitLab Issues^]
+
+---
+
+== Appendix: Training plan document
+
+=== Training plan summary
+
+[cols="1,3"]
+|===
+|Item |Details
+
+|**Training title**
+|Content Editorial Assistant AI-assisted writing training
+
+|**Version**
+|0.0.2
+
+|**Effective date**
+|March 2026
+
+|**Target audience**
+|All CEA users (technical writers, documentation teams)
+
+|**Delivery method**
+|Self-paced online training via Antora documentation
+
+|**Duration**
+|1.5 hours (including exercises)
+
+|**Prerequisites**
+|Basic technical writing experience
+
+|**Assessment**
+|Completion checklist (self-assessment)
+|===
+
+=== Learning outcomes
+
+Upon completion, learners will demonstrate:
+
+. **Knowledge** of AI capabilities and limitations
+. **Understanding** of human-in-the-loop requirements
+. **Ability** to use CEA features effectively
+. **Competence** in reviewing AI-generated content
+. **Awareness** of privacy and data handling requirements
+
+=== Training maintenance
+
+This training guide will be reviewed and updated:
+
+* Quarterly for accuracy
+* When significant features are added
+* When AI policies change
+* Based on user feedback

@@ -104,6 +104,9 @@ class Config:
     RATE_LIMIT_DEFAULT: str = os.environ.get("RATE_LIMIT_DEFAULT", "120/minute")
     RATE_LIMIT_ANALYZE: str = os.environ.get("RATE_LIMIT_ANALYZE", "30/minute")
 
+    # --- Documentation ---
+    DOCS_URL: str = os.environ.get("DOCS_URL", "/docs/")
+
     # --- PDF ---
     PDF_MARGIN_CROP_PERCENT: int = int(os.environ.get("PDF_MARGIN_CROP_PERCENT", "8"))
 

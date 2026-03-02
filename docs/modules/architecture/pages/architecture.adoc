@@ -1,0 +1,553 @@
+= System architecture
+:description: Technical architecture documentation for Content Editorial Assistant v0.0.2
+:keywords: architecture, analysis, rules, llm, flask
+:sectnums:
+:sectanchors:
+
+== Overview
+
+Content Editorial Assistant (CEA) is a production-grade style checking tool for technical documentation, combining deterministic rules with LLM-based analysis. It checks content against the IBM Style Guide, Red Hat Supplementary Style Guide, accessibility guidelines, modular documentation standards, and minimalism principles.
+
+=== Key capabilities
+
+* **111 deterministic rules** with FP-hardened guards for reliable pattern matching
+* **LLM-based analysis** for context-dependent judgment (per-block granular + full-document global)
+* **Three-tier suggestion pipeline** (cache, deterministic replacement, LLM rewrite)
+* **Multi-format support** for PDF, DOCX, Markdown, AsciiDoc, DITA/XML, and plain text
+* **Real-time progress** via Socket.IO WebSocket events
+* **Multi-provider LLM** support (Ollama, OpenAI-compatible API, LlamaStack)
+* **Penalty-based quality scoring** with severity weights and category multipliers
+
+=== Technology stack
+
+* **Backend**: Python 3.12, Flask, SpaCy (`en_core_web_md`), gevent
+* **Frontend**: Vanilla JavaScript (ES6 modules), PatternFly v5 CSS
+* **LLM providers**: Ollama, OpenAI-compatible API, LlamaStack
+* **Data**: SQLite (feedback), in-memory sessions with TTL
+* **Real-time**: Socket.IO (Flask-SocketIO with gevent)
+* **Deployment**: LightRail platform, Gunicorn with gevent workers
+
+== Project structure
+
+[source,text]
+----
+content-editorial-assistant/
+├── main.py                          # Entry point (gevent + socketio.run)
+├── main.sh                          # LightRail entrypoint (exec gunicorn)
+├── gunicorn.conf.py                 # Gunicorn config (gevent workers, preload)
+├── requirements.txt                 # Local dev dependencies
+├── pyproject.toml                   # LightRail deployment (poetry backend)
+├── Makefile                         # Common commands (run, test, lint, etc.)
+├── .env                             # Local config (gitignored)
+├── multishot_examples.yaml          # Few-shot examples for LLM suggestions
+│
+├── app/                             # Flask backend
+│   ├── __init__.py                  # create_app() factory
+│   ├── config.py                    # All config via env vars
+│   ├── api/
+│   │   ├── __init__.py              # Blueprint registration
+│   │   ├── v1/
+│   │   │   ├── analyze.py           # POST /api/v1/analyze
+│   │   │   ├── upload.py            # POST /api/v1/upload
+│   │   │   ├── suggestions.py       # POST /api/v1/suggestions
+│   │   │   ├── citations.py         # GET /api/v1/citations/<rule>
+│   │   │   ├── issues.py            # POST /api/v1/issues/<id>/...
+│   │   │   ├── health.py            # GET /api/v1/health
+│   │   │   ├── views.py             # HTML view routes (/, /review, /help)
+│   │   │   └── error_handlers.py    # JSON error responses
+│   │   └── middleware/
+│   │       ├── rate_limiter.py       # flask-limiter (disabled by default)
+│   │       └── correlation.py       # X-Request-ID header + log filter
+│   ├── services/
+│   │   ├── analysis/
+│   │   │   ├── orchestrator.py      # Three-phase pipeline coordinator
+│   │   │   ├── deterministic.py     # Rule execution + normalization
+│   │   │   ├── preprocessor.py      # Markup cleaning, SpaCy, stats
+│   │   │   ├── merger.py            # Deduplicates deterministic + LLM issues
+│   │   │   ├── scorer.py            # Penalty-based quality score
+│   │   │   └── report.py            # Report generation
+│   │   ├── suggestions/
+│   │   │   └── engine.py            # Cache → deterministic → LLM pipeline
+│   │   └── session/
+│   │       └── store.py             # Thread-safe in-memory store with TTL
+│   ├── llm/
+│   │   ├── client.py                # LLM client (uses models.ModelManager)
+│   │   ├── prompts.py               # Granular and global prompt construction
+│   │   ├── parser.py                # LLM response parsing + normalization
+│   │   └── excerpt_selector.py      # Style guide excerpt selection
+│   └── models/
+│       └── enums.py                 # Enums and dataclasses
+│
+├── models/                          # Multi-provider model system
+│   ├── __init__.py                  # ModelManager, ModelFactory
+│   └── providers/
+│       ├── base_provider.py         # Provider ABC
+│       ├── api_provider.py          # OpenAI-compatible API
+│       ├── ollama_provider.py       # Ollama local provider
+│       └── llamastack_provider.py   # LlamaStack provider
+│
+├── rules/                           # 111 deterministic rules
+│   ├── __init__.py                  # RulesRegistry
+│   ├── base_rule.py                 # BaseRule + in_code_range()
+│   ├── loader.py                    # Auto-discovery loader
+│   ├── rule_mappings.yaml           # Block-type → rule assignments
+│   ├── language_and_grammar/        # Passive voice, anthropomorphism, etc.
+│   │   ├── config/                  # YAML configs (safe verbs, phrasal verbs)
+│   │   └── *_rule.py
+│   ├── punctuation/                 # List punctuation, possessives, etc.
+│   │   ├── config/
+│   │   └── *_rule.py
+│   ├── structure_and_format/        # Sentence length, headings, etc.
+│   │   ├── config/
+│   │   └── *_rule.py
+│   ├── audience_and_medium/         # Accessibility, self-referential, etc.
+│   │   ├── config/
+│   │   └── *_rule.py
+│   └── modular_compliance/          # Module validation (7 rules pending)
+│       ├── config/
+│       └── *_rule.py
+│
+├── style_guides/                    # Citation mappings with excerpts
+│   ├── ibm/
+│   │   ├── ibm_style_mapping.yaml   # 124 rule_ids → topics/pages
+│   │   └── excerpts/               # Pre-extracted YAML excerpts
+│   └── redhat/
+│
+├── static/                          # Frontend (vanilla JS, no build step)
+│   ├── css/
+│   │   ├── cea-variables.css        # CSS custom properties
+│   │   ├── cea-layout.css           # Layout styles
+│   │   └── *.css
+│   └── js/
+│       ├── app.js                   # Application initialization
+│       ├── state/
+│       │   ├── store.js             # Reactive pub/sub state store
+│       │   └── actions.js           # State mutation actions
+│       ├── issues/
+│       │   ├── issue-card.js        # Issue card rendering + suggestions
+│       │   └── checking-indicator.js # Real-time progress UI
+│       ├── editor/
+│       │   ├── underline-renderer.js # Viewport-based underline rendering
+│       │   └── span-mapper.js       # Text-to-DOM position mapping
+│       └── services/
+│           └── socket-client.js     # Socket.IO event handling
+│
+├── templates/                       # Jinja2 HTML templates
+│   ├── base.html
+│   ├── review.html                  # Main editor page
+│   ├── help_support.html            # Help page
+│   └── partials/
+│       ├── _topnav.html
+│       └── _footer.html
+│
+├── tests/                           # pytest suite (389 tests)
+│   ├── conftest.py                  # Fixtures: app, client, mock_spacy, etc.
+│   ├── fixtures/
+│   │   └── errors_sample.adoc       # Test document with rule triggers
+│   ├── llm/                         # test_client, test_parser, test_prompts
+│   ├── services/                    # test_orchestrator, test_merger, etc.
+│   ├── rules/                       # test_fp_guards, test_deterministic
+│   └── api/                         # test_analyze, test_upload, etc.
+│
+├── llamastack/                      # LlamaStack server configs
+├── .light/                          # LightRail per-environment configs
+├── scripts/                         # Build-time utilities
+├── data/                            # Runtime data (gitignored)
+└── docs/                            # Antora documentation (this site)
+----
+
+== Backend architecture
+
+=== App factory pattern
+
+`app/__init__.py` exports `create_app()` — the Flask application factory. All initialization (blueprints, middleware, error handlers, Socket.IO) happens inside this function. Application code never imports `app` directly.
+
+=== Blueprints and routing
+
+Each API version is a Flask blueprint registered in `app/api/__init__.py`. Routes live in `app/api/v1/` with one file per resource (analyze, upload, suggestions, citations, issues, health).
+
+HTML view routes (`/`, `/review`, `/help`) are registered directly on the app in `views.py`, outside the API blueprint.
+
+=== Service layer
+
+Route handlers call services, services call rules/LLM — layers are never skipped:
+
+[source]
+----
+Route Handler (app/api/v1/)
+    │
+    ▼
+Service Layer (app/services/)
+    ├── analysis/orchestrator.py   → coordinates 3-phase pipeline
+    ├── analysis/deterministic.py  → runs 111 rules
+    ├── analysis/merger.py         → deduplicates results
+    ├── analysis/scorer.py         → calculates quality score
+    ├── suggestions/engine.py      → generates rewrites
+    └── session/store.py           → manages session state
+    │
+    ▼
+Domain Layer
+    ├── rules/*                    → deterministic rule logic
+    ├── app/llm/*                  → LLM client, prompts, parser
+    └── models/*                   → provider abstraction
+----
+
+=== Error isolation
+
+One rule's failure never stops other rules. LLM failure returns an empty list and deterministic rules still run. Per-block LLM fallback on exhaustion.
+
+== Three-phase analysis pipeline
+
+The orchestrator (`app/services/analysis/orchestrator.py`) coordinates three sequential phases:
+
+[source]
+----
+┌──────────────────────────────────────────────────┐
+│                   Orchestrator                    │
+│         (app/services/analysis/orchestrator.py)   │
+├──────────┬─────────────────────┬─────────────────┤
+│ Phase 1  │      Phase 2        │     Phase 3      │
+│Determin. │   LLM Granular      │   LLM Global     │
+│ Rules    │   (per-block)       │   (full-doc)     │
+├──────────┼─────────────────────┼─────────────────┤
+│ ~0.5-1s  │ 5 concurrent blocks │ docs < 5K words  │
+│ 111 rules│ chunk size 6000     │ 7 concerns       │
+│ 0 FPs    │ overlap 3 sentences │ tone/flow/struct  │
+└──────────┴─────────────────────┴─────────────────┘
+                      │
+                      ▼
+          ┌──────────────────────┐
+          │       Merger          │
+          │ (dedup + reconcile)   │
+          └──────────────────────┘
+                      │
+                      ▼
+          ┌──────────────────────┐
+          │       Scorer          │
+          │ S = max(30, 100-Σ…)  │
+          └──────────────────────┘
+----
+
+=== Phase 1: Deterministic rules
+
+111 coded rules in `rules/` execute against parsed blocks. Results are emitted immediately via `deterministic_complete` WebSocket event (~0.5-1 second). The HTTP response returns with `partial: true` so the frontend can display results while LLM phases run.
+
+Rules receive `block.content` (fully stripped plain text) and operate within the context of a single block. Inline code ranges are pre-computed from `block.inline_content` + `block.char_map` and passed via `context["inline_code_ranges"]`.
+
+=== Phase 2: LLM granular analysis
+
+Per-block AI analysis with up to `LLM_MAX_CONCURRENT` (default 5) blocks in parallel via `ThreadPoolExecutor`. Each block is sent with:
+
+* Style guide excerpts (selected by `excerpt_selector.py`)
+* Document outline for context
+* Content-type guidance (procedure/concept/reference/release_notes)
+* SKIP list for patterns deterministic rules handle reliably
+
+Chunk size: 6000 characters with 3-sentence overlap. Rate limiting via `tenacity` exponential backoff on 429 errors.
+
+=== Phase 3: LLM global analysis
+
+Full-document review for cross-block concerns. Only runs for documents under `LLM_GLOBAL_PASS_MAX_WORDS` (default 5000 words). Checks 7 concerns: tone consistency, flow/transitions, minimalism, wordiness, audience level, document structure, accessibility.
+
+=== Merger
+
+`merger.merge()` in `app/services/analysis/merger.py` reconciles results from all three phases using four strategies:
+
+1. **LLM-to-LLM text dedup**: Cross-source exact matching + source-aware fuzzy matching
+2. **Span-based overlap dedup**: >80% overlap of shorter span = duplicate
+3. **Category-agnostic span overlap with deterministic**: Any overlap = duplicate
+4. **Word-level text matching fallback**: For spanless `[0,0]` issues
+
+=== Scorer
+
+Quality score formula:
+
+`S = max(30, 100 - Σ(W_i × M_i) / (1 + log10(N_w / 100)))`
+
+Where `W` = severity weight (HIGH:3, MEDIUM:2, LOW:1), `M` = category multiplier (GRAMMAR:1.5 highest, PUNCTUATION:0.8 lowest), `N_w` = word count. Labels: 90+ Excellent, 75-89 Good, 60-74 Needs Work, <60 Poor.
+
+=== Ordering determinism
+
+`_collect_block_results()` sorts results by block index after `as_completed()` collection. This ensures deterministic dedup ordering regardless of thread completion timing.
+
+== Deterministic rules system
+
+=== Rule categories
+
+[cols="1,1,2"]
+|===
+|Category |Directory |Examples
+
+|Language & Grammar
+|`rules/language_and_grammar/`
+|Passive voice, verb tense, anthropomorphism, spelling, terminology, abbreviations, inclusive language
+
+|Punctuation
+|`rules/punctuation/`
+|Possessives, plurals, list punctuation, list consistency, contractions
+
+|Structure & Format
+|`rules/structure_and_format/`
+|Sentence length, heading levels, highlighting, definitions, command syntax
+
+|Audience & Medium
+|`rules/audience_and_medium/`
+|Accessibility, self-referential text, geographic locations, company names
+
+|Modular Compliance
+|`rules/modular_compliance/`
+|Concept, procedure, reference module validation (7 rules pending structural parsing port)
+|===
+
+=== Rule discovery
+
+The `RulesRegistry` in `rules/__init__.py` automatically discovers rules:
+
+1. Scans `rules/` directories up to 4 levels deep
+2. Finds files ending with `_rule.py`
+3. Instantiates classes inheriting from `BaseRule`
+4. Registers rules by their unique rule type identifier
+
+`rules/rule_mappings.yaml` maps which rules run on which block types (paragraph, heading, list_item_ordered, list_item_unordered, etc.).
+
+=== FP hardening
+
+Rules use 5 defensive mechanisms to achieve zero false positives:
+
+1. **Negative lookaheads** in regex patterns
+2. **Per-rule exception whitelists** (e.g., `_STATE_OF_BEING_LEMMAS`, `_KNOWN_ACRONYMS`)
+3. **Scope/context guards** (block type, content type, quoted-text exclusion)
+4. **Proximity constraints** (e.g., 5-word window for geographic terms)
+5. **YAML-driven config** for safe verbs, phrasal verbs, and vocabulary lists
+
+If a deterministic rule cannot be 100% certain, it does not fire. Ambiguous cases are left to the LLM.
+
+=== Inline code protection
+
+`_compute_content_code_ranges()` in the orchestrator pre-computes backtick ranges from `block.inline_content` + `block.char_map`, producing ranges in content coordinates. All rules use `in_code_range()` from `rules/base_rule.py` to skip content inside inline code.
+
+== LLM integration
+
+=== Client architecture
+
+`app/llm/client.py` provides the `LLMClient` class that uses `models.ModelManager` for provider-agnostic LLM access. Three main operations:
+
+* `analyze_block()` — per-block granular analysis
+* `analyze_global()` — full-document global analysis
+* `suggest()` — context-aware rewrite suggestions
+
+=== Provider system
+
+The `models/` directory implements a multi-provider abstraction:
+
+[source]
+----
+ModelManager
+    └── ModelFactory
+        ├── ApiProvider      (OpenAI-compatible endpoints)
+        ├── OllamaProvider   (local Ollama server)
+        └── LlamaStackProvider (LightRail/LlamaStack)
+----
+
+All providers implement the same ABC from `base_provider.py`. Provider selection is driven by `MODEL_PROVIDER` env var.
+
+=== Prompt construction
+
+`app/llm/prompts.py` constructs prompts for granular and global analysis:
+
+* **Granular prompt**: Includes style guide excerpts, document outline, content-type guidance, and a narrowly-scoped SKIP list for patterns deterministic rules handle reliably
+* **Global prompt**: Checks 7 cross-block concerns with a separate SKIP for step numbering in procedures
+
+Both prompts include a SKIP for content inside triple-backtick code blocks.
+
+=== Excerpt selection
+
+`app/llm/excerpt_selector.py` selects style guide excerpts for LLM context. All category excerpts are always included regardless of whether deterministic rules found issues in that category (baseline priority 1 for zero-issue categories). Excerpt budget is configurable via `LLM_EXCERPT_BUDGET_MAX` (default 8000 tokens).
+
+=== LLM variance reduction
+
+Three mechanisms reduce variance across analysis sessions:
+
+1. **Temperature**: Analysis uses `MODEL_ANALYSIS_TEMPERATURE=0.0` (greedy decoding)
+2. **Seed**: `MODEL_SEED=42` passed to all three providers (best-effort per provider)
+3. **Block ordering**: Results sorted by block index before dedup
+
+Full determinism is not achievable with generative LLMs, but these measures provide significant consistency.
+
+== Suggestion engine
+
+Three-tier pipeline in `app/services/suggestions/engine.py`:
+
+1. **Session cache**: Check if a suggestion was already generated
+2. **Deterministic replacement**: If the issue has a single non-instruction suggestion, return it directly
+3. **LLM rewrite**: Context-aware rewrite with the full sentence/block context
+
+Instruction-style suggestions (imperative prefixes like "Rewrite...", "Consider...") route to the LLM instead of being returned as-is. The frontend limits concurrent suggestion fetches to 3 via a queue.
+
+== Frontend architecture
+
+=== State management
+
+`static/js/state/store.js` implements a reactive pub/sub store. Components subscribe to state keys and receive updates when state changes. `actions.js` contains all state mutation actions.
+
+=== Real-time progress
+
+`checking-indicator.js` subscribes to the store's `stageProgress` key and transitions the UI through real phases:
+
+* Phase 1: Deterministic rules (checkmark on completion)
+* Phase 2: "AI-powered analysis (3/15 blocks)" with live counter
+* Phase 3: "Global review"
+
+No fake timer-based animations — progress reflects actual backend events.
+
+=== Underline virtualization
+
+`underline-renderer.js` uses viewport-based rendering via `IntersectionObserver` with a 200px buffer. Cap at 150 active `<mark>` elements. Sentinel elements at ~500-character intervals trigger render/teardown to prevent DOM bloat on large documents with 300+ issues.
+
+=== Span mapping
+
+`span-mapper.js` maps backend span positions to DOM positions. `findTextInDom()` accepts an optional `sentence` parameter for disambiguating duplicate words after user edits. Text search strategies collect all occurrences and pick the one closest to `hintStart`.
+
+=== WebSocket integration
+
+`socket-client.js` handles Socket.IO events from the server. Events are filtered by `session_id` match to prevent stale results from previous analyses. The frontend uses `AbortController` on fetch requests for cancellation.
+
+== Document parsers
+
+=== 3-tier block contract
+
+The `Block` dataclass has three text representations:
+
+1. **`raw_content`** — exact source bytes with block-level and inline markers
+2. **`inline_content`** — block markers stripped, inline markers preserved (e.g., `**bold** item`)
+3. **`content`** — fully stripped plain text for deterministic rules
+
+`char_map` maps `content` positions to `inline_content` positions.
+
+=== AsciiDoc parser
+
+`asciidoc_parser.py` uses regex patterns (no AST or Asciidoctor subprocess for parsing). Handles headings (`=`), ordered lists (`. `), unordered lists (`*`), block titles, code blocks (`----`), admonitions, tables, block anchors, role attributes, list continuation (`+`), and generic block attributes.
+
+Asciidoctor (Ruby) is only used for HTML rendering in the upload flow, not for parsing. A `threading.Semaphore(3)` limits concurrent Ruby processes with a 30-second timeout.
+
+=== Other parsers
+
+* **Markdown parser**: Standard Markdown parsing
+* **DITA/XML parser**: `_element_text()` uses `"".join(parts)` to preserve source adjacency
+* **PDF parser**: Margin crop (top/bottom 8%), repeated-text detection (3+ pages), watermark exclusion
+* **DOCX parser**: Standard Word document extraction
+* **HTML parser**: Uses lxml `text_content()`
+
+=== Preprocessor
+
+`app/services/analysis/preprocessor.py` handles:
+
+* **Markup cleaning**: `_clean_markup()` strips all AsciiDoc syntax before SpaCy and rules see the text
+* **Content-type detection**: Checks `:_mod-docs-content-type:` attribute first, falls back to structural markers
+* **SpaCy processing**: Loads `en_core_web_md` for NLP tasks
+* **Statistics**: Word count, sentence count, block count
+* **Lite-markers**: Builds Markdown representation from `block.inline_content` for LLM context
+
+== Session management
+
+`app/services/session/store.py` provides a thread-safe in-memory session store with TTL-based expiration (`SESSION_TTL_SECONDS`, default 3600). Uses `threading.Lock` for concurrent access.
+
+Sessions store analysis results, suggestion caches, and cancellation state. `is_analysis_current(session_id)` checks between orchestrator phases to stop stale analyses.
+
+== Span mapping and issue resolution
+
+=== Deterministic span mapping
+
+Per-block issues use `_map_block_issues_to_original()` which maps spans directly from block-content coordinates to original-text coordinates via `block.char_map` + `block.start_pos`. This bypasses the cleaned-text offset map entirely.
+
+=== LLM span resolution
+
+LLM issues go through `_find_flagged_in_text()` with multiple strategies:
+
+1. Direct substring search
+2. Position-hinted search within a window
+3. Lite-marker stripping + retry
+4. Markdown inline-marker stripping + retry
+5. Fuzzy matching (`SequenceMatcher`, threshold 0.85)
+
+Failed remaps set `[-1, -1]` sentinel and are filtered out downstream.
+
+=== Text-anchored relocation
+
+After user edits, `findTextInDom()` in `span-mapper.js` relocates flagged text using the original `flagged_text` as anchor. Issues whose flagged text is no longer found are auto-dismissed.
+
+== Configuration
+
+All configuration is via environment variables read in `app/config.py` via `os.environ.get()` with sensible defaults. A `.env` file in the project root is loaded automatically via `python-dotenv`.
+
+See xref:ROOT:environment-variables.adoc[Environment Variables Reference] for the full list.
+
+== Request handling
+
+=== Request correlation
+
+Every request gets an `X-Request-ID` header (read from request or auto-generated UUID). Stored in `flask.g.request_id` and injected into all log records via `RequestIdFilter` for distributed tracing.
+
+=== Rate limiting
+
+`flask-limiter` middleware, disabled by default. When enabled: 120 requests/minute default, 30 requests/minute for `/api/v1/analyze`.
+
+=== Streaming results
+
+[source]
+----
+Client POST /api/v1/analyze
+    │
+    ├─► HTTP 200 (immediate, partial: true)
+    │     └── deterministic results only
+    │
+    └─► WebSocket events:
+          ├── deterministic_complete    (~0.5-1s)
+          ├── stage_progress            (per-block updates)
+          ├── llm_granular_complete
+          ├── llm_global_complete
+          └── analysis_complete         (final merged results)
+----
+
+The UI holds all results until the `analysis_complete` event arrives. Intermediate phase events are logged but do not update the UI.
+
+== Feedback system
+
+Feedback is stored in SQLite on a persistent volume claim at `FEEDBACK_DB_PATH` (default `data/feedback.db`). Falls back to in-memory SQLite (`:memory:`) if the path is unavailable. Uses `check_same_thread=False` for thread safety.
+
+Users provide thumbs-up/thumbs-down votes on issue cards. No content is retained — only anonymized vote data.
+
+== Key design decisions
+
+[cols="1,2"]
+|===
+|Decision |Rationale
+
+|Deterministic rules first, LLM second
+|Deterministic rules are fast, consistent, and have zero false positives. LLM handles the ambiguous cases.
+
+|No frontend build tools
+|Vanilla JS with ES6 modules avoids webpack/vite complexity. No build step required.
+
+|Static excerpt index, no RAG
+|Style guide excerpts are pre-extracted into YAML at build time. No vector databases or embeddings needed.
+
+|Text-anchored spans, no diff libraries
+|`flagged_text` is the anchor for underline positions. Relocated via string search after user edits.
+
+|Thread-safe in-memory sessions
+|No external session store (Redis, etc.) needed. Sessions expire via TTL.
+
+|Per-block LLM fallback
+|If the LLM is exhausted, individual blocks fall back to deterministic-only results. The analysis continues.
+
+|Viewport-based underline rendering
+|IntersectionObserver prevents DOM bloat on large documents with hundreds of issues.
+|===
+
+== See also
+
+* xref:data-flow-diagram.adoc[Data Flow Diagram]
+* xref:ROOT:llm-rules-implementation.adoc[Hybrid Analysis Architecture]
+* xref:ROOT:api-reference.adoc[API Reference]
+* xref:ROOT:environment-variables.adoc[Environment Variables]

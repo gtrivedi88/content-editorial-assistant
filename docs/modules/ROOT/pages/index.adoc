@@ -1,0 +1,219 @@
+= Content Editorial Assistant
+:!sectids:
+
+== What is Content Editorial Assistant?
+
+The Content Editorial Assistant (CEA) is an AI-powered technical writing tool developed by Red Hat to help technical writers improve the quality, readability, and consistency of their documentation.
+
+**Business purpose**: CEA assists the Customer Content Services team in producing high-quality technical content by providing automated style analysis, quality scoring, and AI-assisted rewriting suggestions—all designed to meet organizational documentation standards.
+
+[NOTE]
+====
+**CEA is a hosted application.** You can access it directly without any local installation. Contact the team for the application URL.
+====
+
+---
+
+== Important: Before you use this tool
+
+[IMPORTANT]
+====
+**Do not enter personal information**
+
+This tool is designed for technical documentation only. Do not enter any personal information, confidential data, or sensitive material including:
+
+* Personal identifiable information (PII)
+* Customer data or account information
+* Proprietary business information not intended for AI processing
+* Credentials, passwords, or security tokens
+====
+
+=== Session data and privacy
+
+**Your data is not retained.** User inputs and AI responses are NOT stored once you leave the session. Each new session starts fresh with no memory of previous interactions.
+
+* Text content you enter is processed in real-time only
+* Analysis results exist only during your active session
+* No user content is used for AI model training
+
+=== Review all AI-generated content
+
+[WARNING]
+====
+**Always verify AI suggestions before use.**
+
+AI-generated responses may contain inaccuracies. You must review all suggestions for accuracy and relevance before incorporating them into your documentation.
+
+* Verify factual accuracy of any AI-generated content
+* Ensure suggestions align with your documentation standards
+* Use your professional judgment to accept, modify, or reject suggestions
+* **The final responsibility for content accuracy lies with you**
+====
+
+---
+
+== Features
+
+CEA provides comprehensive tools to improve your technical writing:
+
+=== Style analysis
+* **111 deterministic rules**: IBM Style Guide, Red Hat Supplementary Style Guide, accessibility, modular documentation, and minimalism checks — FP-hardened with zero false-positive guards
+* **AI-powered analysis**: LLM granular (per-block) and global (full-document) passes for context-dependent style checking
+* **Real-time feedback**: Issues highlighted inline with underline virtualization for large documents
+* **Quality scoring**: Penalty-based score (30–100) with severity weights and category multipliers
+
+=== AI-powered suggestions
+* **Three-tier pipeline**: Session cache → deterministic replacement → LLM context-aware rewrite
+* **Per-issue suggestions**: Click any issue card to get a targeted rewrite suggestion
+* **Accept/Apply workflow**: Range-based DOM replacement preserves inline formatting (`<b>`, `<i>`, `<code>`)
+
+=== Document support
+* **Multiple formats**: AsciiDoc, Markdown, DITA/XML, PDF, DOCX, and plain text
+* **Structure preservation**: Block-level parsing with 3-tier text representation (raw, inline, content)
+* **Content-type awareness**: Auto-detects procedure, concept, reference, release notes, and assembly modules
+* **AsciiDoc regex parser**: Full inline marker stripping with char_map position mapping
+
+=== Style guide citations
+* **IBM Style Guide**: 124 rule-to-topic mappings with page references
+* **Red Hat Supplementary Style Guide**: Additional Red Hat-specific guidance
+* **Pre-extracted excerpts**: Style guide excerpts served from YAML (no PDFs deployed)
+
+---
+
+== Limitations
+
+Understanding what this tool cannot do helps you use it effectively:
+
+[cols="1,2"]
+|===
+|Limitation |Details
+
+|**Contextual understanding**
+|The AI may not fully understand specialized domain terminology, product-specific context, or organizational conventions unique to your team.
+
+|**Possible hallucinations**
+|Like all AI systems, CEA may occasionally generate inaccurate or misleading suggestions. Always verify AI output.
+
+|**Cannot perform actions**
+|This tool provides suggestions only. It cannot directly modify your source files, publish content, or make changes outside this interface.
+
+|**English only**
+|Currently optimized for English technical documentation. Other languages are not supported.
+
+|**No memory between sessions**
+|The tool does not remember previous sessions or learn from your past interactions.
+
+|**LLM variance**
+|LLM-based analysis may produce slightly different results across sessions. Deterministic rules are fully consistent. Seed-based reproducibility reduces but does not eliminate variance.
+|===
+
+---
+
+== How to use
+
+=== Step 1: Input your content
+
+* **Upload a document**: Click the upload button and select PDF, DOCX, Markdown, AsciiDoc, DITA/XML, or TXT
+* **Paste text**: Enter content directly into the editor for quick analysis
+* **Content type**: Select concept, procedure, reference, or release notes from the dropdown (auto-detected for AsciiDoc)
+
+=== Step 2: Analyze
+
+Click **Analyze** to run comprehensive analysis. The tool runs a three-phase pipeline:
+
+1. **Deterministic rules** (~0.5–1s): 111 coded rules check grammar, punctuation, structure, and formatting. Results appear immediately
+2. **LLM granular pass**: Per-block AI analysis with concurrent processing (up to 5 blocks at a time). Progress shown as "AI-powered analysis (3/15 blocks)"
+3. **LLM global pass**: Full-document review for tone, flow, structure, minimalism, wordiness, audience level, and accessibility (documents under 5,000 words)
+
+=== Step 3: Review results
+
+Examine the analysis output:
+
+* **Issue cards**: Grouped by IBM Style Guide category with severity indicators
+* **Inline highlighting**: Issues underlined in the editor with viewport-based virtualization
+* **Quality score**: Penalty-based score from 30–100 (90+ Excellent, 75–89 Good, 60–74 Needs Work, <60 Poor)
+* **Report panel**: Slide-over panel with full analysis report
+
+=== Step 4: Get suggestions
+
+For any detected issue:
+
+1. Click the issue card to expand it
+2. Click **Suggest** to get an AI-powered rewrite
+3. Review the suggestion
+4. Click **Accept** to apply the replacement in the editor, or dismiss the issue
+
+---
+
+== Feedback and support
+
+Your feedback is essential for improving this tool. Please report any performance issues, inaccurate suggestions, or bugs.
+
+=== How to provide feedback
+
+==== In-app feedback
+Use the thumbs-up and thumbs-down buttons on each issue card to rate the accuracy of detected issues. Your feedback directly improves CEA.
+
+==== Report issues
+For bugs, feature requests, or detailed feedback, submit an issue on GitLab:
+
+**https://gitlab.cee.redhat.com/ccs-ai/content-editorial-assistant/-/issues[Report an issue on GitLab^]**
+
+When reporting, please include:
+
+* Steps to reproduce the problem
+* Expected vs. actual behavior
+* Screenshots if applicable
+* Sample content (without sensitive data) that triggered the issue
+
+---
+
+== Contact
+
+For questions or direct assistance, reach out to our team:
+
+[cols="1,2"]
+|===
+|Channel |Contact
+
+|**Slack**
+|https://redhat.enterprise.slack.com/archives/C05EXLSNTD1[#content-editorial-assistant^]
+
+|**Email**
+|mailto:gtrivedi@redhat.com[gtrivedi@redhat.com]
+|===
+
+---
+
+== Training
+
+Before using CEA, complete the required training:
+
+[IMPORTANT]
+====
+**xref:training-guide.adoc[AI-assisted writing training guide]**
+
+This comprehensive training covers:
+
+* Understanding AI capabilities and limitations
+* Human-in-the-loop requirements
+* Best practices for reviewing AI-generated content
+* Hands-on exercises
+* Completion checklist
+
+**Estimated time**: 1.5 hours
+====
+
+---
+
+== Developer documentation
+
+The following documentation is for developers and contributors who want to run CEA locally or contribute to the project:
+
+* xref:getting-started.adoc[Getting started] — Local development setup
+* xref:api-reference.adoc[API reference] — REST API and WebSocket integration
+* xref:environment-variables.adoc[Environment variables] — Configuration options
+* xref:deployment-guide.adoc[Deployment guide] — Production deployment with LightRail
+* xref:llm-rules-implementation.adoc[Hybrid analysis architecture] — Deterministic + LLM pipeline
+* xref:architecture:architecture.adoc[System architecture] — Technical architecture overview
+* xref:architecture:data-flow-diagram.adoc[Data flow diagram] — System integrations and data flows

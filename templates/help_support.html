@@ -1,49 +1,170 @@
 {% extends "base.html" %}
 {% set active_page = 'help' %}
-{% block title %}Help &amp; Support — CEA{% endblock %}
+{% block title %}Help &amp; Support — Content Editorial Assistant{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/cea-docs.css') }}">
+{% endblock %}
 
 {% block content %}
-<section class="pf-v5-c-page__main-section">
-  <div style="max-width:720px; margin:0 auto; padding:var(--pf-v5-global--spacer--xl);">
-    <h1 class="pf-v5-c-title pf-m-2xl pf-v5-u-mb-lg">Help &amp; Support</h1>
+<section class="pf-v5-c-page__main-section cea-docs-page">
+  <div class="cea-docs-container">
+    <h1 class="pf-v5-c-title pf-m-2xl cea-docs-title">Help &amp; Support</h1>
 
-    <div class="pf-v5-c-card pf-v5-u-mb-lg">
-      <div class="pf-v5-c-card__title"><h2 class="pf-v5-c-title pf-m-lg">Provide Feedback</h2></div>
-      <div class="pf-v5-c-card__body">
-        <p>When reviewing content, use the thumbs-up/thumbs-down buttons on each issue card
-        to tell us if a suggestion was helpful. This data improves rule accuracy over time.</p>
+    <!-- Important disclaimers -->
+    <div class="pf-v5-c-alert pf-m-warning pf-m-inline cea-docs-alert" aria-label="Important notice">
+      <div class="pf-v5-c-alert__icon"><i class="fas fa-exclamation-triangle"></i></div>
+      <h4 class="pf-v5-c-alert__title">Do not enter personal information</h4>
+      <div class="pf-v5-c-alert__description">
+        <p>This tool is designed for technical documentation only. Do not enter personal identifiable information (PII),
+        customer data, credentials, or confidential business information.</p>
       </div>
     </div>
 
-    <div class="pf-v5-c-card pf-v5-u-mb-lg">
-      <div class="pf-v5-c-card__title"><h2 class="pf-v5-c-title pf-m-lg">Report Issues</h2></div>
-      <div class="pf-v5-c-card__body">
-        <p>Found a bug or have a feature request? Open an issue in our GitLab repository.</p>
-        <p class="pf-v5-u-mt-md">
-          <strong>UI bugs:</strong> Include the browser console output and a screenshot.<br>
-          <strong>False positives:</strong> Include the flagged text and the rule type.
-        </p>
+    <div class="pf-v5-c-alert pf-m-info pf-m-inline cea-docs-alert" aria-label="Data privacy">
+      <div class="pf-v5-c-alert__icon"><i class="fas fa-shield-halved"></i></div>
+      <h4 class="pf-v5-c-alert__title">Session data and privacy</h4>
+      <div class="pf-v5-c-alert__description">
+        <p><strong>Your data is not retained.</strong> User inputs and AI responses are not stored once you leave the session.
+        Each new session starts fresh. No user content is used for AI model training.</p>
       </div>
     </div>
 
-    <div class="pf-v5-c-card pf-v5-u-mb-lg">
-      <div class="pf-v5-c-card__title"><h2 class="pf-v5-c-title pf-m-lg">Contact the Team</h2></div>
-      <div class="pf-v5-c-card__body">
-        <p>Reach out via Slack or email for questions, feature discussions, or integration support.</p>
+    <div class="pf-v5-c-alert pf-m-warning pf-m-inline cea-docs-alert" aria-label="AI review notice">
+      <div class="pf-v5-c-alert__icon"><i class="fas fa-robot"></i></div>
+      <h4 class="pf-v5-c-alert__title">Always review AI-generated content</h4>
+      <div class="pf-v5-c-alert__description">
+        <p>AI-generated suggestions may contain inaccuracies. Verify all suggestions for accuracy and relevance before
+        incorporating them into your documentation. The final responsibility for content accuracy lies with you.</p>
       </div>
     </div>
 
-    <div class="pf-v5-c-card">
-      <div class="pf-v5-c-card__title"><h2 class="pf-v5-c-title pf-m-lg">About CEA</h2></div>
-      <div class="pf-v5-c-card__body">
-        <p>CEA checks your technical writing against 107 deterministic rules based on the
-        IBM Style Guide. All style checking is rules-based (no LLM). The optional
-        AI rewriting feature uses a local model for privacy.</p>
-        <p class="pf-v5-u-mt-md">
-          <strong>Supported formats:</strong> AsciiDoc, Markdown, DITA/XML, PDF, DOCX, plain text
-        </p>
+    <!-- Cards grid -->
+    <div class="cea-help-cards">
+
+      <!-- Provide feedback -->
+      <div class="pf-v5-c-card cea-help-card">
+        <div class="pf-v5-c-card__title">
+          <h2 class="pf-v5-c-title pf-m-lg">
+            <i class="fas fa-thumbs-up cea-help-card__icon"></i> Provide Feedback
+          </h2>
+        </div>
+        <div class="pf-v5-c-card__body">
+          <p>Use the thumbs-up and thumbs-down buttons on each issue card to rate
+          the accuracy of detected issues. Your feedback directly improves CEA.</p>
+          <ul class="cea-help-list">
+            <li><i class="fas fa-thumbs-up cea-text-success"></i> Thumbs up — valid finding</li>
+            <li><i class="fas fa-thumbs-down cea-text-danger"></i> Thumbs down — false positive</li>
+          </ul>
+        </div>
       </div>
+
+      <!-- Report issues -->
+      <div class="pf-v5-c-card cea-help-card">
+        <div class="pf-v5-c-card__title">
+          <h2 class="pf-v5-c-title pf-m-lg">
+            <i class="fas fa-bug cea-help-card__icon"></i> Report Issues
+          </h2>
+        </div>
+        <div class="pf-v5-c-card__body">
+          <p>Found a bug or have a feature request? Open an issue on GitLab.</p>
+          <p>When reporting, include:</p>
+          <ul class="cea-help-list">
+            <li>Steps to reproduce the problem</li>
+            <li>Expected vs. actual behavior</li>
+            <li>Screenshots if applicable</li>
+            <li>Sample content (without sensitive data) that triggered the issue</li>
+          </ul>
+          <p class="cea-help-link">
+            <a href="https://gitlab.cee.redhat.com/ccs-ai/content-editorial-assistant/-/issues"
+               target="_blank" rel="noopener noreferrer">
+              <i class="fas fa-external-link-alt"></i> Open an issue on GitLab
+            </a>
+          </p>
+        </div>
+      </div>
+
+      <!-- Contact the team -->
+      <div class="pf-v5-c-card cea-help-card">
+        <div class="pf-v5-c-card__title">
+          <h2 class="pf-v5-c-title pf-m-lg">
+            <i class="fas fa-comments cea-help-card__icon"></i> Contact the Team
+          </h2>
+        </div>
+        <div class="pf-v5-c-card__body">
+          <p>For questions, feature discussions, or integration support:</p>
+          <table class="cea-help-contact-table">
+            <tbody>
+              <tr>
+                <td><strong>Slack</strong></td>
+                <td><a href="https://redhat.enterprise.slack.com/archives/C05EXLSNTD1"
+                       target="_blank" rel="noopener noreferrer">#content-editorial-assistant</a></td>
+              </tr>
+              <tr>
+                <td><strong>Email</strong></td>
+                <td><a href="mailto:gtrivedi@redhat.com">gtrivedi@redhat.com</a></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- About CEA -->
+      <div class="pf-v5-c-card cea-help-card">
+        <div class="pf-v5-c-card__title">
+          <h2 class="pf-v5-c-title pf-m-lg">
+            <i class="fas fa-info-circle cea-help-card__icon"></i> About CEA
+          </h2>
+        </div>
+        <div class="pf-v5-c-card__body">
+          <p>Content Editorial Assistant is an AI-powered technical writing tool that helps
+          writers improve the quality, readability, and consistency of their documentation.</p>
+          <ul class="cea-help-list">
+            <li><strong>111 deterministic rules</strong> — IBM Style Guide, Red Hat Supplementary Guide,
+            accessibility, modular docs, and minimalism</li>
+            <li><strong>AI-powered analysis</strong> — LLM granular and global passes for
+            context-dependent style checking</li>
+            <li><strong>AI rewriting suggestions</strong> — context-aware rewrites</li>
+            <li><strong>Supported formats</strong> — AsciiDoc, Markdown, DITA/XML, PDF, DOCX, plain text</li>
+          </ul>
+        </div>
+      </div>
+
     </div>
+
+    <!-- Limitations -->
+    <h2 class="pf-v5-c-title pf-m-xl cea-docs-section-title">Limitations</h2>
+    <table class="pf-v5-c-table pf-m-compact pf-m-grid-md cea-docs-table">
+      <thead>
+        <tr><th>Limitation</th><th>Details</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Contextual understanding</strong></td>
+          <td>The AI may not fully understand specialized domain terminology, product-specific context,
+          or organizational conventions unique to your team.</td>
+        </tr>
+        <tr>
+          <td><strong>Possible hallucinations</strong></td>
+          <td>Like all AI systems, CEA may occasionally generate inaccurate or misleading suggestions.
+          Always verify AI output.</td>
+        </tr>
+        <tr>
+          <td><strong>Cannot perform actions</strong></td>
+          <td>This tool provides suggestions only. It cannot directly modify your source files,
+          publish content, or make changes outside this interface.</td>
+        </tr>
+        <tr>
+          <td><strong>English only</strong></td>
+          <td>Currently optimized for English technical documentation.</td>
+        </tr>
+        <tr>
+          <td><strong>No memory between sessions</strong></td>
+          <td>The tool does not remember previous sessions or learn from your past interactions.</td>
+        </tr>
+      </tbody>
+    </table>
+
   </div>
 </section>
 {% endblock %}

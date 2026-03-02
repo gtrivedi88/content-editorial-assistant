@@ -1,0 +1,284 @@
+= Getting started
+
+[NOTE]
+====
+**This guide is for developers and contributors** who want to run Content Editorial Assistant locally or contribute to the project.
+
+If you just want to use the application, it is already hosted. Contact the team for access.
+====
+
+== Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+**Required:**
+
+* Python 3.12 or higher
+* pip (Python package manager)
+* Git (for source control)
+
+**Optional for enhanced features:**
+
+* Ruby + Asciidoctor (for full AsciiDoc HTML rendering in upload flow)
+* An LLM provider — Ollama (local), API (Groq/OpenAI-compatible), or LlamaStack
+
+== Quick setup
+
+=== Step 1: Create virtual environment
+
+[source,bash]
+----
+# Clone repository
+git clone <repository-url>
+cd content-editorial-assistant
+
+# Create and activate virtual environment
+python3.12 -m venv venv
+source venv/bin/activate   # Linux/macOS
+# OR
+# venv\Scripts\activate    # Windows
+----
+
+**You should see `(venv)` at the start of your command prompt.**
+
+=== Step 2: Install requirements
+
+[source,bash]
+----
+pip install --upgrade pip
+pip install -r requirements.txt
+----
+
+=== Step 3: Start the application
+
+[source,bash]
+----
+python main.py
+----
+
+**Then visit:** http://localhost:8000
+
+The application uses gevent + Socket.IO and serves on port 8000 by default.
+
+== Common commands
+
+[cols="2,3"]
+|===
+|Command |Description
+
+|`make run`
+|`python main.py` — dev server at :8000
+
+|`make run-prod`
+|Gunicorn via `gunicorn.conf.py` (gevent workers, preload)
+
+|`make test`
+|Run all 389 tests
+
+|`make coverage`
+|Tests + `coverage.xml` for SonarQube
+
+|`make lint`
+|flake8
+
+|`make security`
+|bandit security scan
+
+|`make clean`
+|Remove venv, caches, reports
+|===
+
+== Configuration
+
+All configuration is via environment variables, loaded from `.env` if present.
+See xref:environment-variables.adoc[Environment Variables Reference] for the full list.
+
+=== Minimal `.env` for local development
+
+[source,bash]
+----
+# Use local Ollama for LLM features
+MODEL_PROVIDER=ollama
+BASE_URL=http://localhost:11434
+MODEL_ID=llama3:8b
+
+# Or disable LLM entirely for deterministic-only analysis
+# LLM_ENABLED=False
+----
+
+=== Configuration file
+
+The main configuration class is `app/config.py` (`Config`). All values are read from environment variables with sensible defaults. The Flask app loads this via `app.config.from_object(Config)` in the app factory.
+
+== LLM provider setup
+
+CEA supports three LLM providers via `models/` — Ollama, API (OpenAI-compatible), and LlamaStack.
+
+=== Option 1: Ollama (local)
+
+[source,bash]
+----
+# Install Ollama
+curl -fsSL https://ollama.com/install.sh | sh   # Linux
+# Or download from https://ollama.com for macOS/Windows
+
+# Pull model
+ollama pull llama3:8b
+----
+
+[source,bash]
+----
+# .env
+MODEL_PROVIDER=ollama
+BASE_URL=http://localhost:11434
+MODEL_ID=llama3:8b
+----
+
+=== Option 2: API provider (Groq, OpenAI-compatible)
+
+[source,bash]
+----
+# .env
+MODEL_PROVIDER=api
+BASE_URL=https://api.groq.com/openai/v1
+MODEL_ID=llama3-70b-8192
+ACCESS_TOKEN=your-api-key-here
+----
+
+=== Option 3: LlamaStack (LightRail platform)
+
+[source,bash]
+----
+# .env
+MODEL_PROVIDER=llamastack
+CEA_MODEL_ID=style_analyzer_model
+----
+
+== AsciiDoc support
+
+For full AsciiDoc rendering in the upload flow, install the Asciidoctor Ruby gem:
+
+[source,bash]
+----
+# Fedora/RHEL
+sudo dnf install ruby ruby-devel
+gem install asciidoctor
+
+# macOS
+brew install ruby
+gem install asciidoctor
+
+# Verify
+asciidoctor --version
+----
+
+[NOTE]
+====
+The AsciiDoc *parser* in CEA is regex-only and does not require Asciidoctor. The Ruby gem is only used for HTML rendering during file upload. AsciiDoc analysis works without it — parsing uses regex patterns for headings, lists, code blocks, admonitions, tables, and inline formatting.
+====
+
+== Project structure
+
+[source,text]
+----
+cea/
+├── app/              # Flask backend (blueprints, services, models, LLM)
+│   ├── __init__.py   # App factory — create_app()
+│   ├── config.py     # All env-var configuration
+│   ├── api/          # API blueprint + middleware
+│   │   ├── v1/       # v1 routes (analyze, upload, suggestions, etc.)
+│   │   └── middleware/  # Rate limiting, correlation IDs
+│   ├── services/     # Business logic
+│   │   ├── analysis/ # Orchestrator, preprocessor, deterministic, merger, scorer
+│   │   ├── suggestions/ # 3-tier suggestion engine
+│   │   └── session/  # Thread-safe in-memory session store
+│   ├── llm/          # LLM client, prompts, parser
+│   └── models/       # Enums and dataclasses
+├── models/           # Multi-provider model system
+│   └── providers/    # api_provider, ollama_provider, llamastack_provider
+├── rules/            # 111 deterministic rules
+│   ├── base_rule.py  # Base class + in_code_range()
+│   ├── loader.py     # Rule discovery + loading
+│   ├── rule_mappings.yaml  # Block-type → rule assignments
+│   └── <category>/   # Rule categories with config/ YAML
+├── style_guides/     # Citation mappings + excerpts (YAML)
+├── static/           # Frontend JS/CSS (ES6 modules, no build step)
+│   ├── js/           # Modules: state/, editor/, issues/, etc.
+│   └── css/          # PatternFly v5 variables + custom layout
+├── templates/        # Jinja2 HTML templates
+├── tests/            # 389 pytest tests (mirrors app/ structure)
+├── docs/             # Antora documentation (this site)
+├── main.py           # Entry point (gevent + socketio.run)
+└── gunicorn.conf.py  # Gunicorn config (gevent workers)
+----
+
+== Running tests
+
+[source,bash]
+----
+# Run all tests
+python -m pytest tests/ -v
+
+# Run specific test file
+python -m pytest tests/rules/test_fp_guards.py -v
+
+# Run with coverage
+python -m pytest tests/ --cov=app --cov=rules --cov-report=xml
+----
+
+All 389 tests must pass. Tests mock external dependencies (SpaCy, LLM) and run without network access.
+
+== Troubleshooting
+
+=== Python version issues
+
+[source,bash]
+----
+# Verify Python 3.12+
+python3.12 --version
+
+# Create venv with exact version
+python3.12 -m venv venv
+----
+
+=== Package installation issues
+
+[source,bash]
+----
+# Fresh reinstall
+rm -rf venv
+python3.12 -m venv venv
+source venv/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt --no-cache-dir
+----
+
+=== SpaCy model verification
+
+[source,bash]
+----
+python -c "import spacy; nlp = spacy.load('en_core_web_md'); print('SpaCy OK')"
+----
+
+NOTE: CEA uses `en_core_web_md` (not `en_core_web_sm`). The model is installed via `requirements.txt`.
+
+=== LLM provider issues
+
+[source,bash]
+----
+# Test Ollama connectivity
+curl http://localhost:11434/api/tags
+
+# Test API provider
+curl -H "Authorization: Bearer $ACCESS_TOKEN" $BASE_URL/models
+----
+
+If the LLM provider is unavailable, CEA falls back gracefully — deterministic rules still run, LLM results return empty lists.
+
+== Next steps
+
+* xref:api-reference.adoc[API Reference] — REST API and WebSocket events
+* xref:environment-variables.adoc[Environment Variables] — Full configuration reference
+* xref:deployment-guide.adoc[Deployment Guide] — Production deployment with LightRail
+* xref:architecture:architecture.adoc[System Architecture] — Technical architecture overview
+* xref:how-to:how-to-add-new-rule.adoc[Add a New Rule] — Extending the rule system

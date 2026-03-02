@@ -1,0 +1,9 @@
+.How-to guides
+* xref:how-to-add-new-rule.adoc[Add a new rule]
+* xref:how-to-add-new-model.adoc[Add a new AI model provider]
+* xref:configure-providers.adoc[Configure AI providers]
+
+.Testing
+* xref:testing-setup.adoc[Testing setup]
+* xref:testing-guide.adoc[Testing guide]
+* xref:writing-tests.adoc[Writing tests]

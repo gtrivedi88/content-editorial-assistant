@@ -1,0 +1,451 @@
+= Data flow diagram
+:toc: left
+:toclevels: 3
+:icons: font
+:sectnums:
+
+== Overview
+
+This document illustrates how data flows through the Content Editorial Assistant, from user input through the three-phase analysis pipeline to final results delivery.
+
+*Last updated*: March 2026
+
+---
+
+== High-level data flow
+
+[source]
+----
+┌─────────────────────────────────────────────────────────────┐
+│                        USER INPUTS                          │
+│   Direct text entry  │  File upload (PDF/DOCX/MD/ADOC/...)  │
+└──────────────┬──────────────────────────────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    INPUT PROCESSING                         │
+│   Format detection → Text extraction → Preprocessor         │
+│   (markup cleaning, SpaCy NLP, content-type detection)      │
+└──────────────┬──────────────────────────────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────────────────────────────┐
+│                 THREE-PHASE ANALYSIS                        │
+│                                                             │
+│  Phase 1: Deterministic    111 rules, FP-hardened           │
+│  Phase 2: LLM Granular     Per-block AI analysis            │
+│  Phase 3: LLM Global       Full-document review             │
+└──────────────┬──────────────────────────────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   POST-PROCESSING                           │
+│   Merger (dedup) → Scorer (quality score) → Report          │
+└──────────────┬──────────────────────────────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      OUTPUT                                 │
+│   WebSocket events → Issue cards → Quality score → Report   │
+└─────────────────────────────────────────────────────────────┘
+----
+
+---
+
+== User input data flow
+
+=== Input types and processing
+
+[cols="1,2,2,2"]
+|===
+|Input type |Format |Processing method |Data retention
+
+|*Direct text entry*
+|Plain text via editor
+|Immediate in-memory processing
+|Session only (TTL-based expiration)
+
+|*File upload*
+|PDF, DOCX, MD, ADOC, DITA/XML, TXT
+|Format detection + text extraction
+|Temporary — deleted after processing
+
+|*Clipboard paste*
+|Plain text
+|Direct text processing
+|Session only (TTL-based expiration)
+|===
+
+=== Input processing sequence
+
+[source]
+----
+User input (text or file)
+    │
+    ▼
+POST /api/v1/analyze  or  POST /api/v1/upload
+    │
+    ├── File upload: format detection → text extraction
+    │   (PDF: margin crop, watermark removal)
+    │   (DOCX: python-docx extraction)
+    │   (AsciiDoc: regex parser → Block objects)
+    │   (DITA/XML: element text extraction)
+    │
+    ▼
+Preprocessor (app/services/analysis/preprocessor.py)
+    ├── _clean_markup()     → strips AsciiDoc/Markdown syntax
+    ├── SpaCy NLP           → sentence splitting, POS tagging
+    ├── _detect_content_type() → concept/procedure/reference/release_notes
+    ├── Statistics           → word count, sentence count, block count
+    └── Lite-markers        → Markdown representation for LLM context
+    │
+    ▼
+Block objects with 3-tier text contract:
+    ├── raw_content      → original source with all markers
+    ├── inline_content   → block markers stripped, inline preserved
+    └── content          → fully stripped plain text for rules
+----
+
+---
+
+== Analysis pipeline data flow
+
+=== Phase 1: Deterministic rules
+
+[source]
+----
+Parsed blocks + cleaned text
+    │
+    ▼
+Deterministic analyzer (app/services/analysis/deterministic.py)
+    │
+    ├── Pre-compute inline code ranges
+    │   (from block.inline_content + block.char_map)
+    │
+    ├── Per-block rules (111 rules from rules/)
+    │   ├── Block type filtering via rule_mappings.yaml
+    │   ├── Context: inline_code_ranges, bold_code_ranges
+    │   ├── Content-type awareness (passive voice exemptions)
+    │   └── FP guards: lookaheads, whitelists, proximity
+    │
+    ├── Full-text rules (definitions, abbreviations)
+    │   └── Document-wide acronym context
+    │
+    ├── Span mapping
+    │   ├── Per-block: block.char_map + block.start_pos → original coords
+    │   └── Full-text: offset map remap → original coords
+    │
+    └── Deduplication (rule_name|flagged_text|sentence)
+    │
+    ▼
+Deterministic issues list
+    │
+    ├──► WebSocket: deterministic_complete event (~0.5-1s)
+    └──► HTTP 200 response (partial: true)
+----
+
+=== Phase 2: LLM granular analysis
+
+[source]
+----
+Parsed blocks + lite-markers
+    │
+    ▼
+Excerpt selector (app/llm/excerpt_selector.py)
+    ├── Select style guide excerpts by category
+    ├── Budget: LLM_EXCERPT_BUDGET_MAX (8000 tokens)
+    └── All categories included (baseline priority 1)
+    │
+    ▼
+Prompt builder (app/llm/prompts.py)
+    ├── Style guide excerpts
+    ├── Document outline
+    ├── Content-type guidance
+    ├── SKIP list (deterministic-handled patterns)
+    └── LLM category constraints (style|grammar|punctuation|structure|audience)
+    │
+    ▼
+ThreadPoolExecutor (max_workers=LLM_MAX_CONCURRENT, default 5)
+    ├── Block 0 ──► LLM Provider ──► parse response
+    ├── Block 1 ──► LLM Provider ──► parse response
+    ├── Block 2 ──► LLM Provider ──► parse response
+    │   ...
+    └── Block N ──► LLM Provider ──► parse response
+    │
+    ├── Rate limiting: tenacity exponential backoff on 429
+    ├── Fallback: per-block deterministic-only on exhaustion
+    ├── Progress: stage_progress events per-block
+    └── Cancellation: is_analysis_current() check
+    │
+    ▼
+_collect_block_results()
+    └── Sort by block index (deterministic dedup ordering)
+    │
+    ▼
+LLM granular issues list
+    └──► WebSocket: llm_granular_complete event
+----
+
+=== Phase 3: LLM global analysis
+
+[source]
+----
+Full document text (< LLM_GLOBAL_PASS_MAX_WORDS, default 5000)
+    │
+    ▼
+Global prompt builder
+    ├── Document outline
+    ├── 7 concerns:
+    │   1. Tone consistency
+    │   2. Flow and transitions
+    │   3. Minimalism
+    │   4. Wordiness
+    │   5. Audience level
+    │   6. Document structure
+    │   7. Accessibility
+    └── SKIP: step numbering, code blocks
+    │
+    ▼
+LLM Provider (single request)
+    │
+    ▼
+LLM global issues list
+    └──► WebSocket: llm_global_complete event
+----
+
+---
+
+== Post-processing data flow
+
+=== Merger
+
+[source]
+----
+Deterministic issues + LLM granular issues + LLM global issues
+    │
+    ▼
+merger.merge() (app/services/analysis/merger.py)
+    │
+    ├── Strategy 1: LLM-to-LLM text dedup
+    │   ├── Cross-source exact text matching
+    │   └── Source-aware fuzzy matching (word overlap)
+    │
+    ├── Strategy 2: Span-based overlap dedup
+    │   └── >80% overlap of shorter span = duplicate
+    │
+    ├── Strategy 3: Category-agnostic span overlap
+    │   └── Any overlap with deterministic issue = duplicate
+    │
+    ├── Strategy 4: Word-level text matching fallback
+    │   └── For spanless [0,0] issues
+    │
+    └── Cross-block boundary detection
+        └── Issues spanning boundaries → demoted (suggestions cleared)
+    │
+    ▼
+Deduplicated issues list
+----
+
+=== Scorer
+
+[source]
+----
+Deduplicated issues + document stats
+    │
+    ▼
+scorer.calculate_score()
+    │
+    ├── Formula: S = max(30, 100 - Σ(W_i × M_i) / (1 + log10(N_w / 100)))
+    │   W = severity weight (HIGH:3, MEDIUM:2, LOW:1)
+    │   M = category multiplier (GRAMMAR:1.5, PUNCTUATION:0.8)
+    │   N_w = word count
+    │
+    └── Labels: 90+ Excellent, 75-89 Good, 60-74 Needs Work, <60 Poor
+    │
+    ▼
+Quality score + score label
+----
+
+---
+
+== Output data flow
+
+=== Results delivery
+
+[source]
+----
+Final merged results + score + report
+    │
+    ▼
+WebSocket: analysis_complete event
+    │
+    ▼
+Frontend (static/js/)
+    ├── actions.js       → processes results, updates store
+    ├── store.js         → reactive state update
+    ├── issue-card.js    → renders issue cards by category
+    ├── underline-renderer.js → viewport-based underline rendering
+    └── checking-indicator.js → final score display
+----
+
+=== Suggestion data flow
+
+[source]
+----
+User clicks "Suggest" on issue card
+    │
+    ▼
+POST /api/v1/suggestions
+    │
+    ▼
+Suggestion engine (app/services/suggestions/engine.py)
+    │
+    ├── Tier 1: Session cache hit? → return cached
+    ├── Tier 2: Deterministic replacement? → return direct
+    └── Tier 3: LLM rewrite → context-aware generation
+    │
+    ▼
+Suggestion text → frontend → user review → Accept/Dismiss
+----
+
+---
+
+== AI model data flow
+
+=== Provider abstraction
+
+[source]
+----
+LLM Client (app/llm/client.py)
+    │
+    ▼
+ModelManager (models/__init__.py)
+    │
+    ▼
+ModelFactory → selects provider based on MODEL_PROVIDER env var
+    │
+    ├── ApiProvider       → OpenAI-compatible HTTP API
+    │   └── HTTPS with optional proxy (HTTPS_PROXY)
+    │
+    ├── OllamaProvider    → Local Ollama server
+    │   └── HTTP to localhost:11434
+    │
+    └── LlamaStackProvider → LlamaStack on LightRail
+        └── Internal service mesh
+----
+
+=== Data sent to AI models
+
+* Block text content (from lite-markers representation)
+* Style guide excerpts (pre-extracted YAML)
+* Document outline
+* Content-type guidance
+* SKIP list instructions
+
+=== Data NOT sent to AI models
+
+* User identifiers or session IDs
+* System credentials or API keys
+* Historical data or feedback
+* Other users' content
+
+---
+
+== Data security and privacy
+
+=== Data handling policies
+
+[cols="1,2,2"]
+|===
+|Data type |Handling |Retention
+
+|*User-entered text*
+|In-memory processing only
+|Deleted when session expires (TTL)
+
+|*Uploaded files*
+|Temporary extraction, then deleted
+|No retention
+
+|*Analysis results*
+|Session-bound in-memory store
+|Deleted when session expires
+
+|*AI interactions*
+|Transient request/response
+|Not stored, not used for training
+
+|*Feedback votes*
+|Anonymized in SQLite
+|Persistent (no content retained)
+|===
+
+=== Security controls
+
+* **Session isolation**: Thread-safe in-memory store with per-session data
+* **No data retention**: Content deleted on session expiry
+* **Request correlation**: `X-Request-ID` for tracing without storing content
+* **Rate limiting**: Configurable per-endpoint limits
+* **TLS**: Enforced in production (LightRail/OpenShift)
+
+---
+
+== Infrastructure integration
+
+=== Deployment architecture
+
+[source]
+----
+┌─────────────────────────────────────┐
+│     Content Editorial Assistant      │
+│       (Flask + gevent + Socket.IO)  │
+└──────────────┬──────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────┐
+│        LLM Provider                  │
+│  (Ollama / API / LlamaStack)        │
+└──────────────┬──────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────┐
+│       LightRail Platform             │
+│  (OpenShift + GitLab CI/CD)         │
+└─────────────────────────────────────┘
+----
+
+=== Data storage
+
+[cols="1,2,2"]
+|===
+|Store |Technology |Purpose
+
+|*Sessions*
+|In-memory (Python dict + Lock)
+|Analysis results, suggestion cache
+
+|*Feedback*
+|SQLite on PVC (`/app/data/feedback.db`)
+|Anonymized thumbs-up/down votes
+
+|*Logs*
+|Structured JSON (python-json-logger)
+|Application logs with request IDs
+|===
+
+---
+
+== Document history
+
+[cols="1,2,3"]
+|===
+|Version |Date |Changes
+
+|2.0
+|March 2026
+|Complete rewrite for v0.0.2 three-phase architecture
+
+|1.0
+|November 2025
+|Initial data flow diagram documentation
+|===

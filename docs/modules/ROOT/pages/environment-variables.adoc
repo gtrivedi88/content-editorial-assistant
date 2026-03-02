@@ -1,0 +1,354 @@
+= Environment variables reference
+:description: Complete reference for all environment variables in Content Editorial Assistant
+:keywords: configuration, environment, variables, setup
+
+[NOTE]
+====
+**This documentation is for developers and system administrators** who are deploying or configuring Content Editorial Assistant locally or in production environments.
+====
+
+== Overview
+
+Content Editorial Assistant uses environment variables for all configuration. Variables are read in `app/config.py` via `os.environ.get()` with sensible defaults. A `.env` file in the project root is loaded automatically via `python-dotenv`.
+
+== Configuration methods
+
+=== 1. `.env` file (recommended for development)
+
+Create a `.env` file in the project root:
+
+[source,bash]
+----
+MODEL_PROVIDER=ollama
+BASE_URL=http://localhost:11434
+MODEL_ID=llama3:8b
+MODEL_ANALYSIS_TEMPERATURE=0.0
+MODEL_SEED=42
+----
+
+=== 2. Environment variables (production)
+
+Export variables in your shell or container environment:
+
+[source,bash]
+----
+export MODEL_PROVIDER=api
+export BASE_URL=https://api.groq.com/openai/v1
+export ACCESS_TOKEN=your-token-here
+----
+
+=== 3. GitLab CI/CD variables
+
+For GitLab CI/CD, add variables at **Settings → CI/CD → Variables**:
+
+* Mark sensitive keys as **Masked**
+* Mark production keys as **Protected**
+
+== LLM / Model provider
+
+[cols="2,1,3"]
+|===
+|Variable |Default |Description
+
+|`LLM_ENABLED`
+|`True`
+|Enable or disable LLM-based analysis
+
+|`MODEL_PROVIDER`
+|`llamastack`
+|AI provider: `ollama`, `api`, or `llamastack`
+
+|`MODEL_ID`
+|_(provider-specific)_
+|Model identifier for the selected provider
+
+|`MODEL_TEMPERATURE`
+|`0.4`
+|Default sampling temperature (fallback)
+
+|`MODEL_ANALYSIS_TEMPERATURE`
+|`0.0`
+|Temperature for analysis (greedy decoding for consistency)
+
+|`MODEL_SUGGESTION_TEMPERATURE`
+|`0.2`
+|Temperature for suggestion generation (slightly creative)
+
+|`MODEL_SEED`
+|`42`
+|Seed for reproducible generation (best-effort per provider)
+
+|`MODEL_MAX_TOKENS`
+|`3072`
+|Maximum output tokens per generation
+
+|`LLM_MAX_CONCURRENT`
+|`5`
+|Max concurrent LLM requests (ThreadPoolExecutor workers)
+
+|`LLM_GLOBAL_PASS_MAX_WORDS`
+|`5000`
+|Word-count ceiling for the global LLM pass
+
+|`LLM_EXCERPT_BUDGET_MAX`
+|`8000`
+|Token budget for style guide excerpts in LLM prompts
+
+|`BLOCK_CACHE_TTL`
+|`3600`
+|Block-level cache time-to-live in seconds
+
+|`LLM_JUDGE_ENABLED`
+|`False`
+|Enable optional second-pass LLM quality filter
+|===
+
+=== Ollama configuration
+
+[source,bash]
+----
+MODEL_PROVIDER=ollama
+BASE_URL=http://localhost:11434
+MODEL_ID=llama3:8b
+----
+
+=== API provider configuration (Groq, OpenAI-compatible)
+
+[source,bash]
+----
+MODEL_PROVIDER=api
+BASE_URL=https://api.groq.com/openai/v1
+MODEL_ID=llama3-70b-8192
+ACCESS_TOKEN=your-api-key-here
+CERT_PATH=true
+----
+
+=== LlamaStack configuration (LightRail)
+
+[source,bash]
+----
+MODEL_PROVIDER=llamastack
+CEA_MODEL_ID=style_analyzer_model
+----
+
+== Flask application
+
+[cols="2,1,3"]
+|===
+|Variable |Default |Description
+
+|`SECRET_KEY`
+|Auto-generated
+|Flask secret key for session signing. Startup warns if not set
+
+|`MAX_CONTENT_LENGTH`
+|`10485760`
+|Maximum upload file size in bytes (10 MB)
+
+|`MAX_TEXT_LENGTH`
+|`50000`
+|Maximum character count for direct text input
+|===
+
+NOTE: Startup logs warn when `SECRET_KEY` is auto-generated, advising to set it for session persistence across restarts.
+
+== Analysis
+
+[cols="2,1,3"]
+|===
+|Variable |Default |Description
+
+|`SPACY_MODEL`
+|`en_core_web_md`
+|SpaCy language model to load
+
+|`CONFIDENCE_THRESHOLD`
+|`0.7`
+|Minimum confidence score for deterministic issues
+
+|`LLM_CONFIDENCE_THRESHOLD`
+|`0.80`
+|Minimum confidence score for LLM issues
+|===
+
+== Sessions and feedback
+
+[cols="2,1,3"]
+|===
+|Variable |Default |Description
+
+|`SESSION_TTL_SECONDS`
+|`3600`
+|Session time-to-live in seconds
+
+|`FEEDBACK_DB_PATH`
+|`data/feedback.db`
+|Path to SQLite feedback database
+
+|`FEEDBACK_PERSISTENT`
+|`True`
+|Use persistent file-based SQLite. Falls back to `:memory:` if path unavailable
+|===
+
+== CORS and security
+
+[cols="2,1,3"]
+|===
+|Variable |Default |Description
+
+|`CORS_ORIGINS`
+|`*`
+|Allowed CORS origins (comma-separated or `*`). Startup warns when set to `*`
+|===
+
+== Rate limiting
+
+[cols="2,1,3"]
+|===
+|Variable |Default |Description
+
+|`RATE_LIMIT_ENABLED`
+|`False`
+|Enable flask-limiter rate limiting
+
+|`RATE_LIMIT_DEFAULT`
+|`120/minute`
+|Default rate limit for all routes
+
+|`RATE_LIMIT_ANALYZE`
+|`30/minute`
+|Rate limit for the analyze endpoint
+|===
+
+== Proxy
+
+[cols="2,1,3"]
+|===
+|Variable |Default |Description
+
+|`HTTPS_PROXY`
+|_(none)_
+|HTTPS proxy URL for outbound API calls
+
+|`HTTP_PROXY`
+|_(none)_
+|HTTP proxy URL for outbound API calls
+
+|`NO_PROXY`
+|_(none)_
+|Comma-separated no-proxy host list
+|===
+
+== AsciiDoc
+
+[cols="2,1,3"]
+|===
+|Variable |Default |Description
+
+|`ASCIIDOCTOR_MAX_CONCURRENT`
+|`3`
+|Max concurrent Asciidoctor Ruby subprocesses (30s timeout each)
+|===
+
+== PDF
+
+[cols="2,1,3"]
+|===
+|Variable |Default |Description
+
+|`PDF_MARGIN_CROP_PERCENT`
+|`8`
+|Percentage of page to crop from top/bottom margins during PDF extraction
+|===
+
+== Logging
+
+[cols="2,1,3"]
+|===
+|Variable |Default |Description
+
+|`LOG_FORMAT`
+|`text`
+|Log output format: `text` or `json` (JSON via `python-json-logger`)
+
+|`LOG_LEVEL`
+|`INFO`
+|Logging level: `DEBUG`, `INFO`, `WARNING`, `ERROR`
+|===
+
+== Documentation
+
+[cols="2,1,3"]
+|===
+|Variable |Default |Description
+
+|`DOCS_URL`
+|`/docs/`
+|URL for the documentation link in the navigation bar
+|===
+
+== Example configurations
+
+=== Development with local Ollama
+
+[source,bash]
+----
+# .env
+MODEL_PROVIDER=ollama
+BASE_URL=http://localhost:11434
+MODEL_ID=llama3:8b
+MODEL_ANALYSIS_TEMPERATURE=0.0
+MODEL_SEED=42
+LLM_ENABLED=True
+----
+
+=== Production with API provider
+
+[source,bash]
+----
+SECRET_KEY=your-strong-secret-key
+MODEL_PROVIDER=api
+BASE_URL=https://api.groq.com/openai/v1
+MODEL_ID=llama3-70b-8192
+ACCESS_TOKEN=your-api-key
+MODEL_ANALYSIS_TEMPERATURE=0.0
+MODEL_SEED=42
+CORS_ORIGINS=https://your-domain.com
+RATE_LIMIT_ENABLED=True
+FEEDBACK_DB_PATH=/app/data/feedback.db
+LOG_FORMAT=json
+----
+
+=== LightRail platform deployment
+
+[source,bash]
+----
+MODEL_PROVIDER=llamastack
+CEA_MODEL_ID=style_analyzer_model
+SECRET_KEY=your-strong-secret-key
+CORS_ORIGINS=https://your-domain.com
+FEEDBACK_DB_PATH=/app/data/feedback.db
+FEEDBACK_PERSISTENT=True
+LOG_FORMAT=json
+----
+
+=== Deterministic-only (no LLM)
+
+[source,bash]
+----
+LLM_ENABLED=False
+----
+
+== Security best practices
+
+1. **Never commit `.env` files** — add to `.gitignore`
+2. **Use masked variables in CI/CD** — prevent exposure in logs
+3. **Rotate API keys regularly** — update `ACCESS_TOKEN` periodically
+4. **Set a strong `SECRET_KEY`** — generate with: `python -c "import secrets; print(secrets.token_hex(32))"`
+5. **Restrict CORS origins** — do not use `*` in production
+
+== See also
+
+* xref:getting-started.adoc[Getting Started Guide]
+* xref:deployment-guide.adoc[Deployment Guide]
+* xref:how-to:configure-providers.adoc[Configure AI Providers]

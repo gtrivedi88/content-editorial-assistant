@@ -1,0 +1,310 @@
+= Add a new AI model provider
+:source-highlighter: highlightjs
+
+== Overview
+
+This guide explains how to add a new AI model provider to CEA. The system uses a provider abstraction layer that supports Ollama, OpenAI-compatible APIs, and LlamaStack. Adding a new provider requires implementing the `BaseModelProvider` abstract class.
+
+=== Current providers
+
+[cols="1,2,2"]
+|===
+|Provider |Class |Use case
+
+|Ollama
+|`OllamaProvider`
+|Local LLM serving (privacy, no API costs)
+
+|API
+|`ApiProvider`
+|OpenAI-compatible cloud APIs (Groq, HuggingFace, OpenAI)
+
+|LlamaStack
+|`LlamaStackProvider`
+|Enterprise deployment on LightRail platform
+|===
+
+== Provider architecture
+
+[source]
+----
+app/llm/client.py (LLMClient)
+    │
+    ▼
+models/__init__.py (ModelManager)
+    │
+    ▼
+models/__init__.py (ModelFactory)
+    │
+    ├── models/providers/api_provider.py
+    ├── models/providers/ollama_provider.py
+    └── models/providers/llamastack_provider.py
+    │
+    ▼
+models/providers/base_provider.py (BaseModelProvider ABC)
+----
+
+The `ModelManager` selects a provider based on the `MODEL_PROVIDER` environment variable, delegates text generation, and handles health checks.
+
+== Step-by-step guide
+
+=== Step 1: Create the provider class
+
+Create a new file in `models/providers/`:
+
+[source,bash]
+----
+touch models/providers/my_provider.py
+----
+
+Implement the `BaseModelProvider` abstract class:
+
+[source,python]
+----
+"""My custom provider — integrates with MyService API."""
+
+import logging
+from typing import Any
+
+from models.providers.base_provider import BaseModelProvider
+
+logger = logging.getLogger(__name__)
+
+
+class MyProvider(BaseModelProvider):
+    """Provider for MyService API."""
+
+    def __init__(self, config: dict[str, Any]) -> None:
+        """Initialize the provider.
+
+        Args:
+            config: Dict with base_url, model_id, access_token, etc.
+        """
+        super().__init__(config)
+        self._client = None
+
+    def _validate_config(self) -> None:
+        """Validate required configuration keys."""
+        if not self.config.get("base_url"):
+            raise ValueError("base_url is required for MyProvider")
+        if not self.config.get("model_id"):
+            raise ValueError("model_id is required for MyProvider")
+
+    def connect(self) -> bool:
+        """Establish connection to the service.
+
+        Returns:
+            True if connection successful.
+        """
+        try:
+            # Initialize your client
+            self._client = create_client(self.config["base_url"])
+            logger.info("Connected to MyService at %s", self.config["base_url"])
+            return True
+        except (ConnectionError, TimeoutError) as exc:
+            logger.warning("Failed to connect to MyService: %s", exc)
+            return False
+
+    def is_available(self) -> bool:
+        """Check if the provider is ready for requests.
+
+        Returns:
+            True if the provider can accept requests.
+        """
+        if self._client is None:
+            return False
+        try:
+            # Quick health check
+            return self._client.ping()
+        except (ConnectionError, TimeoutError):
+            return False
+
+    def generate_text(self, prompt: str, **kwargs: Any) -> str:
+        """Generate text from the model.
+
+        Args:
+            prompt: The input prompt.
+            **kwargs: Generation parameters (temperature, max_tokens, seed, etc.)
+
+        Returns:
+            Generated text string.
+        """
+        params = self._prepare_generation_params(**kwargs)
+
+        response = self._client.generate(
+            model=self.config["model_id"],
+            prompt=prompt,
+            temperature=params.get("temperature", 0.4),
+            max_tokens=params.get("max_tokens", 3072),
+            seed=params.get("seed"),
+        )
+        return response.text
+
+    def get_model_info(self) -> dict[str, Any]:
+        """Return model metadata.
+
+        Returns:
+            Dict with model name, provider, and capabilities.
+        """
+        return {
+            "provider": "my_provider",
+            "model_id": self.config.get("model_id", "unknown"),
+            "base_url": self.config.get("base_url", ""),
+        }
+
+    def disconnect(self) -> None:
+        """Clean up resources."""
+        if self._client:
+            self._client.close()
+            self._client = None
+----
+
+=== Step 2: Register the provider in ModelFactory
+
+Edit `models/__init__.py` to add your provider to the factory:
+
+[source,python]
+----
+from models.providers.my_provider import MyProvider
+
+# In ModelFactory.create_provider():
+if provider_type == "my_provider":
+    return MyProvider(config)
+----
+
+=== Step 3: Add configuration support
+
+Edit `app/config.py` to support your provider's environment variables:
+
+[source,python]
+----
+# In the Config class — only if your provider needs
+# additional config beyond MODEL_PROVIDER, BASE_URL,
+# MODEL_ID, and ACCESS_TOKEN (which are already supported)
+MY_PROVIDER_OPTION: str = os.environ.get("MY_PROVIDER_OPTION", "default")
+----
+
+=== Step 4: Update health check
+
+The health check endpoint (`app/api/v1/health.py`) should already work through the `ModelManager.health_check()` method, which delegates to your provider's `health_check()` base implementation. Verify by running:
+
+[source,bash]
+----
+curl http://localhost:8000/api/v1/health
+----
+
+=== Step 5: Write tests
+
+Create `tests/models/test_my_provider.py`:
+
+[source,python]
+----
+"""Tests for MyProvider."""
+
+from unittest.mock import MagicMock, patch
+
+import pytest
+
+from models.providers.my_provider import MyProvider
+
+
+class TestMyProvider:
+    """Tests for MyProvider."""
+
+    def test_validate_config_requires_base_url(self):
+        """Verify validation fails without base_url."""
+        with pytest.raises(ValueError, match="base_url"):
+            MyProvider({"model_id": "test"})
+
+    def test_generate_text(self):
+        """Verify text generation calls the client."""
+        provider = MyProvider({
+            "base_url": "http://localhost:9000",
+            "model_id": "test-model",
+        })
+        provider._client = MagicMock()
+        provider._client.generate.return_value.text = "Generated output"
+
+        result = provider.generate_text("Test prompt", temperature=0.0)
+
+        assert result == "Generated output"
+
+    def test_is_available_returns_false_when_disconnected(self):
+        """Verify availability check when not connected."""
+        provider = MyProvider({
+            "base_url": "http://localhost:9000",
+            "model_id": "test-model",
+        })
+
+        assert provider.is_available() is False
+----
+
+=== Step 6: Test with the application
+
+Configure your provider and run CEA:
+
+[source,bash]
+----
+# .env
+MODEL_PROVIDER=my_provider
+BASE_URL=http://localhost:9000
+MODEL_ID=your-model-name
+
+# Start CEA
+python main.py
+----
+
+Verify the provider works by running an analysis and checking the health endpoint.
+
+== The BaseModelProvider interface
+
+=== Required methods
+
+[cols="1,2"]
+|===
+|Method |Purpose
+
+|`_validate_config()`
+|Validate provider-specific configuration. Called during `__init__`.
+
+|`connect()`
+|Establish connection. Return `True` on success.
+
+|`is_available()`
+|Check if the provider can accept requests.
+
+|`generate_text(prompt, **kwargs)`
+|Generate text from the model. Return the generated string.
+
+|`get_model_info()`
+|Return model metadata dict.
+|===
+
+=== Optional methods
+
+[cols="1,2"]
+|===
+|Method |Purpose
+
+|`disconnect()`
+|Clean up resources. Default implementation does nothing.
+
+|`health_check()`
+|Return health status dict. Default calls `is_available()`.
+|===
+
+=== Generation parameters
+
+The `_prepare_generation_params(**kwargs)` helper method merges provided kwargs with defaults:
+
+* `temperature` — default 0.4 (analysis uses 0.0, suggestions use 0.2)
+* `max_tokens` — from config (`MODEL_MAX_TOKENS`, default 3072)
+* `top_p` — default 0.7
+* `top_k` — default 20
+* `seed` — from `MODEL_SEED` (default 42, best-effort per provider)
+
+== See also
+
+* xref:configure-providers.adoc[Configure AI Providers]
+* xref:ROOT:environment-variables.adoc[Environment Variables]
+* xref:architecture:architecture.adoc[System Architecture]

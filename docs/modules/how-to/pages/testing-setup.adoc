@@ -1,0 +1,157 @@
+= Testing setup
+:navtitle: Testing setup
+
+== Prerequisites
+
+* Python 3.12+ with virtual environment activated
+* All dependencies installed (`pip install -r requirements.txt`)
+
+== Quick start
+
+[source,bash]
+----
+# Activate virtual environment
+source venv/bin/activate
+
+# Run all tests
+make test
+
+# Or with pytest directly
+python -m pytest tests/ -v
+----
+
+The test suite contains 389 tests that run without network access. All external dependencies (SpaCy, LLM) are mocked.
+
+== Test structure
+
+[source]
+----
+tests/
+├── conftest.py              # Shared fixtures (app, client, mock_spacy, etc.)
+├── fixtures/
+│   └── errors_sample.adoc   # AsciiDoc document with rule triggers
+│
+├── llm/                     # LLM integration tests
+│   ├── test_client.py       # LLMClient (11 tests)
+│   ├── test_parser.py       # Response parsing (32 tests)
+│   └── test_prompts.py      # Prompt construction
+│
+├── services/                # Service layer tests
+│   ├── test_orchestrator_spans.py  # Span mapping (37 tests)
+│   ├── test_merger.py       # Issue dedup (55 tests)
+│   ├── test_session_store.py  # Sessions (15 tests)
+│   ├── test_suggestion_engine.py  # Suggestions (28 tests)
+│   ├── test_scorer.py       # Quality scoring
+│   ├── test_preprocessor.py # Markup cleaning
+│   ├── test_deterministic.py  # Rule execution
+│   └── test_report.py       # Report generation
+│
+├── rules/                   # Rule tests
+│   ├── test_fp_guards.py    # FP guard mechanisms (40 tests)
+│   └── test_deterministic.py
+│
+├── api/                     # API endpoint tests
+│   ├── test_analyze.py      # Analyze endpoint
+│   ├── test_upload.py       # Upload endpoint
+│   ├── test_suggestions_api.py  # Suggestions (6 tests)
+│   ├── test_citations_api.py  # Citations (4 tests)
+│   └── test_error_handlers.py  # Error responses (6 tests)
+│
+├── parsers/                 # Document parser tests
+│   ├── test_asciidoc_parser.py  # AsciiDoc (10 tests)
+│   ├── test_dita_parser.py  # DITA (6 tests)
+│   └── test_xml_parser.py   # XML (7 tests)
+│
+└── feedback/
+    └── test_feedback_store.py  # Feedback (8 tests)
+----
+
+== Key fixtures
+
+The `conftest.py` provides these fixtures:
+
+[cols="1,2"]
+|===
+|Fixture |Purpose
+
+|`app`
+|Flask test app with `TESTING=True`, `LLM_ENABLED=False`, in-memory SQLite
+
+|`client`
+|Flask test client for HTTP requests
+
+|`mock_spacy`
+|Patches SpaCy NLP to return mock Doc with sentence/token mocks
+
+|`mock_llm`
+|Patches LLMClient to return `is_available() == False`
+
+|`sample_text`
+|Multi-sentence text with known issues (passive voice, contractions, etc.)
+
+|`session_with_issues`
+|Pre-populated session with 2 mock issues for accept/dismiss/feedback testing
+|===
+
+== Common commands
+
+[source,bash]
+----
+# Run all tests
+make test
+
+# Run with verbose output
+python -m pytest tests/ -v
+
+# Run a specific test file
+python -m pytest tests/services/test_merger.py -v
+
+# Run tests matching a pattern
+python -m pytest tests/ -k "merger" -v
+
+# Run with coverage
+make coverage
+
+# Run FP guard tests after rule changes
+python -m pytest tests/rules/test_fp_guards.py -v
+
+# Run only fast tests (skip slow integration)
+python -m pytest tests/ -v -m "not slow"
+----
+
+== Coverage
+
+[source,bash]
+----
+# Generate coverage report
+make coverage
+
+# This produces coverage.xml for SonarQube
+----
+
+== Troubleshooting
+
+=== Import errors
+
+[source,bash]
+----
+# Ensure virtual environment is activated
+source venv/bin/activate
+
+# Verify Python version
+python --version  # Should be 3.12+
+----
+
+=== SpaCy model not found
+
+Tests mock SpaCy, so the model is not required for testing. If you see SpaCy errors, ensure `mock_spacy` fixture is being used.
+
+=== Tests hanging
+
+Tests should not make network calls. If a test hangs, it may be trying to connect to an LLM provider. Ensure `mock_llm` fixture is applied.
+
+== See also
+
+* xref:testing-guide.adoc[Testing Guide]
+* xref:writing-tests.adoc[Writing Tests]
+* xref:ROOT:getting-started.adoc[Getting Started]
