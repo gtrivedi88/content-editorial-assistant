@@ -25,6 +25,9 @@ _PROPER_NOUN_RE = re.compile(
 # HTML entity pattern: &amp; &lt; &#123; etc.
 _HTML_ENTITY_RE = re.compile(r'&\w+;|&#\d+;|&#x[\da-fA-F]+;')
 
+# URL pattern for guarding symbols inside URL fragments
+_URL_RE = re.compile(r'https?://[^\s\[\]]+')
+
 _SKIP_BLOCK_TYPES = ('code_block', 'listing', 'literal', 'inline_code')
 
 
@@ -79,6 +82,11 @@ class PunctuationAndSymbolsRule(BasePunctuationRule):
         # Guard: HTML entities (&amp; etc.)
         for ent in _HTML_ENTITY_RE.finditer(sentence):
             if ent.start() <= match.start() < ent.end():
+                return None
+
+        # Guard: symbol inside a URL (e.g., # in https://example.com#section)
+        for url in _URL_RE.finditer(sentence):
+            if url.start() <= match.start() < url.end():
                 return None
 
         return self._create_error(

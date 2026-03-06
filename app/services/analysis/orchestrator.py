@@ -1388,7 +1388,7 @@ _MAX_SEMANTIC_CHUNK_CHARS = 6000
 _OVERLAP_BLOCK_COUNT = 3
 
 # Minimum word count for the global (full-document) LLM pass.
-_GLOBAL_PASS_MIN_WORDS = 200
+_GLOBAL_PASS_MIN_WORDS = 30
 
 
 def _split_into_blocks(text: str) -> list[str]:

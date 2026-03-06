@@ -33,7 +33,7 @@ _RE_TABLE_DELIM = re.compile(r"^\|={3,}\s*$")
 _RE_ADMONITION = re.compile(
     r"^\[(NOTE|TIP|WARNING|IMPORTANT|CAUTION)\]\s*$", re.IGNORECASE
 )
-_RE_ATTR_ENTRY = re.compile(r"^:([\w-]+):\s*(.*)")
+_RE_ATTR_ENTRY = re.compile(r"^:(!?[\w-]+):\s*(.*)")
 _RE_ULIST = re.compile(r"^(\*{1,5})\s+(.+)")
 _RE_OLIST = re.compile(r"^(\.{1,5})\s+(.+)")
 _RE_INCLUDE = re.compile(r"^include::(.+)\[")
@@ -49,6 +49,12 @@ _RE_LIST_CONTINUATION = re.compile(r"^\+\s*$")
 _RE_GENERIC_BLOCK_ATTR = re.compile(r"^\[[\w,%#\"'=\s.+-]+\]\s*$")
 # AsciiDoc table cell separator (for SK-6 per-cell decomposition)
 _RE_TABLE_CELL = re.compile(r"\|")
+# Block delimiter line (====, ****, etc.) — used to strip from admonitions
+_RE_BLOCK_DELIM = re.compile(r"^[=*]{4,}\s*$")
+# Single-line comment (// not followed by another /)
+_RE_SINGLE_LINE_COMMENT = re.compile(r"^[ \t]*//(?!/)")
+# Conditional directives: ifdef::, ifndef::, ifeval::, endif::
+_RE_CONDITIONAL = re.compile(r"^[ \t]*(?:ifdef|ifndef|ifeval|endif)::")
 
 # Pre-compiled AsciiDoc inline patterns for stripping (SK-3).
 # Longer delimiters first to avoid partial matches.
@@ -344,20 +350,20 @@ class AsciidocParser(BaseParser):
                 line, start_pos, idx, lines, skip=True,
             )
 
+        # Single-line comment or conditional directive — skip analysis
+        if _RE_SINGLE_LINE_COMMENT.match(stripped) or _RE_CONDITIONAL.match(stripped):
+            return _append_block(
+                blocks, "comment", stripped, line, start_pos, idx, lines, skip=True
+            )
+
         # Image directive — skip analysis (not prose)
         if _RE_IMAGE.match(stripped):
             return _append_block(
                 blocks, "image", stripped, line, start_pos, idx, lines, skip=True
             )
 
-        # Block anchor [id="..."] — skip analysis (metadata)
-        if _RE_BLOCK_ANCHOR.match(stripped):
-            return _append_block(
-                blocks, "comment", stripped, line, start_pos, idx, lines, skip=True
-            )
-
-        # Role attribute [role="..."] — skip analysis (metadata)
-        if _RE_ROLE_ATTR.match(stripped):
+        # Block anchor [id="..."] or role attribute [role="..."] — skip analysis
+        if _RE_BLOCK_ANCHOR.match(stripped) or _RE_ROLE_ATTR.match(stripped):
             return _append_block(
                 blocks, "comment", stripped, line, start_pos, idx, lines, skip=True
             )
@@ -462,16 +468,24 @@ class AsciidocParser(BaseParser):
         while j < len(lines) and lines[j].strip():
             body_lines.append(lines[j])
             j += 1
-        raw_content = "\n".join(body_lines[1:])  # exclude the [NOTE] line
         raw = "\n".join(body_lines)
+        # Body excludes the [NOTE] marker line
+        body = body_lines[1:]
+        # Strip block delimiters (==== / **** lines) from content tiers.
+        # These are structure, not prose — content should be plain text.
+        leading_skip = 0
+        content_body = _strip_admonition_delimiters(body)
+        if body and body[0] != (content_body[0] if content_body else ""):
+            leading_skip = len(body[0]) + 1  # +1 for newline
+        prose = "\n".join(content_body)
         # Tier 2: preserve inline markers before stripping
-        inline_content = raw_content
+        inline_content = prose
         # SK-3/SK-4: strip inline markers and build char_map
-        content, char_map = _strip_adoc_inline(raw_content)
+        content, char_map = _strip_adoc_inline(prose)
         end_pos = start_pos + len(raw)
-        # Advance start_pos past the [NOTE] marker line so char_map
-        # indices (relative to raw_content) align with the source.
-        content_start = start_pos + len(body_lines[0]) + 1
+        # Advance start_pos past the [NOTE] marker line and any leading
+        # delimiter so char_map indices align with the source.
+        content_start = start_pos + len(body_lines[0]) + 1 + leading_skip
         blocks.append(Block(
             block_type="admonition",
             content=content,
@@ -507,6 +521,11 @@ class AsciidocParser(BaseParser):
                 break
             # Defense: stop at AsciiDoc block title (.SomeTitle)
             if _RE_BLOCK_TITLE.match(stripped_line):
+                break
+            # Defense: stop at single-line comments and conditional directives
+            if _RE_SINGLE_LINE_COMMENT.match(stripped_line):
+                break
+            if _RE_CONDITIONAL.match(stripped_line):
                 break
             para_lines.append(lines[j])
             j += 1
@@ -622,6 +641,29 @@ def _node_content(node: dict, context: str) -> str:
 def _char_offset(lines: list[str], line_idx: int) -> int:
     """Compute the character offset of the start of *lines[line_idx]*."""
     return sum(len(lines[i]) + 1 for i in range(line_idx))
+
+
+def _strip_admonition_delimiters(body: list[str]) -> list[str]:
+    """Remove leading and trailing block delimiter lines from admonition body.
+
+    AsciiDoc admonition blocks may be enclosed in ``====`` or ``****``
+    delimiters.  These are structural markers and should not appear in
+    the block's ``content`` or ``inline_content`` tiers.
+
+    Args:
+        body: Lines of the admonition body (excluding the ``[NOTE]`` marker).
+
+    Returns:
+        Body lines with leading/trailing delimiter lines removed.
+    """
+    if not body:
+        return body
+    result = body
+    if _RE_BLOCK_DELIM.match(result[0]):
+        result = result[1:]
+    if result and _RE_BLOCK_DELIM.match(result[-1]):
+        result = result[:-1]
+    return result
 
 
 def _append_block(

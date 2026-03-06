@@ -115,7 +115,16 @@ def _parse_and_analyze(
             file_type=file_type,
             blocks=blocks,
         )
-        return jsonify(response.to_dict()), 200
+        result = response.to_dict()
+
+        # Include the file content for the editor and the detected format.
+        # For binary formats (PDF, DOCX) return extracted plain text since
+        # the raw content is a temp file path, not displayable text.
+        ext = _get_extension(filename)
+        result["content"] = plain_text if ext in _BINARY_EXTENSIONS else content
+        result["detected_format"] = file_type or "auto"
+
+        return jsonify(result), 200
     except (RuntimeError, OSError, ValueError) as exc:
         logger.error("Upload processing failed for '%s': %s", filename, exc, exc_info=True)
         return jsonify({"error": f"Failed to process file: {exc}"}), 500

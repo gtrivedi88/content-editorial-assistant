@@ -966,3 +966,183 @@ class TestDoNotUseTermsSuggestions:
         )
         assert any("inactive" in s for s in suggestions)
         assert any("safe" in s for s in suggestions)
+
+
+# ===================================================================
+# Phase 12 — AsciiDoc markup cleanup (preprocessor FP guards)
+# ===================================================================
+
+
+class TestAsciidocMarkupCleanup:
+    """Verify preprocessor strips AsciiDoc directives that cause false positives."""
+
+    def test_attribute_unset_stripped(self) -> None:
+        """':!ibi:' attribute unset should be stripped — no exclamation FP."""
+        from app.services.analysis.preprocessor import _clean_markup
+        cleaned = _clean_markup("Some text.\n:!ibi:\nMore text.")
+        assert "!" not in cleaned
+
+    def test_single_line_comment_stripped(self) -> None:
+        """'// comment' should be stripped — no slashes FP."""
+        from app.services.analysis.preprocessor import _clean_markup
+        cleaned = _clean_markup(
+            "Some text.\n// * edge_computing/upgrade/cnf.adoc\nMore text."
+        )
+        assert "edge_computing" not in cleaned
+
+    def test_indented_comment_stripped(self) -> None:
+        """'  // comment' with leading whitespace should also be stripped."""
+        from app.services.analysis.preprocessor import _clean_markup
+        cleaned = _clean_markup("Some text.\n  // indented comment\nMore text.")
+        assert "indented comment" not in cleaned
+
+    def test_ifdef_stripped(self) -> None:
+        """'ifdef::ibu[]' should be stripped — no spacing FP."""
+        from app.services.analysis.preprocessor import _clean_markup
+        cleaned = _clean_markup("Some text.\nifdef::ibu[]\nMore text.")
+        assert "ifdef" not in cleaned
+
+    def test_endif_stripped(self) -> None:
+        """'endif::[]' should be stripped."""
+        from app.services.analysis.preprocessor import _clean_markup
+        cleaned = _clean_markup("Some text.\nendif::[]\nMore text.")
+        assert "endif" not in cleaned
+
+    def test_ifeval_stripped(self) -> None:
+        """'ifeval::' should be stripped."""
+        from app.services.analysis.preprocessor import _clean_markup
+        cleaned = _clean_markup(
+            'Some text.\nifeval::["{context}" == "value"]\nMore text.'
+        )
+        assert "ifeval" not in cleaned
+
+    def test_content_inside_ifdef_preserved(self) -> None:
+        """Content between ifdef/endif should NOT be stripped."""
+        from app.services.analysis.preprocessor import _clean_markup
+        cleaned = _clean_markup(
+            "ifdef::ibu[]\nThis is real prose.\nendif::[]"
+        )
+        assert "This is real prose." in cleaned
+
+    def test_block_comment_still_stripped(self) -> None:
+        """Block comments (////) should still be stripped (regression)."""
+        from app.services.analysis.preprocessor import _clean_markup
+        cleaned = _clean_markup("Text.\n////\nBlock comment\n////\nMore.")
+        assert "Block comment" not in cleaned
+
+    def test_angle_bracket_variable_replaced(self) -> None:
+        """'<root_disk>' should be replaced with 'placeholder'."""
+        from app.services.analysis.preprocessor import _clean_markup
+        cleaned = _clean_markup("Specify the <root_disk> value.")
+        assert "<root_disk>" not in cleaned
+        assert "placeholder" in cleaned
+
+
+# ===================================================================
+# Phase 13 — Punctuation URL guard
+# ===================================================================
+
+
+class TestPunctuationUrlGuard:
+    """Verify punctuation rule skips symbols inside URLs."""
+
+    def test_hash_in_url_not_flagged(self) -> None:
+        """'#' in a URL fragment should not be flagged."""
+        from rules.punctuation.punctuation_and_symbols_rule import (
+            PunctuationAndSymbolsRule,
+        )
+
+        rule = PunctuationAndSymbolsRule()
+        text = "See https://example.com/docs#section for details."
+        sentences = [text]
+
+        result: List[Dict[str, Any]] = rule.analyze(text, sentences)
+
+        hash_issues = [e for e in result if e.get("flagged_text") == "#"]
+        assert hash_issues == [], (
+            f"'#' inside a URL should not be flagged: {hash_issues}"
+        )
+
+    def test_standalone_hash_still_flagged(self) -> None:
+        """'#' used as a symbol in prose should still be flagged."""
+        from rules.punctuation.punctuation_and_symbols_rule import (
+            PunctuationAndSymbolsRule,
+        )
+
+        rule = PunctuationAndSymbolsRule()
+        text = "Enter the # symbol to start."
+        sentences = [text]
+
+        result: List[Dict[str, Any]] = rule.analyze(text, sentences)
+
+        hash_issues = [e for e in result if e.get("flagged_text") == "#"]
+        assert len(hash_issues) >= 1, (
+            "Standalone '#' in prose should be flagged"
+        )
+
+
+# ===================================================================
+# Phase 14 — Lists rule inline code guard
+# ===================================================================
+
+
+class TestListsInlineCodeGuard:
+    """Verify lists rule skips capitalization on backtick-wrapped items."""
+
+    def test_backtick_wrapped_placeholder_not_flagged(self) -> None:
+        """Lowercase first letter inside inline code should not be flagged.
+
+        Simulates per-block analysis where parser strips backticks from
+        content but provides inline_code_ranges via context.
+        """
+        from rules.structure_and_format.lists_rule import ListsRule
+
+        rule = ListsRule()
+        # After parser stripping: backticks removed, content is plain text
+        text = "root_disk value"
+        sentences = [text]
+        context: Dict[str, Any] = {
+            "block_type": "list_item_unordered",
+            # Range covers "root_disk" (positions 0-8) in content coords
+            "inline_code_ranges": [(0, 9)],
+        }
+
+        result: List[Dict[str, Any]] = rule.analyze(
+            text, sentences, context=context,
+        )
+
+        cap_issues = [
+            e for e in result
+            if "Capitalize" in e.get("message", "")
+        ]
+        assert cap_issues == [], (
+            f"Backtick-wrapped content should not be flagged: {cap_issues}"
+        )
+
+    def test_regular_lowercase_still_flagged(self) -> None:
+        """Lowercase first word without code context should be flagged.
+
+        Uses a 2-char word to avoid the command-token guard (>2 chars).
+        """
+        from rules.structure_and_format.lists_rule import ListsRule
+
+        rule = ListsRule()
+        # "an" is 2 chars — won't match _COMMAND_TOKEN_RE (requires >2)
+        text = "an important step"
+        sentences = [text]
+        context: Dict[str, Any] = {
+            "block_type": "list_item_unordered",
+            "inline_code_ranges": [],
+        }
+
+        result: List[Dict[str, Any]] = rule.analyze(
+            text, sentences, context=context,
+        )
+
+        cap_issues = [
+            e for e in result
+            if "Capitalize" in e.get("message", "")
+        ]
+        assert len(cap_issues) >= 1, (
+            "Regular lowercase list item should be flagged"
+        )

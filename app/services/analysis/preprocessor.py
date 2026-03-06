@@ -48,13 +48,18 @@ _MARKUP_SUBS: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"^={4,}\s*$.*?^={4,}\s*$", re.MULTILINE | re.DOTALL), ""),
     # Delete sidebar blocks: **** ... ****
     (re.compile(r"^\*{4,}\s*$.*?^\*{4,}\s*$", re.MULTILINE | re.DOTALL), ""),
+    # --- Single-line constructs (must come after delimited blocks) ---
+    # Delete single-line comments: // text (not block comment delimiters ////)
+    (re.compile(r"^[ \t]*//[^/].*$|^[ \t]*//\s*$", re.MULTILINE), ""),
+    # Delete conditional directives: ifdef::, ifndef::, ifeval::, endif::
+    (re.compile(r"^[ \t]*(?:ifdef|ifndef|ifeval|endif)::[^\n]*$", re.MULTILINE), ""),
     # --- Block-level elements ---
     # Delete standalone block attribute lines: [source,bash], [id="..."], etc.
     (re.compile(r"^\[[^\]]+\]\s*$", re.MULTILINE), ""),
     # Delete block continuation markers (+ alone on a line)
     (re.compile(r"^\+\s*$", re.MULTILINE), ""),
-    # Delete attribute entries: :key: value (metadata, not prose)
-    (re.compile(r"^:[a-zA-Z_][a-zA-Z0-9_-]*:.*$", re.MULTILINE), ""),
+    # Delete attribute entries: :key: value, :!key: unset (metadata, not prose)
+    (re.compile(r"^:!?[\w-]+:.*$", re.MULTILINE), ""),
     # Delete image directives: image::path[alt text]
     (re.compile(r"^image::[^\[]*\[[^\]]*\]\s*$", re.MULTILINE), ""),
     # --- Heading and list markers ---
@@ -87,6 +92,8 @@ _MARKUP_SUBS: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"(?<!\w)\+([^+]+)\+(?!\w)"), "placeholder"),
     # Replace attribute references: {prod-short} → placeholder
     (re.compile(r"\{[a-zA-Z][a-zA-Z0-9_-]*\}"), "placeholder"),
+    # Replace angle-bracket variable placeholders: <root_disk> → placeholder
+    (re.compile(r"<[a-zA-Z_][\w-]*>"), "placeholder"),
     # Delete standalone URLs (not already handled by link macro)
     (re.compile(r"https?://[^\s\[\]]+"), ""),
     # Collapse runs of blank lines to a single blank line

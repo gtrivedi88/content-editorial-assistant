@@ -13,6 +13,7 @@ Guards: code block skip.
 import re
 from typing import List, Dict, Any, Optional
 
+from rules.base_rule import in_code_range
 from .base_structure_rule import BaseStructureRule
 
 _SKIP_BLOCKS = frozenset([
@@ -30,6 +31,38 @@ _THESE_INTRO_RE = re.compile(
 )
 
 _INLINE_CODE = re.compile(r'`[^`]+`')
+
+# Command-like token: all lowercase letters, digits, underscores, hyphens
+_COMMAND_TOKEN_RE = re.compile(r'^[a-z][a-z0-9_\-]+$')
+
+
+def _should_skip_capitalization(
+    content: str, first_alpha_idx: int, text: str, context: Dict[str, Any],
+) -> bool:
+    """Return True if the list-item capitalization check should be skipped.
+
+    Guards against false positives from inline code, command-like tokens,
+    and content inside pre-computed inline code ranges.
+    """
+    # Guard: inline code ranges (backtick content already stripped by parser)
+    code_ranges = context.get("inline_code_ranges", [])
+    if code_ranges:
+        content_offset = text.find(content)
+        if content_offset < 0:
+            content_offset = 0
+        if in_code_range(content_offset + first_alpha_idx, code_ranges):
+            return True
+
+    # Guard: items starting with inline code backtick
+    if content.startswith('`'):
+        return True
+
+    # Guard: command-like token (all lowercase + hyphens, length > 2)
+    first_word = content.split()[0] if content.split() else ''
+    if first_word and _COMMAND_TOKEN_RE.match(first_word) and len(first_word) > 2:
+        return True
+
+    return False
 
 
 class ListsRule(BaseStructureRule):
@@ -88,32 +121,28 @@ class ListsRule(BaseStructureRule):
             return
 
         first_char = content[first_alpha_idx]
-
-        # Guard: skip items starting with inline code
-        if content.startswith('`'):
-            return
-        # Guard: skip items starting with a command-like token (all lowercase + hyphens)
-        first_word = content.split()[0] if content.split() else ''
-        if first_word and re.match(r'^[a-z][a-z0-9_\-]+$', first_word) and len(first_word) > 2:
+        if not first_char.islower():
             return
 
-        if first_char.islower():
-            error = self._create_error(
-                sentence=sentence,
-                sentence_index=idx,
-                message="Capitalize the first word of each list item.",
-                suggestions=[
-                    f"Change '{first_char}' to '{first_char.upper()}'.",
-                    "IBM Style Guide requires capitalized list items.",
-                ],
-                severity='low',
-                text=text,
-                context=context,
-                flagged_text=first_char,
-                span=(first_alpha_idx, first_alpha_idx + 1),
-            )
-            if error:
-                errors.append(error)
+        if _should_skip_capitalization(content, first_alpha_idx, text, context):
+            return
+
+        error = self._create_error(
+            sentence=sentence,
+            sentence_index=idx,
+            message="Capitalize the first word of each list item.",
+            suggestions=[
+                f"Change '{first_char}' to '{first_char.upper()}'.",
+                "IBM Style Guide requires capitalized list items.",
+            ],
+            severity='low',
+            text=text,
+            context=context,
+            flagged_text=first_char,
+            span=(first_alpha_idx, first_alpha_idx + 1),
+        )
+        if error:
+            errors.append(error)
 
     # ------------------------------------------------------------------
     # Check 2 — "these" introducing a list

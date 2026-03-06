@@ -221,3 +221,80 @@ class TestAsciidocParser:
         assert len(code_blocks) == 1
         assert code_blocks[0].should_skip_analysis is True
         assert "dnf install httpd" in code_blocks[0].content
+
+    def test_single_line_comment_skipped(self) -> None:
+        """Single-line comment '// text' produces a skip-analysis block."""
+        content: str = "= Title\n// This is a comment\nSome paragraph.\n"
+
+        parser: AsciidocParser = AsciidocParser()
+        result: ParseResult = parser.parse(content)
+
+        comments = [
+            b for b in result.blocks
+            if b.block_type == "comment" and "comment" in b.content.lower()
+        ]
+        assert len(comments) >= 1
+        assert comments[0].should_skip_analysis is True
+
+    def test_ifdef_directive_skipped(self) -> None:
+        """ifdef/endif produce skip-analysis blocks, content preserved."""
+        content: str = "ifdef::ibu[]\nThis is real prose.\nendif::[]\n"
+
+        parser: AsciidocParser = AsciidocParser()
+        result: ParseResult = parser.parse(content)
+
+        directives = [
+            b for b in result.blocks
+            if b.block_type == "comment"
+            and ("ifdef" in b.content or "endif" in b.content)
+        ]
+        assert len(directives) == 2
+        for d in directives:
+            assert d.should_skip_analysis is True
+
+        # Prose between directives should be a paragraph
+        paragraphs = [b for b in result.blocks if b.block_type == "paragraph"]
+        assert any("real prose" in p.content for p in paragraphs)
+
+    def test_attribute_unset_recognized(self) -> None:
+        """':!name:' recognized as attribute_entry with skip=True."""
+        content: str = ":!ibi:\nSome text.\n"
+
+        parser: AsciidocParser = AsciidocParser()
+        result: ParseResult = parser.parse(content)
+
+        attrs = [b for b in result.blocks if b.block_type == "attribute_entry"]
+        assert len(attrs) >= 1
+        assert attrs[0].should_skip_analysis is True
+
+    def test_admonition_delimiters_stripped(self) -> None:
+        """==== delimiters should not appear in admonition content."""
+        content: str = (
+            "[IMPORTANT]\n"
+            "====\n"
+            "You must complete this at install time.\n"
+            "====\n"
+        )
+
+        parser: AsciidocParser = AsciidocParser()
+        result: ParseResult = parser.parse(content)
+
+        admons = [b for b in result.blocks if b.block_type == "admonition"]
+        assert len(admons) == 1
+        assert "====" not in admons[0].content
+        assert "====" not in admons[0].inline_content
+        assert "You must complete this at install time." == admons[0].content
+
+    def test_admonition_without_delimiters(self) -> None:
+        """Inline admonition (no ====) should still work."""
+        content: str = (
+            "[NOTE]\n"
+            "Remember to save your work.\n"
+        )
+
+        parser: AsciidocParser = AsciidocParser()
+        result: ParseResult = parser.parse(content)
+
+        admons = [b for b in result.blocks if b.block_type == "admonition"]
+        assert len(admons) == 1
+        assert "Remember to save your work." == admons[0].content

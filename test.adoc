@@ -1,190 +1,95 @@
-= Deleting extensions from a private OpenVSX registry
+// Module included in the following assemblies:
+// * edge_computing/image-based-upgrade/cnf-preparing-for-image-based-upgrade.adoc
 
-You can remove extensions from your private OpenVSX registry by using one of the following methods:
+ifeval::["{context}" == "ibi-preparing-image-based-install"]
+:ibi:
+endif::[]
 
-* Use the OpenVSX administrator API (recommended).
-* Delete the extension data directly in the PostgreSQL database.
+ifeval::["{context}" == "shared-container-partition"]
+:ibu:
+endif::[]
 
-[id="delete-extensions-admin-api"]
-== Deleting an extension by using the OpenVSX administrator API
+:_mod-docs-content-type: PROCEDURE
+[id="cnf-image-based-upgrade-shared-container-partition_{context}"]
+= Configuring a shared container partition between ostree stateroots
 
-Use this method to call the administrator API with an administrator user and a personal access token (PAT).
+ifdef::ibu[]
+[role="_abstract"]
+Apply a `MachineConfig` to both the seed and the target clusters during installation time to create a separate partition and share the `/var/lib/containers` partition between the two `ostree` stateroots that will be used during the upgrade process.
+endif::[]
 
-.Prerequisites
-* You must have access to the OpenShift cluster where OpenVSX is deployed (namespace `openvsx`).
+[IMPORTANT]
+====
+You must complete this procedure at installation time.
+====
 
-.Procedure
-. Add the OpenVSX administrator user and PAT to the database:
-+
-Get the PostgreSQL pod name:
-+
-[bash,subs="verbatim",options="nowrap"]
-----
-export POSTGRESQL_POD_NAME=$(oc get pods -n openvsx \
-   -o jsonpath="{.items[*].metadata.name}" | tr ' ' '\n' | grep '^postgresql' | head -n 1)
-----
-+
-Add the administrator user:
-+
-[bash,subs="verbatim",options="nowrap"]
-----
-oc exec -n openvsx "$POSTGRESQL_POD_NAME" -- bash -c \
-   "psql -d openvsx -c \"INSERT INTO user_data (id, login_name, role) VALUES (1002, 'openvsx-admin', 'admin');\""
-----
-+
-Add the administrator PAT:
-+
-[bash,subs="verbatim",options="nowrap"]
-----
-oc exec -n openvsx "$POSTGRESQL_POD_NAME" -- bash -c \
-   "psql -d openvsx -c \"INSERT INTO personal_access_token (id, user_data, value, active, created_timestamp, accessed_timestamp, description) VALUES (1002, 1002, 'openvsx_admin_token', true, current_timestamp, current_timestamp, 'Admin API Token');\""
-----
-+
-**Note:** Use a strong, unique value instead of `openvsx_admin_token` for production. The system passes the PAT in the API request URL.
-
-. To delete an extension and all of its published versions, use the **`curl`** command with the following endpoint:
-+
-`POST /admin/api/extension/<publisher>/<extension>/delete`
-+
-[bash,subs="verbatim",options="nowrap"]
-----
-curl -X POST \
-  "https://<your-openvsx-server-url>/admin/api/extension/<publisher>/<extension>/delete?token=<your-admin-pat>"
-----
-+
-Replace the following placeholders:
-* `_your-openvsx-server-url_`: The URL of your OpenVSX registry.
-* `_publisher_`: The namespace of the extension (for example, `redhat`).
-* `_extension_`: The name of the extension (for example, `vscode-yaml`).
-* `_your-admin-pat_`: The PAT you created for the `openvsx-admin` user.
-
-. To delete a specific version of an extension, send a JSON body in the same `POST` request:
-+
-To remove only certain versions and target platforms instead of the entire extension, include an array that specifies a `version` and `targetPlatform` (for example, `linux-x64`, `darwin-arm64`, or `win32-x64`).
-+
-[bash,subs="verbatim",options="nowrap"]
-----
-curl -X POST \
-  -H "Content-Type: application/json" \
-  -d '[{"version": "1.3.0", "targetPlatform": "linux-x64"}]' \
-  "https://<your-openvsx-server-url>/admin/api/extension/<publisher>/<extension>/delete?token=<your-admin-pat>"
-----
-+
-Use the same placeholders that are listed in the previous step. You can list multiple version and platform pairs in the JSON array to delete several targets in one request.
-
-[id="delete-extensions-postgres"]
-== Deleting an extension from the PostgreSQL database directly
-
-Use this method to remove extension records and related data directly in the database. Use this method if the administrator API is not available or if you must clean up specific data. If the extension uses local storage, you must also remove its files from the OpenVSX server pod.
-
-.Prerequisites
-* You must have access to the OpenShift cluster where OpenVSX is deployed (namespace `openvsx`).
-* You must know the namespace name and extension name that you want to delete.
+ifdef::ibi[]
+[role="_abstract"]
+Apply a `MachineConfig` to the seed cluster to create a separate partition and share the `/var/lib/containers` partition between the two `ostree` stateroots that will be used during the preinstall process.
+endif::[]
 
 .Procedure
-. Open a command prompt in the PostgreSQL pod and connect to the database:
-+
-[bash,subs="verbatim",options="nowrap"]
-----
-export POSTGRESQL_POD_NAME=$(oc get pods -n openvsx \
-   -o jsonpath="{.items[*].metadata.name}" | tr ' ' '\n' | grep '^postgresql' | head -n 1)
-oc exec -it $POSTGRESQL_POD_NAME -n openvsx -- /bin/bash
-----
-+
-Inside the pod, run the **`psql`** command:
-+
-[bash,subs="verbatim",options="nowrap"]
-----
-psql
-----
-+
-At the `postgres=#` prompt, connect to the database:
-+
-[bash,subs="verbatim",options="nowrap"]
-----
-\c openvsx
-----
-+
-You are now connected to the `openvsx` database as the `postgres` user.
 
-. Find the namespace ID and extension ID:
+* Apply a `MachineConfig` to create a separate partition:
 +
-Identify the `namespace` ID (replace `_namespace_name_` with the actual namespace):
-+
-[bash,subs="verbatim",options="nowrap"]
+[source,yaml]
 ----
-SELECT id, name FROM namespace WHERE name = 'namespace_name';
-----
-+
-Identify the extension ID (replace `_namespace_id_` and `_extension_name_` with the values from the previous step):
-+
-[bash,subs="verbatim",options="nowrap"]
-----
-SELECT id, name, namespace_id FROM extension WHERE namespace_id = <namespace_id> AND name = 'extension_name';
-----
-+
-Note the ID of the extension to use as `_extension_id_` in the next steps.
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfig
+metadata:
+  labels:
+    machineconfiguration.openshift.io/role: master
+  name: 98-var-lib-containers-partitioned
+spec:
+  config:
+    ignition:
+      version: 3.2.0
+    storage:
+      disks:
+        - device: /dev/disk/by-path/pci-<root_disk> <1>
+          partitions:
+            - label: var-lib-containers
+              startMiB: <start_of_partition> <2>
+              sizeMiB: <partition_size> <3>
+      filesystems:
+        - device: /dev/disk/by-partlabel/var-lib-containers
+          format: xfs
+          mountOptions:
+            - defaults
+            - prjquota
+          path: /var/lib/containers
+          wipeFilesystem: true
+    systemd:
+      units:
+        - contents: |-
+            # Generated by Butane
+            [Unit]
+            Before=local-fs.target
+            Requires=systemd-fsck@dev-disk-by\x2dpartlabel-var\x2dlib\x2dcontainers.service
+            After=systemd-fsck@dev-disk-by\x2dpartlabel-var\x2dlib\x2dcontainers.service
 
-. Optional: Preview extension versions and file resources:
-+
-Preview the versions:
-+
-[bash,subs="verbatim",options="nowrap"]
-----
-SELECT id, version, pre_release, semver_pre_release, semver_is_pre_release FROM extension_version WHERE extension_id = <extension_id> ORDER BY timestamp DESC;
-----
-+
-Preview the file resources:
-+
-[bash,subs="verbatim",options="nowrap"]
-----
-SELECT id, name, type, storage_type FROM file_resource WHERE extension_id = <extension_id> ORDER BY id;
-----
-+
-If the `storage_type` value is `local`, you must also remove the extension files from the file system on the OpenVSX server pod.
+            [Mount]
+            Where=/var/lib/containers
+            What=/dev/disk/by-partlabel/var-lib-containers
+            Type=xfs
+            Options=defaults,prjquota
 
-. Delete the extension from the database:
-+
-Run the following commands in a single transaction. Replace `_extension_id_` with the extension ID from step 2.
-+
-[bash,subs="verbatim",options="nowrap"]
-----
-BEGIN;
-
--- 1. Delete all file resources for the extension
-DELETE FROM file_resource WHERE extension_id = <extension_id>;
-
--- 2. Delete all extension reviews
-DELETE FROM extension_review WHERE extension_id = <extension_id>;
-
--- 3. Delete all versions of the extension
-DELETE FROM extension_version WHERE extension_id = <extension_id>;
-
--- 4. Delete the extension entry itself
-DELETE FROM extension WHERE id = <extension_id>;
-
-COMMIT;
+            [Install]
+            RequiredBy=local-fs.target
+          enabled: true
+          name: var-lib-containers.mount
 ----
 +
-**Important:** Run these commands in order within one transaction. Do not skip the **`COMMIT`** command, or the system does not apply the changes.
+Where:
++
+* `<root_disk>`: Specify the root disk.
+* `<start_of_partition>`: Specify the start of the partition in MiB. If the value is too small, the installation will fail.
+* `<partition_size>`: Specify a minimum size for the partition of 500 GB to ensure adequate disk space for precached images. If the value is too small, the deployments after installation will fail.
 
-. If applicable, remove the extension files from local storage:
-+
-If the extension used local storage, remove its files from the OpenVSX server pod.
-+
-Get the OpenVSX server pod name:
-+
-[bash,subs="verbatim",options="nowrap"]
-----
-export OPENVSX_POD_NAME=$(oc get pods -n openvsx -o jsonpath="{.items[*].metadata.name}" | tr ' ' '\n' | grep '^openvsx-server' | head -n 1)
-----
-+
-Access the pod and delete the extension folder for the publisher and extension you removed:
-+
-[bash,subs="verbatim",options="nowrap"]
-----
-oc exec -it $OPENVSX_POD_NAME -n openvsx -- /bin/bash -c "rm -rf /tmp/extensions/<publisher>/<extension>"
-----
+ifeval::["{context}" == "ibi-preparing-image-based-install"]
+:!ibi:
+endif::[]
 
-== Related tasks
-* After you remove the extension, refresh your OpenVSX registry to verify that the extension no longer appears in the gallery.
+ifeval::["{context}" == "shared-container-partition"]
+:!ibu:
+endif::[]

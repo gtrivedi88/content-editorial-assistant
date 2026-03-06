@@ -93,6 +93,8 @@ class TestUploadValidFile:
         assert "issues" in data
         assert "score" in data
         assert "report" in data
+        assert data["content"] == content.decode("utf-8")
+        assert "detected_format" in data
 
     def test_upload_md_file(self, client: FlaskClient) -> None:
         """POST /api/v1/upload with a .md file returns 200.
