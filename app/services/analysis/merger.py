@@ -3,12 +3,20 @@
 Merges deterministic and LLM-generated issues into a single list,
 ensuring deterministic results always take priority. LLM issues are
 kept only when they meet the confidence threshold and do not duplicate
-any existing issue (by span overlap or flagged text match).
+any existing issue.
+
+Deduplication is **category-aware**: only issues in the same broad
+editorial category (language, punctuation, structure, technical,
+audience) are considered potential duplicates.  Different categories
+represent genuinely different editorial concerns — even on the same
+text span.  For example, a deterministic "use backtick formatting"
+issue (technical) does not suppress an LLM "use official
+capitalization" issue (language) on the same word.
 
 Deduplication strategies:
-1. Span overlap -- used when both issues have valid character offsets.
-2. Flagged text match -- used when spans are missing or [0, 0], which
-   is common with LLM providers that do not return character offsets.
+1. Span overlap -- same broad category + any character overlap.
+2. Exact text match -- same broad category + identical flagged text
+   (catches duplicates when spans are missing or mis-mapped).
 3. LLM-to-LLM dedup -- removes duplicates between granular and global
    LLM passes before merging with deterministic issues.
 """
@@ -49,9 +57,8 @@ def merge(
     if not llm_issues:
         return _sort_issues(deterministic)
 
-    det_spans = _extract_valid_spans(deterministic)
-    accepted_texts = _extract_flagged_texts(deterministic)
     accepted = list(deterministic)
+    accepted_llm: list[IssueResponse] = []
 
     block_boundaries = _extract_block_boundaries(blocks) if blocks else []
 
@@ -67,7 +74,7 @@ def merge(
         if issue.confidence < confidence_threshold:
             skipped_confidence += 1
             continue
-        if _is_duplicate(issue, det_spans, accepted_texts):
+        if _is_duplicate(issue, deterministic, accepted_llm):
             skipped_overlap += 1
             continue
         # SK-15: demote cross-block spans (disable Accept button)
@@ -75,7 +82,7 @@ def merge(
             issue.suggestions = []
             logger.debug("Demoted cross-block issue: span=%s", issue.span)
         accepted.append(issue)
-        accepted_texts.add(_normalize_text(issue.flagged_text))
+        accepted_llm.append(issue)
         kept += 1
 
     logger.info(
@@ -202,34 +209,135 @@ def _span_overlaps_seen(
 
 
 # ---------------------------------------------------------------------------
-# Duplicate detection
+# Broad category mapping for category-aware deduplication
+# ---------------------------------------------------------------------------
+
+# Maps IssueCategory string values to broad editorial groups.
+# Issues in the SAME broad group can be deduplicated against each other.
+# Issues in DIFFERENT broad groups are about genuinely different editorial
+# concerns and must NOT be deduplicated — even on the same text span.
+_BROAD_CATEGORIES: dict[str, str] = {
+    "style": "language",
+    "grammar": "language",
+    "word-usage": "language",
+    "punctuation": "punctuation",
+    "structure": "structure",
+    "modular": "structure",
+    "numbers": "technical",
+    "technical": "technical",
+    "references": "technical",
+    "audience": "audience",
+    "legal": "audience",
+}
+
+
+def _broad_category(category: object) -> str:
+    """Map an issue category to its broad editorial group.
+
+    Uses the enum's string value for lookup.  Returns ``"unknown"``
+    for ``None`` categories and ``"other"`` for unrecognised values.
+
+    Args:
+        category: An ``IssueCategory`` enum value, string, or None.
+
+    Returns:
+        Broad category group name.
+    """
+    if category is None:
+        return "unknown"
+    cat_value = category.value if hasattr(category, "value") else str(category).lower()
+    return _BROAD_CATEGORIES.get(cat_value, "other")
+
+
+# ---------------------------------------------------------------------------
+# Duplicate detection (category-aware)
 # ---------------------------------------------------------------------------
 
 
 def _is_duplicate(
     issue: IssueResponse,
-    det_spans: list[list[int]],
-    accepted_texts: set[str],
+    det_issues: list[IssueResponse],
+    accepted_llm: list[IssueResponse] | None = None,
 ) -> bool:
     """Check whether an LLM issue duplicates an already-accepted issue.
 
-    When the issue has a valid span, the span-based check is
-    authoritative and its result is returned directly.  Text matching
-    is only used as a fallback when spans are missing or invalid.
+    Category-aware: only issues in the same broad editorial category
+    are considered potential duplicates.  Different categories represent
+    different editorial concerns — a "technical formatting" deterministic
+    issue does not suppress a "language/capitalization" LLM issue on the
+    same word.
+
+    Within the same broad category, two checks apply:
+    1. **Span overlap** — any character overlap between valid spans.
+    2. **Exact text match** — identical normalised ``flagged_text``.
+       Catches duplicates when the LLM span is missing (``[0, 0]``)
+       or mis-mapped (valid but wrong position).
 
     Args:
         issue: The candidate LLM issue.
-        det_spans: Valid spans from deterministic issues.
-        accepted_texts: Normalized flagged texts of all accepted issues.
+        det_issues: Deterministic issues (always take priority).
+        accepted_llm: Previously accepted LLM issues in this merge
+            pass (prevents LLM-to-LLM duplicates within the loop).
 
     Returns:
         True if the issue is a duplicate.
     """
-    if _has_valid_span(issue.span):
-        # Span check is authoritative when spans exist
-        return _is_span_duplicate(issue, det_spans)
-    # Fallback to text matching for spanless issues
-    return _text_matches_any(_normalize_text(issue.flagged_text), accepted_texts)
+    if accepted_llm is None:
+        accepted_llm = []
+
+    all_candidates = list(det_issues) + list(accepted_llm)
+    issue_broad = _broad_category(issue.category)
+    norm = _normalize_text(issue.flagged_text) if issue.flagged_text else ""
+
+    for candidate in all_candidates:
+        if _matches_candidate(issue, issue_broad, norm, candidate):
+            return True
+
+    return False
+
+
+def _matches_candidate(
+    issue: IssueResponse,
+    issue_broad: str,
+    norm: str,
+    candidate: IssueResponse,
+) -> bool:
+    """Check whether a single candidate duplicates the given issue.
+
+    Only considers candidates in the same broad editorial category.
+    Within the same category, checks span overlap and exact text match.
+
+    Args:
+        issue: The candidate LLM issue.
+        issue_broad: Pre-computed broad category of the issue.
+        norm: Pre-computed normalised flagged text of the issue.
+        candidate: An already-accepted issue to compare against.
+
+    Returns:
+        True if the candidate is a duplicate of the issue.
+    """
+    cand_broad = _broad_category(candidate.category)
+
+    # Different broad category → different editorial concern
+    if issue_broad != cand_broad:
+        return False
+
+    # Same category: any span overlap → duplicate
+    if _has_valid_span(issue.span) and _has_valid_span(candidate.span):
+        s1, e1 = issue.span[0], issue.span[1]
+        s2, e2 = candidate.span[0], candidate.span[1]
+        if s1 < e2 and s2 < e1:
+            return True
+
+    # Same category: exact text match → duplicate
+    cand_norm = (
+        _normalize_text(candidate.flagged_text)
+        if candidate.flagged_text else ""
+    )
+    if norm and norm == cand_norm:
+        return True
+
+    return False
 
 
 def _is_span_duplicate(
@@ -238,10 +346,9 @@ def _is_span_duplicate(
 ) -> bool:
     """Check span-based duplication — any overlap is a duplicate.
 
-    When an LLM issue overlaps an existing issue on any span,
-    it is treated as a duplicate regardless of category.  The
-    deterministic issue already flags the problem; duplicate
-    cards from different categories are user-hostile.
+    Low-level span check without category awareness.  Used by unit
+    tests for isolated span logic verification.  The main merge
+    pipeline uses ``_is_duplicate()`` which adds category filtering.
 
     Args:
         issue: The candidate LLM issue with a valid span.

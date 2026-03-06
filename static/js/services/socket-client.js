@@ -107,6 +107,7 @@ export function initSocketClient(store) {
         const stateUpdate = {
             analysisStatus: 'complete',
             qualityScore: (typeof data.score === 'object' ? data.score?.score : data.score) ?? store.get('qualityScore'),
+            detectedContentType: data.detected_content_type || store.get('detectedContentType'),
         };
 
         // Populate issue list from the final merged results

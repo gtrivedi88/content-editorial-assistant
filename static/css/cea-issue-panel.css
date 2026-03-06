@@ -199,6 +199,17 @@
   border-color: var(--pf-v5-global--Color--200);
 }
 
+.cea-issue-btn--fixed {
+  border: 1px solid var(--pf-v5-global--success-color--100, #3e8635);
+  color: var(--pf-v5-global--success-color--100, #3e8635);
+  background: none;
+}
+
+.cea-issue-btn--fixed:hover {
+  background: var(--pf-v5-global--success-color--100, #3e8635);
+  color: #fff;
+}
+
 .cea-issue-btn--feedback {
   padding: 5px 8px;
   color: var(--pf-v5-global--Color--200);

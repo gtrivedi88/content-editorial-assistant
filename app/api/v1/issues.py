@@ -47,6 +47,26 @@ def dismiss_issue(issue_id: str) -> Tuple[Response, int]:
     return _update_issue_status(issue_id, IssueStatus.DISMISSED)
 
 
+@bp.route("/issues/<issue_id>/manually-fixed", methods=["POST"])
+def manually_fix_issue(issue_id: str) -> Tuple[Response, int]:
+    """Mark an issue as manually fixed by the user.
+
+    The user edited the text themselves rather than accepting the
+    suggested correction. Tracked separately from dismissal for
+    accurate metrics on where CEA helped.
+
+    Expects JSON body with ``session_id``. Updates the issue status
+    to MANUALLY_FIXED and returns the recalculated score.
+
+    Args:
+        issue_id: Unique identifier of the issue.
+
+    Returns:
+        Tuple of (JSON response, HTTP status code).
+    """
+    return _update_issue_status(issue_id, IssueStatus.MANUALLY_FIXED)
+
+
 @bp.route("/issues/<issue_id>/feedback", methods=["POST"])
 def submit_feedback(issue_id: str) -> Tuple[Response, int]:
     """Record user feedback (thumbs up/down) for an issue.

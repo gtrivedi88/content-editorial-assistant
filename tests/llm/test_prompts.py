@@ -404,3 +404,87 @@ class TestSuggestionMandate:
         assert '"corrected text"' in system_prompt, (
             "Global prompt should use 'corrected text' in format example"
         )
+
+
+# ---------------------------------------------------------------------------
+# Structural Auditor prompt integration
+# ---------------------------------------------------------------------------
+
+
+class TestStructuralPromptIntegration:
+    """Verify LLM prompts include structural auditor enhancements."""
+
+    def test_global_prompt_includes_short_description_check(self) -> None:
+        """Global prompt CHECK list includes short description quality."""
+        system_prompt, _ = build_global_prompt("text", "procedure", [])
+        assert "short description" in system_prompt.lower()
+
+    def test_global_prompt_abstract_context_injection(self) -> None:
+        """When abstract_context is provided, it appears in user prompt."""
+        _, user_prompt = build_global_prompt(
+            "Document text.", "procedure", [],
+            abstract_context="This module explains how to configure disks.",
+        )
+        assert "Module Abstract" in user_prompt
+        assert "configure disks" in user_prompt
+
+    def test_global_prompt_no_abstract_context(self) -> None:
+        """When abstract_context is None, no abstract section in user prompt."""
+        _, user_prompt = build_global_prompt(
+            "Document text.", "procedure", [],
+            abstract_context=None,
+        )
+        assert "Module Abstract" not in user_prompt
+
+    def test_granular_prompt_includes_technical_term_check(self) -> None:
+        """Granular prompt CHECK list includes technical term formatting."""
+        system_prompt, _ = build_granular_prompt(
+            "text", ["text"], [],
+        )
+        assert "technical term" in system_prompt.lower()
+
+    def test_procedure_guidance_includes_specifies(self) -> None:
+        """Procedure guidance includes 'Specifies' for Where: lists."""
+        guidance = _content_type_guidance("procedure")
+        assert "Specifies" in guidance
+
+    def test_procedure_guidance_includes_abstract_quality(self) -> None:
+        """Procedure guidance flags abstracts missing WHY."""
+        guidance = _content_type_guidance("procedure")
+        assert "WHY" in guidance
+
+    def test_granular_prompt_includes_future_tense_check(self) -> None:
+        """Granular prompt CHECK list includes future tense ('will')."""
+        system_prompt, _ = build_granular_prompt(
+            "text", ["text"], [],
+        )
+        assert "future tense" in system_prompt.lower()
+        assert "will" in system_prompt
+
+    def test_granular_prompt_includes_capitalization_check(self) -> None:
+        """Granular prompt CHECK list includes naming/capitalization."""
+        system_prompt, _ = build_granular_prompt(
+            "text", ["text"], [],
+        )
+        assert "capitalization" in system_prompt.lower()
+
+    def test_global_prompt_includes_future_tense_check(self) -> None:
+        """Global prompt CHECK list includes future tense."""
+        system_prompt, _ = build_global_prompt("text", "concept", [])
+        assert "future tense" in system_prompt.lower()
+
+    def test_global_prompt_includes_single_step_numbered_check(self) -> None:
+        """Global prompt CHECK list includes single-step numbered procedure."""
+        system_prompt, _ = build_global_prompt("text", "procedure", [])
+        assert "single-step numbered" in system_prompt.lower()
+
+    def test_procedure_guidance_includes_single_step_flag(self) -> None:
+        """Procedure guidance flags single-step numbered lists."""
+        guidance = _content_type_guidance("procedure")
+        assert "numbered list" in guidance.lower()
+        assert "unnumbered bullet" in guidance.lower()
+
+    def test_procedure_guidance_includes_admonition_flag(self) -> None:
+        """Procedure guidance flags procedural content in admonitions."""
+        guidance = _content_type_guidance("procedure")
+        assert "admonition" in guidance.lower()

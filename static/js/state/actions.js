@@ -7,6 +7,7 @@ import { store } from './store.js';
 import {
     postAnalyze, postUpload, submitFeedback as apiSubmitFeedback,
     fetchSuggestion, fetchCitation, acceptIssue, dismissIssue,
+    manuallyFixIssue,
 } from '../services/api-client.js';
 import { getGroup } from '../shared/style-guide-groups.js';
 import { generateId } from '../shared/dom-utils.js';
@@ -20,7 +21,7 @@ import { clearSuggestionCache } from '../issues/issue-card.js';
  * the final merged results. No intermediate results are shown.
  */
 export async function analyzeContent() {
-    const { content, formatHint, contentType, sessionId } = store.getState();
+    const { content, formatHint, sessionId } = store.getState();
     if (!content.trim()) return;
 
     const sid = sessionId || generateId();
@@ -37,6 +38,7 @@ export async function analyzeContent() {
         selectedErrorId: null,
         dismissedErrors: new Set(),
         resolvedErrors: new Set(),
+        manuallyFixedErrors: new Set(),
         progressSteps: [],
         progressPercent: 0,
         stageProgress: null,
@@ -45,7 +47,7 @@ export async function analyzeContent() {
     });
 
     try {
-        const response = await postAnalyze(content, formatHint, contentType, sid);
+        const response = await postAnalyze(content, formatHint, 'concept', sid);
 
         // Guard against stale responses after cancellation
         if (store.get('currentAnalysisId') !== analysisId) return;
@@ -65,6 +67,7 @@ export async function analyzeContent() {
             store.setState({
                 analysisResult: response,
                 sessionId: response.session_id || sid,
+                detectedContentType: response.detected_content_type || null,
             });
             return;
         }
@@ -93,6 +96,7 @@ export async function analyzeContent() {
             readability: response.report?.readability || null,
             statistics: response.report?.statistics || null,
             qualityScore: score,
+            detectedContentType: response.detected_content_type || null,
         });
     } catch (err) {
         // Ignore abort errors from cancelled requests
@@ -209,6 +213,38 @@ export function dismissError(errorId) {
             }
         }).catch((err) => {
             console.error('[Actions] Dismiss issue notification failed:', err);
+        });
+    }
+}
+
+/**
+ * Mark an error as manually fixed — the user edited text by hand.
+ * Updates qualityScore from the backend's recalculated score.
+ */
+export function manuallyFixError(errorId) {
+    const { manuallyFixedErrors, errors, filteredErrors, sessionId } = store.getState();
+    const newFixed = new Set(manuallyFixedErrors);
+    newFixed.add(errorId);
+
+    const newErrors = errors.filter((e) => e.id !== errorId);
+    const newFiltered = filteredErrors.filter((e) => e.id !== errorId);
+
+    store.setState({
+        errors: newErrors,
+        filteredErrors: newFiltered,
+        manuallyFixedErrors: newFixed,
+        selectedErrorId: null,
+    });
+
+    // Notify backend and update score from response
+    if (sessionId) {
+        manuallyFixIssue(sessionId, errorId).then((result) => {
+            if (result && result.score != null) {
+                const score = typeof result.score === 'object' ? result.score.score : result.score;
+                store.setState({ qualityScore: score });
+            }
+        }).catch((err) => {
+            console.error('[Actions] Manually fix issue notification failed:', err);
         });
     }
 }

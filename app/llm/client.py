@@ -140,6 +140,7 @@ class LLMClient:
         content_type: str,
         style_guide_excerpts: list[dict],
         document_outline: str | None = None,
+        abstract_context: str | None = None,
     ) -> list[dict]:
         """Run global document-level analysis via the LLM.
 
@@ -151,6 +152,8 @@ class LLMClient:
             content_type: Modular documentation type (concept/procedure/etc.).
             style_guide_excerpts: Relevant style guide excerpt dicts.
             document_outline: Compact heading outline for structural review.
+            abstract_context: Module abstract (first paragraph after heading)
+                for targeted short-description quality evaluation.
 
         Returns:
             List of issue dicts with ``source="llm"``, or empty list
@@ -162,6 +165,7 @@ class LLMClient:
         system_prompt, user_prompt = build_global_prompt(
             full_text, content_type, style_guide_excerpts,
             document_outline=document_outline,
+            abstract_context=abstract_context,
         )
         return self._safe_analysis_call(user_prompt, system_prompt=system_prompt)
 
@@ -392,6 +396,7 @@ def analyze_global(
     content_type: str,
     style_guide_excerpts: list[dict] | None = None,
     document_outline: str | None = None,
+    abstract_context: str | None = None,
 ) -> list[dict]:
     """Module-level wrapper for full-document LLM analysis.
 
@@ -402,6 +407,7 @@ def analyze_global(
         content_type: Modular documentation type.
         style_guide_excerpts: Relevant style guide excerpt dicts.
         document_outline: Compact heading outline for structural review.
+        abstract_context: Module abstract for short-description quality check.
 
     Returns:
         List of issue dicts from the LLM, or empty list.
@@ -409,6 +415,7 @@ def analyze_global(
     return _get_client().analyze_global(
         text, content_type, style_guide_excerpts or [],
         document_outline=document_outline,
+        abstract_context=abstract_context,
     )
 
 

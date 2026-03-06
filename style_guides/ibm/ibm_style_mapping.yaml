@@ -1691,14 +1691,79 @@ modular_compliance:
       guidance: "DITA-specific: Ensure content follows approved DITA templates and information architecture patterns."
 
 # ============================================================================
+# STRUCTURAL RULES (inter-block analysis)
+# ============================================================================
+structural:
+
+  unit_consistency:
+    rule_id: "unit_consistency"
+    display_name: "Unit Consistency"
+    category: "numbers_and_measurement"
+    severity: "medium"
+    enforcement_type: "structural"
+    ibm_style:
+      topic: "Units of measurement"
+      pages: [161, 162, 163, 164]
+      verification_status: "verified"
+      guidance: "Use consistent unit prefixes. Do not mix binary (KiB, MiB, GiB) with decimal (KB, MB, GB)."
+
+  technical_markup:
+    rule_id: "technical_markup"
+    display_name: "Technical Term Markup"
+    category: "technical_elements"
+    severity: "low"
+    enforcement_type: "token_match"
+    ibm_style:
+      topic: "Technical elements formatting"
+      pages: [184, 185, 186, 187, 188, 189, 190, 191]
+      verification_status: "verified"
+      guidance: "Use monospace formatting for command names, file paths, package names, and system components."
+
+  heading_level_skip:
+    rule_id: "heading_level_skip"
+    display_name: "Heading Level Skip"
+    category: "structure_and_format"
+    severity: "medium"
+    enforcement_type: "structural"
+    ibm_style:
+      topic: "Headings"
+      pages: [181, 182, 183]
+      verification_status: "verified"
+      guidance: "Heading levels must be sequential. Do not skip from a higher-level heading to a heading more than one level lower."
+
+  empty_section:
+    rule_id: "empty_section"
+    display_name: "Empty Section"
+    category: "structure_and_format"
+    severity: "medium"
+    enforcement_type: "structural"
+    ibm_style:
+      topic: "Headings"
+      pages: [181]
+      verification_status: "verified"
+      guidance: "Every heading must introduce content. Do not create headings with no body text before the next heading."
+
+  procedure_step_count:
+    rule_id: "procedure_step_count"
+    display_name: "Procedure Step Count"
+    category: "structure_and_format"
+    severity: "low"
+    enforcement_type: "structural"
+    ibm_style:
+      topic: "Procedures"
+      pages: [201, 202, 203]
+      verification_status: "verified"
+      guidance: "Limit procedures to 10 steps. Longer procedures should be broken into sub-tasks."
+
+# ============================================================================
 # VERIFICATION TRACKING
 # ============================================================================
 verification_stats:
-  total_rules: 124
-  verified_rules: 116
+  total_rules: 129
+  verified_rules: 119
   custom_rules: 8
   unverified_rules: 0
   verification_percentage: 94
-  last_verification_sweep: "2026-02-25"
-  last_updated: "2026-02-25"
-  notes: "Added 10 missing rule_id mappings: definitions, using_clarity, repeated_words, compound_words, oxford_comma, do_not_use, simple_words, product_names, obvious_terms, llm_consumability"
+  last_verification_sweep: "2026-03-06"
+  last_updated: "2026-03-06"
+  notes: "Added 3 structural rules (heading_level_skip, empty_section, procedure_step_count). Previous: Added 10 missing rule_id mappings."

@@ -188,6 +188,13 @@ def analyze(
         len(block_det), len(full_det), len(det_issues),
     )
 
+    # Phase 1b: Structural analysis (inter-block rules)
+    parsed_blocks = prep.get("blocks", blocks or [])
+    structural_issues = _run_structural_analysis(
+        parsed_blocks, content_type, prep.get("original_text", text),
+    )
+    det_issues.extend(structural_issues)  # Already in original coords
+
     for i, iss in enumerate(det_issues):
         logger.debug(
             "det issue[%d] FINAL: rule=%s span=%s "
@@ -205,6 +212,7 @@ def analyze(
         "issues": [i.to_dict() for i in det_issues],
         "score": score.to_dict(),
         "report": report.to_dict(),
+        "detected_content_type": content_type,
     })
     _emit_event(socket_sid, "stage_progress", {
         "session_id": session_id,
@@ -222,6 +230,7 @@ def analyze(
         score=score,
         report=report,
         partial=partial,
+        detected_content_type=content_type,
     )
 
     # Store session so suggestion requests can find it
@@ -245,6 +254,7 @@ def analyze(
             "issues": [i.to_dict() for i in det_issues],
             "score": score.to_dict(),
             "report": report.to_dict(),
+            "detected_content_type": content_type,
         })
 
     return response
@@ -354,10 +364,12 @@ def _run_llm_phases(
             "phase": "llm_global",
             "status": "started",
         })
+        abstract_text = _extract_abstract(prep.get("blocks", []))
         global_issues = _run_llm_global(
             session_id, socket_sid, prep, content_type,
             style_guide_excerpts=excerpts,
             document_outline=doc_outline,
+            abstract_context=abstract_text,
         )
         logger.debug("Global produced %d issues", len(global_issues))
         llm_issues.extend(global_issues)
@@ -399,6 +411,7 @@ def _run_llm_phases(
             score=score,
             report=report,
             partial=False,
+            detected_content_type=content_type,
         )
         logger.debug(
             "Updating stored session %s with %d merged issues",
@@ -412,6 +425,7 @@ def _run_llm_phases(
             "issues": [i.to_dict() for i in merged],
             "score": score.to_dict(),
             "report": report.to_dict(),
+            "detected_content_type": content_type,
         })
 
 
@@ -513,6 +527,59 @@ def _analyze_blocks_deterministic(
         all_issues.extend(issues)
 
     return all_issues
+
+
+def _run_structural_analysis(
+    blocks: list,
+    content_type: str,
+    original_text: str,
+) -> list[IssueResponse]:
+    """Run inter-block structural analysis on the full block sequence.
+
+    Unlike per-block deterministic rules that analyze text in isolation,
+    structural rules inspect the ordering and relationships between
+    blocks (e.g., admonition placement, section structure).
+
+    Args:
+        blocks: Full list of parsed Block objects.
+        content_type: Modular documentation type.
+        original_text: Original document text for span resolution.
+
+    Returns:
+        List of structural issues with spans in original-text coordinates.
+    """
+    if not blocks:
+        return []
+
+    try:
+        from rules.modular_compliance.structural_rules import run_structural_rules
+        issues = run_structural_rules(blocks, content_type, original_text)
+        logger.info("Structural analysis found %d issues", len(issues))
+        return issues
+    except (ImportError, ValueError, RuntimeError) as exc:
+        logger.warning("Structural analysis failed: %s", exc)
+        return []
+
+
+def _extract_abstract(blocks: list) -> str | None:
+    """Extract the first paragraph after the first heading.
+
+    Returns the abstract text for targeted LLM quality analysis,
+    or None if no heading/paragraph structure is found.
+    """
+    found_heading = False
+    for block in blocks:
+        if block.block_type == "heading":
+            found_heading = True
+            continue
+        if not found_heading:
+            continue
+        if block.block_type in ("attribute_entry", "comment", "block_title"):
+            continue
+        if block.block_type == "paragraph":
+            return (block.content or "").strip()
+        break  # Non-paragraph content block = no clear abstract
+    return None
 
 
 def _compute_content_code_ranges(
@@ -1079,6 +1146,7 @@ def _run_llm_global(
     content_type: str,
     style_guide_excerpts: list[dict] | None = None,
     document_outline: str | None = None,
+    abstract_context: str | None = None,
 ) -> list[IssueResponse]:
     """Run the LLM global (full-document) analysis pass.
 
@@ -1093,6 +1161,8 @@ def _run_llm_global(
         content_type: Modular documentation type.
         style_guide_excerpts: Relevant style guide excerpt dicts.
         document_outline: Compact heading outline for structural review.
+        abstract_context: First paragraph after heading (module abstract)
+            for targeted short-description quality evaluation.
 
     Returns:
         List of LLM-detected issues, empty on failure or skip.
@@ -1116,6 +1186,7 @@ def _run_llm_global(
                 global_text, content_type,
                 style_guide_excerpts=style_guide_excerpts,
                 document_outline=document_outline,
+                abstract_context=abstract_context,
             )
             issues = _parse_llm_results(results, "llm_global", global_text)
             for i, iss in enumerate(issues):

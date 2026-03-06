@@ -300,14 +300,19 @@ def _get_markdown_wrappers(
 def _block_to_markdown(block: object) -> str:
     """Convert a single Block to its Markdown representation.
 
+    Uses ``block.inline_content`` (Tier 2) so the LLM can see
+    backticks, bold, and italic markers — matching the contract
+    used by ``_blocks_to_lite_markers()``.
+
     Args:
-        block: A Block dataclass instance with clean ``content``.
+        block: A Block dataclass instance.
 
     Returns:
         Markdown-formatted string for this block.
     """
     prefix, suffix = _get_markdown_wrappers(block)
-    return f"{prefix}{block.content}{suffix}"
+    text = block.inline_content if block.inline_content else block.content
+    return f"{prefix}{text}{suffix}"
 
 
 def _flatten_blocks(blocks: list) -> list:

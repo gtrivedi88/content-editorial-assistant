@@ -62,11 +62,13 @@ class IssueStatus(str, Enum):
     - OPEN: newly detected, awaiting user action
     - ACCEPTED: user accepted the suggested correction
     - DISMISSED: user chose to ignore the issue
+    - MANUALLY_FIXED: user fixed the issue by hand (not via Accept)
     """
 
     OPEN = "open"
     ACCEPTED = "accepted"
     DISMISSED = "dismissed"
+    MANUALLY_FIXED = "manually_fixed"
 
 
 class FileType(str, Enum):

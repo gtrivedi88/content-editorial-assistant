@@ -281,6 +281,7 @@ class AnalyzeResponse:
         issues: List of all editorial issues found.
         score: Aggregate quality score and breakdown.
         report: Statistical and readability report.
+        detected_content_type: Auto-detected modular documentation type.
     """
 
     session_id: str
@@ -288,6 +289,7 @@ class AnalyzeResponse:
     score: ScoreResponse
     report: ReportResponse
     partial: bool = False
+    detected_content_type: str = "concept"
 
     def to_dict(self) -> dict[str, object]:
         """Serialize to a JSON-compatible dictionary.
@@ -305,4 +307,5 @@ class AnalyzeResponse:
             "issues": [issue.to_dict() for issue in self.issues],
             "score": self.score.to_dict(),
             "report": self.report.to_dict(),
+            "detected_content_type": self.detected_content_type,
         }

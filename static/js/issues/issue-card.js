@@ -6,7 +6,7 @@
  * to 3 concurrent requests via a module-level queue.
  */
 
-import { acceptSuggestion, dismissError, selectError, submitFeedback, getSuggestion, getCitation } from '../state/actions.js';
+import { acceptSuggestion, dismissError, manuallyFixError, selectError, submitFeedback, getSuggestion, getCitation } from '../state/actions.js';
 import { getGroupMeta, formatRuleType } from '../shared/style-guide-groups.js';
 import { createElement, escapeHtml } from '../shared/dom-utils.js';
 import { replaceUnderlineText, removeUnderline } from '../editor/underline-renderer.js';
@@ -261,6 +261,19 @@ export function createIssueCard(error, editorEl) {
         },
     });
     actions.appendChild(dismissBtn);
+
+    const fixedBtn = createElement('button', {
+        className: 'cea-issue-btn cea-issue-btn--fixed',
+        textContent: 'Fixed',
+        title: 'I fixed this issue manually',
+        'aria-label': `Mark as manually fixed: ${escapeHtml(error.message || '')}`,
+        onClick: (e) => {
+            e.stopPropagation();
+            removeUnderline(editorEl, error.id);
+            manuallyFixError(error.id);
+        },
+    });
+    actions.appendChild(fixedBtn);
 
     // Feedback buttons
     const thumbsUp = createElement('button', {

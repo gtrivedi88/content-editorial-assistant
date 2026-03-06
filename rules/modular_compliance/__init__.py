@@ -23,17 +23,38 @@ Phase 5 Advanced Features:
 - AdvancedModularAnalyzer: Orchestrates all advanced compliance features
 """
 
-from .modular_base_rule import ModularBaseRule
-from .concept_module_rule import ConceptModuleRule
-from .procedure_module_rule import ProcedureModuleRule
-from .reference_module_rule import ReferenceModuleRule
-from .assembly_module_rule import AssemblyModuleRule
-from .modular_structure_bridge import ModularStructureBridge
+import logging as _logging
 
-from .cross_reference_rule import CrossReferenceRule
-from .inter_module_analysis_rule import InterModuleAnalysisRule
-from .template_compliance_rule import TemplateComplianceRule
-from .advanced_modular_analyzer import AdvancedModularAnalyzer
+_logger = _logging.getLogger(__name__)
+
+# These modules depend on structural_parsing which is not yet ported.
+# Guard imports so the package remains importable for structural_rules.
+try:
+    from .modular_base_rule import ModularBaseRule
+    from .concept_module_rule import ConceptModuleRule
+    from .procedure_module_rule import ProcedureModuleRule
+    from .reference_module_rule import ReferenceModuleRule
+    from .assembly_module_rule import AssemblyModuleRule
+    from .modular_structure_bridge import ModularStructureBridge
+
+    from .cross_reference_rule import CrossReferenceRule
+    from .inter_module_analysis_rule import InterModuleAnalysisRule
+    from .template_compliance_rule import TemplateComplianceRule
+    from .advanced_modular_analyzer import AdvancedModularAnalyzer
+except ImportError:
+    _logger.debug(
+        "Modular compliance rules unavailable — structural_parsing not ported"
+    )
+    ModularBaseRule = None  # type: ignore[assignment, misc]
+    ConceptModuleRule = None  # type: ignore[assignment, misc]
+    ProcedureModuleRule = None  # type: ignore[assignment, misc]
+    ReferenceModuleRule = None  # type: ignore[assignment, misc]
+    AssemblyModuleRule = None  # type: ignore[assignment, misc]
+    ModularStructureBridge = None  # type: ignore[assignment, misc]
+    CrossReferenceRule = None  # type: ignore[assignment, misc]
+    InterModuleAnalysisRule = None  # type: ignore[assignment, misc]
+    TemplateComplianceRule = None  # type: ignore[assignment, misc]
+    AdvancedModularAnalyzer = None  # type: ignore[assignment, misc]
 
 __all__ = [
     # Base class

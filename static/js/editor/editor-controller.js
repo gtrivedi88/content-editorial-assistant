@@ -31,6 +31,7 @@ export class EditorController {
         this._bindEvents();
         this._bindStoreSubscriptions();
         this._bindCopyButton();
+        this._updateEmptyState();
     }
 
     /**
@@ -273,6 +274,16 @@ export class EditorController {
         });
     }
 
+    /**
+     * Toggle the cea-editor--empty class based on visible text content.
+     * Drives the CSS placeholder — more reliable than :empty for
+     * contenteditable divs where browsers inject implicit <br> nodes.
+     */
+    _updateEmptyState() {
+        const hasContent = !!(this._rawContent || this._editor.textContent.trim());
+        this._editor.classList.toggle('cea-editor--empty', !hasContent);
+    }
+
     _updateContent() {
         const text = getPlainText(this._editor);
         // Normalize before storing — ensures state.content always matches
@@ -287,6 +298,8 @@ export class EditorController {
         if (this._wordCountEl) {
             this._wordCountEl.textContent = `${words} word${words !== 1 ? 's' : ''} \u00b7 ${chars.toLocaleString()} characters`;
         }
+
+        this._updateEmptyState();
     }
 
     /**
@@ -365,7 +378,9 @@ export class EditorController {
 
     reset() {
         clearUnderlines(this._editor);
-        this._editor.textContent = '';
+        // Use innerHTML to ensure no residual DOM nodes or formatting state
+        // survive from previously pasted HTML (prevents bold-after-reset bug).
+        this._editor.innerHTML = '';
         this._editor.classList.remove('cea-editor-content--markup');
         this._rawContent = '';
         if (this._autoAnalysisTimer) clearTimeout(this._autoAnalysisTimer);
@@ -384,11 +399,13 @@ export class EditorController {
             activeGroup: 'all',
             dismissedErrors: new Set(),
             resolvedErrors: new Set(),
+            manuallyFixedErrors: new Set(),
             progressSteps: [],
             progressPercent: 0,
             qualityScore: 0,
             errorMessage: null,
             currentAnalysisId: null,
+            detectedContentType: null,
         });
         this._updateContent();
     }

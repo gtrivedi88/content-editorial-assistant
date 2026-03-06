@@ -85,15 +85,17 @@
   white-space: nowrap;
 }
 
-.cea-content-type-select {
-  padding: 5px 10px;
+.cea-content-type-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
   border: 1px solid var(--pf-v5-global--BorderColor--100, #e5e7eb);
-  border-radius: 6px;
+  border-radius: 12px;
   background: var(--pf-v5-global--BackgroundColor--100, #fff);
-  color: var(--pf-v5-global--Color--100);
-  font-size: 13px;
+  color: var(--pf-v5-global--Color--200, #6a6e73);
+  font-size: 12px;
   font-family: inherit;
-  cursor: pointer;
+  line-height: 1.4;
 }
 
 /* ── Editor Area ── */
@@ -135,8 +137,10 @@
   border-radius: 6px;
 }
 
-/* Placeholder via ::before when empty */
-.cea-editor-content:empty::before {
+/* Placeholder via ::before — class-driven for contenteditable reliability.
+   Browsers insert implicit <br> into empty contenteditable divs, which
+   breaks the :empty pseudo-class.  JS toggles .cea-editor--empty instead. */
+.cea-editor-content.cea-editor--empty::before {
   content: attr(data-placeholder);
   color: var(--pf-v5-global--Color--200);
   pointer-events: none;

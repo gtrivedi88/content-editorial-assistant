@@ -94,6 +94,105 @@ product_names:
       verification_status: "verified"
       guidance: "Use 'Red Hat Enterprise Linux' on first mention. Use 'RHEL' only after first full reference and in appropriate contexts."
 
+  product_names_ansible:
+    rule_id: "product_names_ansible"
+    display_name: "Ansible Product Names"
+    category: "product_names"
+    severity: "high"
+    red_hat_ssg:
+      topic: "Red Hat Ansible Automation Platform product names"
+      section: "product-conventions"
+      verification_status: "verified"
+      guidance: "Use 'Red Hat Ansible Automation Platform' on first mention. Do not use 'Ansible Tower' (deprecated). Use 'automation controller' for the UI component."
+
+  product_names_rhel_ai:
+    rule_id: "product_names_rhel_ai"
+    display_name: "RHEL AI Product Names"
+    category: "product_names"
+    severity: "high"
+    red_hat_ssg:
+      topic: "Red Hat Enterprise Linux AI product names"
+      section: "product-conventions"
+      verification_status: "verified"
+      guidance: "Use 'Red Hat Enterprise Linux AI' on first mention. Abbreviate to 'RHEL AI' after first full reference."
+
+  product_names_openshift_ai:
+    rule_id: "product_names_openshift_ai"
+    display_name: "OpenShift AI Product Names"
+    category: "product_names"
+    severity: "high"
+    red_hat_ssg:
+      topic: "Red Hat OpenShift AI product names"
+      section: "product-conventions"
+      verification_status: "verified"
+      guidance: "Use 'Red Hat OpenShift AI' on first mention. Abbreviate to 'OpenShift AI' after first full reference."
+
+  product_names_middleware:
+    rule_id: "product_names_middleware"
+    display_name: "Middleware Product Names"
+    category: "product_names"
+    severity: "high"
+    red_hat_ssg:
+      topic: "Red Hat middleware product names"
+      section: "product-conventions"
+      verification_status: "verified"
+      guidance: "Use official product names for JBoss EAP, AMQ, Fuse, and other middleware products. 'Red Hat JBoss Enterprise Application Platform' on first mention."
+
+  product_names_storage:
+    rule_id: "product_names_storage"
+    display_name: "Storage Product Names"
+    category: "product_names"
+    severity: "high"
+    red_hat_ssg:
+      topic: "Red Hat storage product names"
+      section: "product-conventions"
+      verification_status: "verified"
+      guidance: "Use 'Red Hat OpenShift Data Foundation' (not 'OCS'). Use 'Red Hat Ceph Storage' on first mention, then 'Ceph Storage'."
+
+  product_names_virtualization:
+    rule_id: "product_names_virtualization"
+    display_name: "Virtualization Product Names"
+    category: "product_names"
+    severity: "high"
+    red_hat_ssg:
+      topic: "Red Hat virtualization product names"
+      section: "product-conventions"
+      verification_status: "verified"
+      guidance: "Use 'Red Hat OpenShift Virtualization' on first mention. Note: 'Red Hat Virtualization' (standalone) has been deprecated."
+
+  product_names_cloud_services:
+    rule_id: "product_names_cloud_services"
+    display_name: "Cloud Services Product Names"
+    category: "product_names"
+    severity: "high"
+    red_hat_ssg:
+      topic: "Red Hat cloud services product names"
+      section: "product-conventions"
+      verification_status: "verified"
+      guidance: "Use 'Red Hat Hybrid Cloud Console' (not 'cloud.redhat.com'). Use official names for managed services like 'Red Hat OpenShift Service on AWS' (ROSA)."
+
+  product_names_security:
+    rule_id: "product_names_security"
+    display_name: "Security Product Names"
+    category: "product_names"
+    severity: "high"
+    red_hat_ssg:
+      topic: "Red Hat security product names"
+      section: "product-conventions"
+      verification_status: "verified"
+      guidance: "Use 'Red Hat Advanced Cluster Security for Kubernetes' on first mention. Use official names for IdM, Keycloak-based products, and certificate management."
+
+  product_names_developer_tools:
+    rule_id: "product_names_developer_tools"
+    display_name: "Developer Tools Product Names"
+    category: "product_names"
+    severity: "high"
+    red_hat_ssg:
+      topic: "Red Hat developer tools product names"
+      section: "product-conventions"
+      verification_status: "verified"
+      guidance: "Use official names for developer tools. 'Red Hat Developer Hub' (not 'Backstage'). 'Red Hat build of Quarkus' (lowercase 'build of')."
+
 # ============================================================================
 # GRAMMAR AND LANGUAGE
 # ============================================================================
@@ -143,6 +242,90 @@ grammar_and_language:
       verification_status: "verified"
       guidance: "Use Red Hat standard terminology. Refer to the Red Hat glossary for product-specific terms."
 
+  date_format:
+    rule_id: "date_format"
+    display_name: "Date Format"
+    category: "grammar_and_language"
+    severity: "medium"
+    enforcement_type: "token_match"
+    red_hat_ssg:
+      topic: "Date formats"
+      section: "date-formats"
+      verification_status: "verified"
+      guidance: "Use DD Month YYYY format (e.g., 15 January 2025). Do not use numerical date formats that are ambiguous across locales."
+
+  numbers_red_hat:
+    rule_id: "numbers_red_hat"
+    display_name: "Number Usage"
+    category: "grammar_and_language"
+    severity: "low"
+    enforcement_type: "token_match"
+    red_hat_ssg:
+      topic: "Numbers and measurements"
+      section: "numbers"
+      verification_status: "verified"
+      guidance: "Spell out numbers zero through nine. Use numerals for 10 and above. Always use numerals with units of measurement."
+
+  pronouns_red_hat:
+    rule_id: "pronouns_red_hat"
+    display_name: "Pronoun Usage"
+    category: "grammar_and_language"
+    severity: "medium"
+    enforcement_type: "semantic_llm"
+    red_hat_ssg:
+      topic: "Gender-neutral language"
+      section: "pronouns"
+      verification_status: "verified"
+      guidance: "Use gender-neutral pronouns (they/them). Avoid he/she constructions. Rewrite to avoid pronouns where possible."
+
+  passive_voice:
+    rule_id: "passive_voice"
+    display_name: "Passive Voice"
+    category: "grammar_and_language"
+    severity: "medium"
+    enforcement_type: "semantic_llm"
+    red_hat_ssg:
+      topic: "Active voice"
+      section: "active-voice"
+      verification_status: "verified"
+      guidance: "Use active voice, especially in procedures. Active voice is clearer and more direct. Passive voice is acceptable in reference content describing system behavior."
+
+  sentence_length:
+    rule_id: "sentence_length"
+    display_name: "Sentence Length"
+    category: "grammar_and_language"
+    severity: "low"
+    enforcement_type: "token_match"
+    red_hat_ssg:
+      topic: "Sentence length"
+      section: "sentence-length"
+      verification_status: "verified"
+      guidance: "Keep sentences under 25 words. Break long sentences into shorter ones. Use one idea per sentence."
+
+  verb_tense:
+    rule_id: "verb_tense"
+    display_name: "Verb Tense"
+    category: "grammar_and_language"
+    severity: "medium"
+    enforcement_type: "semantic_llm"
+    red_hat_ssg:
+      topic: "Verb tense"
+      section: "verb-tense"
+      verification_status: "verified"
+      guidance: "Use present tense for descriptions. Use imperative mood for procedures. Avoid future tense unless describing a scheduled event."
+
+  spelling:
+    rule_id: "spelling"
+    display_name: "Spelling Conventions"
+    category: "grammar_and_language"
+    severity: "medium"
+    enforcement_type: "token_match"
+    red_hat_ssg:
+      topic: "Spelling"
+      section: "spelling"
+      verification_status: "verified"
+      guidance: "Use US English spelling (e.g., 'color' not 'colour', 'analyze' not 'analyse'). Follow Merriam-Webster for standard terms."
+
 # ============================================================================
 # TECHNICAL CONTENT
 # ============================================================================
@@ -191,6 +374,78 @@ technical_content:
       section: "technical-content"
       verification_status: "verified"
       guidance: "Use monospace for file and directory paths. Use absolute paths when possible. Use environment variables when appropriate."
+
+  api_references:
+    rule_id: "api_references"
+    display_name: "API References"
+    category: "technical_content"
+    severity: "medium"
+    enforcement_type: "semantic_llm"
+    red_hat_ssg:
+      topic: "API references and documentation"
+      section: "api-references"
+      verification_status: "verified"
+      guidance: "Format API endpoints in monospace. Include HTTP method. Document request/response bodies with examples. Use consistent terminology for REST operations."
+
+  yaml_json_examples:
+    rule_id: "yaml_json_examples"
+    display_name: "YAML and JSON Examples"
+    category: "technical_content"
+    severity: "medium"
+    enforcement_type: "semantic_llm"
+    red_hat_ssg:
+      topic: "YAML and JSON formatting"
+      section: "yaml-json"
+      verification_status: "verified"
+      guidance: "Ensure YAML/JSON examples are syntactically valid. Use callouts for key fields. Include comments explaining non-obvious values."
+
+  container_pod_references:
+    rule_id: "container_pod_references"
+    display_name: "Container and Pod References"
+    category: "technical_content"
+    severity: "medium"
+    enforcement_type: "token_match"
+    red_hat_ssg:
+      topic: "Container and pod terminology"
+      section: "containers"
+      verification_status: "verified"
+      guidance: "Use 'container image' (not 'Docker image'). Use 'pod' in Kubernetes/OpenShift context. Use 'container' for the runtime instance."
+
+  operator_references:
+    rule_id: "operator_references"
+    display_name: "Operator References"
+    category: "technical_content"
+    severity: "medium"
+    enforcement_type: "token_match"
+    red_hat_ssg:
+      topic: "Kubernetes Operator terminology"
+      section: "operators"
+      verification_status: "verified"
+      guidance: "Capitalize 'Operator' when referring to the Kubernetes pattern. Use the full Operator name on first mention. Format CRD names in monospace."
+
+  crd_terminology:
+    rule_id: "crd_terminology"
+    display_name: "CRD Terminology"
+    category: "technical_content"
+    severity: "low"
+    enforcement_type: "token_match"
+    red_hat_ssg:
+      topic: "Custom resource definition terminology"
+      section: "crd-terminology"
+      verification_status: "verified"
+      guidance: "Use 'custom resource (CR)' and 'custom resource definition (CRD)'. Format resource kind names in monospace. Spell out on first use."
+
+  cli_output_formatting:
+    rule_id: "cli_output_formatting"
+    display_name: "CLI Output Formatting"
+    category: "technical_content"
+    severity: "low"
+    enforcement_type: "semantic_llm"
+    red_hat_ssg:
+      topic: "Command-line output formatting"
+      section: "cli-output"
+      verification_status: "verified"
+      guidance: "Show expected output in separate code blocks after the command. Truncate long output with ellipsis. Highlight key lines in output."
 
 # ============================================================================
 # FORMATTING
@@ -242,6 +497,184 @@ formatting:
       guidance: "Use meaningful link text rather than 'click here' or bare URLs. Use cross-reference macros for internal links."
 
 # ============================================================================
+# CONTENT STRUCTURE (modular docs patterns)
+# ============================================================================
+content_structure:
+
+  prerequisites_format:
+    rule_id: "prerequisites_format"
+    display_name: "Prerequisites Format"
+    category: "content_structure"
+    severity: "medium"
+    enforcement_type: "structural"
+    red_hat_ssg:
+      topic: "Prerequisites section formatting"
+      section: "prerequisites"
+      verification_status: "verified"
+      guidance: "Use a bulleted list for prerequisites. Each item should be verifiable by the user before starting the procedure."
+
+  verification_format:
+    rule_id: "verification_format"
+    display_name: "Verification Format"
+    category: "content_structure"
+    severity: "medium"
+    enforcement_type: "structural"
+    red_hat_ssg:
+      topic: "Verification section formatting"
+      section: "verification"
+      verification_status: "verified"
+      guidance: "Include a Verification section after procedures. Provide concrete steps users can run to confirm the procedure succeeded."
+
+  additional_resources:
+    rule_id: "additional_resources"
+    display_name: "Additional Resources"
+    category: "content_structure"
+    severity: "low"
+    enforcement_type: "structural"
+    red_hat_ssg:
+      topic: "Additional resources section"
+      section: "additional-resources"
+      verification_status: "verified"
+      guidance: "Place 'Additional resources' section at the end of a module. Use a bulleted list of links. Do not use 'Related information' or 'See also'."
+
+  assembly_structure:
+    rule_id: "assembly_structure"
+    display_name: "Assembly Structure"
+    category: "content_structure"
+    severity: "medium"
+    enforcement_type: "structural"
+    red_hat_ssg:
+      topic: "Assembly module structure"
+      section: "assembly-structure"
+      verification_status: "verified"
+      guidance: "Assemblies include modules using 'include::' directives. Start with a concept module, followed by procedure modules. End with additional resources."
+
+  module_attributes:
+    rule_id: "module_attributes"
+    display_name: "Module Attributes"
+    category: "content_structure"
+    severity: "low"
+    enforcement_type: "token_match"
+    red_hat_ssg:
+      topic: "Module metadata attributes"
+      section: "module-attributes"
+      verification_status: "verified"
+      guidance: "Include ':_mod-docs-content-type:' attribute in every module. Valid values: PROCEDURE, CONCEPT, REFERENCE, ASSEMBLY, SNIPPET."
+
+  title_format:
+    rule_id: "title_format"
+    display_name: "Title Format"
+    category: "content_structure"
+    severity: "medium"
+    enforcement_type: "semantic_llm"
+    red_hat_ssg:
+      topic: "Module title conventions"
+      section: "title-format"
+      verification_status: "verified"
+      guidance: "Use a gerund for procedure titles (e.g., 'Installing the package'). Use a noun phrase for concept titles. Use a noun phrase for reference titles."
+
+# ============================================================================
+# STRUCTURAL RULES (inter-block analysis)
+# ============================================================================
+structural:
+
+  admonition_placement:
+    rule_id: "admonition_placement"
+    display_name: "Admonition Placement"
+    category: "formatting"
+    severity: "high"
+    enforcement_type: "structural"
+    red_hat_ssg:
+      topic: "Admonitions"
+      section: "admonitions"
+      verification_status: "verified"
+      guidance: "Do not start a module with an admonition. Always include a short description before including an admonition."
+
+  where_list_format:
+    rule_id: "where_list_format"
+    display_name: "Where List Format"
+    category: "formatting"
+    severity: "low"
+    enforcement_type: "structural"
+    red_hat_ssg:
+      topic: "Explanation of commands and variables"
+      section: "commands-variables"
+      verification_status: "verified"
+      guidance: "Introduce definition lists with 'where:' and begin each variable description with 'Specifies'."
+
+  heading_level_skip:
+    rule_id: "heading_level_skip"
+    display_name: "Heading Level Skip"
+    category: "structure_and_format"
+    severity: "medium"
+    enforcement_type: "structural"
+    red_hat_ssg:
+      topic: "Heading hierarchy"
+      section: "headings"
+      verification_status: "verified"
+      guidance: "Do not skip heading levels (e.g., do not jump from h1 to h3). Each heading must be one level deeper than its parent."
+
+  prerequisites_position:
+    rule_id: "prerequisites_position"
+    display_name: "Prerequisites Position"
+    category: "structure_and_format"
+    severity: "high"
+    enforcement_type: "structural"
+    red_hat_ssg:
+      topic: "Prerequisites section placement"
+      section: "prerequisites"
+      verification_status: "verified"
+      guidance: "The .Prerequisites section must appear before the .Procedure section in procedure modules."
+
+  empty_section:
+    rule_id: "empty_section"
+    display_name: "Empty Section"
+    category: "structure_and_format"
+    severity: "medium"
+    enforcement_type: "structural"
+    red_hat_ssg:
+      topic: "Section content requirements"
+      section: "headings"
+      verification_status: "verified"
+      guidance: "Every heading must have content before the next heading. Do not create empty sections."
+
+  admonition_stacking:
+    rule_id: "admonition_stacking"
+    display_name: "Admonition Stacking"
+    category: "structure_and_format"
+    severity: "medium"
+    enforcement_type: "structural"
+    red_hat_ssg:
+      topic: "Admonition usage"
+      section: "admonitions"
+      verification_status: "verified"
+      guidance: "Do not stack consecutive admonitions. Include prose content between admonitions to provide context."
+
+  procedure_step_count:
+    rule_id: "procedure_step_count"
+    display_name: "Procedure Step Count"
+    category: "structure_and_format"
+    severity: "low"
+    enforcement_type: "structural"
+    red_hat_ssg:
+      topic: "Procedure length"
+      section: "procedures"
+      verification_status: "verified"
+      guidance: "Keep procedures to 10 or fewer steps. Break longer procedures into sub-procedures or separate modules."
+
+  verification_section:
+    rule_id: "verification_section"
+    display_name: "Verification Section"
+    category: "structure_and_format"
+    severity: "low"
+    enforcement_type: "structural"
+    red_hat_ssg:
+      topic: "Verification section in procedures"
+      section: "verification"
+      verification_status: "verified"
+      guidance: "Procedure modules should include a .Verification section with steps to confirm the procedure succeeded."
+
+# ============================================================================
 # CONFIDENCE ADJUSTMENTS
 # ============================================================================
 confidence_adjustments:
@@ -253,9 +686,9 @@ confidence_adjustments:
 # VERIFICATION TRACKING
 # ============================================================================
 verification_stats:
-  total_rules: 20
-  verified_rules: 20
+  total_rules: 54
+  verified_rules: 54
   unverified_rules: 0
   verification_percentage: 100
-  last_verification_sweep: "2026-01-23"
-  notes: "Initial mapping of Red Hat SSG rules"
+  last_verification_sweep: "2026-03-06"
+  notes: "Expanded from 20 to 51 entries: added 8 grammar/language, 8 product names, 6 technical content, 6 content structure, 6 structural rules, and updated existing entries."

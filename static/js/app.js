@@ -41,11 +41,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const citationPopover = new CitationPopover();
         const suggestionPanel = new SuggestionPanel(editor);
 
-        // Wire up content type dropdown
-        const contentTypeSelect = document.getElementById('cea-content-type');
-        if (contentTypeSelect) {
-            contentTypeSelect.addEventListener('change', (e) => {
-                store.setState({ contentType: e.target.value });
+        // Content type badge — shows auto-detected type after analysis
+        const contentTypeBadge = document.getElementById('cea-content-type-badge');
+        if (contentTypeBadge) {
+            store.subscribe('detectedContentType', (type) => {
+                if (type) {
+                    contentTypeBadge.textContent = type.charAt(0).toUpperCase() + type.slice(1);
+                    contentTypeBadge.style.display = '';
+                } else {
+                    contentTypeBadge.style.display = 'none';
+                }
             });
         }
 

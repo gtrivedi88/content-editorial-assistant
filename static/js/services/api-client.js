@@ -158,6 +158,26 @@ export async function dismissIssue(sessionId, issueId) {
 }
 
 /**
+ * POST /api/v1/issues/<issueId>/manually-fixed — mark issue as manually fixed.
+ */
+export async function manuallyFixIssue(sessionId, issueId) {
+    const resp = await fetch(`/api/v1/issues/${encodeURIComponent(issueId)}/manually-fixed`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            session_id: sessionId,
+        }),
+    });
+
+    if (!resp.ok) {
+        const data = await resp.json().catch(() => ({}));
+        throw new Error(data.error || `HTTP ${resp.status}`);
+    }
+
+    return resp.json();
+}
+
+/**
  * POST /api/v1/report/pdf — generate and download a PDF report.
  */
 export async function downloadPdfReport(analysis, content, structuralBlocks) {

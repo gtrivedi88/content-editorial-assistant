@@ -3,8 +3,9 @@
 Provides a single entry point for looking up citations, excerpts,
 and confidence adjustments across all supported style guides.
 
-Checks guides in priority order: IBM -> Red Hat -> Accessibility ->
-Modular Docs, returning the first match found.
+Checks guides in priority order: Red Hat -> IBM -> Accessibility ->
+Modular Docs, returning the first match found.  Red Hat SSG overrides
+IBM when both guides cover the same topic.
 
 Usage:
     from style_guides.registry import get_citation, format_citation
@@ -25,8 +26,8 @@ DEFAULT_CITATION = "IBM Style Guide"
 # Guide registry: (name, module_path, guide_key_for_excerpts)
 # Each entry is loaded lazily with ImportError protection
 _GUIDE_MODULES: List[Tuple[str, str]] = [
-    ('IBM Style Guide', 'style_guides.ibm.ibm_style_mapping'),
     ('Red Hat Supplementary Style Guide', 'style_guides.red_hat.red_hat_style_mapping'),
+    ('IBM Style Guide', 'style_guides.ibm.ibm_style_mapping'),
     ('Getting Started with Accessibility for Writers', 'style_guides.accessibility.accessibility_mapping'),
     ('Modular Documentation Reference Guide', 'style_guides.modular_docs.modular_docs_mapping'),
 ]

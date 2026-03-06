@@ -3,7 +3,7 @@
 Validates deduplication and merging of deterministic and LLM-generated
 issues, including span overlap detection, text-based matching,
 cross-block boundary demotion, source-aware composite keys, and
-category-aware partial overlap handling.
+category-aware deduplication.
 """
 
 import uuid
@@ -14,6 +14,7 @@ import pytest
 from app.models.enums import IssueCategory, IssueSeverity, IssueStatus
 from app.models.schemas import IssueResponse
 from app.services.analysis.merger import (
+    _broad_category,
     _deduplicate_llm_issues,
     _extract_block_boundaries,
     _extract_flagged_texts,
@@ -27,9 +28,6 @@ from app.services.analysis.merger import (
     _words_overlap,
     merge,
 )
-
-# Note: _find_category_for_span was removed — span dedup is now
-# category-agnostic (any overlap = duplicate).
 
 
 # ---------------------------------------------------------------------------
@@ -270,12 +268,8 @@ class TestIsSpanDuplicate:
 class TestIsDuplicate:
     """Tests for the main duplicate detection dispatch logic."""
 
-    def test_span_authoritative_when_valid(self) -> None:
-        """When the LLM issue has a valid span, span check is authoritative.
-
-        This is the 4I fix: span-based detection takes precedence over
-        text matching when spans are available.
-        """
+    def test_span_overlap_same_category_is_duplicate(self) -> None:
+        """Same broad category + span overlap → duplicate."""
         det = _make_issue(
             flagged_text="completely different text",
             span=[100, 150],
@@ -287,52 +281,117 @@ class TestIsDuplicate:
             span=[120, 170],
             category=IssueCategory.STYLE,
         )
-        det_spans = _extract_valid_spans([det])
-        accepted_texts = _extract_flagged_texts([det])
-        result = _is_duplicate(llm, det_spans, accepted_texts)
-        # Span overlap exists, so it should be a duplicate
+        result = _is_duplicate(llm, [det])
         assert result is True
 
+    def test_span_overlap_different_broad_category_not_duplicate(self) -> None:
+        """Different broad category + span overlap → NOT duplicate.
+
+        A deterministic 'technical formatting' issue should not suppress
+        an LLM 'language/capitalization' issue on the same text.
+        """
+        det = _make_issue(
+            flagged_text="ostree",
+            span=[100, 106],
+            category=IssueCategory.TECHNICAL,
+            rule_name="command_syntax",
+        )
+        llm = _make_issue(
+            source="llm",
+            flagged_text="ostree",
+            span=[100, 106],
+            category=IssueCategory.STYLE,
+            rule_name="llm_style",
+        )
+        result = _is_duplicate(llm, [det])
+        assert result is False
+
     def test_text_fallback_for_spanless_issues(self) -> None:
-        """When the LLM issue has [0, 0] span, text matching is used as fallback."""
-        det = _make_issue(flagged_text="utilize the system", span=[50, 68])
+        """When the LLM issue has [0, 0] span, exact text match is used."""
+        det = _make_issue(
+            flagged_text="utilize the system",
+            span=[50, 68],
+            category=IssueCategory.STYLE,
+        )
         llm = _make_issue(
             source="llm",
             flagged_text="utilize the system",
             span=[0, 0],
+            category=IssueCategory.STYLE,
         )
-        det_spans = _extract_valid_spans([det])
-        accepted_texts = _extract_flagged_texts([det])
-        result = _is_duplicate(llm, det_spans, accepted_texts)
+        result = _is_duplicate(llm, [det])
         assert result is True
 
     def test_text_fallback_no_match(self) -> None:
         """Spanless LLM issue with different text is not a duplicate."""
-        det = _make_issue(flagged_text="utilize the system", span=[50, 68])
+        det = _make_issue(
+            flagged_text="utilize the system",
+            span=[50, 68],
+            category=IssueCategory.STYLE,
+        )
         llm = _make_issue(
             source="llm",
             flagged_text="completely unrelated phrase",
             span=[0, 0],
+            category=IssueCategory.STYLE,
         )
-        det_spans = _extract_valid_spans([det])
-        accepted_texts = _extract_flagged_texts([det])
-        result = _is_duplicate(llm, det_spans, accepted_texts)
+        result = _is_duplicate(llm, [det])
+        assert result is False
+
+    def test_text_fallback_different_category_not_duplicate(self) -> None:
+        """Exact same text but different broad category → NOT duplicate.
+
+        'ostree' flagged for code formatting (TECHNICAL) should not
+        suppress 'ostree' flagged for capitalization (STYLE).
+        """
+        det = _make_issue(
+            flagged_text="ostree",
+            span=[0, 0],
+            category=IssueCategory.TECHNICAL,
+        )
+        llm = _make_issue(
+            source="llm",
+            flagged_text="ostree",
+            span=[0, 0],
+            category=IssueCategory.STYLE,
+        )
+        result = _is_duplicate(llm, [det])
+        assert result is False
+
+    def test_word_subsequence_not_duplicate(self) -> None:
+        """Word subsequences are no longer treated as duplicates.
+
+        'be used' (passive voice) should NOT suppress 'will be used'
+        (future tense) via text matching — these are different
+        editorial concerns even within the same category.
+        """
+        det = _make_issue(
+            flagged_text="be used",
+            span=[200, 207],
+            category=IssueCategory.GRAMMAR,
+        )
+        llm = _make_issue(
+            source="llm",
+            flagged_text="will be used",
+            span=[0, 0],
+            category=IssueCategory.GRAMMAR,
+        )
+        # Text-only check: "will be used" ≠ "be used" (no exact match)
+        result = _is_duplicate(llm, [det])
         assert result is False
 
 
 # ---------------------------------------------------------------------------
-# Category-agnostic span overlap (replaces 4A category-aware logic)
+# Category-aware span overlap deduplication
 # ---------------------------------------------------------------------------
 
 
 class TestSpanOverlapDedup:
-    """Tests for span overlap deduplication (category-agnostic)."""
+    """Tests for span overlap deduplication with category awareness."""
 
-    def test_different_categories_deduped_on_overlap(self) -> None:
-        """Overlapping spans with different categories are now duplicates.
-
-        Any overlap between an LLM issue and an existing issue means the
-        same text is already flagged — duplicate cards are user-hostile.
+    def test_same_broad_category_deduped_on_overlap(self) -> None:
+        """Same broad category (STYLE and GRAMMAR → 'language') + span
+        overlap → duplicate via _is_duplicate.
         """
         det = _make_issue(
             category=IssueCategory.STYLE,
@@ -347,9 +406,28 @@ class TestSpanOverlapDedup:
             flagged_text="was configured by the admin",
             span=[100, 127],
         )
-        det_spans = _extract_valid_spans([det])
-        result = _is_span_duplicate(llm, det_spans)
+        result = _is_duplicate(llm, [det])
         assert result is True
+
+    def test_different_broad_category_not_deduped_on_overlap(self) -> None:
+        """Different broad categories (TECHNICAL vs STYLE) + span overlap
+        → NOT duplicate.  These represent different editorial concerns.
+        """
+        det = _make_issue(
+            category=IssueCategory.TECHNICAL,
+            rule_name="command_syntax",
+            flagged_text="ostree",
+            span=[100, 106],
+        )
+        llm = _make_issue(
+            source="llm",
+            category=IssueCategory.STYLE,
+            rule_name="llm_style",
+            flagged_text="ostree",
+            span=[100, 106],
+        )
+        result = _is_duplicate(llm, [det])
+        assert result is False
 
     def test_same_category_with_overlap_is_duplicate(self) -> None:
         """Overlapping spans with the same category are duplicates."""
@@ -362,16 +440,33 @@ class TestSpanOverlapDedup:
             category=IssueCategory.STYLE,
             span=[110, 160],
         )
-        det_spans = _extract_valid_spans([det])
-        result = _is_span_duplicate(llm, det_spans)
+        result = _is_duplicate(llm, [det])
         assert result is True
 
     def test_unknown_category_with_overlap_is_duplicate(self) -> None:
-        """When either category is None, overlapping spans are duplicates."""
+        """When both categories are None (same 'unknown'), span overlap dedupes."""
         det = _make_issue(span=[100, 150])
         det.category = None
         llm = _make_issue(source="llm", span=[110, 160])
         llm.category = None
+        result = _is_duplicate(llm, [det])
+        assert result is True
+
+    def test_raw_span_duplicate_is_category_agnostic(self) -> None:
+        """The low-level _is_span_duplicate helper remains category-agnostic.
+
+        It checks raw span overlap only.  Category filtering is handled
+        by _is_duplicate which wraps it.
+        """
+        det = _make_issue(
+            category=IssueCategory.TECHNICAL,
+            span=[100, 106],
+        )
+        llm = _make_issue(
+            source="llm",
+            category=IssueCategory.STYLE,
+            span=[100, 106],
+        )
         det_spans = _extract_valid_spans([det])
         result = _is_span_duplicate(llm, det_spans)
         assert result is True
@@ -638,10 +733,10 @@ class TestGlobalGranularCoexistence:
 class TestRepeatedErrorSurvival:
     """Tests for preserving repeated errors at different document positions."""
 
-    def test_same_flagged_text_different_spans_both_survive(self) -> None:
-        """Deterministic 'utilizes' at [100,108] and LLM 'utilizes' at [5000,5008]
-        both survive merge because span-based check is authoritative and
-        non-overlapping spans are not duplicates.
+    def test_same_flagged_text_same_broad_category_deduped(self) -> None:
+        """Deterministic 'utilizes' (WORD_USAGE) and LLM 'utilizes' (STYLE)
+        are deduped via exact text match because both map to the 'language'
+        broad category.
         """
         det = _make_issue(
             source="deterministic",
@@ -659,13 +754,34 @@ class TestRepeatedErrorSurvival:
             category=IssueCategory.STYLE,
         )
         result = merge([det], [llm])
-        assert len(result) == 2
-        spans = [tuple(r.span) for r in result]
-        assert (100, 108) in spans
-        assert (5000, 5008) in spans
+        assert len(result) == 1
+        assert result[0].source == "deterministic"
 
-    def test_same_text_overlapping_spans_deduped(self) -> None:
-        """Same flagged text at the same span location is correctly deduped."""
+    def test_same_flagged_text_different_broad_category_both_survive(self) -> None:
+        """Deterministic 'ostree' (TECHNICAL) and LLM 'ostree' (STYLE)
+        both survive because TECHNICAL and STYLE map to different broad
+        categories ('technical' vs 'language').
+        """
+        det = _make_issue(
+            source="deterministic",
+            flagged_text="ostree",
+            rule_name="command_syntax",
+            span=[100, 106],
+            category=IssueCategory.TECHNICAL,
+        )
+        llm = _make_issue(
+            source="llm",
+            flagged_text="ostree",
+            rule_name="llm_style",
+            span=[100, 106],
+            confidence=0.9,
+            category=IssueCategory.STYLE,
+        )
+        result = merge([det], [llm])
+        assert len(result) == 2
+
+    def test_same_text_overlapping_spans_same_category_deduped(self) -> None:
+        """Same flagged text at the same span, same category → deduped."""
         det = _make_issue(
             source="deterministic",
             flagged_text="utilizes",
@@ -680,7 +796,6 @@ class TestRepeatedErrorSurvival:
             category=IssueCategory.WORD_USAGE,
         )
         result = merge([det], [llm])
-        # Same category + same span = duplicate, only det survives
         assert len(result) == 1
         assert result[0].source == "deterministic"
 
@@ -799,3 +914,46 @@ class TestExtractHelpers:
         issue = _make_issue(flagged_text="")
         texts = _extract_flagged_texts([issue])
         assert len(texts) == 0
+
+
+# ---------------------------------------------------------------------------
+# _broad_category() mapping
+# ---------------------------------------------------------------------------
+
+
+class TestBroadCategory:
+    """Tests for the broad category mapping used in dedup decisions."""
+
+    def test_style_and_grammar_same_group(self) -> None:
+        """STYLE and GRAMMAR both map to 'language'."""
+        assert _broad_category(IssueCategory.STYLE) == "language"
+        assert _broad_category(IssueCategory.GRAMMAR) == "language"
+        assert _broad_category(IssueCategory.WORD_USAGE) == "language"
+
+    def test_technical_group(self) -> None:
+        """TECHNICAL, NUMBERS, REFERENCES map to 'technical'."""
+        assert _broad_category(IssueCategory.TECHNICAL) == "technical"
+        assert _broad_category(IssueCategory.NUMBERS) == "technical"
+        assert _broad_category(IssueCategory.REFERENCES) == "technical"
+
+    def test_structure_group(self) -> None:
+        """STRUCTURE and MODULAR map to 'structure'."""
+        assert _broad_category(IssueCategory.STRUCTURE) == "structure"
+        assert _broad_category(IssueCategory.MODULAR) == "structure"
+
+    def test_audience_group(self) -> None:
+        """AUDIENCE and LEGAL map to 'audience'."""
+        assert _broad_category(IssueCategory.AUDIENCE) == "audience"
+        assert _broad_category(IssueCategory.LEGAL) == "audience"
+
+    def test_punctuation_group(self) -> None:
+        """PUNCTUATION maps to 'punctuation'."""
+        assert _broad_category(IssueCategory.PUNCTUATION) == "punctuation"
+
+    def test_none_category(self) -> None:
+        """None category maps to 'unknown'."""
+        assert _broad_category(None) == "unknown"
+
+    def test_technical_vs_language_are_different(self) -> None:
+        """TECHNICAL and STYLE are in different broad categories."""
+        assert _broad_category(IssueCategory.TECHNICAL) != _broad_category(IssueCategory.STYLE)

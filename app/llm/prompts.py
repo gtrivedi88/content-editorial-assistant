@@ -258,12 +258,28 @@ def build_granular_prompt(
         "the reader complete the task, "
         "anthropomorphism (attributing human actions to software/"
         "systems — e.g. 'the system wants' or 'the system applies'), "
+        "technical term formatting — technical terms, commands, utilities, "
+        "and system components mentioned in prose should use backtick "
+        "formatting (e.g., 'ostree' should be `ostree`), "
+        "future tense — use simple present tense instead of 'will' "
+        "(e.g., 'the installation will fail' → 'the installation fails'; "
+        "'will be used' → 'is used'), "
+        "official naming and capitalization — use the official project name "
+        "capitalization (e.g., 'ostree' should be 'OSTree', 'openshift' "
+        "should be 'OpenShift'), "
+        "lead-in sentence case — definition list lead-ins after a colon "
+        "should be lowercase (e.g., 'Where:' → 'where:' when following "
+        "a sentence), "
         "SKIP (deterministic rules handle these reliably): spelling errors, "
-        "product name casing, number formatting (numerals vs words), "
+        "product name casing for Red Hat product names specifically, "
+        "number formatting (numerals vs words), "
         "list punctuation (trailing commas/semicolons).\n\n"
         "SKIP (standard technical writing): 'placeholder' text, CLI tool "
         "names inside backticks, imperative verb at start of procedure steps, "
         "technical jargon in appropriate context.\n"
+        "SKIP: single-step procedures using a bullet instead of a numbered "
+        "list — when a procedure has only one step, a bullet point is the "
+        "correct format per modular docs convention.\n"
         "SKIP: content inside triple-backtick code blocks — "
         "code examples are context, not prose to edit.\n\n"
         "Flag all clear violations of the style guide rules provided. "
@@ -306,6 +322,7 @@ def build_global_prompt(
     content_type: str,
     style_guide_excerpts: list[dict],
     document_outline: str | None = None,
+    abstract_context: str | None = None,
 ) -> tuple[str, str]:
     """Build a full-document global analysis prompt.
 
@@ -320,6 +337,8 @@ def build_global_prompt(
         style_guide_excerpts: Relevant style guide excerpts.
         document_outline: Optional document heading outline for
             structural awareness.
+        abstract_context: Module abstract (first paragraph after heading)
+            for targeted short-description quality evaluation.
 
     Returns:
         Tuple of (system_prompt, user_prompt).
@@ -337,10 +356,27 @@ def build_global_prompt(
         "(procedure needs Prerequisites/Procedure/Verification sections; "
         "concept needs clear topic sentence; reference needs consistent "
         "format), (7) accessibility — instructions should not rely solely "
-        "on visual cues (color, position, shape).\n\n"
+        "on visual cues (color, position, shape), "
+        "(8) short description quality — every module must have a short "
+        "description (abstract) that includes both WHAT the user will do "
+        "and WHY it is important or beneficial. Abstracts should be 2-3 "
+        "sentences, use active voice, avoid self-referential language "
+        "('This topic covers...'), and avoid feature-focused language "
+        "('This product allows you to...'). Use customer-centric language "
+        "('You can... by...' or 'To..., configure...'), "
+        "(9) future tense — flag uses of 'will' where simple present tense "
+        "is correct (e.g., 'will fail' → 'fails', 'will be used' → 'is used'), "
+        "(10) single-step numbered procedures — if a procedure has only one "
+        "step and it uses a numbered list (1.), flag it; single-step "
+        "procedures should use an unnumbered bullet, "
+        "(11) procedural content inside admonitions — procedures or steps "
+        "inside NOTE/IMPORTANT/WARNING blocks violate Red Hat guidelines.\n\n"
         "SKIP: step numbering in procedures — the rendering engine handles "
         "sequential numbering automatically. Do not flag step order, restart, "
         "or numbering issues.\n"
+        "SKIP: single-step procedures using a bullet instead of a numbered "
+        "list — when a procedure has only one step, a bullet point is the "
+        "correct format per modular docs convention.\n"
         "SKIP: content inside triple-backtick code blocks — "
         "code examples are context, not prose to edit.\n\n"
         "Respond with a JSON array. Each object:\n"
@@ -363,6 +399,12 @@ def build_global_prompt(
         "## Document\n\n"
         f"```\n{full_text}\n```"
     )
+
+    if abstract_context:
+        user_prompt += (
+            f"\n\n## Module Abstract (evaluate for short description quality)\n"
+            f"{abstract_context}\n"
+        )
 
     return system_prompt, user_prompt
 
@@ -498,14 +540,31 @@ def _content_type_guidance(content_type: str) -> str:
     """
     guidance_map = {
         "procedure": (
-            "This is a **procedure** module — task-oriented with numbered steps.\n"
+            "This is a **procedure** module — task-oriented with steps.\n"
             "- Imperative voice ('Click', 'Run', 'Enter') is correct and expected.\n"
-            "- Short, direct sentences in steps are by design, not a style issue.\n"
+            "- Single-step procedures use a bullet (not a numbered list) by convention.\n"
             "- Prerequisites and verification sections are standard structure.\n"
             "- 'the user' is acceptable when referring to a role, not the reader.\n"
+            "- DO FLAG: single-step procedures that use a numbered list (1.) instead "
+            "of an unnumbered bullet — Red Hat guidelines require a bullet for "
+            "single-step procedures.\n"
             "- DO FLAG: anthropomorphism ('the system does X'), unclear instructions, "
             "modal hedging ('You can X', 'You may X') — rewrite as direct imperative ('X').\n"
-            "- DO NOT flag: imperative voice, formal terminology in CLI instructions."
+            "- DO FLAG: procedure abstracts that lead with the action instead of the "
+            "goal. The opening sentence should state WHY the user needs this task "
+            "before HOW to do it. Preferred: 'To [achieve goal], [perform action]' "
+            "(goal-first). Flag: '[perform action] to [achieve goal]' (action-first). "
+            "Example: write 'To share the /var/lib/containers partition between "
+            "stateroots, apply a MachineConfig...' not 'Apply a MachineConfig to "
+            "share the /var/lib/containers partition...'. (Red Hat SSG)\n"
+            "- DO FLAG: definition lists after 'Where:' where variable descriptions "
+            "start with 'Specify' instead of 'Specifies' (Red Hat SSG requires "
+            "'Specifies' for variable descriptions).\n"
+            "- DO FLAG: procedures or steps inside admonitions (NOTE, IMPORTANT, "
+            "WARNING) — Red Hat guidance prohibits procedural content inside "
+            "admonitions; move it to the main procedure body.\n"
+            "- DO NOT flag: imperative voice, formal terminology in CLI instructions, "
+            "short direct sentences in steps."
         ),
         "concept": (
             "This is a **concept** module — explanatory content.\n"

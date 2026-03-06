@@ -11,6 +11,7 @@ class Store {
             formatHint: 'auto',
             detectedFormat: null,  // { format, confidence, markers } from auto-detection
             contentType: 'concept',
+            detectedContentType: null,
 
             // Analysis lifecycle
             analysisStatus: 'idle', // idle | uploading | analyzing | partial | complete | error
@@ -26,6 +27,7 @@ class Store {
             filteredErrors: [],
             dismissedErrors: new Set(),
             resolvedErrors: new Set(),
+            manuallyFixedErrors: new Set(),
 
             // Progress
             progressSteps: [],
