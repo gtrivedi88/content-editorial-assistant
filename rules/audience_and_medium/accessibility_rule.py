@@ -13,6 +13,7 @@ import os
 import re
 import yaml
 from typing import List, Dict, Any
+from rules.base_rule import in_code_range
 from .base_audience_rule import BaseAudienceRule
 
 
@@ -86,16 +87,17 @@ class AccessibilityRule(BaseAudienceRule):
             return []
 
         doc = spacy_doc if spacy_doc is not None else nlp(text)
+        code_ranges = context.get("inline_code_ranges", []) if context else []
         errors = []
 
         for i, sent in enumerate(doc.sents):
-            self._check_all_caps(sent, i, text, context, errors)
-            self._check_color_references(sent, i, text, context, errors)
-            self._check_sensory_directions(sent, i, text, context, errors)
+            self._check_all_caps(sent, i, text, context, code_ranges, errors)
+            self._check_color_references(sent, i, text, context, code_ranges, errors)
+            self._check_sensory_directions(sent, i, text, context, code_ranges, errors)
 
         return errors
 
-    def _check_all_caps(self, sent, sent_index, text, context, errors):
+    def _check_all_caps(self, sent, sent_index, text, context, code_ranges, errors):
         """Flag all-caps words that are not acronyms (harder to read)."""
         for token in sent:
             if not token.text.isupper() or len(token.text) <= 1:
@@ -104,8 +106,10 @@ class AccessibilityRule(BaseAudienceRule):
                 continue
             if token.text in _KNOWN_ACRONYMS:
                 continue
-            # Skip if short enough to be an acronym (8 chars or less)
-            if len(token.text) <= 8:
+            # Skip if short enough to be an acronym (4 chars or less)
+            if len(token.text) <= 4:
+                continue
+            if in_code_range(token.idx, code_ranges):
                 continue
 
             error = self._create_error(
@@ -126,14 +130,16 @@ class AccessibilityRule(BaseAudienceRule):
             if error:
                 errors.append(error)
 
-    def _check_color_references(self, sent, sent_index, text, context, errors):
+    def _check_color_references(self, sent, sent_index, text, context, code_ranges, errors):
         """Flag color-only references (inaccessible to color-blind users)."""
         sent_lower = sent.text.lower()
         for phrase in _CONFIG.get('color_indicator_phrases', []):
             pattern = r'\b' + re.escape(phrase) + r'\b'
             for match in re.finditer(pattern, sent_lower):
-                found = sent.text[match.start():match.end()]
                 start = sent.start_char + match.start()
+                if in_code_range(start, code_ranges):
+                    continue
+                found = sent.text[match.start():match.end()]
                 end = sent.start_char + match.end()
 
                 error = self._create_error(
@@ -153,14 +159,16 @@ class AccessibilityRule(BaseAudienceRule):
                 if error:
                     errors.append(error)
 
-    def _check_sensory_directions(self, sent, sent_index, text, context, errors):
+    def _check_sensory_directions(self, sent, sent_index, text, context, code_ranges, errors):
         """Flag sensory-only directional references."""
         sent_lower = sent.text.lower()
         for phrase in _CONFIG.get('sensory_direction_phrases', []):
             pattern = r'\b' + re.escape(phrase) + r'\b'
             for match in re.finditer(pattern, sent_lower):
-                found = sent.text[match.start():match.end()]
                 start = sent.start_char + match.start()
+                if in_code_range(start, code_ranges):
+                    continue
+                found = sent.text[match.start():match.end()]
                 end = sent.start_char + match.end()
 
                 error = self._create_error(

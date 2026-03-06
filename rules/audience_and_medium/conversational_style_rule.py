@@ -9,6 +9,7 @@ To add new formal->conversational pairs, edit the YAML file — no code changes 
 import os
 import yaml
 from typing import List, Dict, Any
+from rules.base_rule import in_code_range
 from .base_audience_rule import BaseAudienceRule
 
 
@@ -55,31 +56,40 @@ class ConversationalStyleRule(BaseAudienceRule):
             return []
 
         doc = spacy_doc if spacy_doc is not None else nlp(text)
+        code_ranges = context.get("inline_code_ranges", []) if context else []
         errors = []
 
         for i, sent in enumerate(doc.sents):
-            for token in sent:
-                alternative = _FORMAL_MAP.get(token.lemma_.lower())
-                if not alternative:
-                    continue
-
-                error = self._create_error(
-                    sentence=sent.text,
-                    sentence_index=i,
-                    message=(
-                        f"Use '{alternative}' instead of "
-                        f"'{token.text}' for a more conversational tone."
-                    ),
-                    suggestions=[
-                        f"Change '{token.text}' to '{alternative}'",
-                    ],
-                    severity='low',
-                    text=text,
-                    context=context,
-                    flagged_text=token.text,
-                    span=(token.idx, token.idx + len(token.text)),
-                )
-                if error:
-                    errors.append(error)
+            self._check_sentence(sent, i, text, context, code_ranges, errors)
 
         return errors
+
+    def _check_sentence(self, sent, sent_index: int, text: str,
+                        context, code_ranges: list,
+                        errors: List[Dict[str, Any]]) -> None:
+        """Check a single sentence for overly formal tokens."""
+        for token in sent:
+            if in_code_range(token.idx, code_ranges):
+                continue
+            alternative = _FORMAL_MAP.get(token.lemma_.lower())
+            if not alternative:
+                continue
+
+            error = self._create_error(
+                sentence=sent.text,
+                sentence_index=sent_index,
+                message=(
+                    f"Use '{alternative}' instead of "
+                    f"'{token.text}' for a more conversational tone."
+                ),
+                suggestions=[
+                    f"Change '{token.text}' to '{alternative}'",
+                ],
+                severity='low',
+                text=text,
+                context=context,
+                flagged_text=token.text,
+                span=(token.idx, token.idx + len(token.text)),
+            )
+            if error:
+                errors.append(error)

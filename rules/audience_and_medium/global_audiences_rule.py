@@ -16,6 +16,7 @@ import os
 import re
 import yaml
 from typing import List, Dict, Any, Set
+from rules.base_rule import in_code_range
 from .base_audience_rule import BaseAudienceRule
 
 
@@ -92,15 +93,16 @@ class GlobalAudiencesRule(BaseAudienceRule):
             return []
 
         doc = spacy_doc if spacy_doc is not None else nlp(text)
+        code_ranges = context.get("inline_code_ranges", []) if context else []
         errors = []
 
         for i, sent in enumerate(doc.sents):
-            self._check_negation(sent, i, text, context, errors)
+            self._check_negation(sent, i, text, context, code_ranges, errors)
             self._check_sentence_length(sent, i, text, context, errors)
-            self._check_politeness(sent, i, text, context, errors)
-            self._check_self_referential(sent, i, text, context, errors)
-            self._check_expletive(sent, i, text, context, doc, errors)
-            self._check_double_negatives(sent, i, text, context, errors)
+            self._check_politeness(sent, i, text, context, code_ranges, errors)
+            self._check_self_referential(sent, i, text, context, code_ranges, errors)
+            self._check_expletive(sent, i, text, context, code_ranges, doc, errors)
+            self._check_double_negatives(sent, i, text, context, code_ranges, errors)
 
         return errors
 
@@ -108,10 +110,12 @@ class GlobalAudiencesRule(BaseAudienceRule):
     # Check 1: Negative constructions
     # ------------------------------------------------------------------
 
-    def _check_negation(self, sent, sent_index, text, context, errors):
+    def _check_negation(self, sent, sent_index, text, context, code_ranges, errors):
         """Flag negative constructions that confuse non-native readers."""
         for token in sent:
             if token.dep_ != 'neg':
+                continue
+            if in_code_range(token.idx, code_ranges):
                 continue
             head = token.head
             if head.lemma_.lower() in _TECHNICAL_NEGATION_OBJECTS:
@@ -169,7 +173,7 @@ class GlobalAudiencesRule(BaseAudienceRule):
     # Check 3: Politeness terms in technical docs
     # ------------------------------------------------------------------
 
-    def _check_politeness(self, sent, sent_index, text, context, errors):
+    def _check_politeness(self, sent, sent_index, text, context, code_ranges, errors):
         """Flag 'please' and 'thank you' in technical documentation."""
         sent_lower = sent.text.lower()
         for phrase, msg in [
@@ -181,8 +185,10 @@ class GlobalAudiencesRule(BaseAudienceRule):
         ]:
             pattern = r'\b' + re.escape(phrase) + r'\b'
             for match in re.finditer(pattern, sent_lower):
-                found = sent.text[match.start():match.end()]
                 start = sent.start_char + match.start()
+                if in_code_range(start, code_ranges):
+                    continue
+                found = sent.text[match.start():match.end()]
                 end = sent.start_char + match.end()
                 error = self._create_error(
                     sentence=sent.text, sentence_index=sent_index,
@@ -198,14 +204,16 @@ class GlobalAudiencesRule(BaseAudienceRule):
     # Check 4: Self-referential text
     # ------------------------------------------------------------------
 
-    def _check_self_referential(self, sent, sent_index, text, context, errors):
+    def _check_self_referential(self, sent, sent_index, text, context, code_ranges, errors):
         """Flag 'This topic is about' and similar self-referential phrases."""
         sent_lower = sent.text.lower()
         for pattern in _SELF_REFERENTIAL_PATTERNS:
             match = re.search(pattern, sent_lower)
             if match:
-                found = sent.text[match.start():match.end()]
                 start = sent.start_char + match.start()
+                if in_code_range(start, code_ranges):
+                    continue
+                found = sent.text[match.start():match.end()]
                 end = sent.start_char + match.end()
                 error = self._create_error(
                     sentence=sent.text, sentence_index=sent_index,
@@ -227,10 +235,12 @@ class GlobalAudiencesRule(BaseAudienceRule):
     # Check 5: Expletive constructions
     # ------------------------------------------------------------------
 
-    def _check_expletive(self, sent, sent_index, text, context, doc, errors):
+    def _check_expletive(self, sent, sent_index, text, context, code_ranges, doc, errors):
         """Flag expletive 'it is' and 'there are' constructions."""
         for token in sent:
             if token.dep_ != 'expl':
+                continue
+            if in_code_range(token.idx, code_ranges):
                 continue
             head = token.head
             flagged = f"{token.text} {head.text}"
@@ -256,9 +266,11 @@ class GlobalAudiencesRule(BaseAudienceRule):
     # Check 6: Double negatives
     # ------------------------------------------------------------------
 
-    def _check_double_negatives(self, sent, sent_index, text, context, errors):
+    def _check_double_negatives(self, sent, sent_index, text, context, code_ranges, errors):
         """Flag 'not uncommon' → 'common' and similar double negatives."""
         for match in _DOUBLE_NEG_RE.finditer(sent.text):
+            if in_code_range(sent.start_char + match.start(), code_ranges):
+                continue
             neg_word = match.group(1).lower()
             positive = _DOUBLE_NEGATIVES.get(neg_word, '')
             if not positive:

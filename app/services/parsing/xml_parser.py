@@ -15,6 +15,10 @@ from app.services.parsing.base import (
 
 logger = logging.getLogger(__name__)
 
+# XXE-safe XML parser — disables external entity resolution and network
+# access to prevent SSRF and local file read attacks from malicious uploads.
+_SAFE_XML_PARSER = etree.XMLParser(resolve_entities=False, no_network=True)
+
 
 class XmlParser(BaseParser):
     """Parser for generic XML documents.
@@ -40,7 +44,7 @@ class XmlParser(BaseParser):
             return ParseResult(blocks=[], plain_text="")
 
         try:
-            root = etree.fromstring(content.encode("utf-8"))
+            root = etree.fromstring(content.encode("utf-8"), parser=_SAFE_XML_PARSER)
         except etree.XMLSyntaxError as exc:
             logger.warning("XmlParser: XML syntax error: %s", exc)
             return ParseResult(

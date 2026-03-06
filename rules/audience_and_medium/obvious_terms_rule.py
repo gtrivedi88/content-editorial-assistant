@@ -8,6 +8,7 @@ such as "Password field", "Username field", etc.
 import re
 from typing import List, Dict, Any, Optional
 
+from rules.base_rule import in_code_range
 from .base_audience_rule import BaseAudienceRule
 
 _SKIP_BLOCKS = frozenset(['code_block', 'listing', 'literal', 'inline_code'])
@@ -40,58 +41,55 @@ class ObviousTermsRule(BaseAudienceRule):
         if context.get('block_type') in _SKIP_BLOCKS:
             return []
 
-        doc = spacy_doc if (spacy_doc is not None) else (nlp(text) if nlp else None)
+        code_ranges = context.get("inline_code_ranges", [])
         errors: List[Dict[str, Any]] = []
+
+        if spacy_doc is not None:
+            doc = spacy_doc
+        elif nlp:
+            doc = nlp(text)
+        else:
+            doc = None
 
         if doc is not None:
             for i, sent in enumerate(doc.sents):
-                for pattern in _OBVIOUS_PATTERNS:
-                    for match in pattern.finditer(sent.text):
-                        found = match.group(0)
-                        start = sent.start_char + match.start()
-                        end = sent.start_char + match.end()
-                        error = self._create_error(
-                            sentence=sent.text,
-                            sentence_index=i,
-                            message=(
-                                f"Consider not documenting '{found}' "
-                                f"because it is self-explanatory."
-                            ),
-                            suggestions=[
-                                f"Remove the description of '{found}' or "
-                                f"provide non-obvious details instead."
-                            ],
-                            severity='low',
-                            text=text,
-                            context=context,
-                            flagged_text=found,
-                            span=(start, end),
-                        )
-                        if error:
-                            errors.append(error)
+                self._check_sent(sent.text, i, sent.start_char,
+                                 text, context, code_ranges, errors)
         else:
             for i, sentence in enumerate(sentences):
-                for pattern in _OBVIOUS_PATTERNS:
-                    for match in pattern.finditer(sentence):
-                        found = match.group(0)
-                        error = self._create_error(
-                            sentence=sentence,
-                            sentence_index=i,
-                            message=(
-                                f"Consider not documenting '{found}' "
-                                f"because it is self-explanatory."
-                            ),
-                            suggestions=[
-                                f"Remove the description of '{found}' or "
-                                f"provide non-obvious details instead."
-                            ],
-                            severity='low',
-                            text=text,
-                            context=context,
-                            flagged_text=found,
-                            span=(match.start(), match.end()),
-                        )
-                        if error:
-                            errors.append(error)
+                self._check_sent(sentence, i, 0,
+                                 text, context, code_ranges, errors)
 
         return errors
+
+    def _check_sent(self, sent_text: str, sent_index: int,
+                    char_offset: int, text: str, context: Dict,
+                    code_ranges: list,
+                    errors: List[Dict[str, Any]]) -> None:
+        """Check a single sentence for obvious term patterns."""
+        for pattern in _OBVIOUS_PATTERNS:
+            for match in pattern.finditer(sent_text):
+                start = char_offset + match.start()
+                if in_code_range(start, code_ranges):
+                    continue
+                found = match.group(0)
+                end = char_offset + match.end()
+                error = self._create_error(
+                    sentence=sent_text,
+                    sentence_index=sent_index,
+                    message=(
+                        f"Consider not documenting '{found}' "
+                        f"because it is self-explanatory."
+                    ),
+                    suggestions=[
+                        f"Remove the description of '{found}' or "
+                        f"provide non-obvious details instead."
+                    ],
+                    severity='low',
+                    text=text,
+                    context=context,
+                    flagged_text=found,
+                    span=(start, end),
+                )
+                if error:
+                    errors.append(error)

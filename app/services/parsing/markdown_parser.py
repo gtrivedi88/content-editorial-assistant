@@ -22,10 +22,13 @@ logger = logging.getLogger(__name__)
 _MD_INLINE_PATTERNS: list[tuple[re.Pattern[str], int]] = [
     # ~~strikethrough~~
     (re.compile(r"~~(.+?)~~"), 1),
-    # **bold**
+    # **bold** and __bold__
     (re.compile(r"\*\*(.+?)\*\*"), 1),
+    (re.compile(r"__(.+?)__"), 1),
     # *italic* (but not **)
     (re.compile(r"(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)"), 1),
+    # _italic_ (but not __ and not inside identifiers like my_var_name)
+    (re.compile(r"(?<!\w)_(?!_)(.+?)(?<!_)_(?!\w)"), 1),
     # `code`
     (re.compile(r"`([^`]+)`"), 1),
     # [text](url) → text
