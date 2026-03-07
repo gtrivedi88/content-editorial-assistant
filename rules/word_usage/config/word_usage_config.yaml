@@ -46,6 +46,8 @@ a:
   "appendices": "appendixes"
   "application program interface": "application programming interface"
   "architect": "design, plan, structure"
+  "architected": "designed"
+  "are updatable": "can be updated, can be changed"
   "artefact": "artifact"
   "article-based information": "topic-based information"
   "as long as": "if, provided that"
@@ -105,6 +107,7 @@ b:
 c:
   "call out": "callout"
   "call-out": "callout"
+  "CD burner": "CD writer"
   "CamelCase": "camel case"
   "Camelcase": "camel case"
   "cancelation": "cancellation"
@@ -117,7 +120,10 @@ c:
   "catalogue": "catalog"
   "catastrophic error": "unrecoverable error"
   "Caucasian": "White"
+  "basic auth": "Basic HTTP authentication, Basic authentication"
   "CBE": "Common Base Event"
+  "CBTS": "CICS BTS, BTS"
+  "Christian name": "given name"
   "centre": "center"
   "check box": "checkbox"
   "check mark": "checkmark"
@@ -143,7 +149,10 @@ c:
   "cold boot": "hardware restart"
   "cold start": "hardware restart"
   "colour": "color"
+  "colours": "color, colors"
   "combo box": "use the name of the field instead"
+  "componentization": "component-based development, component architecture"
+  "componentize": "develop components, divide into components"
   "comes with": "includes"
   "commandline": "command line"
   "CommServer": "Communications Server"
@@ -182,6 +191,7 @@ c:
 
 # ── D ──────────────────────────────────────────────────────────────────
 d:
+  "datacenter": "data center"
   "data centre": "data center"
   "data-center": "data center"
   "datacentre": "data center"
@@ -235,6 +245,7 @@ d:
   "downlevel": "earlier, previous"
   "down time": "downtime"
   "downward compatible": "compatible with earlier versions"
+  "downwards compatible": "compatible with earlier versions"
   "drag and drop": "drag-and-drop (adj), drag (verb)"
   "drill-down": "drill down"
   "drilldown": "drill down"
@@ -282,6 +293,7 @@ f:
   "floppy": "diskette"
   "floppy disk": "diskette"
   "floppy drive": "diskette drive"
+  "fileserver": "file server"
   "florescent": "fluorescent"
   "fly-out": "flyout"
   "focussed": "focused"
@@ -311,7 +323,13 @@ g:
 
 # ── H ──────────────────────────────────────────────────────────────────
 h:
+  "hamburger": "more options icon, options icon"
   "hard boot": "restart"
+  "hard copy": "hardcopy"
+  "hardcode": "hard code"
+  "hardcoded": "hard-coded"
+  "healthcheck": "health check"
+  "health-check": "health check"
   "hard coded": "hardcoded"
   "hard-coded": "hardcoded"
   "hard file": "hard disk, hard disk drive"
@@ -343,7 +361,9 @@ i:
   "incent": "motivate, encourage"
   "incentivize": "motivate, encourage"
   "inch pound": "inch-pound"
+  "ingests": "import, load, obtain, process"
   "info": "information"
+  "is updatable": "can be updated, can be changed"
   "information technology": "IT"
   "initial caps": "initial capital letters"
   "insure": "ensure"
@@ -362,7 +382,11 @@ j:
 
 # ── K ──────────────────────────────────────────────────────────────────
 k:
+  "k8s": "Kubernetes"
+  "kebab": "more options icon, options icon"
+  "kebab menu": "more options icon, options icon"
   "keep in mind": "remember"
+  "kilobytes": "KB, kB"
   "kernelspace": "kernel-space"
   "key": "press, type, enter"
   "kick off": "start, begin"
@@ -404,6 +428,7 @@ l:
 
 # ── M ──────────────────────────────────────────────────────────────────
 m:
+  "mailserver": "mail server"
   "main directory": "root directory"
   "make file": "makefile"
   "man-hour": "person hour, labor hour"
@@ -441,6 +466,7 @@ m:
 n:
   "name space": "namespace"
   "nameserver": "name server"
+  "NWSAA": "NetWare for SAA"
   "need to": "must"
   "network-centric computing": "network computing"
   "newsfeed": "news feed"
@@ -448,6 +474,7 @@ n:
   "no.": "number"
   "non-compliance": "noncompliance"
   "nonrecoverable": "unrecoverable"
+  "non-English": "in languages other than English, non-English-language"
   "nonsecure": "insecure"
   "non-secure": "insecure"
   "normalise": "normalize"
@@ -460,6 +487,7 @@ o:
   "offline storage": "auxiliary storage"
   "on-boarding": "onboarding"
   "on demand": "on-demand"
+  "on-prem": "on-premises, on-site, in-house"
   "on premise": "on premises, on-premises"
   "on-premise": "on premises, on-premises"
   "on ramp": "access method"
@@ -503,7 +531,10 @@ p:
   "Podcast": "podcast"
   "Pod Cast": "podcast"
   "pojo": "data model"
+  "pop-up blocker": "software to block pop-up ad windows"
   "pop-up list": "list"
+  "pub/sub": "publish/subscribe"
+  "publish-subscribe": "publish/subscribe"
   "pop-up menu": "menu"
   "pop-up window": "window"
   "pops up": "opens"
@@ -530,7 +561,14 @@ q:
 
 # ── R ──────────────────────────────────────────────────────────────────
 r:
+  "ramallama": "RamaLama"
+  "re-occur": "recur"
   "read-write": "read/write"
+  "Red Hat Java": "Red Hat build of OpenJDK"
+  "Red Hat Open Java Development Kit": "Red Hat build of OpenJDK"
+  "Red Hat OpenJDK": "Red Hat build of OpenJDK"
+  "RHOJDK": "Red Hat build of OpenJDK"
+  "right double-click": "double right-click"
   "Redbook": "IBM Redbooks publication"
   "recognise": "recognize"
   "realise": "realize"
@@ -552,6 +590,13 @@ r:
 # ── S ──────────────────────────────────────────────────────────────────
 s:
   "sanity check": "validation, check, review"
+  "sanity test": "test, evaluate, validate, verify"
+  "shift-click": "press Shift and click"
+  "single quote mark": "single quotation mark"
+  "single quote": "single quotation mark"
+  "S90": "IBM S/390"
+  "SME routine": "session management exit routine"
+  "speeds up": "accelerates"
   "schemata": "schemas"
   "screen shot": "screenshot"
   "screencap": "screen capture"
@@ -608,17 +653,28 @@ s:
   "synch": "sync, synchronize"
   "synchronise": "synchronize"
   "syncpoint": "sync point"
+  "sysprep function": "sysprep"
+  "sysprep process": "sysprep"
+  "sysprep tool": "sysprep"
   "system engineer": "systems engineer"
 
 # ── T ──────────────────────────────────────────────────────────────────
 t:
   "tap on": "tap"
+  "tar file": ".tar file"
   "tarball": ".tar file, archive file"
   "TCP/IP network": "Internet Protocol network, IP network"
   "team room": "teamroom"
   "teleprocessing line": "telecommunication line, transmission line"
   "testcase": "test case"
   "the installer": "installation program"
+  "thin provisioned": "thin-provisioned"
+  "thinly provisioned": "thin-provisioned"
+  "thinly-provisioned": "thin-provisioned"
+  "top-left": "upper left, upper-left"
+  "top left": "upper left, upper-left"
+  "top-right": "upper right, upper-right"
+  "top right": "upper right, upper-right"
   "thank you": "remove in technical docs"
   "third-party software vendor": "independent software vendor"
   "thru": "through, throughput"
@@ -673,6 +729,8 @@ u:
 # ── V ──────────────────────────────────────────────────────────────────
 v:
   "vanilla": "standard, default, basic"
+  "vertical ellipsis": "more options icon, options icon"
+  "virtual diskette": "virtual floppy disk"
   "verbatim": "exact, literal"
   "versus": "vs."
   "vs": "vs."
@@ -694,6 +752,7 @@ w:
   "warm boot": "warm start"
   "web cast": "webcast"
   "web-enable": "enable for the web"
+  "webserver": "web server"
   "webmistress": "webmaster"
   "web master": "webmaster"
   "white hat hacker": "offensive security researcher"
@@ -704,6 +763,7 @@ w:
   "wild card": "wildcard"
   "wiring closet": "telecommunications closet"
   "wish": "want"
+  "would like": "want"
   "work group": "workgroup"
   "work space": "workspace"
   "work station": "workstation"
@@ -712,6 +772,8 @@ w:
 
 # ── X ──────────────────────────────────────────────────────────────────
 x:
+  "x64": "64-bit x86, x86_64"
+  "x86-64": "64-bit x86, x86_64"
   "xerox": "photocopy, copy"
   "xterm": "XTerm"
   "XSA": "extended subarea addressing"
@@ -756,3 +818,29 @@ special:
   "10BASE-2": "10BASE2"
   "10BASET": "10BASE-T"
   "32-bit Windows operating system": "Windows 32-bit operating system"
+
+# ── Pattern Terms (need regex lookbehinds) ───────────────────────────
+# Used by pattern_terms_rule.py via _match_pattern_terms().
+# Each entry has: wrong, right, pattern (regex with lookbehinds).
+pattern_terms:
+  - wrong: "bootloader"
+    right: "boot loader"
+    pattern: '(?<!\bGRand Unified )(?<!\bGRUB )\bbootloader\b'
+  - wrong: "Firefox"
+    right: "Mozilla Firefox"
+    pattern: '(?<!\bMozilla )\bFirefox\b'
+  - wrong: "Thunderbird"
+    right: "Mozilla Thunderbird"
+    pattern: '(?<!\bMozilla )\bThunderbird\b'
+  - wrong: "hosted engine"
+    right: "self-hosted engine"
+    pattern: '(?<!self-)\bhosted engine\b'
+  - wrong: "hosted-engine"
+    right: "self-hosted engine"
+    pattern: '(?<!self-)\bhosted-engine\b'
+  - wrong: "executable"
+    right: "executable program"
+    pattern: '\bexecutable\b(?!\s+(?:program|routine|files?|code))'
+  - wrong: "transition"
+    right: "make the transition, move, migrate, change"
+    pattern: '(?<!\bmake the )\btransition\b'

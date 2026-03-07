@@ -2,7 +2,7 @@
 Quotation Marks Rule — Deterministic regex-based detection.
 IBM Style Guide (Page 136):
 1. Place periods and commas inside closing quotation marks.
-2. Do not use curly/smart quotes in code samples.
+2. Do not use curly/smart quotes — use straight quotes in all blocks.
 """
 import re
 from typing import List, Dict, Any, Optional
@@ -39,8 +39,9 @@ class QuotationMarksRule(BasePunctuationRule):
         if block_type not in _SKIP_BLOCKS:
             self._check_punct_outside(sentences, text, context, errors)
 
-        if block_type in ('code_block', 'listing', 'literal'):
-            self._check_smart_quotes(sentences, text, context, errors)
+        # Check 2: Smart/curly quotes should never appear in AsciiDoc source.
+        # They cause rendering issues in all block types, not just code.
+        self._check_smart_quotes(sentences, text, context, errors)
 
         return errors
 
@@ -71,7 +72,11 @@ class QuotationMarksRule(BasePunctuationRule):
                     errors.append(error)
 
     def _check_smart_quotes(self, sentences, text, context, errors):
-        """Check 2: Flag curly/smart quotes in code blocks."""
+        """Check 2: Flag curly/smart quotes in all blocks.
+
+        Smart quotes cause rendering issues in AsciiDoc source and
+        should always be replaced with straight quotes.
+        """
         for idx, sentence in enumerate(sentences):
             for match in _SMART_QUOTES.finditer(sentence):
                 error = self._create_error(

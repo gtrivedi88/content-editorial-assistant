@@ -5,6 +5,7 @@ IBM Style Guide (p. 217-223):
 2. Use lowercase for cross-reference terms (chapter, section, figure, etc.)
    when referring to document parts generically or in cross-references.
 3. Do not abbreviate chapter, part, or volume in cross-references.
+4. Cross-reference introductory phrases need a comma before "see"/"refer".
 """
 import os
 import re
@@ -41,6 +42,15 @@ _XREF_TERMS = set(_CONFIG.get('cross_reference_terms', [
 
 # Check 3: Abbreviations that should not be used in cross-references
 _XREF_ABBREVS: Dict[str, str] = _CONFIG.get('cross_reference_abbreviations', {})
+
+# Check 4: Cross-reference introductory phrases missing comma before "see"
+# Strictly adjacent — does NOT try to match "For more information about X see"
+# (separated forms are left to LLM granular pass to avoid greedy-regex FPs).
+_XREF_INTRO_NO_COMMA = re.compile(
+    r'\b(For\s+(?:more\s+)?(?:information|details))\s+'
+    r'(see|refer\s+to)\b',
+    re.IGNORECASE,
+)
 
 # Context indicators that signal a cross-reference
 _XREF_INDICATORS = re.compile(
@@ -80,6 +90,7 @@ class CitationsRule(BaseReferencesRule):
             self._check_problematic_link_text(sentence, idx, text, context, code_ranges, sent_start, errors)
             self._check_xref_capitalization(sentence, idx, text, context, code_ranges, sent_start, errors)
             self._check_xref_abbreviations(sentence, idx, text, context, code_ranges, sent_start, errors)
+            self._check_xref_intro_comma(sentence, idx, text, context, code_ranges, sent_start, errors)
         return errors
 
     # ------------------------------------------------------------------
@@ -182,3 +193,34 @@ class CitationsRule(BaseReferencesRule):
                 )
                 if error is not None:
                     errors.append(error)
+
+    # ------------------------------------------------------------------
+    # Check 4 — cross-reference introductory comma
+    # ------------------------------------------------------------------
+    def _check_xref_intro_comma(self, sentence, idx, text, context,
+                                code_ranges, sent_start, errors):
+        """Flag 'For more information see' — needs comma before 'see'."""
+        for match in _XREF_INTRO_NO_COMMA.finditer(sentence):
+            if in_code_range(sent_start + match.start(), code_ranges):
+                continue
+            intro = match.group(1)
+            verb = match.group(2)
+            found = match.group(0)
+            error = self._create_error(
+                sentence=sentence,
+                sentence_index=idx,
+                message=(
+                    f"Add a comma before '{verb}' in the cross-reference "
+                    f"introduction: '{intro}, {verb}'."
+                ),
+                suggestions=[
+                    f"{intro}, {verb}",
+                ],
+                severity='low',
+                text=text,
+                context=context,
+                flagged_text=found,
+                span=(match.start(), match.end()),
+            )
+            if error is not None:
+                errors.append(error)

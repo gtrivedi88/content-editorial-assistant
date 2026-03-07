@@ -33,14 +33,21 @@ _ABOVE_RE = re.compile(r'\babove\b', re.IGNORECASE)
 _BELOW_RE = re.compile(r'\bbelow\b', re.IGNORECASE)
 
 # Non-positional contexts for "above" — skip these
+# Handles formatting markers between spatial word and number:
+# "above 50", "above the 50th", "above *50*", "above `50`"
+_OPT_FMT = r'(?:[*_~`]\s*)?'  # optional formatting marker
 _ABOVE_SAFE = re.compile(
-    r'(degrees?\s+above|above\s+zero|rise\s+above|above\s+average|'
-    r'above\s+and\s+beyond|over\s+and\s+above|above\s+all)',
+    r'(degrees?\s+above|above\s+zero|rise[sd]?\s+above|above\s+average|'
+    r'above\s+and\s+beyond|over\s+and\s+above|above\s+all|'
+    r'above\s+(?:the\s+)?' + _OPT_FMT + r'\d|'
+    r'above\s+(?:the\s+)?(?:normal|threshold|limit|maximum|minimum|baseline|target|capacity))',
     re.IGNORECASE,
 )
 # Non-positional contexts for "below" — skip these
 _BELOW_SAFE = re.compile(
-    r'(degrees?\s+below|below\s+zero|fall\s+below|below\s+average)',
+    r'(degrees?\s+below|below\s+zero|falls?\s+below|below\s+average|'
+    r'below\s+(?:the\s+)?' + _OPT_FMT + r'\d|'
+    r'below\s+(?:the\s+)?(?:normal|threshold|limit|maximum|minimum|baseline|target|capacity))',
     re.IGNORECASE,
 )
 

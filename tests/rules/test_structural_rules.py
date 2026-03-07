@@ -82,7 +82,7 @@ class TestAdmonitionPlacement:
             ),
         ]
 
-        issues = _check_admonition_placement(blocks, "")
+        issues = _check_admonition_placement(blocks)
         assert len(issues) == 1
         assert "admonition" in issues[0].message.lower()
         assert issues[0].rule_name == "admonition_placement"
@@ -95,7 +95,7 @@ class TestAdmonitionPlacement:
             _make_block("admonition", "Important note.", 60),
         ]
 
-        issues = _check_admonition_placement(blocks, "")
+        issues = _check_admonition_placement(blocks)
         assert len(issues) == 0
 
     def test_skipped_blocks_ignored(self) -> None:
@@ -107,7 +107,7 @@ class TestAdmonitionPlacement:
             _make_block("admonition", "Note.", 70),
         ]
 
-        issues = _check_admonition_placement(blocks, "")
+        issues = _check_admonition_placement(blocks)
         assert len(issues) == 0
 
     def test_pre_heading_admonition_flagged(self) -> None:
@@ -121,7 +121,7 @@ class TestAdmonitionPlacement:
             _make_block("heading", "Configuring ostree", 60, level=1),
         ]
 
-        issues = _check_admonition_placement(blocks, "")
+        issues = _check_admonition_placement(blocks)
         assert len(issues) == 1
         assert "title" in issues[0].message.lower()
 
@@ -132,7 +132,7 @@ class TestAdmonitionPlacement:
             _make_block("admonition", "Note text.", 20),
         ]
 
-        issues = _check_admonition_placement(blocks, "")
+        issues = _check_admonition_placement(blocks)
         assert len(issues) == 1
         issue = issues[0]
         assert issue.id  # Non-empty UUID

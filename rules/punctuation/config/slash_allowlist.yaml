@@ -37,6 +37,11 @@ built_in_categories:
     - FTP/SFTP
     - SSL/TLS
     - VLAN/VXLAN
+    - KBIT/S
+    - MBIT/S
+    - GBIT/S
+    - TBIT/S
+    - PUBLISH/SUBSCRIBE
   
   # I/O and Data
   io_data:

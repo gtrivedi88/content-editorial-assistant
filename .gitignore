@@ -64,3 +64,5 @@ plain.txt
 
 # Poetry lock (generated)
 poetry.lock
+
+languagetool/

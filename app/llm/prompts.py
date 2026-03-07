@@ -461,6 +461,13 @@ def build_suggestion_prompt(
         "terms, product names, code references; maintain same detail and "
         "meaning; keep sentence structure when possible; do not introduce "
         "new issues.\n\n"
+        "## Style constraints for rewrites\n"
+        "- Use active voice (not passive) unless the actor is irrelevant\n"
+        "- Use present tense (not future 'will') for descriptions\n"
+        "- Do not introduce self-referential language ('this section', "
+        "'this topic', 'this document')\n"
+        "- Preserve imperative voice in procedure steps — do not convert "
+        "'Click X' to 'You should click X'\n\n"
         "Respond with a JSON object:\n"
         '{"rewritten_text":"corrected text",'
         '"explanation":"what changed and why",'

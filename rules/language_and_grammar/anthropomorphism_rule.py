@@ -1,12 +1,14 @@
 """
 Anthropomorphism Rule — Deterministic SpaCy-based detection.
 IBM Style Guide (Page 90): Do not attribute human characteristics to non-human things.
+Red Hat Vale ProductCentricWriting: Flag product-centric "allows/enables/lets you" patterns.
 
 Configuration loaded from config/anthropomorphism_config.yaml.
 To add new terms, edit the YAML file — no code changes needed.
 """
 
 import os
+import re
 import yaml
 from typing import List, Dict, Any, Optional, Set
 from .base_language_rule import BaseLanguageRule
@@ -29,6 +31,13 @@ ANTHROPOMORPHIC_VERBS: Set[str] = set(_CONFIG.get('anthropomorphic_verbs', []))
 SAFE_TECHNICAL_VERBS: Set[str] = set(_CONFIG.get('safe_technical_verbs', []))
 NON_HUMAN_INDICATORS: Set[str] = set(_CONFIG.get('non_human_indicators', []))
 
+# Check 2: Product-centric writing patterns (Vale ProductCentricWriting)
+_PRODUCT_CENTRIC_RE = re.compile(
+    r'\b(allows?|enables?|lets?|permits?)\s+'
+    r'(you|users?|customers?|administrators?|developers?)\b',
+    re.IGNORECASE,
+)
+
 
 class AnthropomorphismRule(BaseLanguageRule):
     """Detects anthropomorphic language using SpaCy dependency parsing."""
@@ -46,12 +55,17 @@ class AnthropomorphismRule(BaseLanguageRule):
             return []
 
         doc = spacy_doc if spacy_doc is not None else nlp(text)
-        errors = []
+        errors: List[Dict[str, Any]] = []
 
+        # Check 1: Anthropomorphic verb usage
         for token in doc:
             error = self._check_token(token, text, context)
             if error is not None:
                 errors.append(error)
+
+        # Check 2: Product-centric writing patterns
+        for i, sent in enumerate(doc.sents):
+            self._check_product_centric(sent, i, text, context, errors)
 
         return errors
 
@@ -130,3 +144,43 @@ class AnthropomorphismRule(BaseLanguageRule):
             if child.dep_ == 'compound' and child.lemma_.lower() in NON_HUMAN_INDICATORS:
                 return True
         return False
+
+    def _check_product_centric(
+        self,
+        sent: Any,
+        idx: int,
+        text: str,
+        context: Optional[Dict[str, Any]],
+        errors: List[Dict[str, Any]],
+    ) -> None:
+        """Check 2: Flag product-centric writing patterns.
+
+        Detects 'allows/enables/lets/permits you' constructions and
+        suggests rewriting to focus on the user's action.
+        """
+        for match in _PRODUCT_CENTRIC_RE.finditer(sent.text):
+            found = match.group(0)
+            verb = match.group(1)
+            error = self._create_error(
+                sentence=sent.text,
+                sentence_index=idx,
+                message=(
+                    f"Product-centric writing: rewrite '{found}' "
+                    f"to focus on the user's action "
+                    f"(e.g., 'You can ...' instead of '... {verb} you to ...')."
+                ),
+                suggestions=[
+                    f"Rewrite to focus on the user: "
+                    f"'You can ...' instead of '... {verb} you to ...'"
+                ],
+                severity='low',
+                text=text,
+                context=context,
+                flagged_text=found,
+                span=(
+                    sent.start_char + match.start(),
+                    sent.start_char + match.end(),
+                ),
+            )
+            if error:
+                errors.append(error)

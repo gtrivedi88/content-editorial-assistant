@@ -4,16 +4,17 @@ IBM Style Guide (p. 184-192): Highlighting and emphasis.
 
 Checks:
   1. Do not use all uppercase letters for emphasis (use italic instead).
+  2. Unformatted camelCase identifiers in prose — should use backticks.
   3. Do not wrap inline code in bold or italic — use monospace only.
-
-Check 2 (bold vs italic misuse) is skipped — too context-dependent
-without markup parsing.
 
 Very conservative: only flags obvious all-caps emphasis words.
 Guards: skip known acronyms (<=5 chars), skip headings, skip code blocks.
 """
+import os
 import re
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Set
+
+import yaml
 
 from rules.base_rule import in_code_range
 from .base_structure_rule import BaseStructureRule
@@ -42,6 +43,25 @@ _KNOWN_ACRONYMS = frozenset([
     'IMPORTANT', 'WARNING', 'CAUTION', 'DANGER', 'ATTENTION',
     'TIP', 'RESTRICTION', 'REQUIREMENT', 'EXCEPTION', 'REMEMBER',
 ])
+
+# Check 2: camelCase identifiers that should be in backticks
+_CAMEL_CASE_RE = re.compile(r'\b[a-z]+[A-Z]\w*\b')
+
+
+def _load_camelcase_exceptions() -> Set[str]:
+    """Load camelCase exception terms from YAML config."""
+    config_path = os.path.join(
+        os.path.dirname(__file__), 'config', 'camelcase_exceptions.yaml',
+    )
+    try:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config = yaml.safe_load(f) or {}
+            return set(config.get('exceptions', []))
+    except (FileNotFoundError, yaml.YAMLError):
+        return set()
+
+
+_CAMELCASE_EXCEPTIONS: Set[str] = _load_camelcase_exceptions()
 
 
 def _is_surrounded_by_lowercase(text: str, start: int, end: int) -> bool:
@@ -81,6 +101,9 @@ class HighlightingRule(BaseStructureRule):
         for idx, sentence in enumerate(sentences):
             sent_start = text.find(sentence)
             self._check_all_caps_emphasis(
+                sentence, idx, text, context, code_ranges, sent_start, errors
+            )
+            self._check_camel_case(
                 sentence, idx, text, context, code_ranges, sent_start, errors
             )
         # Check 3: bold or italic wrapping inline code
@@ -126,6 +149,50 @@ class HighlightingRule(BaseStructureRule):
             )
             if error:
                 errors.append(error)
+
+    # ------------------------------------------------------------------
+    # Check 2 — camelCase identifiers in prose
+    # ------------------------------------------------------------------
+    def _check_camel_case(
+        self, sentence, idx, text, context, code_ranges, sent_start, errors
+    ):
+        """Flag unformatted camelCase identifiers in prose.
+
+        camelCase words (lowercase first letter + uppercase interior)
+        are almost always code identifiers that should be wrapped in
+        backticks for monospace formatting.
+
+        Builds the error dict directly to bypass the base-class
+        ``_is_technical_content()`` guard, which intentionally classifies
+        camelCase as technical content to protect other rules.
+        """
+        for match in _CAMEL_CASE_RE.finditer(sentence):
+            abs_pos = sent_start + match.start() if sent_start >= 0 else -1
+            if abs_pos >= 0 and in_code_range(abs_pos, code_ranges):
+                continue
+            word = match.group(0)
+            if word in _CAMELCASE_EXCEPTIONS:
+                continue
+
+            citation = self._ibm_style_citation or ''
+            msg = (
+                f"Wrap '{word}' in backticks for monospace formatting. "
+                "CamelCase identifiers in prose should use code formatting."
+            )
+            if citation and 'IBM Style' not in msg:
+                msg = f"{msg} Per {citation}."
+
+            errors.append({
+                'type': self.rule_type,
+                'message': msg,
+                'suggestions': [f'`{word}`'],
+                'sentence': sentence,
+                'sentence_index': idx,
+                'severity': 'low',
+                'style_guide_citation': citation,
+                'flagged_text': word,
+                'span': (match.start(), match.end()),
+            })
 
     # ------------------------------------------------------------------
     # Check 3 — bold/italic wrapping inline code

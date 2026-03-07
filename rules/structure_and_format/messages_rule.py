@@ -26,6 +26,9 @@ _SKIP_BLOCKS = frozenset([
     'code_block', 'listing', 'literal', 'inline_code',
 ])
 
+# Quoted text ranges — content inside quotes is UI/output text, not prose
+_QUOTED_RE = re.compile(r'"[^"]*"|\'[^\']*\'')
+
 # "please" at word boundary, case-insensitive
 _PLEASE_RE = re.compile(r'\bplease\b', re.IGNORECASE)
 
@@ -94,28 +97,43 @@ class MessagesRule(BaseStructureRule):
         errors: List[Dict[str, Any]] = []
         for idx, sentence in enumerate(sentences):
             sent_start = text.find(sentence)
-            self._check_exaggerated(sentence, idx, text, context, code_ranges, sent_start, errors)
-            self._check_casual(sentence, idx, text, context, code_ranges, sent_start, errors)
-            self._check_please(sentence, idx, text, context, code_ranges, sent_start, errors)
-            self._check_blaming(sentence, idx, text, context, code_ranges, sent_start, errors)
-            self._check_success(sentence, idx, text, context, code_ranges, sent_start, errors)
-            self._check_preambles(sentence, idx, text, context, code_ranges, sent_start, errors)
+            quoted = [(m.start(), m.end()) for m in _QUOTED_RE.finditer(sentence)]
+            self._check_exaggerated(sentence, idx, text, context, code_ranges, sent_start, quoted, errors)
+            self._check_casual(sentence, idx, text, context, code_ranges, sent_start, quoted, errors)
+            self._check_please(sentence, idx, text, context, code_ranges, sent_start, quoted, errors)
+            self._check_blaming(sentence, idx, text, context, code_ranges, sent_start, quoted, errors)
+            self._check_success(sentence, idx, text, context, code_ranges, sent_start, quoted, errors)
+            self._check_preambles(sentence, idx, text, context, code_ranges, sent_start, quoted, errors)
         return errors
+
+    @staticmethod
+    def _in_quoted_range(pos: int, quoted_ranges: List[tuple]) -> bool:
+        """Return True if *pos* falls inside any quoted text range."""
+        return any(qs <= pos < qe for qs, qe in quoted_ranges)
 
     # ------------------------------------------------------------------
     # Check 1 — exaggerated adjectives
     # ------------------------------------------------------------------
-    def _check_exaggerated(self, sentence, idx, text, context, code_ranges, sent_start, errors):
+    @staticmethod
+    def _is_tech_context(found: str, sentence: str) -> bool:
+        """Return True if *found* is used in a legitimate technical context."""
+        lower = found.lower()
+        if lower == 'fatal' and _FATAL_TECH_RE.search(sentence):
+            return True
+        if lower == 'illegal' and _ILLEGAL_TECH_RE.search(sentence):
+            return True
+        return False
+
+    def _check_exaggerated(self, sentence, idx, text, context, code_ranges, sent_start, quoted, errors):
         for word, replacement in _EXAGGERATED.items():
             pattern = r'\b' + re.escape(word) + r'\b'
             for match in re.finditer(pattern, sentence, re.IGNORECASE):
                 if in_code_range(sent_start + match.start(), code_ranges):
                     continue
-                found = match.group(0)
-                # Guard: "fatal error" in technical context
-                if found.lower() == 'fatal' and _FATAL_TECH_RE.search(sentence):
+                if self._in_quoted_range(match.start(), quoted):
                     continue
-                if found.lower() == 'illegal' and _ILLEGAL_TECH_RE.search(sentence):
+                found = match.group(0)
+                if self._is_tech_context(found, sentence):
                     continue
                 error = self._create_error(
                     sentence=sentence,
@@ -140,11 +158,13 @@ class MessagesRule(BaseStructureRule):
     # ------------------------------------------------------------------
     # Check 2 — casual expressions
     # ------------------------------------------------------------------
-    def _check_casual(self, sentence, idx, text, context, code_ranges, sent_start, errors):
+    def _check_casual(self, sentence, idx, text, context, code_ranges, sent_start, quoted, errors):
         for expr in _CASUAL:
             pattern = r'\b' + re.escape(expr) + r'\b'
             for match in re.finditer(pattern, sentence, re.IGNORECASE):
                 if in_code_range(sent_start + match.start(), code_ranges):
+                    continue
+                if self._in_quoted_range(match.start(), quoted):
                     continue
                 found = match.group(0)
                 error = self._create_error(
@@ -167,9 +187,11 @@ class MessagesRule(BaseStructureRule):
     # ------------------------------------------------------------------
     # Check 3 — "please" in instructions
     # ------------------------------------------------------------------
-    def _check_please(self, sentence, idx, text, context, code_ranges, sent_start, errors):
+    def _check_please(self, sentence, idx, text, context, code_ranges, sent_start, quoted, errors):
         for match in _PLEASE_RE.finditer(sentence):
             if in_code_range(sent_start + match.start(), code_ranges):
+                continue
+            if self._in_quoted_range(match.start(), quoted):
                 continue
             error = self._create_error(
                 sentence=sentence,
@@ -191,13 +213,15 @@ class MessagesRule(BaseStructureRule):
     # ------------------------------------------------------------------
     # Check 4 — blaming the user
     # ------------------------------------------------------------------
-    def _check_blaming(self, sentence, idx, text, context, code_ranges, sent_start, errors):
+    def _check_blaming(self, sentence, idx, text, context, code_ranges, sent_start, quoted, errors):
         sentence_lower = sentence.lower()
         for phrase in _BLAMING:
             pos = sentence_lower.find(phrase.lower())
             if pos == -1:
                 continue
             if in_code_range(sent_start + pos, code_ranges):
+                continue
+            if self._in_quoted_range(pos, quoted):
                 continue
             found = sentence[pos:pos + len(phrase)]
             error = self._create_error(
@@ -220,13 +244,15 @@ class MessagesRule(BaseStructureRule):
     # ------------------------------------------------------------------
     # Check 5 — "Congratulations!" in success messages
     # ------------------------------------------------------------------
-    def _check_success(self, sentence, idx, text, context, code_ranges, sent_start, errors):
+    def _check_success(self, sentence, idx, text, context, code_ranges, sent_start, quoted, errors):
         sentence_lower = sentence.lower()
         for phrase in _SUCCESS:
             pos = sentence_lower.find(phrase.lower())
             if pos == -1:
                 continue
             if in_code_range(sent_start + pos, code_ranges):
+                continue
+            if self._in_quoted_range(pos, quoted):
                 continue
             found = sentence[pos:pos + len(phrase)]
             error = self._create_error(
@@ -249,10 +275,12 @@ class MessagesRule(BaseStructureRule):
     # ------------------------------------------------------------------
     # Check 6 — unnecessary preamble phrases
     # ------------------------------------------------------------------
-    def _check_preambles(self, sentence, idx, text, context, code_ranges, sent_start, errors):
+    def _check_preambles(self, sentence, idx, text, context, code_ranges, sent_start, quoted, errors):
         """Flag 'please note', 'be aware that', and similar preambles."""
         for match in _PREAMBLE_RE.finditer(sentence):
             if in_code_range(sent_start + match.start(), code_ranges):
+                continue
+            if self._in_quoted_range(match.start(), quoted):
                 continue
             found = match.group(0)
             error = self._create_error(

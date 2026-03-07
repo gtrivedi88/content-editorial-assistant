@@ -35,6 +35,7 @@ from .z_words_rule import ZWordsRule
 from .special_chars_rule import SpecialCharsRule
 from .simple_words_rule import SimpleWordsRule
 from .do_not_use_terms_rule import DoNotUseTermsRule
+from .pattern_terms_rule import PatternTermsRule
 from .product_names_rule import ProductNamesRule
 
 
@@ -69,5 +70,6 @@ __all__ = [
     'SpecialCharsRule',
     'SimpleWordsRule',
     'DoNotUseTermsRule',
+    'PatternTermsRule',
     'ProductNamesRule',
 ]

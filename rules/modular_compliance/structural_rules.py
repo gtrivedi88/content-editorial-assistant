@@ -8,7 +8,7 @@ Red Hat SSG and IBM Style Guide structural requirements.
 import logging
 import re
 import uuid
-from typing import Any
+from typing import Any, Optional
 
 from app.models.enums import IssueCategory, IssueSeverity
 from app.models.schemas import IssueResponse
@@ -39,7 +39,7 @@ def run_structural_rules(
     if not content_type:
         logger.debug("content_type is empty/unknown — procedure-specific rules will not fire")
 
-    issues.extend(_check_admonition_placement(content_blocks, original_text))
+    issues.extend(_check_admonition_placement(content_blocks))
     issues.extend(_check_where_list_specifies(content_blocks, original_text))
     issues.extend(_check_heading_level_skip(content_blocks, original_text))
     issues.extend(_check_prerequisites_position(content_blocks, original_text, content_type))
@@ -75,9 +75,46 @@ def run_structural_rules(
 # ---------------------------------------------------------------------------
 
 
+def _make_admonition_issue(
+    block: Any,
+    message: str,
+    suggestions: list[str],
+) -> IssueResponse:
+    """Build an ``admonition_placement`` issue for a misplaced admonition."""
+    admonition_text = (block.content or "")[:80]
+    return IssueResponse(
+        id=str(uuid.uuid4()),
+        source="deterministic",
+        category=IssueCategory.STRUCTURE,
+        rule_name="admonition_placement",
+        message=message,
+        severity=IssueSeverity.HIGH,
+        flagged_text=admonition_text,
+        sentence=admonition_text,
+        sentence_index=0,
+        suggestions=suggestions,
+        span=[block.start_pos, block.start_pos + len(admonition_text)],
+        confidence=0.95,
+    )
+
+
+_ADMONITION_SKIP_TYPES = frozenset([
+    "attribute_entry", "comment", "block_title",
+])
+
+_ABSTRACT_TYPES = frozenset(["paragraph", "preamble"])
+
+
+def _is_section_heading(block: Any) -> bool:
+    """Return True if *block* is a real section heading (not a block title)."""
+    return (
+        block.block_type == "heading"
+        and getattr(block, "level", 1) != 0
+    )
+
+
 def _check_admonition_placement(
     blocks: list,
-    original_text: str,
 ) -> list[IssueResponse]:
     """Flag admonitions that appear before the first paragraph (abstract).
 
@@ -89,81 +126,51 @@ def _check_admonition_placement(
     a paragraph (the abstract), not an admonition. Also catches
     document fragments that start with an admonition before any title.
     """
-    issues: list[IssueResponse] = []
     found_heading = False
-    found_paragraph_after_heading = False
+    found_abstract = False
 
     for block in blocks:
-        # Pre-heading admonition: module starts with admonition before title
-        if not found_heading and block.block_type == "admonition":
-            admonition_text = (block.content or "")[:80]
-            issues.append(IssueResponse(
-                id=str(uuid.uuid4()),
-                source="deterministic",
-                category=IssueCategory.STRUCTURE,
-                rule_name="admonition_placement",
-                message=(
-                    "Do not start a module with an admonition. A title and "
-                    "short description (abstract) must appear before the "
-                    "first admonition. (Red Hat SSG)"
-                ),
-                severity=IssueSeverity.HIGH,
-                flagged_text=admonition_text,
-                sentence=admonition_text,
-                sentence_index=0,
-                suggestions=[
-                    "Add a title and short description paragraph before "
-                    "this admonition.",
-                ],
-                span=[block.start_pos, block.start_pos + len(admonition_text)],
-                confidence=0.95,
-            ))
-            return issues  # One flag is enough
+        if block.block_type == "admonition":
+            issue = _check_admonition_block(block, found_heading, found_abstract)
+            if issue is not None:
+                return [issue]
+            continue
 
-        if block.block_type == "heading":
+        if _is_section_heading(block):
             found_heading = True
-            found_paragraph_after_heading = False
-            continue
+            found_abstract = False
+        elif found_heading and block.block_type in _ABSTRACT_TYPES:
+            found_abstract = True
 
-        if not found_heading:
-            continue
+    return []
 
-        # Skip non-content blocks (block titles, attributes, etc.)
-        if block.block_type in ("attribute_entry", "comment", "block_title"):
-            continue
 
-        if block.block_type == "paragraph":
-            found_paragraph_after_heading = True
-            continue
-
-        if block.block_type == "admonition" and not found_paragraph_after_heading:
-            # Admonition appears before any paragraph after heading
-            admonition_text = (block.content or "")[:80]
-            issues.append(IssueResponse(
-                id=str(uuid.uuid4()),
-                source="deterministic",
-                category=IssueCategory.STRUCTURE,
-                rule_name="admonition_placement",
-                message=(
-                    "Do not start a module with an admonition. Include a "
-                    "short description (abstract) between the title and the "
-                    "first admonition. (Red Hat SSG)"
-                ),
-                severity=IssueSeverity.HIGH,
-                flagged_text=admonition_text,
-                sentence=admonition_text,
-                sentence_index=0,
-                suggestions=[
-                    "Add a short description paragraph before this admonition.",
-                    "The abstract should describe WHAT the user will do and "
-                    "WHY it matters.",
-                ],
-                span=[block.start_pos, block.start_pos + len(admonition_text)],
-                confidence=0.95,
-            ))
-            break  # Only flag the first occurrence per heading
-
-    return issues
+def _check_admonition_block(
+    block: Any,
+    found_heading: bool,
+    found_abstract: bool,
+) -> Optional[IssueResponse]:
+    """Return an issue if *block* is a misplaced admonition, else None."""
+    if not found_heading:
+        return _make_admonition_issue(
+            block,
+            "Do not start a module with an admonition. A title and "
+            "short description (abstract) must appear before the "
+            "first admonition. (Red Hat SSG)",
+            ["Add a title and short description paragraph before "
+             "this admonition."],
+        )
+    if not found_abstract:
+        return _make_admonition_issue(
+            block,
+            "Do not start a module with an admonition. Include a "
+            "short description (abstract) between the title and the "
+            "first admonition. (Red Hat SSG)",
+            ["Add a short description paragraph before this admonition.",
+             "The abstract should describe WHAT the user will do and "
+             "WHY it matters."],
+        )
+    return None
 
 
 # ---------------------------------------------------------------------------

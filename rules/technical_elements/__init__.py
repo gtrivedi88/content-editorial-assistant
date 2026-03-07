@@ -28,9 +28,11 @@ from .mouse_buttons_rule import MouseButtonsRule
 from .programming_elements_rule import ProgrammingElementsRule
 from .ui_elements_rule import UIElementsRule
 from .web_addresses_rule import WebAddressesRule
+from .case_sensitive_terms_rule import CaseSensitiveTermsRule
 
 __all__ = [
     'BaseTechnicalRule',
+    'CaseSensitiveTermsRule',
     'CodeExamplesRule',
     'CommandLineEntryRule',
     'CommandSyntaxRule',

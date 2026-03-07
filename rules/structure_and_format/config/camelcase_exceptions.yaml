@@ -1,0 +1,58 @@
+# CamelCase Detection Exceptions
+# Product names, technical terms, and identifiers that legitimately
+# use camelCase in prose without needing backtick formatting.
+#
+# Only camelCase patterns (lowercase first letter + uppercase interior)
+# are checked. PascalCase (uppercase first letter) is deferred to LLM
+# due to high FP risk from product names.
+
+exceptions:
+  # The term itself
+  - camelCase
+
+  # Virtual/v-prefixed product terms
+  - vCPU
+  - vCPUs
+  - vCenter
+  - vDisk
+  - vGPU
+  - vGPUs
+  - vHost
+  - vSphere
+  - vSwitch
+  - vLLM
+
+  # e-prefixed product terms
+  - eServer
+  - eXpress
+  - eXtenSion
+
+  # x-prefixed product terms
+  - xPaaS
+
+  # Technical terms used as proper nouns
+  - objectClass
+  - relaxngDatatype
+  - kBps
+  - libOSMesa
+  - libXNVCtrl
+
+  # Common JavaScript/TypeScript identifiers used as proper terms
+  - getElementById
+  - querySelector
+  - forEach
+  - innerHTML
+  - textContent
+  - className
+  - addEventListener
+  - setTimeout
+  - setInterval
+  - XMLHttpRequest
+
+  # Well-known tools/libraries used without backticks
+  - iPXE
+  - iPhone
+  - iPad
+  - iSCSI
+  - iSeries
+  - iTerm

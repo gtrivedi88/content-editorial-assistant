@@ -58,6 +58,8 @@ rule_priorities:
     - word_usage_y
     - word_usage_z
     - word_usage_special
+    - word_usage_pattern
+    - case_sensitive_terms
     - terminology
     - possessives
     - plurals
@@ -180,6 +182,7 @@ block_type_rules:
     - product_names
     - compound_words
     - repeated_words
+    - case_sensitive_terms
 
   # Section blocks - Similar to headings but allow more content rules
   section:
@@ -311,6 +314,7 @@ block_type_rules:
     - word_usage_y
     - word_usage_z
     - word_usage_special
+    - word_usage_pattern
 
     # VALE-SOURCED RULES
     - simple_words
@@ -321,6 +325,7 @@ block_type_rules:
     - using_clarity
     - oxford_comma
     - definitions
+    - case_sensitive_terms
 
   # ===============================================================
   # SPECIALIZED CONTENT BLOCKS
@@ -449,6 +454,7 @@ block_type_rules:
     - word_usage_y
     - word_usage_z
     - word_usage_special
+    - word_usage_pattern
 
     # Vale-sourced rules
     - simple_words
@@ -457,6 +463,7 @@ block_type_rules:
     - compound_words
     - repeated_words
     - using_clarity
+    - case_sensitive_terms
 
   # Ordered list items - Additional procedure focus
   list_item_ordered:
@@ -485,6 +492,7 @@ block_type_rules:
     - product_names
     - compound_words
     - repeated_words
+    - case_sensitive_terms
 
   # Unordered list items - Focus on parallel structure
   list_item_unordered:
@@ -529,11 +537,13 @@ block_type_rules:
     - word_usage_y
     - word_usage_z
     - word_usage_special
+    - word_usage_pattern
     - simple_words
     - do_not_use
     - product_names
     - compound_words
     - repeated_words
+    - case_sensitive_terms
 
   # List titles and containers
   list_title:
@@ -663,6 +673,8 @@ block_type_rules:
     - word_usage_y
     - word_usage_z
     - word_usage_special
+    - word_usage_pattern
+    - case_sensitive_terms
 
   # ===============================================================
   # SPECIAL CONTENT BLOCKS
@@ -971,7 +983,9 @@ performance_settings:
     - word_usage_y
     - word_usage_z
     - word_usage_special
-  
+    - word_usage_pattern
+    - case_sensitive_terms
+
   # Rules that must run sequentially (dependencies)
   sequential_execution:
     - spelling  # Run first to clean up obvious errors
