@@ -1,0 +1,289 @@
+# Spelling Allowlist — Technical terms not in standard English dictionaries
+#
+# LanguageTool's MORFOLOGIK_RULE_EN_US dictionary spellchecker flags these
+# terms as misspellings.  Rather than blanket-disabling MORFOLOGIK (which
+# would miss genuine typos like "aplication"), CEA checks flagged words
+# against this allowlist and drops matches on recognized domain terms.
+#
+# Guidelines for adding entries:
+#   - Lowercase only (the lookup lowercases the flagged text before checking)
+#   - Single words only (multi-word phrases won't be flagged as one MORFOLOGIK match)
+#   - Do NOT add words that are in standard English dictionaries
+#   - Include plural/variant forms explicitly (e.g., "configmap" AND "configmaps")
+#   - Alphabetical order within each section for easy maintenance
+#
+# Sources:
+#   - Red Hat Supplementary Style Guide product name list
+#   - case_sensitive_terms_config.yaml (590 entries)
+#   - Red Hat / OpenShift / Kubernetes official documentation glossaries
+#   - LanguageTool false positive observations from CEA testing
+
+terms:
+  # -----------------------------------------------------------------------
+  # Red Hat products and projects
+  # -----------------------------------------------------------------------
+  - amq
+  - ansible
+  - applixware
+  - asciidoc
+  - asciidoctor
+  - bootc
+  - bootimage
+  - bootloader
+  - bootupd
+  - buildah
+  - ceph
+  - cephfs
+  - cfme
+  - coreos
+  - crio
+  - crictl
+  - devworkspace
+  - eap
+  - fcos
+  - greenboot
+  - graalvm
+  - jbang
+  - jboss
+  - knowledgebase
+  - lightspeed
+  - microshift
+  - minishift
+  - operatorhub
+  - openshift
+  - openrewrite
+  - overcloud
+  - podman
+  - quarkus
+  - redfish
+  - resteasy
+  - rhcos
+  - rhel
+  - shadowman
+  - skopeo
+  - smallrye
+  - softirq
+  - undercloud
+  - wildfly
+
+  # -----------------------------------------------------------------------
+  # Kubernetes / container ecosystem
+  # -----------------------------------------------------------------------
+  - buildconfig
+  - buildconfigs
+  - configmap
+  - configmaps
+  - containerd
+  - daemonset
+  - daemonsets
+  - dockerfiles
+  - etcd
+  - imagestream
+  - imagestreams
+  - kubeadm
+  - kubeconfig
+  - kubectl
+  - kubelet
+  - kubernetes
+  - kustomize
+  - machineconfig
+  - machineconfigs
+  - machineset
+  - machinesets
+  - replicaset
+  - replicasets
+  - statefulset
+  - statefulsets
+  - deploymentconfig
+  - deploymentconfigs
+
+  # -----------------------------------------------------------------------
+  # Linux / system / networking
+  # -----------------------------------------------------------------------
+  - btrfs
+  - cgroup
+  - cgroups
+  - chrony
+  - coredump
+  - devops
+  - diskdruid
+  - dracut
+  - firewalld
+  - flatpak
+  - flathub
+  - grub
+  - grubby
+  - hyperthreading
+  - ipsec
+  - journald
+  - kbase
+  - keystore
+  - keystores
+  - kickstart
+  - kvm
+  - ldaps
+  - librados
+  - librbd
+  - logind
+  - mkinitrd
+  - mtls
+  - namespaced
+  - netfilter
+  - networkd
+  - ostree
+  - ostreecommit
+  - powerpc
+  - ramdisk
+  - seccomp
+  - selinux
+  - smartnic
+  - softirqs
+  - starttls
+  - stateroot
+  - stateroots
+  - sysctl
+  - systemctl
+  - systemd
+  - tmpfiles
+  - tmpfs
+  - udev
+  - vlan
+  - vlans
+  - vnic
+  - vnics
+  - vnuma
+  - vxlan
+
+  # -----------------------------------------------------------------------
+  # Programming languages / runtimes / tools
+  # -----------------------------------------------------------------------
+  - clojure
+  - dotnet
+  - erlang
+  - fortran
+  - golang
+  - grpc
+  - gtk
+  - javadoc
+  - javadocs
+  - junit
+  - microprofile
+  - mongodb
+  - mysql
+  - nodejs
+  - nvidia
+  - posix
+  - powershell
+  - redis
+  - samba
+  - sqlite
+  - subversion
+  - webauthn
+  - websocket
+  - websockets
+  - xterm
+
+  # -----------------------------------------------------------------------
+  # Automation / CI-CD / config management
+  # -----------------------------------------------------------------------
+  - playbook
+  - playbooks
+  - runbook
+  - runbooks
+  - tekton
+
+  # -----------------------------------------------------------------------
+  # Virtualization / cloud
+  # -----------------------------------------------------------------------
+  - hypervisor
+  - hypervisors
+  - vcpu
+  - vcpus
+  - vdsm
+
+  # -----------------------------------------------------------------------
+  # Observability / monitoring
+  # -----------------------------------------------------------------------
+  - grafana
+  - jaeger
+  - prometheus
+  - thanos
+
+  # -----------------------------------------------------------------------
+  # File formats / protocols / standards
+  # -----------------------------------------------------------------------
+  - cidr
+  - dita
+  - exif
+  - fqdn
+  - grpc
+  - iso
+  - ldap
+  - iscsi
+  - objectclass
+  - oci
+  - posix
+  - protobuf
+  - spice
+  - sssd
+  - syslog
+
+  # -----------------------------------------------------------------------
+  # General technical terms common in docs
+  # -----------------------------------------------------------------------
+  - autoscaler
+  - autoscaling
+  - backend
+  - backends
+  - backport
+  - backported
+  - backports
+  - blocklist
+  - blocklisted
+  - blocklists
+  - customizable
+  - deprovisioned
+  - deprovisioning
+  - failback
+  - failover
+  - failovers
+  - hotfix
+  - hotfixes
+  - lifecycle
+  - liveness
+  - loadbalancer
+  - loadbalancers
+  - middleware
+  - multicluster
+  - multicloud
+  - multinode
+  - multitenancy
+  - multitenant
+  - namespace
+  - namespaces
+  - offboarding
+  - onboarding
+  - prereq
+  - prereqs
+  - readiness
+  - rebalance
+  - rebalancing
+  - repo
+  - repos
+  - rollback
+  - rollbacks
+  - runtime
+  - runtimes
+  - sidecar
+  - sidecars
+  - webhook
+  - webhooks
+  - workaround
+  - workarounds
+
+  # -----------------------------------------------------------------------
+  # IDE / editor terms
+  # -----------------------------------------------------------------------
+  - jetbrains
+  - vscode
+  - xemacs

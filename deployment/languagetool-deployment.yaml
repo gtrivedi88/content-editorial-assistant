@@ -1,0 +1,58 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: languagetool
+  labels:
+    app: languagetool
+    app.kubernetes.io/name: languagetool
+    app.kubernetes.io/component: grammar-checker
+    app.kubernetes.io/part-of: cea
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: languagetool
+  template:
+    metadata:
+      labels:
+        app: languagetool
+    spec:
+      containers:
+        - name: languagetool
+          image: quay.io/rhdeveldocs/languagetool:latest
+          ports:
+            - containerPort: 8010
+              protocol: TCP
+          env:
+            - name: Java_Xms
+              value: "512m"
+            - name: Java_Xmx
+              value: "3g"
+            - name: langtool_languageModel
+              value: ""
+            - name: langtool_fasttextModel
+              value: ""
+          resources:
+            requests:
+              memory: "2Gi"
+              cpu: "500m"
+            limits:
+              memory: "4Gi"
+              cpu: "2"
+          livenessProbe:
+            httpGet:
+              path: /v2/languages
+              port: 8010
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /v2/languages
+              port: 8010
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3

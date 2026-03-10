@@ -23,6 +23,8 @@ from app.services.analysis.merger import (
     _has_valid_span,
     _is_duplicate,
     _is_span_duplicate,
+    _merge_lt_tier,
+    _merge_llm_tier,
     _normalize_text,
     _span_crosses_block_boundary,
     _words_overlap,
@@ -957,3 +959,250 @@ class TestBroadCategory:
     def test_technical_vs_language_are_different(self) -> None:
         """TECHNICAL and STYLE are in different broad categories."""
         assert _broad_category(IssueCategory.TECHNICAL) != _broad_category(IssueCategory.STYLE)
+
+
+# ---------------------------------------------------------------------------
+# Three-tier merge: deterministic > LanguageTool > LLM
+# ---------------------------------------------------------------------------
+
+
+class TestThreeTierMerge:
+    """Tests for 3-tier merge hierarchy with LanguageTool (Tier 2)."""
+
+    def test_three_tier_all_unique(self) -> None:
+        """All three tiers with non-overlapping issues are all kept."""
+        det = _make_issue(
+            source="deterministic",
+            flagged_text="utilize",
+            span=[10, 17],
+            category=IssueCategory.WORD_USAGE,
+        )
+        lt = _make_issue(
+            source="languagetool",
+            flagged_text="their going",
+            span=[50, 61],
+            category=IssueCategory.GRAMMAR,
+        )
+        llm = _make_issue(
+            source="llm",
+            flagged_text="very unique",
+            span=[100, 111],
+            confidence=0.9,
+            category=IssueCategory.STYLE,
+        )
+        result = merge([det], [llm], lt_issues=[lt])
+        assert len(result) == 3
+
+    def test_lt_deduped_against_deterministic(self) -> None:
+        """LT issue overlapping a deterministic issue (same category) is dropped."""
+        det = _make_issue(
+            source="deterministic",
+            flagged_text="utilize",
+            span=[10, 17],
+            category=IssueCategory.WORD_USAGE,
+        )
+        lt = _make_issue(
+            source="languagetool",
+            flagged_text="utilize",
+            span=[10, 17],
+            category=IssueCategory.GRAMMAR,
+        )
+        result = merge([det], [], lt_issues=[lt])
+        assert len(result) == 1
+        assert result[0].source == "deterministic"
+
+    def test_llm_deduped_against_lt(self) -> None:
+        """LLM issue overlapping an LT issue (same category) is dropped."""
+        lt = _make_issue(
+            source="languagetool",
+            flagged_text="their going",
+            span=[50, 61],
+            category=IssueCategory.GRAMMAR,
+        )
+        llm = _make_issue(
+            source="llm",
+            flagged_text="their going to",
+            span=[50, 64],
+            confidence=0.9,
+            category=IssueCategory.GRAMMAR,
+        )
+        result = merge([], [llm], lt_issues=[lt])
+        assert len(result) == 1
+        assert result[0].source == "languagetool"
+
+    def test_lt_survives_different_category(self) -> None:
+        """LT issue with different broad category than deterministic survives."""
+        det = _make_issue(
+            source="deterministic",
+            flagged_text="ostree",
+            span=[100, 106],
+            category=IssueCategory.TECHNICAL,
+        )
+        lt = _make_issue(
+            source="languagetool",
+            flagged_text="ostree",
+            span=[100, 106],
+            category=IssueCategory.GRAMMAR,
+        )
+        result = merge([det], [], lt_issues=[lt])
+        assert len(result) == 2
+
+    def test_cross_category_all_survive(self) -> None:
+        """LT grammar + LLM audience on the same span both survive."""
+        det = _make_issue(
+            source="deterministic",
+            flagged_text="ostree",
+            span=[100, 106],
+            category=IssueCategory.TECHNICAL,
+        )
+        lt = _make_issue(
+            source="languagetool",
+            flagged_text="ostree",
+            span=[100, 106],
+            category=IssueCategory.GRAMMAR,
+        )
+        llm = _make_issue(
+            source="llm",
+            flagged_text="ostree",
+            span=[100, 106],
+            confidence=0.9,
+            category=IssueCategory.AUDIENCE,
+        )
+        result = merge([det], [llm], lt_issues=[lt])
+        # All three are different broad categories: technical, language, audience
+        assert len(result) == 3
+
+    def test_lt_cross_block_demotion(self) -> None:
+        """LT issue crossing a block boundary gets suggestions cleared."""
+        blocks = [
+            _make_block(0, 100, "paragraph"),
+            _make_block(100, 200, "code"),
+        ]
+        lt = _make_issue(
+            source="languagetool",
+            flagged_text="text crossing boundary",
+            span=[90, 110],
+            suggestions=["fixed text"],
+            category=IssueCategory.GRAMMAR,
+        )
+        result = merge([], [], blocks=blocks, lt_issues=[lt])
+        assert len(result) == 1
+        assert result[0].suggestions == []
+
+    def test_lt_none_treated_as_empty(self) -> None:
+        """Passing lt_issues=None behaves like an empty list."""
+        det = _make_issue(span=[10, 20])
+        result = merge([det], [], lt_issues=None)
+        assert len(result) == 1
+
+
+# ---------------------------------------------------------------------------
+# _merge_lt_tier() helper
+# ---------------------------------------------------------------------------
+
+
+class TestMergeLtTier:
+    """Tests for the _merge_lt_tier() helper function."""
+
+    def test_all_unique_lt_accepted(self) -> None:
+        """LT issues with no deterministic overlap are all accepted."""
+        det = _make_issue(
+            flagged_text="utilize", span=[10, 17],
+            category=IssueCategory.WORD_USAGE,
+        )
+        lt_a = _make_issue(
+            source="languagetool", flagged_text="their",
+            span=[50, 55], category=IssueCategory.GRAMMAR,
+        )
+        lt_b = _make_issue(
+            source="languagetool", flagged_text="alot",
+            span=[80, 84], category=IssueCategory.GRAMMAR,
+        )
+        accepted, kept, skipped = _merge_lt_tier([lt_a, lt_b], [det], [])
+        assert kept == 2
+        assert skipped == 0
+        assert len(accepted) == 2
+
+    def test_duplicate_lt_skipped(self) -> None:
+        """LT issue duplicating a deterministic issue is skipped."""
+        det = _make_issue(
+            flagged_text="utilize",
+            span=[10, 17],
+            category=IssueCategory.WORD_USAGE,
+        )
+        lt = _make_issue(
+            source="languagetool",
+            flagged_text="utilize",
+            span=[10, 17],
+            category=IssueCategory.STYLE,
+        )
+        accepted, kept, skipped = _merge_lt_tier([lt], [det], [])
+        assert kept == 0
+        assert skipped == 1
+        assert len(accepted) == 0
+
+    def test_lt_to_lt_dedup_within_tier(self) -> None:
+        """Two LT issues with same text are deduped within Tier 2."""
+        lt_a = _make_issue(
+            source="languagetool",
+            flagged_text="their going",
+            span=[50, 61],
+            category=IssueCategory.GRAMMAR,
+        )
+        lt_b = _make_issue(
+            source="languagetool",
+            flagged_text="their going",
+            span=[50, 61],
+            category=IssueCategory.GRAMMAR,
+        )
+        _, kept, skipped = _merge_lt_tier([lt_a, lt_b], [], [])
+        assert kept == 1
+        assert skipped == 1
+
+
+# ---------------------------------------------------------------------------
+# _merge_llm_tier() with LT in priority pool
+# ---------------------------------------------------------------------------
+
+
+class TestMergeLlmTierWithLt:
+    """Tests for _merge_llm_tier() when LT issues are in the priority pool."""
+
+    def test_llm_deduped_against_lt_in_pool(self) -> None:
+        """LLM issue with same text as LT in priority pool is dropped."""
+        lt = _make_issue(
+            source="languagetool",
+            flagged_text="their going",
+            span=[50, 61],
+            category=IssueCategory.GRAMMAR,
+        )
+        llm = _make_issue(
+            source="llm",
+            flagged_text="their going",
+            span=[50, 61],
+            confidence=0.9,
+            category=IssueCategory.GRAMMAR,
+        )
+        # Priority pool = deterministic + accepted LT
+        _, kept, stats = _merge_llm_tier([llm], [lt], 0.7, [])
+        assert kept == 0
+        assert stats["skipped_overlap"] == 1
+
+    def test_llm_survives_different_category_from_lt(self) -> None:
+        """LLM with different broad category from LT survives."""
+        lt = _make_issue(
+            source="languagetool",
+            flagged_text="ostree",
+            span=[100, 106],
+            category=IssueCategory.GRAMMAR,
+        )
+        llm = _make_issue(
+            source="llm",
+            flagged_text="ostree",
+            span=[100, 106],
+            confidence=0.9,
+            category=IssueCategory.AUDIENCE,
+        )
+        _, kept, stats = _merge_llm_tier([llm], [lt], 0.7, [])
+        assert kept == 1
+        assert stats["skipped_overlap"] == 0

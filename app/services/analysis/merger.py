@@ -34,38 +34,135 @@ def merge(
     llm_issues: list[IssueResponse],
     confidence_threshold: float = 0.7,
     blocks: list | None = None,
+    lt_issues: list[IssueResponse] | None = None,
 ) -> list[IssueResponse]:
-    """Merge deterministic and LLM issues with deduplication.
+    """Merge issues from all tiers with category-aware deduplication.
 
-    Deterministic issues always take priority. LLM issues are included
-    only if their confidence meets the threshold and they are not
-    duplicates of any deterministic issue or previously accepted LLM
-    issue.
+    Three-tier priority hierarchy:
+    1. **Deterministic** (Tier 1) — always accepted, highest priority.
+    2. **LanguageTool** (Tier 2) — accepted unless duplicate of Tier 1.
+    3. **LLM** (Tier 3) — accepted unless duplicate of Tier 1 or 2.
 
-    When ``blocks`` are provided, LLM issues that span across block
-    boundaries are demoted (suggestion disabled) to prevent DOM errors.
+    Deduplication is category-aware: only issues in the same broad
+    editorial group are considered duplicates.
+
+    When ``blocks`` are provided, issues from Tier 2 and 3 that span
+    across block boundaries are demoted (suggestions disabled).
 
     Args:
         deterministic: Issues from the deterministic rules engine.
         llm_issues: Issues from the LLM analysis passes.
         confidence_threshold: Minimum confidence for LLM issues.
         blocks: Optional list of Block objects for cross-block safety.
+        lt_issues: Issues from LanguageTool (Tier 2, optional).
 
     Returns:
         Merged, deduplicated list sorted by sentence_index then span[0].
     """
-    if not llm_issues:
-        return _sort_issues(deterministic)
-
-    accepted = list(deterministic)
-    accepted_llm: list[IssueResponse] = []
+    if lt_issues is None:
+        lt_issues = []
 
     block_boundaries = _extract_block_boundaries(blocks) if blocks else []
 
-    # Deduplicate LLM issues against each other first (granular vs global)
+    # Tier 1: Deterministic issues always accepted
+    accepted = list(deterministic)
+
+    # Tier 2: LanguageTool issues — dedup against deterministic
+    accepted_lt, lt_kept, lt_skipped = _merge_lt_tier(
+        lt_issues, deterministic, block_boundaries,
+    )
+    accepted.extend(accepted_lt)
+
+    # Tier 3: LLM issues — dedup against deterministic + LT
+    if not llm_issues:
+        if lt_kept or lt_skipped:
+            logger.info(
+                "Merge: %d deterministic + %d LT kept (%d LT overlapping)",
+                len(deterministic), lt_kept, lt_skipped,
+            )
+        return _sort_issues(accepted)
+
+    priority_pool = list(deterministic) + accepted_lt
+    accepted_llm, kept, stats = _merge_llm_tier(
+        llm_issues, priority_pool, confidence_threshold, block_boundaries,
+    )
+    accepted.extend(accepted_llm)
+
+    logger.info(
+        "Merge: %d deterministic + %d LT kept + %d LLM kept "
+        "(%d LT overlapping, %d below threshold, %d LLM overlapping, "
+        "%d LLM-to-LLM deduped)",
+        len(deterministic), lt_kept, kept, lt_skipped,
+        stats["skipped_confidence"], stats["skipped_overlap"],
+        stats["llm_deduped"],
+    )
+
+    return _sort_issues(accepted)
+
+
+# ---------------------------------------------------------------------------
+# Tier merge helpers
+# ---------------------------------------------------------------------------
+
+
+def _merge_lt_tier(
+    lt_issues: list[IssueResponse],
+    deterministic: list[IssueResponse],
+    block_boundaries: list[int],
+) -> tuple[list[IssueResponse], int, int]:
+    """Merge LanguageTool issues (Tier 2) against deterministic (Tier 1).
+
+    Args:
+        lt_issues: LanguageTool issues to merge.
+        deterministic: Tier 1 issues for duplicate checking.
+        block_boundaries: Block end positions for cross-block demotion.
+
+    Returns:
+        Tuple of (accepted_lt, kept_count, skipped_count).
+    """
+    accepted_lt: list[IssueResponse] = []
+    kept = 0
+    skipped = 0
+
+    for issue in lt_issues:
+        if _is_duplicate(issue, deterministic, accepted_lt):
+            skipped += 1
+            continue
+        if block_boundaries and _span_crosses_block_boundary(
+            issue.span, block_boundaries,
+        ):
+            issue.suggestions = []
+            logger.debug("Demoted cross-block LT issue: span=%s", issue.span)
+        accepted_lt.append(issue)
+        kept += 1
+
+    return accepted_lt, kept, skipped
+
+
+def _merge_llm_tier(
+    llm_issues: list[IssueResponse],
+    priority_pool: list[IssueResponse],
+    confidence_threshold: float,
+    block_boundaries: list[int],
+) -> tuple[list[IssueResponse], int, dict[str, int]]:
+    """Merge LLM issues (Tier 3) against higher-priority tiers.
+
+    Deduplicates LLM issues against each other first (granular vs
+    global), then against the priority pool (deterministic + LT).
+
+    Args:
+        llm_issues: Combined LLM issues from all passes.
+        priority_pool: Tier 1 + Tier 2 issues for duplicate checking.
+        confidence_threshold: Minimum confidence for LLM issues.
+        block_boundaries: Block end positions for cross-block demotion.
+
+    Returns:
+        Tuple of (accepted_llm, kept_count, stats_dict).
+    """
     unique_llm = _deduplicate_llm_issues(llm_issues)
     llm_deduped = len(llm_issues) - len(unique_llm)
 
+    accepted_llm: list[IssueResponse] = []
     kept = 0
     skipped_confidence = 0
     skipped_overlap = 0
@@ -74,25 +171,23 @@ def merge(
         if issue.confidence < confidence_threshold:
             skipped_confidence += 1
             continue
-        if _is_duplicate(issue, deterministic, accepted_llm):
+        if _is_duplicate(issue, priority_pool, accepted_llm):
             skipped_overlap += 1
             continue
-        # SK-15: demote cross-block spans (disable Accept button)
-        if block_boundaries and _span_crosses_block_boundary(issue.span, block_boundaries):
+        if block_boundaries and _span_crosses_block_boundary(
+            issue.span, block_boundaries,
+        ):
             issue.suggestions = []
-            logger.debug("Demoted cross-block issue: span=%s", issue.span)
-        accepted.append(issue)
+            logger.debug("Demoted cross-block LLM issue: span=%s", issue.span)
         accepted_llm.append(issue)
         kept += 1
 
-    logger.info(
-        "Merge: %d deterministic + %d LLM kept "
-        "(%d below threshold, %d overlapping, %d LLM-to-LLM deduped)",
-        len(deterministic), kept, skipped_confidence,
-        skipped_overlap, llm_deduped,
-    )
-
-    return _sort_issues(accepted)
+    stats = {
+        "skipped_confidence": skipped_confidence,
+        "skipped_overlap": skipped_overlap,
+        "llm_deduped": llm_deduped,
+    }
+    return accepted_llm, kept, stats
 
 
 # ---------------------------------------------------------------------------

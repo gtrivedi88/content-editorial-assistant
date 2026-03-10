@@ -14,6 +14,7 @@ export class CheckingIndicator {
         this._el = null;
         this._groups = getAllGroups();
         this._aiRow = null;
+        this._ltRow = null;
         this._globalRow = null;
 
         store.subscribe('analysisStatus', (status) => {
@@ -71,6 +72,7 @@ export class CheckingIndicator {
 
         this._el = wrapper;
         this._aiRow = null;
+        this._ltRow = null;
         this._globalRow = null;
         this._container.insertBefore(wrapper, this._container.firstChild);
     }
@@ -81,36 +83,66 @@ export class CheckingIndicator {
             this._el = null;
         }
         this._aiRow = null;
+        this._ltRow = null;
         this._globalRow = null;
     }
 
     /**
      * Handle stage_progress events from the backend.
-     * Transitions the UI through deterministic → AI Analysis → Global Review.
+     * Transitions the UI through deterministic → Grammar → AI Analysis → Global Review.
      */
     _onStageProgress(data) {
         if (!this._el) return;
 
-        if (data.phase === 'deterministic' && data.status === 'done') {
+        const handler = this._phaseHandlers[data.phase];
+        if (handler) {
+            handler.call(this, data);
+        }
+    }
+
+    /** @private Phase handler lookup — one method per backend phase. */
+    get _phaseHandlers() {
+        return {
+            deterministic: this._handleDeterministic,
+            languagetool: this._handleLanguageTool,
+            llm_granular: this._handleLlmGranular,
+            llm_global: this._handleLlmGlobal,
+        };
+    }
+
+    _handleDeterministic(data) {
+        if (data.status === 'done') {
             this._markAllGroupsDone();
             this._showAiPhase(data.blocks_total);
-        } else if (data.phase === 'llm_granular') {
-            if (data.status === 'started') {
-                this._markAllGroupsDone();
-                this._showAiPhase(data.blocks_total);
-            } else if (data.status === 'progress') {
-                this._updateAiProgress(data.blocks_done, data.blocks_total);
-            } else if (data.status === 'done') {
-                this._markAiDone();
-                this._showGlobalPhase();
-            }
-        } else if (data.phase === 'llm_global') {
-            if (data.status === 'started') {
-                this._markAiDone();
-                this._showGlobalPhase();
-            } else if (data.status === 'done') {
-                this._markGlobalDone();
-            }
+        }
+    }
+
+    _handleLanguageTool(data) {
+        if (data.status === 'started') {
+            this._showLtPhase();
+        } else if (data.status === 'done') {
+            this._markLtDone();
+        }
+    }
+
+    _handleLlmGranular(data) {
+        if (data.status === 'started') {
+            this._markAllGroupsDone();
+            this._showAiPhase(data.blocks_total);
+        } else if (data.status === 'progress') {
+            this._updateAiProgress(data.blocks_done, data.blocks_total);
+        } else if (data.status === 'done') {
+            this._markAiDone();
+            this._showGlobalPhase();
+        }
+    }
+
+    _handleLlmGlobal(data) {
+        if (data.status === 'started') {
+            this._markAiDone();
+            this._showGlobalPhase();
+        } else if (data.status === 'done') {
+            this._markGlobalDone();
         }
     }
 
@@ -123,6 +155,38 @@ export class CheckingIndicator {
         for (const row of rows) {
             row.className = 'cea-checking__group cea-checking__group--done';
             row.querySelector('.cea-checking__group-icon').innerHTML =
+                '<i class="fas fa-check"></i>';
+        }
+    }
+
+    /**
+     * Show the LanguageTool grammar analysis phase row.
+     */
+    _showLtPhase() {
+        if (!this._el || this._ltRow) return;
+
+        const groupsContainer = this._el.querySelector('.cea-checking__groups');
+        if (groupsContainer) {
+            const ltRow = createElement('div', {
+                className: 'cea-checking__group cea-checking__group--active',
+            });
+            ltRow.appendChild(createElement('span', {
+                className: 'cea-checking__group-icon',
+                innerHTML: '<i class="fas fa-spinner fa-spin"></i>',
+            }));
+            ltRow.appendChild(createElement('span', { textContent: 'Grammar analysis' }));
+            groupsContainer.appendChild(ltRow);
+            this._ltRow = ltRow;
+        }
+    }
+
+    /**
+     * Mark the LanguageTool row as done.
+     */
+    _markLtDone() {
+        if (this._ltRow) {
+            this._ltRow.className = 'cea-checking__group cea-checking__group--done';
+            this._ltRow.querySelector('.cea-checking__group-icon').innerHTML =
                 '<i class="fas fa-check"></i>';
         }
     }

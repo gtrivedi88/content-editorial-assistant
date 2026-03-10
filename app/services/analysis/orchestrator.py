@@ -334,6 +334,20 @@ def _run_llm_phases(
     # Build document outline for LLM section-level awareness
     doc_outline = _build_document_outline(prep.get("blocks", []))
 
+    # Fire LanguageTool in parallel with LLM granular
+    lt_future = None
+    if Config.LANGUAGETOOL_ENABLED and not _is_cancelled(session_id):
+        logger.debug("Starting LanguageTool phase (parallel)")
+        _emit_event(socket_sid, "stage_progress", {
+            "session_id": session_id,
+            "phase": "languagetool",
+            "status": "started",
+        })
+        lt_executor = ThreadPoolExecutor(max_workers=1)
+        lt_future = lt_executor.submit(
+            _run_languagetool_phase, prep,
+        )
+
     # Phase 2: LLM granular (per-block)
     blocks_total = len(prep.get("blocks", []))
     if not _is_cancelled(session_id):
@@ -353,6 +367,24 @@ def _run_llm_phases(
         _emit_event(socket_sid, "stage_progress", {
             "session_id": session_id,
             "phase": "llm_granular",
+            "status": "done",
+        })
+
+    # Collect LanguageTool results (runs parallel, collect after granular)
+    lt_issues: list[IssueResponse] = []
+    if lt_future is not None and not _is_cancelled(session_id):
+        try:
+            lt_issues = lt_future.result(
+                timeout=Config.LANGUAGETOOL_TIMEOUT + 2,
+            )
+            logger.info("LanguageTool produced %d issues", len(lt_issues))
+        except TimeoutError:
+            logger.warning("LanguageTool phase timed out")
+        except Exception as exc:
+            logger.warning("LanguageTool phase failed: %s", exc)
+        _emit_event(socket_sid, "stage_progress", {
+            "session_id": session_id,
+            "phase": "languagetool",
             "status": "done",
         })
 
@@ -385,11 +417,15 @@ def _run_llm_phases(
         llm_issues = _run_judge_pass(llm_issues, document_excerpt, content_type)
 
     # Merge and emit final results
-    logger.debug("Total LLM issues=%d, merging with det=%d", len(llm_issues), len(det_issues))
+    logger.debug(
+        "Total LLM issues=%d, LT issues=%d, merging with det=%d",
+        len(llm_issues), len(lt_issues), len(det_issues),
+    )
     if not _is_cancelled(session_id):
         merged = merge_issues(
             det_issues, llm_issues, Config.CONFIDENCE_THRESHOLD,
             blocks=prep.get("blocks"),
+            lt_issues=lt_issues,
         )
         score = calculate_score(merged, prep["word_count"])
         report = _build_report(prep, score)
@@ -427,6 +463,33 @@ def _run_llm_phases(
             "report": report.to_dict(),
             "detected_content_type": content_type,
         })
+
+
+def _run_languagetool_phase(prep: dict[str, Any]) -> list[IssueResponse]:
+    """Run LanguageTool analysis on prose blocks.
+
+    Called in a background thread, parallel with the LLM granular pass.
+    Gracefully returns an empty list on any failure.
+
+    Args:
+        prep: Preprocessed text data containing blocks and original text.
+
+    Returns:
+        List of IssueResponse from LanguageTool, empty on failure.
+    """
+    try:
+        from app.services.analysis.languagetool_client import check_blocks
+        blocks = prep.get("blocks", [])
+        if not blocks:
+            return []
+        original_text = prep.get("original_text", "")
+        return check_blocks(blocks, original_text=original_text)
+    except ImportError:
+        logger.warning("languagetool_client not available")
+        return []
+    except Exception as exc:
+        logger.warning("LanguageTool phase error: %s", exc)
+        return []
 
 
 def _run_deterministic_with_blocks(

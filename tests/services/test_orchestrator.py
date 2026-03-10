@@ -12,7 +12,10 @@ import pytest
 
 from app.models.enums import IssueCategory, IssueSeverity, IssueStatus
 from app.models.schemas import AnalyzeResponse, IssueResponse, ReportResponse, ScoreResponse
-from app.services.analysis.orchestrator import _collect_acronyms
+from app.services.analysis.orchestrator import (
+    _collect_acronyms,
+    _run_languagetool_phase,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -243,3 +246,68 @@ class TestCollectAcronyms:
         """Empty text returns empty dict."""
         result = _collect_acronyms("")
         assert result == {}
+
+
+# ---------------------------------------------------------------------------
+# LanguageTool phase integration
+# ---------------------------------------------------------------------------
+
+
+class TestRunLanguageToolPhase:
+    """Tests for _run_languagetool_phase() helper."""
+
+    @patch("app.services.analysis.languagetool_client.check_blocks")
+    def test_returns_issues_from_check_blocks(
+        self, mock_check: MagicMock,
+    ) -> None:
+        """Calls check_blocks with blocks and original_text from prep."""
+        mock_block = MagicMock()
+        prep = {
+            "blocks": [mock_block],
+            "original_text": "Hello world.",
+        }
+        mock_issue = _make_issue()
+        mock_check.return_value = [mock_issue]
+
+        result = _run_languagetool_phase(prep)
+
+        assert len(result) == 1
+        mock_check.assert_called_once_with(
+            [mock_block], original_text="Hello world.",
+        )
+
+    def test_empty_blocks_returns_empty(self) -> None:
+        """When blocks list is empty, returns empty without calling LT."""
+        prep = {"blocks": [], "original_text": ""}
+        result = _run_languagetool_phase(prep)
+        assert result == []
+
+    def test_missing_blocks_key_returns_empty(self) -> None:
+        """When prep has no 'blocks' key, returns empty."""
+        result = _run_languagetool_phase({})
+        assert result == []
+
+    @patch(
+        "app.services.analysis.languagetool_client.check_blocks",
+        side_effect=RuntimeError("LT crashed"),
+    )
+    def test_exception_returns_empty(self, mock_check: MagicMock) -> None:
+        """Exceptions from check_blocks are caught, returns empty."""
+        prep = {
+            "blocks": [MagicMock()],
+            "original_text": "",
+        }
+        result = _run_languagetool_phase(prep)
+        assert result == []
+
+    @patch("app.services.analysis.languagetool_client.check_blocks")
+    def test_missing_original_text_defaults_empty(
+        self, mock_check: MagicMock,
+    ) -> None:
+        """When original_text is missing from prep, defaults to empty."""
+        mock_check.return_value = []
+        prep = {"blocks": [MagicMock()]}
+        _run_languagetool_phase(prep)
+        mock_check.assert_called_once()
+        _, kwargs = mock_check.call_args
+        assert kwargs["original_text"] == ""

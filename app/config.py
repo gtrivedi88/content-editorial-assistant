@@ -48,6 +48,11 @@ class Config:
         HTTP_PROXY: HTTP proxy URL.
         NO_PROXY: Comma-separated no-proxy host list.
         ASCIIDOCTOR_MAX_CONCURRENT: Max concurrent Asciidoctor subprocesses.
+        LANGUAGETOOL_ENABLED: Whether LanguageTool external grammar checking is active.
+        LANGUAGETOOL_URL: Base URL of the LanguageTool HTTP API.
+        LANGUAGETOOL_TIMEOUT: Timeout in seconds for LanguageTool API calls.
+        LANGUAGETOOL_DISABLED_RULES: Comma-separated LT rule IDs to skip.
+        LANGUAGETOOL_DISABLED_CATEGORIES: Comma-separated LT categories to skip.
         PDF_MARGIN_CROP_PERCENT: Percentage of page to crop from margins.
     """
 
@@ -107,6 +112,21 @@ class Config:
     # --- Documentation ---
     DOCS_URL: str = os.environ.get("DOCS_URL", "/docs/")
 
+    # --- LanguageTool ---
+    LANGUAGETOOL_ENABLED: bool = os.environ.get(
+        "LANGUAGETOOL_ENABLED", "False",
+    ).lower() in ("true", "1", "yes")
+    LANGUAGETOOL_URL: str = os.environ.get(
+        "LANGUAGETOOL_URL", "http://localhost:8010",
+    )
+    LANGUAGETOOL_TIMEOUT: int = int(os.environ.get("LANGUAGETOOL_TIMEOUT", "5"))
+    LANGUAGETOOL_DISABLED_RULES: str = os.environ.get(
+        "LANGUAGETOOL_DISABLED_RULES", "",
+    )
+    LANGUAGETOOL_DISABLED_CATEGORIES: str = os.environ.get(
+        "LANGUAGETOOL_DISABLED_CATEGORIES", "TYPOGRAPHY",
+    )
+
     # --- PDF ---
     PDF_MARGIN_CROP_PERCENT: int = int(os.environ.get("PDF_MARGIN_CROP_PERCENT", "8"))
 
@@ -131,6 +151,10 @@ class Config:
         logger.info("  SESSION_TTL_SECONDS=%d", cls.SESSION_TTL_SECONDS)
         logger.info("  CORS_ORIGINS=%s", cls.CORS_ORIGINS)
         logger.info("  RATE_LIMIT_ENABLED=%s", cls.RATE_LIMIT_ENABLED)
+        logger.info("  LANGUAGETOOL_ENABLED=%s", cls.LANGUAGETOOL_ENABLED)
+        if cls.LANGUAGETOOL_ENABLED:
+            logger.info("  LANGUAGETOOL_URL=%s", cls.LANGUAGETOOL_URL)
+            logger.info("  LANGUAGETOOL_TIMEOUT=%d", cls.LANGUAGETOOL_TIMEOUT)
 
         if cls.CORS_ORIGINS == "*":
             logger.warning(
