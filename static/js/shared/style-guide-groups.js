@@ -256,6 +256,53 @@ export function getAllGroups() {
 }
 
 /**
+ * Map IBM Style Guide groups to 5 visual categories for colored underlines and chips.
+ */
+const GROUP_TO_CATEGORY = {
+    language_and_grammar: 'grammar',
+    punctuation: 'punctuation',
+    audience_and_medium: 'style',
+    structure_and_format: 'structure',
+    word_usage: 'style',
+    numbers_and_measurement: 'grammar',
+    references: 'structure',
+    technical_elements: 'grammar',
+    legal_information: 'style',
+    modular_compliance: 'structure',
+    general: 'grammar',
+};
+
+/**
+ * Get the visual category for an error (spelling, grammar, style, punctuation, structure).
+ * @param {Object} error - Error with type, group, and optional rule_name
+ * @returns {string} - One of: spelling, grammar, style, punctuation, structure
+ */
+export function getCategory(error) {
+    // Rule-type level: separate "spelling" from language_and_grammar
+    if (error.type === 'spelling') return 'spelling';
+    // LanguageTool issues: use the LT category mapping
+    if (error.rule_name?.startsWith('lt_')) return 'grammar';
+    // Group-level mapping
+    return GROUP_TO_CATEGORY[error.group] || 'grammar';
+}
+
+/**
+ * Get category display label.
+ * @param {string} category - One of: spelling, grammar, style, punctuation, structure
+ * @returns {string} - Human-readable label
+ */
+export function getCategoryLabel(category) {
+    const labels = {
+        spelling: 'Spelling',
+        grammar: 'Grammar',
+        style: 'Style',
+        punctuation: 'Punctuation',
+        structure: 'Structure',
+    };
+    return labels[category] || 'Grammar';
+}
+
+/**
  * Format a rule type string for display.
  * "word_usage_a" → "Word Usage A", "active_voice" → "Active Voice"
  */

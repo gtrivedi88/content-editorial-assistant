@@ -1,14 +1,16 @@
 /**
- * Issue Panel — manages the right sidebar: score, group list, cards, checking indicator.
+ * Issue Panel — manages the right sidebar: score ring, category chips,
+ * flat issue card list, checking indicator, and resolved counter.
+ *
+ * Flat list design: all issues render in document order as discrete cards.
+ * Category chips provide interactive filtering (click to toggle).
+ * Lazy rendering: first 50 cards immediately, remainder in idle batches.
  */
 
-import { store } from '../state/store.js';
-import { selectError, filterByGroup } from '../state/actions.js';
 import { ScoreRing } from './score-ring.js';
-import { GroupList } from './group-list.js';
 import { CheckingIndicator } from './checking-indicator.js';
 import { createIssueCard } from './issue-card.js';
-import { getGroupMeta } from '../shared/style-guide-groups.js';
+import { getCategory, getCategoryLabel } from '../shared/style-guide-groups.js';
 import { scrollToElement, createElement } from '../shared/dom-utils.js';
 
 export class IssuePanel {
@@ -16,6 +18,8 @@ export class IssuePanel {
         this._panel = panelEl;
         this._store = storeRef;
         this._editor = editorController;
+        this._activeCatFilter = null;
+        this._lastRenderedErrors = null;
 
         this._headerEl = panelEl.querySelector('.cea-issue-panel__header');
         this._bodyEl = panelEl.querySelector('.cea-issue-panel__body');
@@ -24,199 +28,272 @@ export class IssuePanel {
 
         // Initialize sub-components
         this._scoreRing = new ScoreRing(this._headerEl, storeRef);
-        this._groupList = new GroupList(this._bodyEl, storeRef);
         this._checkingIndicator = new CheckingIndicator(this._bodyEl, storeRef);
+
+        // Create issue list container
+        this._issueListEl = createElement('div', { className: 'cea-issue-list' });
+        this._issueListEl.style.display = 'none';
+        this._bodyEl.appendChild(this._issueListEl);
+
+        // Chips container (inserted into header dynamically)
+        this._chipsEl = null;
 
         this._bindSubscriptions();
     }
 
     _bindSubscriptions() {
-        // Show cards when a group is drilled into
-        this._store.subscribe('activeGroup', (group) => {
-            if (group !== 'all') {
-                this._showGroupDetail(group);
-            } else {
-                this._hideGroupDetail();
+        // Handle visibility based on analysis status
+        this._store.subscribe('analysisStatus', (status) => {
+            this._handleStatusChange(status);
+        });
+
+        // Render cards + chips when errors change while analysis is complete
+        this._store.subscribe('errors', (errors) => {
+            if (this._store.get('analysisStatus') === 'complete') {
+                this._onResultsReady(errors);
             }
         });
 
-        // Re-render cards when filtered errors change (while in detail view)
-        this._store.subscribe('filteredErrors', (errors) => {
-            if (this._store.get('activeGroup') !== 'all') {
-                this._renderCards(errors);
-            }
-        });
-
-        // Highlight active card — auto-drill into group if in summary view
+        // Highlight active card and clear filter if needed
         this._store.subscribe('selectedErrorId', (errorId) => {
-            if (errorId && this._store.get('activeGroup') === 'all') {
-                const errors = this._store.get('errors');
-                const error = errors.find((e) => e.id === errorId);
-                if (error && error.group) {
-                    filterByGroup(error.group);
-                    requestAnimationFrame(() => this._highlightCard(errorId));
-                    return;
-                }
+            if (errorId && this._activeCatFilter) {
+                this._clearChipFilter();
             }
             this._highlightCard(errorId);
         });
 
-        // Show/hide panel sections based on analysis status
-        this._store.subscribe('analysisStatus', (status) => {
-            if (status === 'complete') {
-                if (this._headerEl) this._headerEl.style.display = '';
-                if (this._emptyState) this._emptyState.style.display = 'none';
-                if (this._footerEl) this._footerEl.style.display = '';
-            } else if (status === 'analyzing') {
-                if (this._headerEl) this._headerEl.style.display = 'none';
-                if (this._emptyState) this._emptyState.style.display = 'none';
-                if (this._footerEl) this._footerEl.style.display = 'none';
-            } else if (status === 'error') {
-                if (this._headerEl) this._headerEl.style.display = 'none';
-                if (this._footerEl) this._footerEl.style.display = 'none';
-                if (this._emptyState) {
-                    const msg = this._store.get('errorMessage') || 'Analysis failed';
-                    this._emptyState.style.display = '';
-                    this._emptyState.querySelector('.cea-empty-state__icon').innerHTML =
-                        '<i class="fas fa-exclamation-triangle" style="color:var(--cea-color-issues)"></i>';
-                    this._emptyState.querySelector('.cea-empty-state__title').textContent = 'Analysis failed';
-                    this._emptyState.querySelector('.cea-empty-state__body').textContent = msg;
-                }
-            } else if (status === 'idle') {
-                if (this._headerEl) this._headerEl.style.display = 'none';
-                if (this._emptyState) {
-                    this._emptyState.style.display = '';
-                    this._emptyState.querySelector('.cea-empty-state__title').textContent = 'Ready to review';
-                    this._emptyState.querySelector('.cea-empty-state__body').innerHTML =
-                        'Paste or upload content to see inline suggestions.';
-                    this._emptyState.querySelector('.cea-empty-state__icon').innerHTML =
-                        '<i class="fas fa-spell-check"></i>';
-                }
-                if (this._footerEl) this._footerEl.style.display = 'none';
-            }
-        });
-
-        // Show resolved counter
+        // Update resolved counter
         this._store.subscribe('resolvedErrors', (resolved) => {
             this._updateResolvedCounter(resolved.size);
         });
     }
 
-    _showGroupDetail(groupKey) {
-        const meta = getGroupMeta(groupKey);
-        const errors = this._store.get('filteredErrors');
-
-        // Remove existing detail elements
-        this._hideGroupDetail();
-
-        // Back button
-        const backBtn = createElement('button', {
-            className: 'cea-group-back',
-            innerHTML: '<i class="fas fa-arrow-left"></i> All categories',
-            onClick: () => filterByGroup('all'),
-        });
-
-        // Detail title
-        const title = createElement('div', {
-            className: 'cea-group-detail-title',
-            textContent: `${meta.label} \u2014 ${errors.length} issue${errors.length !== 1 ? 's' : ''}`,
-        });
-
-        // Cards container
-        const cardsContainer = createElement('div', {
-            className: 'cea-group-detail-cards',
-        });
-
-        this._backBtn = backBtn;
-        this._detailTitle = title;
-        this._cardsContainer = cardsContainer;
-
-        this._bodyEl.insertBefore(cardsContainer, this._bodyEl.firstChild);
-        this._bodyEl.insertBefore(title, cardsContainer);
-        this._bodyEl.insertBefore(backBtn, title);
-
-        // Hide the group list
-        const groupListEl = this._bodyEl.querySelector('.cea-group-list');
-        if (groupListEl) groupListEl.style.display = 'none';
-
-        this._renderCards(errors);
+    _handleStatusChange(status) {
+        if (status === 'complete') {
+            this._showCompleteState();
+            this._onResultsReady(this._store.get('errors'));
+        } else if (status === 'analyzing') {
+            this._showAnalyzingState();
+        } else if (status === 'error') {
+            this._showErrorState();
+        } else if (status === 'idle') {
+            this._showIdleState();
+        }
     }
 
-    _hideGroupDetail() {
-        if (this._backBtn) { this._backBtn.remove(); this._backBtn = null; }
-        if (this._detailTitle) { this._detailTitle.remove(); this._detailTitle = null; }
-        if (this._cardsContainer) { this._cardsContainer.remove(); this._cardsContainer = null; }
-
-        // Show group list again
-        const groupListEl = this._bodyEl.querySelector('.cea-group-list');
-        if (groupListEl) groupListEl.style.display = '';
+    _showCompleteState() {
+        if (this._headerEl) this._headerEl.style.display = '';
+        if (this._emptyState) this._emptyState.style.display = 'none';
+        if (this._footerEl) this._footerEl.style.display = '';
     }
 
+    _showAnalyzingState() {
+        if (this._headerEl) this._headerEl.style.display = 'none';
+        if (this._emptyState) this._emptyState.style.display = 'none';
+        if (this._footerEl) this._footerEl.style.display = 'none';
+        this._issueListEl.style.display = 'none';
+        this._removeChips();
+        this._lastRenderedErrors = null;
+    }
+
+    _showErrorState() {
+        if (this._headerEl) this._headerEl.style.display = 'none';
+        if (this._footerEl) this._footerEl.style.display = 'none';
+        this._issueListEl.style.display = 'none';
+        this._removeChips();
+        if (this._emptyState) {
+            const msg = this._store.get('errorMessage') || 'Analysis failed';
+            this._emptyState.style.display = '';
+            this._emptyState.querySelector('.cea-empty-state__icon').innerHTML =
+                '<i class="fas fa-exclamation-triangle" style="color:var(--cea-color-issues)"></i>';
+            this._emptyState.querySelector('.cea-empty-state__title').textContent = 'Analysis failed';
+            this._emptyState.querySelector('.cea-empty-state__body').textContent = msg;
+        }
+    }
+
+    _showIdleState() {
+        if (this._headerEl) this._headerEl.style.display = 'none';
+        if (this._footerEl) this._footerEl.style.display = 'none';
+        this._issueListEl.style.display = 'none';
+        this._removeChips();
+        this._lastRenderedErrors = null;
+        if (this._emptyState) {
+            this._emptyState.style.display = '';
+            this._emptyState.querySelector('.cea-empty-state__title').textContent = 'Ready to review';
+            this._emptyState.querySelector('.cea-empty-state__body').innerHTML =
+                'Paste or upload content to see inline suggestions.';
+            this._emptyState.querySelector('.cea-empty-state__icon').innerHTML =
+                '<i class="fas fa-spell-check"></i>';
+        }
+    }
+
+    /**
+     * Render chips and cards when analysis results are ready.
+     * Guards against double-render via reference equality check.
+     */
+    _onResultsReady(errors) {
+        if (this._lastRenderedErrors === errors) return;
+        this._lastRenderedErrors = errors;
+
+        if (errors.length > 0) {
+            this._renderChips(errors);
+            this._renderCards(errors);
+            this._issueListEl.style.display = '';
+        } else {
+            this._issueListEl.style.display = 'none';
+            this._showNoIssuesState();
+        }
+    }
+
+    // ── Category Chips ──
+
+    _renderChips(errors) {
+        this._removeChips();
+
+        const counts = { spelling: 0, grammar: 0, style: 0, punctuation: 0, structure: 0 };
+        for (const error of errors) {
+            const cat = getCategory(error);
+            if (counts[cat] !== undefined) counts[cat]++;
+        }
+
+        const container = createElement('div', { className: 'cea-chips' });
+        for (const [cat, count] of Object.entries(counts)) {
+            if (count === 0) continue;
+            const chip = createElement('span', {
+                className: `cea-chip cea-chip--${cat}`,
+                dataset: { cat },
+            });
+            chip.appendChild(createElement('span', { className: 'cea-chip__dot' }));
+            chip.appendChild(document.createTextNode(`${count} ${getCategoryLabel(cat)}`));
+            chip.addEventListener('click', () => this._toggleChipFilter(cat));
+            container.appendChild(chip);
+        }
+
+        if (this._headerEl) {
+            this._headerEl.appendChild(container);
+        }
+        this._chipsEl = container;
+
+        // Stagger visibility animation
+        const chips = container.querySelectorAll('.cea-chip');
+        chips.forEach((c, i) => {
+            setTimeout(() => c.classList.add('cea-visible'), 400 + i * 80);
+        });
+    }
+
+    _toggleChipFilter(cat) {
+        if (this._activeCatFilter === cat) {
+            this._clearChipFilter();
+        } else {
+            this._activeCatFilter = cat;
+            if (this._chipsEl) {
+                this._chipsEl.querySelectorAll('.cea-chip').forEach(c => c.classList.remove('cea-chip--active'));
+                this._chipsEl.querySelector(`.cea-chip--${cat}`)?.classList.add('cea-chip--active');
+            }
+            this._filterCardsByCategory(cat);
+        }
+    }
+
+    _clearChipFilter() {
+        this._activeCatFilter = null;
+        if (this._chipsEl) {
+            this._chipsEl.querySelectorAll('.cea-chip').forEach(c => c.classList.remove('cea-chip--active'));
+        }
+        this._filterCardsByCategory(null);
+    }
+
+    /**
+     * Show/hide cards based on category filter.
+     * null = show all, otherwise show only matching data-cat.
+     */
+    _filterCardsByCategory(cat) {
+        const cards = this._issueListEl.querySelectorAll('.cea-issue-card');
+        for (const card of cards) {
+            card.style.display = (!cat || card.dataset.cat === cat) ? '' : 'none';
+        }
+    }
+
+    _removeChips() {
+        if (this._chipsEl) {
+            this._chipsEl.remove();
+            this._chipsEl = null;
+        }
+        this._activeCatFilter = null;
+    }
+
+    // ── Card List ──
+
+    /**
+     * Render the flat issue card list with lazy loading.
+     * First 50 cards render immediately; remainder in idle batches of 30.
+     */
     _renderCards(errors) {
-        const container = this._cardsContainer || this._bodyEl;
-
-        // Remove existing cards
-        const existingCards = container.querySelectorAll('.cea-issue-card');
-        existingCards.forEach((c) => c.remove());
-
-        // Remove existing resolved counter
-        const existingCounter = container.querySelector('.cea-resolved-counter');
-        if (existingCounter) existingCounter.remove();
+        this._issueListEl.innerHTML = '';
+        this._activeCatFilter = null;
 
         const editorEl = this._editor.getEditorElement();
+        const INITIAL_BATCH = 50;
+        const BATCH_SIZE = 30;
 
-        // Add resolved counter
-        const totalErrors = this._store.get('errors').length +
-            this._store.get('resolvedErrors').size +
-            this._store.get('dismissedErrors').size;
-        const resolved = this._store.get('resolvedErrors').size + this._store.get('dismissedErrors').size;
-
-        if (totalErrors > 0 && this._store.get('activeGroup') !== 'all') {
-            const counter = document.createElement('div');
-            counter.className = 'cea-resolved-counter';
-            counter.innerHTML = `<strong>${resolved}</strong> of ${totalErrors} issues addressed`;
-            container.insertBefore(counter, container.firstChild);
+        // Render first batch immediately
+        const firstBatch = errors.slice(0, INITIAL_BATCH);
+        for (const error of firstBatch) {
+            this._issueListEl.appendChild(createIssueCard(error, editorEl));
         }
 
-        // Render cards
-        for (const error of errors) {
-            const card = createIssueCard(error, editorEl);
-            container.appendChild(card);
-        }
-
-        // Show empty state if no errors after analysis
-        if (errors.length === 0 && this._store.get('analysisStatus') === 'complete') {
-            if (this._emptyState) {
-                this._emptyState.querySelector('.cea-empty-state__title').textContent = 'No issues found';
-                this._emptyState.querySelector('.cea-empty-state__body').textContent =
-                    'Your content looks good! No style issues detected.';
-                this._emptyState.querySelector('.cea-empty-state__icon').innerHTML =
-                    '<i class="fas fa-circle-check"></i>';
-                this._emptyState.style.display = '';
-            }
+        // Render remaining in idle batches
+        if (errors.length > INITIAL_BATCH) {
+            this._renderRemainingCards(errors, INITIAL_BATCH, BATCH_SIZE, editorEl);
         }
     }
 
-    _highlightCard(errorId) {
-        // Remove previous active
-        const prev = this._bodyEl.querySelector('.cea-issue-card--active');
-        if (prev) prev.classList.remove('cea-issue-card--active');
-
-        if (errorId) {
-            const card = this._bodyEl.querySelector(`.cea-issue-card[data-error-id="${errorId}"]`);
-            if (card) {
-                card.classList.add('cea-issue-card--active');
-                scrollToElement(card, 'nearest');
+    _renderRemainingCards(errors, startIdx, batchSize, editorEl) {
+        let idx = startIdx;
+        const renderBatch = () => {
+            const end = Math.min(idx + batchSize, errors.length);
+            const fragment = document.createDocumentFragment();
+            for (; idx < end; idx++) {
+                fragment.appendChild(createIssueCard(errors[idx], editorEl));
             }
+            this._issueListEl.appendChild(fragment);
+            if (idx < errors.length) {
+                (globalThis.requestIdleCallback || setTimeout)(renderBatch);
+            }
+        };
+        (globalThis.requestIdleCallback || setTimeout)(renderBatch);
+    }
+
+    _showNoIssuesState() {
+        if (this._emptyState) {
+            this._emptyState.querySelector('.cea-empty-state__title').textContent = 'No issues found';
+            this._emptyState.querySelector('.cea-empty-state__body').textContent =
+                'Your content looks good! No style issues detected.';
+            this._emptyState.querySelector('.cea-empty-state__icon').innerHTML =
+                '<i class="fas fa-circle-check"></i>';
+            this._emptyState.style.display = '';
+        }
+    }
+
+    // ── Card Highlighting ──
+
+    _highlightCard(errorId) {
+        const prev = this._bodyEl.querySelector('.cea-card-active');
+        if (prev) prev.classList.remove('cea-card-active');
+
+        if (!errorId) return;
+
+        const card = this._bodyEl.querySelector(`.cea-issue-card[data-error-id="${errorId}"]`);
+        if (card) {
+            card.classList.add('cea-card-active');
+            scrollToElement(card, 'nearest');
         }
     }
 
     _updateResolvedCounter(count) {
         const counter = this._bodyEl.querySelector('.cea-resolved-counter');
-        if (counter) {
-            const totalErrors = this._store.get('errors').length + count + this._store.get('dismissedErrors').size;
-            const total = count + this._store.get('dismissedErrors').size;
-            counter.innerHTML = `<strong>${total}</strong> of ${totalErrors} issues addressed`;
-        }
+        if (!counter) return;
+        const totalErrors = this._store.get('errors').length + count + this._store.get('dismissedErrors').size;
+        const total = count + this._store.get('dismissedErrors').size;
+        counter.innerHTML = `<strong>${total}</strong> of ${totalErrors} issues addressed`;
     }
 }

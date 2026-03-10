@@ -31,4 +31,35 @@
   --cea-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
   --cea-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
   --cea-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+
+  /* Category palette (LT-inspired) */
+  --cea-cat-spelling:     #d93025;
+  --cea-cat-grammar:      #f29900;
+  --cea-cat-style:        #4285f4;
+  --cea-cat-punctuation:  #f29900;
+  --cea-cat-structure:    #7b8794;
+
+  --cea-cat-spelling-bg:     rgba(217, 48, 37, 0.05);
+  --cea-cat-grammar-bg:      rgba(242, 153, 0, 0.05);
+  --cea-cat-style-bg:        rgba(66, 133, 244, 0.05);
+  --cea-cat-punctuation-bg:  rgba(242, 153, 0, 0.05);
+  --cea-cat-structure-bg:    rgba(123, 135, 148, 0.05);
+
+  --cea-cat-spelling-bg-strong:     rgba(217, 48, 37, 0.08);
+  --cea-cat-grammar-bg-strong:      rgba(242, 153, 0, 0.08);
+  --cea-cat-style-bg-strong:        rgba(66, 133, 244, 0.08);
+  --cea-cat-punctuation-bg-strong:  rgba(242, 153, 0, 0.08);
+  --cea-cat-structure-bg-strong:    rgba(123, 135, 148, 0.08);
+
+  /* Motion curves */
+  --cea-ease-spring:  cubic-bezier(0.32, 0.72, 0, 1);
+  --cea-ease-smooth:  cubic-bezier(0.4, 0, 0.2, 1);
+  --cea-ease-out:     cubic-bezier(0, 0, 0.2, 1);
+  --cea-ease-bounce:  cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Neutrals for new card design */
+  --cea-bg-hover:     #f4f5f7;
+  --cea-text-secondary: var(--pf-v5-global--Color--200, #6a6e73);
+  --cea-text-muted:   #9aa0a6;
+  --cea-border-light: #f1f3f4;
 }

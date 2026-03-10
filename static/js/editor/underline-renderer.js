@@ -5,6 +5,7 @@
  */
 
 import { charSpanToDomRange, findTextInDom, getPlainText } from './span-mapper.js';
+import { getCategory } from '../shared/style-guide-groups.js';
 
 /**
  * Full errors array maintained in memory for viewport-based rendering.
@@ -166,6 +167,7 @@ function _renderSingleMark(editorEl, error) {
         mark.className = 'cea-underline';
         mark.dataset.errorId = error.id;
         mark.dataset.group = error.group;
+        mark.dataset.cat = getCategory(error);
         mark.setAttribute('tabindex', '0');
         mark.setAttribute('role', 'button');
         mark.setAttribute('aria-label', error.message);
@@ -178,6 +180,7 @@ function _renderSingleMark(editorEl, error) {
             mark.className = 'cea-underline';
             mark.dataset.errorId = error.id;
             mark.dataset.group = error.group;
+            mark.dataset.cat = getCategory(error);
             mark.setAttribute('tabindex', '0');
             mark.setAttribute('role', 'button');
             mark.setAttribute('aria-label', error.message);
@@ -228,11 +231,33 @@ export function removeUnderline(editorEl, errorId) {
 
 /**
  * Replace the text of a specific underline (for accept).
+ *
+ * Handles backtick-wrapped suggestions: when the replacement text is
+ * backtick-delimited (e.g., `OSTree`) AND the adjacent DOM text already
+ * has backticks (the original source had inline code formatting), the
+ * outer backticks are stripped to prevent double-backtick insertion.
  */
 export function replaceUnderlineText(editorEl, errorId, newText) {
     const mark = editorEl.querySelector(`.cea-underline[data-error-id="${errorId}"]`);
     if (mark) {
-        mark.textContent = newText;
+        let text = newText;
+
+        // Prevent double backticks: if the replacement is backtick-wrapped
+        // and the surrounding DOM text already provides backticks, strip
+        // the redundant outer backticks from the replacement.
+        if (text.startsWith('`') && text.endsWith('`') && text.length > 2) {
+            const prev = mark.previousSibling;
+            const next = mark.nextSibling;
+            const prevEndsBacktick = prev?.nodeType === Node.TEXT_NODE
+                && prev.textContent.endsWith('`');
+            const nextStartsBacktick = next?.nodeType === Node.TEXT_NODE
+                && next.textContent.startsWith('`');
+            if (prevEndsBacktick && nextStartsBacktick) {
+                text = text.slice(1, -1);
+            }
+        }
+
+        mark.textContent = text;
         mark.classList.add('cea-underline--resolved');
         // Remove the mark wrapper after a brief visual feedback
         setTimeout(() => {

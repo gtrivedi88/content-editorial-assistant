@@ -14,6 +14,7 @@ import { ReportPanel } from './report/report-panel.js';
 import { FileHandler } from './file/file-handler.js';
 import { CitationPopover } from './citations/popover.js';
 import { SuggestionPanel } from './suggestions/panel.js';
+import { InlinePopup } from './editor/inline-popup.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     // Theme (all pages)
@@ -37,9 +38,10 @@ document.addEventListener('DOMContentLoaded', () => {
         );
         const fileHandler = new FileHandler(store, editor);
 
-        // Initialize citation popover and suggestion panel
+        // Initialize citation popover, suggestion panel, and inline popup
         const citationPopover = new CitationPopover();
         const suggestionPanel = new SuggestionPanel(editor);
+        const inlinePopup = new InlinePopup(store, editorEl);
 
         // Content type badge — shows auto-detected type after analysis
         const contentTypeBadge = document.getElementById('cea-content-type-badge');
@@ -77,11 +79,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (reportBackBtn) reportBackBtn.addEventListener('click', () => reportPanel.close());
         if (reportOverlay) reportOverlay.addEventListener('click', () => reportPanel.close());
 
-        // Escape key closes report and citation popover
+        // Escape key closes report, citation popover, and inline popup
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 reportPanel.close();
                 citationPopover.hide();
+                inlinePopup.hide();
             }
         });
     }

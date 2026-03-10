@@ -7,7 +7,7 @@
  */
 
 import { acceptSuggestion, dismissError, manuallyFixError, selectError, submitFeedback, getSuggestion, getCitation } from '../state/actions.js';
-import { getGroupMeta, formatRuleType } from '../shared/style-guide-groups.js';
+import { getGroupMeta, formatRuleType, getCategory, getCategoryLabel } from '../shared/style-guide-groups.js';
 import { createElement, escapeHtml } from '../shared/dom-utils.js';
 import { replaceUnderlineText, removeUnderline } from '../editor/underline-renderer.js';
 
@@ -69,7 +69,7 @@ export function clearSuggestionCache() {
  *   "do not" (raw replacement, e.g. contractions) -> "do not"
  *   "Rewrite in active voice: ..." -> "" (instruction, not a replacement)
  */
-function extractReplacement(suggestion, flaggedText) {
+export function extractReplacement(suggestion, flaggedText) {
     if (!suggestion) return '';
 
     // Pattern: "Change 'X' to 'Y'" or "Change 'X' to 'Y'."
@@ -127,7 +127,7 @@ function _isInstruction(suggestion, flaggedText) {
  * (e.g., "Use 'inactive' instead of 'disabled'").
  * Returns the extracted text with case matching, or empty string.
  */
-function _extractFromMessage(message, flaggedText) {
+export function extractFromMessage(message, flaggedText) {
     if (!message) return '';
 
     // "Use 'Y' instead"
@@ -166,105 +166,112 @@ function _matchCase(replacement, flaggedText) {
 
 /**
  * Create a DOM element for an issue card.
+ * Two-tier structure: summary row (always visible) + expandable detail.
  */
 export function createIssueCard(error, editorEl) {
-    const suggestion = error.suggestions?.[0] || '';
-    const replacementText = extractReplacement(suggestion, error.flagged_text);
+    const cat = getCategory(error);
 
     const card = createElement('div', {
         className: 'cea-issue-card',
-        dataset: { errorId: error.id },
+        dataset: { errorId: error.id, cat },
         onClick: () => selectError(error.id),
     });
 
-    // Header: source badge + rule type badge
-    const header = createElement('div', { className: 'cea-issue-card__header' });
+    // ── Summary row (always visible) ──
+    const summary = createElement('div', { className: 'cea-card-summary' });
 
-    // Source badge: "AI" for LLM-sourced, "Rule" for deterministic
-    const isLlmSource = error.source && error.source.startsWith('llm');
-    const sourceBadge = createElement('span', {
-        className: `cea-issue-source-badge cea-issue-source-badge--${isLlmSource ? 'ai' : 'rule'}`,
-        textContent: isLlmSource ? 'AI' : 'Rule',
-        title: isLlmSource ? 'Detected by AI analysis' : 'Detected by deterministic rule',
-    });
-    header.appendChild(sourceBadge);
+    summary.appendChild(createElement('span', {
+        className: `cea-card-dot cea-card-dot--${cat}`,
+    }));
 
-    header.appendChild(createElement('span', {
-        className: 'cea-issue-type-badge',
+    const textEl = createElement('div', { className: 'cea-card-text' });
+    const flagged = error.flagged_text || '';
+    const truncated = flagged.length > 30 ? flagged.slice(0, 30) + '\u2026' : flagged;
+
+    textEl.appendChild(createElement('span', {
+        className: 'cea-card-word',
+        textContent: truncated,
+    }));
+    textEl.appendChild(createElement('span', {
+        className: 'cea-card-sep',
+        textContent: ' \u2013 ',
+    }));
+    textEl.appendChild(createElement('span', {
+        className: 'cea-card-desc',
         textContent: formatRuleType(error.type),
     }));
-    card.appendChild(header);
 
-    // Flagged text
-    if (error.flagged_text) {
-        const flagged = createElement('div', { className: 'cea-issue-card__flagged' });
-        flagged.appendChild(createElement('span', {
-            className: 'cea-issue-card__flagged-text',
-            textContent: error.flagged_text,
+    summary.appendChild(textEl);
+    card.appendChild(summary);
+
+    // ── Expandable detail ──
+    const detail = createElement('div', { className: 'cea-card-detail' });
+    const detailWrap = createElement('div', { className: 'cea-card-detail-wrap' });
+    const detailInner = createElement('div', { className: 'cea-card-detail-inner' });
+
+    // Category label
+    const catLabel = createElement('div', {
+        className: 'cea-detail-cat',
+        dataset: { cat },
+    });
+    catLabel.appendChild(document.createTextNode(getCategoryLabel(cat)));
+    if (error.style_guide_citation) {
+        catLabel.appendChild(createElement('i', {
+            className: 'fas fa-circle-info',
+            title: error.style_guide_citation,
         }));
-        card.appendChild(flagged);
     }
+    detailInner.appendChild(catLabel);
 
     // Message
-    card.appendChild(createElement('div', {
-        className: 'cea-issue-card__message',
+    detailInner.appendChild(createElement('div', {
+        className: 'cea-detail-msg',
         textContent: error.message,
     }));
 
-    // Deterministic suggestion (if available)
-    if (replacementText) {
-        const suggBox = createElement('div', { className: 'cea-issue-card__suggestion' });
-        suggBox.appendChild(createElement('span', {
-            className: 'cea-issue-card__suggestion-icon',
-            innerHTML: '<i class="fas fa-arrow-right"></i>',
-        }));
-        suggBox.appendChild(createElement('span', {
-            className: 'cea-issue-card__suggestion-text',
-            textContent: replacementText,
-        }));
-        card.appendChild(suggBox);
+    // Suggestion chips — extract all deterministic alternatives
+    const allSuggestions = (error.suggestions || [])
+        .map(s => extractReplacement(s, error.flagged_text))
+        .filter(Boolean);
+
+    let firstChip = null;
+
+    if (allSuggestions.length === 1) {
+        firstChip = _createSuggestionChip(allSuggestions[0], error, editorEl);
+        detailInner.appendChild(firstChip);
+    } else if (allSuggestions.length > 1) {
+        const chipsWrapper = createElement('div', { className: 'cea-suggestion-chips' });
+        for (const text of allSuggestions) {
+            const chip = _createSuggestionChip(text, error, editorEl);
+            if (!firstChip) firstChip = chip;
+            chipsWrapper.appendChild(chip);
+        }
+        detailInner.appendChild(chipsWrapper);
     }
 
     // LLM suggestion container (populated async)
     const llmContainer = createElement('div', {
         className: 'cea-issue-card__llm-suggestion',
     });
-    card.appendChild(llmContainer);
+    detailInner.appendChild(llmContainer);
 
-    // Actions
-    const actions = createElement('div', { className: 'cea-issue-card__actions' });
+    // Action links
+    const actions = createElement('div', { className: 'cea-detail-actions' });
 
-    // Accept button — hoisted so _autoFetchSuggestion can update its handler
-    let acceptBtn = null;
-    if (replacementText) {
-        acceptBtn = createElement('button', {
-            className: 'cea-issue-btn cea-issue-btn--accept',
-            textContent: 'Accept',
-            'aria-label': `Accept suggestion for: ${escapeHtml(error.flagged_text || '')}`,
-            onClick: (e) => {
-                e.stopPropagation();
-                replaceUnderlineText(editorEl, error.id, replacementText);
-                acceptSuggestion(error.id);
-            },
-        });
-        actions.appendChild(acceptBtn);
-    }
-
-    const dismissBtn = createElement('button', {
-        className: 'cea-issue-btn cea-issue-btn--dismiss',
-        textContent: 'Dismiss',
+    actions.appendChild(createElement('button', {
+        className: 'cea-action-link',
+        innerHTML: '<i class="fas fa-times"></i> Dismiss',
         'aria-label': `Dismiss issue: ${escapeHtml(error.message || '')}`,
         onClick: (e) => {
             e.stopPropagation();
             removeUnderline(editorEl, error.id);
             dismissError(error.id);
         },
-    });
-    actions.appendChild(dismissBtn);
+    }));
 
-    const fixedBtn = createElement('button', {
-        className: 'cea-issue-btn cea-issue-btn--fixed',
-        textContent: 'Fixed',
+    actions.appendChild(createElement('button', {
+        className: 'cea-action-link',
+        innerHTML: '<i class="fas fa-check"></i> I fixed it',
         title: 'I fixed this issue manually',
         'aria-label': `Mark as manually fixed: ${escapeHtml(error.message || '')}`,
         onClick: (e) => {
@@ -272,12 +279,11 @@ export function createIssueCard(error, editorEl) {
             removeUnderline(editorEl, error.id);
             manuallyFixError(error.id);
         },
-    });
-    actions.appendChild(fixedBtn);
+    }));
 
     // Feedback buttons
     const thumbsUp = createElement('button', {
-        className: 'cea-issue-btn cea-issue-btn--feedback',
+        className: 'cea-action-link',
         innerHTML: '<i class="fas fa-thumbs-up"></i>',
         title: 'Helpful',
         'aria-label': 'Mark this issue as helpful',
@@ -291,7 +297,7 @@ export function createIssueCard(error, editorEl) {
     });
 
     const thumbsDown = createElement('button', {
-        className: 'cea-issue-btn cea-issue-btn--feedback',
+        className: 'cea-action-link',
         innerHTML: '<i class="fas fa-thumbs-down"></i>',
         title: 'Not helpful',
         'aria-label': 'Mark this issue as not helpful',
@@ -306,39 +312,84 @@ export function createIssueCard(error, editorEl) {
 
     actions.appendChild(thumbsUp);
     actions.appendChild(thumbsDown);
-    card.appendChild(actions);
+    detailInner.appendChild(actions);
 
-    // Citation link — only show when a real citation string exists.
-    // LLM issues have empty style_guide_citation; showing the raw rule_name
-    // (e.g., "llm_style") leads to a 404 "Citation not available" popup.
+    // Citation link
     if (error.style_guide_citation) {
-        const citationLink = createElement('button', {
-            className: 'cea-issue-card__citation cea-citation-link',
+        const citation = createElement('div', { className: 'cea-detail-citation' });
+        const citBtn = createElement('button', {
             'aria-label': `View citation: ${escapeHtml(error.style_guide_citation)}`,
             onClick: (e) => {
                 e.stopPropagation();
                 _handleCitationClick(error.rule_name || error.type, e.currentTarget);
             },
         });
-        citationLink.innerHTML = `<i class="fas fa-book"></i> ${escapeHtml(error.style_guide_citation)}`;
-        card.appendChild(citationLink);
+        citBtn.innerHTML = `<i class="fas fa-book"></i> ${escapeHtml(error.style_guide_citation)}`;
+        citation.appendChild(citBtn);
+        detailInner.appendChild(citation);
     }
+
+    detailWrap.appendChild(detailInner);
+    detail.appendChild(detailWrap);
+    card.appendChild(detail);
 
     // Auto-fetch LLM suggestion (rate-limited, deduplicated)
     if (!_fetchedIssueIds.has(error.id)) {
         _fetchedIssueIds.add(error.id);
-        _enqueueRequest(() => _autoFetchSuggestion(error, editorEl, card, llmContainer, acceptBtn, actions));
+        _enqueueRequest(() => _autoFetchSuggestion(error, editorEl, card, llmContainer, firstChip));
     }
 
     return card;
 }
 
 /**
+ * Create a suggestion chip button.
+ */
+function _createSuggestionChip(text, error, editorEl) {
+    return createElement('button', {
+        className: 'cea-suggestion-chip',
+        textContent: text,
+        'aria-label': `Accept suggestion: ${escapeHtml(text)}`,
+        onClick: (e) => {
+            e.stopPropagation();
+            replaceUnderlineText(editorEl, error.id, text);
+            acceptSuggestion(error.id);
+        },
+    });
+}
+
+/**
+ * Try to create a fallback suggestion chip when the LLM call fails.
+ * Returns true if a chip was inserted, false otherwise.
+ */
+function _tryFallbackChip(error, editorEl, container) {
+    // Try suggestions from the error response
+    if (error.suggestions?.length > 0) {
+        const text = extractReplacement(error.suggestions[0], error.flagged_text);
+        if (text) {
+            container.innerHTML = '';
+            container.parentNode.insertBefore(_createSuggestionChip(text, error, editorEl), container);
+            return true;
+        }
+    }
+    // Try extracting replacement from issue message text
+    if (error.message) {
+        const msgText = extractFromMessage(error.message, error.flagged_text);
+        if (msgText) {
+            container.innerHTML = '';
+            container.parentNode.insertBefore(_createSuggestionChip(msgText, error, editorEl), container);
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
  * Auto-fetch an LLM suggestion for the given issue.
  * Shows a spinner while loading, then renders the rewrite or fails silently.
- * Updates the Accept button to use the LLM rewrite text.
+ * Updates the first suggestion chip to use the LLM rewrite text when available.
  */
-async function _autoFetchSuggestion(error, editorEl, card, container, existingAcceptBtn, actionsEl) {
+async function _autoFetchSuggestion(error, editorEl, card, container, existingChip) {
     // Show spinner
     container.innerHTML = '';
     const loadingEl = createElement('span', {
@@ -355,51 +406,8 @@ async function _autoFetchSuggestion(error, editorEl, card, container, existingAc
     if (!card.isConnected) return;
 
     if (!result || result.error) {
-        // Try fallback: use suggestions from the error response
-        if (result && result.suggestions && result.suggestions.length > 0 && !existingAcceptBtn) {
-            const fallbackSugg = result.suggestions[0];
-            const fallbackText = extractReplacement(fallbackSugg, error.flagged_text);
-            if (fallbackText) {
-                container.innerHTML = '';
-                const fallbackBtn = createElement('button', {
-                    className: 'cea-issue-btn cea-issue-btn--accept',
-                    textContent: 'Accept',
-                    'aria-label': `Accept suggestion for: ${escapeHtml(error.flagged_text || '')}`,
-                    onClick: (e) => {
-                        e.stopPropagation();
-                        replaceUnderlineText(editorEl, error.id, fallbackText);
-                        acceptSuggestion(error.id);
-                    },
-                });
-                if (actionsEl) {
-                    actionsEl.insertBefore(fallbackBtn, actionsEl.firstChild);
-                }
-                return;
-            }
-        }
-        // Fallback 2: extract replacement from issue message text
-        if (!existingAcceptBtn && error.message) {
-            const msgText = _extractFromMessage(error.message, error.flagged_text);
-            if (msgText) {
-                container.innerHTML = '';
-                const msgBtn = createElement('button', {
-                    className: 'cea-issue-btn cea-issue-btn--accept',
-                    textContent: 'Accept',
-                    'aria-label': `Accept suggestion for: ${escapeHtml(error.flagged_text || '')}`,
-                    onClick: (e) => {
-                        e.stopPropagation();
-                        replaceUnderlineText(editorEl, error.id, msgText);
-                        acceptSuggestion(error.id);
-                    },
-                });
-                if (actionsEl) {
-                    actionsEl.insertBefore(msgBtn, actionsEl.firstChild);
-                }
-                return;
-            }
-        }
-        // Silently remove spinner, keep deterministic suggestion
-        container.innerHTML = '';
+        if (existingChip) container.innerHTML = '';
+        else _tryFallbackChip(error, editorEl, container);
         return;
     }
 
@@ -409,36 +417,21 @@ async function _autoFetchSuggestion(error, editorEl, card, container, existingAc
         return;
     }
 
-    // Render LLM suggestion
+    // Clear spinner
     container.innerHTML = '';
-    container.appendChild(createElement('span', {
-        className: 'cea-issue-card__suggestion-icon',
-        innerHTML: '<i class="fas fa-wand-magic-sparkles"></i>',
-    }));
-    container.appendChild(createElement('span', {
-        className: 'cea-issue-card__suggestion-text',
-        textContent: rewriteText,
-    }));
 
-    // Update or create Accept button to use LLM rewrite text
-    if (existingAcceptBtn) {
-        existingAcceptBtn.onclick = (e) => {
+    // Update existing chip or create new one
+    if (existingChip) {
+        // LLM rewrite is higher quality — update first chip's handler
+        existingChip.onclick = (e) => {
             e.stopPropagation();
             replaceUnderlineText(editorEl, error.id, rewriteText);
             acceptSuggestion(error.id);
         };
-    } else if (actionsEl) {
-        const newAcceptBtn = createElement('button', {
-            className: 'cea-issue-btn cea-issue-btn--accept',
-            textContent: 'Accept',
-            'aria-label': `Accept suggestion for: ${escapeHtml(error.flagged_text || '')}`,
-            onClick: (e) => {
-                e.stopPropagation();
-                replaceUnderlineText(editorEl, error.id, rewriteText);
-                acceptSuggestion(error.id);
-            },
-        });
-        actionsEl.insertBefore(newAcceptBtn, actionsEl.firstChild);
+    } else {
+        // No deterministic suggestion — create chip with LLM text
+        const chip = _createSuggestionChip(rewriteText, error, editorEl);
+        container.parentNode.insertBefore(chip, container);
     }
 }
 

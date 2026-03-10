@@ -263,6 +263,10 @@ terms:
   - namespaces
   - offboarding
   - onboarding
+  - precache
+  - precached
+  - precaches
+  - precaching
   - prereq
   - prereqs
   - readiness

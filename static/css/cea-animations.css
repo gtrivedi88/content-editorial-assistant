@@ -56,12 +56,43 @@
               fill 0.3s ease !important;
 }
 
+/* Card entrance */
+@keyframes cea-card-entrance {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Resolve flash on underline */
+@keyframes cea-resolve-flash {
+  0% { background: rgba(52, 168, 83, 0.3); }
+  100% { background: transparent; }
+}
+
+.cea-underline.cea-flash {
+  animation: cea-resolve-flash 1s var(--cea-ease-smooth) forwards;
+  text-decoration: none !important;
+}
+
+.cea-underline.cea-resolved {
+  text-decoration: none !important;
+  background: rgba(52, 168, 83, 0.08);
+  border-radius: 2px;
+  transition: background 0.5s;
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .cea-animate-fade-in,
   .cea-animate-pulse,
-  .cea-animate-spin {
+  .cea-animate-spin,
+  .cea-issue-card {
     animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .cea-chip {
+    opacity: 1;
+    transform: none;
   }
 
   .cea-theme-transitioning,

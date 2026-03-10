@@ -168,20 +168,37 @@ export class EditorController {
             }, 50);
         });
 
-        // Click on underlines
+        // Click on underlines — open inline popup (not sidebar card)
         this._editor.addEventListener('click', (e) => {
             const underline = e.target.closest('.cea-underline');
             if (underline) {
                 e.stopPropagation();
-                selectError(underline.dataset.errorId);
+                // Clear sidebar selection/fading before opening popup (Gap 1 fix)
+                if (this._store.get('selectedErrorId')) {
+                    selectError(null);
+                }
+                globalThis.dispatchEvent(new CustomEvent('cea:show-inline-popup', {
+                    detail: {
+                        errorId: underline.dataset.errorId,
+                        markEl: underline,
+                    },
+                }));
             }
         });
 
-        // Keyboard on underlines
+        // Keyboard on underlines — open inline popup
         this._editor.addEventListener('keydown', (e) => {
             if ((e.key === 'Enter' || e.key === ' ') && e.target.classList?.contains('cea-underline')) {
                 e.preventDefault();
-                selectError(e.target.dataset.errorId);
+                if (this._store.get('selectedErrorId')) {
+                    selectError(null);
+                }
+                globalThis.dispatchEvent(new CustomEvent('cea:show-inline-popup', {
+                    detail: {
+                        errorId: e.target.dataset.errorId,
+                        markEl: e.target,
+                    },
+                }));
             }
         });
 
@@ -262,10 +279,26 @@ export class EditorController {
             }
         });
 
-        // Highlight active underline
+        // Highlight active underline + text fading
+        // All block-level elements that technical docs can contain — must match
+        // the CSS selectors in cea-editor.css .cea-faded rules exactly.
+        const FOCUSABLE_BLOCKS = 'p, h1, h2, h3, h4, h5, h6, li, td, th, blockquote, dt, dd, pre';
+
         this._store.subscribe('selectedErrorId', (errorId) => {
             const mark = setActiveUnderline(this._editor, errorId);
-            if (mark) mark.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            if (errorId && mark) {
+                // Fade non-relevant blocks
+                this._editor.classList.add('cea-faded');
+                this._editor.querySelectorAll('.cea-focus').forEach(el => el.classList.remove('cea-focus'));
+                const parent = mark.closest(FOCUSABLE_BLOCKS);
+                if (parent) parent.classList.add('cea-focus');
+                mark.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+                // Clear fading
+                this._editor.classList.remove('cea-faded');
+                this._editor.querySelectorAll('.cea-focus').forEach(el => el.classList.remove('cea-focus'));
+            }
         });
 
         // Filter underlines by group

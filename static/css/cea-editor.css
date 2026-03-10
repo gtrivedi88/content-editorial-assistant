@@ -327,23 +327,41 @@
   margin-bottom: 4px;
 }
 
-/* ── Inline Underlines (single-color solid) ── */
+/* ── Inline Underlines (category-colored) ── */
 
 .cea-underline {
-  text-decoration: underline solid var(--cea-accent-underline, #0066cc) 2px;
-  text-underline-offset: 3px;
   cursor: pointer;
-  border-radius: 2px;
   padding: 1px 0;
   position: relative;
-  transition: background 0.2s;
+  transition: background 0.2s var(--cea-ease-smooth, ease);
+  text-decoration-skip-ink: none;
 }
 
-/* Hover */
-.cea-underline:hover { background: rgba(0, 102, 204, 0.08); }
+/* Category-colored underlines via data-cat attribute */
+.cea-underline[data-cat="spelling"]    { text-decoration: underline solid var(--cea-cat-spelling) 2px; text-underline-offset: 3px; }
+.cea-underline[data-cat="grammar"]     { text-decoration: underline solid var(--cea-cat-grammar) 2px; text-underline-offset: 3px; }
+.cea-underline[data-cat="style"]       { text-decoration: underline solid var(--cea-cat-style) 2px; text-underline-offset: 3px; }
+.cea-underline[data-cat="punctuation"] { text-decoration: underline solid var(--cea-cat-punctuation) 2px; text-underline-offset: 3px; }
+.cea-underline[data-cat="structure"]   { text-decoration: underline solid var(--cea-cat-structure) 1.5px; text-underline-offset: 3px; }
 
-/* Active/selected */
-.cea-underline--active { background: rgba(0, 102, 204, 0.12); }
+/* Fallback for marks without data-cat */
+.cea-underline:not([data-cat]) { text-decoration: underline solid var(--cea-accent-underline, #0066cc) 2px; text-underline-offset: 3px; }
+
+/* Hover — category background tint */
+.cea-underline[data-cat="spelling"]:hover    { background: var(--cea-cat-spelling-bg); border-radius: 2px; }
+.cea-underline[data-cat="grammar"]:hover     { background: var(--cea-cat-grammar-bg); border-radius: 2px; }
+.cea-underline[data-cat="style"]:hover       { background: var(--cea-cat-style-bg); border-radius: 2px; }
+.cea-underline[data-cat="punctuation"]:hover { background: var(--cea-cat-punctuation-bg); border-radius: 2px; }
+.cea-underline[data-cat="structure"]:hover   { background: var(--cea-cat-structure-bg); border-radius: 2px; }
+.cea-underline:not([data-cat]):hover         { background: rgba(0, 102, 204, 0.08); border-radius: 2px; }
+
+/* Active/selected — stronger background */
+.cea-underline--active[data-cat="spelling"]    { background: var(--cea-cat-spelling-bg-strong); border-radius: 2px; }
+.cea-underline--active[data-cat="grammar"]     { background: var(--cea-cat-grammar-bg-strong); border-radius: 2px; }
+.cea-underline--active[data-cat="style"]       { background: var(--cea-cat-style-bg-strong); border-radius: 2px; }
+.cea-underline--active[data-cat="punctuation"] { background: var(--cea-cat-punctuation-bg-strong); border-radius: 2px; }
+.cea-underline--active[data-cat="structure"]   { background: var(--cea-cat-structure-bg-strong); border-radius: 2px; }
+.cea-underline--active:not([data-cat])         { background: rgba(0, 102, 204, 0.12); }
 
 /* Resolved */
 .cea-underline--resolved {
@@ -456,4 +474,42 @@
     padding: 8px 12px;
     gap: 8px;
   }
+}
+
+/* ── Text Fading — dims non-focused blocks when an issue is selected ── */
+
+.cea-editor-content.cea-faded p,
+.cea-editor-content.cea-faded h1,
+.cea-editor-content.cea-faded h2,
+.cea-editor-content.cea-faded h3,
+.cea-editor-content.cea-faded h4,
+.cea-editor-content.cea-faded h5,
+.cea-editor-content.cea-faded h6,
+.cea-editor-content.cea-faded li,
+.cea-editor-content.cea-faded td,
+.cea-editor-content.cea-faded th,
+.cea-editor-content.cea-faded blockquote,
+.cea-editor-content.cea-faded dt,
+.cea-editor-content.cea-faded dd,
+.cea-editor-content.cea-faded pre {
+  opacity: 0.2;
+  transition: opacity 0.4s var(--cea-ease-smooth, ease);
+}
+
+.cea-editor-content.cea-faded p.cea-focus,
+.cea-editor-content.cea-faded h1.cea-focus,
+.cea-editor-content.cea-faded h2.cea-focus,
+.cea-editor-content.cea-faded h3.cea-focus,
+.cea-editor-content.cea-faded h4.cea-focus,
+.cea-editor-content.cea-faded h5.cea-focus,
+.cea-editor-content.cea-faded h6.cea-focus,
+.cea-editor-content.cea-faded li.cea-focus,
+.cea-editor-content.cea-faded td.cea-focus,
+.cea-editor-content.cea-faded th.cea-focus,
+.cea-editor-content.cea-faded blockquote.cea-focus,
+.cea-editor-content.cea-faded dt.cea-focus,
+.cea-editor-content.cea-faded dd.cea-focus,
+.cea-editor-content.cea-faded pre.cea-focus {
+  opacity: 1;
+  transition: opacity 0.25s var(--cea-ease-out, ease);
 }

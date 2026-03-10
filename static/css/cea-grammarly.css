@@ -246,6 +246,49 @@
   border-bottom: 1px solid var(--pf-v5-global--BorderColor--100, #e8e8e8);
 }
 
+/* ── Category Chips ── */
+
+.cea-chips { display: flex; gap: 5px; flex-wrap: wrap; }
+
+.cea-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s var(--cea-ease-smooth);
+  border: 1.5px solid transparent;
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+.cea-chip.cea-visible {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.3s var(--cea-ease-out), transform 0.3s var(--cea-ease-spring);
+}
+
+.cea-chip:hover { filter: brightness(0.95); transform: translateY(-1px); }
+
+/* Active chip — selected filter has a visible border */
+.cea-chip.cea-chip--active { border-color: currentColor; }
+
+.cea-chip__dot { width: 7px; height: 7px; border-radius: 50%; }
+
+.cea-chip--spelling    { background: var(--cea-cat-spelling-bg); color: var(--cea-cat-spelling); }
+.cea-chip--spelling .cea-chip__dot { background: var(--cea-cat-spelling); }
+.cea-chip--grammar     { background: var(--cea-cat-grammar-bg); color: #b7791f; }
+.cea-chip--grammar .cea-chip__dot { background: var(--cea-cat-grammar); }
+.cea-chip--style       { background: var(--cea-cat-style-bg); color: var(--cea-cat-style); }
+.cea-chip--style .cea-chip__dot { background: var(--cea-cat-style); }
+.cea-chip--punctuation { background: var(--cea-cat-punctuation-bg); color: #b7791f; }
+.cea-chip--punctuation .cea-chip__dot { background: var(--cea-cat-punctuation); }
+.cea-chip--structure   { background: var(--cea-cat-structure-bg); color: var(--cea-cat-structure); }
+.cea-chip--structure .cea-chip__dot { background: var(--cea-cat-structure); }
+
 /* ── Paste hint toast ── */
 
 .cea-paste-hint {

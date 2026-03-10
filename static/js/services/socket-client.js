@@ -112,8 +112,18 @@ export function initSocketClient(store) {
 
         // Populate issue list from the final merged results
         if (data.issues && data.issues.length > 0) {
-            const finalIssues = data.issues.map((issue, idx) => normalizeSocketIssue(issue, idx));
-            console.log('[Socket] DEBUG normalized %d issues:', finalIssues.length);
+            const normalized = data.issues.map((issue, idx) => normalizeSocketIssue(issue, idx));
+
+            // Deduplicate by span + type (mirrors flattenErrors in actions.js)
+            const seen = new Set();
+            const finalIssues = normalized.filter((e) => {
+                const key = `${e.globalSpan[0]}-${e.globalSpan[1]}-${e.type}`;
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+
+            console.log('[Socket] DEBUG normalized %d issues (deduped from %d):', finalIssues.length, normalized.length);
             finalIssues.forEach((e, i) => {
                 console.log('[Socket] DEBUG normalized[%d]: id=%s globalSpan=[%d,%d] flagged_text=%s',
                     i, e.id, e.globalSpan[0], e.globalSpan[1],

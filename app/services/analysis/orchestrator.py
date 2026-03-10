@@ -589,7 +589,32 @@ def _analyze_blocks_deterministic(
         )
         all_issues.extend(issues)
 
-    return all_issues
+    # Cross-block dedup: remove issues with the same rule_name and
+    # flagged_text that appear across different blocks (e.g. AsciiDoc
+    # conditional ifdef/endif branches that contain near-identical text).
+    # Per-block dedup (inside deterministic.analyze) uses the stricter
+    # key rule_name|flagged_text|sentence, so same-text issues from
+    # different blocks survive it. This pass catches them.
+    pre_dedup = len(all_issues)
+    seen: set[str] = set()
+    deduped: list[IssueResponse] = []
+    for issue in all_issues:
+        key = f"{issue.rule_name}|{issue.flagged_text}"
+        if key in seen:
+            logger.debug(
+                "Cross-block dedup: skipping duplicate %s '%s'",
+                issue.rule_name, issue.flagged_text,
+            )
+            continue
+        seen.add(key)
+        deduped.append(issue)
+    if len(deduped) < pre_dedup:
+        logger.info(
+            "Cross-block dedup removed %d duplicate issues",
+            pre_dedup - len(deduped),
+        )
+
+    return deduped
 
 
 def _run_structural_analysis(
@@ -1035,6 +1060,9 @@ def _run_llm_granular(
                     i, iss.rule_name, iss.span, iss.flagged_text[:80] if iss.flagged_text else "",
                 )
             issues = _validate_llm_issues(issues)
+            issues = _strip_backtick_suggestions(
+                issues, prep.get("original_text", ""),
+            )
             _emit_event(socket_sid, "llm_granular_complete", {
                 "session_id": session_id,
                 "issues": [i.to_dict() for i in issues],
@@ -1268,6 +1296,9 @@ def _run_llm_global(
                     i, iss.rule_name, iss.span, iss.flagged_text[:80] if iss.flagged_text else "",
                 )
             issues = _validate_llm_issues(issues)
+            issues = _strip_backtick_suggestions(
+                issues, prep.get("original_text", ""),
+            )
             _emit_event(socket_sid, "llm_global_complete", {
                 "session_id": session_id,
                 "issues": [i.to_dict() for i in issues],
@@ -2011,6 +2042,77 @@ def _validate_llm_issues(
             issue.flagged_text[:80],
         )
     return validated
+
+
+def _strip_backtick_suggestions(
+    issues: list[IssueResponse],
+    original_text: str,
+) -> list[IssueResponse]:
+    """Strip redundant backticks from LLM suggestions on already-backticked text.
+
+    When the LLM flags text that is already inside backtick-delimited inline
+    code in the original source (e.g., ``\u0060ostree\u0060``), suggestions like
+    ``\u0060OSTree\u0060`` would produce double backticks on accept.
+
+    This function:
+    - Drops false-positive issues whose only suggestion is to add backtick
+      formatting to text that already has it.
+    - Strips the outer backticks from suggestions when the flagged text is
+      already inside backticks (keeping the content change, e.g., casing fix).
+
+    Args:
+        issues: Validated LLM issues with resolved spans.
+        original_text: The original (un-cleaned) document text.
+
+    Returns:
+        Filtered list with backtick-safe suggestions.
+    """
+    if not original_text:
+        return issues
+
+    filtered: list[IssueResponse] = []
+    for issue in issues:
+        s, e = issue.span[0], issue.span[1]
+
+        # Check if the flagged text is surrounded by backticks
+        if not (s > 0 and e < len(original_text)
+                and original_text[s - 1] == '`'
+                and original_text[e] == '`'):
+            filtered.append(issue)
+            continue
+
+        # The flagged text is already inside backticks.
+        flagged = issue.flagged_text or ""
+        new_suggestions: list[str] = []
+        all_redundant = True
+
+        for sug in (issue.suggestions or []):
+            stripped = sug.strip()
+            # Suggestion is just the flagged text with backticks → redundant
+            if stripped == f"`{flagged}`":
+                continue
+            # Suggestion has outer backticks → strip them
+            if (stripped.startswith('`') and stripped.endswith('`')
+                    and len(stripped) > 2):
+                new_suggestions.append(stripped[1:-1])
+                all_redundant = False
+            else:
+                new_suggestions.append(sug)
+                all_redundant = False
+
+        if all_redundant and not new_suggestions:
+            # All suggestions just added backticks to already-backticked text.
+            # This is a false positive — drop the issue.
+            logger.debug(
+                "Dropped LLM false positive: '%s' already backticked at [%d,%d]",
+                flagged, s, e,
+            )
+            continue
+
+        issue.suggestions = new_suggestions
+        filtered.append(issue)
+
+    return filtered
 
 
 # Mapping from LLM category values to rule_name strings that the

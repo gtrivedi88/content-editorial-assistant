@@ -1,0 +1,1643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CEA — Design Preview v4</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+
+  <style>
+    /* ================================================================
+       CEA x LanguageTool Preview v4 — Refined Craft
+       Card-segregated issue list, spring animations, polished depth
+       ================================================================ */
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --cea-masthead-height: 48px;
+      --cea-panel-width: 370px;
+
+      /* Category palette — matched to LT */
+      --cat-spelling:     #d93025;
+      --cat-grammar:      #f29900;
+      --cat-style:        #4285f4;
+      --cat-punctuation:  #f29900;
+      --cat-structure:    #7b8794;
+
+      --cat-spelling-bg:     rgba(217, 48, 37, 0.05);
+      --cat-grammar-bg:      rgba(242, 153, 0, 0.05);
+      --cat-style-bg:        rgba(66, 133, 244, 0.05);
+      --cat-punctuation-bg:  rgba(242, 153, 0, 0.05);
+      --cat-structure-bg:    rgba(123, 135, 148, 0.05);
+
+      --cat-spelling-bg-strong:     rgba(217, 48, 37, 0.08);
+      --cat-grammar-bg-strong:      rgba(242, 153, 0, 0.08);
+      --cat-style-bg-strong:        rgba(66, 133, 244, 0.08);
+      --cat-punctuation-bg-strong:  rgba(242, 153, 0, 0.08);
+      --cat-structure-bg-strong:    rgba(123, 135, 148, 0.08);
+
+      /* Neutrals */
+      --bg:           #ffffff;
+      --bg-panel:     #f8f9fa;
+      --bg-hover:     #f4f5f7;
+      --bg-card:      #ffffff;
+      --text:         #1a1d21;
+      --text-secondary: #5f6368;
+      --text-muted:   #9aa0a6;
+      --border:       #e8eaed;
+      --border-light: #f1f3f4;
+
+      /* Accents */
+      --blue:         #4285f4;
+      --blue-hover:   #3367d6;
+      --blue-bg:      rgba(66, 133, 244, 0.06);
+      --green:        #34a853;
+      --green-bg:     rgba(52, 168, 83, 0.08);
+
+      /* Motion — spring-like curves */
+      --ease-spring:  cubic-bezier(0.32, 0.72, 0, 1);
+      --ease-smooth:  cubic-bezier(0.4, 0, 0.2, 1);
+      --ease-out:     cubic-bezier(0, 0, 0.2, 1);
+      --ease-bounce:  cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--text);
+      background: var(--bg);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow: hidden;
+      height: 100vh;
+    }
+
+    /* ================================================================
+       MASTHEAD
+       ================================================================ */
+
+    .cea-masthead {
+      height: var(--cea-masthead-height);
+      background: #1a1d21;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      color: #fff;
+      z-index: 100;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .cea-logo {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #fff;
+      text-decoration: none;
+      margin-right: 24px;
+    }
+
+    .cea-logo-icon {
+      width: 24px;
+      height: 24px;
+      background: var(--blue);
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+    }
+
+    .cea-version-badge {
+      font-size: 9px;
+      font-weight: 600;
+      background: rgba(255,255,255,0.1);
+      padding: 1px 5px;
+      border-radius: 3px;
+      color: rgba(255,255,255,0.5);
+    }
+
+    .cea-nav { display: flex; gap: 1px; list-style: none; }
+
+    .cea-nav a {
+      color: rgba(255,255,255,0.5);
+      text-decoration: none;
+      padding: 5px 12px;
+      border-radius: 5px;
+      font-size: 12px;
+      font-weight: 600;
+      transition: 0.15s var(--ease-smooth);
+    }
+
+    .cea-nav a:hover { color: rgba(255,255,255,0.85); background: rgba(255,255,255,0.06); }
+    .cea-nav a.active { color: #fff; background: rgba(255,255,255,0.1); }
+
+    .cea-masthead-actions {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .cea-masthead-btn {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.6);
+      padding: 4px 8px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 12px;
+      font-family: inherit;
+      transition: 0.15s var(--ease-smooth);
+    }
+
+    .cea-masthead-btn:hover { background: rgba(255,255,255,0.06); color: #fff; }
+
+    /* ================================================================
+       TWO-PANE LAYOUT
+       ================================================================ */
+
+    .cea-layout {
+      display: flex;
+      height: calc(100vh - var(--cea-masthead-height));
+      overflow: hidden;
+    }
+
+    /* ================================================================
+       EDITOR PANEL
+       ================================================================ */
+
+    .cea-editor-panel {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--bg);
+      position: relative;
+    }
+
+    .cea-editor-topbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      background: var(--bg);
+    }
+
+    .cea-topbar-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      background: var(--bg);
+      color: var(--text-secondary);
+      font-size: 11px;
+      font-family: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s var(--ease-smooth);
+    }
+
+    .cea-topbar-btn:hover { border-color: var(--blue); color: var(--blue); }
+    .cea-topbar-btn i { font-size: 10px; }
+
+    .cea-content-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .cea-topbar-sep { width: 1px; height: 16px; background: var(--border); }
+
+    /* Editor content area */
+    .cea-editor-area {
+      flex: 1;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    .cea-editor-area::-webkit-scrollbar { width: 6px; }
+    .cea-editor-area::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 3px; }
+    .cea-editor-area::-webkit-scrollbar-track { background: transparent; }
+
+    .cea-editor-wrap {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 40px 36px;
+      min-height: 100%;
+    }
+
+    .cea-editor-content {
+      font-size: 15.5px;
+      line-height: 1.85;
+      color: var(--text);
+      outline: none;
+    }
+
+    .cea-editor-content p {
+      margin: 0 0 18px 0;
+      transition: opacity 0.4s var(--ease-smooth);
+    }
+
+    .cea-editor-content h2 {
+      font-size: 1.5em;
+      font-weight: 700;
+      margin: 28px 0 14px;
+      letter-spacing: -0.3px;
+      transition: opacity 0.4s var(--ease-smooth);
+    }
+
+    .cea-editor-content h3 {
+      font-size: 1.1em;
+      font-weight: 700;
+      margin: 22px 0 10px;
+      transition: opacity 0.4s var(--ease-smooth);
+    }
+
+    .cea-editor-content code {
+      font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 0.85em;
+      background: #f1f3f5;
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #d63384;
+    }
+
+    /* Text fading — staggered for organic feel */
+    .cea-editor-content.cea-faded p,
+    .cea-editor-content.cea-faded h2,
+    .cea-editor-content.cea-faded h3 {
+      opacity: 0.2;
+      transition: opacity 0.4s var(--ease-smooth);
+    }
+
+    .cea-editor-content.cea-faded p.cea-focus,
+    .cea-editor-content.cea-faded h2.cea-focus,
+    .cea-editor-content.cea-faded h3.cea-focus {
+      opacity: 1;
+      transition: opacity 0.25s var(--ease-out);
+    }
+
+    /* Bottom toolbar */
+    .cea-editor-bottombar {
+      display: flex;
+      align-items: center;
+      padding: 6px 16px;
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+      background: var(--bg);
+      gap: 2px;
+    }
+
+    .cea-fmt-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      padding: 6px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.15s var(--ease-smooth);
+    }
+
+    .cea-fmt-btn:hover { color: var(--text); background: var(--bg-hover); }
+    .cea-fmt-sep { width: 1px; height: 18px; background: var(--border); margin: 0 4px; }
+
+    .cea-bottombar-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .cea-word-count {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 500;
+      padding: 4px 8px;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      cursor: default;
+    }
+
+    .cea-copy-btn {
+      padding: 5px 14px;
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s var(--ease-smooth);
+    }
+
+    .cea-copy-btn:hover { background: var(--blue-hover); transform: translateY(-1px); }
+    .cea-copy-btn:active { transform: translateY(0) scale(0.98); }
+
+    /* ================================================================
+       UNDERLINES — Flat solid, category-colored
+       ================================================================ */
+
+    .cea-underline {
+      cursor: pointer;
+      padding: 1px 0;
+      position: relative;
+      transition: background 0.2s var(--ease-smooth);
+      text-decoration-skip-ink: none;
+    }
+
+    .cea-underline[data-cat="spelling"]    { text-decoration: underline solid var(--cat-spelling) 2px; text-underline-offset: 3px; }
+    .cea-underline[data-cat="grammar"]     { text-decoration: underline solid var(--cat-grammar) 2px; text-underline-offset: 3px; }
+    .cea-underline[data-cat="style"]       { text-decoration: underline solid var(--cat-style) 2px; text-underline-offset: 3px; }
+    .cea-underline[data-cat="punctuation"] { text-decoration: underline solid var(--cat-punctuation) 2px; text-underline-offset: 3px; }
+    .cea-underline[data-cat="structure"]   { text-decoration: underline solid var(--cat-structure) 1.5px; text-underline-offset: 3px; }
+
+    .cea-underline[data-cat="spelling"]:hover    { background: var(--cat-spelling-bg); border-radius: 2px; }
+    .cea-underline[data-cat="grammar"]:hover     { background: var(--cat-grammar-bg); border-radius: 2px; }
+    .cea-underline[data-cat="style"]:hover       { background: var(--cat-style-bg); border-radius: 2px; }
+    .cea-underline[data-cat="punctuation"]:hover { background: var(--cat-punctuation-bg); border-radius: 2px; }
+    .cea-underline[data-cat="structure"]:hover   { background: var(--cat-structure-bg); border-radius: 2px; }
+
+    .cea-underline.cea-active[data-cat="spelling"]    { background: var(--cat-spelling-bg-strong); border-radius: 2px; }
+    .cea-underline.cea-active[data-cat="grammar"]     { background: var(--cat-grammar-bg-strong); border-radius: 2px; }
+    .cea-underline.cea-active[data-cat="style"]       { background: var(--cat-style-bg-strong); border-radius: 2px; }
+    .cea-underline.cea-active[data-cat="punctuation"] { background: var(--cat-punctuation-bg-strong); border-radius: 2px; }
+    .cea-underline.cea-active[data-cat="structure"]   { background: var(--cat-structure-bg-strong); border-radius: 2px; }
+
+    /* Subtle pulse on active */
+    @keyframes underlinePulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.75; }
+    }
+    .cea-underline.cea-active { animation: underlinePulse 2.5s ease-in-out infinite; }
+
+    /* ================================================================
+       ISSUE PANEL (right)
+       ================================================================ */
+
+    .cea-issue-panel {
+      width: var(--cea-panel-width);
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border-left: 1px solid var(--border);
+      background: var(--bg-panel);
+    }
+
+    /* Score header */
+    .cea-panel-header {
+      flex-shrink: 0;
+      padding: 16px 16px 14px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+
+    .cea-score-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .cea-score-ring {
+      width: 52px;
+      height: 52px;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .cea-score-ring svg { transform: rotate(-90deg); }
+    .cea-score-ring__bg { fill: none; stroke: var(--border); stroke-width: 4.5; }
+    .cea-score-ring__fill {
+      fill: none;
+      stroke-width: 4.5;
+      stroke-linecap: round;
+      stroke: var(--green);
+      stroke-dasharray: 97.4;
+      stroke-dashoffset: 97.4;
+      transition: stroke-dashoffset 1.2s var(--ease-spring);
+    }
+
+    .cea-score-ring__value {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--text);
+      opacity: 0;
+      transition: opacity 0.4s ease 0.6s;
+    }
+
+    .cea-score-ring.cea-animated .cea-score-ring__fill { stroke-dashoffset: 24; }
+    .cea-score-ring.cea-animated .cea-score-ring__value { opacity: 1; }
+
+    .cea-score-info { flex: 1; }
+    .cea-score-label { font-size: 14px; font-weight: 700; color: var(--text); }
+    .cea-score-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; font-weight: 500; }
+
+    /* Category chips */
+    .cea-chips { display: flex; gap: 5px; flex-wrap: wrap; }
+
+    .cea-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 9px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s var(--ease-smooth);
+      border: 1.5px solid transparent;
+      opacity: 0;
+      transform: translateY(4px);
+    }
+
+    .cea-chip.cea-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .cea-chip:hover { filter: brightness(0.95); transform: translateY(-1px); }
+    .cea-chip:active { transform: scale(0.96); }
+
+    .cea-chip__dot { width: 7px; height: 7px; border-radius: 50%; }
+
+    .cea-chip--spelling    { background: var(--cat-spelling-bg); color: var(--cat-spelling); }
+    .cea-chip--spelling .cea-chip__dot { background: var(--cat-spelling); }
+    .cea-chip--grammar     { background: var(--cat-grammar-bg); color: #b7791f; }
+    .cea-chip--grammar .cea-chip__dot { background: var(--cat-grammar); }
+    .cea-chip--style       { background: var(--cat-style-bg); color: var(--cat-style); }
+    .cea-chip--style .cea-chip__dot { background: var(--cat-style); }
+    .cea-chip--punctuation { background: var(--cat-punctuation-bg); color: #b7791f; }
+    .cea-chip--punctuation .cea-chip__dot { background: var(--cat-punctuation); }
+    .cea-chip--structure   { background: var(--cat-structure-bg); color: var(--cat-structure); }
+    .cea-chip--structure .cea-chip__dot { background: var(--cat-structure); }
+
+    /* ================================================================
+       ISSUE LIST — Card-segregated with gaps
+       ================================================================ */
+
+    .cea-issue-list {
+      flex: 1;
+      overflow-y: auto;
+      scrollbar-width: none;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .cea-issue-list::-webkit-scrollbar { display: none; }
+
+    /* ================================================================
+       ISSUE CARD — Each issue is its own discrete card
+       ================================================================ */
+
+    .cea-issue-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      cursor: pointer;
+      overflow: hidden;
+      transition: border-color 0.25s var(--ease-smooth),
+                  box-shadow 0.25s var(--ease-smooth),
+                  transform 0.25s var(--ease-spring);
+      /* Staggered entrance */
+      opacity: 0;
+      transform: translateY(6px);
+      animation: cardEntrance 0.45s var(--ease-spring) forwards;
+    }
+
+    .cea-issue-card:nth-child(1) { animation-delay: 0.08s; }
+    .cea-issue-card:nth-child(2) { animation-delay: 0.13s; }
+    .cea-issue-card:nth-child(3) { animation-delay: 0.18s; }
+    .cea-issue-card:nth-child(4) { animation-delay: 0.23s; }
+    .cea-issue-card:nth-child(5) { animation-delay: 0.28s; }
+    .cea-issue-card:nth-child(6) { animation-delay: 0.33s; }
+    .cea-issue-card:nth-child(7) { animation-delay: 0.38s; }
+    .cea-issue-card:nth-child(8) { animation-delay: 0.43s; }
+
+    @keyframes cardEntrance {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Hover — subtle lift */
+    .cea-issue-card:hover {
+      border-color: rgba(0, 0, 0, 0.12);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      transform: translateY(-1px);
+    }
+
+    /* Active/expanded — colored left accent + elevated */
+    .cea-issue-card.cea-card-active {
+      border-color: transparent;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04);
+      transform: translateY(-1px);
+      border-left: 3.5px solid var(--active-accent, var(--blue));
+    }
+
+    .cea-issue-card.cea-card-active[data-cat="spelling"]    { --active-accent: var(--cat-spelling); }
+    .cea-issue-card.cea-card-active[data-cat="grammar"]     { --active-accent: var(--cat-grammar); }
+    .cea-issue-card.cea-card-active[data-cat="style"]       { --active-accent: var(--cat-style); }
+    .cea-issue-card.cea-card-active[data-cat="punctuation"] { --active-accent: var(--cat-punctuation); }
+    .cea-issue-card.cea-card-active[data-cat="structure"]   { --active-accent: var(--cat-structure); }
+
+    /* Card summary row (always visible) */
+    .cea-card-summary {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      transition: background 0.15s var(--ease-smooth);
+    }
+
+    .cea-issue-card:hover .cea-card-summary { background: rgba(0, 0, 0, 0.015); }
+    .cea-issue-card.cea-card-active .cea-card-summary { background: transparent; }
+
+    .cea-card-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      transition: transform 0.3s var(--ease-bounce);
+    }
+
+    .cea-issue-card:hover .cea-card-dot { transform: scale(1.2); }
+
+    .cea-card-dot--spelling    { background: var(--cat-spelling); }
+    .cea-card-dot--grammar     { background: var(--cat-grammar); }
+    .cea-card-dot--style       { background: var(--cat-style); }
+    .cea-card-dot--punctuation { background: var(--cat-punctuation); }
+    .cea-card-dot--structure   { background: var(--cat-structure); }
+
+    .cea-card-text {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 13px;
+    }
+
+    .cea-card-word { font-weight: 700; color: var(--text); }
+    .cea-card-sep { color: var(--text-muted); margin: 0 5px; font-weight: 400; }
+    .cea-card-desc { color: var(--text-secondary); font-weight: 400; }
+
+    /* ================================================================
+       CARD EXPANSION — grid-template-rows for buttery smooth height
+       ================================================================ */
+
+    .cea-card-detail {
+      display: grid;
+      grid-template-rows: 0fr;
+      transition: grid-template-rows 0.4s var(--ease-spring);
+    }
+
+    .cea-issue-card.cea-card-active .cea-card-detail {
+      grid-template-rows: 1fr;
+    }
+
+    .cea-card-detail-wrap {
+      overflow: hidden;
+    }
+
+    .cea-card-detail-inner {
+      padding: 2px 14px 14px 32px;
+      opacity: 0;
+      transform: translateY(-4px);
+      transition: opacity 0.3s var(--ease-out) 0.08s,
+                  transform 0.35s var(--ease-spring) 0.06s;
+    }
+
+    .cea-issue-card.cea-card-active .cea-card-detail-inner {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .cea-detail-cat {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .cea-detail-cat[data-cat="spelling"]    { color: var(--cat-spelling); }
+    .cea-detail-cat[data-cat="grammar"]     { color: #b7791f; }
+    .cea-detail-cat[data-cat="style"]       { color: var(--cat-style); }
+    .cea-detail-cat[data-cat="punctuation"] { color: #b7791f; }
+    .cea-detail-cat[data-cat="structure"]   { color: var(--cat-structure); }
+
+    .cea-detail-cat i {
+      font-size: 11px;
+      color: var(--text-muted);
+      cursor: help;
+      transition: color 0.15s;
+    }
+
+    .cea-detail-cat i:hover { color: var(--text-secondary); }
+
+    .cea-detail-msg {
+      font-size: 12.5px;
+      color: var(--text-secondary);
+      line-height: 1.55;
+      margin-bottom: 12px;
+    }
+
+    /* Blue suggestion chip */
+    .cea-suggestion-chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 16px;
+      background: var(--blue);
+      color: #fff;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s var(--ease-smooth);
+      border: none;
+      font-family: inherit;
+      margin-bottom: 12px;
+    }
+
+    .cea-suggestion-chip:hover {
+      background: var(--blue-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 3px 10px rgba(66, 133, 244, 0.3);
+    }
+
+    .cea-suggestion-chip:active { transform: scale(0.97); box-shadow: none; }
+
+    /* Action links */
+    .cea-detail-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .cea-action-link {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.15s var(--ease-smooth);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-weight: 500;
+      background: none;
+      border: none;
+      font-family: inherit;
+      padding: 4px 6px;
+      border-radius: 4px;
+      margin: 0 -6px;
+    }
+
+    .cea-action-link:first-child { margin-left: -6px; }
+    .cea-action-link:hover { color: var(--text-secondary); background: var(--bg-hover); }
+    .cea-action-link i { font-size: 11px; }
+
+    /* Citation */
+    .cea-detail-citation {
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border-light);
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .cea-detail-citation a { color: var(--blue); text-decoration: none; }
+    .cea-detail-citation a:hover { text-decoration: underline; }
+
+    /* ================================================================
+       CARD REMOVAL ANIMATION
+       ================================================================ */
+
+    .cea-issue-card.cea-removing {
+      transform: scale(0.95) translateX(8px);
+      opacity: 0;
+      max-height: 0 !important;
+      margin: 0;
+      padding: 0;
+      border-width: 0;
+      transition: all 0.4s var(--ease-smooth);
+      pointer-events: none;
+    }
+
+    .cea-underline.cea-resolved {
+      text-decoration: none !important;
+      background: var(--green-bg);
+      border-radius: 2px;
+      transition: background 0.5s;
+    }
+
+    @keyframes resolveFlash {
+      0% { background: rgba(52, 168, 83, 0.3); }
+      100% { background: transparent; }
+    }
+
+    .cea-underline.cea-flash {
+      animation: resolveFlash 1s var(--ease-smooth) forwards;
+      text-decoration: none !important;
+    }
+
+    /* Panel footer */
+    .cea-panel-footer {
+      padding: 10px 16px;
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+      background: var(--bg);
+    }
+
+    .cea-report-btn {
+      width: 100%;
+      padding: 8px;
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s var(--ease-smooth);
+    }
+
+    .cea-report-btn:hover { border-color: var(--blue); color: var(--blue); }
+
+    /* ================================================================
+       FLOATING POPUP
+       ================================================================ */
+
+    .cea-popup {
+      position: fixed;
+      z-index: 500;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12),
+                  0 4px 12px rgba(0, 0, 0, 0.06),
+                  0 0 0 1px rgba(0, 0, 0, 0.02);
+      width: 320px;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(8px) scale(0.96);
+      transition: opacity 0.25s var(--ease-out),
+                  transform 0.35s var(--ease-spring),
+                  visibility 0.25s;
+      pointer-events: none;
+    }
+
+    .cea-popup.cea-popup-visible {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+    }
+
+    /* Popup arrow */
+    .cea-popup::before {
+      content: '';
+      position: absolute;
+      top: -6px;
+      left: var(--arrow-left, 24px);
+      width: 12px;
+      height: 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-bottom: none;
+      border-right: none;
+      transform: rotate(45deg);
+    }
+
+    .cea-popup-header {
+      display: flex;
+      align-items: center;
+      padding: 10px 14px 0;
+      gap: 6px;
+    }
+
+    .cea-popup-cat {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .cea-popup-cat i.fa-chevron-down { font-size: 8px; color: var(--text-muted); }
+
+    .cea-popup-drag {
+      margin: 0 auto;
+      color: var(--text-muted);
+      font-size: 12px;
+      cursor: grab;
+      letter-spacing: 1px;
+    }
+
+    .cea-popup-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px;
+      font-size: 14px;
+      border-radius: 5px;
+      transition: all 0.15s var(--ease-smooth);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .cea-popup-close:hover { background: var(--bg-hover); color: var(--text); }
+
+    .cea-popup-body { padding: 10px 14px 14px; }
+
+    .cea-popup-title {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 3px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .cea-popup-title i { font-size: 11px; color: var(--text-muted); cursor: help; }
+
+    .cea-popup-msg {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 10px;
+      line-height: 1.5;
+    }
+
+    .cea-popup-actions { display: flex; align-items: center; gap: 8px; }
+
+    .cea-popup .cea-suggestion-chip { margin-bottom: 0; font-size: 12px; padding: 5px 12px; }
+
+    .cea-popup-ignore {
+      font-size: 12px;
+      color: var(--text-muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 500;
+      transition: all 0.15s var(--ease-smooth);
+      padding: 5px 10px;
+      border-radius: 5px;
+    }
+
+    .cea-popup-ignore:hover { color: var(--text-secondary); background: var(--bg-hover); }
+
+    /* ================================================================
+       PREVIEW LABEL
+       ================================================================ */
+
+    .preview-label {
+      position: fixed;
+      top: var(--cea-masthead-height);
+      right: 0;
+      background: var(--cat-spelling);
+      color: white;
+      padding: 3px 14px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      z-index: 999;
+      border-radius: 0 0 0 6px;
+    }
+
+    /* ================================================================
+       RESPONSIVE
+       ================================================================ */
+
+    @media (max-width: 1100px) { :root { --cea-panel-width: 330px; } }
+
+    @media (max-width: 768px) {
+      .cea-layout { flex-direction: column; }
+      .cea-issue-panel {
+        width: 100%;
+        height: 40vh;
+        border-left: none;
+        border-top: 1px solid var(--border);
+      }
+    }
+
+    /* ================================================================
+       REDUCED MOTION
+       ================================================================ */
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="preview-label">Design Preview v4</div>
+
+<!-- MASTHEAD -->
+<header class="cea-masthead">
+  <a class="cea-logo" href="#">
+    <div class="cea-logo-icon"><i class="fas fa-pen-nib"></i></div>
+    Content Editorial Assistant
+    <span class="cea-version-badge">0.0.2</span>
+  </a>
+  <nav>
+    <ul class="cea-nav">
+      <li><a href="#" class="active">Review</a></li>
+      <li><a href="#">Docs <i class="fas fa-external-link-alt" style="font-size:0.65em"></i></a></li>
+      <li><a href="#">Help</a></li>
+    </ul>
+  </nav>
+  <div class="cea-masthead-actions">
+    <button class="cea-masthead-btn" type="button" title="Toggle theme"><i class="fas fa-circle-half-stroke"></i></button>
+  </div>
+</header>
+
+<!-- TWO-PANE LAYOUT -->
+<div class="cea-layout">
+
+  <!-- EDITOR PANEL -->
+  <div class="cea-editor-panel">
+
+    <div class="cea-editor-topbar">
+      <button class="cea-topbar-btn" type="button"><i class="fas fa-upload"></i> Upload</button>
+      <span class="cea-content-badge">procedure</span>
+      <span class="cea-topbar-sep"></span>
+      <button class="cea-topbar-btn" type="button"><i class="fas fa-rotate"></i> Reset</button>
+    </div>
+
+    <div class="cea-editor-area">
+      <div class="cea-editor-wrap">
+        <div class="cea-editor-content" id="cea-editor" contenteditable="false">
+
+          <h2>Installing the OpenShift CLI</h2>
+
+          <p>
+            You can install the OpenShift CLI (<code>oc</code>) to interact with OpenShift Container Platform
+            from a command-line interface. The following procedure describes how to install the CLI on Linux.
+          </p>
+
+          <h3>.Prerequisites</h3>
+
+          <p id="p-prereq">
+            You have a running OpenShift Container Platform cluster and you have
+            <span class="cea-underline" data-cat="grammar" data-issue="4">logged into</span>
+            it using a web console or API token. Ensure that you have
+            <span class="cea-underline" data-cat="style" data-issue="5">sufficient</span>
+            privileges to perform the installation.
+          </p>
+
+          <h3>.Procedure</h3>
+
+          <p>
+            1. Navigate to the OpenShift Container Platform downloads page for your operating system and
+            download the appropriate <code>oc</code> binary.
+          </p>
+
+          <p>
+            2. Unpack the archive by running the following command:
+          </p>
+
+          <p><code>$ tar xvf oc.tar.gz</code></p>
+
+          <p id="p-step3">
+            3. Place the <code>oc</code> binary in a directory that is on your <code>PATH</code>. You
+            can verify this by running <code>echo $PATH</code> in your
+            <span class="cea-underline" data-cat="spelling" data-issue="1">termnial</span>.
+          </p>
+
+          <p id="p-step4">
+            4.
+            <span class="cea-underline" data-cat="grammar" data-issue="3">After the installation is complete, verify</span>
+            by running:
+          </p>
+
+          <p><code>$ oc version</code></p>
+
+          <p id="p-verify">
+            This will
+            <span class="cea-underline" data-cat="style" data-issue="8">display</span>
+            the version of the CLI and the server. If you cannot run this command, make sure your
+            <code>PATH</code> variable
+            <span class="cea-underline" data-cat="punctuation" data-issue="6">includes,</span>
+            the directory where you placed the binary.
+          </p>
+
+          <p id="p-more">
+            For more information about
+            <span class="cea-underline" data-cat="spelling" data-issue="2">configuing</span>
+            the CLI, refer to the
+            <span class="cea-underline" data-cat="structure" data-issue="7">below</span>
+            documentation section.
+          </p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="cea-editor-bottombar">
+      <button class="cea-fmt-btn" type="button" title="Bold"><i class="fas fa-bold"></i></button>
+      <button class="cea-fmt-btn" type="button" title="Italic"><i class="fas fa-italic"></i></button>
+      <button class="cea-fmt-btn" type="button" title="Underline"><i class="fas fa-underline"></i></button>
+      <button class="cea-fmt-btn" type="button" title="Strikethrough"><i class="fas fa-strikethrough"></i></button>
+      <span class="cea-fmt-sep"></span>
+      <button class="cea-fmt-btn" type="button" title="Link"><i class="fas fa-link"></i></button>
+      <button class="cea-fmt-btn" type="button" title="Ordered list"><i class="fas fa-list-ol"></i></button>
+      <button class="cea-fmt-btn" type="button" title="Unordered list"><i class="fas fa-list-ul"></i></button>
+      <span class="cea-fmt-sep"></span>
+      <button class="cea-fmt-btn" type="button" title="Undo"><i class="fas fa-rotate-left"></i></button>
+      <button class="cea-fmt-btn" type="button" title="Redo"><i class="fas fa-rotate-right"></i></button>
+      <div class="cea-bottombar-right">
+        <span class="cea-word-count" id="cea-word-count">342 words</span>
+        <button class="cea-copy-btn" type="button">Copy text</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ISSUE PANEL -->
+  <div class="cea-issue-panel">
+
+    <div class="cea-panel-header">
+      <div class="cea-score-row">
+        <div class="cea-score-ring" id="cea-score-ring">
+          <svg viewBox="0 0 36 36" width="52" height="52">
+            <circle class="cea-score-ring__bg" cx="18" cy="18" r="15.5" />
+            <circle class="cea-score-ring__fill" cx="18" cy="18" r="15.5"
+                    stroke-dasharray="97.4" stroke-dashoffset="97.4" />
+          </svg>
+          <span class="cea-score-ring__value">75</span>
+        </div>
+        <div class="cea-score-info">
+          <div class="cea-score-label">Good</div>
+          <div class="cea-score-sub" id="cea-issue-count">8 issues found</div>
+        </div>
+      </div>
+
+      <div class="cea-chips" id="cea-chips">
+        <span class="cea-chip cea-chip--spelling"><span class="cea-chip__dot"></span> 2 Spelling</span>
+        <span class="cea-chip cea-chip--grammar"><span class="cea-chip__dot"></span> 2 Grammar</span>
+        <span class="cea-chip cea-chip--style"><span class="cea-chip__dot"></span> 2 Style</span>
+        <span class="cea-chip cea-chip--punctuation"><span class="cea-chip__dot"></span> 1 Punctuation</span>
+        <span class="cea-chip cea-chip--structure"><span class="cea-chip__dot"></span> 1 Structure</span>
+      </div>
+    </div>
+
+    <!-- Issue list — card-segregated -->
+    <div class="cea-issue-list" id="cea-issue-list">
+
+      <!-- Issue 1: termnial -->
+      <div class="cea-issue-card" data-issue="1" data-cat="spelling">
+        <div class="cea-card-summary">
+          <span class="cea-card-dot cea-card-dot--spelling"></span>
+          <span class="cea-card-text">
+            <span class="cea-card-word">termnial</span>
+            <span class="cea-card-sep">&ndash;</span>
+            <span class="cea-card-desc">Spelling mistake</span>
+          </span>
+        </div>
+        <div class="cea-card-detail">
+          <div class="cea-card-detail-wrap">
+            <div class="cea-card-detail-inner">
+              <div class="cea-detail-cat" data-cat="spelling">Spelling mistake <i class="fas fa-circle-info"></i></div>
+              <div class="cea-detail-msg">Possible spelling mistake found.</div>
+              <button class="cea-suggestion-chip" data-action="accept">terminal</button>
+              <div class="cea-detail-actions">
+                <button class="cea-action-link" data-action="dismiss"><i class="fas fa-ban"></i> Dismiss</button>
+                <button class="cea-action-link" data-action="fixed"><i class="fas fa-check"></i> I fixed it</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Issue 2: configuing -->
+      <div class="cea-issue-card" data-issue="2" data-cat="spelling">
+        <div class="cea-card-summary">
+          <span class="cea-card-dot cea-card-dot--spelling"></span>
+          <span class="cea-card-text">
+            <span class="cea-card-word">configuing</span>
+            <span class="cea-card-sep">&ndash;</span>
+            <span class="cea-card-desc">Spelling mistake</span>
+          </span>
+        </div>
+        <div class="cea-card-detail">
+          <div class="cea-card-detail-wrap">
+            <div class="cea-card-detail-inner">
+              <div class="cea-detail-cat" data-cat="spelling">Spelling mistake <i class="fas fa-circle-info"></i></div>
+              <div class="cea-detail-msg">Possible spelling mistake found.</div>
+              <button class="cea-suggestion-chip" data-action="accept">configuring</button>
+              <div class="cea-detail-actions">
+                <button class="cea-action-link" data-action="dismiss"><i class="fas fa-ban"></i> Dismiss</button>
+                <button class="cea-action-link" data-action="fixed"><i class="fas fa-check"></i> I fixed it</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Issue 3: After the installation... -->
+      <div class="cea-issue-card" data-issue="3" data-cat="grammar">
+        <div class="cea-card-summary">
+          <span class="cea-card-dot cea-card-dot--grammar"></span>
+          <span class="cea-card-text">
+            <span class="cea-card-word">After the installation...</span>
+            <span class="cea-card-sep">&ndash;</span>
+            <span class="cea-card-desc">Lead with verb</span>
+          </span>
+        </div>
+        <div class="cea-card-detail">
+          <div class="cea-card-detail-wrap">
+            <div class="cea-card-detail-inner">
+              <div class="cea-detail-cat" data-cat="grammar">Lead with imperative verb <i class="fas fa-circle-info"></i></div>
+              <div class="cea-detail-msg">In procedural steps, lead with the imperative verb. Restructure to put the action first.</div>
+              <button class="cea-suggestion-chip" data-action="accept">Verify the installation by running:</button>
+              <div class="cea-detail-actions">
+                <button class="cea-action-link" data-action="dismiss"><i class="fas fa-ban"></i> Dismiss</button>
+                <button class="cea-action-link" data-action="fixed"><i class="fas fa-check"></i> I fixed it</button>
+                <button class="cea-action-link" data-action="feedback-up"><i class="fas fa-thumbs-up"></i></button>
+                <button class="cea-action-link" data-action="feedback-down"><i class="fas fa-thumbs-down"></i></button>
+              </div>
+              <div class="cea-detail-citation">
+                <i class="fas fa-book-open"></i>
+                <a href="#">IBM Style Guide &mdash; Procedures, p. 142</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Issue 4: logged into -->
+      <div class="cea-issue-card" data-issue="4" data-cat="grammar">
+        <div class="cea-card-summary">
+          <span class="cea-card-dot cea-card-dot--grammar"></span>
+          <span class="cea-card-text">
+            <span class="cea-card-word">logged into</span>
+            <span class="cea-card-sep">&ndash;</span>
+            <span class="cea-card-desc">Use &ldquo;logged in to&rdquo;</span>
+          </span>
+        </div>
+        <div class="cea-card-detail">
+          <div class="cea-card-detail-wrap">
+            <div class="cea-card-detail-inner">
+              <div class="cea-detail-cat" data-cat="grammar">Phrasal verb <i class="fas fa-circle-info"></i></div>
+              <div class="cea-detail-msg">The phrasal verb "log in" takes "to" as a separate preposition, not "into."</div>
+              <button class="cea-suggestion-chip" data-action="accept">logged in to</button>
+              <div class="cea-detail-actions">
+                <button class="cea-action-link" data-action="dismiss"><i class="fas fa-ban"></i> Dismiss</button>
+                <button class="cea-action-link" data-action="fixed"><i class="fas fa-check"></i> I fixed it</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Issue 5: sufficient -->
+      <div class="cea-issue-card" data-issue="5" data-cat="style">
+        <div class="cea-card-summary">
+          <span class="cea-card-dot cea-card-dot--style"></span>
+          <span class="cea-card-text">
+            <span class="cea-card-word">sufficient</span>
+            <span class="cea-card-sep">&ndash;</span>
+            <span class="cea-card-desc">Use simpler word</span>
+          </span>
+        </div>
+        <div class="cea-card-detail">
+          <div class="cea-card-detail-wrap">
+            <div class="cea-card-detail-inner">
+              <div class="cea-detail-cat" data-cat="style">Complex word <i class="fas fa-circle-info"></i></div>
+              <div class="cea-detail-msg">Use a simpler word.</div>
+              <button class="cea-suggestion-chip" data-action="accept">enough</button>
+              <div class="cea-detail-actions">
+                <button class="cea-action-link" data-action="dismiss"><i class="fas fa-ban"></i> Dismiss</button>
+                <button class="cea-action-link" data-action="fixed"><i class="fas fa-check"></i> I fixed it</button>
+              </div>
+              <div class="cea-detail-citation">
+                <i class="fas fa-book-open"></i>
+                <a href="#">IBM Style Guide &mdash; Word Usage, p. 238</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Issue 6: includes, -->
+      <div class="cea-issue-card" data-issue="6" data-cat="punctuation">
+        <div class="cea-card-summary">
+          <span class="cea-card-dot cea-card-dot--punctuation"></span>
+          <span class="cea-card-text">
+            <span class="cea-card-word">includes,</span>
+            <span class="cea-card-sep">&ndash;</span>
+            <span class="cea-card-desc">Remove comma</span>
+          </span>
+        </div>
+        <div class="cea-card-detail">
+          <div class="cea-card-detail-wrap">
+            <div class="cea-card-detail-inner">
+              <div class="cea-detail-cat" data-cat="punctuation">Punctuation error <i class="fas fa-circle-info"></i></div>
+              <div class="cea-detail-msg">Remove the comma after "includes" &mdash; no comma before a direct object.</div>
+              <button class="cea-suggestion-chip" data-action="accept">includes</button>
+              <div class="cea-detail-actions">
+                <button class="cea-action-link" data-action="dismiss"><i class="fas fa-ban"></i> Dismiss</button>
+                <button class="cea-action-link" data-action="fixed"><i class="fas fa-check"></i> I fixed it</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Issue 7: below -->
+      <div class="cea-issue-card" data-issue="7" data-cat="structure">
+        <div class="cea-card-summary">
+          <span class="cea-card-dot cea-card-dot--structure"></span>
+          <span class="cea-card-text">
+            <span class="cea-card-word">below</span>
+            <span class="cea-card-sep">&ndash;</span>
+            <span class="cea-card-desc">Spatial reference</span>
+          </span>
+        </div>
+        <div class="cea-card-detail">
+          <div class="cea-card-detail-wrap">
+            <div class="cea-card-detail-inner">
+              <div class="cea-detail-cat" data-cat="structure">Self-referential text <i class="fas fa-circle-info"></i></div>
+              <div class="cea-detail-msg">Do not use spatial references. Content may be reordered or viewed on different devices.</div>
+              <div class="cea-detail-actions">
+                <button class="cea-action-link" data-action="dismiss"><i class="fas fa-ban"></i> Dismiss</button>
+                <button class="cea-action-link" data-action="fixed"><i class="fas fa-check"></i> I fixed it</button>
+              </div>
+              <div class="cea-detail-citation">
+                <i class="fas fa-book-open"></i>
+                <a href="#">IBM Style Guide &mdash; Self-Referential Text, p. 67</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Issue 8: display -->
+      <div class="cea-issue-card" data-issue="8" data-cat="style">
+        <div class="cea-card-summary">
+          <span class="cea-card-dot cea-card-dot--style"></span>
+          <span class="cea-card-text">
+            <span class="cea-card-word">display</span>
+            <span class="cea-card-sep">&ndash;</span>
+            <span class="cea-card-desc">Anthropomorphism</span>
+          </span>
+        </div>
+        <div class="cea-card-detail">
+          <div class="cea-card-detail-wrap">
+            <div class="cea-card-detail-inner">
+              <div class="cea-detail-cat" data-cat="style">Anthropomorphism <i class="fas fa-circle-info"></i></div>
+              <div class="cea-detail-msg">Avoid attributing human characteristics to software. "This will display" implies intent.</div>
+              <button class="cea-suggestion-chip" data-action="accept">shows</button>
+              <div class="cea-detail-actions">
+                <button class="cea-action-link" data-action="dismiss"><i class="fas fa-ban"></i> Dismiss</button>
+                <button class="cea-action-link" data-action="fixed"><i class="fas fa-check"></i> I fixed it</button>
+                <button class="cea-action-link" data-action="feedback-up"><i class="fas fa-thumbs-up"></i></button>
+                <button class="cea-action-link" data-action="feedback-down"><i class="fas fa-thumbs-down"></i></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="cea-panel-footer">
+      <button class="cea-report-btn" type="button">
+        <i class="fas fa-chart-bar"></i> View Full Report
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<!-- FLOATING POPUP -->
+<div class="cea-popup" id="cea-popup">
+  <div class="cea-popup-header">
+    <span class="cea-popup-cat" id="popup-cat">Correct <i class="fas fa-chevron-down"></i></span>
+    <span class="cea-popup-drag"><i class="fas fa-grip-vertical"></i></span>
+    <button class="cea-popup-close" id="popup-close" type="button"><i class="fas fa-xmark"></i></button>
+  </div>
+  <div class="cea-popup-body">
+    <div class="cea-popup-title" id="popup-title">Missing comma <i class="fas fa-circle-info"></i></div>
+    <div class="cea-popup-msg" id="popup-msg">Possible missing comma found.</div>
+    <div class="cea-popup-actions">
+      <button class="cea-suggestion-chip" id="popup-suggestion" data-action="accept">introduction,</button>
+      <button class="cea-popup-ignore" id="popup-ignore">Ignore</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================================
+     INTERACTIVE BEHAVIOR
+     ====================================================================== -->
+<script>
+(function() {
+  'use strict';
+
+  var editor = document.getElementById('cea-editor');
+  var popup = document.getElementById('cea-popup');
+  var issueList = document.getElementById('cea-issue-list');
+  var activeIssueId = null;
+  var resolvedCount = 0;
+  var totalIssues = 8;
+
+  // Issue metadata
+  var issueData = {
+    '1': { title: 'Spelling mistake', msg: 'Possible spelling mistake found.', suggestion: 'terminal', cat: 'Spelling' },
+    '2': { title: 'Spelling mistake', msg: 'Possible spelling mistake found.', suggestion: 'configuring', cat: 'Spelling' },
+    '3': { title: 'Lead with imperative verb', msg: 'In procedural steps, lead with the imperative verb.', suggestion: 'Verify the installation by running:', cat: 'Grammar' },
+    '4': { title: 'Phrasal verb', msg: 'Use "logged in to" instead of "logged into."', suggestion: 'logged in to', cat: 'Grammar' },
+    '5': { title: 'Complex word', msg: 'Use a simpler word.', suggestion: 'enough', cat: 'Style' },
+    '6': { title: 'Punctuation error', msg: 'Remove the comma after "includes."', suggestion: 'includes', cat: 'Punctuation' },
+    '7': { title: 'Spatial reference', msg: 'Do not use spatial references.', suggestion: null, cat: 'Structure' },
+    '8': { title: 'Anthropomorphism', msg: 'Avoid attributing human characteristics to software.', suggestion: 'shows', cat: 'Style' },
+  };
+
+  // ── Entrance animations ──
+  function animateEntrance() {
+    // Score ring fill animation
+    var scoreRing = document.getElementById('cea-score-ring');
+    requestAnimationFrame(function() {
+      scoreRing.classList.add('cea-animated');
+    });
+
+    // Stagger category chips
+    var chips = document.querySelectorAll('.cea-chip');
+    chips.forEach(function(chip, i) {
+      setTimeout(function() {
+        chip.classList.add('cea-visible');
+      }, 400 + i * 80);
+    });
+  }
+
+  // Trigger entrance after brief delay
+  setTimeout(animateEntrance, 150);
+
+  // ── Select an issue (from sidebar card click) ──
+  function selectIssue(issueId) {
+    if (activeIssueId === issueId) {
+      deselectAll();
+      return;
+    }
+
+    hidePopup();
+    activeIssueId = issueId;
+
+    // Update cards
+    document.querySelectorAll('.cea-issue-card').forEach(function(c) {
+      c.classList.toggle('cea-card-active', c.dataset.issue === issueId);
+    });
+
+    // Fade editor text
+    editor.classList.add('cea-faded');
+    document.querySelectorAll('.cea-editor-content p, .cea-editor-content h2, .cea-editor-content h3').forEach(function(el) {
+      el.classList.remove('cea-focus');
+    });
+
+    // Highlight corresponding underline
+    document.querySelectorAll('.cea-underline').forEach(function(u) {
+      u.classList.remove('cea-active');
+    });
+
+    var underline = document.querySelector('.cea-underline[data-issue="' + issueId + '"]');
+    if (underline) {
+      underline.classList.add('cea-active');
+      var parent = underline.closest('p, h2, h3');
+      if (parent) parent.classList.add('cea-focus');
+      underline.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    // Scroll active card into view in the list
+    var activeCard = document.querySelector('.cea-issue-card[data-issue="' + issueId + '"]');
+    if (activeCard) {
+      activeCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+
+  // ── Deselect all ──
+  function deselectAll() {
+    activeIssueId = null;
+    document.querySelectorAll('.cea-issue-card').forEach(function(c) {
+      c.classList.remove('cea-card-active');
+    });
+    editor.classList.remove('cea-faded');
+    document.querySelectorAll('.cea-underline').forEach(function(u) {
+      u.classList.remove('cea-active');
+    });
+    hidePopup();
+  }
+
+  // ── Show popup near underlined text ──
+  function showPopup(underlineEl, issueId) {
+    var data = issueData[issueId];
+    if (!data) return;
+
+    // Collapse sidebar expansion
+    document.querySelectorAll('.cea-issue-card').forEach(function(c) {
+      c.classList.remove('cea-card-active');
+    });
+
+    // Update popup content
+    document.getElementById('popup-cat').innerHTML = data.cat + ' <i class="fas fa-chevron-down"></i>';
+    document.getElementById('popup-title').innerHTML = data.title + ' <i class="fas fa-circle-info"></i>';
+    document.getElementById('popup-msg').textContent = data.msg;
+
+    var suggBtn = document.getElementById('popup-suggestion');
+    if (data.suggestion) {
+      suggBtn.textContent = data.suggestion;
+      suggBtn.style.display = '';
+      suggBtn.dataset.issue = issueId;
+    } else {
+      suggBtn.style.display = 'none';
+    }
+
+    document.getElementById('popup-ignore').dataset.issue = issueId;
+
+    // Position popup below the underline
+    var rect = underlineEl.getBoundingClientRect();
+    var popupLeft = Math.max(8, Math.min(rect.left - 20, window.innerWidth - 340));
+    popup.style.left = popupLeft + 'px';
+    popup.style.top = (rect.bottom + 10) + 'px';
+
+    // Update arrow position
+    var arrowLeft = rect.left - popupLeft + rect.width / 2 - 6;
+    popup.style.setProperty('--arrow-left', Math.max(12, Math.min(arrowLeft, 290)) + 'px');
+
+    // Highlight underline
+    document.querySelectorAll('.cea-underline').forEach(function(u) { u.classList.remove('cea-active'); });
+    underlineEl.classList.add('cea-active');
+
+    // Fade text
+    editor.classList.add('cea-faded');
+    document.querySelectorAll('.cea-editor-content p, .cea-editor-content h2, .cea-editor-content h3').forEach(function(el) {
+      el.classList.remove('cea-focus');
+    });
+    var parent = underlineEl.closest('p, h2, h3');
+    if (parent) parent.classList.add('cea-focus');
+
+    activeIssueId = issueId;
+    popup.classList.add('cea-popup-visible');
+  }
+
+  function hidePopup() {
+    popup.classList.remove('cea-popup-visible');
+  }
+
+  // ── Resolve an issue ──
+  function resolveIssue(issueId) {
+    var card = document.querySelector('.cea-issue-card[data-issue="' + issueId + '"]');
+    if (card) {
+      // Set explicit height for smooth collapse
+      card.style.maxHeight = card.offsetHeight + 'px';
+      // Force layout
+      void card.offsetHeight;
+      card.classList.add('cea-removing');
+      setTimeout(function() { card.remove(); }, 450);
+    }
+
+    // Flash underline green then remove
+    var underline = document.querySelector('.cea-underline[data-issue="' + issueId + '"]');
+    if (underline) {
+      underline.classList.add('cea-flash');
+    }
+
+    hidePopup();
+    deselectAll();
+
+    // Update count
+    resolvedCount++;
+    var remaining = totalIssues - resolvedCount;
+    document.getElementById('cea-issue-count').textContent =
+      remaining + ' issue' + (remaining !== 1 ? 's' : '') + ' found';
+  }
+
+  // ── Event: click issue card ──
+  issueList.addEventListener('click', function(e) {
+    // Check if clicked on an action button inside the detail
+    var actionBtn = e.target.closest('[data-action]');
+    if (actionBtn) {
+      var card = actionBtn.closest('.cea-issue-card');
+      var issueId = card ? card.dataset.issue : null;
+      if (!issueId) return;
+
+      var action = actionBtn.dataset.action;
+      if (action === 'accept' || action === 'dismiss' || action === 'fixed') {
+        resolveIssue(issueId);
+      }
+      return;
+    }
+
+    // Otherwise toggle expansion
+    var clickedCard = e.target.closest('.cea-issue-card');
+    if (clickedCard) {
+      selectIssue(clickedCard.dataset.issue);
+    }
+  });
+
+  // ── Event: click underline in editor ──
+  editor.addEventListener('click', function(e) {
+    var underline = e.target.closest('.cea-underline');
+    if (underline) {
+      e.stopPropagation();
+      showPopup(underline, underline.dataset.issue);
+    }
+  });
+
+  // ── Event: click outside to deselect ──
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.cea-issue-panel') &&
+        !e.target.closest('.cea-underline') &&
+        !e.target.closest('.cea-popup')) {
+      deselectAll();
+    }
+  });
+
+  // ── Popup events ──
+  document.getElementById('popup-close').addEventListener('click', function() {
+    deselectAll();
+  });
+
+  document.getElementById('popup-suggestion').addEventListener('click', function() {
+    var issueId = this.dataset.issue;
+    if (issueId) resolveIssue(issueId);
+  });
+
+  document.getElementById('popup-ignore').addEventListener('click', function() {
+    var issueId = this.dataset.issue;
+    if (issueId) resolveIssue(issueId);
+  });
+
+  // ── Keyboard navigation ──
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      deselectAll();
+      return;
+    }
+
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      var cards = Array.from(document.querySelectorAll('.cea-issue-card:not(.cea-removing)'));
+      if (cards.length === 0) return;
+
+      var currentIdx = -1;
+      if (activeIssueId) {
+        currentIdx = cards.findIndex(function(c) { return c.dataset.issue === activeIssueId; });
+      }
+
+      var nextIdx;
+      if (e.key === 'ArrowDown') {
+        nextIdx = currentIdx < cards.length - 1 ? currentIdx + 1 : 0;
+      } else {
+        nextIdx = currentIdx > 0 ? currentIdx - 1 : cards.length - 1;
+      }
+
+      selectIssue(cards[nextIdx].dataset.issue);
+      e.preventDefault();
+    }
+  });
+
+})();
+</script>
+
+</body>
+</html>

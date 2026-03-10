@@ -1,0 +1,142 @@
+/* ── Inline Popup — floating tooltip near underlined text ── */
+
+.cea-inline-popup {
+  position: absolute;
+  z-index: 1060;
+  width: 340px;
+  max-width: calc(100vw - 16px);
+  background: var(--pf-v5-global--BackgroundColor--100, #fff);
+  border: 1px solid var(--pf-v5-global--BorderColor--100, #e8eaed);
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.25s var(--cea-ease-out, ease),
+              transform 0.3s var(--cea-ease-spring, ease);
+  pointer-events: none;
+}
+
+.cea-inline-popup--visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* Above variant */
+.cea-inline-popup--above {
+  transform: translateY(-4px);
+}
+.cea-inline-popup--above.cea-inline-popup--visible {
+  transform: translateY(0);
+}
+
+/* ── Arrow ── */
+.cea-inline-popup::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: var(--arrow-left, 24px);
+  width: 10px;
+  height: 10px;
+  background: var(--pf-v5-global--BackgroundColor--100, #fff);
+  border-top: 1px solid var(--pf-v5-global--BorderColor--100, #e8eaed);
+  border-left: 1px solid var(--pf-v5-global--BorderColor--100, #e8eaed);
+  transform: rotate(45deg);
+  z-index: 1;
+}
+
+/* Arrow flipped for --above placement */
+.cea-inline-popup--above::before {
+  top: auto;
+  bottom: -5px;
+  border-top: none;
+  border-left: none;
+  border-bottom: 1px solid var(--pf-v5-global--BorderColor--100, #e8eaed);
+  border-right: 1px solid var(--pf-v5-global--BorderColor--100, #e8eaed);
+}
+
+/* ── Header ── */
+.cea-inline-popup__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px 6px;
+}
+
+.cea-inline-popup__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.cea-inline-popup__dot--spelling    { background: var(--cea-cat-spelling); }
+.cea-inline-popup__dot--grammar     { background: var(--cea-cat-grammar); }
+.cea-inline-popup__dot--style       { background: var(--cea-cat-style); }
+.cea-inline-popup__dot--punctuation { background: var(--cea-cat-punctuation); }
+.cea-inline-popup__dot--structure   { background: var(--cea-cat-structure); }
+
+.cea-inline-popup__cat {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.cea-inline-popup__cat[data-cat="spelling"]    { color: var(--cea-cat-spelling); }
+.cea-inline-popup__cat[data-cat="grammar"]     { color: #b7791f; }
+.cea-inline-popup__cat[data-cat="style"]       { color: var(--cea-cat-style); }
+.cea-inline-popup__cat[data-cat="punctuation"] { color: #b7791f; }
+.cea-inline-popup__cat[data-cat="structure"]   { color: var(--cea-cat-structure); }
+
+.cea-inline-popup__close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--cea-text-muted, #9aa0a6);
+  font-size: 14px;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, background 0.15s;
+}
+.cea-inline-popup__close:hover {
+  color: var(--pf-v5-global--Color--100, #151515);
+  background: var(--cea-bg-hover, #f4f5f7);
+}
+
+/* ── Body ── */
+.cea-inline-popup__body {
+  padding: 0 14px 10px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--cea-text-secondary, var(--pf-v5-global--Color--200, #6a6e73));
+}
+
+/* ── Actions ── */
+.cea-inline-popup__actions {
+  padding: 0 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Suggestion chips inside popup reuse .cea-suggestion-chips and .cea-suggestion-chip
+   from cea-issue-panel.css — no duplication needed. */
+
+/* Dismiss button inherits .cea-action-link from cea-issue-panel.css.
+   Override margin for popup context. */
+.cea-inline-popup__actions > .cea-action-link {
+  margin: 0;
+  align-self: flex-start;
+}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .cea-inline-popup {
+    transition: none;
+    opacity: 1;
+    transform: none;
+  }
+}
