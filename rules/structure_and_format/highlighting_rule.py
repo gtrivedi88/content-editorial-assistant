@@ -39,7 +39,7 @@ _KNOWN_ACRONYMS = frozenset([
     'TODO', 'FIXME', 'NOTE', 'HACK', 'INFO', 'WARN', 'FAIL',
     'NULL', 'TRUE', 'FALSE', 'ENUM', 'VOID', 'CHAR', 'BOOL',
     'NASA', 'NATO', 'OSHA', 'NIST', 'IEEE', 'IETF', 'RFC',
-    'RHEL', 'SUSE', 'DITA', 'SCSI', 'BIOS', 'UEFI',
+    'RHEL', 'SUSE', 'DITA', 'SCSI', 'BIOS', 'UEFI', 'NVIDIA', 'CUDA',
     'IMPORTANT', 'WARNING', 'CAUTION', 'DANGER', 'ATTENTION',
     'TIP', 'RESTRICTION', 'REQUIREMENT', 'EXCEPTION', 'REMEMBER',
 ])

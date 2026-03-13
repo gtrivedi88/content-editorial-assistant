@@ -117,6 +117,13 @@ class CurrencyRule(BaseNumbersRule):
                            text: str, context) -> List[Dict[str, Any]]:
         results: List[Dict[str, Any]] = []
         for m in _MULTIPLIER_RE.finditer(sentence):
+            # Skip multipliers inside hyphenated identifiers / model names
+
+            start, end = m.start(), m.end()
+            if (start > 0 and sentence[start - 1] == '-') or (
+                end < len(sentence) and sentence[end] == '-'
+            ):
+                continue
             number = m.group(1)
             letter = m.group(2).upper()
             word = _MULTIPLIER_WORD.get(letter)

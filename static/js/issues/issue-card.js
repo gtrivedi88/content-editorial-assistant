@@ -417,6 +417,9 @@ async function _autoFetchSuggestion(error, editorEl, card, container, existingCh
         return;
     }
 
+    // Persist LLM rewrite so inline popup can read it
+    error._llmSuggestion = rewriteText;
+
     // Clear spinner
     container.innerHTML = '';
 

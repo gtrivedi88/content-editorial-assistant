@@ -53,6 +53,12 @@ class DashesRule(BasePunctuationRule):
             for match in _EM_DASH_RE.finditer(sentence):
                 if in_code_range(sent_start + match.start(), code_ranges):
                     continue
+                # Skip '--' when it is a CLI flag prefix (e.g. --enforce)
+                end = match.end()
+                if match.group(0) == '--' and end < len(sentence) and (
+                    sentence[end].isalpha()
+                ):
+                    continue
                 error = self._create_error(
                     sentence=sentence,
                     sentence_index=i,

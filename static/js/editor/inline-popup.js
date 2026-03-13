@@ -119,6 +119,11 @@ export class InlinePopup {
             .map(s => extractReplacement(s, error.flagged_text))
             .filter(Boolean);
 
+        // Use cached LLM rewrite if available (syncs with side panel)
+        if (allSuggestions.length === 0 && error._llmSuggestion) {
+            allSuggestions.push(error._llmSuggestion);
+        }
+
         // Fallback: try extracting from message text
         if (allSuggestions.length === 0) {
             const msgText = extractFromMessage(error.message, error.flagged_text);
