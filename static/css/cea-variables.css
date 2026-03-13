@@ -36,19 +36,19 @@
   --cea-cat-spelling:     #d93025;
   --cea-cat-grammar:      #f29900;
   --cea-cat-style:        #4285f4;
-  --cea-cat-punctuation:  #f29900;
+  --cea-cat-punctuation:  #e07c00;
   --cea-cat-structure:    #7b8794;
 
   --cea-cat-spelling-bg:     rgba(217, 48, 37, 0.05);
   --cea-cat-grammar-bg:      rgba(242, 153, 0, 0.05);
   --cea-cat-style-bg:        rgba(66, 133, 244, 0.05);
-  --cea-cat-punctuation-bg:  rgba(242, 153, 0, 0.05);
+  --cea-cat-punctuation-bg:  rgba(224, 124, 0, 0.05);
   --cea-cat-structure-bg:    rgba(123, 135, 148, 0.05);
 
   --cea-cat-spelling-bg-strong:     rgba(217, 48, 37, 0.08);
   --cea-cat-grammar-bg-strong:      rgba(242, 153, 0, 0.08);
   --cea-cat-style-bg-strong:        rgba(66, 133, 244, 0.08);
-  --cea-cat-punctuation-bg-strong:  rgba(242, 153, 0, 0.08);
+  --cea-cat-punctuation-bg-strong:  rgba(224, 124, 0, 0.08);
   --cea-cat-structure-bg-strong:    rgba(123, 135, 148, 0.08);
 
   /* Motion curves */

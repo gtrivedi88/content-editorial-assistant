@@ -280,11 +280,11 @@
 
 .cea-chip--spelling    { background: var(--cea-cat-spelling-bg); color: var(--cea-cat-spelling); }
 .cea-chip--spelling .cea-chip__dot { background: var(--cea-cat-spelling); }
-.cea-chip--grammar     { background: var(--cea-cat-grammar-bg); color: #b7791f; }
+.cea-chip--grammar     { background: var(--cea-cat-grammar-bg); color: var(--cea-cat-grammar); }
 .cea-chip--grammar .cea-chip__dot { background: var(--cea-cat-grammar); }
 .cea-chip--style       { background: var(--cea-cat-style-bg); color: var(--cea-cat-style); }
 .cea-chip--style .cea-chip__dot { background: var(--cea-cat-style); }
-.cea-chip--punctuation { background: var(--cea-cat-punctuation-bg); color: #b7791f; }
+.cea-chip--punctuation { background: var(--cea-cat-punctuation-bg); color: var(--cea-cat-punctuation); }
 .cea-chip--punctuation .cea-chip__dot { background: var(--cea-cat-punctuation); }
 .cea-chip--structure   { background: var(--cea-cat-structure-bg); color: var(--cea-cat-structure); }
 .cea-chip--structure .cea-chip__dot { background: var(--cea-cat-structure); }

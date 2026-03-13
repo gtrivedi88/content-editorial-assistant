@@ -54,11 +54,8 @@ export class IssuePanel {
             }
         });
 
-        // Highlight active card and clear filter if needed
+        // Highlight active card
         this._store.subscribe('selectedErrorId', (errorId) => {
-            if (errorId && this._activeCatFilter) {
-                this._clearChipFilter();
-            }
             this._highlightCard(errorId);
         });
 

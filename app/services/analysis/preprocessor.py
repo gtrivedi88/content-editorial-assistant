@@ -264,6 +264,7 @@ _MARKDOWN_WRAPPERS: dict[str, tuple[str, str]] = {
     "blockquote": ("> ", ""),
     "quote": ("> ", ""),
     "table_cell": ("| ", " "),
+    "dlist": ("- **Definition:** ", ""),
 }
 
 

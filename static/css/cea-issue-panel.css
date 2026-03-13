@@ -227,9 +227,9 @@
 }
 
 .cea-detail-cat[data-cat="spelling"]    { color: var(--cea-cat-spelling); }
-.cea-detail-cat[data-cat="grammar"]     { color: #b7791f; }
+.cea-detail-cat[data-cat="grammar"]     { color: var(--cea-cat-grammar); }
 .cea-detail-cat[data-cat="style"]       { color: var(--cea-cat-style); }
-.cea-detail-cat[data-cat="punctuation"] { color: #b7791f; }
+.cea-detail-cat[data-cat="punctuation"] { color: var(--cea-cat-punctuation); }
 .cea-detail-cat[data-cat="structure"]   { color: var(--cea-cat-structure); }
 
 .cea-detail-cat i {

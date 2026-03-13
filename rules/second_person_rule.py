@@ -175,7 +175,10 @@ class SecondPersonRule(BaseRule):
                     f"Use 'you' instead of 'the {role}' in user-facing "
                     f"documentation. Per IBM Style Guide (Page 119) [Verified]."
                 ),
-                suggestions=["you"],
+                suggestions=[
+                    f"Rewrite using 'you' instead of 'the {role}', "
+                    "adjusting verb agreement and possessives as needed"
+                ],
                 severity='low', text=text, context=context,
                 flagged_text=match.group(0),
                 span=(match.start(), match.end()),
