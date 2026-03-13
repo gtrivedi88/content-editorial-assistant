@@ -491,6 +491,11 @@ def preprocess(
     word_count = len(words)
     paragraph_count = _count_paragraphs(cleaned)
 
+    unique_words = len({w.lower() for w in words}) if words else 0
+    vocabulary_diversity = round(
+        unique_words / word_count if word_count > 0 else 0.0, 4,
+    )
+
     avg_words = _safe_divide(word_count, len(sentences))
     avg_syllables = _compute_avg_syllables(words)
 
@@ -533,6 +538,8 @@ def preprocess(
         "paragraph_count": paragraph_count,
         "avg_words_per_sentence": round(avg_words, 2),
         "avg_syllables_per_word": round(avg_syllables, 2),
+        "unique_words": unique_words,
+        "vocabulary_diversity": vocabulary_diversity,
         "detected_content_type": _detect_content_type(text),
     }
 

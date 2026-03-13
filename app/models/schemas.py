@@ -224,7 +224,8 @@ class ReportResponse:
     """Statistical report for an analyzed document.
 
     Contains word counts, sentence metrics, readability scores,
-    issue category breakdowns, and per-guide compliance percentages.
+    issue category breakdowns, per-guide compliance percentages,
+    and LLM consumability analysis.
 
     Attributes:
         word_count: Total number of words in the document.
@@ -236,6 +237,10 @@ class ReportResponse:
             each containing score and help_text.
         category_breakdown: Issue counts keyed by category name.
         compliance: Per-guide compliance percentages (0.0-1.0).
+        unique_words: Count of distinct words (case-insensitive).
+        vocabulary_diversity: Type-token ratio (0.0-1.0).
+        estimated_reading_time: Human-readable reading time string.
+        llm_consumability: LLM consumability score and breakdown.
     """
 
     word_count: int
@@ -246,6 +251,10 @@ class ReportResponse:
     readability: dict[str, dict[str, object]] = field(default_factory=dict)
     category_breakdown: dict[str, int] = field(default_factory=dict)
     compliance: dict[str, float] = field(default_factory=dict)
+    unique_words: int = 0
+    vocabulary_diversity: float = 0.0
+    estimated_reading_time: str = ""
+    llm_consumability: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, object]:
         """Serialize to a JSON-compatible dictionary.
@@ -264,6 +273,17 @@ class ReportResponse:
             },
             "category_breakdown": dict(self.category_breakdown),
             "compliance": dict(self.compliance),
+            "statistics": {
+                "word_count": self.word_count,
+                "sentence_count": self.sentence_count,
+                "paragraph_count": self.paragraph_count,
+                "avg_sentence_length": self.avg_words_per_sentence,
+                "unique_words": self.unique_words,
+                "vocabulary_diversity": self.vocabulary_diversity,
+                "avg_syllables_per_word": self.avg_syllables_per_word,
+                "estimated_reading_time": self.estimated_reading_time,
+            },
+            "llm_consumability": dict(self.llm_consumability),
         }
 
 

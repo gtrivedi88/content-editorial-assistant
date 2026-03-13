@@ -12,6 +12,8 @@ import { SelectionTracker } from './selection-tracker.js';
 import { MarginLabels } from './margin-labels.js';
 import { debounce, escapeHtml, copyToClipboard, normalizeWhitespace } from '../shared/dom-utils.js';
 import { detectFormatFromContent } from '../file/format-detector.js';
+import { abortCurrentAnalysis } from '../services/api-client.js';
+import { clearSuggestionCache } from '../issues/issue-card.js';
 
 export class EditorController {
     constructor(editorEl, storeRef) {
@@ -417,6 +419,10 @@ export class EditorController {
     }
 
     reset() {
+        // Abort any in-flight analysis HTTP request
+        abortCurrentAnalysis();
+        clearSuggestionCache();
+
         clearUnderlines(this._editor);
         // Use innerHTML to ensure no residual DOM nodes or formatting state
         // survive from previously pasted HTML (prevents bold-after-reset bug).
@@ -426,6 +432,7 @@ export class EditorController {
         if (this._autoAnalysisTimer) clearTimeout(this._autoAnalysisTimer);
         this._store.setState({
             content: '',
+            htmlContent: null,
             formatHint: 'auto',
             detectedFormat: null,
             analysisStatus: 'idle',
@@ -442,10 +449,12 @@ export class EditorController {
             manuallyFixedErrors: new Set(),
             progressSteps: [],
             progressPercent: 0,
+            stageProgress: null,
             qualityScore: 0,
             errorMessage: null,
             currentAnalysisId: null,
             detectedContentType: null,
+            sessionId: null,
         });
         this._updateContent();
     }

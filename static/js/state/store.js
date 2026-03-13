@@ -8,6 +8,7 @@ class Store {
         this._state = {
             // Content
             content: '',
+            htmlContent: null,     // sanitized innerHTML from browser paste
             formatHint: 'auto',
             detectedFormat: null,  // { format, confidence, markers } from auto-detection
             contentType: 'concept',
@@ -20,6 +21,7 @@ class Store {
             structuralBlocks: [],
             readability: null,
             statistics: null,
+            reportData: null,
 
             // UI state
             selectedErrorId: null,

@@ -1,6 +1,6 @@
 """Readability metric calculations for analyzed content.
 
-Computes six standard readability metrics using the textstat library.
+Computes four standard readability metrics using the textstat library.
 Each metric returns a numeric score and explanatory help text suitable
 for display in the statistical report panel.
 """
@@ -32,14 +32,6 @@ _METRIC_DEFINITIONS: list[dict[str, Any]] = [
         ),
     },
     {
-        "name": "SMOG Index",
-        "func": textstat.smog_index,
-        "help_text": (
-            "Years of education needed to understand the text. "
-            "Based on polysyllabic word density."
-        ),
-    },
-    {
         "name": "Gunning Fog",
         "func": textstat.gunning_fog,
         "help_text": (
@@ -53,14 +45,6 @@ _METRIC_DEFINITIONS: list[dict[str, Any]] = [
         "help_text": (
             "Based on character count per word and sentence length. "
             "10-14 is typical for technical writing."
-        ),
-    },
-    {
-        "name": "ARI",
-        "func": textstat.automated_readability_index,
-        "help_text": (
-            "Automated Readability Index. Based on characters per word "
-            "and words per sentence."
         ),
     },
 ]
@@ -109,7 +93,7 @@ def _compute_single_metric(definition: dict[str, Any], text: str) -> dict[str, o
 
 
 def calculate_readability(text: str) -> dict[str, dict[str, object]]:
-    """Calculate all six readability metrics for the given text.
+    """Calculate four readability metrics for the given text.
 
     Handles edge cases such as empty text, very short text (fewer than
     three words), and single-sentence documents by returning 0.0 scores

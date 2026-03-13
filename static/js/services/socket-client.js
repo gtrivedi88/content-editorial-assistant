@@ -143,6 +143,7 @@ export function initSocketClient(store) {
             store.setState({
                 readability: data.report.readability || store.get('readability'),
                 statistics: data.report.statistics || store.get('statistics'),
+                reportData: data.report || store.get('reportData'),
             });
         }
     });

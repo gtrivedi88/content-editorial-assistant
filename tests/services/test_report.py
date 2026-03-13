@@ -1,6 +1,6 @@
 """Tests for reporting services: readability metrics and report builder.
 
-Validates that readability calculations return all six standard metrics
+Validates that readability calculations return all four standard metrics
 with explanatory help text, and that the report builder produces
 complete ReportResponse objects with document statistics.
 """
@@ -24,14 +24,12 @@ _SAMPLE_TEXT: str = (
     "Active voice is preferred over passive voice in most technical writing."
 )
 
-# All six expected readability metric names
+# All four expected readability metric names
 _EXPECTED_METRICS: list[str] = [
     "Flesch Reading Ease",
     "Flesch-Kincaid Grade",
-    "SMOG Index",
     "Gunning Fog",
     "Coleman-Liau",
-    "ARI",
 ]
 
 
@@ -39,11 +37,11 @@ class TestReadability:
     """Tests for the readability metric calculation module."""
 
     def test_readability_all_metrics_present(self) -> None:
-        """All six readability scores are present in the result.
+        """All four readability scores are present in the result.
 
         The calculate_readability function must return entries for
-        Flesch Reading Ease, Flesch-Kincaid Grade, SMOG Index,
-        Gunning Fog, Coleman-Liau, and ARI.
+        Flesch Reading Ease, Flesch-Kincaid Grade, Gunning Fog,
+        and Coleman-Liau.
         """
         result: Dict[str, Dict[str, object]] = calculate_readability(_SAMPLE_TEXT)
 
@@ -159,7 +157,7 @@ class TestReportBuilder:
     def test_report_has_readability_metrics(self) -> None:
         """Report includes readability metrics from calculate_readability.
 
-        The readability dict should contain entries for all six
+        The readability dict should contain entries for all four
         standard metrics.
         """
         from app.services.reporting.builder import build_report

@@ -2600,15 +2600,40 @@ def _build_report(
     Returns:
         ReportResponse with document statistics and breakdowns.
     """
+    from app.services.reporting.llm_consumability import (
+        calculate_llm_consumability,
+    )
+    from app.services.reporting.readability import calculate_readability
+
+    readability = calculate_readability(prep["text"])
+
+    llm_consumability = calculate_llm_consumability(
+        blocks=prep.get("blocks", []),
+        prep=prep,
+        file_type=prep.get("file_type"),
+        readability=readability,
+    )
+
+    word_count = prep["word_count"]
+    minutes = max(1, word_count // 200)
+    if minutes < 60:
+        reading_time = f"{minutes} min"
+    else:
+        reading_time = f"{minutes // 60}h {minutes % 60}m"
+
     return ReportResponse(
-        word_count=prep["word_count"],
+        word_count=word_count,
         sentence_count=prep["sentence_count"],
         paragraph_count=prep["paragraph_count"],
         avg_words_per_sentence=prep["avg_words_per_sentence"],
         avg_syllables_per_word=prep["avg_syllables_per_word"],
-        readability={},
+        readability=readability,
         category_breakdown=dict(score.category_counts),
         compliance=dict(score.compliance),
+        unique_words=prep.get("unique_words", 0),
+        vocabulary_diversity=prep.get("vocabulary_diversity", 0.0),
+        estimated_reading_time=reading_time,
+        llm_consumability=llm_consumability,
     )
 
 

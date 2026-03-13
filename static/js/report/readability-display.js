@@ -1,64 +1,130 @@
 /**
- * Readability Display — renders readability score cards.
+ * Readability Display — renders readability metric cards with gauges and context.
+ * Handles the backend format: { "Flesch Reading Ease": { score, help_text }, ... }
  */
 
 import { escapeHtml } from '../shared/dom-utils.js';
 
 /**
- * Render readability scores section as HTML string.
+ * Determine status tier for a higher-is-better metric.
  */
-export function renderReadability(readability) {
-    if (!readability) return '';
-
-    const flesch = readability.flesch_reading_ease ?? readability.flesch ?? null;
-    const grade = readability.flesch_kincaid_grade ?? readability.grade_level ?? null;
-    const smog = readability.smog_index ?? readability.smog ?? null;
-    const fog = readability.gunning_fog ?? null;
-
-    let html = `<div class="cea-report-section">
-        <h3 class="cea-report-section__title">Readability Scores</h3>
-        <div class="cea-report-grid">`;
-
-    if (flesch !== null) {
-        const variant = flesch >= 60 ? 'cea-report-stat--success' : flesch >= 30 ? 'cea-report-stat--warning' : 'cea-report-stat--danger';
-        html += `<div class="cea-report-stat ${variant}">
-            <div class="cea-report-stat__value">${Number(flesch).toFixed(1)}</div>
-            <div class="cea-report-stat__label">Flesch Reading Ease<br><small>Higher is easier (60+ recommended)</small></div>
-        </div>`;
-    }
-
-    if (grade !== null) {
-        const variant = grade <= 10 ? 'cea-report-stat--success' : grade <= 14 ? 'cea-report-stat--warning' : 'cea-report-stat--danger';
-        html += `<div class="cea-report-stat ${variant}">
-            <div class="cea-report-stat__value">${Number(grade).toFixed(1)}</div>
-            <div class="cea-report-stat__label">Grade Level<br><small>${getGradeLabel(grade)}</small></div>
-        </div>`;
-    }
-
-    if (smog !== null) {
-        const variant = smog <= 10 ? 'cea-report-stat--success' : smog <= 14 ? 'cea-report-stat--warning' : 'cea-report-stat--danger';
-        html += `<div class="cea-report-stat ${variant}">
-            <div class="cea-report-stat__value">${Number(smog).toFixed(1)}</div>
-            <div class="cea-report-stat__label">SMOG Index<br><small>Years of education needed</small></div>
-        </div>`;
-    }
-
-    if (fog !== null) {
-        const variant = fog <= 10 ? 'cea-report-stat--success' : fog <= 14 ? 'cea-report-stat--warning' : 'cea-report-stat--danger';
-        html += `<div class="cea-report-stat ${variant}">
-            <div class="cea-report-stat__value">${Number(fog).toFixed(1)}</div>
-            <div class="cea-report-stat__label">Gunning Fog Index<br><small>Ideal: 7\u20138 for technical docs</small></div>
-        </div>`;
-    }
-
-    html += `</div></div>`;
-    return html;
+function statusHigherBetter(value, good, warn) {
+    if (value >= good) return 'success';
+    if (value >= warn) return 'warning';
+    return 'danger';
 }
 
-function getGradeLabel(grade) {
-    if (grade <= 6) return 'Elementary';
-    if (grade <= 8) return 'Middle School';
-    if (grade <= 12) return 'High School';
-    if (grade <= 16) return 'College Level';
-    return 'Graduate Level';
+/**
+ * Determine status tier for a lower-is-better metric.
+ */
+function statusLowerBetter(value, good, warn) {
+    if (value <= good) return 'success';
+    if (value <= warn) return 'warning';
+    return 'danger';
+}
+
+/**
+ * Metric configuration — defines how each readability metric is displayed.
+ */
+const METRIC_CONFIG = {
+    'Flesch Reading Ease': {
+        label: 'Flesch Reading Ease',
+        ideal: '60\u201370',
+        max: 100,
+        invert: false, // higher is better
+        getStatus: (v) => statusHigherBetter(v, 60, 30),
+        why: 'The gold standard for readability. Scores 60\u201370 mean your content is accessible to most technical professionals without being oversimplified.',
+    },
+    'Flesch-Kincaid Grade': {
+        label: 'Flesch-Kincaid Grade',
+        ideal: '8\u201312',
+        max: 20,
+        invert: true, // lower is better
+        getStatus: (v) => statusLowerBetter(v, 12, 14),
+        why: 'Maps to US school grade level. Grade 8\u201312 ensures your technical docs are clear to professionals without requiring advanced academic training.',
+    },
+    'Gunning Fog': {
+        label: 'Gunning Fog Index',
+        ideal: '8\u201312',
+        max: 20,
+        invert: true,
+        getStatus: (v) => statusLowerBetter(v, 12, 14),
+        why: 'Designed for business and technical writing. Penalizes complex words \u2014 keep below 12 for docs that engineers actually read.',
+    },
+    'Coleman-Liau': {
+        label: 'Coleman-Liau Index',
+        ideal: '10\u201314',
+        max: 20,
+        invert: true,
+        getStatus: (v) => statusLowerBetter(v, 14, 16),
+        why: 'Character-based formula \u2014 especially reliable for technical vocabulary where syllable counting can be misleading.',
+    },
+};
+
+/**
+ * Build a small SVG arc gauge for a metric score.
+ */
+function buildGauge(value, max, invert, status) {
+    const clamped = Math.max(0, Math.min(value, max));
+    const pct = invert ? (1 - clamped / max) : (clamped / max);
+    const radius = 28;
+    const circumference = Math.PI * radius; // half circle
+    const offset = circumference * (1 - pct);
+
+    const colorMap = {
+        success: 'var(--pf-v5-global--success-color--100)',
+        warning: 'var(--pf-v5-global--warning-color--100)',
+        danger: 'var(--cea-color-issues, #c9190b)',
+    };
+    const color = colorMap[status] || colorMap.warning;
+
+    return `<svg class="cea-report-gauge" viewBox="0 0 64 36" width="64" height="36">
+        <path d="M4,34 A28,28 0 0,1 60,34" fill="none"
+              stroke="var(--pf-v5-global--BorderColor--100)" stroke-width="5" stroke-linecap="round"/>
+        <path d="M4,34 A28,28 0 0,1 60,34" fill="none"
+              stroke="${color}" stroke-width="5" stroke-linecap="round"
+              stroke-dasharray="${circumference}" stroke-dashoffset="${offset}"/>
+    </svg>`;
+}
+
+/**
+ * Render readability scores section as HTML string.
+ * Accepts the new backend format: { metricName: { score, help_text } }
+ */
+export function renderReadability(readability) {
+    if (!readability || typeof readability !== 'object') return '';
+
+    const entries = Object.entries(readability);
+    if (entries.length === 0) return '';
+
+    let cards = '';
+    for (const [name, data] of entries) {
+        const config = METRIC_CONFIG[name];
+        if (!config) continue;
+
+        const score = Number(data.score ?? 0);
+        const helpText = data.help_text || config.why;
+        const status = config.getStatus(score);
+        const gauge = buildGauge(score, config.max, config.invert, status);
+
+        cards += `<div class="cea-report-metric-card cea-report-metric-card--${status}">
+            <div class="cea-report-metric-card__header">
+                ${gauge}
+                <div class="cea-report-metric-card__score">${score.toFixed(1)}</div>
+            </div>
+            <div class="cea-report-metric-card__label">${escapeHtml(config.label)}</div>
+            <div class="cea-report-metric-card__ideal">Ideal: ${config.ideal}</div>
+            <details class="cea-report-detail">
+                <summary>Why it matters</summary>
+                <p>${escapeHtml(helpText)}</p>
+            </details>
+        </div>`;
+    }
+
+    if (!cards) return '';
+
+    return `<div class="cea-report-section">
+        <h3 class="cea-report-section__title">Readability Metrics</h3>
+        <div class="cea-report-grid">${cards}</div>
+    </div>`;
 }

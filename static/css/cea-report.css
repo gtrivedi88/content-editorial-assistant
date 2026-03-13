@@ -15,11 +15,19 @@
   margin: 0 0 var(--pf-v5-global--spacer--md) 0;
 }
 
+/* ── Grid Layouts ─────────────────────────────────────── */
+
 .cea-report-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: var(--pf-v5-global--spacer--md);
 }
+
+.cea-report-grid--3col {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* ── Stat Cards ───────────────────────────────────────── */
 
 .cea-report-stat {
   padding: var(--pf-v5-global--spacer--md);
@@ -41,6 +49,11 @@
   line-height: 1.4;
 }
 
+.cea-report-stat__label small {
+  color: var(--pf-v5-global--Color--300, #6a6e73);
+  font-weight: 400;
+}
+
 /* Stat variants */
 .cea-report-stat--danger { border-left-color: var(--cea-color-issues, #c9190b); }
 .cea-report-stat--danger .cea-report-stat__value { color: var(--cea-color-issues, #c9190b); }
@@ -50,7 +63,198 @@
 .cea-report-stat--success { border-left-color: var(--pf-v5-global--success-color--100); }
 .cea-report-stat--success .cea-report-stat__value { color: var(--pf-v5-global--success-color--100); }
 
-/* Breakdown table */
+/* ── Quality Score Hero ───────────────────────────────── */
+
+.cea-report-hero {
+  text-align: center;
+  padding: var(--pf-v5-global--spacer--xl) 0 var(--pf-v5-global--spacer--lg);
+  margin-bottom: var(--pf-v5-global--spacer--xl);
+  border-bottom: 1px solid var(--pf-v5-global--BorderColor--100);
+}
+
+.cea-report-hero__gauge {
+  display: block;
+  margin: 0 auto;
+  width: 160px;
+  height: 90px;
+}
+
+.cea-report-hero__score {
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1;
+  margin-top: -20px;
+}
+
+.cea-report-hero__label {
+  font-size: var(--pf-v5-global--FontSize--md);
+  color: var(--pf-v5-global--Color--200);
+  margin-top: var(--pf-v5-global--spacer--xs);
+}
+
+/* ── Small Gauge (readability cards) ──────────────────── */
+
+.cea-report-gauge {
+  display: block;
+  flex-shrink: 0;
+}
+
+/* ── Readability Metric Cards ─────────────────────────── */
+
+.cea-report-metric-card {
+  padding: var(--pf-v5-global--spacer--md);
+  border: 1px solid var(--pf-v5-global--BorderColor--100);
+  border-radius: var(--pf-v5-global--BorderRadius--sm);
+  border-left: 3px solid var(--pf-v5-global--primary-color--100);
+}
+
+.cea-report-metric-card--success { border-left-color: var(--pf-v5-global--success-color--100); }
+.cea-report-metric-card--warning { border-left-color: var(--pf-v5-global--warning-color--100); }
+.cea-report-metric-card--danger  { border-left-color: var(--cea-color-issues, #c9190b); }
+
+.cea-report-metric-card__header {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--pf-v5-global--spacer--sm);
+  margin-bottom: var(--pf-v5-global--spacer--xs);
+}
+
+.cea-report-metric-card__score {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--pf-v5-global--Color--100);
+  line-height: 1;
+}
+
+.cea-report-metric-card__label {
+  font-size: var(--pf-v5-global--FontSize--sm);
+  font-weight: 600;
+  color: var(--pf-v5-global--Color--100);
+}
+
+.cea-report-metric-card__ideal {
+  font-size: var(--pf-v5-global--FontSize--xs);
+  color: var(--pf-v5-global--Color--300, #6a6e73);
+  margin-bottom: var(--pf-v5-global--spacer--xs);
+}
+
+/* ── Collapsible Details ──────────────────────────────── */
+
+.cea-report-detail {
+  margin-top: var(--pf-v5-global--spacer--xs);
+}
+
+.cea-report-detail summary {
+  font-size: var(--pf-v5-global--FontSize--xs);
+  color: var(--pf-v5-global--link--Color);
+  cursor: pointer;
+  user-select: none;
+}
+
+.cea-report-detail summary:hover {
+  text-decoration: underline;
+}
+
+.cea-report-detail p,
+.cea-report-detail ul {
+  font-size: var(--pf-v5-global--FontSize--xs);
+  color: var(--pf-v5-global--Color--200);
+  margin: var(--pf-v5-global--spacer--xs) 0 0;
+  line-height: 1.5;
+}
+
+/* ── LLM Consumability ────────────────────────────────── */
+
+.cea-report-llm {
+  padding: var(--pf-v5-global--spacer--md);
+  border: 1px solid var(--pf-v5-global--BorderColor--100);
+  border-radius: var(--pf-v5-global--BorderRadius--sm);
+}
+
+.cea-report-llm__header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--pf-v5-global--spacer--md);
+  margin-bottom: var(--pf-v5-global--spacer--md);
+}
+
+.cea-report-llm__score {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.cea-report-llm__label {
+  font-size: var(--pf-v5-global--FontSize--md);
+  color: var(--pf-v5-global--Color--200);
+}
+
+.cea-report-llm__bars {
+  margin-bottom: var(--pf-v5-global--spacer--sm);
+}
+
+.cea-report-llm__list {
+  margin: var(--pf-v5-global--spacer--xs) 0 0;
+  padding-left: var(--pf-v5-global--spacer--lg);
+  font-size: var(--pf-v5-global--FontSize--xs);
+  line-height: 1.6;
+}
+
+.cea-report-llm__list--good li::marker {
+  color: var(--pf-v5-global--success-color--100);
+}
+
+.cea-report-llm__list--improve li::marker {
+  color: var(--pf-v5-global--warning-color--100);
+}
+
+/* ── Compliance / Progress Bars ───────────────────────── */
+
+.cea-report-compliance {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pf-v5-global--spacer--sm);
+}
+
+.cea-report-compliance__row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cea-report-compliance__label {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--pf-v5-global--FontSize--sm);
+  color: var(--pf-v5-global--Color--100);
+}
+
+.cea-report-compliance__pct {
+  font-weight: 600;
+  color: var(--pf-v5-global--Color--200);
+}
+
+.cea-report-progress-bar {
+  height: 6px;
+  background: var(--pf-v5-global--BorderColor--100);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.cea-report-progress-bar__fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cea-report-progress-bar__fill {
+    transition: none;
+  }
+}
+
+/* ── Breakdown table (legacy compat) ──────────────────── */
+
 .cea-report-breakdown {
   width: 100%;
   border-collapse: collapse;
@@ -80,8 +284,13 @@
   vertical-align: middle;
 }
 
+/* ── Responsive ───────────────────────────────────────── */
+
 @media (max-width: 480px) {
   .cea-report-grid {
     grid-template-columns: 1fr;
+  }
+  .cea-report-grid--3col {
+    grid-template-columns: repeat(2, 1fr);
   }
 }

@@ -95,6 +95,7 @@ export async function analyzeContent() {
             codeBlockRanges: response.code_block_ranges || [],
             readability: response.report?.readability || null,
             statistics: response.report?.statistics || null,
+            reportData: response.report || null,
             qualityScore: score,
             detectedContentType: response.detected_content_type || null,
         });

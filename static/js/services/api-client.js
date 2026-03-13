@@ -6,6 +6,17 @@
 let currentAnalyzeController = null;
 
 /**
+ * Abort any in-flight analysis request.
+ * Called by reset to cancel pending HTTP requests.
+ */
+export function abortCurrentAnalysis() {
+    if (currentAnalyzeController) {
+        currentAnalyzeController.abort();
+        currentAnalyzeController = null;
+    }
+}
+
+/**
  * POST /api/v1/analyze — analyze content.
  * Aborts any in-flight analysis request before starting a new one.
  */
@@ -185,16 +196,11 @@ export async function manuallyFixIssue(sessionId, issueId) {
 /**
  * POST /api/v1/report/pdf — generate and download a PDF report.
  */
-export async function downloadPdfReport(analysis, content, structuralBlocks) {
+export async function downloadPdfReport(sessionId) {
     const resp = await fetch('/api/v1/report/pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            analysis,
-            content,
-            structural_blocks: structuralBlocks,
-            report_type: 'full',
-        }),
+        body: JSON.stringify({ session_id: sessionId }),
     });
 
     if (!resp.ok) {
