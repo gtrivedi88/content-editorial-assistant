@@ -9,21 +9,26 @@ let currentAnalyzeController = null;
  * POST /api/v1/analyze — analyze content.
  * Aborts any in-flight analysis request before starting a new one.
  */
-export async function postAnalyze(content, formatHint, contentType, sessionId) {
+export async function postAnalyze(content, formatHint, contentType, sessionId, htmlContent) {
     if (currentAnalyzeController) {
         currentAnalyzeController.abort();
     }
     currentAnalyzeController = new AbortController();
 
+    const payload = {
+        text: content,
+        content_type: contentType || 'concept',
+        format_hint: formatHint || 'auto',
+        session_id: sessionId || '',
+    };
+    if (htmlContent) {
+        payload.html_content = htmlContent;
+    }
+
     const resp = await fetch('/api/v1/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            text: content,
-            content_type: contentType || 'concept',
-            format_hint: formatHint || 'auto',
-            session_id: sessionId || '',
-        }),
+        body: JSON.stringify(payload),
         signal: currentAnalyzeController.signal,
     });
 

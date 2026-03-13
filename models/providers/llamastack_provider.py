@@ -8,6 +8,7 @@ import os
 import ssl
 from typing import Any, Dict, Optional, Sequence
 
+import httpx
 from llama_stack_client import DefaultHttpxClient, LlamaStackClient
 
 from .base_provider import BaseModelProvider
@@ -55,10 +56,22 @@ class LlamaStackProvider(BaseModelProvider):
                     "Loaded CA certificate from %s", ca_cert_path
                 )
 
-            # Initialize client with proper TLS
+            # Initialize client with proper TLS and request timeout.
+            # Gemini 2.5 Flash is a thinking model that can take 60s+
+            # on large prompts; 90s balances user experience vs
+            # allowing complex analysis to complete.
+            request_timeout = int(
+                self.config.get('timeout', 90)
+            )
             self.client = LlamaStackClient(
                 base_url=base_url,
-                http_client=DefaultHttpxClient(verify=ctx)
+                http_client=DefaultHttpxClient(
+                    verify=ctx,
+                    timeout=httpx.Timeout(
+                        request_timeout,
+                        connect=10.0,
+                    ),
+                ),
             )
 
             # Test connection by listing models
@@ -196,6 +209,11 @@ class LlamaStackProvider(BaseModelProvider):
             logger.warning("Llama Stack returned empty response")
             return ""
 
+        except httpx.TimeoutException as exc:
+            logger.error(
+                "Llama Stack request timed out: %s", exc
+            )
+            return ""
         except (RuntimeError, OSError, ValueError) as exc:
             logger.error("Llama Stack generation failed: %s", exc)
             return ""

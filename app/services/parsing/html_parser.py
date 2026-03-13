@@ -4,6 +4,7 @@ Walks the parsed DOM to produce Block structures, skipping script/style
 elements and mapping common HTML tags to semantic block types.
 """
 
+import copy
 import logging
 from typing import Optional
 
@@ -18,6 +19,16 @@ logger = logging.getLogger(__name__)
 
 # Elements whose subtree should be completely ignored
 _SKIP_TAGS = frozenset({"script", "style", "noscript", "svg", "math"})
+
+# CSS classes that indicate admonition containers in Red Hat docs HTML
+_ADMONITION_CLASSES = frozenset({
+    "note", "tip", "important", "warning", "caution", "admonition",
+})
+
+# Block types that can contain inline <code> elements
+_INLINE_CODE_BLOCK_TYPES = frozenset({
+    "paragraph", "list_item", "blockquote", "table_cell",
+})
 
 # Tag -> block_type mapping
 _TAG_MAP: dict[str, str] = {
@@ -146,33 +157,31 @@ class HtmlParser(BaseParser):
         Returns:
             A Block or None if the element has no useful content.
         """
-        text_content = _text_of(element).strip()
+        if _is_admonition(element):
+            block_type = "admonition"
+
         raw_content = _outer_html(element)
-
-        if not text_content and block_type != "image":
-            return None
-
-        level = _heading_level(tag)
-        skip = block_type == "code_block"
+        skip = block_type in ("code_block", "admonition")
         start_pos = offset
         end_pos = offset + len(raw_content)
 
-        metadata: dict = {}
+        text_content, inline_content = _extract_block_text(
+            element, block_type, skip,
+        )
+        metadata = _image_metadata(element) if block_type == "image" else {}
         if block_type == "image":
-            src = element.get("src", "")
-            alt = element.get("alt", "")
-            metadata["src"] = src
-            metadata["alt"] = alt
-            text_content = alt or src
+            text_content = metadata.get("alt") or metadata.get("src", "")
+
+        if not text_content and block_type != "image":
+            return None
 
         children: list[Block] = []
         if block_type in ("list", "table"):
             children = self._extract_children(element, start_pos)
 
-        # SK-4: build char_map for non-code blocks
-        char_map: list[int] | None = None
-        if not skip and text_content:
-            char_map = build_xml_char_map(raw_content, text_content)
+        char_map = _build_block_char_map(
+            skip, text_content, inline_content, raw_content,
+        )
 
         return Block(
             block_type=block_type,
@@ -180,7 +189,8 @@ class HtmlParser(BaseParser):
             raw_content=raw_content,
             start_pos=start_pos,
             end_pos=end_pos,
-            level=level,
+            inline_content=inline_content,
+            level=_heading_level(tag),
             children=children,
             should_skip_analysis=skip,
             metadata=metadata,
@@ -236,3 +246,91 @@ def _heading_level(tag: str) -> int:
     return 0
 
 
+def _is_admonition(element: HtmlElement) -> bool:
+    """Return True if *element* has CSS classes indicating an admonition."""
+    classes = set((element.get("class") or "").lower().split())
+    return bool(classes & _ADMONITION_CLASSES)
+
+
+def _image_metadata(element: HtmlElement) -> dict:
+    """Extract image metadata from an element."""
+    return {
+        "src": element.get("src", ""),
+        "alt": element.get("alt", ""),
+    }
+
+
+def _extract_block_text(
+    element: HtmlElement, block_type: str, skip: bool,
+) -> tuple[str, str]:
+    """Extract content and inline_content from an element.
+
+    For block types that can contain inline ``<code>``, preserves code
+    markers as backticks in ``inline_content`` so the orchestrator can
+    compute inline code ranges.
+
+    Returns:
+        ``(content, inline_content)`` pair, both stripped.
+    """
+    if block_type in _INLINE_CODE_BLOCK_TYPES and not skip:
+        content, inline = _extract_text_with_code_markers(element)
+        return content.strip(), inline.strip()
+    return _text_of(element).strip(), ""
+
+
+def _extract_text_with_code_markers(
+    element: HtmlElement,
+) -> tuple[str, str]:
+    """Extract plain text and code-marked text from *element*.
+
+    Clones the element, wraps ``<code>`` text with backticks in-place,
+    and lets lxml's ``text_content()`` safely stitch text and tails.
+
+    Returns:
+        ``(content, inline_content)`` where inline_content has backticks
+        around text that was inside ``<code>`` tags.
+    """
+    content = element.text_content() or ""
+
+    el_copy = copy.deepcopy(element)
+    for code_el in el_copy.xpath(".//code"):
+        code_text = code_el.text_content() or ""
+        code_el.text = f"`{code_text}`"
+        while len(code_el):
+            code_el.remove(code_el[0])
+
+    inline_content = el_copy.text_content() or ""
+    return content, inline_content
+
+
+def _build_code_char_map(content: str, inline_content: str) -> list[int]:
+    """Build a char_map from *content* positions to *inline_content* positions.
+
+    The two strings differ only by backtick wrappers around code terms.
+    Walks both in parallel, skipping backticks in inline_content.
+    """
+    char_map: list[int] = []
+    j = 0
+    for _ in range(len(content)):
+        while j < len(inline_content) and inline_content[j] == "`":
+            j += 1
+        if j < len(inline_content):
+            char_map.append(j)
+            j += 1
+        else:
+            char_map.append(max(0, len(inline_content) - 1))
+    return char_map
+
+
+def _build_block_char_map(
+    skip: bool,
+    text_content: str,
+    inline_content: str,
+    raw_content: str,
+) -> list[int] | None:
+    """Build the appropriate char_map for a block."""
+    if skip or not text_content:
+        return None
+    if inline_content and inline_content != text_content:
+        return _build_code_char_map(text_content, inline_content)
+    return build_xml_char_map(raw_content, text_content)

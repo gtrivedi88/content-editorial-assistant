@@ -54,6 +54,7 @@ terms:
   - openrewrite
   - overcloud
   - podman
+  - prithvi
   - quarkus
   - redfish
   - resteasy

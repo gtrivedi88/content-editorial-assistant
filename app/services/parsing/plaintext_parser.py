@@ -2,6 +2,8 @@
 
 Splits on double newlines to identify paragraphs and uses simple heuristics
 (ALL-CAPS lines, short lines followed by blanks) to detect headings.
+Includes fallback detection for admonitions, UI artifacts, table captions,
+browser-injected bullets, and structured headings.
 """
 
 import logging
@@ -17,6 +19,30 @@ _HEADING_MAX_LENGTH = 80
 
 # Regex for lines that are entirely upper-case letters, digits, and spaces
 _ALL_CAPS_RE = re.compile(r"^[A-Z0-9][A-Z0-9 :,\-]{2,}$")
+
+# Admonition labels (single-word chunks from pasted docs)
+_ADMONITION_LABELS = frozenset({
+    "note", "tip", "important", "warning", "caution",
+})
+
+# UI chrome artifacts that should not be analysed
+_UI_ARTIFACTS = frozenset({
+    "expand", "collapse", "show more", "show less",
+    "copy", "download", "back to top", "table of contents",
+})
+
+# Table captions like "Table 1.2. Kernel parameters"
+_TABLE_CAPTION_RE = re.compile(r"^Table\s+\d+[\.\d]*\.\s+")
+
+# Structured headings: "Chapter 1.", "1.2.3. Title", "Appendix A"
+_STRUCTURED_HEADING_RE = re.compile(
+    r"^(Chapter\s+\d+\.|"
+    r"\d+\.\d+[\.\d]*\.\s|"
+    r"(Appendix|Part|Section)\s+[A-Z0-9])"
+)
+
+# Browser-injected Unicode bullet characters (Chrome/Edge paste)
+_BROWSER_BULLET_RE = re.compile(r"^[•○▪►‣◦⁃∙]\s+")
 
 
 class PlaintextParser(BaseParser):
@@ -81,7 +107,17 @@ class PlaintextParser(BaseParser):
     def _classify_chunk(
         stripped: str, raw: str, start_pos: int, end_pos: int
     ) -> Block:
-        """Classify a text chunk as heading or paragraph.
+        """Classify a text chunk by heuristic type detection.
+
+        Classification order (first match wins):
+        1. UI artifacts → skip
+        2. Admonition labels → skip
+        3. Table captions → skip
+        4. Tabular data (2+ tabs per line) → skip
+        5. Browser bullet lines → list_item_unordered
+        6. Structured heading → heading
+        7. ALL-CAPS / short heading → heading
+        8. Default → paragraph
 
         Args:
             stripped: Whitespace-trimmed chunk text.
@@ -90,8 +126,30 @@ class PlaintextParser(BaseParser):
             end_pos: Character offset of the chunk end.
 
         Returns:
-            A Block instance typed as either ``heading`` or ``paragraph``.
+            A Block instance with the detected type.
         """
+        skip_type = _detect_skip_type(stripped)
+        if skip_type is not None:
+            return Block(
+                block_type=skip_type,
+                content=stripped,
+                raw_content=raw,
+                start_pos=start_pos,
+                end_pos=end_pos,
+                should_skip_analysis=True,
+            )
+
+        bullet_match = _BROWSER_BULLET_RE.match(stripped)
+        if bullet_match:
+            content = stripped[bullet_match.end():]
+            return Block(
+                block_type="list_item_unordered",
+                content=content,
+                raw_content=raw,
+                start_pos=start_pos,
+                end_pos=end_pos,
+            )
+
         if _is_heading_line(stripped):
             return Block(
                 block_type="heading",
@@ -111,18 +169,39 @@ class PlaintextParser(BaseParser):
         )
 
 
+def _detect_skip_type(text: str) -> str | None:
+    """Return a block type string if *text* should be skipped, else None.
+
+    Detects UI artifacts, admonition labels, table captions, and tabular data.
+    """
+    lower = text.lower()
+    if lower in _UI_ARTIFACTS:
+        return "ui_artifact"
+    if lower in _ADMONITION_LABELS:
+        return "admonition"
+    if _TABLE_CAPTION_RE.match(text):
+        return "table_caption"
+    # Tabular data: lines with 2+ tab characters
+    if "\t" in text and text.count("\t") >= 2:
+        return "table"
+    return None
+
+
 def _is_heading_line(text: str) -> bool:
     """Return True if *text* looks like a heading.
 
     Heuristics applied:
     * Single line (no embedded newlines).
     * Shorter than the maximum heading length.
+    * Structured heading pattern (Chapter N., 1.2.3., Appendix A).
     * Either ALL-CAPS or does not end with sentence-terminating punctuation.
     """
     if "\n" in text:
         return False
     if len(text) > _HEADING_MAX_LENGTH:
         return False
+    if _STRUCTURED_HEADING_RE.match(text):
+        return True
     if _ALL_CAPS_RE.match(text):
         return True
     if not text.endswith((".", "!", "?", ":")):

@@ -31,6 +31,7 @@ from app.services.analysis.orchestrator import (
     _find_flagged_in_text,
 )
 from rules.base_rule import in_code_range
+from rules.term_registry import is_known_term, is_likely_code
 
 logger = logging.getLogger(__name__)
 
@@ -487,6 +488,7 @@ def _should_skip_match(
     flagged: str,
     block_local_offset: int,
     code_ranges: list[tuple[int, int]],
+    lt_category: str = "",
 ) -> bool:
     """Return True if a match should be discarded by FP guards.
 
@@ -495,12 +497,15 @@ def _should_skip_match(
     2. Inline code range guard
     3. Technical content heuristic guard
     4. Domain-aware spelling allowlist (MORFOLOGIK only)
+    5. Unified term registry (TYPOS, CASING, CONFUSED_WORDS, STYLE)
+    6. Heuristic code pattern detection
 
     Args:
         rule_id: LanguageTool rule identifier.
         flagged: The flagged text extracted from the batch.
         block_local_offset: Character offset within block.content.
         code_ranges: Pre-computed inline code ranges for the block.
+        lt_category: LanguageTool rule category ID (e.g. TYPOS, GRAMMAR).
 
     Returns:
         True if the match should be skipped.
@@ -530,6 +535,23 @@ def _should_skip_match(
             )
             return True
 
+    # Unified term registry — case-sensitive exact match on correct forms.
+    # Do NOT suppress GRAMMAR — known terms can still have grammar errors.
+    _registry_categories = {"TYPOS", "CASING", "CONFUSED_WORDS", "STYLE"}
+    if lt_category in _registry_categories and is_known_term(flagged):
+        logger.debug(
+            "Skipping LT match on known term: %r (category=%s)",
+            flagged, lt_category,
+        )
+        return True
+
+    # Heuristic code detection for terms not in any config
+    if is_likely_code(flagged):
+        logger.debug(
+            "Skipping LT match on code-like content: %r", flagged,
+        )
+        return True
+
     return False
 
 
@@ -554,7 +576,9 @@ def _process_batch_matches(
     issues: list[IssueResponse] = []
 
     for match in matches:
-        rule_id = match.get("rule", {}).get("id", "")
+        rule_obj = match.get("rule", {})
+        rule_id = rule_obj.get("id", "")
+        lt_category = rule_obj.get("category", {}).get("id", "")
 
         # UTF-16 → codepoint conversion
         raw_offset = match.get("offset", 0)
@@ -574,7 +598,7 @@ def _process_batch_matches(
         flagged = batch.text[py_offset:py_end]
 
         if _should_skip_match(rule_id, flagged, block_local_offset,
-                              entry.code_ranges):
+                              entry.code_ranges, lt_category):
             continue
 
         issue = _map_lt_match_to_issue(

@@ -404,7 +404,14 @@ export class EditorController {
         console.log('[EditorController] triggerAnalysis: text.len=%d, hasRawContent=%s, innerText.len=%d',
             text.length, !!this._rawContent, (this._editor.innerText || '').length);
         if (!text.trim()) return;
-        this._store.setState({ content: text });
+
+        // When no markup detected, always send innerHTML for structure-aware
+        // parsing.  The browser wraps typed text in <p>/<div>, and pasted
+        // HTML preserves <h1>, <code>, <table>, <li> — the HTML parser
+        // handles all of it.
+        const htmlContent = this._rawContent ? null : this._editor.innerHTML;
+
+        this._store.setState({ content: text, htmlContent });
         clearUnderlines(this._editor);
         analyzeContent();
     }

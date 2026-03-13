@@ -55,6 +55,68 @@ _RE_BLOCK_DELIM = re.compile(r"^[=*]{4,}\s*$")
 _RE_SINGLE_LINE_COMMENT = re.compile(r"^[ \t]*//(?!/)")
 # Conditional directives: ifdef::, ifndef::, ifeval::, endif::
 _RE_CONDITIONAL = re.compile(r"^[ \t]*(?:ifdef|ifndef|ifeval|endif)::")
+# Definition list term: "term::" or "term:::" (nested) at end of line
+_RE_DLIST = re.compile(r"^(.+?):{2,4}\s*$")
+# Definition list term with inline description: "term:: description"
+_RE_DLIST_INLINE = re.compile(r"^(.+?):{2,4}\s+(.+)$")
+# Literal block delimiter (4+ dots)
+_RE_LITERAL_OPEN = re.compile(r"^\.{4,}\s*$")
+# Comment block delimiter (4+ slashes)
+_RE_COMMENT_BLOCK = re.compile(r"^/{4,}\s*$")
+# Passthrough block delimiter (4+ plus signs)
+_RE_PASSTHROUGH_OPEN = re.compile(r"^\+{4,}\s*$")
+# Sidebar block delimiter (4+ asterisks)
+_RE_SIDEBAR_OPEN = re.compile(r"^\*{4,}\s*$")
+# Example block delimiter (4+ equals signs)
+_RE_EXAMPLE_OPEN = re.compile(r"^={4,}\s*$")
+# Quote/verse block delimiter (4+ underscores)
+_RE_QUOTE_OPEN = re.compile(r"^_{4,}\s*$")
+
+# Delimited block patterns: (regex, block_type, should_skip_analysis)
+_DELIMITED_BLOCK_PATTERNS: list[tuple[re.Pattern[str], str, bool]] = [
+    (_RE_CODE_OPEN, "code_block", True),
+    (_RE_LITERAL_OPEN, "literal", True),
+    (_RE_COMMENT_BLOCK, "comment", True),
+    (_RE_PASSTHROUGH_OPEN, "comment", True),
+    (_RE_SIDEBAR_OPEN, "sidebar", False),
+    (_RE_EXAMPLE_OPEN, "example", False),
+    (_RE_QUOTE_OPEN, "quote", False),
+    (_RE_TABLE_DELIM, "table", False),
+]
+
+# Single-line patterns that produce skip-analysis blocks
+_SKIP_LINE_PATTERNS: list[tuple[re.Pattern[str], str]] = [
+    (_RE_SINGLE_LINE_COMMENT, "comment"),
+    (_RE_CONDITIONAL, "comment"),
+    (_RE_IMAGE, "image"),
+    (_RE_BLOCK_ANCHOR, "comment"),
+    (_RE_ROLE_ATTR, "comment"),
+    (_RE_INCLUDE, "comment"),
+    (_RE_LIST_CONTINUATION, "comment"),
+    (_RE_GENERIC_BLOCK_ATTR, "comment"),
+]
+
+# Patterns that stop paragraph accumulation (any block-level construct)
+_PARAGRAPH_STOP_PATTERNS: list[re.Pattern[str]] = [
+    _RE_CODE_OPEN,
+    _RE_LITERAL_OPEN,
+    _RE_COMMENT_BLOCK,
+    _RE_PASSTHROUGH_OPEN,
+    _RE_SIDEBAR_OPEN,
+    _RE_EXAMPLE_OPEN,
+    _RE_QUOTE_OPEN,
+    _RE_TABLE_DELIM,
+    _RE_LIST_CONTINUATION,
+    _RE_GENERIC_BLOCK_ATTR,
+    _RE_BLOCK_TITLE,
+    _RE_SINGLE_LINE_COMMENT,
+    _RE_CONDITIONAL,
+    _RE_HEADING,
+    _RE_ADMONITION,
+    _RE_BLOCK_ANCHOR,
+    _RE_ROLE_ATTR,
+    _RE_DLIST,
+]
 
 # Pre-compiled AsciiDoc inline patterns for stripping (SK-3).
 # Longer delimiters first to avoid partial matches.
@@ -325,17 +387,13 @@ class AsciidocParser(BaseParser):
                 blocks, "heading", text, line, start_pos, idx, lines, level=level
             )
 
-        # Code block (---- delimited)
-        if _RE_CODE_OPEN.match(stripped):
-            return self._consume_delimited(
-                lines, idx, stripped, blocks, "code_block", start_pos, skip=True
-            )
-
-        # Table (|=== delimited)
-        if _RE_TABLE_DELIM.match(stripped):
-            return self._consume_delimited(
-                lines, idx, stripped, blocks, "table", start_pos
-            )
+        # Delimited blocks (code, literal, comment, passthrough, sidebar,
+        # example, quote, table) — matched via lookup table.
+        for pattern, block_type, skip in _DELIMITED_BLOCK_PATTERNS:
+            if pattern.match(stripped):
+                return self._consume_delimited(
+                    lines, idx, stripped, blocks, block_type, start_pos, skip=skip
+                )
 
         # Admonition
         admon = _RE_ADMONITION.match(stripped)
@@ -350,22 +408,50 @@ class AsciidocParser(BaseParser):
                 line, start_pos, idx, lines, skip=True,
             )
 
-        # Single-line comment or conditional directive — skip analysis
-        if _RE_SINGLE_LINE_COMMENT.match(stripped) or _RE_CONDITIONAL.match(stripped):
+        # Single-line skip patterns (comments, directives, images, anchors)
+        for pattern, block_type in _SKIP_LINE_PATTERNS:
+            if pattern.match(stripped):
+                return _append_block(
+                    blocks, block_type, stripped, line, start_pos, idx, lines, skip=True
+                )
+
+        # Definition lists, list items, and block titles
+        result = self._try_consume_list_like(
+            stripped, line, start_pos, idx, lines, blocks
+        )
+        if result is not None:
+            return result
+
+        # Default: paragraph (accumulate contiguous non-blank lines)
+        return self._consume_paragraph(lines, idx, blocks, start_pos)
+
+    def _try_consume_list_like(
+        self,
+        stripped: str,
+        line: str,
+        start_pos: int,
+        idx: int,
+        lines: list[str],
+        blocks: list[Block],
+    ) -> int | None:
+        """Try to consume definition list, list item, or block title.
+
+        Returns the next line index, or None if no pattern matched.
+        """
+        # Definition list with inline description: "term:: description"
+        dlist_inline = _RE_DLIST_INLINE.match(stripped)
+        if dlist_inline:
+            desc = dlist_inline.group(2).strip()
             return _append_block(
-                blocks, "comment", stripped, line, start_pos, idx, lines, skip=True
+                blocks, "dlist", desc, line, start_pos, idx, lines,
             )
 
-        # Image directive — skip analysis (not prose)
-        if _RE_IMAGE.match(stripped):
+        # Definition list term only: "term::" (description on next line)
+        dlist = _RE_DLIST.match(stripped)
+        if dlist:
             return _append_block(
-                blocks, "image", stripped, line, start_pos, idx, lines, skip=True
-            )
-
-        # Block anchor [id="..."] or role attribute [role="..."] — skip analysis
-        if _RE_BLOCK_ANCHOR.match(stripped) or _RE_ROLE_ATTR.match(stripped):
-            return _append_block(
-                blocks, "comment", stripped, line, start_pos, idx, lines, skip=True
+                blocks, "dlist", dlist.group(1).strip(), line, start_pos,
+                idx, lines, skip=True,
             )
 
         # Unordered list item
@@ -373,7 +459,8 @@ class AsciidocParser(BaseParser):
         if ulist:
             level = len(ulist.group(1))
             return _append_block(
-                blocks, "list_item_unordered", ulist.group(2), line, start_pos, idx, lines, level=level
+                blocks, "list_item_unordered", ulist.group(2), line,
+                start_pos, idx, lines, level=level,
             )
 
         # Ordered list item
@@ -381,7 +468,8 @@ class AsciidocParser(BaseParser):
         if olist:
             level = len(olist.group(1))
             return _append_block(
-                blocks, "list_item_ordered", olist.group(2), line, start_pos, idx, lines, level=level
+                blocks, "list_item_ordered", olist.group(2), line,
+                start_pos, idx, lines, level=level,
             )
 
         # AsciiDoc block title (.Prerequisites, .Procedure, etc.)
@@ -392,26 +480,7 @@ class AsciidocParser(BaseParser):
                 line, start_pos, idx, lines, level=0,
             )
 
-        # Include directive -- skip analysis
-        if _RE_INCLUDE.match(stripped):
-            return _append_block(
-                blocks, "comment", stripped, line, start_pos, idx, lines, skip=True
-            )
-
-        # List continuation marker (+) — skip analysis (structural)
-        if _RE_LIST_CONTINUATION.match(stripped):
-            return _append_block(
-                blocks, "comment", stripped, line, start_pos, idx, lines, skip=True
-            )
-
-        # Generic block attribute [...] — skip analysis (metadata)
-        if _RE_GENERIC_BLOCK_ATTR.match(stripped):
-            return _append_block(
-                blocks, "comment", stripped, line, start_pos, idx, lines, skip=True
-            )
-
-        # Default: paragraph (accumulate contiguous non-blank lines)
-        return self._consume_paragraph(lines, idx, blocks, start_pos)
+        return None
 
     def _consume_delimited(
         self,
@@ -510,22 +579,8 @@ class AsciidocParser(BaseParser):
         j = idx
         while j < len(lines) and lines[j].strip():
             stripped_line = lines[j].strip()
-            # Defense: stop if we hit a code block delimiter (----)
-            if _RE_CODE_OPEN.match(stripped_line):
-                break
-            # Defense: stop at list continuation marker (+)
-            if _RE_LIST_CONTINUATION.match(stripped_line):
-                break
-            # Defense: stop at block attribute lines ([source,bash] etc.)
-            if _RE_GENERIC_BLOCK_ATTR.match(stripped_line):
-                break
-            # Defense: stop at AsciiDoc block title (.SomeTitle)
-            if _RE_BLOCK_TITLE.match(stripped_line):
-                break
-            # Defense: stop at single-line comments and conditional directives
-            if _RE_SINGLE_LINE_COMMENT.match(stripped_line):
-                break
-            if _RE_CONDITIONAL.match(stripped_line):
+            # Defense: stop at any block-level construct
+            if _is_paragraph_break(stripped_line):
                 break
             para_lines.append(lines[j])
             j += 1
@@ -554,6 +609,18 @@ class AsciidocParser(BaseParser):
 # ------------------------------------------------------------------
 # Pure helper functions
 # ------------------------------------------------------------------
+
+
+def _is_paragraph_break(stripped_line: str) -> bool:
+    """Return True if *stripped_line* is a block-level construct.
+
+    Used by ``_consume_paragraph()`` to stop accumulating lines when
+    a new block-level element is encountered.
+    """
+    for pattern in _PARAGRAPH_STOP_PATTERNS:
+        if pattern.match(stripped_line):
+            return True
+    return False
 
 
 def _write_temp_files(content: str) -> tuple[str, str]:

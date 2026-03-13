@@ -21,7 +21,7 @@ import { clearSuggestionCache } from '../issues/issue-card.js';
  * the final merged results. No intermediate results are shown.
  */
 export async function analyzeContent() {
-    const { content, formatHint, sessionId } = store.getState();
+    const { content, formatHint, sessionId, htmlContent } = store.getState();
     if (!content.trim()) return;
 
     const sid = sessionId || generateId();
@@ -47,7 +47,7 @@ export async function analyzeContent() {
     });
 
     try {
-        const response = await postAnalyze(content, formatHint, 'concept', sid);
+        const response = await postAnalyze(content, formatHint, 'concept', sid, htmlContent);
 
         // Guard against stale responses after cancellation
         if (store.get('currentAnalysisId') !== analysisId) return;

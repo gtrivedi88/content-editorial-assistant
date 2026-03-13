@@ -42,9 +42,16 @@ _ASCIIDOC_PATTERNS: list[tuple[re.Pattern[str], int]] = [
     (re.compile(r"^=+\s+"), 5),
     (re.compile(r"^:[\w-]+:"), 5),
     (re.compile(r"^\|={4,}\s*$"), 5),
+    (re.compile(r"^\[id="), 5),
+    (re.compile(r"^\[role="), 5),
+    (re.compile(r".*::\s*$"), 5),
+    (re.compile(r"^(ifdef|ifndef|endif)::"), 5),
     (re.compile(r"^\[(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]"), 4),
-    (re.compile(r"^\..+"), 3),
+    (re.compile(r"^\[(source|listing)"), 4),
+    (re.compile(r"^\.[A-Z]"), 3),
     (re.compile(r"^(include|image|link)::"), 3),
+    (re.compile(r"^\+\s*$"), 3),
+    (re.compile(r"^\[.*\]\s*$"), 3),
     (re.compile(r"^\*{4,}\s*$"), 2),
     (re.compile(r"^={4,}\s*$"), 2),
     (re.compile(r"^-{4,}\s*$"), 2),
@@ -155,7 +162,12 @@ def detect_format(content: str, filename: Optional[str] = None) -> FileType:
         if not stripped:
             continue
         scores[FileType.ASCIIDOC] += _score_line_patterns(stripped, _ASCIIDOC_PATTERNS)
-        scores[FileType.MARKDOWN] += _score_line_patterns(stripped, _MARKDOWN_PATTERNS)
+        # Definition list terms (ending with ::) are AsciiDoc-only;
+        # skip Markdown scoring for these lines to prevent false wins.
+        if not stripped.endswith("::"):
+            scores[FileType.MARKDOWN] += _score_line_patterns(
+                stripped, _MARKDOWN_PATTERNS
+            )
 
     best_format = max(scores, key=lambda ft: scores[ft])
     best_score = scores[best_format]

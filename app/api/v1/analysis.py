@@ -51,11 +51,17 @@ def analyze() -> Tuple[Response, int]:
         return jsonify({"error": f"Invalid content_type. Must be one of: {valid_values}"}), 400
 
     session_id = data.get("session_id") or None
+    html_content = data.get("html_content") or None
     logger.debug(
-        "/analyze received session_id=%r from frontend (raw=%r)",
+        "/analyze received session_id=%r from frontend (raw=%r), html_content=%s",
         session_id, data.get("session_id"),
+        f"{len(html_content)} chars" if html_content else "None",
     )
-    return _run_analysis(text, content_type.value, session_id=session_id)
+    return _run_analysis(
+        text, content_type.value,
+        session_id=session_id,
+        html_content=html_content,
+    )
 
 
 def _resolve_content_type(raw_value: str) -> ContentType | None:
@@ -74,17 +80,23 @@ def _resolve_content_type(raw_value: str) -> ContentType | None:
 
 
 def _run_analysis(
-    text: str, content_type: str, session_id: str | None = None,
+    text: str,
+    content_type: str,
+    session_id: str | None = None,
+    html_content: str | None = None,
 ) -> Tuple[Response, int]:
     """Execute the analysis pipeline and return the result.
 
     Detects format from pasted text and parses into blocks so the
-    orchestrator can build lite_markers for LLM analysis.
+    orchestrator can build lite_markers for LLM analysis.  When
+    *html_content* is provided (from a browser paste), the HTML parser
+    is used directly for structure-aware block detection.
 
     Args:
         text: Sanitized and validated input text.
         content_type: Validated content type string value.
         session_id: Optional session ID from the client for session continuity.
+        html_content: Optional sanitized HTML from the browser's contenteditable.
 
     Returns:
         Tuple of (JSON response, HTTP status code).
@@ -92,11 +104,26 @@ def _run_analysis(
     from app.services.analysis.orchestrator import analyze as run_analysis
     from app.services.parsing import detect_and_parse
     from app.services.parsing.format_detector import detect_format
+    from app.models.enums import FileType
 
     try:
-        file_type = detect_format(text, None)
-        parse_result = detect_and_parse(text, None)
-        blocks = parse_result.blocks if parse_result.blocks else []
+        if html_content:
+            # Browser paste — use HTML parser for structure-aware parsing
+            from app.services.parsing.html_parser import HtmlParser
+            file_type = FileType.HTML
+            html_parser = HtmlParser()
+            parse_result = html_parser.parse(html_content)
+            blocks = parse_result.blocks if parse_result.blocks else []
+            logger.debug(
+                "HTML-aware paste: parsed %d blocks from %d chars of HTML",
+                len(blocks), len(html_content),
+            )
+        else:
+            # Standard flow — format detection + auto-parsing
+            file_type = detect_format(text, None)
+            parse_result = detect_and_parse(text, None)
+            blocks = parse_result.blocks if parse_result.blocks else []
+
         response = run_analysis(
             text, content_type,
             file_type=file_type.value,

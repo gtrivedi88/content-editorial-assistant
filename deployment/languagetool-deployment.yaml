@@ -29,10 +29,6 @@ spec:
               value: "512m"
             - name: Java_Xmx
               value: "3g"
-            - name: langtool_languageModel
-              value: ""
-            - name: langtool_fasttextModel
-              value: ""
           resources:
             requests:
               memory: "2Gi"
