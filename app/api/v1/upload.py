@@ -1,8 +1,8 @@
-"""Upload route — accepts file uploads for editorial review.
+"""Upload route — accepts file uploads for text extraction.
 
 Handles POST /api/v1/upload which validates the uploaded file,
-detects its format, parses it into blocks, extracts plain text,
-and delegates to the analysis orchestrator.
+detects its format, parses it into blocks, and extracts plain text.
+Analysis is triggered separately by the frontend via /api/v1/analyze.
 """
 
 import logging
@@ -19,7 +19,6 @@ from app.api.middleware.request_validator import (
     validate_file_type,
 )
 from app.config import Config
-from app.models.enums import ContentType
 
 logger = logging.getLogger(__name__)
 
@@ -48,86 +47,64 @@ def upload() -> Tuple[Response, int]:
     validate_file_type(filename)
     validate_file_size(uploaded, Config.MAX_CONTENT_LENGTH)
 
-    content_type = _resolve_content_type(request.form.get("content_type", "concept"))
-
-    return _parse_and_analyze(uploaded, filename, content_type)
+    return _parse_and_extract(uploaded, filename)
 
 
-def _resolve_content_type(raw_value: str) -> str:
-    """Convert a raw string to a validated content type value.
 
-    Args:
-        raw_value: The string value from the form data.
-
-    Returns:
-        The validated content type string, defaulting to ``"concept"``.
-    """
-    try:
-        return ContentType(raw_value).value
-    except ValueError:
-        return ContentType.CONCEPT.value
-
-
-def _parse_and_analyze(
-    uploaded: object, filename: str, content_type: str
+def _parse_and_extract(
+    uploaded: object, filename: str,
 ) -> Tuple[Response, int]:
-    """Parse the uploaded file and run analysis.
+    """Parse the uploaded file and extract text content.
+
+    Does not run analysis — the frontend triggers analysis separately
+    via ``/api/v1/analyze`` after displaying the extracted content.
 
     Args:
         uploaded: The uploaded FileStorage object.
         filename: Original filename for format detection.
-        content_type: Validated content type string value.
 
     Returns:
         Tuple of (JSON response, HTTP status code).
     """
-    from app.services.analysis.orchestrator import analyze as run_analysis
     from app.services.parsing import detect_and_parse
 
+    temp_path: str | None = None
     try:
         content = _read_file_content(uploaded, filename)
+        ext = _get_extension(filename)
+        if ext in _BINARY_EXTENSIONS:
+            temp_path = content
+
         parse_result = detect_and_parse(content, filename)
         plain_text = _extract_text(parse_result)
 
         if not plain_text.strip():
             return jsonify({"error": "No analyzable text found in the uploaded file"}), 422
 
-        # Override content_type if the file declares one (e.g. AsciiDoc attribute)
+        file_type = _detect_file_type(filename)
+
+        result: dict[str, object] = {
+            "success": True,
+            "content": plain_text if ext in _BINARY_EXTENSIONS else content,
+            "detected_format": file_type or "auto",
+        }
+
         file_content_type = _extract_content_type_from_file(content)
         if file_content_type is not None:
-            content_type = file_content_type
+            result["detected_content_type"] = file_content_type
 
-        file_type = _detect_file_type(filename)
-        blocks = parse_result.blocks if hasattr(parse_result, "blocks") else []
-        logger.debug(
-            "file=%s file_type=%s blocks=%d plain_text_len=%d",
-            filename, file_type, len(blocks), len(plain_text),
+        logger.info(
+            "Upload extracted: file=%s format=%s content_len=%d",
+            filename, file_type, len(plain_text),
         )
-        for i, b in enumerate(blocks[:20]):
-            logger.debug(
-                "block[%d]: type=%s skip=%s content=%.80r",
-                i, b.block_type, b.should_skip_analysis,
-                (b.content or "")[:80],
-            )
-        logger.debug("plain_text[:300]=%.300r", plain_text[:300])
-        response = run_analysis(
-            plain_text, content_type,
-            file_type=file_type,
-            blocks=blocks,
-        )
-        result = response.to_dict()
-
-        # Include the file content for the editor and the detected format.
-        # For binary formats (PDF, DOCX) return extracted plain text since
-        # the raw content is a temp file path, not displayable text.
-        ext = _get_extension(filename)
-        result["content"] = plain_text if ext in _BINARY_EXTENSIONS else content
-        result["detected_format"] = file_type or "auto"
 
         return jsonify(result), 200
     except (RuntimeError, OSError, ValueError) as exc:
         logger.error("Upload processing failed for '%s': %s", filename, exc, exc_info=True)
         return jsonify({"error": f"Failed to process file: {exc}"}), 500
+    finally:
+        if temp_path:
+            _cleanup_temp(temp_path)
 
 
 def _read_file_content(uploaded: object, filename: str) -> str:

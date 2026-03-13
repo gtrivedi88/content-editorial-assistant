@@ -1,11 +1,19 @@
 /**
  * File Handler — upload via /api/v1/upload, drag-drop, file picker.
+ *
+ * Flow: validate → upload (extract text) → display in editor → auto-analyze.
+ * Markup formats (AsciiDoc, Markdown, DITA, XML, HTML) are displayed in
+ * monospace with raw content preserved. Non-markup (PDF, DOCX, TXT) are
+ * displayed as structured paragraphs.
  */
 
 import { uploadFile } from '../state/actions.js';
 
 const ALLOWED_EXTENSIONS = ['.pdf', '.docx', '.md', '.adoc', '.asciidoc', '.dita', '.xml', '.txt', '.html'];
 const MAX_SIZE = 16 * 1024 * 1024; // 16MB
+
+/** Formats where the raw file content is displayed as monospace markup. */
+const MARKUP_FORMATS = new Set(['asciidoc', 'markdown', 'dita', 'xml', 'html']);
 
 export class FileHandler {
     constructor(store, editorController) {
@@ -27,7 +35,7 @@ export class FileHandler {
         }
 
         // Listen for drag-drop events from editor
-        window.addEventListener('cea:file-drop', (e) => {
+        globalThis.addEventListener('cea:file-drop', (e) => {
             const file = e.detail?.file;
             if (file) this._handleFile(file);
         });
@@ -51,9 +59,22 @@ export class FileHandler {
             return;
         }
 
+        // Upload for text extraction (no analysis yet)
         const result = await uploadFile(file);
-        if (result?.content) {
+        if (!result?.content) return;
+
+        const format = result.detected_format || 'auto';
+
+        // Display content in editor with format-appropriate rendering
+        if (MARKUP_FORMATS.has(format)) {
+            this._editor.setMarkupContent(result.content, format);
+        } else {
+            this._store.setState({ formatHint: format });
             this._editor.setContent(result.content);
         }
+
+        // Auto-trigger analysis — uses the same WebSocket-enabled path
+        // as paste (checking indicator, stage progress, cancellation)
+        this._editor.triggerAnalysis();
     }
 }

@@ -114,7 +114,9 @@ export async function analyzeContent() {
 }
 
 /**
- * Upload a file and populate the editor.
+ * Upload a file for text extraction.
+ * Returns the extracted content and detected format.
+ * Content display and analysis triggering are handled by FileHandler.
  */
 export async function uploadFile(file) {
     store.setState({ analysisStatus: 'uploading', errorMessage: null });
@@ -130,12 +132,7 @@ export async function uploadFile(file) {
             return null;
         }
 
-        store.setState({
-            analysisStatus: 'idle',
-            content: response.content,
-            formatHint: response.detected_format || 'auto',
-        });
-
+        store.setState({ analysisStatus: 'idle' });
         return response;
     } catch (err) {
         console.error('[Actions] Upload failed:', err);

@@ -1,61 +1,19 @@
 """Tests for the file upload API endpoint.
 
 Verifies POST /api/v1/upload behaviour for valid uploads, missing
-files, unsupported formats, and oversized files.
+files, unsupported formats, and oversized files. Upload is extract-only:
+it returns content and detected format but does not run analysis.
 """
 
 import io
 import logging
-from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
 from flask import Flask
 from flask.testing import FlaskClient
 
-from app.models.schemas import (
-    AnalyzeResponse,
-    ReportResponse,
-    ScoreResponse,
-)
-
 logger = logging.getLogger(__name__)
-
-
-# ---------------------------------------------------------------------------
-# Helper: build a mock AnalyzeResponse for patching the orchestrator
-# ---------------------------------------------------------------------------
-
-
-def _build_mock_response(session_id: str = "upload-session-456") -> AnalyzeResponse:
-    """Build a minimal AnalyzeResponse for mocking the upload analysis.
-
-    Args:
-        session_id: The session ID to assign.
-
-    Returns:
-        A fully populated AnalyzeResponse instance.
-    """
-    return AnalyzeResponse(
-        session_id=session_id,
-        issues=[],
-        score=ScoreResponse(
-            score=90,
-            color="#3e8635",
-            label="Excellent",
-            total_issues=0,
-            category_counts={},
-            compliance={},
-        ),
-        report=ReportResponse(
-            word_count=20,
-            sentence_count=2,
-            paragraph_count=1,
-            avg_words_per_sentence=10.0,
-            avg_syllables_per_word=1.3,
-        ),
-        partial=False,
-    )
 
 
 class TestUploadValidFile:
@@ -64,18 +22,14 @@ class TestUploadValidFile:
     def test_upload_txt_file(self, client: FlaskClient) -> None:
         """POST /api/v1/upload with a .txt file returns 200.
 
-        A valid plaintext file should be accepted, parsed, and analyzed
-        successfully.
+        A valid plaintext file should be accepted, parsed, and the
+        extracted content returned without running analysis.
         """
         content = b"The server was restarted by the administrator."
 
         with patch(
             "app.services.parsing.detect_and_parse"
-        ) as mock_parse, patch(
-            "app.services.analysis.orchestrator.analyze",
-            return_value=_build_mock_response(),
-        ):
-            # Configure mock parse result
+        ) as mock_parse:
             parse_result = MagicMock()
             parse_result.plain_text = content.decode("utf-8")
             mock_parse.return_value = parse_result
@@ -90,25 +44,24 @@ class TestUploadValidFile:
 
         assert response.status_code == 200
         data = response.get_json()
-        assert "issues" in data
-        assert "score" in data
-        assert "report" in data
+        assert data["success"] is True
         assert data["content"] == content.decode("utf-8")
         assert "detected_format" in data
+        # Extract-only: no analysis results in the response
+        assert "issues" not in data
+        assert "score" not in data
 
     def test_upload_md_file(self, client: FlaskClient) -> None:
         """POST /api/v1/upload with a .md file returns 200.
 
-        Markdown files are a supported upload format.
+        Markdown files are a supported upload format. The raw markup
+        content is returned for editor display.
         """
         content = b"# Heading\n\nThis is a markdown document."
 
         with patch(
             "app.services.parsing.detect_and_parse"
-        ) as mock_parse, patch(
-            "app.services.analysis.orchestrator.analyze",
-            return_value=_build_mock_response(),
-        ):
+        ) as mock_parse:
             parse_result = MagicMock()
             parse_result.plain_text = content.decode("utf-8")
             mock_parse.return_value = parse_result
@@ -122,6 +75,9 @@ class TestUploadValidFile:
             )
 
         assert response.status_code == 200
+        data = response.get_json()
+        assert data["success"] is True
+        assert data["content"] == content.decode("utf-8")
 
 
 class TestUploadValidation:

@@ -388,10 +388,40 @@ export class EditorController {
         this._selection.restore();
     }
 
+    /**
+     * Set plain text content (PDF, DOCX, TXT uploads).
+     * Creates paragraph structure for proper HTML-aware analysis.
+     */
     setContent(text) {
         this._rawContent = '';
-        this._editor.textContent = normalizeWhitespace(text);
         this._editor.classList.remove('cea-editor-content--markup');
+
+        const normalized = normalizeWhitespace(text);
+        const paragraphs = normalized.split(/\n\s*\n/).filter(p => p.trim());
+        if (paragraphs.length > 1) {
+            this._editor.innerHTML = paragraphs
+                .map(p => `<p>${escapeHtml(p.replace(/\n/g, ' '))}</p>`)
+                .join('');
+        } else {
+            this._editor.textContent = normalized;
+        }
+
+        this._updateContent();
+    }
+
+    /**
+     * Set raw markup content (AsciiDoc, Markdown, DITA, XML, HTML uploads).
+     * Displays in monospace and preserves raw markup for analysis.
+     */
+    setMarkupContent(text, format) {
+        const normalized = normalizeWhitespace(text);
+        this._rawContent = normalized;
+        this._editor.textContent = normalized;
+        this._editor.classList.add('cea-editor-content--markup');
+        this._store.setState({
+            formatHint: format,
+            detectedFormat: { format, confidence: 'high' },
+        });
         this._updateContent();
     }
 
