@@ -19,6 +19,7 @@ class ContentType(str, Enum):
     PROCEDURE = "procedure"
     REFERENCE = "reference"
     ASSEMBLY = "assembly"
+    RELEASE_NOTES = "release_notes"
 
 
 class IssueCategory(str, Enum):

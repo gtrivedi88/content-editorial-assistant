@@ -55,6 +55,9 @@ dependencies = [
     # ================================
     "reportlab (>=4.1.0,<5.0.0)",
 
+    # Security: pin minimum version to patch CVE-2025-66034
+    "fonttools (>=4.60.2)",
+
     # ================================
     # FILE PROCESSING & PARSING
     # ================================

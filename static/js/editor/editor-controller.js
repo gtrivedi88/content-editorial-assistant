@@ -12,13 +12,15 @@ import { SelectionTracker } from './selection-tracker.js';
 import { MarginLabels } from './margin-labels.js';
 import { debounce, escapeHtml, copyToClipboard, normalizeWhitespace } from '../shared/dom-utils.js';
 import { detectFormatFromContent } from '../file/format-detector.js';
+import { detectContentType } from '../file/content-type-detector.js';
 import { abortCurrentAnalysis } from '../services/api-client.js';
 import { clearSuggestionCache } from '../issues/issue-card.js';
 
 export class EditorController {
-    constructor(editorEl, storeRef) {
+    constructor(editorEl, storeRef, contentTypePopup) {
         this._editor = editorEl;
         this._store = storeRef;
+        this._contentTypePopup = contentTypePopup || null;
         this._selection = new SelectionTracker(editorEl);
         this._wordCountEl = document.getElementById('cea-word-count');
         this._rawContent = ''; // stores raw markup for analysis
@@ -171,6 +173,7 @@ export class EditorController {
         });
 
         // Click on underlines — open inline popup (not sidebar card)
+        // Click on non-underline area — dismiss sidebar selection/fading
         this._editor.addEventListener('click', (e) => {
             const underline = e.target.closest('.cea-underline');
             if (underline) {
@@ -185,6 +188,9 @@ export class EditorController {
                         markEl: underline,
                     },
                 }));
+            } else if (this._store.get('selectedErrorId')) {
+                // Clicking on non-underline area dismisses sidebar focus/fading
+                selectError(null);
             }
         });
 
@@ -202,6 +208,18 @@ export class EditorController {
                     },
                 }));
             }
+        });
+
+        // Clean up errors removed as collateral during sentence-level replacement
+        globalThis.addEventListener('cea:errors-removed', (e) => {
+            const { errorIds } = e.detail;
+            if (!errorIds || errorIds.length === 0) return;
+            const removedSet = new Set(errorIds);
+            const { errors, filteredErrors } = this._store.getState();
+            this._store.setState({
+                errors: errors.filter(err => !removedSet.has(err.id)),
+                filteredErrors: filteredErrors.filter(err => !removedSet.has(err.id)),
+            });
         });
 
         // Drag and drop
@@ -293,8 +311,16 @@ export class EditorController {
                 // Fade non-relevant blocks
                 this._editor.classList.add('cea-faded');
                 this._editor.querySelectorAll('.cea-focus').forEach(el => el.classList.remove('cea-focus'));
-                const parent = mark.closest(FOCUSABLE_BLOCKS);
-                if (parent) parent.classList.add('cea-focus');
+                // Walk up from the mark through ALL ancestor focusable blocks
+                // and add cea-focus to each. CSS opacity stacks multiplicatively,
+                // so a <p> with opacity:1 inside an <li> with opacity:0.2 is
+                // still visually 0.2. Adding cea-focus to every ancestor block
+                // between the mark and the editor root prevents this.
+                let el = mark.closest(FOCUSABLE_BLOCKS);
+                while (el && this._editor.contains(el)) {
+                    el.classList.add('cea-focus');
+                    el = el.parentElement?.closest(FOCUSABLE_BLOCKS) || null;
+                }
                 mark.scrollIntoView({ behavior: 'smooth', block: 'center' });
             } else {
                 // Clear fading
@@ -429,7 +455,7 @@ export class EditorController {
         return normalizeWhitespace(this._rawContent || getPlainText(this._editor));
     }
 
-    triggerAnalysis() {
+    async triggerAnalysis() {
         const raw = this._rawContent || getPlainText(this._editor);
         // Defense-in-depth: ensure text sent to backend is always normalized
         const text = normalizeWhitespace(raw);
@@ -445,7 +471,17 @@ export class EditorController {
 
         this._store.setState({ content: text, htmlContent });
         clearUnderlines(this._editor);
-        analyzeContent();
+
+        // Detect content type — popup only when detection is ambiguous
+        const detected = detectContentType(text);
+        if (detected) {
+            analyzeContent(detected);
+        } else if (this._contentTypePopup) {
+            const selected = await this._contentTypePopup.show();
+            analyzeContent(selected, true);
+        } else {
+            analyzeContent('concept');
+        }
     }
 
     reset() {

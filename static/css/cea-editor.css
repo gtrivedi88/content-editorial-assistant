@@ -88,6 +88,7 @@
 .cea-content-type-badge {
   display: inline-flex;
   align-items: center;
+  gap: 4px;
   padding: 4px 10px;
   border: 1px solid var(--pf-v5-global--BorderColor--100, #e5e7eb);
   border-radius: 12px;
@@ -96,6 +97,83 @@
   font-size: 12px;
   font-family: inherit;
   line-height: 1.4;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.cea-content-type-badge:hover {
+  border-color: var(--pf-v5-global--primary-color--100);
+  color: var(--pf-v5-global--primary-color--100);
+}
+
+.cea-content-type-badge:focus-visible {
+  outline: 2px solid var(--pf-v5-global--primary-color--100);
+  outline-offset: 1px;
+}
+
+.cea-content-type-badge::after {
+  content: '\f078';
+  font-family: 'Font Awesome 6 Free', 'Font Awesome 5 Free', sans-serif;
+  font-weight: 900;
+  font-size: 8px;
+  opacity: 0.6;
+}
+
+/* ── Content Type Popup ── */
+
+.cea-ct-popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1070;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cea-ct-popup {
+  background: var(--pf-v5-global--BackgroundColor--100, #fff);
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  padding: 24px;
+  width: 360px;
+  max-width: 90vw;
+}
+
+.cea-ct-popup__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--pf-v5-global--Color--100);
+  margin: 0 0 8px 0;
+}
+
+.cea-ct-popup__desc {
+  font-size: 13px;
+  color: var(--pf-v5-global--Color--200);
+  margin: 0 0 16px 0;
+  line-height: 1.5;
+}
+
+.cea-ct-popup__select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--pf-v5-global--BorderColor--100, #e5e7eb);
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--pf-v5-global--Color--100);
+  background: var(--pf-v5-global--BackgroundColor--100, #fff);
+  margin-bottom: 16px;
+}
+
+.cea-ct-popup__select:focus {
+  outline: 2px solid var(--pf-v5-global--primary-color--100);
+  outline-offset: -1px;
+}
+
+.cea-ct-popup__actions {
+  display: flex;
+  justify-content: flex-end;
 }
 
 /* ── Editor Area ── */

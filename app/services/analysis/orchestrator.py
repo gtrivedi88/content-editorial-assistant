@@ -87,6 +87,39 @@ def _select_style_guide_excerpts(
         return []
 
 
+def _resolve_detected_content_type(
+    content_type: str,
+    detected: Optional[str],
+    user_selected: bool,
+) -> str:
+    """Choose the final content type from auto-detection vs user selection.
+
+    When the user explicitly selected a type (via popup or badge override),
+    their choice is preserved.  Otherwise, auto-detected type overrides
+    the default.
+
+    Args:
+        content_type: The content type from the request (default or user-chosen).
+        detected: Auto-detected content type from preprocessing, or None.
+        user_selected: Whether the user explicitly chose the content type.
+
+    Returns:
+        The resolved content type string.
+    """
+    if detected and not user_selected:
+        logger.info(
+            "Auto-detected content_type=%s (overriding default=%s)",
+            detected, content_type,
+        )
+        return detected
+    if user_selected:
+        logger.info(
+            "Using user-selected content_type=%s (auto-detected=%s)",
+            content_type, detected,
+        )
+    return content_type
+
+
 def analyze(
     text: str,
     content_type: str,
@@ -94,6 +127,7 @@ def analyze(
     socket_sid: Optional[str] = None,
     session_id: Optional[str] = None,
     blocks: Optional[list] = None,
+    user_selected: bool = False,
 ) -> AnalyzeResponse:
     """Run the full three-phase analysis pipeline.
 
@@ -113,6 +147,9 @@ def analyze(
         blocks: Optional list of Block objects from a parser. Enables
             lite_markers Markdown representation for LLM analysis and
             semantic block-boundary splitting.
+        user_selected: Whether the user explicitly selected the content type
+            via the popup or badge override.  When True, the auto-detected
+            type does not override the user's choice.
 
     Returns:
         AnalyzeResponse with deterministic results and partial=True
@@ -129,14 +166,12 @@ def analyze(
     _emit_progress(socket_sid, session_id, "preprocessing", "Preprocessing text", 5)
     prep = preprocess(text, blocks=blocks, file_type=file_type)
 
-    # Override content_type if the document declares or implies one
+    # Resolve final content_type: auto-detected overrides default,
+    # but user's explicit selection takes priority.
     detected = prep.get("detected_content_type")
-    if detected:
-        logger.info(
-            "Auto-detected content_type=%s (user selected=%s)",
-            detected, content_type,
-        )
-        content_type = detected
+    content_type = _resolve_detected_content_type(
+        content_type, detected, user_selected,
+    )
 
     # Phase 0.5: Collect acronym definitions for LLM context
     acronym_context = _collect_acronyms(prep["text"])

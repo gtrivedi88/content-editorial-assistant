@@ -288,6 +288,7 @@
 .cea-chip--punctuation .cea-chip__dot { background: var(--cea-cat-punctuation); }
 .cea-chip--structure   { background: var(--cea-cat-structure-bg); color: var(--cea-cat-structure); }
 .cea-chip--structure .cea-chip__dot { background: var(--cea-cat-structure); }
+.cea-chip--all        { background: var(--pf-v5-global--BackgroundColor--200, #f0f0f0); color: var(--pf-v5-global--Color--200, #6a6e73); }
 
 /* ── Paste hint toast ── */
 

@@ -20,7 +20,7 @@ export function abortCurrentAnalysis() {
  * POST /api/v1/analyze — analyze content.
  * Aborts any in-flight analysis request before starting a new one.
  */
-export async function postAnalyze(content, formatHint, contentType, sessionId, htmlContent) {
+export async function postAnalyze(content, formatHint, contentType, sessionId, htmlContent, userSelected) {
     if (currentAnalyzeController) {
         currentAnalyzeController.abort();
     }
@@ -34,6 +34,9 @@ export async function postAnalyze(content, formatHint, contentType, sessionId, h
     };
     if (htmlContent) {
         payload.html_content = htmlContent;
+    }
+    if (userSelected) {
+        payload.user_selected = true;
     }
 
     const resp = await fetch('/api/v1/analyze', {

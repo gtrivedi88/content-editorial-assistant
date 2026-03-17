@@ -20,7 +20,7 @@ import { clearSuggestionCache } from '../issues/issue-card.js';
  * visible until the analysis_complete WebSocket event delivers
  * the final merged results. No intermediate results are shown.
  */
-export async function analyzeContent() {
+export async function analyzeContent(contentType = 'concept', userSelected = false) {
     const { content, formatHint, sessionId, htmlContent } = store.getState();
     if (!content.trim()) return;
 
@@ -47,7 +47,7 @@ export async function analyzeContent() {
     });
 
     try {
-        const response = await postAnalyze(content, formatHint, 'concept', sid, htmlContent);
+        const response = await postAnalyze(content, formatHint, contentType, sid, htmlContent, userSelected);
 
         // Guard against stale responses after cancellation
         if (store.get('currentAnalysisId') !== analysisId) return;

@@ -236,34 +236,155 @@ export function removeUnderline(editorEl, errorId) {
  * backtick-delimited (e.g., `OSTree`) AND the adjacent DOM text already
  * has backticks (the original source had inline code formatting), the
  * outer backticks are stripped to prevent double-backtick insertion.
+ *
+ * Sentence-level rewrites: when the LLM returns a full sentence rewrite
+ * (much longer than the flagged span), replaces the entire sentence in
+ * the DOM instead of just the mark's content to prevent text duplication.
+ *
+ * @param {HTMLElement} editorEl - The contenteditable editor element
+ * @param {string} errorId - The error ID to replace
+ * @param {string} newText - The replacement text
+ * @param {string} [sentence] - Optional containing sentence for sentence-level replacement
  */
-export function replaceUnderlineText(editorEl, errorId, newText) {
+export function replaceUnderlineText(editorEl, errorId, newText, sentence) {
     const mark = editorEl.querySelector(`.cea-underline[data-error-id="${errorId}"]`);
-    if (mark) {
-        let text = newText;
+    if (!mark) return;
 
-        // Prevent double backticks: if the replacement is backtick-wrapped
-        // and the surrounding DOM text already provides backticks, strip
-        // the redundant outer backticks from the replacement.
-        if (text.startsWith('`') && text.endsWith('`') && text.length > 2) {
-            const prev = mark.previousSibling;
-            const next = mark.nextSibling;
-            const prevEndsBacktick = prev?.nodeType === Node.TEXT_NODE
-                && prev.textContent.endsWith('`');
-            const nextStartsBacktick = next?.nodeType === Node.TEXT_NODE
-                && next.textContent.startsWith('`');
-            if (prevEndsBacktick && nextStartsBacktick) {
-                text = text.slice(1, -1);
-            }
-        }
+    const markText = mark.textContent;
+    const isSentenceRewrite = sentence
+        && newText.length > markText.length * 2
+        && newText.length > 40;
 
-        mark.textContent = text;
-        mark.classList.add('cea-underline--resolved');
-        // Remove the mark wrapper after a brief visual feedback
-        setTimeout(() => {
-            removeUnderline(editorEl, errorId);
-        }, 600);
+    // Sentence-level rewrite: replace the full sentence, not just the mark
+    if (isSentenceRewrite && _replaceSentence(editorEl, mark, newText, sentence)) {
+        return;
     }
+
+    // Simple replacement: swap the mark's text content
+    let text = newText;
+
+    // Prevent double backticks: if the replacement is backtick-wrapped
+    // and the surrounding DOM text already provides backticks, strip
+    // the redundant outer backticks from the replacement.
+    if (text.startsWith('`') && text.endsWith('`') && text.length > 2) {
+        const prev = mark.previousSibling;
+        const next = mark.nextSibling;
+        const prevEndsBacktick = prev?.nodeType === Node.TEXT_NODE
+            && prev.textContent.endsWith('`');
+        const nextStartsBacktick = next?.nodeType === Node.TEXT_NODE
+            && next.textContent.startsWith('`');
+        if (prevEndsBacktick && nextStartsBacktick) {
+            text = text.slice(1, -1);
+        }
+    }
+
+    mark.textContent = text;
+    mark.classList.add('cea-underline--resolved');
+    // Remove the mark wrapper after a brief visual feedback
+    setTimeout(() => {
+        removeUnderline(editorEl, errorId);
+    }, 600);
+}
+
+/**
+ * Replace an entire sentence in the DOM when the LLM returns a
+ * sentence-level rewrite.
+ *
+ * Steps:
+ * 1. Pre-check that the sentence exists in the parent's text content
+ * 2. Collect other marks that might be removed as collateral
+ * 3. Unwrap the target mark (keep its text as a regular text node)
+ * 4. Find the sentence in the cleaned text and build a DOM range
+ * 5. Replace the sentence via range.deleteContents + range.insertNode
+ * 6. Emit cleanup event for marks removed as collateral
+ *
+ * @param {HTMLElement} editorEl - The contenteditable editor element
+ * @param {HTMLElement} mark - The mark element being accepted
+ * @param {string} newText - The replacement sentence text
+ * @param {string} sentence - The original sentence to find and replace
+ * @returns {boolean} True if replacement succeeded or mark was unwrapped
+ */
+function _replaceSentence(editorEl, mark, newText, sentence) {
+    const parent = mark.parentNode;
+    if (!parent) return false;
+
+    // Pre-check: verify sentence exists in parent's text before modifying DOM
+    if (!parent.textContent.includes(sentence)) {
+        return false;
+    }
+
+    // Collect other mark IDs in parent for collateral cleanup (Bug 3)
+    const otherMarkIds = [];
+    parent.querySelectorAll('.cea-underline').forEach(m => {
+        if (m !== mark) otherMarkIds.push(m.dataset.errorId);
+    });
+
+    // Unwrap the target mark, preserving its text content
+    while (mark.firstChild) {
+        parent.insertBefore(mark.firstChild, mark);
+    }
+    mark.remove();
+    parent.normalize();
+
+    // Find the sentence in the cleaned text
+    const fullText = parent.textContent;
+    const sentIdx = fullText.indexOf(sentence);
+    if (sentIdx === -1) {
+        // Extremely unlikely after pre-check — mark already unwrapped
+        return true;
+    }
+
+    const sentEnd = sentIdx + sentence.length;
+
+    // Walk text nodes to build a DOM range covering the sentence
+    const walker = document.createTreeWalker(parent, NodeFilter.SHOW_TEXT);
+    let pos = 0;
+    let startNode = null, startOffset = 0;
+    let endNode = null, endOffset = 0;
+
+    while (walker.nextNode()) {
+        const node = walker.currentNode;
+        const nodeLen = node.textContent.length;
+
+        if (!startNode && pos + nodeLen > sentIdx) {
+            startNode = node;
+            startOffset = sentIdx - pos;
+        }
+        if (pos + nodeLen >= sentEnd) {
+            endNode = node;
+            endOffset = sentEnd - pos;
+            break;
+        }
+        pos += nodeLen;
+    }
+
+    if (!startNode || !endNode) return true;
+
+    try {
+        const range = document.createRange();
+        range.setStart(startNode, startOffset);
+        range.setEnd(endNode, Math.min(endOffset, endNode.textContent.length));
+        range.deleteContents();
+        range.insertNode(document.createTextNode(newText));
+        parent.normalize();
+    } catch (e) {
+        console.warn('[UnderlineRenderer] _replaceSentence failed:', e);
+        return true;
+    }
+
+    // Emit cleanup event for marks that were removed as collateral
+    if (otherMarkIds.length > 0) {
+        const removedIds = otherMarkIds.filter(id =>
+            !editorEl.querySelector(`.cea-underline[data-error-id="${id}"]`)
+        );
+        if (removedIds.length > 0) {
+            globalThis.dispatchEvent(new CustomEvent('cea:errors-removed', {
+                detail: { errorIds: removedIds },
+            }));
+        }
+    }
+
+    return true;
 }
 
 /**

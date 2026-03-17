@@ -139,7 +139,7 @@ export class InlinePopup {
                     'aria-label': `Accept suggestion: ${escapeHtml(text)}`,
                     onClick: (e) => {
                         e.stopPropagation();
-                        replaceUnderlineText(this._editorEl, error.id, text);
+                        replaceUnderlineText(this._editorEl, error.id, text, error.sentence);
                         acceptSuggestion(error.id);
                         this.hide();
                     },

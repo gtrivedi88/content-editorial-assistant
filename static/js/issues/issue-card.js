@@ -352,7 +352,7 @@ function _createSuggestionChip(text, error, editorEl) {
         'aria-label': `Accept suggestion: ${escapeHtml(text)}`,
         onClick: (e) => {
             e.stopPropagation();
-            replaceUnderlineText(editorEl, error.id, text);
+            replaceUnderlineText(editorEl, error.id, text, error.sentence);
             acceptSuggestion(error.id);
         },
     });
@@ -428,7 +428,7 @@ async function _autoFetchSuggestion(error, editorEl, card, container, existingCh
         // LLM rewrite is higher quality — update first chip's handler
         existingChip.onclick = (e) => {
             e.stopPropagation();
-            replaceUnderlineText(editorEl, error.id, rewriteText);
+            replaceUnderlineText(editorEl, error.id, rewriteText, error.sentence);
             acceptSuggestion(error.id);
         };
     } else {

@@ -138,6 +138,7 @@ export class IssuePanel {
             this._issueListEl.style.display = '';
         } else {
             this._issueListEl.style.display = 'none';
+            this._removeChips();
             this._showNoIssuesState();
         }
     }
@@ -154,6 +155,16 @@ export class IssuePanel {
         }
 
         const container = createElement('div', { className: 'cea-chips' });
+
+        // "All" chip — always first, active by default
+        const allChip = createElement('span', {
+            className: 'cea-chip cea-chip--all cea-chip--active',
+            dataset: { cat: 'all' },
+        });
+        allChip.appendChild(document.createTextNode(`${errors.length} All`));
+        allChip.addEventListener('click', () => this._clearChipFilter());
+        container.appendChild(allChip);
+
         for (const [cat, count] of Object.entries(counts)) {
             if (count === 0) continue;
             const chip = createElement('span', {
@@ -195,6 +206,8 @@ export class IssuePanel {
         this._activeCatFilter = null;
         if (this._chipsEl) {
             this._chipsEl.querySelectorAll('.cea-chip').forEach(c => c.classList.remove('cea-chip--active'));
+            const allChip = this._chipsEl.querySelector('.cea-chip--all');
+            if (allChip) allChip.classList.add('cea-chip--active');
         }
         this._filterCardsByCategory(null);
     }

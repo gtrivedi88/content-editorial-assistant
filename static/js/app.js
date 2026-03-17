@@ -7,8 +7,10 @@
 
 import { themeManager } from './shared/theme-manager.js';
 import { store } from './state/store.js';
+import { analyzeContent } from './state/actions.js';
 import { initSocketClient } from './services/socket-client.js';
 import { EditorController } from './editor/editor-controller.js';
+import { ContentTypePopup } from './editor/content-type-popup.js';
 import { IssuePanel } from './issues/issue-panel.js';
 import { ReportPanel } from './report/report-panel.js';
 import { FileHandler } from './file/file-handler.js';
@@ -26,7 +28,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Review page modules
     const editorEl = document.getElementById('cea-editor');
     if (editorEl) {
-        const editor = new EditorController(editorEl, store);
+        const contentTypePopup = new ContentTypePopup();
+        const editor = new EditorController(editorEl, store, contentTypePopup);
         const issuePanel = new IssuePanel(
             document.getElementById('cea-issue-panel'),
             store,
@@ -44,15 +47,24 @@ document.addEventListener('DOMContentLoaded', () => {
         const inlinePopup = new InlinePopup(store, editorEl);
 
         // Content type badge — shows auto-detected type after analysis
+        // Click opens popup to override type and re-analyze.
         const contentTypeBadge = document.getElementById('cea-content-type-badge');
         if (contentTypeBadge) {
             store.subscribe('detectedContentType', (type) => {
                 if (type) {
-                    contentTypeBadge.textContent = type.charAt(0).toUpperCase() + type.slice(1);
+                    const label = type === 'release_notes'
+                        ? 'Release Notes'
+                        : type.charAt(0).toUpperCase() + type.slice(1);
+                    contentTypeBadge.textContent = label;
                     contentTypeBadge.style.display = '';
                 } else {
                     contentTypeBadge.style.display = 'none';
                 }
+            });
+
+            contentTypeBadge.addEventListener('click', async () => {
+                const selected = await contentTypePopup.show();
+                analyzeContent(selected, true);
             });
         }
 

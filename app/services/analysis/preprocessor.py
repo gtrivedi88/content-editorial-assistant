@@ -545,16 +545,55 @@ def preprocess(
     }
 
 
-# Pre-compiled pattern for content-type detection from AsciiDoc attributes
+# ---------------------------------------------------------------------------
+# Content-type detection — 4-tier weighted multi-type scoring engine
+# ---------------------------------------------------------------------------
+
+# Tier 1: Metadata — instant win (AsciiDoc attribute)
 _CONTENT_TYPE_ATTR_RE = re.compile(
     r":_mod-docs-content-type:\s*(CONCEPT|PROCEDURE|REFERENCE|ASSEMBLY)",
     re.IGNORECASE,
 )
 
-# Structural markers that indicate a procedure document
-_PROCEDURE_MARKERS_RE = re.compile(
-    r"^\.(Procedure|Prerequisites)\s*$", re.MULTILINE,
+# Tier 2: Structural markers — high confidence (+20 each)
+# Optional dot prefix handles both AsciiDoc (.Procedure) and plain text (Procedure).
+# Trap 3 fix: \s*$ handles non-breaking spaces from browser paste.
+_STRUCT_PROCEDURE_RE = re.compile(
+    r"^(?:\.)?(Procedure|Prerequisites|Verification|Troubleshooting)\s*$",
+    re.MULTILINE,
 )
+_STRUCT_REFERENCE_RE = re.compile(
+    r"^(?:\.)?(Additional resources|Related information)\s*$",
+    re.MULTILINE | re.IGNORECASE,
+)
+
+# Tier 3: Lexical title guard — medium confidence (+10)
+# (?:=\s+)? handles both AsciiDoc headings and plain-text headings.
+_CONCEPT_TITLE_RE = re.compile(
+    r"^(?:=\s+)?(About|Understanding|Architecture|Introduction)\b",
+    re.MULTILINE | re.IGNORECASE,
+)
+_PROCEDURE_TITLE_RE = re.compile(
+    r"^(?:=\s+)?(Configuring|Creating|Installing|Managing|Updating|"
+    r"Using|Adding|Removing|Deploying|Enabling|Setting)\b",
+    re.MULTILINE | re.IGNORECASE,
+)
+_REFERENCE_TITLE_RE = re.compile(
+    r"^(?:=\s+)?.*(?:Reference|Parameters|Properties|Commands|"
+    r"Variables|Attributes)\s*$",
+    re.MULTILINE | re.IGNORECASE,
+)
+
+# Tier 4: Content shape — low confidence (+5)
+_NUMBERED_STEPS_RE = re.compile(r"^\d+\.\s+[A-Z]", re.MULTILINE)
+_IMPERATIVE_STEPS_RE = re.compile(
+    r"^\d+\.\s+(?:Click|Select|Enter|Run|Type|Open|Navigate|Configure|"
+    r"Set|Add|Remove|Create|Install|Enable|Disable|Verify|Check|Ensure)\b",
+    re.MULTILINE,
+)
+_OPTIONAL_PREFIX_RE = re.compile(r"^Optional:", re.MULTILINE)
+_TABLE_MARKER_RE = re.compile(r"^\|===", re.MULTILINE)
+_DEF_LIST_RE = re.compile(r"::\s*$", re.MULTILINE)
 
 
 # ---------------------------------------------------------------------------
@@ -563,31 +602,107 @@ _PROCEDURE_MARKERS_RE = re.compile(
 
 
 def _detect_content_type(text: str) -> str | None:
-    """Detect modular documentation content type from text markers.
+    """Detect modular documentation content type via 4-tier weighted scoring.
 
-    Checks for the ``:_mod-docs-content-type:`` AsciiDoc attribute first.
-    Falls back to structural markers (``.Procedure``, ``.Prerequisites``)
-    to identify procedure documents.
+    Uses a multi-type scoring dictionary that tracks points for procedure,
+    concept, and reference simultaneously.  The type with the highest score
+    wins, provided it meets the minimum threshold of 5 points.
+
+    Tiers (highest to lowest confidence):
+        1. Metadata — ``:_mod-docs-content-type:`` attribute (instant win)
+        2. Structural markers — standalone headings like Procedure (+20 each)
+        3. Lexical title guard — naming conventions like gerund titles (+10)
+        4. Content shape — numbered steps, tables, definition lists (+5)
 
     Args:
         text: Raw input text (before markup cleaning).
 
     Returns:
-        Detected content type string, or None if not detected.
+        Detected content type string, or None if ambiguous.
     """
-    # Priority 1: explicit attribute
+    # Tier 1: explicit AsciiDoc attribute → instant win
     attr_match = _CONTENT_TYPE_ATTR_RE.search(text)
     if attr_match:
         return attr_match.group(1).lower()
 
-    # Priority 2: structural markers
-    markers = _PROCEDURE_MARKERS_RE.findall(text)
-    if markers:
-        marker_lower = {m.lower() for m in markers}
-        if "procedure" in marker_lower:
-            return "procedure"
+    # Tiers 2-4: multi-type scoring
+    scores: dict[str, int] = {"procedure": 0, "concept": 0, "reference": 0}
+
+    # Tier 2: structural markers (+20 each)
+    _score_structural_markers(text, scores)
+
+    # Tier 3: lexical title guard (+10)
+    _score_title_patterns(text, scores)
+
+    # Tier 4: content shape (+5)
+    _score_content_shape(text, scores)
+
+    # Winner takes all — must meet threshold of 5
+    best = max(scores, key=scores.get)
+    if scores[best] >= 5:
+        return best
 
     return None
+
+
+def _score_structural_markers(text: str, scores: dict[str, int]) -> None:
+    """Score Tier 2 structural markers into the scores dict.
+
+    Args:
+        text: Raw input text.
+        scores: Mutable scores dictionary to update.
+    """
+    proc_markers = _STRUCT_PROCEDURE_RE.findall(text)
+    if proc_markers:
+        marker_lower = {m.lower() for m in proc_markers}
+        if "procedure" in marker_lower:
+            scores["procedure"] += 20
+        if "prerequisites" in marker_lower:
+            scores["procedure"] += 20
+        if "verification" in marker_lower:
+            scores["procedure"] += 20
+        if "troubleshooting" in marker_lower:
+            scores["procedure"] += 20
+
+    if _STRUCT_REFERENCE_RE.search(text):
+        scores["reference"] += 20
+
+
+def _score_title_patterns(text: str, scores: dict[str, int]) -> None:
+    """Score Tier 3 lexical title patterns into the scores dict.
+
+    Args:
+        text: Raw input text.
+        scores: Mutable scores dictionary to update.
+    """
+    if _CONCEPT_TITLE_RE.search(text):
+        scores["concept"] += 10
+    if _PROCEDURE_TITLE_RE.search(text):
+        scores["procedure"] += 10
+    if _REFERENCE_TITLE_RE.search(text):
+        scores["reference"] += 10
+
+
+def _score_content_shape(text: str, scores: dict[str, int]) -> None:
+    """Score Tier 4 content shape signals into the scores dict.
+
+    Args:
+        text: Raw input text.
+        scores: Mutable scores dictionary to update.
+    """
+    numbered = len(_NUMBERED_STEPS_RE.findall(text))
+    if numbered >= 3:
+        scores["procedure"] += 5
+    imperative = len(_IMPERATIVE_STEPS_RE.findall(text))
+    if imperative >= 2:
+        scores["procedure"] += 5
+    if _OPTIONAL_PREFIX_RE.search(text):
+        scores["procedure"] += 5
+
+    tables = len(_TABLE_MARKER_RE.findall(text))
+    def_lists = len(_DEF_LIST_RE.findall(text))
+    if tables > 0 or def_lists > 2:
+        scores["reference"] += 5
 
 
 def _clean_markup(text: str) -> str:

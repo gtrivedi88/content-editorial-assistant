@@ -52,15 +52,18 @@ def analyze() -> Tuple[Response, int]:
 
     session_id = data.get("session_id") or None
     html_content = data.get("html_content") or None
+    user_selected = bool(data.get("user_selected", False))
     logger.debug(
-        "/analyze received session_id=%r from frontend (raw=%r), html_content=%s",
+        "/analyze received session_id=%r from frontend (raw=%r), html_content=%s, user_selected=%s",
         session_id, data.get("session_id"),
         f"{len(html_content)} chars" if html_content else "None",
+        user_selected,
     )
     return _run_analysis(
         text, content_type.value,
         session_id=session_id,
         html_content=html_content,
+        user_selected=user_selected,
     )
 
 
@@ -84,6 +87,7 @@ def _run_analysis(
     content_type: str,
     session_id: str | None = None,
     html_content: str | None = None,
+    user_selected: bool = False,
 ) -> Tuple[Response, int]:
     """Execute the analysis pipeline and return the result.
 
@@ -97,6 +101,7 @@ def _run_analysis(
         content_type: Validated content type string value.
         session_id: Optional session ID from the client for session continuity.
         html_content: Optional sanitized HTML from the browser's contenteditable.
+        user_selected: Whether the user explicitly selected the content type.
 
     Returns:
         Tuple of (JSON response, HTTP status code).
@@ -129,6 +134,7 @@ def _run_analysis(
             file_type=file_type.value,
             session_id=session_id,
             blocks=blocks,
+            user_selected=user_selected,
         )
         logger.debug(
             "/analyze responding with session_id=%s, %d issues, partial=%s",
