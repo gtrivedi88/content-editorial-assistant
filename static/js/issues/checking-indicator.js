@@ -16,6 +16,7 @@ export class CheckingIndicator {
         this._aiRow = null;
         this._ltRow = null;
         this._globalRow = null;
+        this._judgeRow = null;
 
         store.subscribe('analysisStatus', (status) => {
             if (status === 'analyzing') {
@@ -74,6 +75,7 @@ export class CheckingIndicator {
         this._aiRow = null;
         this._ltRow = null;
         this._globalRow = null;
+        this._judgeRow = null;
         this._container.insertBefore(wrapper, this._container.firstChild);
     }
 
@@ -85,11 +87,12 @@ export class CheckingIndicator {
         this._aiRow = null;
         this._ltRow = null;
         this._globalRow = null;
+        this._judgeRow = null;
     }
 
     /**
      * Handle stage_progress events from the backend.
-     * Transitions the UI through deterministic → Grammar → AI Analysis → Global Review.
+     * Transitions the UI through deterministic → Grammar → AI Analysis → Global Review → Quality Review.
      */
     _onStageProgress(data) {
         if (!this._el) return;
@@ -107,6 +110,7 @@ export class CheckingIndicator {
             languagetool: this._handleLanguageTool,
             llm_granular: this._handleLlmGranular,
             llm_global: this._handleLlmGlobal,
+            llm_judge: this._handleLlmJudge,
         };
     }
 
@@ -143,6 +147,15 @@ export class CheckingIndicator {
             this._showGlobalPhase();
         } else if (data.status === 'done') {
             this._markGlobalDone();
+        }
+    }
+
+    _handleLlmJudge(data) {
+        if (data.status === 'started') {
+            this._markGlobalDone();
+            this._showJudgePhase();
+        } else if (data.status === 'done') {
+            this._markJudgeDone();
         }
     }
 
@@ -275,6 +288,43 @@ export class CheckingIndicator {
         if (this._globalRow) {
             this._globalRow.className = 'cea-checking__group cea-checking__group--done';
             this._globalRow.querySelector('.cea-checking__group-icon').innerHTML =
+                '<i class="fas fa-check"></i>';
+        }
+    }
+
+    /**
+     * Show the Quality Review (judge) phase row.
+     */
+    _showJudgePhase() {
+        if (!this._el || this._judgeRow) return;
+
+        const subtitle = this._el.querySelector('.cea-checking__subtitle');
+        if (subtitle) {
+            subtitle.textContent = 'Running quality review';
+        }
+
+        const groupsContainer = this._el.querySelector('.cea-checking__groups');
+        if (groupsContainer) {
+            const judgeRow = createElement('div', {
+                className: 'cea-checking__group cea-checking__group--active',
+            });
+            judgeRow.appendChild(createElement('span', {
+                className: 'cea-checking__group-icon',
+                innerHTML: '<i class="fas fa-spinner fa-spin"></i>',
+            }));
+            judgeRow.appendChild(createElement('span', { textContent: 'Quality review' }));
+            groupsContainer.appendChild(judgeRow);
+            this._judgeRow = judgeRow;
+        }
+    }
+
+    /**
+     * Mark the Quality Review (judge) row as done.
+     */
+    _markJudgeDone() {
+        if (this._judgeRow) {
+            this._judgeRow.className = 'cea-checking__group cea-checking__group--done';
+            this._judgeRow.querySelector('.cea-checking__group-icon').innerHTML =
                 '<i class="fas fa-check"></i>';
         }
     }

@@ -448,8 +448,19 @@ def _run_llm_phases(
 
     # Phase 2C: LLM judge self-correction (optional)
     if not _is_cancelled(session_id) and llm_issues and Config.LLM_JUDGE_ENABLED:
+        _emit_event(socket_sid, "stage_progress", {
+            "session_id": session_id,
+            "phase": "llm_judge",
+            "status": "started",
+            "issues_total": len(llm_issues),
+        })
         document_excerpt = prep.get("lite_markers") or prep.get("text", "")
         llm_issues = _run_judge_pass(llm_issues, document_excerpt, content_type)
+        _emit_event(socket_sid, "stage_progress", {
+            "session_id": session_id,
+            "phase": "llm_judge",
+            "status": "done",
+        })
 
     # Merge and emit final results
     logger.debug(
@@ -571,7 +582,13 @@ def _run_deterministic_with_blocks(
         parsed_blocks, content_type, original_text, acronym_context,
     )
     # Filter failed block remaps
+    pre_block_count = len(block_issues)
     block_issues = [i for i in block_issues if i.span != [-1, -1]]
+    if len(block_issues) < pre_block_count:
+        logger.info(
+            "Dropped %d per-block issues with failed remap",
+            pre_block_count - len(block_issues),
+        )
     logger.debug("Per-block produced %d issues", len(block_issues))
     for i, iss in enumerate(block_issues[:10]):
         logger.debug(
@@ -913,6 +930,54 @@ def _shift_issue_spans(
             issue.span = [issue.span[0] + offset, issue.span[1] + offset]
 
 
+def _find_block_text_position(
+    block_content: str,
+    text: str,
+    start_pos_hint: int,
+) -> int:
+    """Find where a block's content text appears in *text*.
+
+    Handles coordinate-space mismatches between block positions
+    (which may be in raw HTML coordinates) and *text* (which may
+    be browser-extracted plain text).  Collects all occurrences and
+    returns the one closest to *start_pos_hint*.
+
+    For AsciiDoc content, ``block.content`` has inline markers
+    stripped while ``text`` retains AsciiDoc markup — the search
+    will return ``-1`` and callers fall back to ``block.start_pos``.
+
+    Args:
+        block_content: The block's plain-text content.
+        text: The original text to search in.
+        start_pos_hint: Expected position (may be wrong coordinate
+            space, but relative ordering is preserved).
+
+    Returns:
+        Position in *text* where block content starts, or ``-1``.
+    """
+    if not block_content or len(block_content) < 8:
+        return -1
+
+    # Use a prefix for matching — handles trailing whitespace diffs
+    search_text = block_content[:min(50, len(block_content))]
+    if len(search_text) < 8:
+        return -1
+
+    best = -1
+    best_dist = float("inf")
+    pos = 0
+    while pos < len(text):
+        idx = text.find(search_text, pos)
+        if idx < 0:
+            break
+        dist = abs(idx - start_pos_hint)
+        if dist < best_dist:
+            best = idx
+            best_dist = dist
+        pos = idx + 1
+    return best
+
+
 def _map_block_issues_to_original(
     issues: list[IssueResponse],
     block: Any,
@@ -923,6 +988,10 @@ def _map_block_issues_to_original(
     Uses ``block.char_map`` (from inline-marker stripping) and
     ``block.start_pos`` to compute an approximate original-text
     position, then refines with :func:`_find_flagged_in_text`.
+
+    When ``block.start_pos`` is in a different coordinate space
+    (e.g., raw HTML positions while ``original_text`` is browser
+    plain text), a content-based anchor search resolves the mismatch.
 
     Modifies issues in place.  Issues whose flagged text cannot be
     found in the original text get the ``[-1, -1]`` sentinel.
@@ -935,8 +1004,21 @@ def _map_block_issues_to_original(
     char_map = getattr(block, "char_map", None)
     orig_len = len(original_text)
 
+    # Resolve the block's actual position in original_text.
+    # block.start_pos may be in a different coordinate space
+    # (e.g., raw HTML byte positions when original_text is browser
+    # plain text).  Content-based anchor resolves the mismatch.
+    block_content = getattr(block, "content", "")
+    content_anchor = _find_block_text_position(
+        block_content, original_text, block.start_pos,
+    )
+
     for issue in issues:
         if not issue.span or not issue.flagged_text:
+            logger.info(
+                "Dropped block issue missing span or flagged_text: rule=%s",
+                issue.rule_name,
+            )
             continue
 
         span_start = issue.span[0]
@@ -947,7 +1029,13 @@ def _map_block_issues_to_original(
         else:
             raw_offset = span_start
 
-        orig_approx = block.start_pos + raw_offset
+        # Use content anchor if available (fixes HTML coordinate
+        # mismatch); otherwise use block.start_pos + raw_offset.
+        if content_anchor >= 0:
+            orig_approx = content_anchor + span_start
+        else:
+            orig_approx = block.start_pos + raw_offset
+
         flagged = issue.flagged_text
 
         # Search near the approximate position first
@@ -956,6 +1044,7 @@ def _map_block_issues_to_original(
 
         result = _find_flagged_in_text(
             original_text, flagged, search_from, search_to,
+            position_hint=orig_approx,
         )
         if result:
             issue.span = [result[0], result[1]]
@@ -963,10 +1052,17 @@ def _map_block_issues_to_original(
             continue
 
         # Widen to the full block range
-        block_from = max(0, block.start_pos - 20)
-        block_to = min(orig_len, block.end_pos + 200)
+        if content_anchor >= 0:
+            block_from = max(0, content_anchor - 20)
+            block_to = min(
+                orig_len, content_anchor + len(block_content) + 200,
+            )
+        else:
+            block_from = max(0, block.start_pos - 20)
+            block_to = min(orig_len, block.end_pos + 200)
         result = _find_flagged_in_text(
             original_text, flagged, block_from, block_to,
+            position_hint=orig_approx,
         )
         if result:
             issue.span = [result[0], result[1]]
@@ -1431,7 +1527,7 @@ def _judge_single_batch(
     if drop_indices:
         for idx in drop_indices:
             if 0 <= idx < len(issues):
-                logger.debug(
+                logger.info(
                     "Judge dropped: flagged=%r category=%s",
                     issues[idx].flagged_text[:60], issues[idx].category,
                 )
@@ -1993,8 +2089,8 @@ def _parse_llm_results(
 
             # Filter out issues that flag synthetic placeholder text
             if _is_placeholder_issue(issue):
-                logger.debug(
-                    "Filtered placeholder LLM issue: flagged=%r msg=%r",
+                logger.info(
+                    "Dropped placeholder LLM issue: flagged=%r msg=%r",
                     issue.flagged_text[:80], (issue.message or "")[:80],
                 )
                 continue
@@ -2138,7 +2234,7 @@ def _strip_backtick_suggestions(
         if all_redundant and not new_suggestions:
             # All suggestions just added backticks to already-backticked text.
             # This is a false positive — drop the issue.
-            logger.debug(
+            logger.info(
                 "Dropped LLM false positive: '%s' already backticked at [%d,%d]",
                 flagged, s, e,
             )
@@ -2217,8 +2313,10 @@ def _resolve_llm_span(issue: IssueResponse, text: str) -> None:
     """Compute character span for an LLM issue by text search.
 
     Finds the ``flagged_text`` in the original text and sets the span
-    to [start, end].  Uses three strategies: exact match, case-insensitive
-    match, and sentence-context search.
+    to [start, end].  Tries sentence-context search first (the LLM
+    provides ``issue.sentence`` for disambiguation), then falls back
+    to exact match, case-insensitive, whitespace-collapsed, Markdown-
+    stripped, and fuzzy strategies.
 
     Args:
         issue: IssueResponse to update — modified in place.
@@ -2230,38 +2328,43 @@ def _resolve_llm_span(issue: IssueResponse, text: str) -> None:
         return
 
     flagged = issue.flagged_text
+    text_lower = text.lower()
+    flagged_lower = flagged.lower()
     logger.debug(
         "_resolve_llm_span: rule=%s flagged=%r (len=%d) text_len=%d",
         issue.rule_name, flagged[:80], len(flagged), len(text),
     )
 
-    # Strategy 1: exact substring match
+    # Strategy 1: sentence-context search (highest accuracy for
+    # disambiguation).  The LLM provides issue.sentence specifically
+    # to anchor flagged_text to the correct occurrence.
+    span = _resolve_via_sentence_context(
+        issue, text, text_lower, flagged, flagged_lower,
+    )
+    if span:
+        issue.span = span
+        return
+
+    # Strategy 2: exact substring match (first-match; OK when sentence
+    # context is unavailable or the sentence itself drifted)
     idx = text.find(flagged)
     if idx >= 0:
         issue.span = [idx, idx + len(flagged)]
         return
 
-    # Strategy 2: case-insensitive match (LLMs sometimes alter casing)
-    text_lower = text.lower()
-    flagged_lower = flagged.lower()
+    # Strategy 3: case-insensitive match (LLMs sometimes alter casing)
     idx = text_lower.find(flagged_lower)
     if idx >= 0:
         issue.span = [idx, idx + len(flagged)]
         return
 
-    # Strategy 3: stripped/collapsed whitespace match
+    # Strategy 4: stripped/collapsed whitespace match
     flagged_collapsed = " ".join(flagged.split())
     if flagged_collapsed != flagged:
         idx = text.find(flagged_collapsed)
         if idx >= 0:
             issue.span = [idx, idx + len(flagged_collapsed)]
             return
-
-    # Strategy 4: sentence-context search
-    span = _resolve_via_sentence_context(issue, text, text_lower, flagged, flagged_lower)
-    if span:
-        issue.span = span
-        return
 
     # Strategy 5: strip Markdown formatting from flagged text (lite-markers
     # prefix + inline backticks/bold) and search with inline-marker tolerance
@@ -2281,6 +2384,12 @@ def _resolve_llm_span(issue: IssueResponse, text: str) -> None:
 
     # Strategy 6: fuzzy anchor — LLM may return slightly altered text
     _resolve_llm_span_fuzzy(issue, text)
+
+    if issue.span == [0, 0]:
+        logger.info(
+            "Span resolution failed (all 6 strategies): rule=%s flagged=%r",
+            issue.rule_name, (issue.flagged_text or "")[:80],
+        )
 
 
 # Minimum similarity ratio for fuzzy anchor matching (SK-11).
@@ -2464,22 +2573,67 @@ def _find_ignoring_inline_markers(
     return start, end
 
 
+def _find_closest_match(
+    text: str,
+    pattern: str,
+    search_from: int,
+    search_to: int,
+    hint: int,
+) -> int:
+    """Find the occurrence of *pattern* in *text* closest to *hint*.
+
+    Collects all matches in ``[search_from, search_to)`` and returns
+    the one whose start position is nearest to *hint*.
+
+    Args:
+        text: The text to search in.
+        pattern: Substring to find.
+        search_from: Start of search region.
+        search_to: End of search region.
+        hint: Expected position — closest match wins.
+
+    Returns:
+        Index of the closest match, or ``-1`` if none found.
+    """
+    best = -1
+    best_dist = float("inf")
+    pos = search_from
+    while pos < search_to:
+        idx = text.find(pattern, pos, search_to)
+        if idx < 0:
+            break
+        dist = abs(idx - hint)
+        if dist < best_dist:
+            best = idx
+            best_dist = dist
+        pos = idx + 1
+    return best
+
+
 def _find_flagged_in_text(
     text: str,
     flagged: str,
     search_from: int = 0,
     search_to: int | None = None,
+    position_hint: int | None = None,
 ) -> tuple[int, int, str] | None:
     """Search for flagged text in a region using multiple strategies.
 
     Tries in order: exact match, case-insensitive match, heading-marker
     stripped match, and inline-marker-tolerant match.
 
+    When *position_hint* is provided and multiple matches exist in the
+    search region, returns the match closest to the hint position.
+    This prevents common short words (e.g., "using") from snapping to
+    the wrong occurrence.
+
     Args:
         text: The text to search in.
         flagged: The flagged text to find.
         search_from: Start of the search region.
         search_to: End of the search region (default: end of text).
+        position_hint: Expected position in *text* — used to
+            disambiguate when multiple matches exist.
 
     Returns:
         Tuple of ``(start, end, matched_text)`` or ``None`` if not found.
@@ -2488,13 +2642,26 @@ def _find_flagged_in_text(
         search_to = len(text)
 
     # Strategy 1: exact substring match
-    idx = text.find(flagged, search_from, search_to)
+    if position_hint is not None:
+        idx = _find_closest_match(
+            text, flagged, search_from, search_to, position_hint,
+        )
+    else:
+        idx = text.find(flagged, search_from, search_to)
     if idx >= 0:
         return idx, idx + len(flagged), flagged
 
     # Strategy 2: case-insensitive match
     region = text[search_from:search_to]
-    idx_lower = region.lower().find(flagged.lower())
+    region_lower = region.lower()
+    flagged_lower = flagged.lower()
+    if position_hint is not None:
+        idx_lower = _find_closest_match(
+            region_lower, flagged_lower, 0, len(region),
+            position_hint - search_from,
+        )
+    else:
+        idx_lower = region_lower.find(flagged_lower)
     if idx_lower >= 0:
         actual = search_from + idx_lower
         return actual, actual + len(flagged), text[actual:actual + len(flagged)]
@@ -2502,7 +2669,12 @@ def _find_flagged_in_text(
     # Strategy 3: strip Markdown markers from lite-markers format
     stripped = _strip_lite_markers(flagged)
     if stripped != flagged:
-        idx = text.find(stripped, search_from, search_to)
+        if position_hint is not None:
+            idx = _find_closest_match(
+                text, stripped, search_from, search_to, position_hint,
+            )
+        else:
+            idx = text.find(stripped, search_from, search_to)
         if idx >= 0:
             return idx, idx + len(stripped), stripped
 

@@ -78,13 +78,13 @@ class Config:
     BLOCK_CACHE_TTL: int = int(os.environ.get("BLOCK_CACHE_TTL", "3600"))
 
     # --- Analysis ---
-    CONFIDENCE_THRESHOLD: float = float(os.environ.get("CONFIDENCE_THRESHOLD", "0.7"))
-    LLM_CONFIDENCE_THRESHOLD: float = float(os.environ.get("LLM_CONFIDENCE_THRESHOLD", "0.80"))
-    # Defaults to False intentionally — enabling the judge pass is a
-    # per-deployment decision that depends on LLM budget and latency
-    # tolerance.  Set LLM_JUDGE_ENABLED=true in the environment when
-    # the additional LLM round-trip is acceptable.
-    LLM_JUDGE_ENABLED: bool = os.environ.get("LLM_JUDGE_ENABLED", "False").lower() in ("true", "1", "yes")
+    CONFIDENCE_THRESHOLD: float = float(os.environ.get("CONFIDENCE_THRESHOLD", "0.55"))
+    LLM_CONFIDENCE_THRESHOLD: float = float(os.environ.get("LLM_CONFIDENCE_THRESHOLD", "0.55"))
+    # Judge pass enabled by default — provides FP filtering safety net
+    # for the lowered confidence threshold.  Disable via
+    # LLM_JUDGE_ENABLED=false if the additional LLM round-trip is
+    # unacceptable for budget or latency.
+    LLM_JUDGE_ENABLED: bool = os.environ.get("LLM_JUDGE_ENABLED", "True").lower() in ("true", "1", "yes")
 
     # --- Feedback ---
     FEEDBACK_DB_PATH: str = os.environ.get("FEEDBACK_DB_PATH", "data/feedback.db")

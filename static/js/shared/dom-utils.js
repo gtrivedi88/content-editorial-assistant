@@ -13,7 +13,7 @@
  * @returns {string}
  */
 export function normalizeWhitespace(text) {
-    return text.normalize('NFC').replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\t/g, ' ');
+    return text.normalize('NFC').replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\t/g, ' ').replace(/ {2,}/g, ' ');
 }
 
 const _escapeEl = document.createElement('div');

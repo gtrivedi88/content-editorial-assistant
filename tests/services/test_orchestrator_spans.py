@@ -19,9 +19,13 @@ from app.models.schemas import IssueResponse
 from app.services.analysis.orchestrator import (
     _compute_bold_code_ranges,
     _compute_content_code_ranges,
+    _find_block_text_position,
     _find_bold_code_in_inline,
+    _find_closest_match,
     _find_flagged_in_text,
+    _map_block_issues_to_original,
     _map_ranges_to_content,
+    _resolve_llm_span,
     _resolve_llm_span_fuzzy,
     _strip_lite_markers,
     _strip_markdown_inline,
@@ -433,3 +437,312 @@ class TestComputeBoldCodeRanges:
         result = _map_ranges_to_content(ranges, char_map)
         assert len(result) == 1
         assert result[0][2] == "bold"
+
+
+# ===================================================================
+# _resolve_llm_span — sentence-context priority (F1)
+# ===================================================================
+
+
+class TestResolveLlmSpanSentenceContextPriority:
+    """Tests that sentence-context search runs before naive text.find."""
+
+    def test_sentence_context_disambiguates_duplicate_word(self) -> None:
+        """When flagged_text appears multiple times, sentence anchors to correct one.
+
+        Simulates the real bug: the word 'using' appears in both the intro
+        paragraph and a bullet item.  The LLM provides a sentence that
+        contains the bullet's 'using', so the span must land there — not
+        on the first document-wide occurrence.
+        """
+        text = (
+            "You can manage network settings using a web browser. "
+            "Configuring a network bond by using the RHEL web console."
+        )
+        # The LLM flagged "using" in the second sentence
+        issue = _make_issue(
+            flagged_text="using",
+            sentence="Configuring a network bond by using the RHEL web console.",
+        )
+        _resolve_llm_span(issue, text)
+
+        # Must resolve to the second "using" (pos 80), not the first (pos 36)
+        assert issue.span != [0, 0], "Span should be resolved"
+        matched = text[issue.span[0]:issue.span[1]]
+        assert matched == "using"
+        # The second "using" starts after "by " in the second sentence
+        assert issue.span[0] > 50, (
+            f"Expected span in second sentence, got pos {issue.span[0]}"
+        )
+
+    def test_falls_back_to_text_find_without_sentence(self) -> None:
+        """Without issue.sentence, falls back to text.find (first occurrence).
+
+        When the LLM does not provide a sentence, the first occurrence
+        is the best available guess.
+        """
+        text = "Click Save to continue. Click Save again to confirm."
+        issue = _make_issue(
+            flagged_text="Save",
+            sentence="",  # no sentence context
+        )
+        _resolve_llm_span(issue, text)
+
+        assert issue.span != [0, 0], "Span should be resolved"
+        matched = text[issue.span[0]:issue.span[1]]
+        assert matched == "Save"
+        # Falls back to first occurrence
+        assert issue.span[0] == 6
+
+
+# ===================================================================
+# _find_closest_match — hint-aware substring search
+# ===================================================================
+
+
+class TestFindClosestMatch:
+    """Tests for _find_closest_match hint-aware search."""
+
+    def test_picks_closest_to_hint(self) -> None:
+        """When multiple matches exist, returns the one closest to hint."""
+        text = "use the tool. then use it again. finally use it once more."
+        #       ^pos 0          ^pos 19                 ^pos 41
+        # "use" appears at 0, 19, 41 — hint=40 should pick pos 41
+        idx = _find_closest_match(text, "use", 0, len(text), 40)
+        assert idx == 41
+
+    def test_returns_first_when_hint_is_zero(self) -> None:
+        """Hint near zero picks the first occurrence."""
+        text = "apple banana apple cherry"
+        idx = _find_closest_match(text, "apple", 0, len(text), 0)
+        assert idx == 0
+
+    def test_returns_neg1_when_not_found(self) -> None:
+        """Returns -1 when pattern is not in the region."""
+        text = "no match here"
+        idx = _find_closest_match(text, "xyz", 0, len(text), 5)
+        assert idx == -1
+
+    def test_respects_search_bounds(self) -> None:
+        """Only considers matches within [search_from, search_to)."""
+        text = "aaa bbb aaa ccc aaa"
+        # Only search [8, 15) — middle "aaa" at pos 8
+        idx = _find_closest_match(text, "aaa", 8, 15, 12)
+        assert idx == 8
+
+
+# ===================================================================
+# _find_flagged_in_text with position_hint
+# ===================================================================
+
+
+class TestFindFlaggedPositionHint:
+    """Tests for _find_flagged_in_text with position_hint parameter."""
+
+    def test_hint_picks_closest_occurrence(self) -> None:
+        """position_hint picks the closest match, not the first."""
+        text = "manage settings using a browser. bond by using the console."
+        #                   ^pos 16                      ^pos 41
+        # "using" at 16 and 41; hint=40 should pick pos 41
+        result = _find_flagged_in_text(
+            text, "using", position_hint=40,
+        )
+        assert result is not None
+        assert result[0] == 41
+
+    def test_no_hint_picks_first(self) -> None:
+        """Without position_hint, picks the first occurrence."""
+        text = "manage settings using a browser. bond by using the console."
+        result = _find_flagged_in_text(text, "using")
+        assert result is not None
+        assert result[0] == 16
+
+    def test_hint_with_search_bounds(self) -> None:
+        """position_hint works correctly within search bounds."""
+        text = "using this. ignore. using that. skip. using more."
+        #       ^pos 0              ^pos 20             ^pos 38
+        # Restrict to [15, 45), hint=22 — should find pos 20
+        result = _find_flagged_in_text(
+            text, "using", search_from=15, search_to=45,
+            position_hint=22,
+        )
+        assert result is not None
+        assert result[0] == 20
+
+    def test_hint_case_insensitive_fallback(self) -> None:
+        """position_hint applies to case-insensitive fallback too."""
+        text = "Save your work. Click Save to continue."
+        #                              ^pos 22
+        # "save" (lowercase) at pos 0 and 22 — hint=25 picks pos 22
+        result = _find_flagged_in_text(
+            text, "save", position_hint=25,
+        )
+        assert result is not None
+        # Case-insensitive match at position 22 (closest to hint=25)
+        assert result[0] == 22
+        assert result[2] == "Save"
+
+
+# ===================================================================
+# _find_block_text_position — content-based block anchor
+# ===================================================================
+
+
+class TestFindBlockTextPosition:
+    """Tests for _find_block_text_position content-based anchor."""
+
+    def test_finds_exact_block_content(self) -> None:
+        """Finds block content exactly in the text."""
+        text = "Intro paragraph. Configure the bridge settings. More text."
+        pos = _find_block_text_position(
+            "Configure the bridge settings.", text, 0,
+        )
+        assert pos == 17
+
+    def test_returns_neg1_for_short_content(self) -> None:
+        """Returns -1 when block content is too short to anchor."""
+        text = "Some text here."
+        pos = _find_block_text_position("Hi", text, 0)
+        assert pos == -1
+
+    def test_picks_closest_when_duplicate(self) -> None:
+        """When content appears twice, picks closest to hint."""
+        text = (
+            "Install the package on the server. "
+            "Extra padding here. "
+            "Install the package on the server."
+        )
+        # First occurrence at 0, second at 55
+        pos = _find_block_text_position(
+            "Install the package on the server.", text, 50,
+        )
+        assert pos == 55
+
+    def test_returns_neg1_when_not_found(self) -> None:
+        """Returns -1 when content is not in the text."""
+        text = "Completely different content here."
+        pos = _find_block_text_position(
+            "This text does not appear anywhere.", text, 0,
+        )
+        assert pos == -1
+
+    def test_prefix_match_handles_trailing_diffs(self) -> None:
+        """Prefix matching handles trailing whitespace differences."""
+        # Block content has slightly different trailing text
+        text = "Configure the bridge settings for the network interface properly."
+        pos = _find_block_text_position(
+            "Configure the bridge settings for the network interface properly!",
+            text, 0,
+        )
+        # Full match fails but prefix (first 50 chars) succeeds
+        assert pos == 0
+
+
+# ===================================================================
+# _map_block_issues_to_original — HTML coordinate mismatch fix
+# ===================================================================
+
+
+class TestMapBlockIssuesHtmlMismatch:
+    """Tests for _map_block_issues_to_original with coordinate mismatch.
+
+    Simulates HTML paste where block.start_pos is in raw HTML
+    coordinates but original_text is browser-extracted plain text.
+    """
+
+    def test_content_anchor_fixes_html_coordinate_mismatch(self) -> None:
+        """Content anchor resolves HTML→plain text coordinate mismatch.
+
+        block.start_pos is in HTML coordinates (much larger than
+        the plain text position).  Content-based anchor search finds
+        the correct position in plain text.
+        """
+        # Simulate plain text that the browser extracted
+        original_text = (
+            "Manage network settings using a web browser. "
+            "Configure a bond by using the console."
+        )
+        # The paragraph block has content from the HTML parser.
+        # start_pos is in HTML coordinates (e.g., 200) but the
+        # actual position in plain text is 0.
+        # "using" in content is at position 24.
+
+        class FakeBlock:
+            content = "Manage network settings using a web browser."
+            start_pos = 200  # HTML coordinate — wrong for plain text!
+            end_pos = 350
+            char_map = None
+
+        block = FakeBlock()
+        issues = [
+            _make_issue(flagged_text="using", span=[24, 29]),
+        ]
+
+        _map_block_issues_to_original(issues, block, original_text)
+
+        assert issues[0].span != [-1, -1], "Should resolve successfully"
+        matched = original_text[issues[0].span[0]:issues[0].span[1]]
+        assert matched == "using"
+        # Must be the first "using" (pos 24), not the second (pos 65)
+        assert issues[0].span[0] == 24
+
+    def test_hint_prevents_wrong_occurrence(self) -> None:
+        """position_hint prevents snapping to wrong occurrence.
+
+        Even with correct coordinates, a wide search window could
+        include multiple occurrences.  position_hint picks closest.
+        """
+        original_text = (
+            "Use the using pattern here. "
+            "Also using there. "
+            "And using everywhere."
+        )
+
+        class FakeBlock:
+            content = "Also using there."
+            start_pos = 28  # Correct plain-text coordinate
+            end_pos = 45
+            char_map = None
+
+        block = FakeBlock()
+        issues = [
+            _make_issue(flagged_text="using", span=[5, 10]),
+        ]
+
+        _map_block_issues_to_original(issues, block, original_text)
+
+        assert issues[0].span != [-1, -1]
+        matched = original_text[issues[0].span[0]:issues[0].span[1]]
+        assert matched == "using"
+        # Must be the second "using" (in "Also using there"),
+        # not the first or third
+        assert issues[0].span[0] == 33
+
+    def test_fallback_to_start_pos_for_asciidoc(self) -> None:
+        """Falls back to block.start_pos when content anchor fails.
+
+        For AsciiDoc, block.content has markers stripped but
+        original_text has markup, so content search returns -1.
+        block.start_pos is already in the correct coordinate space.
+        """
+        # AsciiDoc original text with inline markup
+        original_text = "Click **Save** to continue."
+
+        class FakeBlock:
+            content = "Click Save to continue."  # Stripped
+            start_pos = 0  # Correct AsciiDoc coordinate
+            end_pos = 27
+            char_map = [0, 1, 2, 3, 4, 5, 8, 9, 10, 11,
+                        14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+                        24, 25, 26]
+
+        block = FakeBlock()
+        issues = [
+            _make_issue(flagged_text="Save", span=[6, 10]),
+        ]
+
+        _map_block_issues_to_original(issues, block, original_text)
+
+        assert issues[0].span != [-1, -1]
+        matched = original_text[issues[0].span[0]:issues[0].span[1]]
+        assert matched == "Save"

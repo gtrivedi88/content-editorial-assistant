@@ -63,24 +63,32 @@ def parse_analysis_response(raw_text: str) -> list[dict]:
     return _validate_and_filter_issues(issues)
 
 
-def parse_suggestion_response(raw_text: str) -> dict:
+def parse_suggestion_response(
+    raw_text: str, flagged_text: str = "",
+) -> dict:
     """Parse raw LLM text output into a suggestion dict.
 
     Expects the text to contain a JSON object with
     ``rewritten_text``, ``explanation``, and ``confidence`` fields.
 
+    When ``flagged_text`` is provided, the validator checks whether
+    the rewrite is disproportionately long relative to the flagged
+    span and sets ``scope: "sentence"`` accordingly.
+
     Args:
         raw_text: Raw text string from the LLM provider.
+        flagged_text: Original flagged text for scope detection.
 
     Returns:
         Dict with ``rewritten_text``, ``explanation``, ``confidence``
-        keys, or an error dict if parsing fails.
+        keys (and optionally ``scope``), or an error dict if parsing
+        fails.
     """
     parsed = _parse_json_text(raw_text)
     if parsed is None:
         return {"error": "Could not parse LLM response as JSON"}
 
-    return _validate_suggestion(parsed)
+    return _validate_suggestion(parsed, flagged_text=flagged_text)
 
 
 # ------------------------------------------------------------------
@@ -117,6 +125,15 @@ def _parse_json_text(text: str) -> Any:
             len(salvaged),
         )
         return salvaged
+
+    # Attempt to salvage from a truncated wrapper object ({"reasoning":...,"issues":[...
+    salvaged = _salvage_truncated_object(cleaned)
+    if salvaged is not None:
+        logger.info(
+            "Salvaged %d complete items from truncated wrapper object",
+            len(salvaged),
+        )
+        return {"issues": salvaged}
 
     logger.warning(
         "Failed to parse LLM response as JSON (first 200 chars: %s)",
@@ -158,6 +175,36 @@ def _salvage_truncated_array(text: str) -> list[dict] | None:
 
     spans = _find_object_spans(stripped)
     items = _parse_object_spans(stripped, spans)
+    return items if items else None
+
+
+def _salvage_truncated_object(text: str) -> list[dict] | None:
+    """Extract complete issue objects from a truncated wrapper response.
+
+    When the LLM returns ``{"reasoning": "...", "issues": [...]`` but
+    the response is cut off mid-array, this finds the ``"issues"``
+    array start and salvages complete ``{ ... }`` objects from it.
+
+    Args:
+        text: Potentially truncated JSON wrapper object text.
+
+    Returns:
+        List of parsed issue dicts, or None if nothing could be salvaged.
+    """
+    stripped = text.strip()
+    if not stripped.startswith("{"):
+        return None
+
+    # Find the "issues" key followed by ':'  and '['
+    match = re.search(r'"issues"\s*:\s*\[', stripped)
+    if match is None:
+        return None
+
+    array_start = match.end() - 1  # position of '['
+    array_text = stripped[array_start:]
+
+    spans = _find_object_spans(array_text)
+    items = _parse_object_spans(array_text, spans)
     return items if items else None
 
 
@@ -289,8 +336,8 @@ def _validate_and_filter_issues(issues: list) -> list[dict]:
 
         confidence = item.get("confidence", 0.0)
         if confidence < threshold:
-            logger.debug(
-                "Filtered LLM issue below threshold (%.2f < %.2f): %s",
+            logger.info(
+                "Dropped LLM issue at parse (confidence %.2f < %.2f): %s",
                 confidence, threshold, item.get("flagged_text", "")[:80],
             )
             continue
@@ -322,6 +369,35 @@ def _has_required_fields(item: dict) -> bool:
     return True
 
 
+def _scrub_suggestions(suggestions: list, flagged_text: str) -> list[str]:
+    """Drop suggestions that are explanatory text, not replacements.
+
+    A concrete replacement should be roughly the same length as the
+    flagged span.  Suggestions >3× longer AND >20 chars are almost
+    certainly instructions or explanations rather than drop-in text.
+
+    Args:
+        suggestions: Raw suggestion list from LLM output.
+        flagged_text: The text the issue flagged.
+
+    Returns:
+        Filtered list containing only plausible replacements.
+    """
+    flagged_len = len(flagged_text) if flagged_text else 1
+    scrubbed: list[str] = []
+    for s in suggestions:
+        if not isinstance(s, str) or not s.strip():
+            continue
+        if len(s) > 20 and len(s) > flagged_len * 3:
+            logger.debug(
+                "Scrubbed chatty suggestion (len=%d vs flagged_len=%d): %s",
+                len(s), flagged_len, s[:80],
+            )
+            continue
+        scrubbed.append(s)
+    return scrubbed
+
+
 def _normalize_issue_fields(item: dict) -> None:
     """Normalize and default optional fields on an issue dict.
 
@@ -335,6 +411,9 @@ def _normalize_issue_fields(item: dict) -> None:
     suggestions = item.get("suggestions")
     if not isinstance(suggestions, list):
         item["suggestions"] = [suggestions] if suggestions else []
+    item["suggestions"] = _scrub_suggestions(
+        item["suggestions"], item.get("flagged_text", ""),
+    )
 
     # Sentence
     if "sentence" not in item:
@@ -372,14 +451,19 @@ def _normalize_issue_fields(item: dict) -> None:
 # ------------------------------------------------------------------
 
 
-def _validate_suggestion(parsed: Any) -> dict:
+def _validate_suggestion(
+    parsed: Any, flagged_text: str = "",
+) -> dict:
     """Validate a parsed suggestion response.
 
     Expects a dict with ``rewritten_text``, ``explanation``, and
-    ``confidence`` fields.
+    ``confidence`` fields.  When ``flagged_text`` is provided, sets
+    ``scope: "sentence"`` if the rewrite is disproportionately long
+    relative to the flagged span (signal only — no trimming).
 
     Args:
         parsed: Parsed JSON from the LLM suggestion response.
+        flagged_text: Original flagged text for scope detection.
 
     Returns:
         Validated suggestion dict, or error dict if invalid.
@@ -405,11 +489,22 @@ def _validate_suggestion(parsed: Any) -> dict:
     except (ValueError, TypeError):
         confidence = 0.8
 
-    return {
+    result: dict = {
         "rewritten_text": str(rewritten),
         "explanation": str(explanation),
         "confidence": confidence,
     }
+
+    # Scope detection: flag sentence-level rewrites so the frontend
+    # can display them differently (e.g., "Apply rewrite" button
+    # instead of showing the full sentence as chip text).
+    if flagged_text:
+        flagged_len = len(flagged_text)
+        rewrite_len = len(str(rewritten))
+        if rewrite_len > flagged_len * 3 and rewrite_len > 40:
+            result["scope"] = "sentence"
+
+    return result
 
 
 def parse_judge_response(

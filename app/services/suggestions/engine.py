@@ -239,6 +239,7 @@ def _request_llm_suggestion(issue: IssueResponse, response: AnalyzeResponse) -> 
         context_sentences=context_sentences,
         rule_info=rule_info,
         style_guide_excerpt=style_guide_excerpt,
+        sentence=issue.sentence or "",
     )
 
     if "error" in result:

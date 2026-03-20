@@ -175,6 +175,8 @@ block_type_rules:
     
     # Content quality rules
     - second_person
+    - global_audiences
+    - accessibility
 
     # Vale-sourced rules
     - simple_words
@@ -245,6 +247,7 @@ block_type_rules:
     - tone
     - obvious_terms
     - self_referential_text
+    - accessibility
 
     # NUMBERS AND MEASUREMENT RULES
     - numbers_currency
@@ -344,6 +347,7 @@ block_type_rules:
     - second_person
     - tone
     - global_audiences
+    - accessibility
 
   # Example blocks - Code examples and demonstrations
   example:
@@ -356,6 +360,7 @@ block_type_rules:
     - terminology
     - sentence_length
     - second_person
+    - accessibility
     - technical_commands
     - technical_files_directories
     - technical_programming_elements
@@ -377,6 +382,7 @@ block_type_rules:
     - terminology
     - sentence_length
     - second_person
+    - accessibility
 
   # ===============================================================
   # LIST AND STRUCTURED CONTENT
@@ -456,6 +462,39 @@ block_type_rules:
     - word_usage_special
     - word_usage_pattern
 
+    # Grammar rules (SpaCy-based deterministic)
+    - verbs
+    - articles
+    - anthropomorphism
+    - pronouns
+    - conjunctions
+    - prepositions
+    - adverbs_only
+
+    # Content quality (expanded coverage)
+    - accessibility
+    - obvious_terms
+    - self_referential_text
+    - definitions
+    - oxford_comma
+
+    # Numbers and measurement
+    - numbers_currency
+    - dates_and_times
+    - numerals_vs_words
+    - units_of_measurement
+
+    # References
+    - references_citations
+    - references_geographic_locations
+    - references_names_titles
+    - references_product_versions
+
+    # Legal
+    - legal_claims
+    - legal_company_names
+    - legal_personal_information
+
     # Vale-sourced rules
     - simple_words
     - do_not_use
@@ -487,11 +526,88 @@ block_type_rules:
     - technical_programming_elements
     - numbers_general
     - numerals_vs_words
+    # Grammar rules (SpaCy-based deterministic)
+    - verbs
+    - articles
+    - anthropomorphism
+    - pronouns
+    - conjunctions
+    - prepositions
+    - adverbs_only
+
+    # Content quality (expanded coverage)
+    - second_person
+    - global_audiences
+    - tone
+    - accessibility
+    - obvious_terms
+    - self_referential_text
+    - definitions
+    - oxford_comma
+
+    # Punctuation
+    - dashes
+    - ellipses
+    - exclamation_points
+    - hyphens
+    - periods
+    - slashes
+    - spacing
+
+    # Numbers and measurement
+    - numbers_currency
+    - dates_and_times
+    - units_of_measurement
+
+    # References
+    - references_citations
+    - references_geographic_locations
+    - references_names_titles
+    - references_product_names
+    - references_product_versions
+
+    # Legal
+    - legal_claims
+    - legal_company_names
+    - legal_personal_information
+
+    # Word usage (comprehensive A-Z)
+    - word_usage_a
+    - word_usage_b
+    - word_usage_c
+    - word_usage_d
+    - word_usage_e
+    - word_usage_f
+    - word_usage_g
+    - word_usage_h
+    - word_usage_i
+    - word_usage_j
+    - word_usage_k
+    - word_usage_l
+    - word_usage_m
+    - word_usage_n
+    - word_usage_o
+    - word_usage_p
+    - word_usage_q
+    - word_usage_r
+    - word_usage_s
+    - word_usage_t
+    - word_usage_u
+    - word_usage_v
+    - word_usage_w
+    - word_usage_x
+    - word_usage_y
+    - word_usage_z
+    - word_usage_special
+    - word_usage_pattern
+
+    # Vale-sourced rules
     - simple_words
     - do_not_use
     - product_names
     - compound_words
     - repeated_words
+    - using_clarity
     - case_sensitive_terms
 
   # Unordered list items - Focus on parallel structure
@@ -510,6 +626,56 @@ block_type_rules:
     - terminology
     - inclusive_language
     # - verbs  # MOVED TO LLM
+    # Grammar rules (SpaCy-based deterministic — verbs excluded, see above)
+    - articles
+    - anthropomorphism
+    - pronouns
+    - conjunctions
+    - prepositions
+    - adverbs_only
+
+    # Content quality (expanded coverage)
+    - second_person
+    - global_audiences
+    - tone
+    - accessibility
+    - obvious_terms
+    - self_referential_text
+    - definitions
+    - oxford_comma
+
+    # Punctuation
+    - dashes
+    - ellipses
+    - exclamation_points
+    - hyphens
+    - periods
+    - slashes
+    - spacing
+
+    # Morphological analysis
+    - plurals
+    - possessives
+
+    # Numbers and measurement
+    - numbers_currency
+    - dates_and_times
+    - numerals_vs_words
+    - units_of_measurement
+
+    # References
+    - references_citations
+    - references_geographic_locations
+    - references_names_titles
+    - references_product_names
+    - references_product_versions
+
+    # Legal
+    - legal_claims
+    - legal_company_names
+    - legal_personal_information
+
+    # Word usage (comprehensive A-Z)
     - word_usage_a
     - word_usage_b
     - word_usage_c
@@ -543,6 +709,7 @@ block_type_rules:
     - product_names
     - compound_words
     - repeated_words
+    - using_clarity
     - case_sensitive_terms
 
   # List titles and containers
@@ -676,6 +843,48 @@ block_type_rules:
     - word_usage_pattern
     - case_sensitive_terms
 
+    # Grammar rules (SpaCy-based deterministic)
+    - verbs
+    - articles
+    - anthropomorphism
+    - pronouns
+    - conjunctions
+    - prepositions
+    - adverbs_only
+
+    # Content quality (expanded coverage)
+    - accessibility
+    - obvious_terms
+    - self_referential_text
+    - definitions
+    - oxford_comma
+
+    # Numbers and measurement
+    - numbers_currency
+    - dates_and_times
+    - numerals_vs_words
+    - units_of_measurement
+
+    # References
+    - references_citations
+    - references_geographic_locations
+    - references_names_titles
+    - references_product_names
+    - references_product_versions
+
+    # Legal
+    - legal_claims
+    - legal_company_names
+    - legal_personal_information
+
+    # Vale-sourced rules
+    - simple_words
+    - do_not_use
+    - product_names
+    - compound_words
+    - repeated_words
+    - using_clarity
+
   # ===============================================================
   # SPECIAL CONTENT BLOCKS
   # ===============================================================
@@ -718,7 +927,87 @@ block_type_rules:
     - tone
     - sentence_length
     - second_person
+    - accessibility
 
+    # Grammar rules (SpaCy-based deterministic)
+    - verbs
+    - articles
+    - anthropomorphism
+    - pronouns
+    - conjunctions
+    - prepositions
+    - adverbs_only
+
+    # Content quality (expanded coverage)
+    - conversational_style
+    - obvious_terms
+    - self_referential_text
+    - definitions
+    - oxford_comma
+
+    # Numbers and measurement
+    - numbers_currency
+    - dates_and_times
+    - numbers_general
+    - numerals_vs_words
+    - units_of_measurement
+
+    # References
+    - references_citations
+    - references_geographic_locations
+    - references_names_titles
+    - references_product_names
+    - references_product_versions
+
+    # Legal
+    - legal_claims
+    - legal_company_names
+    - legal_personal_information
+
+    # Technical elements
+    - technical_commands
+    - technical_files_directories
+    - technical_programming_elements
+    - technical_ui_elements
+
+    # Word usage (comprehensive A-Z)
+    - word_usage_a
+    - word_usage_b
+    - word_usage_c
+    - word_usage_d
+    - word_usage_e
+    - word_usage_f
+    - word_usage_g
+    - word_usage_h
+    - word_usage_i
+    - word_usage_j
+    - word_usage_k
+    - word_usage_l
+    - word_usage_m
+    - word_usage_n
+    - word_usage_o
+    - word_usage_p
+    - word_usage_q
+    - word_usage_r
+    - word_usage_s
+    - word_usage_t
+    - word_usage_u
+    - word_usage_v
+    - word_usage_w
+    - word_usage_x
+    - word_usage_y
+    - word_usage_z
+    - word_usage_special
+    - word_usage_pattern
+
+    # Vale-sourced rules
+    - simple_words
+    - do_not_use
+    - product_names
+    - compound_words
+    - repeated_words
+    - using_clarity
+    - case_sensitive_terms
 
   # Quotes and citations
   quote:
@@ -739,6 +1028,7 @@ block_type_rules:
     - tone
     - abbreviations
     - spelling
+    - accessibility
 
   # Blockquotes - Enhanced analysis for markdown blockquotes (often used for regular content)
   blockquote:
@@ -773,7 +1063,8 @@ block_type_rules:
     # Content quality
     - tone
     - global_audiences
-    
+    - accessibility
+
     # References and citations
     - references_citations
     - references_product_names
@@ -828,6 +1119,7 @@ block_type_rules:
     - references_product_names
     - references_product_versions
     - technical_mouse_buttons
+    - accessibility
 
   # ===============================================================
   # MEDIA AND METADATA BLOCKS

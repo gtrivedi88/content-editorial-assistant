@@ -53,11 +53,31 @@ _PROSE_BLOCK_TYPES: frozenset[str] = frozenset({
 # ---------------------------------------------------------------------------
 
 _LT_SKIP_RULES: frozenset[str] = frozenset({
+    # --- Typography ---
     "TYPOGRAPHICAL_APOSTROPHE",
     "DASH_RULE",
     "MULTIPLICATION_SIGN",
     "EN_UNPAIRED_BRACKETS",
     "EN_QUOTES",
+
+    # --- CEA conflict prevention (CEA handles these better) ---
+    "PASSIVE_VOICE",                        # CEA verbs_rule.py is content-type-aware
+    "ENGLISH_WORD_REPEAT_BEGINNING_RULE",   # Common in tech doc parallel lists
+    "ENGLISH_WORD_REPEAT_RULE",             # CEA repeated_words_rule
+    "OXFORD_COMMA",                         # CEA punctuation rules
+    "SERIAL_COMMA_RULE",                    # CEA punctuation rules
+    "READABILITY_RULE",                     # CEA scorer.py handles readability
+    "SENTENCE_FRAGMENT",                    # Normal in tech doc lists/tables
+
+    # --- Technical documentation noise ---
+    "THREE_NN",                             # 3 consecutive nouns standard in tech
+    "COMMA_PARENTHESIS_WHITESPACE",         # Trips on code/variable refs
+    "CD_NN",                                # Number+Noun combos in versioning
+    "UPPERCASE_SENTENCE_START",             # Case-sensitive code at step starts
+    "WHITESPACE_RULE",                      # CEA preprocessor handles normalization
+
+    # --- Tone/style (LLM handles these) ---
+    "WORDINESS",                            # LLM global/granular pass is superior
 })
 
 

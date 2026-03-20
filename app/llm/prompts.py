@@ -76,6 +76,10 @@ def _load_examples() -> dict:
         analysis_ex = data.get("analysis_examples")
         if analysis_ex:
             _EXAMPLES_DB["__analysis__"] = analysis_ex
+        # Store negative boundary examples under a reserved key
+        neg_ex = data.get("negative_examples")
+        if neg_ex:
+            _EXAMPLES_DB["__negative__"] = neg_ex
         logger.info(
             "Loaded %d multi-shot example categories", len(_EXAMPLES_DB),
         )
@@ -161,11 +165,13 @@ def _format_analysis_examples(content_type: str) -> str:
     db = _load_examples()
     analysis = db.get("__analysis__", {})
     type_examples = analysis.get(content_type, {})
-    if not type_examples:
-        return ""
 
-    good = type_examples.get("good_flags", [])
-    bad = type_examples.get("bad_flags", [])
+    good = type_examples.get("good_flags", []) if type_examples else []
+    bad = list(type_examples.get("bad_flags", [])) if type_examples else []
+
+    # Inject boundary-defining negative examples for confidence calibration
+    _append_negative_boundary_examples(bad, content_type)
+
     if not good and not bad:
         return ""
 
@@ -194,11 +200,14 @@ def _append_good_flags(flags: list[dict], lines: list[str]) -> None:
 def _append_bad_flags(flags: list[dict], lines: list[str]) -> None:
     """Append formatted bad-flag examples to *lines*.
 
+    Renders up to 4 examples (2 original bad-flags + 2 injected
+    negative boundary examples for confidence calibration).
+
     Args:
         flags: List of bad-flag example dicts.
         lines: Accumulator for formatted lines (mutated).
     """
-    for ex in flags[:2]:
+    for ex in flags[:4]:
         lines.append(
             f"**Do NOT flag** (false positive):\n"
             f"- Text: `{ex.get('text', '')}`\n"
@@ -206,6 +215,45 @@ def _append_bad_flags(flags: list[dict], lines: list[str]) -> None:
         )
 
 
+# Map content types to relevant negative example categories
+_NEGATIVE_EXAMPLE_CATEGORIES: dict[str, list[str]] = {
+    "procedure": ["passive_voice_appropriate", "word_usage_contextual"],
+    "concept": ["passive_voice_appropriate", "contractions_appropriate"],
+    "reference": ["passive_voice_appropriate", "word_usage_contextual"],
+    "release_notes": ["passive_voice_appropriate"],
+}
+
+
+def _append_negative_boundary_examples(
+    bad_flags: list[dict], content_type: str,
+) -> None:
+    """Inject boundary-defining negative examples into bad_flags.
+
+    Pulls from the root-level ``negative_examples`` section of
+    ``multishot_examples.yaml`` to teach the LLM where rules do NOT
+    apply, calibrating confidence scores on genuine violations.
+
+    Args:
+        bad_flags: List of bad-flag example dicts (mutated).
+        content_type: Modular documentation type.
+    """
+    db = _load_examples()
+    negatives = db.get("__negative__", {})
+    if not negatives:
+        return
+
+    categories = _NEGATIVE_EXAMPLE_CATEGORIES.get(
+        content_type, ["passive_voice_appropriate"],
+    )
+
+    for cat_key in categories:
+        examples = negatives.get(cat_key, [])
+        if examples:
+            best = max(examples, key=lambda x: x.get("success_rate", 0))
+            bad_flags.append({
+                "text": best.get("before", ""),
+                "reason": best.get("reasoning", "Acceptable — do not flag"),
+            })
 
 
 def build_granular_prompt(
@@ -268,7 +316,10 @@ def build_granular_prompt(
         "`ostree`, 'systemctl' should be `systemctl`). Do NOT flag "
         "general technical concepts or descriptive phrases (e.g., "
         "'kernel modules', 'system extensions', 'command line options' "
-        "are prose concepts, not code)\n"
+        "are prose concepts, not code). Do NOT flag text already "
+        "wrapped in **bold** markers (e.g., **Edit**, **Apply**, "
+        "**Routes**) — these are UI element names already formatted "
+        "with bold per the source document\n"
         "- Future tense — use simple present tense instead of 'will' "
         "(e.g., 'the installation will fail' → 'the installation fails'; "
         "'will be used' → 'is used')\n"
@@ -301,6 +352,10 @@ def build_granular_prompt(
         "are context, not prose to edit\n"
         "- Markdown structural markers (#, -, 1., >, **, `) — these are "
         "document formatting, not prose to edit\n"
+        "- Text wrapped in **bold** markers — words like **Edit**, "
+        "**Apply**, **Save** are UI element names (button labels, menu "
+        "items, tab names) already formatted with bold. Do NOT suggest "
+        "backtick formatting for these\n"
         "- Missing lead-in sentences for standard modular docs sections "
         "(Prerequisites, Verification, Troubleshooting, Additional resources) "
         "— these section headings are self-explanatory labels that do not "
@@ -312,7 +367,12 @@ def build_granular_prompt(
         "when the text is genuinely ambiguous or when an alternative reading "
         "makes the usage correct.\n\n"
         "## RESPONSE FORMAT\n"
-        "Respond with a JSON array. Each object:\n"
+        "Respond with a JSON object containing a \"reasoning\" string "
+        "and an \"issues\" array.\n"
+        "In \"reasoning\", briefly confirm which of the above IN SCOPE "
+        "checks you applied and note any categories where you found "
+        "no issues.\n"
+        "Each object in the \"issues\" array:\n"
         '{"flagged_text":"exact span","message":"explanation",'
         '"suggestions":["corrected text"],"severity":"low|medium|high",'
         '"category":"style|grammar|punctuation|structure|audience",'
@@ -322,7 +382,8 @@ def build_granular_prompt(
         "of the flagged span that fixes the issue. Do not leave "
         "suggestions empty. Keep suggestions scoped to the flagged_text "
         "span only — do not rewrite surrounding text.\n\n"
-        "No issues → []. Return ONLY JSON, no additional text."
+        "No issues → {\"reasoning\":\"...\",\"issues\":[]}. "
+        "Return ONLY JSON, no additional text."
     )
 
     user_prompt = (
@@ -410,6 +471,8 @@ def build_global_prompt(
         "are context, not prose to edit\n"
         "- Markdown structural markers (#, -, 1., >, **, `) — document "
         "formatting, not prose to edit\n"
+        "- Text wrapped in **bold** markers — UI element names already "
+        "formatted with bold, do not suggest backtick formatting\n"
         "- Missing lead-in sentences for standard modular docs sections "
         "(Prerequisites, Verification, Troubleshooting, Additional resources) "
         "— these section headings are self-explanatory labels that do not "
@@ -450,10 +513,15 @@ def build_suggestion_prompt(
     context_sentences: list[str],
     rule_info: dict,
     style_guide_excerpt: dict,
+    sentence: str = "",
 ) -> tuple[str, str]:
     """Build a rewrite suggestion prompt for a flagged text span.
 
-    Returns a ``(system_prompt, user_prompt)`` tuple.
+    When ``sentence`` is provided and contains ``flagged_text``, the
+    prompt embeds the flagged text within its containing sentence using
+    ``\u27e8\u27e9`` markers.  This anchors the LLM to the exact word
+    and prevents over-scoped rewrites.  Falls back to isolated code
+    block format when sentence is unavailable.
 
     Args:
         flagged_text: The exact text span that was flagged.
@@ -461,6 +529,7 @@ def build_suggestion_prompt(
         rule_info: Dict with ``rule_name``, ``category``, ``message``,
             ``severity`` describing the detected issue.
         style_guide_excerpt: Relevant style guide excerpt dict.
+        sentence: The containing sentence (optional).
 
     Returns:
         Tuple of (system_prompt, user_prompt).
@@ -475,12 +544,12 @@ def build_suggestion_prompt(
     examples_section = _format_examples_section(rule_name)
 
     system_prompt = (
-        "Technical documentation editor. Rewrite flagged text to fix "
-        "the issue while preserving technical accuracy.\n\n"
+        "Technical documentation editor. Rewrite ONLY the flagged text "
+        "to fix the issue while preserving technical accuracy.\n\n"
         "Requirements: fix ONLY the identified issue; preserve technical "
         "terms, product names, code references; maintain same detail and "
         "meaning; keep sentence structure when possible; do not introduce "
-        "new issues.\n\n"
+        "new issues; do NOT rewrite surrounding sentences.\n\n"
         "## Style constraints for rewrites\n"
         "- Use active voice (not passive) unless the actor is irrelevant\n"
         "- Use present tense (not future 'will') for descriptions\n"
@@ -495,16 +564,38 @@ def build_suggestion_prompt(
         "Return ONLY JSON, no additional text."
     )
 
+    # Build context section: embed flagged text in sentence when possible
+    has_sentence = bool(sentence and flagged_text and flagged_text in sentence)
+    if has_sentence:
+        marked_sentence = sentence.replace(
+            flagged_text,
+            f"\u27e8{flagged_text}\u27e9",
+            1,
+        )
+        context_section = (
+            "## Context\n\n"
+            "In the following sentence, the text between \u27e8\u27e9 "
+            "markers has been flagged:\n\n"
+            f'"{marked_sentence}"\n\n'
+            "## Surrounding Sentences (for context only "
+            "\u2014 do NOT rewrite these)\n\n"
+            f"{context_json}\n\n"
+        )
+    else:
+        context_section = (
+            "## Flagged Text\n\n"
+            f"```\n{flagged_text}\n```\n\n"
+            "## Surrounding Context\n\n"
+            f"{context_json}\n\n"
+        )
+
     user_prompt = (
         "## Issue Details\n\n"
         f"- **Rule**: {rule_name}\n"
         f"- **Category**: {category}\n"
         f"- **Severity**: {severity}\n"
         f"- **Problem**: {message}\n\n"
-        "## Flagged Text\n\n"
-        f"```\n{flagged_text}\n```\n\n"
-        "## Surrounding Context\n\n"
-        f"{context_json}\n\n"
+        f"{context_section}"
         f"{excerpt_section}"
         f"{examples_section}"
     )
@@ -538,14 +629,32 @@ def build_judge_prompt(
         "You are reviewing editorial flags generated by an AI editor "
         "for technical documentation. For each flag, decide: KEEP "
         "(real issue worth fixing) or DROP (false positive).\n\n"
-        "DROP if: the flagged text is standard technical writing, the "
-        "suggestion would change technical meaning, the issue is a "
-        "matter of preference not a style guide violation, or the "
-        "flagged text is inside a code reference or CLI command.\n\n"
-        "KEEP if: the issue is clearly supported by IBM Style Guide or "
-        "Red Hat Supplementary Style Guide, the fix improves clarity "
-        "without changing meaning, or the issue is a real grammar or "
-        "punctuation error.\n\n"
+        "## DROP criteria (false positive)\n"
+        "- Flagged text is standard technical writing for the document type\n"
+        "- Suggestion would change technical meaning\n"
+        "- Issue is subjective preference, not a style guide rule\n"
+        "- Flagged text is inside a code reference, CLI command, or "
+        "configuration parameter\n"
+        "- State-of-being constructions flagged as passive voice "
+        "(e.g., 'is configured', 'is installed', 'is stored')\n"
+        "- Imperative verbs at procedure step starts flagged as "
+        "incomplete sentences\n"
+        "- Text wrapped in bold or backtick formatting flagged for "
+        "additional formatting\n"
+        "- UI element names (button labels, menu items) flagged for "
+        "backtick formatting when already bold\n\n"
+        "## KEEP criteria (real issue)\n"
+        "- Clearly supported by IBM Style Guide or Red Hat "
+        "Supplementary Style Guide\n"
+        "- Fix improves clarity without changing technical meaning\n"
+        "- Real grammar or punctuation error\n"
+        "- Future tense ('will fail') where present tense works\n"
+        "- Anthropomorphism ('the system wants', 'the tool tries')\n"
+        "- Wordiness that can be cut without losing information\n"
+        "- Unofficial capitalization of known project names\n\n"
+        f"## Document type: {content_type}\n"
+        + _judge_content_type_note(content_type)
+        + "\n\n"
         "Respond with a JSON object:\n"
         '{"keep": [0, 2, 4], "drop": [1, 3]}\n\n'
         "Indices refer to the issues array (0-based). Return ONLY JSON."
@@ -560,6 +669,40 @@ def build_judge_prompt(
     )
 
     return system_prompt, user_prompt
+
+
+def _judge_content_type_note(content_type: str) -> str:
+    """Return content-type-specific guidance for the judge prompt.
+
+    Helps the judge make accurate keep/drop decisions based on the
+    norms of the document type being reviewed.
+
+    Args:
+        content_type: Modular documentation type.
+
+    Returns:
+        Guidance string, or empty string for unknown types.
+    """
+    notes = {
+        "procedure": (
+            "Procedure: imperative voice and short fragments are correct. "
+            "Passive voice in state-of-being patterns is acceptable. "
+            "Do not drop issues about future tense or wordiness."
+        ),
+        "concept": (
+            "Concept: explanatory prose. Passive voice for state-of-being "
+            "is acceptable. Anthropomorphism and wordiness are real issues."
+        ),
+        "reference": (
+            "Reference: terse factual descriptions. Sentence fragments "
+            "and passive voice are expected. Drop issues about brevity."
+        ),
+        "release_notes": (
+            "Release notes: past tense passive is standard. "
+            "Drop passive voice flags. Keep first-person flags."
+        ),
+    }
+    return notes.get(content_type, "")
 
 
 # ------------------------------------------------------------------

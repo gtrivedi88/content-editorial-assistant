@@ -175,6 +175,7 @@ class LLMClient:
         context_sentences: list[str],
         rule_info: dict,
         style_guide_excerpt: dict,
+        sentence: str = "",
     ) -> dict:
         """Request a rewrite suggestion from the LLM.
 
@@ -183,6 +184,7 @@ class LLMClient:
             context_sentences: Surrounding sentences for context.
             rule_info: Dict with rule_name, category, message, severity.
             style_guide_excerpt: The relevant style guide excerpt dict.
+            sentence: The containing sentence for anchored rewriting.
 
         Returns:
             Dict with ``rewritten_text``, ``explanation``, ``confidence``
@@ -193,9 +195,11 @@ class LLMClient:
 
         system_prompt, user_prompt = build_suggestion_prompt(
             flagged_text, context_sentences, rule_info, style_guide_excerpt,
+            sentence=sentence,
         )
         return self._safe_suggestion_call(
             user_prompt, system_prompt=system_prompt,
+            flagged_text=flagged_text,
         )
 
     def judge_issues(
@@ -272,13 +276,17 @@ class LLMClient:
         return []
 
     def _safe_suggestion_call(
-        self, prompt: str, system_prompt: str = "",
+        self,
+        prompt: str,
+        system_prompt: str = "",
+        flagged_text: str = "",
     ) -> dict:
         """Call the LLM and parse a suggestion response safely.
 
         Args:
             prompt: The user prompt string.
             system_prompt: Invariant system instructions.
+            flagged_text: Original flagged text for scope detection.
 
         Returns:
             Parsed suggestion dict, or error dict on failure.
@@ -291,7 +299,7 @@ class LLMClient:
             )
             if not raw_text:
                 return {"error": "LLM returned empty response"}
-            return parse_suggestion_response(raw_text)
+            return parse_suggestion_response(raw_text, flagged_text=flagged_text)
         except (ConnectionError, TimeoutError, RuntimeError) as exc:
             logger.warning("LLM suggestion call failed: %s", exc)
         except (ValueError, KeyError) as exc:

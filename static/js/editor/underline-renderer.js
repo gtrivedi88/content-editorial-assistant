@@ -4,7 +4,7 @@
  * in the visible scroll region (with 200px buffer). Caps at 150 active marks.
  */
 
-import { charSpanToDomRange, findTextInDom, getPlainText } from './span-mapper.js';
+import { charSpanToDomRange, findTextInDom, getPlainText, buildTextMap, buildVirtualString } from './span-mapper.js';
 import { getCategory } from '../shared/style-guide-groups.js';
 
 /**
@@ -40,10 +40,6 @@ export function scheduleRender() {
  * @param {Array} errors - Normalized error objects with globalSpan and group
  */
 export function renderUnderlines(editorEl, errors) {
-    console.log('[UnderlineRenderer] renderUnderlines called with %d errors', errors.length);
-    errors.forEach((e, i) => console.log('[UnderlineRenderer]   error[%d]: id=%s rule=%s globalSpan=[%d,%d] flagged_text=%s',
-        i, e.id, e.rule_name || e.type, e.globalSpan[0], e.globalSpan[1],
-        JSON.stringify((e.flagged_text || '').substring(0, 60))));
     allErrors = errors;
     editorRef = editorEl;
 
@@ -91,71 +87,51 @@ function _viewportRender(editorEl, errors) {
         }
     }
 
-    // Clear existing marks
     clearUnderlines(editorEl);
+
+    // Build shared data structures once for all errors
+    const textMap = buildTextMap(editorEl);
+    const virtual = buildVirtualString(null, editorEl);
 
     // Sort descending by span start to avoid offset invalidation
     const sorted = [...visibleErrors].sort((a, b) => b.globalSpan[0] - a.globalSpan[0]);
 
     for (const error of sorted) {
-        _renderSingleMark(editorEl, error);
+        _renderSingleMark(editorEl, error, textMap, virtual);
     }
-
-    // Verify how many marks actually got created
-    const markCount = editorEl.querySelectorAll('.cea-underline').length;
-    console.log('[UnderlineRenderer] _viewportRender DONE: %d marks created in DOM', markCount);
 }
 
 /**
  * Render a single <mark> element for an error.
+ * Content-first: uses text search as primary path, offsets as fallback.
+ *
+ * @param {HTMLElement} editorEl
+ * @param {Object} error
+ * @param {Array} [textMap] - Pre-built text map for offset-based fallback
+ * @param {Object} [virtual] - Pre-built virtual string for content-first search
  */
-function _renderSingleMark(editorEl, error) {
+function _renderSingleMark(editorEl, error, textMap, virtual) {
     const [start, end] = error.globalSpan;
     let range = null;
-    console.log('[UnderlineRenderer] _renderSingleMark: id=%s rule=%s span=[%d,%d] flagged_text=%s',
-        error.id, error.rule_name || error.type, start, end,
-        JSON.stringify((error.flagged_text || '').substring(0, 60)));
 
-    if (start !== end) {
-        // Offset-based mapping when a valid span exists
-        range = charSpanToDomRange(editorEl, start, end);
+    // PRIMARY: content-first search via virtual string
+    if (error.flagged_text) {
+        range = findTextInDom(editorEl, error.flagged_text, start, error.sentence, virtual);
+    }
 
-        // Verify the range found the right text; fallback to text search if not
+    // FALLBACK: offset-based mapping when content search fails
+    if (!range && start !== end) {
+        range = charSpanToDomRange(editorEl, start, end, textMap);
+        // Safety: verify offset-based range actually matches the flagged text
         if (range && error.flagged_text) {
             const rangeText = range.toString();
-            console.log('[UnderlineRenderer]   rangeText=%s vs flagged=%s match=%s',
-                JSON.stringify(rangeText.substring(0, 60)),
-                JSON.stringify(error.flagged_text.substring(0, 60)),
-                rangeText === error.flagged_text);
             if (rangeText !== error.flagged_text) {
-                // Offset drift detected — fall back to searching for the flagged text
-                console.log('[UnderlineRenderer]   DRIFT detected, trying findTextInDom fallback');
-                const fallback = findTextInDom(editorEl, error.flagged_text, start, error.sentence);
-                if (fallback) {
-                    console.log('[UnderlineRenderer]   findTextInDom fallback SUCCEEDED');
-                    range = fallback;
-                } else {
-                    // Discard the drifted range — don't highlight wrong text.
-                    // Legacy principle: never create a mark that wraps incorrect text.
-                    console.log('[UnderlineRenderer]   findTextInDom fallback FAILED — discarding drifted range');
-                    range = null;
-                }
+                range = null;
             }
         }
     }
 
-    if (!range) {
-        // Last resort: search for the flagged text anywhere in the DOM.
-        // Covers [0,0] spans from unresolved LLM issues.
-        console.log('[UnderlineRenderer]   No range from offset mapping, trying last-resort text search');
-        if (error.flagged_text) {
-            range = findTextInDom(editorEl, error.flagged_text, start, error.sentence);
-        }
-        if (!range) {
-            console.warn('[UnderlineRenderer]   ALL METHODS FAILED for error %s — no highlight created', error.id);
-            return;
-        }
-    }
+    if (!range) return;
 
     // Check if this range is already inside a <mark>
     const ancestor = range.commonAncestorContainer;
@@ -245,18 +221,27 @@ export function removeUnderline(editorEl, errorId) {
  * @param {string} errorId - The error ID to replace
  * @param {string} newText - The replacement text
  * @param {string} [sentence] - Optional containing sentence for sentence-level replacement
+ * @param {string} [scope] - Backend scope signal ("sentence" = sentence-level rewrite)
  */
-export function replaceUnderlineText(editorEl, errorId, newText, sentence) {
+export function replaceUnderlineText(editorEl, errorId, newText, sentence, scope) {
     const mark = editorEl.querySelector(`.cea-underline[data-error-id="${errorId}"]`);
     if (!mark) return;
 
     const markText = mark.textContent;
-    const isSentenceRewrite = sentence
-        && newText.length > markText.length * 2
-        && newText.length > 40;
+    const isSentenceRewrite = scope === 'sentence'
+        || (sentence && newText.length > markText.length * 2 && newText.length > 40);
 
     // Sentence-level rewrite: replace the full sentence, not just the mark
-    if (isSentenceRewrite && _replaceSentence(editorEl, mark, newText, sentence)) {
+    if (isSentenceRewrite) {
+        if (_replaceSentence(editorEl, mark, newText, sentence)) {
+            return;
+        }
+        // DOM sentence mapping failed — abort rather than stuffing
+        // a full sentence into a single-word mark
+        console.warn(
+            '[UnderlineRenderer] Sentence replacement failed for error',
+            errorId, '— cannot safely apply edit',
+        );
         return;
     }
 
@@ -308,12 +293,15 @@ function _replaceSentence(editorEl, mark, newText, sentence) {
     const parent = mark.parentNode;
     if (!parent) return false;
 
-    // Pre-check: verify sentence exists in parent's text before modifying DOM
-    if (!parent.textContent.includes(sentence)) {
+    const normalize = (txt) => txt.replaceAll(/\s+/g, ' ');
+    const normSentence = normalize(sentence);
+
+    // Pre-check using normalized text (handles \n vs space mismatch)
+    if (!normalize(parent.textContent).includes(normSentence)) {
         return false;
     }
 
-    // Collect other mark IDs in parent for collateral cleanup (Bug 3)
+    // Collect other mark IDs in parent for collateral cleanup
     const otherMarkIds = [];
     parent.querySelectorAll('.cea-underline').forEach(m => {
         if (m !== mark) otherMarkIds.push(m.dataset.errorId);
@@ -326,17 +314,17 @@ function _replaceSentence(editorEl, mark, newText, sentence) {
     mark.remove();
     parent.normalize();
 
-    // Find the sentence in the cleaned text
-    const fullText = parent.textContent;
-    const sentIdx = fullText.indexOf(sentence);
+    // Find the sentence using normalized text
+    const sentIdx = normalize(parent.textContent).indexOf(normSentence);
     if (sentIdx === -1) {
         // Extremely unlikely after pre-check — mark already unwrapped
         return true;
     }
 
-    const sentEnd = sentIdx + sentence.length;
+    const sentEnd = sentIdx + normSentence.length;
 
-    // Walk text nodes to build a DOM range covering the sentence
+    // Walk text nodes to build a DOM range covering the sentence.
+    // Use proportional offset mapping between normalized and original text.
     const walker = document.createTreeWalker(parent, NodeFilter.SHOW_TEXT);
     let pos = 0;
     let startNode = null, startOffset = 0;
@@ -344,15 +332,19 @@ function _replaceSentence(editorEl, mark, newText, sentence) {
 
     while (walker.nextNode()) {
         const node = walker.currentNode;
-        const nodeLen = node.textContent.length;
+        const nodeLen = normalize(node.textContent).length;
 
         if (!startNode && pos + nodeLen > sentIdx) {
             startNode = node;
-            startOffset = sentIdx - pos;
+            startOffset = Math.floor(
+                (sentIdx - pos) * (node.textContent.length / nodeLen),
+            );
         }
         if (pos + nodeLen >= sentEnd) {
             endNode = node;
-            endOffset = sentEnd - pos;
+            endOffset = Math.ceil(
+                (sentEnd - pos) * (node.textContent.length / nodeLen),
+            );
             break;
         }
         pos += nodeLen;

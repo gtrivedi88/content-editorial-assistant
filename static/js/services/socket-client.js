@@ -95,26 +95,15 @@ export function initSocketClient(store) {
     // Final: Analysis fully complete — the single source of truth for UI results
     socket.on('analysis_complete', (data) => {
         if (data.session_id !== store.get('sessionId')) return;
-
-        console.log('[Socket] Analysis fully complete, %d issues received', (data.issues || []).length);
-        if (data.issues) {
-            data.issues.forEach((iss, i) => {
-                console.log('[Socket] DEBUG raw issue[%d]: id=%s rule=%s span=%s flagged_text=%s',
-                    i, iss.id, iss.rule_name, JSON.stringify(iss.span),
-                    JSON.stringify((iss.flagged_text || '').substring(0, 60)));
-            });
-        }
         const stateUpdate = {
             analysisStatus: 'complete',
             qualityScore: (typeof data.score === 'object' ? data.score?.score : data.score) ?? store.get('qualityScore'),
             detectedContentType: data.detected_content_type || store.get('detectedContentType'),
         };
 
-        // Populate issue list from the final merged results
         if (data.issues && data.issues.length > 0) {
             const normalized = data.issues.map((issue, idx) => normalizeSocketIssue(issue, idx));
 
-            // Deduplicate by span + type (mirrors flattenErrors in actions.js)
             const seen = new Set();
             const finalIssues = normalized.filter((e) => {
                 const key = `${e.globalSpan[0]}-${e.globalSpan[1]}-${e.type}`;
@@ -123,12 +112,6 @@ export function initSocketClient(store) {
                 return true;
             });
 
-            console.log('[Socket] DEBUG normalized %d issues (deduped from %d):', finalIssues.length, normalized.length);
-            finalIssues.forEach((e, i) => {
-                console.log('[Socket] DEBUG normalized[%d]: id=%s globalSpan=[%d,%d] flagged_text=%s',
-                    i, e.id, e.globalSpan[0], e.globalSpan[1],
-                    JSON.stringify((e.flagged_text || '').substring(0, 60)));
-            });
             const activeGroup = store.get('activeGroup');
             stateUpdate.errors = finalIssues;
             stateUpdate.filteredErrors = activeGroup === 'all'
@@ -136,16 +119,14 @@ export function initSocketClient(store) {
                 : finalIssues.filter((e) => e.group === activeGroup);
         }
 
-        store.setState(stateUpdate);
-
-        // Update report data if provided
+        // Merge report data into the same setState to avoid double subscriber notification
         if (data.report) {
-            store.setState({
-                readability: data.report.readability || store.get('readability'),
-                statistics: data.report.statistics || store.get('statistics'),
-                reportData: data.report || store.get('reportData'),
-            });
+            stateUpdate.readability = data.report.readability || store.get('readability');
+            stateUpdate.statistics = data.report.statistics || store.get('statistics');
+            stateUpdate.reportData = data.report || store.get('reportData');
         }
+
+        store.setState(stateUpdate);
     });
 
     // LLM skipped — background task failed to start, use HTTP response data

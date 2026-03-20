@@ -307,6 +307,38 @@ class TestNormalizeIssueFields:
         _normalize_issue_fields(item)
         assert item["confidence"] == 0.8
 
+    def test_scrubs_chatty_suggestions(self) -> None:
+        """Suggestions >3x flagged_text length AND >20 chars are dropped.
+
+        The LLM sometimes returns explanatory text as a suggestion
+        (e.g., 'Consider rephrasing to use active voice...').  These
+        are scrubbed by _scrub_suggestions via _normalize_issue_fields.
+        """
+        item: dict = {
+            "flagged_text": "using",
+            "message": "msg",
+            "suggestions": [
+                "Consider rephrasing this sentence to use active voice "
+                "by restructuring the clause to make the actor the subject",
+            ],
+        }
+        _normalize_issue_fields(item)
+        assert item["suggestions"] == []
+
+    def test_keeps_short_concrete_suggestions(self) -> None:
+        """Short concrete replacements survive scrubbing.
+
+        A single-word or phrase replacement that is roughly the same
+        length as the flagged text must not be filtered out.
+        """
+        item: dict = {
+            "flagged_text": "utilize",
+            "message": "msg",
+            "suggestions": ["use"],
+        }
+        _normalize_issue_fields(item)
+        assert item["suggestions"] == ["use"]
+
 
 # ---------------------------------------------------------------------------
 # parse_suggestion_response
@@ -403,6 +435,37 @@ class TestParseSuggestionResponse:
         })
         result = parse_suggestion_response(raw)
         assert result["rewritten_text"] == "Primary text."
+
+    def test_scope_sentence_for_long_rewrite(self) -> None:
+        """Sentence-scope flag is set when rewrite is >3x flagged and >40 chars."""
+        raw = json.dumps({
+            "rewritten_text": "The system uses SSH to connect to the remote host securely.",
+            "explanation": "Replaced utilizes with uses.",
+            "confidence": 0.9,
+        })
+        result = parse_suggestion_response(raw, flagged_text="utilizes")
+        assert result.get("scope") == "sentence"
+        assert result["rewritten_text"].startswith("The system")
+
+    def test_no_scope_for_short_rewrite(self) -> None:
+        """No scope flag when rewrite is proportional to flagged text."""
+        raw = json.dumps({
+            "rewritten_text": "uses",
+            "explanation": "Simpler word.",
+            "confidence": 0.95,
+        })
+        result = parse_suggestion_response(raw, flagged_text="utilizes")
+        assert "scope" not in result
+
+    def test_no_scope_without_flagged_text(self) -> None:
+        """No scope flag when flagged_text is not provided."""
+        raw = json.dumps({
+            "rewritten_text": "A very long sentence that rewrites the entire context and more.",
+            "explanation": "Full rewrite.",
+            "confidence": 0.85,
+        })
+        result = parse_suggestion_response(raw)
+        assert "scope" not in result
 
 
 # ---------------------------------------------------------------------------

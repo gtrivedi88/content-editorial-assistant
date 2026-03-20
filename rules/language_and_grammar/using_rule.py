@@ -91,10 +91,7 @@ class UsingRule(BaseLanguageRule):
                 "Use 'by using' instead of 'using' after a noun "
                 "for clarity and grammatical correctness."
             ),
-            suggestions=[
-                f"Change '{prev_token.text} using' to "
-                f"'{prev_token.text} by using'"
-            ],
+            suggestions=["by using"],
             severity='medium',
             text=text,
             context=context,

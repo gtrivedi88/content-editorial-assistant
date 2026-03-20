@@ -108,13 +108,22 @@ export function extractReplacement(suggestion, flaggedText) {
  */
 function _isInstruction(suggestion, flaggedText) {
     // Instructions typically start with imperative verbs
-    if (/^(Rewrite|Consider|Rephrase|Restructure|Replace|Remove|Break|Combine|Simplify|Avoid|Insert|Add|Move|Split|Write|Do not|Ensure|Verify|Check)\b/i.test(suggestion)) {
+    if (/^(Rewrite|Consider|Rephrase|Restructure|Replace|Remove|Break|Combine|Simplify|Avoid|Insert|Add|Move|Split|Write|Do not|Ensure|Verify|Check|This sentence)\b/i.test(suggestion)) {
+        return true;
+    }
+
+    const flaggedLen = (flaggedText || '').length;
+
+    // Explanatory sentence ending in period — not a text replacement.
+    // Safe: _isInstruction() is only called on deterministic rule
+    // suggestions (after regex extraction fails). Deterministic rules
+    // generate word/phrase swaps, not sentences ending in periods.
+    if (suggestion.endsWith('.') && suggestion.length > 15) {
         return true;
     }
 
     // Suggestions significantly longer than the flagged text are likely instructions
-    const flaggedLen = (flaggedText || '').length;
-    if (suggestion.length > 50 && suggestion.length > flaggedLen * 3) {
+    if (suggestion.length > 35 && suggestion.length > flaggedLen * 3) {
         return true;
     }
 
@@ -237,12 +246,12 @@ export function createIssueCard(error, editorEl) {
     let firstChip = null;
 
     if (allSuggestions.length === 1) {
-        firstChip = _createSuggestionChip(allSuggestions[0], error, editorEl);
+        firstChip = _createSuggestionChip(allSuggestions[0], allSuggestions[0], error, editorEl);
         detailInner.appendChild(firstChip);
     } else if (allSuggestions.length > 1) {
         const chipsWrapper = createElement('div', { className: 'cea-suggestion-chips' });
         for (const text of allSuggestions) {
-            const chip = _createSuggestionChip(text, error, editorEl);
+            const chip = _createSuggestionChip(text, text, error, editorEl);
             if (!firstChip) firstChip = chip;
             chipsWrapper.appendChild(chip);
         }
@@ -343,16 +352,21 @@ export function createIssueCard(error, editorEl) {
 }
 
 /**
- * Create a suggestion chip button.
+ * Create a suggestion chip button with separate display and apply text.
+ *
+ * @param {string} displayText - Text shown on the chip
+ * @param {string} applyText - Text inserted into the DOM on accept
+ * @param {Object} error - The issue error object
+ * @param {HTMLElement} editorEl - The contenteditable editor
  */
-function _createSuggestionChip(text, error, editorEl) {
+function _createSuggestionChip(displayText, applyText, error, editorEl) {
     return createElement('button', {
         className: 'cea-suggestion-chip',
-        textContent: text,
-        'aria-label': `Accept suggestion: ${escapeHtml(text)}`,
+        textContent: displayText,
+        'aria-label': `Accept suggestion: ${escapeHtml(displayText)}`,
         onClick: (e) => {
             e.stopPropagation();
-            replaceUnderlineText(editorEl, error.id, text, error.sentence);
+            replaceUnderlineText(editorEl, error.id, applyText, error.sentence, error._llmScope);
             acceptSuggestion(error.id);
         },
     });
@@ -368,7 +382,7 @@ function _tryFallbackChip(error, editorEl, container) {
         const text = extractReplacement(error.suggestions[0], error.flagged_text);
         if (text) {
             container.innerHTML = '';
-            container.parentNode.insertBefore(_createSuggestionChip(text, error, editorEl), container);
+            container.parentNode.insertBefore(_createSuggestionChip(text, text, error, editorEl), container);
             return true;
         }
     }
@@ -377,7 +391,7 @@ function _tryFallbackChip(error, editorEl, container) {
         const msgText = extractFromMessage(error.message, error.flagged_text);
         if (msgText) {
             container.innerHTML = '';
-            container.parentNode.insertBefore(_createSuggestionChip(msgText, error, editorEl), container);
+            container.parentNode.insertBefore(_createSuggestionChip(msgText, msgText, error, editorEl), container);
             return true;
         }
     }
@@ -387,7 +401,8 @@ function _tryFallbackChip(error, editorEl, container) {
 /**
  * Auto-fetch an LLM suggestion for the given issue.
  * Shows a spinner while loading, then renders the rewrite or fails silently.
- * Updates the first suggestion chip to use the LLM rewrite text when available.
+ * Replaces the existing chip entirely (fixes RC1 text/handler mismatch).
+ * Uses backend scope signal for display/apply separation (RC5).
  */
 async function _autoFetchSuggestion(error, editorEl, card, container, existingChip) {
     // Show spinner
@@ -417,24 +432,25 @@ async function _autoFetchSuggestion(error, editorEl, card, container, existingCh
         return;
     }
 
-    // Persist LLM rewrite so inline popup can read it
+    // Persist LLM rewrite and scope signal for inline popup and replaceUnderlineText
     error._llmSuggestion = rewriteText;
+    error._llmScope = result.scope || null;
 
     // Clear spinner
     container.innerHTML = '';
 
-    // Update existing chip or create new one
-    if (existingChip) {
-        // LLM rewrite is higher quality — update first chip's handler
-        existingChip.onclick = (e) => {
-            e.stopPropagation();
-            replaceUnderlineText(editorEl, error.id, rewriteText, error.sentence);
-            acceptSuggestion(error.id);
-        };
+    // Determine display text vs apply text based on scope
+    const isSentenceScope = result.scope === 'sentence';
+    const displayText = isSentenceScope ? 'Apply rewrite' : rewriteText;
+
+    // Always create a fresh chip — fixes RC1 where only onclick was patched
+    // but textContent stayed as old deterministic text
+    const newChip = _createSuggestionChip(displayText, rewriteText, error, editorEl);
+
+    if (existingChip && existingChip.isConnected) {
+        existingChip.replaceWith(newChip);
     } else {
-        // No deterministic suggestion — create chip with LLM text
-        const chip = _createSuggestionChip(rewriteText, error, editorEl);
-        container.parentNode.insertBefore(chip, container);
+        container.parentNode.insertBefore(newChip, container);
     }
 }
 

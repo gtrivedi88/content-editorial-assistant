@@ -1146,3 +1146,234 @@ class TestListsInlineCodeGuard:
         assert len(cap_issues) >= 1, (
             "Regular lowercase list item should be flagged"
         )
+
+
+# ===================================================================
+# ConjunctionsRule — while temporal vs contrastive detection
+# ===================================================================
+
+
+class TestConjunctionsWhileFPGuards:
+    """False-positive guards for the ConjunctionsRule while-check.
+
+    The rule must only flag 'while' when positive contrastive evidence
+    exists.  Temporal and ambiguous uses must NOT be flagged — ambiguous
+    cases are deferred to the LLM granular pass.
+    """
+
+    # ---- Temporal uses — must NOT be flagged ----------------------------
+
+    def test_while_with_create_not_flagged(
+        self, nlp: spacy.language.Language,
+    ) -> None:
+        """'while you create the bridge' is temporal (concurrent action)."""
+        from rules.language_and_grammar.conjunctions_rule import (
+            ConjunctionsRule,
+        )
+
+        rule = ConjunctionsRule()
+        text = (
+            "You can either create these devices while you create the "
+            "bridge or you can create them in advance."
+        )
+        doc = nlp(text)
+        errors: List[Dict[str, Any]] = rule.analyze(
+            text, [text], nlp=nlp, spacy_doc=doc,
+        )
+        while_errors = [
+            e for e in errors if "although" in e.get("message", "").lower()
+        ]
+        assert len(while_errors) == 0, (
+            "Temporal 'while' in 'either…while…or' must not be flagged"
+        )
+
+    def test_while_progressive_aspect_not_flagged(
+        self, nlp: spacy.language.Language,
+    ) -> None:
+        """Progressive-aspect verb in the while-clause is temporal."""
+        from rules.language_and_grammar.conjunctions_rule import (
+            ConjunctionsRule,
+        )
+
+        rule = ConjunctionsRule()
+        text = "You can review logs while the system is rebooting."
+        doc = nlp(text)
+        errors: List[Dict[str, Any]] = rule.analyze(
+            text, [text], nlp=nlp, spacy_doc=doc,
+        )
+        while_errors = [
+            e for e in errors if "although" in e.get("message", "").lower()
+        ]
+        assert len(while_errors) == 0, (
+            "Progressive 'while…is rebooting' must not be flagged"
+        )
+
+    def test_while_either_or_not_flagged(
+        self, nlp: spacy.language.Language,
+    ) -> None:
+        """'either…while' structure implies choice-of-timing, not contrast."""
+        from rules.language_and_grammar.conjunctions_rule import (
+            ConjunctionsRule,
+        )
+
+        rule = ConjunctionsRule()
+        text = (
+            "You can either configure the network while you set up "
+            "the host or do it afterward."
+        )
+        doc = nlp(text)
+        errors: List[Dict[str, Any]] = rule.analyze(
+            text, [text], nlp=nlp, spacy_doc=doc,
+        )
+        while_errors = [
+            e for e in errors if "although" in e.get("message", "").lower()
+        ]
+        assert len(while_errors) == 0, (
+            "'either…while' temporal pattern must not be flagged"
+        )
+
+    def test_while_action_verb_ambiguous_not_flagged(
+        self, nlp: spacy.language.Language,
+    ) -> None:
+        """Ambiguous 'while' with action verb — deferred to LLM."""
+        from rules.language_and_grammar.conjunctions_rule import (
+            ConjunctionsRule,
+        )
+
+        rule = ConjunctionsRule()
+        text = (
+            "While the API supports JSON, the system also accepts XML."
+        )
+        doc = nlp(text)
+        errors: List[Dict[str, Any]] = rule.analyze(
+            text, [text], nlp=nlp, spacy_doc=doc,
+        )
+        while_errors = [
+            e for e in errors if "although" in e.get("message", "").lower()
+        ]
+        assert len(while_errors) == 0, (
+            "Ambiguous 'while' with action verb must not be flagged — "
+            "LLM handles these"
+        )
+
+    # ---- Contrastive uses — MUST be flagged -----------------------------
+
+    def test_while_linking_verb_flagged(
+        self, nlp: spacy.language.Language,
+    ) -> None:
+        """'While X is simple, Y has drawbacks' — copular head → contrastive."""
+        from rules.language_and_grammar.conjunctions_rule import (
+            ConjunctionsRule,
+        )
+
+        rule = ConjunctionsRule()
+        text = (
+            "While this approach is simpler, it has significant drawbacks."
+        )
+        doc = nlp(text)
+        errors: List[Dict[str, Any]] = rule.analyze(
+            text, [text], nlp=nlp, spacy_doc=doc,
+        )
+        while_errors = [
+            e for e in errors if "although" in e.get("message", "").lower()
+        ]
+        assert len(while_errors) >= 1, (
+            "Contrastive 'while' with linking verb must be flagged"
+        )
+
+    def test_while_comparative_adjective_flagged(
+        self, nlp: spacy.language.Language,
+    ) -> None:
+        """Comparative adjective in while-clause signals contrast."""
+        from rules.language_and_grammar.conjunctions_rule import (
+            ConjunctionsRule,
+        )
+
+        rule = ConjunctionsRule()
+        text = (
+            "While containers are more portable, VMs provide better isolation."
+        )
+        doc = nlp(text)
+        errors: List[Dict[str, Any]] = rule.analyze(
+            text, [text], nlp=nlp, spacy_doc=doc,
+        )
+        while_errors = [
+            e for e in errors if "although" in e.get("message", "").lower()
+        ]
+        assert len(while_errors) >= 1, (
+            "Contrastive 'while' with comparative must be flagged"
+        )
+
+    def test_while_contrastive_adverb_flagged(
+        self, nlp: spacy.language.Language,
+    ) -> None:
+        """Contrastive adverb ('however', 'instead') in main clause."""
+        from rules.language_and_grammar.conjunctions_rule import (
+            ConjunctionsRule,
+        )
+
+        rule = ConjunctionsRule()
+        text = (
+            "While the feature works, it is nevertheless too slow."
+        )
+        doc = nlp(text)
+        errors: List[Dict[str, Any]] = rule.analyze(
+            text, [text], nlp=nlp, spacy_doc=doc,
+        )
+        while_errors = [
+            e for e in errors if "although" in e.get("message", "").lower()
+        ]
+        assert len(while_errors) >= 1, (
+            "Contrastive 'while' with 'nevertheless' in main clause "
+            "must be flagged"
+        )
+
+    def test_while_seems_flagged(
+        self, nlp: spacy.language.Language,
+    ) -> None:
+        """'While X seems Y' — linking verb 'seems' → contrastive."""
+        from rules.language_and_grammar.conjunctions_rule import (
+            ConjunctionsRule,
+        )
+
+        rule = ConjunctionsRule()
+        text = (
+            "While this method seems adequate, it fails under load."
+        )
+        doc = nlp(text)
+        errors: List[Dict[str, Any]] = rule.analyze(
+            text, [text], nlp=nlp, spacy_doc=doc,
+        )
+        while_errors = [
+            e for e in errors if "although" in e.get("message", "").lower()
+        ]
+        assert len(while_errors) >= 1, (
+            "Contrastive 'while' with 'seems' must be flagged"
+        )
+
+    # ---- Suggestion quality ---------------------------------------------
+
+    def test_while_suggestion_is_direct_replacement(
+        self, nlp: spacy.language.Language,
+    ) -> None:
+        """Suggestion must be 'although', not an instruction string."""
+        from rules.language_and_grammar.conjunctions_rule import (
+            ConjunctionsRule,
+        )
+
+        rule = ConjunctionsRule()
+        text = (
+            "While this approach is simpler, it has significant drawbacks."
+        )
+        doc = nlp(text)
+        errors: List[Dict[str, Any]] = rule.analyze(
+            text, [text], nlp=nlp, spacy_doc=doc,
+        )
+        while_errors = [
+            e for e in errors if "although" in e.get("message", "").lower()
+        ]
+        assert len(while_errors) >= 1
+        suggestions = while_errors[0].get("suggestions", [])
+        assert "although" in suggestions, (
+            "Suggestion must be a direct replacement, not an instruction"
+        )

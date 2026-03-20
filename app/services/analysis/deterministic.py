@@ -136,6 +136,7 @@ def _normalize_error(
     sentence_index = int(error.get("sentence_index", 0))
     flagged_text = str(error.get("flagged_text", ""))
     suggestions = _extract_suggestions(error)
+    suggestions = _scrub_deterministic_suggestions(suggestions, flagged_text)
     span = _resolve_span(error, text, flagged_text, sentence)
     citation = _resolve_citation(rule_type)
     confidence = _resolve_confidence(rule_type, error)
@@ -206,6 +207,46 @@ def _extract_suggestions(error: dict[str, Any]) -> list[str]:
     if isinstance(raw, list):
         return [str(s) for s in raw if s is not None]
     return [str(raw)]
+
+
+_DET_INSTRUCTION_PREFIXES = (
+    "rewrite", "consider", "rephrase", "restructure", "replace",
+    "remove", "break", "combine", "simplify", "avoid", "insert",
+    "add", "move", "split", "write", "do not", "ensure", "verify",
+    "check", "make the", "use a ",
+)
+
+
+def _scrub_deterministic_suggestions(
+    suggestions: list[str], flagged_text: str,
+) -> list[str]:
+    """Filter out instruction-style suggestions from deterministic rules.
+
+    Defense-in-depth: the frontend ``_isInstruction()`` already catches
+    most instruction text, but scrubbing at the source is safer —
+    the ``_autoFetchSuggestion`` path bypasses ``extractReplacement``.
+
+    Args:
+        suggestions: Raw suggestion strings from the rule.
+        flagged_text: The text span that was flagged.
+
+    Returns:
+        Filtered list of concrete replacement suggestions.
+    """
+    flagged_len = len(flagged_text) if flagged_text else 1
+    scrubbed: list[str] = []
+    for s in suggestions:
+        if not s or not s.strip():
+            continue
+        lower = s.lower().strip()
+        if any(lower.startswith(p) for p in _DET_INSTRUCTION_PREFIXES):
+            logger.debug("Scrubbed instruction suggestion: %s", s[:80])
+            continue
+        if len(s) > 20 and len(s) > flagged_len * 3:
+            logger.debug("Scrubbed chatty suggestion: %s", s[:80])
+            continue
+        scrubbed.append(s)
+    return scrubbed
 
 
 def _resolve_span(

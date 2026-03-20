@@ -170,9 +170,18 @@ def _merge_llm_tier(
     for issue in unique_llm:
         if issue.confidence < confidence_threshold:
             skipped_confidence += 1
+            logger.info(
+                "Dropped LLM issue (confidence %.2f < %.2f): %s",
+                issue.confidence, confidence_threshold,
+                (issue.flagged_text or "")[:80],
+            )
             continue
         if _is_duplicate(issue, priority_pool, accepted_llm):
             skipped_overlap += 1
+            logger.info(
+                "Dropped LLM issue (duplicate): %s",
+                (issue.flagged_text or "")[:80],
+            )
             continue
         if block_boundaries and _span_crosses_block_boundary(
             issue.span, block_boundaries,
@@ -417,12 +426,18 @@ def _matches_candidate(
     if issue_broad != cand_broad:
         return False
 
-    # Same category: any span overlap → duplicate
+    # Same category: >50% containment of shorter span → duplicate.
+    # Prevents 1-char accidental overlap from suppressing distinct issues.
     if _has_valid_span(issue.span) and _has_valid_span(candidate.span):
         s1, e1 = issue.span[0], issue.span[1]
         s2, e2 = candidate.span[0], candidate.span[1]
-        if s1 < e2 and s2 < e1:
-            return True
+        overlap_start = max(s1, s2)
+        overlap_end = min(e1, e2)
+        if overlap_start < overlap_end:
+            overlap_len = overlap_end - overlap_start
+            shorter_len = min(e1 - s1, e2 - s2)
+            if shorter_len > 0 and overlap_len / shorter_len > 0.5:
+                return True
 
     # Same category: exact text match → duplicate
     cand_norm = (

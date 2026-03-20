@@ -150,7 +150,7 @@ export class SuggestionPanel {
             className: 'cea-suggestion-apply-btn',
             'aria-label': 'Apply this suggestion to the editor',
             onClick: () => {
-                replaceUnderlineText(editorEl, error.id, rewriteText, error.sentence);
+                replaceUnderlineText(editorEl, error.id, rewriteText, error.sentence, error._llmScope);
                 acceptSuggestion(error.id);
                 this._removePanel();
             },

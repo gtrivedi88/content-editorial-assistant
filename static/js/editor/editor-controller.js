@@ -7,7 +7,7 @@
 import { store } from '../state/store.js';
 import { analyzeContent, selectError } from '../state/actions.js';
 import { renderUnderlines, clearUnderlines, setActiveUnderline, filterUnderlines } from './underline-renderer.js';
-import { getPlainText, charSpanToDomRange } from './span-mapper.js';
+import { getPlainText, charSpanToDomRange, buildTextMap } from './span-mapper.js';
 import { SelectionTracker } from './selection-tracker.js';
 import { MarginLabels } from './margin-labels.js';
 import { debounce, escapeHtml, copyToClipboard, normalizeWhitespace } from '../shared/dom-utils.js';
@@ -278,21 +278,8 @@ export class EditorController {
             }
         });
 
-        // Render underlines when errors change — editor keeps raw text
         this._store.subscribe('errors', (errors) => {
             const status = this._store.get('analysisStatus');
-            console.log('[EditorController] errors subscription fired: %d errors, status=%s', errors.length, status);
-            console.log('[EditorController] editor element: tagName=%s, contentEditable=%s, childNodes=%d, textContent.len=%d, innerText.len=%d',
-                this._editor.tagName, this._editor.contentEditable,
-                this._editor.childNodes.length,
-                (this._editor.textContent || '').length,
-                (this._editor.innerText || '').length);
-            // Log first 200 chars of textContent vs innerText
-            const tc = (this._editor.textContent || '').substring(0, 200);
-            const it = (this._editor.innerText || '').substring(0, 200);
-            console.log('[EditorController] textContent[0:200]=%s', JSON.stringify(tc));
-            console.log('[EditorController] innerText[0:200]=%s', JSON.stringify(it));
-            console.log('[EditorController] textContent===innerText: %s', this._editor.textContent === this._editor.innerText);
             if ((status === 'complete' || status === 'partial') && errors.length > 0) {
                 clearUnderlines(this._editor);
                 renderUnderlines(this._editor, errors);
@@ -347,11 +334,7 @@ export class EditorController {
 
     _updateContent() {
         const text = getPlainText(this._editor);
-        // Normalize before storing — ensures state.content always matches
-        // what the backend will see after its own normalization.
         const contentToStore = normalizeWhitespace(this._rawContent || text);
-        console.log('[EditorController] _updateContent: innerText.len=%d, rawContent.len=%d, stored.len=%d, hasRawContent=%s',
-            text.length, this._rawContent.length, contentToStore.length, !!this._rawContent);
         this._store.setState({ content: contentToStore });
 
         const words = text.trim() ? text.trim().split(/\s+/).length : 0;
@@ -380,10 +363,10 @@ export class EditorController {
             parent.normalize();
         }
 
-        // Apply from last-to-first to preserve offsets
         const sorted = [...ranges].sort((a, b) => b.start_pos - a.start_pos);
+        const textMap = buildTextMap(this._editor);
         for (const range of sorted) {
-            const domRange = charSpanToDomRange(this._editor, range.start_pos, range.end_pos);
+            const domRange = charSpanToDomRange(this._editor, range.start_pos, range.end_pos, textMap);
             if (!domRange) continue;
 
             try {
@@ -457,10 +440,7 @@ export class EditorController {
 
     async triggerAnalysis() {
         const raw = this._rawContent || getPlainText(this._editor);
-        // Defense-in-depth: ensure text sent to backend is always normalized
         const text = normalizeWhitespace(raw);
-        console.log('[EditorController] triggerAnalysis: text.len=%d, hasRawContent=%s, innerText.len=%d',
-            text.length, !!this._rawContent, (this._editor.innerText || '').length);
         if (!text.trim()) return;
 
         // When no markup detected, always send innerHTML for structure-aware

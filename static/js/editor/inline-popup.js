@@ -133,13 +133,18 @@ export class InlinePopup {
         if (allSuggestions.length > 0) {
             const chipsWrap = createElement('div', { className: 'cea-suggestion-chips' });
             for (const text of allSuggestions) {
+                // Separate display from apply: LLM sentence-scope rewrites
+                // show "Apply rewrite" but apply the full rewrite text
+                const isLlmSentence = text === error._llmSuggestion
+                    && error._llmScope === 'sentence';
+                const displayText = isLlmSentence ? 'Apply rewrite' : text;
                 const chip = createElement('button', {
                     className: 'cea-suggestion-chip',
-                    textContent: text,
-                    'aria-label': `Accept suggestion: ${escapeHtml(text)}`,
+                    textContent: displayText,
+                    'aria-label': `Accept suggestion: ${escapeHtml(displayText)}`,
                     onClick: (e) => {
                         e.stopPropagation();
-                        replaceUnderlineText(this._editorEl, error.id, text, error.sentence);
+                        replaceUnderlineText(this._editorEl, error.id, text, error.sentence, error._llmScope);
                         acceptSuggestion(error.id);
                         this.hide();
                     },

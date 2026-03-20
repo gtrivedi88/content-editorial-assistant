@@ -11,9 +11,7 @@ from typing import Optional
 from lxml import html as lxml_html
 from lxml.html import HtmlElement
 
-from app.services.parsing.base import (
-    BaseParser, Block, ParseResult, build_xml_char_map,
-)
+from app.services.parsing.base import BaseParser, Block, ParseResult
 
 logger = logging.getLogger(__name__)
 
@@ -25,9 +23,18 @@ _ADMONITION_CLASSES = frozenset({
     "note", "tip", "important", "warning", "caution", "admonition",
 })
 
+# Block-level tags that produce a newline in innerText — mirrors
+# span-mapper.js BLOCK_TAGS for synchronized offset tracking.
+_INNERTEXT_BLOCK_TAGS = frozenset({
+    "p", "div", "h1", "h2", "h3", "h4", "h5", "h6",
+    "li", "tr", "blockquote", "pre", "hr", "ul", "ol",
+    "table", "thead", "tbody", "dt", "dd", "figcaption",
+})
+
 # Block types that can contain inline <code> elements
 _INLINE_CODE_BLOCK_TYPES = frozenset({
-    "paragraph", "list_item", "blockquote", "table_cell",
+    "paragraph", "list_item", "list_item_ordered",
+    "list_item_unordered", "blockquote", "table_cell",
 })
 
 # Tag -> block_type mapping
@@ -51,10 +58,10 @@ _TAG_MAP: dict[str, str] = {
     "blockquote": "blockquote",
     "img": "image",
     "figure": "image",
-    "section": "section",
-    "article": "section",
     "aside": "sidebar",
-    "div": "paragraph",
+    "dt": "paragraph",
+    "dd": "paragraph",
+    # div, section, article are containers — _walk() recurses into them
 }
 
 
@@ -124,6 +131,20 @@ class HtmlParser(BaseParser):
         if tag in _SKIP_TAGS:
             return offset
 
+        # Account for innerText newline at block boundaries (mirrors span-mapper.js)
+        if tag in _INNERTEXT_BLOCK_TAGS and offset > 0 and blocks:
+            offset += 1
+
+        # Admonition div/section/article — treat as terminal block
+        if tag in ("div", "section", "article") and _is_admonition(element):
+            block = self._element_to_block(
+                element, tag, "admonition", offset,
+            )
+            if block is not None:
+                blocks.append(block)
+                offset = block.end_pos
+            return offset
+
         block_type = _TAG_MAP.get(tag)
 
         if block_type is not None:
@@ -133,9 +154,23 @@ class HtmlParser(BaseParser):
                 offset = block.end_pos
             return offset
 
-        # Container element without a direct mapping -- recurse into children
+        # Container element — capture loose text + recurse into children
+        return self._walk_container(element, blocks, offset)
+
+    def _walk_container(
+        self,
+        element: HtmlElement,
+        blocks: list[Block],
+        offset: int,
+    ) -> int:
+        """Walk a container element, capturing loose text and recursing."""
+        if element.text and element.text.strip():
+            offset = self._emit_loose_text(element.text, offset, blocks)
+
         for child in element:
             offset = self._walk(child, blocks, offset)
+            if child.tail and child.tail.strip():
+                offset = self._emit_loose_text(child.tail, offset, blocks)
 
         return offset
 
@@ -162,8 +197,6 @@ class HtmlParser(BaseParser):
 
         raw_content = _outer_html(element)
         skip = block_type in ("code_block", "admonition")
-        start_pos = offset
-        end_pos = offset + len(raw_content)
 
         text_content, inline_content = _extract_block_text(
             element, block_type, skip,
@@ -175,12 +208,15 @@ class HtmlParser(BaseParser):
         if not text_content and block_type != "image":
             return None
 
+        start_pos = offset
+        end_pos = offset + len(text_content)
+
         children: list[Block] = []
         if block_type in ("list", "table"):
             children = self._extract_children(element, start_pos)
 
         char_map = _build_block_char_map(
-            skip, text_content, inline_content, raw_content,
+            skip, text_content, inline_content,
         )
 
         return Block(
@@ -198,21 +234,59 @@ class HtmlParser(BaseParser):
         )
 
     def _extract_children(
-        self, element: HtmlElement, parent_offset: int
+        self, element: HtmlElement, parent_offset: int,
     ) -> list[Block]:
         """Extract child blocks from list or table containers."""
         children: list[Block] = []
         offset = parent_offset
+        parent_tag = _local_tag(element)
         for child in element:
             tag = _local_tag(child)
             child_type = _TAG_MAP.get(tag)
             if child_type is None:
                 continue
+            # Typed list items based on parent
+            if child_type == "list_item":
+                if parent_tag == "ol":
+                    child_type = "list_item_ordered"
+                elif parent_tag == "ul":
+                    child_type = "list_item_unordered"
             block = self._element_to_block(child, tag, child_type, offset)
             if block is not None:
                 children.append(block)
                 offset = block.end_pos
         return children
+
+    def _emit_loose_text(
+        self, text: str, offset: int, blocks: list[Block],
+    ) -> int:
+        """Create a paragraph block from loose text inside a container.
+
+        Handles text nodes directly inside container elements (div,
+        section, article) that are not wrapped in ``<p>`` tags.
+
+        Args:
+            text: The raw text string (element.text or child.tail).
+            offset: Current character offset.
+            blocks: Accumulator for discovered blocks.
+
+        Returns:
+            Updated character offset.
+        """
+        clean = text.strip()
+        if not clean:
+            return offset
+        end = offset + len(clean)
+        blocks.append(Block(
+            block_type="paragraph",
+            content=clean,
+            raw_content=text,
+            start_pos=offset,
+            end_pos=end,
+            inline_content=clean,
+            char_map=None,
+        ))
+        return end
 
 
 # ------------------------------------------------------------------
@@ -273,47 +347,76 @@ def _extract_block_text(
         ``(content, inline_content)`` pair, both stripped.
     """
     if block_type in _INLINE_CODE_BLOCK_TYPES and not skip:
-        content, inline = _extract_text_with_code_markers(element)
+        content, inline = _extract_text_with_inline_markers(element)
         return content.strip(), inline.strip()
     return _text_of(element).strip(), ""
 
 
-def _extract_text_with_code_markers(
+def _extract_text_with_inline_markers(
     element: HtmlElement,
 ) -> tuple[str, str]:
-    """Extract plain text and code-marked text from *element*.
+    """Extract plain text and inline-marked text from *element*.
 
-    Clones the element, wraps ``<code>`` text with backticks in-place,
-    and lets lxml's ``text_content()`` safely stitch text and tails.
+    Clones the element, wraps ``<code>`` text with backticks and
+    ``<b>``/``<strong>`` text with ``**`` markers in-place, then lets
+    lxml's ``text_content()`` safely stitch text and tails.
+
+    Processing order: code first (innermost), then bold (outermost),
+    so ``<b><code>curl</code></b>`` produces ``**`curl`**``.
 
     Returns:
         ``(content, inline_content)`` where inline_content has backticks
-        around text that was inside ``<code>`` tags.
+        around code and ``**`` around bold text.
     """
     content = element.text_content() or ""
 
     el_copy = copy.deepcopy(element)
+
+    # Process code elements first (innermost)
     for code_el in el_copy.xpath(".//code"):
         code_text = code_el.text_content() or ""
         code_el.text = f"`{code_text}`"
         while len(code_el):
             code_el.remove(code_el[0])
 
+    # Process bold elements (outermost) — skip nested bolds
+    for bold_el in el_copy.xpath(
+        ".//b[not(ancestor::b or ancestor::strong)]"
+        " | .//strong[not(ancestor::b or ancestor::strong)]"
+    ):
+        bold_text = bold_el.text_content() or ""
+        if not bold_text.strip():
+            continue
+        bold_el.text = f"**{bold_text}**"
+        while len(bold_el):
+            bold_el.remove(bold_el[0])
+
     inline_content = el_copy.text_content() or ""
     return content, inline_content
 
 
-def _build_code_char_map(content: str, inline_content: str) -> list[int]:
+def _build_inline_char_map(content: str, inline_content: str) -> list[int]:
     """Build a char_map from *content* positions to *inline_content* positions.
 
-    The two strings differ only by backtick wrappers around code terms.
-    Walks both in parallel, skipping backticks in inline_content.
+    The two strings differ by backtick wrappers around code terms and
+    ``**`` wrappers around bold terms.  Walks both in parallel, skipping
+    inserted markers in inline_content.
     """
     char_map: list[int] = []
     j = 0
     for _ in range(len(content)):
-        while j < len(inline_content) and inline_content[j] == "`":
-            j += 1
+        while j < len(inline_content):
+            ch = inline_content[j]
+            if ch == "`":
+                j += 1
+            elif (
+                ch == "*"
+                and j + 1 < len(inline_content)
+                and inline_content[j + 1] == "*"
+            ):
+                j += 2
+            else:
+                break
         if j < len(inline_content):
             char_map.append(j)
             j += 1
@@ -326,11 +429,10 @@ def _build_block_char_map(
     skip: bool,
     text_content: str,
     inline_content: str,
-    raw_content: str,
 ) -> list[int] | None:
     """Build the appropriate char_map for a block."""
     if skip or not text_content:
         return None
     if inline_content and inline_content != text_content:
-        return _build_code_char_map(text_content, inline_content)
-    return build_xml_char_map(raw_content, text_content)
+        return _build_inline_char_map(text_content, inline_content)
+    return None
