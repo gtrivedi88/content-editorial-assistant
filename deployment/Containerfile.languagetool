@@ -1,0 +1,32 @@
+# LanguageTool with n-gram data for enhanced grammar checking.
+#
+# Extends the community image with:
+# - English n-gram data (~8.8GB) for context-aware confused word detection
+#
+# Word2vec was deprecated and removed from LanguageTool — the --word2vecmodel
+# option no longer exists. N-gram data is the only supplemental model needed.
+#
+# Build: bash scripts/build-languagetool-image.sh
+# Run:   podman run -d -p 8010:8010 quay.io/rhdeveldocs/languagetool:6.7-ngram-v1
+#
+# NOTE: Transient ~24GB disk required during the n-gram build step
+# (compressed 8.5GB archive + extracted 15GB data before archive deletion).
+
+FROM docker.io/erikvl87/languagetool:6.7
+
+# --- N-gram data (English) ---
+# Lucene index files are memory-mapped at runtime (~8.8GB mmap, not JVM heap).
+# Uses 7z instead of unzip — the 8.5GB ZIP requires ZIP64 support that the
+# base image's unzip doesn't handle reliably in overlay filesystems.
+USER root
+RUN apk add --no-cache p7zip && \
+    mkdir -p /ngrams && \
+    cd /tmp && \
+    curl -fSL -o ngrams-en.zip \
+      https://languagetool.org/download/ngram-data/ngrams-en-20150817.zip && \
+    7z x ngrams-en.zip -o/ngrams && \
+    rm ngrams-en.zip && \
+    chown -R languagetool:languagetool /ngrams && \
+    apk del p7zip
+
+USER languagetool

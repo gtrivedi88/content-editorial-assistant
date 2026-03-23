@@ -78,8 +78,28 @@ _LT_SKIP_RULES: frozenset[str] = frozenset({
 
     # --- Tone/style (LLM handles these) ---
     "WORDINESS",                            # LLM global/granular pass is superior
+
+    # --- Picky-mode rules with high FP rates on technical docs ---
+    "ARTICLE_MISSING",                      # Tech doc headings/lists intentionally omit articles
+    "COMMA_COMPOUND_SENTENCE",              # Over-triggers on complex tech sentences
+    "COMMA_COMPOUND_SENTENCE_2",            # Same family, same FP pattern
+    "WHO_WHOM",                             # Irrelevant in tech docs
+    "CONSECUTIVE_SPACES",                   # CEA preprocessor normalizes whitespace
+    "UNLIKELY_OPENING_PUNCTUATION",         # Code/CLI output fragments trip this
+    "SENTENCE_WHITESPACE",                  # Already handled by CEA normalization
+    "EN_COMPOUNDS",                         # Overlaps with CEA CompoundWordsRule (8,490 entries)
+    "WORD_CONTAINS_UNDERSCORE",             # FP on code identifiers (snake_case is valid)
 })
 
+
+# ---------------------------------------------------------------------------
+# Hint-type gating — picky-mode and low-confidence n-gram matches
+# ---------------------------------------------------------------------------
+
+_HINT_GATED_CATEGORIES: frozenset[str] = frozenset({
+    "CONFUSED_WORDS",
+    "STYLE",
+})
 
 # ---------------------------------------------------------------------------
 # Domain-aware spelling allowlist — loaded from YAML
@@ -466,6 +486,7 @@ def _call_languagetool(
     payload = {
         "text": text,
         "language": "en-US",
+        "level": Config.LANGUAGETOOL_LEVEL,
     }
     if disabled_rules:
         payload["disabledRules"] = disabled_rules
@@ -509,6 +530,8 @@ def _should_skip_match(
     block_local_offset: int,
     code_ranges: list[tuple[int, int]],
     lt_category: str = "",
+    confidence: float = 1.0,
+    match_type: str = "",
 ) -> bool:
     """Return True if a match should be discarded by FP guards.
 
@@ -518,7 +541,9 @@ def _should_skip_match(
     3. Technical content heuristic guard
     4. Domain-aware spelling allowlist (MORFOLOGIK only)
     5. Unified term registry (TYPOS, CASING, CONFUSED_WORDS, STYLE)
-    6. Heuristic code pattern detection
+    6. Hint-type filtering for n-gram-backed gated categories
+    7. Confidence threshold for gated categories (future-proofing)
+    8. Heuristic code pattern detection
 
     Args:
         rule_id: LanguageTool rule identifier.
@@ -526,6 +551,8 @@ def _should_skip_match(
         block_local_offset: Character offset within block.content.
         code_ranges: Pre-computed inline code ranges for the block.
         lt_category: LanguageTool rule category ID (e.g. TYPOS, GRAMMAR).
+        confidence: Rule confidence from LT response (default 1.0).
+        match_type: Value of ``match.type.typeName`` (e.g. ``Hint``).
 
     Returns:
         True if the match should be skipped.
@@ -565,6 +592,30 @@ def _should_skip_match(
         )
         return True
 
+    # Hint-type filtering for n-gram-backed gated categories.
+    # Picky-mode rules and low-confidence n-gram detections return
+    # type.typeName="Hint". These are unreliable on technical prose
+    # (n-gram corpora trained on general English, not tech docs).
+    if (Config.LANGUAGETOOL_FILTER_HINTS
+            and lt_category in _HINT_GATED_CATEGORIES
+            and match_type == "Hint"):
+        logger.debug(
+            "Skipping Hint-type match in gated category: "
+            "rule=%s, category=%s, text=%r",
+            rule_id, lt_category, flagged,
+        )
+        return True
+
+    # Future-proofing: if confidenceMap is ever configured on the server,
+    # also gate on low confidence for the same categories.
+    if (lt_category in _HINT_GATED_CATEGORIES
+            and confidence < Config.LANGUAGETOOL_CONFIDENCE_THRESHOLD):
+        logger.debug(
+            "Skipping low-confidence match: %r (%.2f < %.2f)",
+            flagged, confidence, Config.LANGUAGETOOL_CONFIDENCE_THRESHOLD,
+        )
+        return True
+
     # Heuristic code detection for terms not in any config
     if is_likely_code(flagged):
         logger.debug(
@@ -600,6 +651,12 @@ def _process_batch_matches(
         rule_id = rule_obj.get("id", "")
         lt_category = rule_obj.get("category", {}).get("id", "")
 
+        match_confidence = rule_obj.get("confidence", 0.95)
+        if not isinstance(match_confidence, (int, float)):
+            match_confidence = 0.95
+
+        match_type = match.get("type", {}).get("typeName", "")
+
         # UTF-16 → codepoint conversion
         raw_offset = match.get("offset", 0)
         py_offset = _utf16_to_codepoint_offset(batch.text, raw_offset)
@@ -618,7 +675,8 @@ def _process_batch_matches(
         flagged = batch.text[py_offset:py_end]
 
         if _should_skip_match(rule_id, flagged, block_local_offset,
-                              entry.code_ranges, lt_category):
+                              entry.code_ranges, lt_category,
+                              match_confidence, match_type):
             continue
 
         issue = _map_lt_match_to_issue(

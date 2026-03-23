@@ -28,6 +28,9 @@ _HTML_ENTITY_RE = re.compile(r'&\w+;|&#\d+;|&#x[\da-fA-F]+;')
 # URL pattern for guarding symbols inside URL fragments
 _URL_RE = re.compile(r'https?://[^\s\[\]]+')
 
+# Guard: '+' used as a UI button label — "the + button", "click the +"
+_PLUS_BUTTON_RE = re.compile(r'(?:the|click|press|tap|select)\s+\+\s*(?:button|icon|sign)', re.IGNORECASE)
+
 _SKIP_BLOCK_TYPES = ('code_block', 'listing', 'literal', 'inline_code')
 
 
@@ -88,6 +91,10 @@ class PunctuationAndSymbolsRule(BasePunctuationRule):
         for url in _URL_RE.finditer(sentence):
             if url.start() <= match.start() < url.end():
                 return None
+
+        # Guard: '+' used as a UI button label ("the + button")
+        if symbol == '+' and _PLUS_BUTTON_RE.search(sentence):
+            return None
 
         return self._create_error(
             sentence=sentence,

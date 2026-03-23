@@ -478,7 +478,11 @@ def build_global_prompt(
         "— these section headings are self-explanatory labels that do not "
         "require introductory text before their content\n\n"
         "## RESPONSE FORMAT\n"
-        "Respond with a JSON array. Each object:\n"
+        "Respond with a JSON object containing a \"reasoning\" string "
+        "and an \"issues\" array.\n"
+        "In \"reasoning\", briefly note which document-level checks you "
+        "applied and any areas with no issues.\n"
+        "Each object in the \"issues\" array:\n"
         '{"flagged_text":"exact span","message":"explanation",'
         '"suggestions":["corrected text"],"severity":"low|medium|high",'
         '"category":"style|grammar|punctuation|structure|audience",'
@@ -488,7 +492,8 @@ def build_global_prompt(
         "of the flagged span that fixes the issue. Do not leave "
         "suggestions empty. Keep suggestions scoped to the flagged_text "
         "span only — do not rewrite surrounding text.\n\n"
-        "No issues → []. Return ONLY JSON, no additional text."
+        "No issues → {\"reasoning\":\"...\",\"issues\":[]}. "
+        "Return ONLY JSON, no additional text."
     )
 
     user_prompt = (

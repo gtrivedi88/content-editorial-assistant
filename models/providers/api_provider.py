@@ -4,6 +4,7 @@ Universal API provider for any OpenAI-compatible REST API service.
 """
 
 import logging
+import os
 from typing import Any, Dict, Union
 
 import requests
@@ -135,6 +136,10 @@ class APIProvider(BaseModelProvider):
             'Authorization': 'Bearer %s' % self.config['api_key'],
         }
 
+    _VALID_REASONING_EFFORTS: frozenset = frozenset(
+        {"none", "low", "medium", "high"},
+    )
+
     def _is_gemini_api(self) -> bool:
         """Check if the configured API endpoint is Google Gemini.
 
@@ -146,6 +151,22 @@ class APIProvider(BaseModelProvider):
         """
         base_url = self.config.get('base_url', '')
         return 'generativelanguage.googleapis.com' in base_url
+
+    def _get_reasoning_effort(self) -> str:
+        """Return the Gemini reasoning effort level from app config.
+
+        Returns:
+            Validated effort string, or empty string if unset/invalid.
+        """
+        try:
+            from app.config import Config
+            effort = getattr(Config, 'GEMINI_REASONING_EFFORT', '')
+        except ImportError:
+            effort = os.environ.get('GEMINI_REASONING_EFFORT', '')
+        effort = (effort or '').strip().lower()
+        if effort in self._VALID_REASONING_EFFORTS:
+            return effort
+        return ''
 
     def is_available(self) -> bool:
         """Check if the API provider and model are available."""
@@ -246,6 +267,13 @@ class APIProvider(BaseModelProvider):
         seed = params.get('seed')
         if seed is not None and not self._is_gemini_api():
             payload["seed"] = seed
+
+        # Gemini 2.5 thinking models: constrain reasoning effort to
+        # reduce run-to-run variance from non-deterministic thinking traces.
+        if self._is_gemini_api():
+            reasoning_effort = self._get_reasoning_effort()
+            if reasoning_effort:
+                payload["reasoning_effort"] = reasoning_effort
 
         return endpoint, payload
 

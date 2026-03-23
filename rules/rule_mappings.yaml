@@ -524,8 +524,19 @@ block_type_rules:
     - technical_commands
     - technical_files_directories
     - technical_programming_elements
+    - technical_mouse_buttons
+    - technical_ui_elements
+    - technical_keyboard_keys
+    - technical_menus_navigation
     - numbers_general
     - numerals_vs_words
+    - using_clarity
+    - simple_words
+    - do_not_use
+    - product_names
+    - compound_words
+    - repeated_words
+    - case_sensitive_terms
     # Grammar rules (SpaCy-based deterministic)
     - verbs
     - articles

@@ -52,6 +52,10 @@ class BaseModelProvider(ABC):
         token_config = get_token_config(self.config)
         default_max_tokens = token_config.get_max_tokens('default')
 
+        # Pop internal-only keys so they never leak into API payloads
+        kwargs.pop('_result_meta', None)
+        kwargs.pop('_timeout_override', None)
+
         params: Dict[str, Any] = {
             'temperature': self.config.get('temperature', 0.4),
             'max_tokens': self.config.get('max_tokens', default_max_tokens),
@@ -61,6 +65,10 @@ class BaseModelProvider(ABC):
 
         # Override with provided kwargs
         params.update(kwargs)
+
+        if params['temperature'] == 0.0:
+            params['top_p'] = 1.0
+
         return params
 
     def health_check(self) -> Dict[str, Any]:

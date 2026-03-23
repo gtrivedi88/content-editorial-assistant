@@ -143,3 +143,14 @@ simple_words:
   "prior to": "before"
   "subsequent to": "after"
   "with regard to": "about"
+
+  # Procedural wordiness (IBM Style — concise instructions)
+  "you can either": "you can"
+  "is able to": "can"
+  "are able to": "can"
+  "in order for": "for"
+  "make sure that": "verify that"
+  "keep in mind that": "note that"
+  "be aware that": "note that"
+  "has the ability to": "can"
+  "is capable of": "can"

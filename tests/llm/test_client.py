@@ -339,3 +339,128 @@ class TestJudgeIssues:
         keep, drop = client.judge_issues([], "doc excerpt", "concept")
         assert keep == []
         assert drop == []
+
+    @patch("app.llm.client._get_model_manager")
+    @patch("app.llm.client.Config")
+    def test_judge_uses_basic_response_format(
+        self, mock_config: MagicMock, mock_get_mm: MagicMock,
+    ) -> None:
+        """Judge call uses basic json_object format, not strict json_schema."""
+        mock_config.LLM_ENABLED = True
+        mock_config.LLM_MAX_CONCURRENT = 5
+        mock_config.MODEL_ANALYSIS_TEMPERATURE = 0.1
+        mock_config.MODEL_SEED = None
+
+        judge_json = json.dumps({"keep": [0], "drop": []})
+        mm = _make_mock_model_manager(available=True, generate_return=judge_json)
+        mock_get_mm.return_value = mm
+
+        client = LLMClient()
+        client.judge_issues(
+            [{"flagged_text": "a", "message": "A"}],
+            "doc excerpt", "concept",
+        )
+        call_kwargs = mm.generate_text.call_args[1]
+        assert call_kwargs["response_format"] == {"type": "json_object"}
+
+
+# ---------------------------------------------------------------------------
+# _safe_analysis_call format fallback
+# ---------------------------------------------------------------------------
+
+
+class TestSafeAnalysisCallFallback:
+    """Tests for json_schema → json_object fallback in _safe_analysis_call."""
+
+    @patch("app.llm.client._get_model_manager")
+    @patch("app.llm.client.Config")
+    def test_fallback_on_empty_response(
+        self, mock_config: MagicMock, mock_get_mm: MagicMock,
+    ) -> None:
+        """Falls back to basic format when strict schema returns empty."""
+        mock_config.LLM_ENABLED = True
+        mock_config.LLM_MAX_CONCURRENT = 5
+        mock_config.MODEL_ANALYSIS_TEMPERATURE = 0.1
+        mock_config.MODEL_SEED = None
+
+        issues_json = json.dumps([{
+            "flagged_text": "test",
+            "message": "Test issue.",
+            "severity": "low",
+            "category": "style",
+            "confidence": 0.9,
+        }])
+
+        mm = _make_mock_model_manager(available=True)
+        mm.generate_text.side_effect = ["", issues_json]
+        mock_get_mm.return_value = mm
+
+        client = LLMClient()
+        result = client.analyze_block("test text", ["test text"], [])
+        assert len(result) == 1
+        assert mm.generate_text.call_count == 2
+
+    @patch("app.llm.client._get_model_manager")
+    @patch("app.llm.client.Config")
+    def test_fallback_on_runtime_error(
+        self, mock_config: MagicMock, mock_get_mm: MagicMock,
+    ) -> None:
+        """Falls back to basic format when strict schema raises RuntimeError."""
+        mock_config.LLM_ENABLED = True
+        mock_config.LLM_MAX_CONCURRENT = 5
+        mock_config.MODEL_ANALYSIS_TEMPERATURE = 0.1
+        mock_config.MODEL_SEED = None
+
+        issues_json = json.dumps([{
+            "flagged_text": "test",
+            "message": "Test issue.",
+            "severity": "low",
+            "category": "style",
+            "confidence": 0.9,
+        }])
+
+        mm = _make_mock_model_manager(available=True)
+        mm.generate_text.side_effect = [
+            RuntimeError("400: unsupported response_format"),
+            issues_json,
+        ]
+        mock_get_mm.return_value = mm
+
+        client = LLMClient()
+        result = client.analyze_block("test text", ["test text"], [])
+        assert len(result) == 1
+        assert mm.generate_text.call_count == 2
+
+    @patch("app.llm.client._get_model_manager")
+    @patch("app.llm.client.Config")
+    def test_remembers_downgraded_format(
+        self, mock_config: MagicMock, mock_get_mm: MagicMock,
+    ) -> None:
+        """After fallback, subsequent calls use basic format directly."""
+        from app.llm.client import _ANALYSIS_RESPONSE_FORMAT_BASIC
+
+        mock_config.LLM_ENABLED = True
+        mock_config.LLM_MAX_CONCURRENT = 5
+        mock_config.MODEL_ANALYSIS_TEMPERATURE = 0.1
+        mock_config.MODEL_SEED = None
+
+        issues_json = json.dumps([{
+            "flagged_text": "test",
+            "message": "Test.",
+            "severity": "low",
+            "category": "style",
+            "confidence": 0.9,
+        }])
+
+        mm = _make_mock_model_manager(available=True)
+        mm.generate_text.side_effect = ["", issues_json, issues_json]
+        mock_get_mm.return_value = mm
+
+        client = LLMClient()
+        client.analyze_block("text1", ["text1"], [])
+        assert client._current_analysis_format == _ANALYSIS_RESPONSE_FORMAT_BASIC
+
+        mm.generate_text.reset_mock()
+        mm.generate_text.return_value = issues_json
+        client.analyze_block("text2", ["text2"], [])
+        assert mm.generate_text.call_count == 1

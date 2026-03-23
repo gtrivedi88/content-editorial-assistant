@@ -39,12 +39,50 @@ from app.llm.prompts import (
 
 logger = logging.getLogger(__name__)
 
-# JSON schema for structured LLM analysis output.  Providers that support
-# JSON mode for analysis calls.  Uses ``{"type": "json_object"}`` which
-# is supported by Gemini, OpenAI, and Ollama.  The exact schema is
-# described in the system prompt; this just constrains the model to
-# return valid JSON, eliminating code-fence parsing failures.
-_ANALYSIS_RESPONSE_FORMAT: dict = {"type": "json_object"}
+# Structured JSON schema for LLM analysis output.  Constrains the
+# model's output to the exact field names, types, and enum values
+# expected by the parser — reduces run-to-run variance by shrinking
+# the output space the model samples from.
+_ISSUE_SCHEMA: dict = {
+    "type": "object",
+    "properties": {
+        "flagged_text": {"type": "string"},
+        "message": {"type": "string"},
+        "suggestions": {"type": "array", "items": {"type": "string"}},
+        "severity": {"type": "string", "enum": ["low", "medium", "high"]},
+        "category": {
+            "type": "string",
+            "enum": ["style", "grammar", "punctuation", "structure", "audience"],
+        },
+        "sentence": {"type": "string"},
+        "sentence_index": {"type": "integer"},
+        "confidence": {"type": "number"},
+    },
+    "required": [
+        "flagged_text", "message", "suggestions", "severity",
+        "category", "sentence", "sentence_index", "confidence",
+    ],
+    "additionalProperties": False,
+}
+
+_ANALYSIS_RESPONSE_FORMAT: dict = {
+    "type": "json_schema",
+    "json_schema": {
+        "name": "analysis_response",
+        "schema": {
+            "type": "object",
+            "properties": {
+                "reasoning": {"type": "string"},
+                "issues": {"type": "array", "items": _ISSUE_SCHEMA},
+            },
+            "required": ["reasoning", "issues"],
+            "additionalProperties": False,
+        },
+    },
+}
+
+# Fallback for providers that don't support json_schema (e.g. older Ollama)
+_ANALYSIS_RESPONSE_FORMAT_BASIC: dict = {"type": "json_object"}
 
 # Lazy-initialized singleton to avoid import-time side effects
 _model_manager_instance = None
@@ -81,6 +119,7 @@ class LLMClient:
         self._executor: ThreadPoolExecutor = ThreadPoolExecutor(
             max_workers=Config.LLM_MAX_CONCURRENT,
         )
+        self._current_analysis_format: dict = _ANALYSIS_RESPONSE_FORMAT
 
     # ------------------------------------------------------------------
     # Public API
@@ -233,7 +272,7 @@ class LLMClient:
             raw_text = self._generate(
                 user_prompt,
                 system_prompt=system_prompt,
-                response_format=_ANALYSIS_RESPONSE_FORMAT,
+                response_format=_ANALYSIS_RESPONSE_FORMAT_BASIC,
             )
             if not raw_text:
                 return list(range(len(issues))), []
@@ -253,6 +292,11 @@ class LLMClient:
     ) -> list[dict]:
         """Call the LLM and parse an analysis response safely.
 
+        Tries the current preferred response format first.  If the
+        provider rejects it (empty response or RuntimeError from HTTP
+        400), falls back to the basic ``json_object`` format and
+        remembers the working format for subsequent calls.
+
         Args:
             prompt: The user prompt string.
             system_prompt: Invariant system instructions.
@@ -260,19 +304,35 @@ class LLMClient:
         Returns:
             Parsed issue list, or empty list on any failure.
         """
-        try:
-            raw_text = self._generate(
-                prompt,
-                system_prompt=system_prompt,
-                response_format=_ANALYSIS_RESPONSE_FORMAT,
-            )
-            if not raw_text:
-                return []
-            return parse_analysis_response(raw_text)
-        except (ConnectionError, TimeoutError, RuntimeError) as exc:
-            logger.warning("LLM analysis call failed: %s", exc)
-        except (ValueError, KeyError) as exc:
-            logger.warning("LLM analysis response parsing failed: %s", exc)
+        formats = [self._current_analysis_format]
+        if self._current_analysis_format is not _ANALYSIS_RESPONSE_FORMAT_BASIC:
+            formats.append(_ANALYSIS_RESPONSE_FORMAT_BASIC)
+
+        for fmt in formats:
+            try:
+                raw_text = self._generate(
+                    prompt,
+                    system_prompt=system_prompt,
+                    response_format=fmt,
+                )
+                if not raw_text:
+                    continue
+                result = parse_analysis_response(raw_text)
+                if fmt is not self._current_analysis_format:
+                    logger.info(
+                        "Switching analysis response format to basic "
+                        "json_object (provider rejected json_schema)",
+                    )
+                    self._current_analysis_format = fmt
+                return result
+            except (ConnectionError, TimeoutError, RuntimeError) as exc:
+                logger.warning("LLM analysis call failed: %s", exc)
+                continue
+            except (ValueError, KeyError) as exc:
+                logger.warning(
+                    "LLM analysis response parsing failed: %s", exc,
+                )
+                break
         return []
 
     def _safe_suggestion_call(

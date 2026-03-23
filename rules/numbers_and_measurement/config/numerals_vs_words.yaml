@@ -35,14 +35,20 @@ numeral_words:
   "100": "One hundred"
   "1000": "One thousand"
 
-# Block types to skip entirely (technical content)
+# Block types to skip entirely (technical content and list items —
+# numbered list items are expected to start with numerals)
 skip_block_types:
   - listing
   - literal
   - code_block
   - inline_code
+  - list_item_ordered
+  - list_item_unordered
+  - list_item
 
-# Patterns at sentence start that indicate numbered list items (skip these)
+# Patterns at sentence start that indicate numbered list items (skip these).
+# Includes standalone "N." from SpaCy sentence splits of "1. Select..."
 list_item_patterns:
   - '^\d+\.\s'
   - '^\d+\)\s'
+  - '^\d+\.$'

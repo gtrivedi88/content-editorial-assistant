@@ -13,7 +13,9 @@ import pytest
 from app.models.enums import IssueCategory, IssueSeverity, IssueStatus
 from app.models.schemas import AnalyzeResponse, IssueResponse, ReportResponse, ScoreResponse
 from app.services.analysis.orchestrator import (
+    _check_single_step_procedure,
     _collect_acronyms,
+    _expand_container_block,
     _run_languagetool_phase,
 )
 
@@ -311,3 +313,114 @@ class TestRunLanguageToolPhase:
         mock_check.assert_called_once()
         _, kwargs = mock_check.call_args
         assert kwargs["original_text"] == ""
+
+
+# ---------------------------------------------------------------------------
+# _expand_container_block
+# ---------------------------------------------------------------------------
+
+
+def _make_block(
+    block_type: str = "paragraph",
+    content: str = "test",
+    children: list | None = None,
+    start_pos: int = 0,
+    should_skip_analysis: bool = False,
+) -> MagicMock:
+    """Create a minimal mock Block for orchestrator unit tests."""
+    block = MagicMock()
+    block.block_type = block_type
+    block.content = content
+    block.start_pos = start_pos
+    block.should_skip_analysis = should_skip_analysis
+    block.children = children
+    return block
+
+
+class TestExpandContainerBlock:
+    """Tests for _expand_container_block()."""
+
+    def test_returns_children_for_list_with_children(self) -> None:
+        """A list block with children returns the children list."""
+        child1 = _make_block("list_item_ordered", "Step 1")
+        child2 = _make_block("list_item_ordered", "Step 2")
+        parent = _make_block("list", "Step 1Step 2", children=[child1, child2])
+        result = _expand_container_block(parent)
+        assert result == [child1, child2]
+
+    def test_returns_empty_for_childless_list(self) -> None:
+        """A list block without children returns empty list."""
+        parent = _make_block("list", "Some text", children=[])
+        result = _expand_container_block(parent)
+        assert result == []
+
+    def test_returns_empty_for_list_with_none_children(self) -> None:
+        """A list block where children is None returns empty list."""
+        parent = _make_block("list", "Some text", children=None)
+        result = _expand_container_block(parent)
+        assert result == []
+
+    def test_returns_block_for_non_container(self) -> None:
+        """A paragraph block returns [block] wrapper."""
+        block = _make_block("paragraph", "Hello world")
+        result = _expand_container_block(block)
+        assert result == [block]
+
+    def test_returns_children_for_table_with_children(self) -> None:
+        """A table block with children returns the children list."""
+        child = _make_block("table_row", "Cell data")
+        parent = _make_block("table", "Cell data", children=[child])
+        result = _expand_container_block(parent)
+        assert result == [child]
+
+
+# ---------------------------------------------------------------------------
+# _check_single_step_procedure
+# ---------------------------------------------------------------------------
+
+
+class TestCheckSingleStepProcedure:
+    """Tests for _check_single_step_procedure()."""
+
+    def test_flags_single_ordered_item(self) -> None:
+        """Detects a list with exactly one ordered child."""
+        child = _make_block(
+            "list_item_ordered", "Run the install command.",
+            start_pos=10,
+        )
+        parent = _make_block("list", "Run the install command.", children=[child])
+        original = "Some text Run the install command. More text"
+        result = _check_single_step_procedure(parent, original)
+        assert result is not None
+        assert result.rule_name == "procedures"
+        assert result.category == IssueCategory.STRUCTURE
+        assert "bullet" in result.message.lower()
+        assert result.span[0] == 10
+
+    def test_skips_multi_item_list(self) -> None:
+        """Ignores lists with more than one child."""
+        child1 = _make_block("list_item_ordered", "Step 1")
+        child2 = _make_block("list_item_ordered", "Step 2")
+        parent = _make_block("list", "Step 1Step 2", children=[child1, child2])
+        result = _check_single_step_procedure(parent, "Step 1 Step 2")
+        assert result is None
+
+    def test_skips_single_unordered_item(self) -> None:
+        """Ignores lists with a single unordered child."""
+        child = _make_block("list_item_unordered", "A bullet item.")
+        parent = _make_block("list", "A bullet item.", children=[child])
+        result = _check_single_step_procedure(parent, "A bullet item.")
+        assert result is None
+
+    def test_skips_non_list_block(self) -> None:
+        """Ignores paragraph blocks entirely."""
+        block = _make_block("paragraph", "Some paragraph text.")
+        result = _check_single_step_procedure(block, "Some paragraph text.")
+        assert result is None
+
+    def test_skips_empty_content_child(self) -> None:
+        """Returns None when the single ordered child has no content."""
+        child = _make_block("list_item_ordered", "", start_pos=0)
+        parent = _make_block("list", "", children=[child])
+        result = _check_single_step_procedure(parent, "")
+        assert result is None

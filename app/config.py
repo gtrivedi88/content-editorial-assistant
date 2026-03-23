@@ -53,6 +53,9 @@ class Config:
         LANGUAGETOOL_TIMEOUT: Timeout in seconds for LanguageTool API calls.
         LANGUAGETOOL_DISABLED_RULES: Comma-separated LT rule IDs to skip.
         LANGUAGETOOL_DISABLED_CATEGORIES: Comma-separated LT categories to skip.
+        LANGUAGETOOL_LEVEL: LT analysis level ('default' or 'picky').
+        LANGUAGETOOL_FILTER_HINTS: Suppress Hint-type matches in gated categories.
+        LANGUAGETOOL_CONFIDENCE_THRESHOLD: Confidence floor for gated categories.
         PDF_MARGIN_CROP_PERCENT: Percentage of page to crop from margins.
     """
 
@@ -72,6 +75,9 @@ class Config:
     MODEL_SUGGESTION_TEMPERATURE: float = float(os.environ.get("MODEL_SUGGESTION_TEMPERATURE", "0.2"))
     MODEL_SEED: int | None = int(os.environ.get("MODEL_SEED", "42"))
     MODEL_MAX_TOKENS: int = int(os.environ.get("MODEL_MAX_TOKENS", "3072"))
+
+    # Gemini reasoning effort
+    GEMINI_REASONING_EFFORT: str = os.environ.get("GEMINI_REASONING_EFFORT", "low")
     LLM_MAX_CONCURRENT: int = int(os.environ.get("LLM_MAX_CONCURRENT", "5"))
     LLM_GLOBAL_PASS_MAX_WORDS: int = int(os.environ.get("LLM_GLOBAL_PASS_MAX_WORDS", "5000"))
     LLM_EXCERPT_BUDGET_MAX: int = int(os.environ.get("LLM_EXCERPT_BUDGET_MAX", "8000"))
@@ -126,6 +132,13 @@ class Config:
     LANGUAGETOOL_DISABLED_CATEGORIES: str = os.environ.get(
         "LANGUAGETOOL_DISABLED_CATEGORIES", "TYPOGRAPHY",
     )
+    LANGUAGETOOL_LEVEL: str = os.environ.get("LANGUAGETOOL_LEVEL", "default")
+    LANGUAGETOOL_FILTER_HINTS: bool = os.environ.get(
+        "LANGUAGETOOL_FILTER_HINTS", "True",
+    ).lower() in ("true", "1", "yes")
+    LANGUAGETOOL_CONFIDENCE_THRESHOLD: float = float(
+        os.environ.get("LANGUAGETOOL_CONFIDENCE_THRESHOLD", "0.85"),
+    )
 
     # --- PDF ---
     PDF_MARGIN_CROP_PERCENT: int = int(os.environ.get("PDF_MARGIN_CROP_PERCENT", "8"))
@@ -142,6 +155,7 @@ class Config:
         logger.info("  MODEL_SUGGESTION_TEMPERATURE=%.2f", cls.MODEL_SUGGESTION_TEMPERATURE)
         logger.info("  MODEL_SEED=%s", cls.MODEL_SEED)
         logger.info("  MODEL_MAX_TOKENS=%d", cls.MODEL_MAX_TOKENS)
+        logger.info("  GEMINI_REASONING_EFFORT=%s", cls.GEMINI_REASONING_EFFORT or "(unset)")
         logger.info("  LLM_MAX_CONCURRENT=%d", cls.LLM_MAX_CONCURRENT)
         logger.info("  CONFIDENCE_THRESHOLD=%.2f", cls.CONFIDENCE_THRESHOLD)
         logger.info("  LLM_CONFIDENCE_THRESHOLD=%.2f", cls.LLM_CONFIDENCE_THRESHOLD)
@@ -155,6 +169,12 @@ class Config:
         if cls.LANGUAGETOOL_ENABLED:
             logger.info("  LANGUAGETOOL_URL=%s", cls.LANGUAGETOOL_URL)
             logger.info("  LANGUAGETOOL_TIMEOUT=%d", cls.LANGUAGETOOL_TIMEOUT)
+            logger.info("  LANGUAGETOOL_LEVEL=%s", cls.LANGUAGETOOL_LEVEL)
+            logger.info("  LANGUAGETOOL_FILTER_HINTS=%s", cls.LANGUAGETOOL_FILTER_HINTS)
+            logger.info(
+                "  LANGUAGETOOL_CONFIDENCE_THRESHOLD=%.2f",
+                cls.LANGUAGETOOL_CONFIDENCE_THRESHOLD,
+            )
 
         if cls.CORS_ORIGINS == "*":
             logger.warning(

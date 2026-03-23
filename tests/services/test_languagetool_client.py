@@ -17,6 +17,7 @@ from app.services.analysis.languagetool_client import (
     _build_batches,
     _call_languagetool,
     _find_entry_for_offset,
+    _HINT_GATED_CATEGORIES,
     _is_technical_content,
     _load_spelling_allowlist,
     _LT_CATEGORY_MAP,
@@ -873,3 +874,169 @@ class TestProseBlockTypes:
         assert "code_block" not in _PROSE_BLOCK_TYPES
         assert "table" not in _PROSE_BLOCK_TYPES
         assert "admonition" not in _PROSE_BLOCK_TYPES
+
+
+# ---------------------------------------------------------------------------
+# Picky-mode level parameter
+# ---------------------------------------------------------------------------
+
+
+class TestPickyLevelParameter:
+    """Tests for the ``level`` parameter in _call_languagetool."""
+
+    @patch("app.services.analysis.languagetool_client.requests.post")
+    @patch("app.services.analysis.languagetool_client.Config")
+    def test_picky_level_sent_in_payload(
+        self, mock_config: MagicMock, mock_post: MagicMock,
+    ) -> None:
+        """Picky level value is included in the HTTP payload."""
+        mock_config.LANGUAGETOOL_URL = "http://localhost:8010"
+        mock_config.LANGUAGETOOL_TIMEOUT = 5
+        mock_config.LANGUAGETOOL_LEVEL = "picky"
+        mock_post.return_value = MagicMock(
+            status_code=200,
+            json=lambda: {"matches": []},
+        )
+        mock_post.return_value.raise_for_status = MagicMock()
+
+        _call_languagetool("Test text.")
+
+        called_data = mock_post.call_args[1].get("data") or mock_post.call_args[0][1] if len(mock_post.call_args[0]) > 1 else mock_post.call_args[1].get("data", {})
+        assert called_data["level"] == "picky"
+
+    @patch("app.services.analysis.languagetool_client.requests.post")
+    @patch("app.services.analysis.languagetool_client.Config")
+    def test_default_level_sent_in_payload(
+        self, mock_config: MagicMock, mock_post: MagicMock,
+    ) -> None:
+        """Default level value is included in the HTTP payload."""
+        mock_config.LANGUAGETOOL_URL = "http://localhost:8010"
+        mock_config.LANGUAGETOOL_TIMEOUT = 5
+        mock_config.LANGUAGETOOL_LEVEL = "default"
+        mock_post.return_value = MagicMock(
+            status_code=200,
+            json=lambda: {"matches": []},
+        )
+        mock_post.return_value.raise_for_status = MagicMock()
+
+        _call_languagetool("Test text.")
+
+        called_data = mock_post.call_args[1].get("data") or mock_post.call_args[0][1] if len(mock_post.call_args[0]) > 1 else mock_post.call_args[1].get("data", {})
+        assert called_data["level"] == "default"
+
+
+# ---------------------------------------------------------------------------
+# Confidence and Hint-type filtering
+# ---------------------------------------------------------------------------
+
+
+class TestConfidenceFiltering:
+    """Tests for confidence and Hint-type FP guard in _should_skip_match."""
+
+    def test_hint_confused_words_skipped(self) -> None:
+        """CONFUSED_WORDS + typeName='Hint' is skipped."""
+        assert _should_skip_match(
+            "CONFUSION_RULE", "then", 0, [],
+            lt_category="CONFUSED_WORDS", confidence=0.95,
+            match_type="Hint",
+        ) is True
+
+    def test_other_confused_words_passes(self) -> None:
+        """CONFUSED_WORDS + typeName='Other' passes through."""
+        assert _should_skip_match(
+            "CONFUSION_RULE", "then", 0, [],
+            lt_category="CONFUSED_WORDS", confidence=0.95,
+            match_type="Other",
+        ) is False
+
+    def test_hint_style_skipped(self) -> None:
+        """STYLE + typeName='Hint' is skipped."""
+        assert _should_skip_match(
+            "STYLE_RULE", "very", 0, [],
+            lt_category="STYLE", confidence=0.95,
+            match_type="Hint",
+        ) is True
+
+    def test_hint_grammar_not_gated(self) -> None:
+        """GRAMMAR + typeName='Hint' passes (GRAMMAR not in gated set)."""
+        assert _should_skip_match(
+            "GRAMMAR_RULE", "the the", 0, [],
+            lt_category="GRAMMAR", confidence=0.95,
+            match_type="Hint",
+        ) is False
+
+    def test_empty_match_type_passes(self) -> None:
+        """Missing typeName (empty string) passes through."""
+        assert _should_skip_match(
+            "CONFUSION_RULE", "then", 0, [],
+            lt_category="CONFUSED_WORDS", confidence=0.95,
+            match_type="",
+        ) is False
+
+    @patch("app.services.analysis.languagetool_client.Config")
+    def test_filter_hints_disabled(self, mock_config: MagicMock) -> None:
+        """Hint matches pass when LANGUAGETOOL_FILTER_HINTS is False."""
+        mock_config.LANGUAGETOOL_FILTER_HINTS = False
+        mock_config.LANGUAGETOOL_CONFIDENCE_THRESHOLD = 0.85
+        result = _should_skip_match(
+            "CONFUSION_RULE", "then", 0, [],
+            lt_category="CONFUSED_WORDS", confidence=0.95,
+            match_type="Hint",
+        )
+        assert result is False
+
+    def test_confidence_fallback_low(self) -> None:
+        """Low confidence in gated category is skipped."""
+        assert _should_skip_match(
+            "CONFUSION_RULE", "then", 0, [],
+            lt_category="CONFUSED_WORDS", confidence=0.50,
+            match_type="Other",
+        ) is True
+
+    def test_confidence_fallback_boundary(self) -> None:
+        """Confidence exactly at threshold passes (strict <)."""
+        assert _should_skip_match(
+            "CONFUSION_RULE", "then", 0, [],
+            lt_category="CONFUSED_WORDS", confidence=0.85,
+            match_type="Other",
+        ) is False
+
+
+# ---------------------------------------------------------------------------
+# Picky-mode skip rules
+# ---------------------------------------------------------------------------
+
+
+class TestPickyModeSkipRules:
+    """Tests for picky-mode rule IDs in _LT_SKIP_RULES."""
+
+    _PICKY_RULES = [
+        "ARTICLE_MISSING",
+        "COMMA_COMPOUND_SENTENCE",
+        "COMMA_COMPOUND_SENTENCE_2",
+        "WHO_WHOM",
+        "CONSECUTIVE_SPACES",
+        "UNLIKELY_OPENING_PUNCTUATION",
+        "SENTENCE_WHITESPACE",
+        "EN_COMPOUNDS",
+        "WORD_CONTAINS_UNDERSCORE",
+    ]
+
+    @pytest.mark.parametrize("rule_id", _PICKY_RULES)
+    def test_picky_fp_rules_in_skip_set(self, rule_id: str) -> None:
+        """Each picky FP rule is present in _LT_SKIP_RULES."""
+        assert rule_id in _LT_SKIP_RULES
+
+    def test_en_compounds_skipped(self) -> None:
+        """EN_COMPOUNDS match is skipped by _should_skip_match."""
+        assert _should_skip_match("EN_COMPOUNDS", "setup", 0, []) is True
+
+    def test_word_contains_underscore_skipped(self) -> None:
+        """WORD_CONTAINS_UNDERSCORE match is skipped."""
+        assert _should_skip_match(
+            "WORD_CONTAINS_UNDERSCORE", "my_var", 0, [],
+        ) is True
+
+    def test_total_skip_rules_count(self) -> None:
+        """Total skip rules = 27 (18 existing + 9 picky)."""
+        assert len(_LT_SKIP_RULES) == 27

@@ -66,3 +66,4 @@ plain.txt
 poetry.lock
 
 languagetool/
+/deployment/LANGUAGETOOL.md

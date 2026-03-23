@@ -24,6 +24,13 @@ _HEADING_BLOCKS = frozenset([
 # Check 1: heading text ending with a period
 _ENDS_WITH_PERIOD = re.compile(r'\.\s*$')
 
+# Section numbering at start of heading (e.g. "5.2.", "1.3.1.", "Chapter 5.",
+# "Appendix A.")
+_SECTION_NUMBER_RE = re.compile(
+    r'^(?:(?:Chapter|Appendix|Part|Section)\s+\w+\.(?:\s|$)|(?:\d+\.)+(?:\s|$))',
+    re.IGNORECASE,
+)
+
 # Check 2: heading text ending with a colon
 _ENDS_WITH_COLON = re.compile(r':\s*$')
 
@@ -72,6 +79,9 @@ class HeadingsRule(BaseStructureRule):
         if _ENDS_WITH_PERIOD.search(sentence):
             # Guard: skip URLs or file extensions at end
             if re.search(r'\.\w{2,4}\s*$', sentence):
+                return
+            # Guard: section numbering like "5.2. Configuring..."
+            if _SECTION_NUMBER_RE.match(sentence):
                 return
             error = self._create_error(
                 sentence=sentence, sentence_index=idx,

@@ -23,7 +23,7 @@ from difflib import SequenceMatcher
 from typing import Any, Optional
 
 from app.config import Config
-from app.models.enums import IssueStatus
+from app.models.enums import IssueCategory, IssueSeverity, IssueStatus
 from app.models.schemas import (
     AnalyzeResponse,
     IssueResponse,
@@ -636,10 +636,21 @@ def _analyze_blocks_deterministic(
     for block in blocks:
         if block.should_skip_analysis or not (block.content and block.content.strip()):
             continue
-        issues = _analyze_single_block_deterministic(
-            block, content_type, nlp, original_text, acronym_context,
-        )
-        all_issues.extend(issues)
+
+        # Single-step numbered procedure detection: if an ordered list
+        # has exactly 1 item, flag it — should use bullet, not number.
+        single_step = _check_single_step_procedure(block, original_text)
+        if single_step:
+            all_issues.append(single_step)
+
+        analysis_targets = _expand_container_block(block)
+        for target in analysis_targets:
+            if target.should_skip_analysis or not (target.content and target.content.strip()):
+                continue
+            issues = _analyze_single_block_deterministic(
+                target, content_type, nlp, original_text, acronym_context,
+            )
+            all_issues.extend(issues)
 
     # Cross-block dedup: remove issues with the same rule_name and
     # flagged_text that appear across different blocks (e.g. AsciiDoc
@@ -667,6 +678,89 @@ def _analyze_blocks_deterministic(
         )
 
     return deduped
+
+
+_CONTAINER_BLOCK_TYPES = frozenset({"list", "table"})
+
+
+def _expand_container_block(block: Any) -> list:
+    """Expand container blocks into their children for per-block analysis.
+
+    Parent ``<ul>/<ol>`` blocks use ``text_content()`` which concatenates
+    all ``<li>`` text without separators (e.g. "screen.Click").  Analysis
+    must happen on children (``list_item_ordered`` / ``list_item_unordered``)
+    where each item has its own block type and isolated content.
+
+    Args:
+        block: A parsed Block object.
+
+    Returns:
+        Children list for containers with children, empty list for
+        containers without children (prevents analysing concatenated
+        parent text), or ``[block]`` for non-container blocks.
+    """
+    if block.block_type in _CONTAINER_BLOCK_TYPES:
+        children = getattr(block, "children", None)
+        if children:
+            return children
+        return []
+    return [block]
+
+
+def _check_single_step_procedure(
+    block: Any, original_text: str,
+) -> IssueResponse | None:
+    """Flag ordered lists with exactly one item.
+
+    Per modular docs convention, a single-step procedure should use
+    a bullet (unordered), not a numbered list.  This check runs on
+    the parent ``list`` block before children expansion.
+
+    Args:
+        block: A parsed Block object (potentially a list container).
+        original_text: Full document text for span mapping.
+
+    Returns:
+        An IssueResponse if the list has exactly one ordered child,
+        else None.
+    """
+    if block.block_type != "list":
+        return None
+    children = getattr(block, "children", None)
+    if not children or len(children) != 1:
+        return None
+    child = children[0]
+    if getattr(child, "block_type", "") != "list_item_ordered":
+        return None
+
+    content = child.content or ""
+    if not content.strip():
+        return None
+
+    flagged = content[:60].strip()
+    start_pos = getattr(child, "start_pos", 0)
+    span_end = start_pos + len(flagged)
+
+    return IssueResponse(
+        id=str(uuid.uuid4()),
+        source="deterministic",
+        category=IssueCategory.STRUCTURE,
+        rule_name="procedures",
+        flagged_text=flagged,
+        message=(
+            "Single-step procedures should use a bullet, not a numbered "
+            "list. Per modular docs convention."
+        ),
+        suggestions=[
+            "Rewrite this single-step procedure as an unnumbered bullet.",
+        ],
+        severity=IssueSeverity.LOW,
+        sentence=content[:80].strip(),
+        sentence_index=0,
+        span=[start_pos, span_end],
+        confidence=1.0,
+        status=IssueStatus.OPEN,
+    )
 
 
 def _run_structural_analysis(
