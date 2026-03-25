@@ -27,6 +27,7 @@ from tenacity import (
 from app.config import Config
 from app.llm.parser import (
     parse_analysis_response,
+    parse_analysis_response_ex,
     parse_judge_response,
     parse_suggestion_response,
 )
@@ -72,7 +73,7 @@ _ANALYSIS_RESPONSE_FORMAT: dict = {
         "schema": {
             "type": "object",
             "properties": {
-                "reasoning": {"type": "string"},
+                "reasoning": {"type": "string", "maxLength": 1000},
                 "issues": {"type": "array", "items": _ISSUE_SCHEMA},
             },
             "required": ["reasoning", "issues"],
@@ -83,6 +84,26 @@ _ANALYSIS_RESPONSE_FORMAT: dict = {
 
 # Fallback for providers that don't support json_schema (e.g. older Ollama)
 _ANALYSIS_RESPONSE_FORMAT_BASIC: dict = {"type": "json_object"}
+
+# Provider-agnostic set of finish_reason values that indicate output
+# was truncated.  Values are upper-cased for matching (OpenAI returns
+# "length", Gemini returns "MAX_TOKENS").
+_TRUNCATION_FINISH_REASONS: frozenset[str] = frozenset({"LENGTH", "MAX_TOKENS"})
+
+# Per-content-type multipliers for token budget prediction.
+_CONTENT_TYPE_MULTIPLIERS: dict[str, float] = {
+    "procedure": 1.2,
+    "assembly": 1.15,
+    "release_notes": 1.1,
+    "reference": 0.9,
+}
+
+# Reasoning effort → thinking token baseline map.
+_EFFORT_BASE_THINK: dict[str, int] = {
+    "none": 200,
+    "low": 1000,
+    "medium": 8000,
+}
 
 # Lazy-initialized singleton to avoid import-time side effects
 _model_manager_instance = None
@@ -147,6 +168,7 @@ class LLMClient:
         content_type: str = "concept",
         acronym_context: dict[str, str] | None = None,
         document_outline: str | None = None,
+        det_issue_count: int = 0,
     ) -> list[dict]:
         """Run granular per-block analysis via the LLM.
 
@@ -157,6 +179,8 @@ class LLMClient:
             content_type: Modular documentation type (concept, procedure, etc.).
             acronym_context: Known acronym definitions from the document.
             document_outline: Compact heading outline of the full document.
+            det_issue_count: Phase 1 deterministic issue count (messiness signal
+                for dynamic token budget prediction).
 
         Returns:
             List of issue dicts with ``source="llm"``, or empty list
@@ -171,7 +195,16 @@ class LLMClient:
             acronym_context=acronym_context,
             document_outline=document_outline,
         )
-        return self._safe_analysis_call(user_prompt, system_prompt=system_prompt)
+        max_tokens = self._dynamic_max_tokens(
+            "granular",
+            input_text_len=len(text),
+            sentence_count=len(sentences),
+            det_issue_count=det_issue_count,
+            content_type=content_type,
+        )
+        return self._safe_analysis_call(
+            user_prompt, system_prompt=system_prompt, max_tokens=max_tokens,
+        )
 
     def analyze_global(
         self,
@@ -180,11 +213,12 @@ class LLMClient:
         style_guide_excerpts: list[dict],
         document_outline: str | None = None,
         abstract_context: str | None = None,
+        det_issue_count: int = 0,
     ) -> list[dict]:
         """Run global document-level analysis via the LLM.
 
-        Checks tone consistency, flow, minimalism, wordiness,
-        structure, and accessibility across the entire document.
+        Checks tone consistency, audience level, accessibility, and
+        short description quality across the entire document.
 
         Args:
             full_text: Full document text.
@@ -193,6 +227,8 @@ class LLMClient:
             document_outline: Compact heading outline for structural review.
             abstract_context: Module abstract (first paragraph after heading)
                 for targeted short-description quality evaluation.
+            det_issue_count: Phase 1 deterministic issue count (messiness signal
+                for dynamic token budget prediction).
 
         Returns:
             List of issue dicts with ``source="llm"``, or empty list
@@ -206,7 +242,15 @@ class LLMClient:
             document_outline=document_outline,
             abstract_context=abstract_context,
         )
-        return self._safe_analysis_call(user_prompt, system_prompt=system_prompt)
+        max_tokens = self._dynamic_max_tokens(
+            "global",
+            input_text_len=len(full_text),
+            content_type=content_type,
+            det_issue_count=det_issue_count,
+        )
+        return self._safe_analysis_call(
+            user_prompt, system_prompt=system_prompt, max_tokens=max_tokens,
+        )
 
     def suggest(
         self,
@@ -287,8 +331,69 @@ class LLMClient:
     # Internal helpers
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def _dynamic_max_tokens(
+        phase: str,
+        input_text_len: int = 0,
+        num_issues: int = 0,
+        content_type: str = "concept",
+        sentence_count: int = 0,
+        det_issue_count: int = 0,
+    ) -> int:
+        """Predict the required ``max_tokens`` budget for a given phase.
+
+        Uses structural features of the input to estimate output size
+        plus a reasoning-effort-scaled thinking baseline.
+
+        Args:
+            phase: One of ``granular``, ``global``, ``judge``, ``suggest``.
+            input_text_len: Character length of the input text.
+            num_issues: Number of issues (for judge phase).
+            content_type: Document content type for multiplier lookup.
+            sentence_count: Number of sentences in the block/document.
+            det_issue_count: Phase 1 deterministic issue count (messiness signal).
+
+        Returns:
+            Token budget clamped to ``[1024, Config.MODEL_MAX_TOKENS]``.
+        """
+        effort = getattr(Config, 'GEMINI_REASONING_EFFORT', 'low') or 'low'
+        effort = effort.strip().lower()
+
+        # High effort → return cap immediately (model decides its own budget)
+        if effort == "high":
+            return Config.MODEL_MAX_TOKENS
+
+        base_think = _EFFORT_BASE_THINK.get(effort, 1000)
+
+        if phase == "granular":
+            predicted_issues = max(3, sentence_count // 2, det_issue_count // 3)
+            output_tokens = 200 + predicted_issues * 85
+            think_tokens = base_think + sentence_count * 15
+            budget = output_tokens + think_tokens
+        elif phase == "global":
+            output_tokens = 300 + input_text_len // 40
+            think_tokens = int(base_think * 1.5)
+            budget = output_tokens + think_tokens
+        elif phase == "judge":
+            output_tokens = 100 + num_issues * 15
+            think_tokens = int(base_think * 0.8)
+            budget = output_tokens + think_tokens
+        elif phase == "suggest":
+            budget = base_think + 500
+        else:
+            budget = base_think + 1000
+
+        # Content-type scaling
+        multiplier = _CONTENT_TYPE_MULTIPLIERS.get(content_type, 1.0)
+        budget = int(budget * multiplier)
+
+        return max(1024, min(budget, Config.MODEL_MAX_TOKENS))
+
     def _safe_analysis_call(
-        self, prompt: str, system_prompt: str = "",
+        self,
+        prompt: str,
+        system_prompt: str = "",
+        max_tokens: int | None = None,
     ) -> list[dict]:
         """Call the LLM and parse an analysis response safely.
 
@@ -297,9 +402,13 @@ class LLMClient:
         400), falls back to the basic ``json_object`` format and
         remembers the working format for subsequent calls.
 
+        On truncation (detected via parser salvage or provider
+        ``finish_reason``), retries once with a 1.5x token budget.
+
         Args:
             prompt: The user prompt string.
             system_prompt: Invariant system instructions.
+            max_tokens: Optional explicit token budget override.
 
         Returns:
             Parsed issue list, or empty list on any failure.
@@ -310,21 +419,45 @@ class LLMClient:
 
         for fmt in formats:
             try:
-                raw_text = self._generate(
-                    prompt,
-                    system_prompt=system_prompt,
-                    response_format=fmt,
-                )
+                result_meta: dict = {}
+                gen_kwargs: dict = {
+                    "system_prompt": system_prompt,
+                    "response_format": fmt,
+                    "_result_meta": result_meta,
+                }
+                if max_tokens is not None:
+                    gen_kwargs["max_tokens"] = max_tokens
+
+                raw_text = self._generate(prompt, **gen_kwargs)
                 if not raw_text:
                     continue
-                result = parse_analysis_response(raw_text)
+
+                # Reasoning instrumentation: log reasoning vs issues split
+                self._log_reasoning_split(raw_text)
+
+                issues, truncated = parse_analysis_response_ex(raw_text)
+
+                # Check provider-level truncation signal
+                fr = str(result_meta.get("finish_reason", "")).upper()
+                if fr in _TRUNCATION_FINISH_REASONS:
+                    truncated = True
+
                 if fmt is not self._current_analysis_format:
                     logger.info(
                         "Switching analysis response format to basic "
                         "json_object (provider rejected json_schema)",
                     )
                     self._current_analysis_format = fmt
-                return result
+
+                # On truncation, retry once with a larger budget
+                if truncated:
+                    retried = self._retry_truncated_analysis(
+                        prompt, system_prompt, fmt, max_tokens,
+                    )
+                    if len(retried) > len(issues):
+                        return retried
+
+                return issues
             except (ConnectionError, TimeoutError, RuntimeError) as exc:
                 logger.warning("LLM analysis call failed: %s", exc)
                 continue
@@ -334,6 +467,68 @@ class LLMClient:
                 )
                 break
         return []
+
+    @staticmethod
+    def _log_reasoning_split(raw_text: str) -> None:
+        """Log the character-count split between reasoning and issues.
+
+        Helps quantify whether reasoning is consuming a disproportionate
+        share of the output budget (Issue #16).
+        """
+        import json as _json
+        try:
+            stripped = raw_text.strip()
+            if stripped.startswith("```"):
+                stripped = stripped.lstrip("`json\n").rstrip("`\n").strip()
+            data = _json.loads(stripped)
+            if isinstance(data, dict):
+                r_len = len(data.get("reasoning", ""))
+                i_text = _json.dumps(data.get("issues", []))
+                logger.info(
+                    "LLM output split: reasoning=%d chars, issues=%d chars, total=%d",
+                    r_len, len(i_text), len(raw_text),
+                )
+        except (ValueError, TypeError):
+            pass
+
+    def _retry_truncated_analysis(
+        self,
+        prompt: str,
+        system_prompt: str,
+        fmt: dict,
+        original_max_tokens: int | None,
+    ) -> list[dict]:
+        """Retry a truncated analysis call with 1.5x token budget.
+
+        Args:
+            prompt: The original user prompt.
+            system_prompt: The original system prompt.
+            fmt: The response format dict to use.
+            original_max_tokens: Token budget from the original call.
+
+        Returns:
+            Parsed issue list from the retry, or empty list on failure.
+        """
+        base = original_max_tokens or Config.MODEL_MAX_TOKENS
+        retry_budget = min(int(base * 1.5), Config.MODEL_MAX_TOKENS)
+        logger.info(
+            "Retrying truncated analysis with budget %d (was %d)",
+            retry_budget, base,
+        )
+        try:
+            raw_text = self._generate(
+                prompt,
+                system_prompt=system_prompt,
+                response_format=fmt,
+                max_tokens=retry_budget,
+                _timeout_override=75,
+            )
+            if not raw_text:
+                return []
+            return parse_analysis_response(raw_text)
+        except (ConnectionError, TimeoutError, RuntimeError) as exc:
+            logger.warning("Truncation retry failed: %s", exc)
+            return []
 
     def _safe_suggestion_call(
         self,
@@ -435,6 +630,7 @@ def analyze_block(
     acronym_context: dict[str, str] | None = None,
     style_guide_excerpts: list[dict] | None = None,
     document_outline: str | None = None,
+    det_issue_count: int = 0,
 ) -> list[dict]:
     """Module-level wrapper for per-block LLM analysis.
 
@@ -447,6 +643,7 @@ def analyze_block(
         acronym_context: Known acronym definitions from the document.
         style_guide_excerpts: Relevant style guide excerpt dicts.
         document_outline: Compact heading outline of the full document.
+        det_issue_count: Phase 1 deterministic issue count.
 
     Returns:
         List of issue dicts from the LLM, or empty list.
@@ -456,6 +653,7 @@ def analyze_block(
         content_type=content_type,
         acronym_context=acronym_context,
         document_outline=document_outline,
+        det_issue_count=det_issue_count,
     )
 
 
@@ -465,6 +663,7 @@ def analyze_global(
     style_guide_excerpts: list[dict] | None = None,
     document_outline: str | None = None,
     abstract_context: str | None = None,
+    det_issue_count: int = 0,
 ) -> list[dict]:
     """Module-level wrapper for full-document LLM analysis.
 
@@ -476,6 +675,7 @@ def analyze_global(
         style_guide_excerpts: Relevant style guide excerpt dicts.
         document_outline: Compact heading outline for structural review.
         abstract_context: Module abstract for short-description quality check.
+        det_issue_count: Phase 1 deterministic issue count.
 
     Returns:
         List of issue dicts from the LLM, or empty list.
@@ -484,6 +684,7 @@ def analyze_global(
         text, content_type, style_guide_excerpts or [],
         document_outline=document_outline,
         abstract_context=abstract_context,
+        det_issue_count=det_issue_count,
     )
 
 

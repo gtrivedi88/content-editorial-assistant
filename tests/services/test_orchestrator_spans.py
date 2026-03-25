@@ -746,3 +746,43 @@ class TestMapBlockIssuesHtmlMismatch:
         assert issues[0].span != [-1, -1]
         matched = original_text[issues[0].span[0]:issues[0].span[1]]
         assert matched == "Save"
+
+
+# ---------------------------------------------------------------------------
+# _collect_block_results — cancellation check
+# ---------------------------------------------------------------------------
+
+
+class TestCollectBlockResultsCancellation:
+    """Verify _collect_block_results respects session cancellation."""
+
+    def test_stops_collecting_on_cancellation(self) -> None:
+        """When session is cancelled, stops collecting remaining blocks."""
+        from concurrent.futures import Future
+        from unittest.mock import patch
+
+        from app.services.analysis.orchestrator import _collect_block_results
+
+        f1: Future = Future()
+        f2: Future = Future()
+        f1.set_result([{"flagged_text": "a", "message": "m"}])
+        f2.set_result([{"flagged_text": "b", "message": "m"}])
+
+        futures = {f1: 0, f2: 1}
+
+        call_count = 0
+
+        def mock_cancelled(sid: str) -> bool:
+            nonlocal call_count
+            call_count += 1
+            return call_count > 1
+
+        with patch(
+            "app.services.analysis.orchestrator._is_cancelled",
+            side_effect=mock_cancelled,
+        ):
+            results = _collect_block_results(
+                futures, session_id="test-session",
+            )
+
+        assert len(results) <= 1

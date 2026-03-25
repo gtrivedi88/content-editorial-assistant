@@ -107,6 +107,8 @@ class TestAnalyzeBlock:
         mock_config.MODEL_ANALYSIS_TEMPERATURE = 0.1
         mock_config.MODEL_SEED = None
         mock_config.LLM_CONFIDENCE_THRESHOLD = 0.8
+        mock_config.MODEL_MAX_TOKENS = 16384
+        mock_config.GEMINI_REASONING_EFFORT = "low"
 
         issues_json = json.dumps([{
             "flagged_text": "was restarted",
@@ -155,6 +157,8 @@ class TestAnalyzeBlock:
         mock_config.MODEL_ANALYSIS_TEMPERATURE = 0.1
         mock_config.MODEL_SEED = 42
         mock_config.LLM_CONFIDENCE_THRESHOLD = 0.8
+        mock_config.MODEL_MAX_TOKENS = 16384
+        mock_config.GEMINI_REASONING_EFFORT = "low"
 
         mock_get_mm.return_value = _make_mock_model_manager(
             available=True, generate_return="[]",
@@ -186,6 +190,8 @@ class TestAnalyzeGlobal:
         mock_config.MODEL_ANALYSIS_TEMPERATURE = 0.1
         mock_config.MODEL_SEED = None
         mock_config.LLM_CONFIDENCE_THRESHOLD = 0.8
+        mock_config.MODEL_MAX_TOKENS = 16384
+        mock_config.GEMINI_REASONING_EFFORT = "low"
 
         issues_json = json.dumps([{
             "flagged_text": "",
@@ -265,6 +271,8 @@ class TestRetryLogic:
         mock_config.MODEL_ANALYSIS_TEMPERATURE = 0.1
         mock_config.MODEL_SEED = None
         mock_config.LLM_CONFIDENCE_THRESHOLD = 0.8
+        mock_config.MODEL_MAX_TOKENS = 16384
+        mock_config.GEMINI_REASONING_EFFORT = "low"
 
         issues_json = json.dumps([{
             "flagged_text": "test",
@@ -382,6 +390,8 @@ class TestSafeAnalysisCallFallback:
         mock_config.LLM_MAX_CONCURRENT = 5
         mock_config.MODEL_ANALYSIS_TEMPERATURE = 0.1
         mock_config.MODEL_SEED = None
+        mock_config.MODEL_MAX_TOKENS = 16384
+        mock_config.GEMINI_REASONING_EFFORT = "low"
 
         issues_json = json.dumps([{
             "flagged_text": "test",
@@ -410,6 +420,8 @@ class TestSafeAnalysisCallFallback:
         mock_config.LLM_MAX_CONCURRENT = 5
         mock_config.MODEL_ANALYSIS_TEMPERATURE = 0.1
         mock_config.MODEL_SEED = None
+        mock_config.MODEL_MAX_TOKENS = 16384
+        mock_config.GEMINI_REASONING_EFFORT = "low"
 
         issues_json = json.dumps([{
             "flagged_text": "test",
@@ -443,6 +455,8 @@ class TestSafeAnalysisCallFallback:
         mock_config.LLM_MAX_CONCURRENT = 5
         mock_config.MODEL_ANALYSIS_TEMPERATURE = 0.1
         mock_config.MODEL_SEED = None
+        mock_config.MODEL_MAX_TOKENS = 16384
+        mock_config.GEMINI_REASONING_EFFORT = "low"
 
         issues_json = json.dumps([{
             "flagged_text": "test",
@@ -464,3 +478,243 @@ class TestSafeAnalysisCallFallback:
         mm.generate_text.return_value = issues_json
         client.analyze_block("text2", ["text2"], [])
         assert mm.generate_text.call_count == 1
+
+
+# ---------------------------------------------------------------------------
+# _dynamic_max_tokens
+# ---------------------------------------------------------------------------
+
+
+class TestDynamicMaxTokens:
+    """Tests for per-phase token budget prediction."""
+
+    @patch("app.llm.client.Config")
+    def test_granular_procedure_higher_than_concept(
+        self, mock_config: MagicMock,
+    ) -> None:
+        """Procedure content type produces a higher budget than concept."""
+        mock_config.MODEL_MAX_TOKENS = 16384
+        mock_config.GEMINI_REASONING_EFFORT = "low"
+        proc = LLMClient._dynamic_max_tokens(
+            "granular", sentence_count=20, content_type="procedure",
+        )
+        concept = LLMClient._dynamic_max_tokens(
+            "granular", sentence_count=20, content_type="concept",
+        )
+        assert proc > concept
+
+    @patch("app.llm.client.Config")
+    def test_det_issue_count_scales_budget(
+        self, mock_config: MagicMock,
+    ) -> None:
+        """Higher deterministic issue count produces larger budget."""
+        mock_config.MODEL_MAX_TOKENS = 16384
+        mock_config.GEMINI_REASONING_EFFORT = "low"
+        low = LLMClient._dynamic_max_tokens(
+            "granular", sentence_count=10, det_issue_count=3,
+        )
+        high = LLMClient._dynamic_max_tokens(
+            "granular", sentence_count=10, det_issue_count=30,
+        )
+        assert high > low
+
+    @patch("app.llm.client.Config")
+    def test_floor_at_1024(
+        self, mock_config: MagicMock,
+    ) -> None:
+        """Budget never drops below 1024."""
+        mock_config.MODEL_MAX_TOKENS = 16384
+        mock_config.GEMINI_REASONING_EFFORT = "none"
+        result = LLMClient._dynamic_max_tokens("suggest")
+        assert result >= 1024
+
+    @patch("app.llm.client.Config")
+    def test_cap_at_model_max(
+        self, mock_config: MagicMock,
+    ) -> None:
+        """Budget never exceeds MODEL_MAX_TOKENS."""
+        mock_config.MODEL_MAX_TOKENS = 2048
+        mock_config.GEMINI_REASONING_EFFORT = "medium"
+        result = LLMClient._dynamic_max_tokens(
+            "granular", sentence_count=500, det_issue_count=200,
+        )
+        assert result <= 2048
+
+    @patch("app.llm.client.Config")
+    def test_high_effort_returns_cap(
+        self, mock_config: MagicMock,
+    ) -> None:
+        """High reasoning effort returns MODEL_MAX_TOKENS directly."""
+        mock_config.MODEL_MAX_TOKENS = 16384
+        mock_config.GEMINI_REASONING_EFFORT = "high"
+        result = LLMClient._dynamic_max_tokens("granular")
+        assert result == 16384
+
+    @patch("app.llm.client.Config")
+    def test_judge_scales_with_issues(
+        self, mock_config: MagicMock,
+    ) -> None:
+        """Judge budget scales with number of issues."""
+        mock_config.MODEL_MAX_TOKENS = 16384
+        mock_config.GEMINI_REASONING_EFFORT = "low"
+        small = LLMClient._dynamic_max_tokens("judge", num_issues=5)
+        large = LLMClient._dynamic_max_tokens("judge", num_issues=50)
+        assert large > small
+
+    @patch("app.llm.client.Config")
+    def test_suggest_fixed_budget(
+        self, mock_config: MagicMock,
+    ) -> None:
+        """Suggest phase uses a fixed base_think + 500 budget."""
+        mock_config.MODEL_MAX_TOKENS = 16384
+        mock_config.GEMINI_REASONING_EFFORT = "low"
+        result = LLMClient._dynamic_max_tokens("suggest")
+        assert result == 1500  # 1000 (base_think for low) + 500
+
+
+# ---------------------------------------------------------------------------
+# Truncation retry
+# ---------------------------------------------------------------------------
+
+
+class TestTruncationRetry:
+    """Tests for truncation detection and retry in _safe_analysis_call."""
+
+    @patch("app.llm.client._get_model_manager")
+    @patch("app.llm.client.Config")
+    def test_parser_truncation_triggers_retry(
+        self, mock_config: MagicMock, mock_get_mm: MagicMock,
+    ) -> None:
+        """When parser detects truncation, retry with 1.5x budget."""
+        mock_config.LLM_ENABLED = True
+        mock_config.LLM_MAX_CONCURRENT = 5
+        mock_config.MODEL_ANALYSIS_TEMPERATURE = 0.0
+        mock_config.MODEL_SEED = None
+        mock_config.MODEL_MAX_TOKENS = 4096
+
+        issue = {
+            "flagged_text": "foo",
+            "message": "bar",
+            "severity": "medium",
+            "category": "style",
+            "confidence": 0.9,
+        }
+        # First call: truncated (salvaged 1 issue)
+        truncated_json = '[' + json.dumps(issue) + ', {"flagged_text": "partial'
+        # Retry call: clean with 2 issues
+        clean_json = json.dumps([issue, issue])
+
+        mm = _make_mock_model_manager(available=True)
+        mm.generate_text.side_effect = [truncated_json, clean_json]
+        mock_get_mm.return_value = mm
+
+        client = LLMClient()
+        result = client._safe_analysis_call("test prompt")
+        assert len(result) == 2
+        assert mm.generate_text.call_count == 2
+
+    @patch("app.llm.client._get_model_manager")
+    @patch("app.llm.client.Config")
+    def test_finish_reason_length_triggers_retry(
+        self, mock_config: MagicMock, mock_get_mm: MagicMock,
+    ) -> None:
+        """When finish_reason='length', triggers retry."""
+        mock_config.LLM_ENABLED = True
+        mock_config.LLM_MAX_CONCURRENT = 5
+        mock_config.MODEL_ANALYSIS_TEMPERATURE = 0.0
+        mock_config.MODEL_SEED = None
+        mock_config.MODEL_MAX_TOKENS = 4096
+
+        issue = {
+            "flagged_text": "foo",
+            "message": "bar",
+            "severity": "medium",
+            "category": "style",
+            "confidence": 0.9,
+        }
+        clean_json = json.dumps([issue])
+
+        mm = _make_mock_model_manager(available=True)
+
+        def side_effect(prompt, **kwargs):
+            meta = kwargs.get("_result_meta")
+            if meta is not None and mm.generate_text.call_count <= 1:
+                meta["finish_reason"] = "length"
+            return clean_json
+
+        mm.generate_text.side_effect = side_effect
+        mock_get_mm.return_value = mm
+
+        client = LLMClient()
+        result = client._safe_analysis_call("test prompt")
+        assert len(result) >= 1
+        assert mm.generate_text.call_count == 2
+
+
+# ---------------------------------------------------------------------------
+# GAP 1: _dynamic_max_tokens wired into analyze_block / analyze_global
+# ---------------------------------------------------------------------------
+
+
+class TestDynamicTokenWiring:
+    """Verify analyze_block and analyze_global pass computed max_tokens."""
+
+    @patch("app.llm.client._get_model_manager")
+    @patch("app.llm.client.Config")
+    def test_analyze_block_passes_max_tokens(
+        self, mock_config: MagicMock, mock_get_mm: MagicMock,
+    ) -> None:
+        """analyze_block computes and forwards max_tokens."""
+        mock_config.LLM_ENABLED = True
+        mock_config.LLM_MAX_CONCURRENT = 5
+        mock_config.MODEL_ANALYSIS_TEMPERATURE = 0.0
+        mock_config.MODEL_SEED = None
+        mock_config.MODEL_MAX_TOKENS = 16384
+        mock_config.GEMINI_REASONING_EFFORT = "low"
+
+        mm = _make_mock_model_manager(available=True, generate_return="[]")
+        mock_get_mm.return_value = mm
+
+        client = LLMClient()
+        client.analyze_block(
+            "Some text", ["Some text"], [],
+            content_type="concept",
+            det_issue_count=10,
+        )
+
+        call_kwargs = mm.generate_text.call_args
+        assert call_kwargs is not None
+        assert "max_tokens" in call_kwargs.kwargs or (
+            len(call_kwargs.args) > 0
+        )
+        max_tok = call_kwargs.kwargs.get("max_tokens")
+        assert max_tok is not None
+        assert max_tok >= 1024
+
+    @patch("app.llm.client._get_model_manager")
+    @patch("app.llm.client.Config")
+    def test_analyze_global_passes_max_tokens(
+        self, mock_config: MagicMock, mock_get_mm: MagicMock,
+    ) -> None:
+        """analyze_global computes and forwards max_tokens."""
+        mock_config.LLM_ENABLED = True
+        mock_config.LLM_MAX_CONCURRENT = 5
+        mock_config.MODEL_ANALYSIS_TEMPERATURE = 0.0
+        mock_config.MODEL_SEED = None
+        mock_config.MODEL_MAX_TOKENS = 16384
+        mock_config.GEMINI_REASONING_EFFORT = "low"
+
+        mm = _make_mock_model_manager(available=True, generate_return="[]")
+        mock_get_mm.return_value = mm
+
+        client = LLMClient()
+        client.analyze_global(
+            "Full document text " * 50, "concept", [],
+            det_issue_count=5,
+        )
+
+        call_kwargs = mm.generate_text.call_args
+        assert call_kwargs is not None
+        max_tok = call_kwargs.kwargs.get("max_tokens")
+        assert max_tok is not None
+        assert max_tok >= 1024

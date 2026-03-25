@@ -39,6 +39,10 @@ class Config:
         LLM_MAX_CONCURRENT: Max concurrent LLM requests.
         LLM_GLOBAL_PASS_MAX_WORDS: Word-count ceiling for the global LLM pass.
         LLM_EXCERPT_BUDGET_MAX: Token budget for style-guide excerpts.
+        LLM_CHUNK_SIZE: Max characters per LLM semantic chunk.
+        LLM_CHUNK_OVERLAP: Number of trailing blocks repeated across chunks.
+        LLM_GLOBAL_MIN_WORDS: Minimum word count to trigger global LLM pass.
+        LLM_JUDGE_BATCH_SIZE: Issues per judge batch for LLM self-correction.
         CONFIDENCE_THRESHOLD: Minimum score to surface an issue.
         FEEDBACK_DB_PATH: Path to the SQLite feedback database.
         FEEDBACK_PERSISTENT: Use persistent (file) or in-memory SQLite.
@@ -82,6 +86,12 @@ class Config:
     LLM_GLOBAL_PASS_MAX_WORDS: int = int(os.environ.get("LLM_GLOBAL_PASS_MAX_WORDS", "5000"))
     LLM_EXCERPT_BUDGET_MAX: int = int(os.environ.get("LLM_EXCERPT_BUDGET_MAX", "8000"))
     BLOCK_CACHE_TTL: int = int(os.environ.get("BLOCK_CACHE_TTL", "3600"))
+
+    # --- LLM Block Splitting ---
+    LLM_CHUNK_SIZE: int = int(os.environ.get("LLM_CHUNK_SIZE", "3500"))
+    LLM_CHUNK_OVERLAP: int = int(os.environ.get("LLM_CHUNK_OVERLAP", "2"))
+    LLM_GLOBAL_MIN_WORDS: int = int(os.environ.get("LLM_GLOBAL_MIN_WORDS", "300"))
+    LLM_JUDGE_BATCH_SIZE: int = int(os.environ.get("LLM_JUDGE_BATCH_SIZE", "25"))
 
     # --- Analysis ---
     CONFIDENCE_THRESHOLD: float = float(os.environ.get("CONFIDENCE_THRESHOLD", "0.55"))
@@ -161,6 +171,10 @@ class Config:
         logger.info("  LLM_CONFIDENCE_THRESHOLD=%.2f", cls.LLM_CONFIDENCE_THRESHOLD)
         logger.info("  LLM_JUDGE_ENABLED=%s", cls.LLM_JUDGE_ENABLED)
         logger.info("  BLOCK_CACHE_TTL=%d", cls.BLOCK_CACHE_TTL)
+        logger.info("  LLM_CHUNK_SIZE=%d", cls.LLM_CHUNK_SIZE)
+        logger.info("  LLM_CHUNK_OVERLAP=%d", cls.LLM_CHUNK_OVERLAP)
+        logger.info("  LLM_GLOBAL_MIN_WORDS=%d", cls.LLM_GLOBAL_MIN_WORDS)
+        logger.info("  LLM_JUDGE_BATCH_SIZE=%d", cls.LLM_JUDGE_BATCH_SIZE)
         logger.info("  FEEDBACK_PERSISTENT=%s", cls.FEEDBACK_PERSISTENT)
         logger.info("  SESSION_TTL_SECONDS=%d", cls.SESSION_TTL_SECONDS)
         logger.info("  CORS_ORIGINS=%s", cls.CORS_ORIGINS)

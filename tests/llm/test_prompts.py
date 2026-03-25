@@ -468,15 +468,15 @@ class TestStructuralPromptIntegration:
         )
         assert "capitalization" in system_prompt.lower()
 
-    def test_global_prompt_includes_future_tense_check(self) -> None:
-        """Global prompt CHECK list includes future tense."""
+    def test_global_prompt_includes_tone_consistency_check(self) -> None:
+        """Global prompt CHECK list includes tone consistency."""
         system_prompt, _ = build_global_prompt("text", "concept", [])
-        assert "future tense" in system_prompt.lower()
+        assert "tone consistency" in system_prompt.lower()
 
-    def test_global_prompt_includes_single_step_numbered_check(self) -> None:
-        """Global prompt CHECK list includes single-step numbered procedure."""
+    def test_global_prompt_includes_accessibility_check(self) -> None:
+        """Global prompt CHECK list includes accessibility."""
         system_prompt, _ = build_global_prompt("text", "procedure", [])
-        assert "single-step numbered" in system_prompt.lower()
+        assert "accessibility" in system_prompt.lower()
 
     def test_procedure_guidance_includes_single_step_flag(self) -> None:
         """Procedure guidance flags single-step numbered lists."""
@@ -488,3 +488,15 @@ class TestStructuralPromptIntegration:
         """Procedure guidance flags procedural content in admonitions."""
         guidance = _content_type_guidance("procedure")
         assert "admonition" in guidance.lower()
+
+    def test_granular_prompt_reasoning_constraint(self) -> None:
+        """Granular prompt constrains reasoning length for json_object fallback."""
+        system_prompt, _ = build_granular_prompt("text", ["text"], [])
+        assert "2-3 sentences" in system_prompt
+        assert "prioritize" in system_prompt.lower()
+
+    def test_global_prompt_reasoning_constraint(self) -> None:
+        """Global prompt constrains reasoning length for json_object fallback."""
+        system_prompt, _ = build_global_prompt("text", "concept", [])
+        assert "2-3 sentences" in system_prompt
+        assert "prioritize" in system_prompt.lower()

@@ -181,13 +181,21 @@ class APIProvider(BaseModelProvider):
             logger.error("API is not available")
             return ""
 
+        # Pop internal-only kwargs before they reach _prepare_generation_params
+        result_meta_raw = kwargs.pop('_result_meta', None)
+        result_meta = result_meta_raw if isinstance(result_meta_raw, dict) else None
+        timeout_override = kwargs.pop('_timeout_override', None)
+
         params = self._prepare_generation_params(**kwargs)
         endpoint, payload = self._build_request(prompt, params)
         headers = self._get_headers()
 
-        # Optimize timeout based on use case
+        # Optimize timeout based on use case (or explicit override)
         use_case = kwargs.get('use_case', 'default')
-        timeout = self._get_timeout_for_use_case(use_case)
+        if timeout_override is not None:
+            timeout = int(timeout_override)
+        else:
+            timeout = self._get_timeout_for_use_case(use_case)
 
         try:
             cert_path = self.config.get('cert_path')
@@ -202,7 +210,9 @@ class APIProvider(BaseModelProvider):
             )
 
             if response.status_code == 200:
-                generated_text = self._extract_response(response.json())
+                response_data = response.json()
+                self._extract_result_meta(response_data, result_meta)
+                generated_text = self._extract_response(response_data)
 
                 if generated_text:
                     logger.debug(
@@ -238,6 +248,31 @@ class APIProvider(BaseModelProvider):
         except (requests.exceptions.RequestException, OSError) as exc:
             logger.error("API generation failed: %s", exc)
             return ""
+
+    @staticmethod
+    def _extract_result_meta(
+        response_data: dict,
+        meta: dict | None,
+    ) -> None:
+        """Populate *meta* with finish_reason and token usage from API response.
+
+        Args:
+            response_data: Parsed JSON response from the OpenAI-compatible API.
+            meta: Mutable dict to update, or ``None`` to skip.
+        """
+        if meta is None or not isinstance(response_data, dict):
+            return
+        choices = response_data.get('choices', [])
+        if choices and isinstance(choices[0], dict):
+            finish_reason = choices[0].get('finish_reason')
+            if finish_reason is not None:
+                meta['finish_reason'] = finish_reason
+        usage = response_data.get('usage')
+        if isinstance(usage, dict):
+            for key in ('completion_tokens', 'prompt_tokens'):
+                val = usage.get(key)
+                if val is not None:
+                    meta[key] = val
 
     def _build_request(
         self, prompt: str, params: Dict[str, Any]

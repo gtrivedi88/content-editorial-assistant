@@ -54,8 +54,12 @@ except ImportError:
     analyze_global = None  # type: ignore[assignment]
     judge_issues = None  # type: ignore[assignment]
 
-# Maximum number of issues per judge batch (SK-13).
-_JUDGE_BATCH_SIZE = 20
+# Maximum number of issues per judge batch — configurable via
+# LLM_JUDGE_BATCH_SIZE env var.  Increasing from 20 to 25 reduces
+# round-trips for typical issue counts (28 issues = 1 batch instead
+# of 2).  Do not exceed ~30 — LLMs become unreliable with large
+# index lists in the keep/drop verdict format.
+_JUDGE_BATCH_SIZE: int = Config.LLM_JUDGE_BATCH_SIZE
 
 
 def _select_style_guide_excerpts(
@@ -238,9 +242,12 @@ def analyze(
         )
 
     # Calculate preliminary score and report
+    _t0 = time.monotonic()
     score = calculate_score(det_issues, prep["word_count"])
     report = _build_report(prep, score)
+    logger.info("response_path: score+report %.3fs", time.monotonic() - _t0)
 
+    _t1 = time.monotonic()
     _emit_progress(socket_sid, session_id, "deterministic_complete", "Style checks complete", 50)
     _emit_event(socket_sid, "deterministic_complete", {
         "session_id": session_id,
@@ -254,11 +261,13 @@ def analyze(
         "phase": "deterministic",
         "status": "done",
     })
+    logger.info("response_path: socket_emit %.3fs", time.monotonic() - _t1)
 
     # Determine whether LLM phases should run
     llm_enabled = Config.LLM_ENABLED and analyze_block is not None
     partial = llm_enabled
 
+    _t2 = time.monotonic()
     response = AnalyzeResponse(
         session_id=session_id,
         issues=det_issues,
@@ -291,6 +300,7 @@ def analyze(
             "report": report.to_dict(),
             "detected_content_type": content_type,
         })
+    logger.info("response_path: store+schedule %.3fs", time.monotonic() - _t2)
 
     return response
 
@@ -346,9 +356,13 @@ def _run_llm_phases(
     content_type: str,
     acronym_context: dict[str, str] | None = None,
 ) -> None:
-    """Execute LLM granular and global passes sequentially.
+    """Execute LLM granular and global passes in parallel.
 
-    Checks for session cancellation between phases. Emits progress
+    Granular and global are independent (both use preprocessed text)
+    and are launched concurrently.  The judge pass runs after both
+    complete since it reviews combined LLM issues.
+
+    Checks for session cancellation within each phase.  Emits progress
     and completion events via Socket.IO.
 
     Args:
@@ -360,7 +374,6 @@ def _run_llm_phases(
         acronym_context: Known acronym definitions from the document.
     """
     logger.debug("_run_llm_phases STARTED session=%s", session_id)
-    llm_issues: list[IssueResponse] = []
 
     # Select style guide excerpts based on deterministic findings
     excerpts = _select_style_guide_excerpts(det_issues, content_type)
@@ -368,8 +381,14 @@ def _run_llm_phases(
 
     # Build document outline for LLM section-level awareness
     doc_outline = _build_document_outline(prep.get("blocks", []))
+    abstract_text = _extract_abstract(prep.get("blocks", []))
 
-    # Fire LanguageTool in parallel with LLM granular
+    # ------------------------------------------------------------------
+    # Launch parallel phases: LT + granular + global
+    # ------------------------------------------------------------------
+    phase_executor = ThreadPoolExecutor(max_workers=3)
+
+    # LanguageTool (parallel)
     lt_future = None
     if Config.LANGUAGETOOL_ENABLED and not _is_cancelled(session_id):
         logger.debug("Starting LanguageTool phase (parallel)")
@@ -378,34 +397,76 @@ def _run_llm_phases(
             "phase": "languagetool",
             "status": "started",
         })
-        lt_executor = ThreadPoolExecutor(max_workers=1)
-        lt_future = lt_executor.submit(
+        lt_future = phase_executor.submit(
             _run_languagetool_phase, prep,
         )
 
-    # Phase 2: LLM granular (per-block)
+    # LLM granular (parallel)
+    granular_future = None
     blocks_total = len(prep.get("blocks", []))
     if not _is_cancelled(session_id):
-        logger.debug("Starting granular phase")
+        logger.debug("Starting granular phase (parallel)")
         _emit_event(socket_sid, "stage_progress", {
             "session_id": session_id,
             "phase": "llm_granular",
             "status": "started",
             "blocks_total": blocks_total,
         })
-        llm_issues = _run_llm_granular(
+        granular_future = phase_executor.submit(
+            _run_llm_granular,
             session_id, socket_sid, prep, content_type, acronym_context,
             style_guide_excerpts=excerpts,
             document_outline=doc_outline,
+            det_issue_count=len(det_issues),
         )
-        logger.debug("Granular produced %d issues", len(llm_issues))
+
+    # LLM global (parallel — no data dependency on granular)
+    global_future = None
+    if not _is_cancelled(session_id):
+        logger.debug("Starting global phase (parallel with granular)")
+        _emit_event(socket_sid, "stage_progress", {
+            "session_id": session_id,
+            "phase": "llm_global",
+            "status": "started",
+        })
+        global_future = phase_executor.submit(
+            _run_llm_global,
+            session_id, socket_sid, prep, content_type,
+            style_guide_excerpts=excerpts,
+            document_outline=doc_outline,
+            abstract_context=abstract_text,
+            det_issue_count=len(det_issues),
+        )
+
+    # ------------------------------------------------------------------
+    # Collect results — each phase is error-isolated
+    # ------------------------------------------------------------------
+    granular_issues: list[IssueResponse] = []
+    if granular_future is not None:
+        try:
+            granular_issues = granular_future.result()
+            logger.debug("Granular produced %d issues", len(granular_issues))
+        except Exception as exc:
+            logger.warning("Granular phase failed: %s", exc)
         _emit_event(socket_sid, "stage_progress", {
             "session_id": session_id,
             "phase": "llm_granular",
             "status": "done",
         })
 
-    # Collect LanguageTool results (runs parallel, collect after granular)
+    global_issues: list[IssueResponse] = []
+    if global_future is not None:
+        try:
+            global_issues = global_future.result()
+            logger.debug("Global produced %d issues", len(global_issues))
+        except Exception as exc:
+            logger.warning("Global phase failed: %s", exc)
+        _emit_event(socket_sid, "stage_progress", {
+            "session_id": session_id,
+            "phase": "llm_global",
+            "status": "done",
+        })
+
     lt_issues: list[IssueResponse] = []
     if lt_future is not None and not _is_cancelled(session_id):
         try:
@@ -423,28 +484,10 @@ def _run_llm_phases(
             "status": "done",
         })
 
-    # Phase 3: LLM global (full-document)
-    if not _is_cancelled(session_id):
-        logger.debug("Starting global phase")
-        _emit_event(socket_sid, "stage_progress", {
-            "session_id": session_id,
-            "phase": "llm_global",
-            "status": "started",
-        })
-        abstract_text = _extract_abstract(prep.get("blocks", []))
-        global_issues = _run_llm_global(
-            session_id, socket_sid, prep, content_type,
-            style_guide_excerpts=excerpts,
-            document_outline=doc_outline,
-            abstract_context=abstract_text,
-        )
-        logger.debug("Global produced %d issues", len(global_issues))
-        llm_issues.extend(global_issues)
-        _emit_event(socket_sid, "stage_progress", {
-            "session_id": session_id,
-            "phase": "llm_global",
-            "status": "done",
-        })
+    phase_executor.shutdown(wait=False)
+
+    # Merge granular + global into a single LLM issues list
+    llm_issues: list[IssueResponse] = granular_issues + global_issues
 
     # Phase 2C: LLM judge self-correction (optional)
     if not _is_cancelled(session_id) and llm_issues and Config.LLM_JUDGE_ENABLED:
@@ -1232,6 +1275,7 @@ def _run_llm_granular(
     acronym_context: dict[str, str] | None = None,
     style_guide_excerpts: list[dict] | None = None,
     document_outline: str | None = None,
+    det_issue_count: int = 0,
 ) -> list[IssueResponse]:
     """Run the LLM granular (per-block) analysis pass.
 
@@ -1247,10 +1291,14 @@ def _run_llm_granular(
         acronym_context: Known acronym definitions from the document.
         style_guide_excerpts: Relevant style guide excerpt dicts.
         document_outline: Compact heading outline of the full document.
+        det_issue_count: Phase 1 deterministic issue count for token budget.
 
     Returns:
         List of LLM-detected issues, empty on failure.
     """
+    if _is_cancelled(session_id):
+        return []
+
     _emit_progress(socket_sid, session_id, "llm_granular", "Running AI analysis", 60)
 
     try:
@@ -1267,6 +1315,7 @@ def _run_llm_granular(
                 style_guide_excerpts=style_guide_excerpts,
                 document_outline=document_outline,
                 progress_context=progress_ctx,
+                det_issue_count=det_issue_count,
             )
             issues = _parse_llm_results(results, "llm_granular", resolve_text)
             for i, iss in enumerate(issues):
@@ -1313,6 +1362,7 @@ def _run_incremental_blocks(
     style_guide_excerpts: list[dict] | None = None,
     document_outline: str | None = None,
     progress_context: dict[str, Any] | None = None,
+    det_issue_count: int = 0,
 ) -> list[dict[str, Any]]:
     """Analyze blocks incrementally, skipping unchanged ones.
 
@@ -1349,6 +1399,7 @@ def _run_incremental_blocks(
             style_guide_excerpts=style_guide_excerpts,
             document_outline=document_outline,
             progress_context=progress_context,
+            det_issue_count=det_issue_count,
         )
         _store_block_data(
             session_id, block_hashes, blocks, results,
@@ -1379,6 +1430,7 @@ def _run_incremental_blocks(
         style_guide_excerpts=style_guide_excerpts,
         document_outline=document_outline,
         progress_context=progress_context,
+        det_issue_count=det_issue_count,
     )
 
     # Build per-block issue mapping for changed blocks
@@ -1463,12 +1515,13 @@ def _run_llm_global(
     style_guide_excerpts: list[dict] | None = None,
     document_outline: str | None = None,
     abstract_context: str | None = None,
+    det_issue_count: int = 0,
 ) -> list[IssueResponse]:
     """Run the LLM global (full-document) analysis pass.
 
     Sends the full document text (lite-markers Markdown when available)
-    to the LLM for tone, flow, minimalism, wordiness, audience,
-    structure, and accessibility checks.
+    to the LLM for tone, audience level, accessibility, and short
+    description quality checks.
 
     Args:
         session_id: Analysis session identifier.
@@ -1479,14 +1532,26 @@ def _run_llm_global(
         document_outline: Compact heading outline for structural review.
         abstract_context: First paragraph after heading (module abstract)
             for targeted short-description quality evaluation.
+        det_issue_count: Phase 1 deterministic issue count for token budget.
 
     Returns:
         List of LLM-detected issues, empty on failure or skip.
     """
+    if _is_cancelled(session_id):
+        return []
+
     if prep["word_count"] < _GLOBAL_PASS_MIN_WORDS:
         logger.info(
             "Skipping LLM global pass: %d words below minimum of %d",
             prep["word_count"], _GLOBAL_PASS_MIN_WORDS,
+        )
+        return []
+
+    _GLOBAL_SKIP_CONTENT_TYPES = frozenset({"assembly", "reference"})
+    if content_type in _GLOBAL_SKIP_CONTENT_TYPES:
+        logger.info(
+            "Skipping LLM global pass for content_type=%s",
+            content_type,
         )
         return []
 
@@ -1503,6 +1568,7 @@ def _run_llm_global(
                 style_guide_excerpts=style_guide_excerpts,
                 document_outline=document_outline,
                 abstract_context=abstract_context,
+                det_issue_count=det_issue_count,
             )
             issues = _parse_llm_results(results, "llm_global", global_text)
             for i, iss in enumerate(issues):
@@ -1769,16 +1835,18 @@ def _cache_block(key: str, issues: list[dict[str, Any]]) -> None:
 # Minimum character count per block; smaller paragraphs are merged together.
 _MIN_BLOCK_CHARS = 1500
 
-# Maximum characters per semantic chunk (larger budget since blocks are
-# semantic units and never split mid-block).
-_MAX_SEMANTIC_CHUNK_CHARS = 6000
+# Maximum characters per semantic chunk — configurable via LLM_CHUNK_SIZE.
+_MAX_SEMANTIC_CHUNK_CHARS: int = Config.LLM_CHUNK_SIZE
 
 # Number of trailing blocks to repeat at the start of the next chunk
-# for cross-boundary context continuity.
-_OVERLAP_BLOCK_COUNT = 3
+# for cross-boundary context continuity — configurable via LLM_CHUNK_OVERLAP.
+# Keep overlap <= 2 when chunk size is 3500 to avoid > 25% overhead.
+_OVERLAP_BLOCK_COUNT: int = Config.LLM_CHUNK_OVERLAP
 
-# Minimum word count for the global (full-document) LLM pass.
-_GLOBAL_PASS_MIN_WORDS = 30
+# Minimum word count for the global (full-document) LLM pass — configurable
+# via LLM_GLOBAL_MIN_WORDS.  At 300, short docs skip the global pass
+# entirely, saving 60-70s of LLM time.
+_GLOBAL_PASS_MIN_WORDS: int = Config.LLM_GLOBAL_MIN_WORDS
 
 
 def _split_into_blocks(text: str) -> list[str]:
@@ -1884,8 +1952,14 @@ def _group_with_overlap(
         part_len = len(part)
         if current_len + part_len > max_chars and current:
             chunks.append("\n\n".join(current))
-            # Carry the last N blocks as overlap into the next chunk
-            overlap = current[-_OVERLAP_BLOCK_COUNT:]
+            # Carry the last N blocks as overlap into the next chunk.
+            # Guard: if the chunk has fewer blocks than the overlap
+            # count, skip overlap entirely to prevent full-chunk
+            # duplication.
+            if len(current) > _OVERLAP_BLOCK_COUNT:
+                overlap = current[-_OVERLAP_BLOCK_COUNT:]
+            else:
+                overlap = []
             current = list(overlap)
             current_len = sum(len(p) for p in current)
 
@@ -1906,6 +1980,7 @@ def _analyze_blocks(
     style_guide_excerpts: list[dict] | None = None,
     document_outline: str | None = None,
     progress_context: dict[str, Any] | None = None,
+    det_issue_count: int = 0,
 ) -> list[dict[str, Any]]:
     """Run LLM analysis on blocks, using parallelism when beneficial.
 
@@ -1921,6 +1996,7 @@ def _analyze_blocks(
         document_outline: Compact heading outline of the full document.
         progress_context: Optional dict with socket_sid, session_id,
             blocks_total for per-block progress events.
+        det_issue_count: Phase 1 deterministic issue count for token budget.
 
     Returns:
         Combined list of raw issue dicts from all blocks.
@@ -1937,6 +2013,7 @@ def _analyze_blocks(
             acronym_context=acronym_context,
             style_guide_excerpts=style_guide_excerpts,
             document_outline=document_outline,
+            det_issue_count=det_issue_count,
         )
         _cache_block(key, results)
         return results
@@ -1946,6 +2023,7 @@ def _analyze_blocks(
         style_guide_excerpts=style_guide_excerpts,
         document_outline=document_outline,
         progress_context=progress_context,
+        det_issue_count=det_issue_count,
     )
 
 
@@ -1956,6 +2034,7 @@ def _analyze_blocks_parallel(
     style_guide_excerpts: list[dict] | None = None,
     document_outline: str | None = None,
     progress_context: dict[str, Any] | None = None,
+    det_issue_count: int = 0,
 ) -> list[dict[str, Any]]:
     """Execute multiple block analyses concurrently.
 
@@ -1971,6 +2050,7 @@ def _analyze_blocks_parallel(
         style_guide_excerpts: Relevant style guide excerpt dicts.
         document_outline: Compact heading outline of the full document.
         progress_context: Optional dict for per-block progress events.
+        det_issue_count: Phase 1 deterministic issue count for token budget.
 
     Returns:
         Combined list of raw issue dicts from all successful blocks.
@@ -1986,11 +2066,12 @@ def _analyze_blocks_parallel(
             executor, blocks, content_type, acronym_context,
             style_guide_excerpts=style_guide_excerpts,
             document_outline=document_outline,
+            det_issue_count=det_issue_count,
         )
-        # Account for cached blocks in progress counter
         cached_offset = len(cached_results) if progress_context else 0
+        sid = progress_context.get("session_id", "") if progress_context else ""
         new_results = _collect_block_results(
-            futures, progress_context, cached_offset,
+            futures, progress_context, cached_offset, session_id=sid,
         )
 
     return cached_results + new_results
@@ -2003,6 +2084,7 @@ def _submit_block_futures(
     acronym_context: dict[str, str] | None = None,
     style_guide_excerpts: list[dict] | None = None,
     document_outline: str | None = None,
+    det_issue_count: int = 0,
 ) -> tuple[dict[Any, int], list[dict[str, Any]]]:
     """Submit each block to the executor, skipping cache hits.
 
@@ -2016,6 +2098,7 @@ def _submit_block_futures(
         acronym_context: Known acronym definitions from the document.
         style_guide_excerpts: Relevant style guide excerpt dicts.
         document_outline: Compact heading outline of the full document.
+        det_issue_count: Phase 1 deterministic issue count for token budget.
 
     Returns:
         Tuple of (futures mapping, cached issue list).
@@ -2035,7 +2118,7 @@ def _submit_block_futures(
         future = executor.submit(
             _analyze_and_cache_block, block, block_sentences,
             content_type, key, acronym_context, style_guide_excerpts,
-            document_outline,
+            document_outline, det_issue_count,
         )
         futures[future] = i
 
@@ -2050,6 +2133,7 @@ def _analyze_and_cache_block(
     acronym_context: dict[str, str] | None = None,
     style_guide_excerpts: list[dict] | None = None,
     document_outline: str | None = None,
+    det_issue_count: int = 0,
 ) -> list[dict[str, Any]]:
     """Analyze a single block and store results in the cache.
 
@@ -2061,6 +2145,7 @@ def _analyze_and_cache_block(
         acronym_context: Known acronym definitions from the document.
         style_guide_excerpts: Relevant style guide excerpt dicts.
         document_outline: Compact heading outline of the full document.
+        det_issue_count: Phase 1 deterministic issue count for token budget.
 
     Returns:
         Raw issue dicts from the LLM.
@@ -2071,6 +2156,7 @@ def _analyze_and_cache_block(
         acronym_context=acronym_context,
         style_guide_excerpts=style_guide_excerpts,
         document_outline=document_outline,
+        det_issue_count=det_issue_count,
     )
     _cache_block(cache_key, results)
     return results
@@ -2080,6 +2166,7 @@ def _collect_block_results(
     futures: dict[Any, int],
     progress_context: dict[str, Any] | None = None,
     cached_offset: int = 0,
+    session_id: str = "",
 ) -> list[dict[str, Any]]:
     """Collect results from completed block futures.
 
@@ -2088,12 +2175,16 @@ def _collect_block_results(
     sorted by block index before returning so that deduplication
     ordering is deterministic regardless of thread completion timing.
 
+    Checks for session cancellation between block completions so that
+    stale analysis can short-circuit without waiting for all blocks.
+
     Args:
         futures: Mapping of Future objects to block indices.
         progress_context: Optional dict with socket_sid, session_id,
             blocks_total for progress events.
         cached_offset: Number of already-cached blocks to add to
             the done counter (incremental analysis).
+        session_id: Analysis session identifier for cancellation checks.
 
     Returns:
         Combined list of raw issue dicts, ordered by block index.
@@ -2101,6 +2192,9 @@ def _collect_block_results(
     indexed_results: list[tuple[int, list[dict[str, Any]]]] = []
     blocks_done = cached_offset
     for future in as_completed(futures):
+        if session_id and _is_cancelled(session_id):
+            logger.info("Analysis cancelled, discarding remaining blocks")
+            break
         block_idx = futures[future]
         block_issues: list[dict[str, Any]] = []
         try:

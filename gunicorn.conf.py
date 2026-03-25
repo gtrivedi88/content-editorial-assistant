@@ -43,3 +43,26 @@ def when_ready(server: object) -> None:
         "Using %s worker(s) of type '%s' with %ss timeout",
         workers, worker_class, timeout,
     )
+
+
+def post_worker_init(worker: object) -> None:
+    """Eagerly initialize singletons after fork for warm first requests.
+
+    Runs in each worker process after ``fork()``, avoiding fork-safety
+    issues with ``threading.Lock`` and mutable state.  SpaCy's model
+    data is ``mmap``-based and safely shared from ``preload_app``.
+
+    Args:
+        worker: The Gunicorn worker instance.
+    """
+    from app.extensions import get_nlp
+    from app.services.session.store import get_session_store
+
+    get_nlp()
+    get_session_store()
+
+    try:
+        from rules import term_registry  # noqa: F401 — triggers module-level load
+        worker.log.info("Worker %s: singletons initialized", worker.pid)
+    except ImportError:
+        worker.log.info("Worker %s: core singletons initialized", worker.pid)

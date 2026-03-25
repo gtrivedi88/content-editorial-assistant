@@ -63,6 +63,34 @@ def parse_analysis_response(raw_text: str) -> list[dict]:
     return _validate_and_filter_issues(issues)
 
 
+def parse_analysis_response_ex(raw_text: str) -> tuple[list[dict], bool]:
+    """Parse raw LLM text and report whether the response was truncated.
+
+    Behaves identically to :func:`parse_analysis_response` but returns
+    a ``(issues, truncated)`` tuple.  The *truncated* flag is ``True``
+    when the parser had to salvage complete objects from a broken JSON
+    response — indicating the output was cut off and some issues may
+    have been lost.
+
+    Args:
+        raw_text: Raw text string from the LLM provider.
+
+    Returns:
+        Tuple of (validated issue list, truncated flag).
+    """
+    meta: dict = {}
+    parsed = _parse_json_text(raw_text, _parse_meta=meta)
+    truncated = meta.get("truncated", False)
+    if parsed is None:
+        return [], truncated
+
+    issues = _normalize_to_list(parsed)
+    if issues is None:
+        return [], truncated
+
+    return _validate_and_filter_issues(issues), truncated
+
+
 def parse_suggestion_response(
     raw_text: str, flagged_text: str = "",
 ) -> dict:
@@ -96,7 +124,10 @@ def parse_suggestion_response(
 # ------------------------------------------------------------------
 
 
-def _parse_json_text(text: str) -> Any:
+def _parse_json_text(
+    text: str,
+    _parse_meta: dict | None = None,
+) -> Any:
     """Parse a JSON string from LLM output.
 
     Handles common LLM quirks: markdown code fences, trailing commas,
@@ -105,6 +136,9 @@ def _parse_json_text(text: str) -> Any:
 
     Args:
         text: Raw text that should contain JSON.
+        _parse_meta: Optional mutable dict that will be updated with
+            ``{"truncated": True}`` when salvage paths are used.
+            Callers that do not pass this argument see no change.
 
     Returns:
         Parsed Python object (list or dict), or None on failure.
@@ -124,6 +158,8 @@ def _parse_json_text(text: str) -> Any:
             "Salvaged %d complete items from truncated LLM response",
             len(salvaged),
         )
+        if _parse_meta is not None:
+            _parse_meta["truncated"] = True
         return salvaged
 
     # Attempt to salvage from a truncated wrapper object ({"reasoning":...,"issues":[...
@@ -133,6 +169,8 @@ def _parse_json_text(text: str) -> Any:
             "Salvaged %d complete items from truncated wrapper object",
             len(salvaged),
         )
+        if _parse_meta is not None:
+            _parse_meta["truncated"] = True
         return {"issues": salvaged}
 
     logger.warning(

@@ -15,6 +15,7 @@ from app.llm.parser import (
     _normalize_issue_fields,
     _strip_code_fences,
     parse_analysis_response,
+    parse_analysis_response_ex,
     parse_judge_response,
     parse_suggestion_response,
 )
@@ -514,3 +515,80 @@ class TestParseJudgeResponse:
         keep, drop = parse_judge_response("", total_issues=2)
         assert keep == [0, 1]
         assert drop == []
+
+
+# ---------------------------------------------------------------------------
+# parse_analysis_response_ex
+# ---------------------------------------------------------------------------
+
+
+class TestParseAnalysisResponseEx:
+    """Tests for the extended parser returning (issues, truncated)."""
+
+    def test_clean_json_returns_false_truncated(self) -> None:
+        """Valid JSON sets truncated=False."""
+        issue = {
+            "flagged_text": "foo",
+            "message": "bar",
+            "severity": "medium",
+            "category": "style",
+            "confidence": 0.9,
+        }
+        raw = json.dumps({"reasoning": "ok", "issues": [issue]})
+        issues, truncated = parse_analysis_response_ex(raw)
+        assert len(issues) == 1
+        assert truncated is False
+
+    def test_truncated_array_sets_flag(self) -> None:
+        """Truncated JSON array sets truncated=True."""
+        issue = {
+            "flagged_text": "foo",
+            "message": "bar",
+            "severity": "medium",
+            "category": "style",
+            "confidence": 0.9,
+        }
+        raw = "[" + json.dumps(issue) + ", {\"flagged_text\": \"partial"
+        issues, truncated = parse_analysis_response_ex(raw)
+        assert len(issues) == 1
+        assert truncated is True
+
+    def test_truncated_wrapper_sets_flag(self) -> None:
+        """Truncated wrapper object sets truncated=True."""
+        issue = {
+            "flagged_text": "foo",
+            "message": "bar",
+            "severity": "medium",
+            "category": "style",
+            "confidence": 0.9,
+        }
+        raw = '{"reasoning": "thinking...", "issues": [' + json.dumps(issue) + ', {"flag'
+        issues, truncated = parse_analysis_response_ex(raw)
+        assert len(issues) == 1
+        assert truncated is True
+
+    def test_backward_compat_with_original(self) -> None:
+        """Returns same issues as parse_analysis_response for clean input."""
+        issue = {
+            "flagged_text": "foo",
+            "message": "bar",
+            "severity": "medium",
+            "category": "style",
+            "confidence": 0.9,
+        }
+        raw = json.dumps([issue])
+        original = parse_analysis_response(raw)
+        ex_issues, truncated = parse_analysis_response_ex(raw)
+        assert len(ex_issues) == len(original)
+        assert truncated is False
+
+    def test_empty_input_returns_empty(self) -> None:
+        """Empty input returns empty list and False."""
+        issues, truncated = parse_analysis_response_ex("")
+        assert issues == []
+        assert truncated is False
+
+    def test_invalid_json_returns_empty(self) -> None:
+        """Invalid JSON returns empty list."""
+        issues, truncated = parse_analysis_response_ex("not json at all")
+        assert issues == []

@@ -24,9 +24,17 @@ class LlamaStackProvider(BaseModelProvider):
     ModelManager system.
     """
 
+    #: Maps ``use_case`` values to ``"fast"`` (8s client) or omitted
+    #: (default: main client with configured timeout).
+    _TIMEOUT_USE_CASES: Dict[str, str] = {
+        'health_check': 'fast',
+        'surgical': 'fast',
+    }
+
     def __init__(self, config: Dict[str, Any]) -> None:
         """Initialize the Llama Stack provider."""
         self.client: Optional[LlamaStackClient] = None
+        self._fast_client: Optional[LlamaStackClient] = None
         self.model_id: str = config.get('model', 'style_analyzer_model')
         super().__init__(config)
 
@@ -39,6 +47,48 @@ class LlamaStackProvider(BaseModelProvider):
                 "This provider requires Lightrail platform deployment."
             )
 
+    def _client_for_use_case(self, use_case: object) -> LlamaStackClient:
+        """Select the HTTP client for the given generation use case.
+
+        Args:
+            use_case: Logical use case (e.g. ``health_check``, ``surgical``).
+
+        Returns:
+            Fast client when the use case requires a short timeout; otherwise
+            the primary client. Falls back to the primary client if the fast
+            client is not initialized.
+        """
+        key = str(use_case) if use_case is not None else 'default'
+        want_fast = self._TIMEOUT_USE_CASES.get(key) == 'fast'
+        if want_fast and self._fast_client is not None:
+            return self._fast_client
+        if self.client is None:
+            raise RuntimeError("Llama Stack client not initialized")
+        return self.client
+
+    @staticmethod
+    def _populate_result_meta(
+        response: Any,
+        meta: Optional[Dict[str, Any]],
+    ) -> None:
+        """Write finish reason and token usage into *meta* when present."""
+        if meta is None:
+            return
+        choices = getattr(response, 'choices', None) or []
+        if choices:
+            choice0 = choices[0]
+            finish_reason = getattr(choice0, 'finish_reason', None)
+            if finish_reason is not None:
+                meta['finish_reason'] = finish_reason
+        usage = getattr(response, 'usage', None)
+        if usage is not None:
+            completion = getattr(usage, 'completion_tokens', None)
+            if completion is not None:
+                meta['completion_tokens'] = completion
+            prompt = getattr(usage, 'prompt_tokens', None)
+            if prompt is not None:
+                meta['prompt_tokens'] = prompt
+
     def connect(self) -> bool:
         """Connect to the Llama Stack instance."""
         try:
@@ -47,7 +97,6 @@ class LlamaStackProvider(BaseModelProvider):
                 'LIGHTRAIL_LLAMA_STACK_TLS_SERVICE_CA_CERT_PATH'
             )
 
-            # Setup TLS context for secure communication
             ctx = ssl.create_default_context()
             ctx.minimum_version = ssl.TLSVersion.TLSv1_2
             if ca_cert_path and os.path.exists(ca_cert_path):
@@ -55,11 +104,8 @@ class LlamaStackProvider(BaseModelProvider):
                 logger.debug(
                     "Loaded CA certificate from %s", ca_cert_path
                 )
+            self._ssl_context = ctx
 
-            # Initialize client with proper TLS and request timeout.
-            # Gemini 2.5 Flash is a thinking model that can take 60s+
-            # on large prompts; 90s balances user experience vs
-            # allowing complex analysis to complete.
             request_timeout = int(
                 self.config.get('timeout', 90)
             )
@@ -71,6 +117,15 @@ class LlamaStackProvider(BaseModelProvider):
                         request_timeout,
                         connect=10.0,
                     ),
+                ),
+            )
+
+            # Fast client for health checks and surgical operations (8s).
+            self._fast_client = LlamaStackClient(
+                base_url=base_url,
+                http_client=DefaultHttpxClient(
+                    verify=ctx,
+                    timeout=httpx.Timeout(8, connect=5.0),
                 ),
             )
 
@@ -145,7 +200,8 @@ class LlamaStackProvider(BaseModelProvider):
             return self.connect()
 
         try:
-            model_list = list(self.client.models.list())
+            probe = self._fast_client if self._fast_client else self.client
+            model_list = list(probe.models.list())
             return len(model_list) > 0
         except OSError as exc:
             logger.warning(
@@ -159,6 +215,12 @@ class LlamaStackProvider(BaseModelProvider):
 
         Uses the OpenAI-compatible ``/v1/chat/completions`` endpoint
         introduced in llama-stack-client 0.3.x.
+
+        Internal keyword arguments (not sent to the API): ``use_case``
+        selects the HTTP client timeout profile; ``_result_meta`` may be
+        a dict updated with ``finish_reason``, ``completion_tokens``, and
+        ``prompt_tokens``; ``_timeout_override`` is accepted for API
+        compatibility and ignored here (reserved for future use).
         """
         if not self.is_available():
             raise RuntimeError("Llama Stack is not available")
@@ -167,6 +229,13 @@ class LlamaStackProvider(BaseModelProvider):
             raise RuntimeError("Llama Stack client not initialized")
 
         try:
+            meta_raw = kwargs.pop('_result_meta', None)
+            timeout_override = kwargs.pop('_timeout_override', None)
+            use_case = kwargs.pop('use_case', 'default')
+            result_meta: Optional[Dict[str, Any]] = (
+                meta_raw if isinstance(meta_raw, dict) else None
+            )
+
             system_prompt = kwargs.pop('system_prompt', '')
             messages: list[Dict[str, Any]] = []
             if system_prompt:
@@ -195,7 +264,20 @@ class LlamaStackProvider(BaseModelProvider):
             if response_format:
                 call_kwargs["response_format"] = response_format
 
-            response = self.client.chat.completions.create(**call_kwargs)
+            if timeout_override is not None:
+                active = LlamaStackClient(
+                    base_url=self.client._base_url,
+                    http_client=DefaultHttpxClient(
+                        verify=self._ssl_context,
+                        timeout=httpx.Timeout(
+                            int(timeout_override), connect=10.0,
+                        ),
+                    ),
+                )
+            else:
+                active = self._client_for_use_case(use_case)
+            response = active.chat.completions.create(**call_kwargs)
+            self._populate_result_meta(response, result_meta)
 
             if (response.choices
                     and response.choices[0].message
