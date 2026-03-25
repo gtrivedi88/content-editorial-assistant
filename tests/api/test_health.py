@@ -1,9 +1,11 @@
 """Tests for the health check API endpoint.
 
-Verifies GET /api/v1/health returns correct status and expected fields.
+Verifies GET /api/v1/health returns correct status and expected fields,
+including LLM availability caching behaviour.
 """
 
 import logging
+from unittest.mock import patch
 
 import pytest
 from flask.testing import FlaskClient
@@ -71,3 +73,58 @@ class TestHealthCheck:
         assert "uptime_seconds" in data
         assert isinstance(data["uptime_seconds"], (int, float))
         assert data["uptime_seconds"] >= 0
+
+    def test_llm_check_cached_on_repeated_calls(
+        self, client: FlaskClient
+    ) -> None:
+        """LLM availability is cached — repeated probes skip TLS round-trip.
+
+        The second health check within the TTL window should return the
+        cached result without calling ``LLMClient.is_available()`` again.
+        """
+        import app.api.v1.health as health_mod
+
+        # Reset cache so the first call is a real check
+        health_mod._llm_cache_timestamp = 0.0
+
+        with patch(
+            "app.llm.client.LLMClient"
+        ) as mock_cls:
+            mock_cls.return_value.is_available.return_value = True
+
+            resp1 = client.get("/api/v1/health")
+            resp2 = client.get("/api/v1/health")
+
+            assert resp1.status_code == 200
+            assert resp2.status_code == 200
+            # Only one real call — second was served from cache
+            assert mock_cls.return_value.is_available.call_count == 1
+
+    def test_llm_cache_expires_after_ttl(
+        self, client: FlaskClient
+    ) -> None:
+        """LLM cache expires after TTL — next probe triggers a real check.
+
+        Simulates cache expiry by backdating the timestamp, then
+        verifies that a fresh ``is_available()`` call is made.
+        """
+        import app.api.v1.health as health_mod
+
+        # Reset cache
+        health_mod._llm_cache_timestamp = 0.0
+
+        with patch(
+            "app.llm.client.LLMClient"
+        ) as mock_cls:
+            mock_cls.return_value.is_available.return_value = True
+
+            # First call — real check
+            client.get("/api/v1/health")
+            assert mock_cls.return_value.is_available.call_count == 1
+
+            # Expire the cache by backdating timestamp
+            health_mod._llm_cache_timestamp = 0.0
+
+            # Second call — cache expired, real check again
+            client.get("/api/v1/health")
+            assert mock_cls.return_value.is_available.call_count == 2

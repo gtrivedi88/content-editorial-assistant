@@ -44,6 +44,7 @@ def create_app(config_override: Optional[dict] = None) -> Flask:
     )
 
     _apply_config(app, config_override)
+    _set_static_cache(app)
 
     _init_cors(app)
     _init_rate_limiter(app)
@@ -102,6 +103,23 @@ def _apply_config(app: Flask, overrides: Optional[dict]) -> None:
     if overrides:
         app.config.update(overrides)
         logger.info("Applied %d config overrides", len(overrides))
+
+
+def _set_static_cache(app: Flask) -> None:
+    """Set Cache-Control max-age for static assets.
+
+    Flask defaults to ``no-cache`` which forces the browser to
+    revalidate every JS/CSS file on each page load.  With ~40 static
+    assets served through TLS on OpenShift, this adds significant
+    latency.  A 1-hour max-age lets browsers cache assets between
+    page loads; files only change on redeploys.
+
+    Args:
+        app: The Flask application.
+    """
+    max_age = int(os.environ.get("STATIC_CACHE_MAX_AGE", "3600"))
+    app.config["SEND_FILE_MAX_AGE_DEFAULT"] = max_age
+    logger.info("Static file cache max-age=%ds", max_age)
 
 
 def _init_cors(app: Flask) -> None:
