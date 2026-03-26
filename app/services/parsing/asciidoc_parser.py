@@ -71,8 +71,11 @@ _RE_SIDEBAR_OPEN = re.compile(r"^\*{4,}\s*$")
 _RE_EXAMPLE_OPEN = re.compile(r"^={4,}\s*$")
 # Quote/verse block delimiter (4+ underscores)
 _RE_QUOTE_OPEN = re.compile(r"^_{4,}\s*$")
+# Open block delimiter (exactly 2 dashes)
+_RE_OPEN_BLOCK = re.compile(r"^--\s*$")
 
 # Delimited block patterns: (regex, block_type, should_skip_analysis)
+# Order matters: _RE_CODE_OPEN (4+ dashes) must precede _RE_OPEN_BLOCK (2 dashes).
 _DELIMITED_BLOCK_PATTERNS: list[tuple[re.Pattern[str], str, bool]] = [
     (_RE_CODE_OPEN, "code_block", True),
     (_RE_LITERAL_OPEN, "literal", True),
@@ -82,6 +85,7 @@ _DELIMITED_BLOCK_PATTERNS: list[tuple[re.Pattern[str], str, bool]] = [
     (_RE_EXAMPLE_OPEN, "example", False),
     (_RE_QUOTE_OPEN, "quote", False),
     (_RE_TABLE_DELIM, "table", False),
+    (_RE_OPEN_BLOCK, "open_block", False),
 ]
 
 # Single-line patterns that produce skip-analysis blocks
@@ -116,11 +120,18 @@ _PARAGRAPH_STOP_PATTERNS: list[re.Pattern[str]] = [
     _RE_BLOCK_ANCHOR,
     _RE_ROLE_ATTR,
     _RE_DLIST,
+    _RE_OPEN_BLOCK,
 ]
 
 # Pre-compiled AsciiDoc inline patterns for stripping (SK-3).
-# Longer delimiters first to avoid partial matches.
+# Inline macros first, then formatting markers (longer delimiters first).
+# strip_inline_markers() resolves overlaps by position (leftmost wins),
+# so list order is a readability convention, not functional priority.
 _ADOC_INLINE_PATTERNS: list[tuple[re.Pattern[str], int]] = [
+    # link:URL[display text] → display text
+    (re.compile(r"link:https?://[^\s\[\]]+\[([^\]]*)\]"), 1),
+    # xref:target[display text] → display text
+    (re.compile(r"xref:[^\[]+\[([^\]]*)\]"), 1),
     # **unconstrained bold**
     (re.compile(r"\*\*(.+?)\*\*"), 1),
     # *constrained bold*
@@ -511,6 +522,14 @@ class AsciidocParser(BaseParser):
             _decompose_table_cells(inner, blocks, inner_start)
             return j
 
+        # Open blocks: recursively re-parse inner content so that
+        # attribute entries, includes, lists, headings, etc. are
+        # recognized with their correct block types.
+        if block_type == "open_block":
+            inner_start = start_pos + len(body_lines[0]) + 1
+            _reparse_open_block(inner, blocks, inner_start)
+            return j
+
         content = "\n".join(inner)
         end_pos = start_pos + len(raw)
         blocks.append(Block(
@@ -770,6 +789,47 @@ def _append_block(
         char_map=char_map,
     ))
     return idx + 1
+
+
+def _reparse_open_block(
+    inner_lines: list[str],
+    blocks: list[Block],
+    inner_start: int,
+) -> None:
+    """Recursively re-parse lines inside an AsciiDoc open block (``--``).
+
+    Feeds inner lines back through the main ``_consume_line`` dispatch
+    so every construct the parser already handles (attribute entries,
+    includes, lists, headings, admonitions, nested delimited blocks)
+    is recognised with its correct block type and skip flag.
+
+    Args:
+        inner_lines: Lines between the opening and closing ``--``.
+        blocks: Accumulator for discovered blocks (mutated).
+        inner_start: Character offset of the first inner line.
+    """
+    if not inner_lines:
+        return
+
+    # Build a synthetic content string from the inner lines so that
+    # _char_offset (which sums line lengths) produces offsets relative
+    # to inner_start.  We re-create a parser instance to call
+    # _consume_line which needs the full_text for offset computation.
+    inner_text = "\n".join(inner_lines)
+    parser = AsciidocParser()
+    parser._asciidoctor_available = False
+
+    inner_blocks: list[Block] = []
+    idx = 0
+    while idx < len(inner_lines):
+        idx = parser._consume_line(inner_lines, idx, inner_blocks, inner_text)
+
+    # Shift start_pos / end_pos by inner_start so they reference the
+    # original document, not the synthetic inner string.
+    for blk in inner_blocks:
+        blk.start_pos += inner_start
+        blk.end_pos += inner_start
+    blocks.extend(inner_blocks)
 
 
 def _decompose_table_cells(

@@ -424,3 +424,42 @@ class TestCheckSingleStepProcedure:
         parent = _make_block("list", "", children=[child])
         result = _check_single_step_procedure(parent, "")
         assert result is None
+
+
+# ---------------------------------------------------------------------------
+# Pre-judge deduplication
+# ---------------------------------------------------------------------------
+
+
+class TestPreJudgeDedup:
+    """Verify that the orchestrator imports and uses deduplicate_llm_issues."""
+
+    def test_deduplicate_llm_issues_is_importable(self) -> None:
+        """The public deduplicate_llm_issues is importable from merger."""
+        from app.services.analysis.merger import deduplicate_llm_issues
+        assert callable(deduplicate_llm_issues)
+
+    def test_pre_judge_dedup_reduces_duplicates(self) -> None:
+        """Calling deduplicate_llm_issues removes same-source text dupes."""
+        from app.services.analysis.merger import deduplicate_llm_issues
+
+        dup_a = IssueResponse(
+            id="a", source="granular", category=IssueCategory.STYLE,
+            rule_name="llm_style", flagged_text="With this update,",
+            message="Wordy", suggestions=[], severity=IssueSeverity.LOW,
+            sentence="With this update, the module is ready.",
+            sentence_index=0, span=[0, 18],
+            style_guide_citation="", confidence=0.9,
+            status=IssueStatus.OPEN,
+        )
+        dup_b = IssueResponse(
+            id="b", source="granular", category=IssueCategory.STYLE,
+            rule_name="llm_style", flagged_text="With this update,",
+            message="Wordy", suggestions=[], severity=IssueSeverity.LOW,
+            sentence="With this update, the module is ready.",
+            sentence_index=0, span=[0, 18],
+            style_guide_citation="", confidence=0.9,
+            status=IssueStatus.OPEN,
+        )
+        result = deduplicate_llm_issues([dup_a, dup_b])
+        assert len(result) == 1

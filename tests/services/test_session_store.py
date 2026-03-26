@@ -395,3 +395,69 @@ class TestSessionStore:
                 session_id, "nonexistent-issue-id", IssueStatus.ACCEPTED
             )
             assert result is None
+
+
+class TestUpdateSessionResponsePreservesStatuses:
+    """Verify that update_session_response preserves user-modified statuses."""
+
+    def test_accepted_status_preserved_after_session_update(self, app: Flask) -> None:
+        """Accepted issue statuses should survive an update_session_response call.
+
+        Simulates the race condition where a user accepts an issue during
+        the LLM background phase, then the orchestrator replaces the session
+        response with merged results.
+        """
+        with app.app_context():
+            store: SessionStore = get_session_store()
+            original = _make_response(num_issues=2)
+            session_id: str = store.create_session(original)
+
+            # User accepts the first issue during LLM phase
+            issue_id = original.issues[0].id
+            store.update_issue_status(session_id, issue_id, IssueStatus.ACCEPTED)
+
+            # Verify the status was set
+            session = store.get_session(session_id)
+            assert session is not None
+            assert session.issues[0].status == IssueStatus.ACCEPTED
+
+            # Orchestrator creates a new response with the same issue IDs
+            new_response = _make_response(num_issues=2)
+            # Copy issue IDs so they match
+            new_response.issues[0].id = issue_id
+            new_response.issues[1].id = original.issues[1].id
+
+            store.update_session_response(session_id, new_response)
+
+            # Verify status was preserved
+            updated = store.get_session(session_id)
+            assert updated is not None
+            accepted_issues = [i for i in updated.issues if i.status == IssueStatus.ACCEPTED]
+            assert len(accepted_issues) == 1, (
+                f"Expected 1 accepted issue after session update, got {len(accepted_issues)}"
+            )
+            assert accepted_issues[0].id == issue_id
+
+    def test_score_recalculated_after_status_transfer(self, app: Flask) -> None:
+        """Score should reflect preserved statuses, not original penalties."""
+        with app.app_context():
+            store: SessionStore = get_session_store()
+            original = _make_response(num_issues=1)
+            session_id: str = store.create_session(original)
+
+            # Accept the only issue — score should become 100
+            issue_id = original.issues[0].id
+            score_result = store.update_issue_status(session_id, issue_id, IssueStatus.ACCEPTED)
+            assert score_result is not None
+            assert score_result.score == 100
+
+            # New response with the same issue ID (OPEN status)
+            new_response = _make_response(num_issues=1)
+            new_response.issues[0].id = issue_id
+
+            store.update_session_response(session_id, new_response)
+
+            # Score should still be 100 because status was preserved
+            updated = store.get_session(session_id)
+            assert updated is not None
+            assert updated.score.score == 100

@@ -128,3 +128,17 @@ class TestHealthCheck:
             # Second call — cache expired, real check again
             client.get("/api/v1/health")
             assert mock_cls.return_value.is_available.call_count == 2
+
+    def test_llm_cache_ttl_reads_from_config(
+        self, client: FlaskClient
+    ) -> None:
+        """LLM cache TTL is sourced from ``Config.LLM_CACHE_TTL``.
+
+        Verifies that the module-level ``_LLM_CACHE_TTL`` in health.py
+        reflects the value from ``Config`` rather than a hardcoded
+        constant, ensuring the env-var override path works.
+        """
+        import app.api.v1.health as health_mod
+        from app.config import Config
+
+        assert health_mod._LLM_CACHE_TTL == Config.LLM_CACHE_TTL

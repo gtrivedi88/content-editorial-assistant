@@ -298,3 +298,198 @@ class TestAsciidocParser:
         admons = [b for b in result.blocks if b.block_type == "admonition"]
         assert len(admons) == 1
         assert "Remember to save your work." == admons[0].content
+
+    # ---- Link/xref macro stripping ----------------------------------------
+
+    def test_link_macro_stripped_from_content(self) -> None:
+        """link:URL[text] in list items produces display text in content."""
+        content: str = (
+            "* link:https://access.redhat.com/errata/RHEA-2026:5819"
+            "[RHEA-2026:5819]\n"
+        )
+
+        parser: AsciidocParser = AsciidocParser()
+        result: ParseResult = parser.parse(content)
+
+        items = [b for b in result.blocks
+                 if b.block_type == "list_item_unordered"]
+        assert len(items) == 1
+        assert items[0].content == "RHEA-2026:5819"
+
+    def test_link_macro_preserved_in_inline_content(self) -> None:
+        """inline_content retains the full link macro for LLM context."""
+        content: str = (
+            "* link:https://example.com/page[Example Page]\n"
+        )
+
+        parser: AsciidocParser = AsciidocParser()
+        result: ParseResult = parser.parse(content)
+
+        items = [b for b in result.blocks
+                 if b.block_type == "list_item_unordered"]
+        assert len(items) == 1
+        assert "link:https://" in items[0].inline_content
+        assert items[0].content == "Example Page"
+
+    def test_xref_macro_stripped_from_content(self) -> None:
+        """xref:target[text] stripped to display text in content."""
+        content: str = "See xref:install-guide[the installation guide] for details.\n"
+
+        parser: AsciidocParser = AsciidocParser()
+        result: ParseResult = parser.parse(content)
+
+        paras = [b for b in result.blocks if b.block_type == "paragraph"]
+        assert len(paras) >= 1
+        assert "xref:" not in paras[0].content
+        assert "the installation guide" in paras[0].content
+
+    def test_link_macro_char_map_alignment(self) -> None:
+        """char_map maps content positions back to inline_content correctly."""
+        content: str = (
+            "Click link:https://example.com[here] to continue.\n"
+        )
+
+        parser: AsciidocParser = AsciidocParser()
+        result: ParseResult = parser.parse(content)
+
+        paras = [b for b in result.blocks if b.block_type == "paragraph"]
+        assert len(paras) >= 1
+        block = paras[0]
+        assert block.content == "Click here to continue."
+        assert block.char_map is not None
+        here_idx = block.content.index("here")
+        mapped = block.char_map[here_idx]
+        assert block.inline_content[mapped:mapped + 4] == "here"
+
+    # ---- Open block (--) handling ------------------------------------------
+
+    def test_open_block_attribute_skipped(self) -> None:
+        """Attribute entry inside ``--`` block has should_skip_analysis=True."""
+        content: str = (
+            "--\n"
+            ":FeatureName: The Argo CD Image Updater feature\n"
+            "--\n"
+        )
+
+        parser: AsciidocParser = AsciidocParser()
+        result: ParseResult = parser.parse(content)
+
+        attrs = [b for b in result.blocks if b.block_type == "attribute_entry"]
+        assert len(attrs) == 1
+        assert attrs[0].should_skip_analysis is True
+        assert "FeatureName" in attrs[0].content
+
+    def test_open_block_include_skipped(self) -> None:
+        """include:: directive inside ``--`` block has should_skip_analysis=True."""
+        content: str = (
+            "--\n"
+            "include::snippets/technology-preview.adoc[]\n"
+            "--\n"
+        )
+
+        parser: AsciidocParser = AsciidocParser()
+        result: ParseResult = parser.parse(content)
+
+        skipped = [
+            b for b in result.blocks
+            if b.should_skip_analysis and "include::" in b.content
+        ]
+        assert len(skipped) == 1
+
+    def test_open_block_prose_parsed(self) -> None:
+        """Prose paragraph inside ``--`` block is a paragraph with correct positions."""
+        content: str = (
+            "--\n"
+            "This is prose inside an open block.\n"
+            "--\n"
+        )
+
+        parser: AsciidocParser = AsciidocParser()
+        result: ParseResult = parser.parse(content)
+
+        paras = [b for b in result.blocks if b.block_type == "paragraph"]
+        assert len(paras) == 1
+        assert paras[0].content == "This is prose inside an open block."
+        assert paras[0].start_pos > 0
+        assert paras[0].end_pos > paras[0].start_pos
+
+    def test_open_block_mixed(self) -> None:
+        """Open block with attribute + include + prose produces correct block types."""
+        content: str = (
+            "--\n"
+            ":FeatureName: The Argo CD Image Updater feature\n"
+            "include::snippets/technology-preview.adoc[]\n"
+            "--\n"
+        )
+
+        parser: AsciidocParser = AsciidocParser()
+        result: ParseResult = parser.parse(content)
+
+        attrs = [b for b in result.blocks if b.block_type == "attribute_entry"]
+        assert len(attrs) == 1
+        assert attrs[0].should_skip_analysis is True
+
+        includes = [
+            b for b in result.blocks
+            if b.should_skip_analysis and "include::" in b.content
+        ]
+        assert len(includes) == 1
+
+    def test_open_block_empty(self) -> None:
+        """Empty ``--``/``--`` produces no inner blocks."""
+        content: str = "--\n--\n"
+
+        parser: AsciidocParser = AsciidocParser()
+        result: ParseResult = parser.parse(content)
+
+        non_skip = [b for b in result.blocks if not b.should_skip_analysis]
+        assert non_skip == []
+
+    def test_open_block_no_conflict_with_code(self) -> None:
+        """``----`` (4+ dashes) still matches code block, not open block."""
+        content: str = (
+            "----\n"
+            "echo hello\n"
+            "----\n"
+        )
+
+        parser: AsciidocParser = AsciidocParser()
+        result: ParseResult = parser.parse(content)
+
+        code_blocks = [b for b in result.blocks if b.block_type == "code_block"]
+        assert len(code_blocks) == 1
+        assert code_blocks[0].should_skip_analysis is True
+
+    def test_open_block_stops_paragraph(self) -> None:
+        """``--`` stops a preceding paragraph accumulation."""
+        content: str = (
+            "Some paragraph text.\n"
+            "--\n"
+            ":attr: value\n"
+            "--\n"
+        )
+
+        parser: AsciidocParser = AsciidocParser()
+        result: ParseResult = parser.parse(content)
+
+        paras = [b for b in result.blocks if b.block_type == "paragraph"]
+        assert len(paras) == 1
+        assert paras[0].content == "Some paragraph text."
+        assert "--" not in paras[0].content
+
+    def test_open_block_with_list_items(self) -> None:
+        """List items inside an open block get correct block types."""
+        content: str = (
+            "--\n"
+            "* Bullet one\n"
+            "* Bullet two\n"
+            "--\n"
+        )
+
+        parser: AsciidocParser = AsciidocParser()
+        result: ParseResult = parser.parse(content)
+
+        items = [b for b in result.blocks if b.block_type == "list_item_unordered"]
+        assert len(items) == 2
+        assert items[0].content == "Bullet one"
+        assert items[1].content == "Bullet two"

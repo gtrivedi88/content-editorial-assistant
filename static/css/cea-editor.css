@@ -223,6 +223,7 @@
   color: var(--pf-v5-global--Color--200);
   pointer-events: none;
   font-style: italic;
+  font-size: 18px;
 }
 
 /*

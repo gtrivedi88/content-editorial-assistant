@@ -278,3 +278,67 @@ class TestReleaseNotesEnum:
         ct = ContentType("release_notes")
         assert ct == ContentType.RELEASE_NOTES
         assert ct.value == "release_notes"
+
+
+class TestReleaseNotesRefinement:
+    """Content type refinement from REFERENCE → release_notes."""
+
+    def test_reference_with_release_notes_title_and_section(self):
+        """REFERENCE + release notes title + section → release_notes."""
+        from app.services.analysis.preprocessor import _detect_content_type
+
+        text = (
+            ":_mod-docs-content-type: REFERENCE\n\n"
+            "= Release notes for Product 1.0\n\n"
+            "== New features\n\n"
+            "Feature description here.\n"
+        )
+        assert _detect_content_type(text) == "release_notes"
+
+    def test_reference_without_markers_stays_reference(self):
+        """REFERENCE without release notes signals stays reference."""
+        from app.services.analysis.preprocessor import _detect_content_type
+
+        text = (
+            ":_mod-docs-content-type: REFERENCE\n\n"
+            "= API Parameters\n\n"
+            "== Configuration options\n\n"
+            "Parameter descriptions here.\n"
+        )
+        assert _detect_content_type(text) == "reference"
+
+    def test_reference_with_three_sections_no_title(self):
+        """3+ release notes sections without title → release_notes."""
+        from app.services.analysis.preprocessor import _detect_content_type
+
+        text = (
+            ":_mod-docs-content-type: REFERENCE\n\n"
+            "= Product 1.0 changes\n\n"
+            "== New features\n\nStuff.\n\n"
+            "== Fixed issues\n\nMore stuff.\n\n"
+            "== Known issues\n\nOther stuff.\n"
+        )
+        assert _detect_content_type(text) == "release_notes"
+
+    def test_reference_with_one_section_no_title_stays_reference(self):
+        """1 release notes section without title stays reference."""
+        from app.services.analysis.preprocessor import _detect_content_type
+
+        text = (
+            ":_mod-docs-content-type: REFERENCE\n\n"
+            "= API changelog\n\n"
+            "== Known issues\n\n"
+            "Some known issues.\n"
+        )
+        assert _detect_content_type(text) == "reference"
+
+    def test_procedure_not_refined(self):
+        """PROCEDURE type is never refined to release_notes."""
+        from app.services.analysis.preprocessor import _detect_content_type
+
+        text = (
+            ":_mod-docs-content-type: PROCEDURE\n\n"
+            "= Release notes for Product\n\n"
+            "== New features\n\n"
+        )
+        assert _detect_content_type(text) == "procedure"

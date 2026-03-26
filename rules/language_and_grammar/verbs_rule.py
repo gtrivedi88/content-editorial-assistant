@@ -19,11 +19,13 @@ _STATE_OF_BEING_LEMMAS: frozenset = frozenset({
     'install', 'instal', 'store', 'locate', 'deploy', 'host', 'mount', 'place',
     # State-of-being status
     'configure', 'enable', 'disable', 'activate', 'deactivate',
-    'distribute', 'license', 'certify',
+    'distribute', 'license', 'certify', 'surface',
     # State-of-being detection/result
     'detect', 'discover', 'find', 'determine', 'observe',
     # Release notes patterns
     'fix', 'add', 'remove', 'resolve', 'address', 'update',
+    'optimize', 'optimise', 'improve', 'enhance', 'reduce',
+    'consolidate', 'streamline', 'migrate', 'introduce',
 })
 
 # Action verbs where passive is acceptable in reference docs and release notes
@@ -31,6 +33,8 @@ _STATE_OF_BEING_LEMMAS: frozenset = frozenset({
 _REFERENCE_OK_PASSIVE: frozenset = frozenset({
     'list', 'describe', 'document', 'specify', 'define', 'include',
     'associate', 'relate', 'connect', 'link', 'bind', 'map',
+    'push', 'publish', 'release', 'ship',
+    'build', 'provide', 'package',
 })
 
 
@@ -104,16 +108,31 @@ class VerbsRule(BaseLanguageRule):
         return errors
 
     def _suggest_active(self, sent, main_verb) -> str:
-        agent = None
+        """Build an active-voice suggestion from the passive agent.
+
+        Falls back to a generic message when no agent is found or
+        when the extracted agent is not a valid sentence subject
+        (e.g., a gerund like 'removing' from 'optimized by removing').
+        """
+        agent_token = None
         for child in main_verb.children:
             if child.dep_ == 'agent':
                 for grandchild in child.children:
                     if grandchild.dep_ == 'pobj':
-                        agent = grandchild.text
+                        agent_token = grandchild
                         break
-        if agent:
-            return f"Consider: '{agent} {main_verb.lemma_}s ...' (active voice)"
-        return "Rewrite in active voice: make the actor the subject of the sentence."
+        if agent_token is not None:
+            # Guard: only suggest when the agent is a noun/proper noun,
+            # not a gerund (VBG) or other non-subject POS.
+            if agent_token.tag_ in ('NN', 'NNP', 'NNS', 'NNPS', 'PRP'):
+                return (
+                    f"Consider: '{agent_token.text} "
+                    f"{main_verb.lemma_}s ...' (active voice)"
+                )
+        return (
+            "Rewrite in active voice: make the actor "
+            "the subject of the sentence."
+        )
 
     # --- Future tense: "will" + verb ---
 

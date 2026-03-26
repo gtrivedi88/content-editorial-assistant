@@ -51,6 +51,15 @@ _RULE_TO_EXAMPLE_KEY: dict[str, str] = {
 }
 
 
+def ensure_loaded() -> None:
+    """Eagerly load multi-shot examples (call from ``post_worker_init``).
+
+    Triggers the lazy singleton so that the first real analysis request
+    does not pay the YAML parsing cost (~1s for 2384-line file).
+    """
+    _load_examples()
+
+
 def _load_examples() -> dict:
     """Load multi-shot examples on first use (lazy singleton).
 
@@ -310,16 +319,33 @@ def build_granular_prompt(
         "- Anthropomorphism — attributing human actions to software/"
         "systems (e.g., 'the system wants' or 'the system applies')\n"
         "- Technical term formatting — specific commands, CLI utilities, "
-        "file paths, directory names, configuration parameters, package "
-        "names, environment variables, and code elements mentioned in "
-        "prose should use backtick formatting (e.g., 'ostree' should be "
+        "file paths, directory names, configuration parameters, "
+        "environment variables, and code elements that would appear "
+        "verbatim in a terminal command or configuration file should "
+        "use backtick formatting (e.g., 'ostree' should be "
         "`ostree`, 'systemctl' should be `systemctl`). Do NOT flag "
         "general technical concepts or descriptive phrases (e.g., "
         "'kernel modules', 'system extensions', 'command line options' "
         "are prose concepts, not code). Do NOT flag text already "
         "wrapped in **bold** markers (e.g., **Edit**, **Apply**, "
         "**Routes**) — these are UI element names already formatted "
-        "with bold per the source document\n"
+        "with bold per the source document. Do NOT flag product names, "
+        "project names, software component names, specification names, "
+        "standard names, framework names, or protocol names used as "
+        "proper nouns in prose (e.g., Dex, Keycloak, Kubernetes "
+        "Operator, Argo CD, Terraform, CloudEvents, OpenTelemetry, "
+        "OAuth, gRPC, Prometheus) — these are prose references to "
+        "software or standards, not code elements that a user would "
+        "type in a terminal or config file. Do NOT flag feature names, "
+        "capability labels, or conceptual proper nouns (e.g., "
+        "'Agent Mapping Modes', 'Technology Preview', 'Image Updater', "
+        "'Network Policy') — these describe features or concepts, "
+        "not code. "
+        "Do NOT flag Kubernetes resource type names written in "
+        "lowercase prose form (e.g., 'config map', 'network policy', "
+        "'custom resource', 'deployment', 'service', 'secret', "
+        "'pod', 'namespace') — only flag the CamelCase API kind "
+        "(e.g., `ConfigMap`, `NetworkPolicy`) when used as code\n"
         "- Future tense — use simple present tense instead of 'will' "
         "(e.g., 'the installation will fail' → 'the installation fails'; "
         "'will be used' → 'is used')\n"
@@ -363,7 +389,10 @@ def build_granular_prompt(
         "- Missing lead-in sentences for standard modular docs sections "
         "(Prerequisites, Verification, Troubleshooting, Additional resources) "
         "— these section headings are self-explanatory labels that do not "
-        "require introductory text before their content\n\n"
+        "require introductory text before their content\n"
+        "- 'by using' constructions — 'by using' after a noun is the "
+        "correct grammatical form per IBM Style Guide (not wordiness). "
+        "Do not flag 'by using' as wordy or suggest removing 'by'\n\n"
         "## BIAS DIRECTIVE\n"
         "Flag all clear violations of the style guide rules provided. "
         "When a pattern clearly violates a rule, flag it regardless of "
@@ -643,7 +672,15 @@ def build_judge_prompt(
         "- Text wrapped in bold or backtick formatting flagged for "
         "additional formatting\n"
         "- UI element names (button labels, menu items) flagged for "
-        "backtick formatting when already bold\n\n"
+        "backtick formatting when already bold\n"
+        "- Product names, project names, feature names, specification "
+        "names, standard names, or framework names flagged for "
+        "backtick formatting — these are proper nouns in prose, not "
+        "code elements\n"
+        "- Kubernetes resource types in lowercase prose form (config map, "
+        "network policy, custom resource) flagged for backtick formatting\n"
+        "- 'by using' flagged as wordy — 'by using' after a noun is "
+        "the correct form per IBM Style Guide\n\n"
         "## KEEP criteria (real issue)\n"
         "- Clearly supported by IBM Style Guide or Red Hat "
         "Supplementary Style Guide\n"
@@ -700,7 +737,9 @@ def _judge_content_type_note(content_type: str) -> str:
         ),
         "release_notes": (
             "Release notes: past tense passive is standard. "
-            "Drop passive voice flags. Keep first-person flags."
+            "Drop passive voice flags. Keep first-person flags. "
+            "Drop repetitive-phrase flags for standard openers "
+            "('With this update', 'Before this update')."
         ),
     }
     return notes.get(content_type, "")
@@ -773,6 +812,8 @@ def _content_type_guidance(content_type: str) -> str:
             "This is a **release notes** document.\n"
             "- Past tense passive is acceptable ('was fixed', 'was added', 'was removed').\n"
             "- 'the user' refers to end users of the software, not the reader.\n"
+            "- Repetitive opening phrases like 'With this update', 'Before this update', "
+            "'Previously' are standard release notes structure — do NOT flag as repetitive.\n"
             "- Focus on: clarity of change descriptions, completeness."
         ),
         "assembly": (

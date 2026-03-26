@@ -127,6 +127,18 @@ export function initSocketClient(store) {
         }
 
         store.setState(stateUpdate);
+
+        // Guard: if user resolved issues during LLM phase, the score from
+        // analysis_complete may be stale.  Backend preserves statuses, but
+        // the emitted score was computed before the session update.
+        const { resolvedErrors, dismissedErrors, manuallyFixedErrors } = store.getState();
+        const hasResolved = (resolvedErrors?.size > 0)
+            || (dismissedErrors?.size > 0)
+            || (manuallyFixedErrors?.size > 0);
+        const currentErrors = store.get('errors') || [];
+        if (hasResolved && currentErrors.length === 0) {
+            store.setState({ qualityScore: 100 });
+        }
     });
 
     // LLM skipped — background task failed to start, use HTTP response data

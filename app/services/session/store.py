@@ -113,8 +113,10 @@ class SessionStore:
     def update_session_response(self, session_id: str, response: AnalyzeResponse) -> bool:
         """Update an existing session with a new analysis response.
 
-        Preserves the suggestion cache and creation timestamp. Used by
-        the orchestrator to update results after LLM phases complete.
+        Preserves the suggestion cache, creation timestamp, and any
+        user-modified issue statuses (accept/dismiss/manually-fixed)
+        from the previous response. Used by the orchestrator to update
+        results after LLM phases complete.
 
         Args:
             session_id: The session identifier.
@@ -127,6 +129,8 @@ class SessionStore:
             session = self._sessions.get(session_id)
             if session is None:
                 return False
+            old_response = session["response"]
+            _transfer_issue_statuses(old_response, response)
             session["response"] = response
         logger.info("Updated session %s with %d issues", session_id, len(response.issues))
         return True
@@ -413,6 +417,49 @@ class SessionStore:
 
 # ---------------------------------------------------------------------------
 # Module-level singleton
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+
+def _transfer_issue_statuses(
+    old_response: AnalyzeResponse,
+    new_response: AnalyzeResponse,
+) -> None:
+    """Transfer user-modified issue statuses from old to new response.
+
+    When the LLM background phase completes and replaces the session
+    response, any accept/dismiss/manually-fixed actions the user took
+    during the LLM phase must be preserved.
+
+    Args:
+        old_response: The previous response with potential user actions.
+        new_response: The incoming response to receive preserved statuses.
+    """
+    old_statuses: dict[str, IssueStatus] = {}
+    for issue in old_response.issues:
+        if issue.status != IssueStatus.OPEN:
+            old_statuses[issue.id] = issue.status
+
+    if not old_statuses:
+        return
+
+    for issue in new_response.issues:
+        saved = old_statuses.get(issue.id)
+        if saved is not None:
+            issue.status = saved
+
+    # Recalculate score to reflect preserved statuses
+    new_score = calculate_score(
+        new_response.issues, new_response.report.word_count
+    )
+    new_response.score = new_score
+    logger.debug(
+        "Transferred %d user-modified statuses, recalculated score=%d",
+        len(old_statuses), new_score.score,
+    )
+
+
 # ---------------------------------------------------------------------------
 
 _store_instance: Optional[SessionStore] = None

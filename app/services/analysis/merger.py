@@ -159,7 +159,7 @@ def _merge_llm_tier(
     Returns:
         Tuple of (accepted_llm, kept_count, stats_dict).
     """
-    unique_llm = _deduplicate_llm_issues(llm_issues)
+    unique_llm = deduplicate_llm_issues(llm_issues)
     llm_deduped = len(llm_issues) - len(unique_llm)
 
     accepted_llm: list[IssueResponse] = []
@@ -204,7 +204,7 @@ def _merge_llm_tier(
 # ---------------------------------------------------------------------------
 
 
-def _deduplicate_llm_issues(
+def deduplicate_llm_issues(
     issues: list[IssueResponse],
 ) -> list[IssueResponse]:
     """Remove duplicate LLM issues (e.g., granular vs global overlap).

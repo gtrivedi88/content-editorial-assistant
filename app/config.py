@@ -92,6 +92,7 @@ class Config:
     LLM_CHUNK_OVERLAP: int = int(os.environ.get("LLM_CHUNK_OVERLAP", "2"))
     LLM_GLOBAL_MIN_WORDS: int = int(os.environ.get("LLM_GLOBAL_MIN_WORDS", "300"))
     LLM_JUDGE_BATCH_SIZE: int = int(os.environ.get("LLM_JUDGE_BATCH_SIZE", "25"))
+    LLM_CACHE_TTL: float = float(os.environ.get("LLM_CACHE_TTL", "120"))
 
     # --- Analysis ---
     CONFIDENCE_THRESHOLD: float = float(os.environ.get("CONFIDENCE_THRESHOLD", "0.55"))

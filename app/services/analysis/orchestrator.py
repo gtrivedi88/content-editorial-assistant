@@ -31,7 +31,10 @@ from app.models.schemas import (
     ScoreResponse,
 )
 from app.services.analysis.deterministic import analyze as run_deterministic
-from app.services.analysis.merger import merge as merge_issues
+from app.services.analysis.merger import (
+    merge as merge_issues,
+    deduplicate_llm_issues,
+)
 from app.services.analysis.preprocessor import _block_to_markdown, preprocess
 from app.services.analysis.scorer import calculate_score
 
@@ -486,8 +489,10 @@ def _run_llm_phases(
 
     phase_executor.shutdown(wait=False)
 
-    # Merge granular + global into a single LLM issues list
-    llm_issues: list[IssueResponse] = granular_issues + global_issues
+    # Merge granular + global into a single LLM issues list, dedup before judge
+    raw_count = len(granular_issues) + len(global_issues)
+    llm_issues = deduplicate_llm_issues(granular_issues + global_issues)
+    logger.info("Pre-judge dedup: %d -> %d LLM issues", raw_count, len(llm_issues))
 
     # Phase 2C: LLM judge self-correction (optional)
     if not _is_cancelled(session_id) and llm_issues and Config.LLM_JUDGE_ENABLED:

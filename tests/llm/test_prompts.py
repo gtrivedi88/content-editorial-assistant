@@ -16,6 +16,7 @@ from app.llm.prompts import (
     _select_examples,
     build_global_prompt,
     build_granular_prompt,
+    build_judge_prompt,
     build_suggestion_prompt,
 )
 
@@ -500,3 +501,87 @@ class TestStructuralPromptIntegration:
         system_prompt, _ = build_global_prompt("text", "concept", [])
         assert "2-3 sentences" in system_prompt
         assert "prioritize" in system_prompt.lower()
+
+    def test_technical_term_excludes_product_names(self) -> None:
+        """Granular prompt excludes product/feature names from backtick formatting."""
+        system_prompt, _ = build_granular_prompt("text", ["text"], [])
+        assert "product names" in system_prompt.lower()
+        assert "feature names" in system_prompt.lower()
+        assert "prose references to software" in system_prompt
+
+    def test_skip_by_using_construction(self) -> None:
+        """Granular prompt SKIP list includes 'by using' constructions."""
+        system_prompt, _ = build_granular_prompt("text", ["text"], [])
+        assert "by using" in system_prompt
+        assert "IBM Style Guide" in system_prompt
+
+
+# ---------------------------------------------------------------------------
+# Judge prompt DROP criteria
+# ---------------------------------------------------------------------------
+
+
+class TestJudgePromptDropCriteria:
+    """Tests for judge prompt DROP criteria additions."""
+
+    def test_judge_drops_product_name_backtick_flags(self) -> None:
+        """Judge DROP criteria include product name backtick false positives."""
+        issues = [{"flagged_text": "Dex", "message": "backtick", "severity": "low"}]
+        system_prompt, _ = build_judge_prompt(issues, "some text", "concept")
+        assert "product names" in system_prompt.lower()
+        assert "proper nouns" in system_prompt.lower()
+
+    def test_judge_drops_by_using_wordiness_flags(self) -> None:
+        """Judge DROP criteria include 'by using' wordiness false positives."""
+        issues = [{"flagged_text": "by using", "message": "wordy", "severity": "low"}]
+        system_prompt, _ = build_judge_prompt(issues, "some text", "concept")
+        assert "by using" in system_prompt
+        assert "IBM Style Guide" in system_prompt
+
+    def test_judge_drops_k8s_resource_type_backtick_flags(self) -> None:
+        """Judge DROP criteria include Kubernetes resource types in prose form."""
+        issues = [{"flagged_text": "config map", "message": "backtick", "severity": "low"}]
+        system_prompt, _ = build_judge_prompt(issues, "some text", "concept")
+        assert "resource type" in system_prompt.lower()
+
+
+class TestGranularPromptK8sExclusion:
+    """Tests for Kubernetes resource type prose form exclusions."""
+
+    def test_k8s_prose_resource_types_excluded(self) -> None:
+        """Granular prompt excludes Kubernetes resource types in prose form."""
+        system_prompt, _ = build_granular_prompt("text", ["text"], [])
+        assert "config map" in system_prompt
+        assert "network policy" in system_prompt
+        assert "CamelCase API kind" in system_prompt
+
+
+class TestTechnicalTermSpecificationExclusion:
+    """Tests for specification/standard/framework name exclusions."""
+
+    def test_granular_excludes_specification_names(self) -> None:
+        """Granular prompt excludes specification/standard/framework names."""
+        system_prompt, _ = build_granular_prompt("text", ["text"], [])
+        assert "specification names" in system_prompt
+        assert "standard names" in system_prompt
+        assert "framework names" in system_prompt
+        assert "protocol names" in system_prompt
+
+    def test_granular_excludes_specific_examples(self) -> None:
+        """Granular prompt lists CloudEvents, OpenTelemetry, etc. as examples."""
+        system_prompt, _ = build_granular_prompt("text", ["text"], [])
+        assert "CloudEvents" in system_prompt
+        assert "OpenTelemetry" in system_prompt
+        assert "gRPC" in system_prompt
+
+    def test_granular_uses_verbatim_criteria(self) -> None:
+        """Granular CHECK uses 'verbatim in a terminal' not 'package names'."""
+        system_prompt, _ = build_granular_prompt("text", ["text"], [])
+        assert "verbatim in a terminal" in system_prompt
+
+    def test_judge_drops_specification_name_backtick_flags(self) -> None:
+        """Judge DROP criteria include specification/framework names."""
+        issues = [{"flagged_text": "OpenTelemetry", "message": "backtick"}]
+        system_prompt, _ = build_judge_prompt(issues, "some text", "concept")
+        assert "specification" in system_prompt.lower()
+        assert "framework names" in system_prompt

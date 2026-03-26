@@ -2376,6 +2376,10 @@ analysis_examples:
     bad_flags:
       - text: "The `oc adm` command was updated to support the new authentication method."
         reason: "Past passive is correct for release notes — do not flag"
+      - text: "configure an external identity provider by using Red Hat Build of Keycloak"
+        reason: "'by using' after a noun is correct per IBM Style Guide — do not flag as wordy"
+      - text: "deploy Argo CD agents by using the Operator"
+        reason: "'Operator' is a product/project name, not a code element — do not suggest backtick formatting"
 
 # Performance settings
 performance:

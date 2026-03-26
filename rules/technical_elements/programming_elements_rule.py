@@ -40,6 +40,7 @@ _SAFE_WORDS = frozenset([
     'LET', 'SAY', 'END', 'NEW', 'OLD', 'OUR', 'ANY', 'ITS', 'YOU', 'HOW',
     'API', 'SDK', 'URL', 'SQL', 'XML', 'CSS', 'HTML', 'JSON', 'YAML',
     'HTTP', 'HTTPS', 'REST', 'SOAP', 'IBM', 'CLI', 'GUI', 'IDE',
+    'RPM', 'CVE', 'CPU', 'GPU', 'PDF', 'CSV', 'PVC', 'CRD',
     'NOTE', 'IMPORTANT', 'WARNING', 'CAUTION', 'TIP', 'DANGER',
     'AND', 'ANDING', 'ORED',  # Boolean operators used as verbs are OK per IBM
 ])
@@ -103,6 +104,8 @@ class ProgrammingElementsRule(BaseTechnicalRule):
             suffix = match.group(2)
 
             if keyword in _SAFE_WORDS:
+                continue
+            if keyword not in _PROGRAMMING_KEYWORDS:
                 continue
             if in_code_range(sent_start + match.start(), code_ranges):
                 continue

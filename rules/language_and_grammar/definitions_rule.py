@@ -24,6 +24,9 @@ _ACRONYM_USE = re.compile(r'\b([A-Z]{3,5}s?)\b')
 # Match parenthetical definitions: (RBAC), (APIs), etc.
 _ACRONYM_DEF = re.compile(r'\(([A-Z]{3,5}s?)\)')
 
+# Identifier suffix: ACRONYM followed by dash-digit (RHEA-2026, GITOPS-8017)
+_IDENTIFIER_SUFFIX_RE = re.compile(r'^-\d')
+
 
 def _load_exceptions() -> frozenset:
     """Load well-known acronyms that don't need definitions."""
@@ -97,6 +100,11 @@ class DefinitionsRule(BaseLanguageRule):
             seen_acronyms.add(acronym)
             if acronym in _WELL_KNOWN or acronym in defined:
                 continue
+            if match.start() > 0 and sent.text[match.start() - 1] == '{':
+                continue
+            remaining = sent.text[match.end():]
+            if remaining and _IDENTIFIER_SUFFIX_RE.match(remaining):
+                continue
             start = sent.start_char + match.start()
             if in_code_range(start, code_ranges):
                 continue
@@ -128,6 +136,11 @@ class DefinitionsRule(BaseLanguageRule):
                 continue
             seen_acronyms.add(acronym)
             if acronym in _WELL_KNOWN or acronym in defined:
+                continue
+            if match.start() > 0 and sentence[match.start() - 1] == '{':
+                continue
+            remaining = sentence[match.end():]
+            if remaining and _IDENTIFIER_SUFFIX_RE.match(remaining):
                 continue
             if in_code_range(sent_start + match.start(), code_ranges):
                 continue

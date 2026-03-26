@@ -63,6 +63,10 @@ def post_worker_init(worker: object) -> None:
 
     try:
         from rules import term_registry  # noqa: F401 — triggers module-level load
+        from app.llm.prompts import ensure_loaded as load_prompts
+        from models.token_config import get_token_config
+        load_prompts()
+        get_token_config()
         worker.log.info("Worker %s: singletons initialized", worker.pid)
     except ImportError:
         worker.log.info("Worker %s: core singletons initialized", worker.pid)

@@ -16,13 +16,14 @@ from typing import Tuple
 from flask import Response, jsonify
 
 from app.api.v1 import bp
+from app.config import Config
 
 logger = logging.getLogger(__name__)
 
 _start_time: float = time.monotonic()
 
 # Cached LLM availability — prevents TLS + models.list() on every probe
-_LLM_CACHE_TTL: float = 30.0
+_LLM_CACHE_TTL: float = Config.LLM_CACHE_TTL
 _llm_cache_lock = threading.Lock()
 _llm_cached_result: bool = False
 _llm_cache_timestamp: float = 0.0

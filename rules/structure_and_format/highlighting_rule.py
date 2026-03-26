@@ -165,7 +165,16 @@ class HighlightingRule(BaseStructureRule):
         Builds the error dict directly to bypass the base-class
         ``_is_technical_content()`` guard, which intentionally classifies
         camelCase as technical content to protect other rules.
+
+        Skips entirely when ``inline_code_ranges`` is absent from the
+        context dict — this indicates the full-text pass where inline
+        markup has been stripped and code-range data is unavailable,
+        so we cannot distinguish already-formatted identifiers from
+        bare ones.
         """
+        if context and "inline_code_ranges" not in context:
+            return
+
         for match in _CAMEL_CASE_RE.finditer(sentence):
             abs_pos = sent_start + match.start() if sent_start >= 0 else -1
             if abs_pos >= 0 and in_code_range(abs_pos, code_ranges):

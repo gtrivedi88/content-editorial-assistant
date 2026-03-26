@@ -595,6 +595,17 @@ _OPTIONAL_PREFIX_RE = re.compile(r"^Optional:", re.MULTILINE)
 _TABLE_MARKER_RE = re.compile(r"^\|===", re.MULTILINE)
 _DEF_LIST_RE = re.compile(r"::\s*$", re.MULTILINE)
 
+# Release notes structural signals — used to refine REFERENCE → release_notes
+_RELEASE_NOTES_TITLE_RE = re.compile(
+    r"^=\s+.*\brelease\s+notes\b", re.IGNORECASE | re.MULTILINE,
+)
+_RELEASE_NOTES_SECTIONS_RE = re.compile(
+    r"^==\s+(?:New features|Fixed issues|Known issues|"
+    r"Errata updates|Technology Preview|Deprecated.*functionality|"
+    r"Removed.*functionality|Breaking changes)",
+    re.IGNORECASE | re.MULTILINE,
+)
+
 
 # ---------------------------------------------------------------------------
 # Internal helpers
@@ -623,7 +634,10 @@ def _detect_content_type(text: str) -> str | None:
     # Tier 1: explicit AsciiDoc attribute → instant win
     attr_match = _CONTENT_TYPE_ATTR_RE.search(text)
     if attr_match:
-        return attr_match.group(1).lower()
+        declared = attr_match.group(1).lower()
+        if declared == "reference" and _is_release_notes(text):
+            return "release_notes"
+        return declared
 
     # Tiers 2-4: multi-type scoring
     scores: dict[str, int] = {"procedure": 0, "concept": 0, "reference": 0}
@@ -643,6 +657,27 @@ def _detect_content_type(text: str) -> str | None:
         return best
 
     return None
+
+
+def _is_release_notes(text: str) -> bool:
+    """Check if text has release notes structural patterns.
+
+    Used to refine ``reference`` → ``release_notes`` when the document
+    declares ``:_mod-docs-content-type: REFERENCE`` but has strong
+    release notes signals (Red Hat convention).
+
+    Requires reinforcing evidence to avoid false refinement:
+    title AND 1+ section heading, OR 3+ section headings alone.
+
+    Args:
+        text: Raw input text.
+
+    Returns:
+        True if release notes structure is detected.
+    """
+    has_title = bool(_RELEASE_NOTES_TITLE_RE.search(text))
+    section_count = len(_RELEASE_NOTES_SECTIONS_RE.findall(text))
+    return (has_title and section_count >= 1) or section_count >= 3
 
 
 def _score_structural_markers(text: str, scores: dict[str, int]) -> None:

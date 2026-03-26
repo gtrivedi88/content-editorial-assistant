@@ -677,6 +677,90 @@ class TestHighlightingRuleBoldCode:
         )
 
 
+class TestHighlightingCamelCaseFullTextGuard:
+    """Check 2: camelCase detection skips in full-text mode (no code-range info)."""
+
+    def test_camelcase_skipped_without_code_range_key(
+        self, nlp: spacy.language.Language,
+    ) -> None:
+        """camelCase should NOT be flagged when inline_code_ranges key is absent."""
+        from rules.structure_and_format.highlighting_rule import HighlightingRule
+
+        rule = HighlightingRule()
+        text = "Fixed incorrect ownerReferences apiVersion in config maps."
+        doc = nlp(text)
+        sentences = [sent.text for sent in doc.sents]
+        context: Dict[str, Any] = {"block_type": "paragraph"}
+
+        result: List[Dict[str, Any]] = rule.analyze(
+            text, sentences, nlp=nlp, context=context, spacy_doc=doc,
+        )
+
+        camel_issues = [
+            e for e in result
+            if "camelcase" in e.get("message", "").lower()
+            or "backticks" in e.get("message", "").lower()
+        ]
+        assert camel_issues == [], (
+            f"camelCase should not be flagged in full-text mode: {camel_issues}"
+        )
+
+    def test_camelcase_flagged_with_empty_code_ranges(
+        self, nlp: spacy.language.Language,
+    ) -> None:
+        """camelCase SHOULD be flagged when inline_code_ranges key is present (per-block)."""
+        from rules.structure_and_format.highlighting_rule import HighlightingRule
+
+        rule = HighlightingRule()
+        text = "Fixed incorrect ownerReferences apiVersion in config maps."
+        doc = nlp(text)
+        sentences = [sent.text for sent in doc.sents]
+        context: Dict[str, Any] = {
+            "block_type": "paragraph",
+            "inline_code_ranges": [],
+        }
+
+        result: List[Dict[str, Any]] = rule.analyze(
+            text, sentences, nlp=nlp, context=context, spacy_doc=doc,
+        )
+
+        camel_issues = [
+            e for e in result
+            if "camelcase" in e.get("message", "").lower()
+            or "backticks" in e.get("message", "").lower()
+        ]
+        assert len(camel_issues) == 2, (
+            f"Expected 2 camelCase flags (ownerReferences, apiVersion): {camel_issues}"
+        )
+
+    def test_camelcase_in_code_range_not_flagged(
+        self, nlp: spacy.language.Language,
+    ) -> None:
+        """camelCase inside inline_code_ranges should NOT be flagged (per-block)."""
+        from rules.structure_and_format.highlighting_rule import HighlightingRule
+
+        rule = HighlightingRule()
+        text = "Update ownerReferences in the config maps."
+        doc = nlp(text)
+        sentences = [sent.text for sent in doc.sents]
+        context: Dict[str, Any] = {
+            "block_type": "paragraph",
+            "inline_code_ranges": [(7, 22)],
+        }
+
+        result: List[Dict[str, Any]] = rule.analyze(
+            text, sentences, nlp=nlp, context=context, spacy_doc=doc,
+        )
+
+        camel_issues = [
+            e for e in result
+            if "ownerReferences" in e.get("flagged_text", "")
+        ]
+        assert camel_issues == [], (
+            f"ownerReferences inside code range should not be flagged: {camel_issues}"
+        )
+
+
 # ===================================================================
 # CEA Perfection Plan — Rule coverage tests
 # ===================================================================
@@ -1376,4 +1460,447 @@ class TestConjunctionsWhileFPGuards:
         suggestions = while_errors[0].get("suggestions", [])
         assert "although" in suggestions, (
             "Suggestion must be a direct replacement, not an instruction"
+        )
+
+
+# ---------------------------------------------------------------------------
+# DefinitionsRule — attribute ref and identifier FP guards
+# ---------------------------------------------------------------------------
+
+
+class TestDefinitionsRuleFPGuards:
+    """Tests for DefinitionsRule false-positive guards."""
+
+    def test_attribute_ref_not_flagged(
+        self, nlp: spacy.language.Language,
+    ) -> None:
+        """Acronyms inside AsciiDoc attribute refs {ATTR} are skipped."""
+        from rules.language_and_grammar.definitions_rule import (
+            DefinitionsRule,
+        )
+
+        rule = DefinitionsRule()
+        text = "{OCP} 4.14 is available on {OCP} 4.16."
+        doc = nlp(text)
+        errors: List[Dict[str, Any]] = rule.analyze(
+            text, [text], nlp=nlp, spacy_doc=doc,
+        )
+        ocp_errors = [e for e in errors if e.get("flagged_text") == "OCP"]
+        assert len(ocp_errors) == 0, (
+            "Acronyms inside {ATTR} attribute references must not be flagged"
+        )
+
+    def test_identifier_suffix_not_flagged(
+        self, nlp: spacy.language.Language,
+    ) -> None:
+        """Acronyms in identifiers like RHEA-2026 are skipped."""
+        from rules.language_and_grammar.definitions_rule import (
+            DefinitionsRule,
+        )
+
+        rule = DefinitionsRule()
+        text = "RHEA-2026:5819 is the advisory. See GITOPS-8017."
+        doc = nlp(text)
+        errors: List[Dict[str, Any]] = rule.analyze(
+            text, [text], nlp=nlp, spacy_doc=doc,
+        )
+        rhea = [e for e in errors if e.get("flagged_text") == "RHEA"]
+        gitops = [e for e in errors
+                  if e.get("flagged_text") == "GITOP"]
+        assert len(rhea) == 0, "RHEA-2026 is an identifier, not an acronym"
+        assert len(gitops) == 0, "GITOPS-8017 is an identifier"
+
+    def test_standalone_acronym_still_flagged(
+        self, nlp: spacy.language.Language,
+    ) -> None:
+        """Standalone undefined acronyms are still flagged (regression)."""
+        from rules.language_and_grammar.definitions_rule import (
+            DefinitionsRule,
+        )
+
+        rule = DefinitionsRule()
+        text = "The XYZQ module handles authentication."
+        doc = nlp(text)
+        errors: List[Dict[str, Any]] = rule.analyze(
+            text, [text], nlp=nlp, spacy_doc=doc,
+        )
+        xyzq = [e for e in errors if e.get("flagged_text") == "XYZQ"]
+        assert len(xyzq) == 1, (
+            "Standalone undefined acronyms must still be flagged"
+        )
+
+    def test_attribute_ref_plain_path_not_flagged(self) -> None:
+        """Attribute ref guard works on the plain-sentence path too."""
+        from rules.language_and_grammar.definitions_rule import (
+            DefinitionsRule,
+        )
+
+        rule = DefinitionsRule()
+        text = "Available on {OCP} 4.14 and 4.16."
+        errors: List[Dict[str, Any]] = rule.analyze(
+            text, [text],
+        )
+        ocp_errors = [e for e in errors if e.get("flagged_text") == "OCP"]
+        assert len(ocp_errors) == 0, (
+            "Plain-path attribute ref guard must also skip {ATTR}"
+        )
+
+
+# ---------------------------------------------------------------------------
+# VerbsRule — release notes passive voice exemptions
+# ---------------------------------------------------------------------------
+
+
+class TestVerbsRuleReleaseNotesPassive:
+    """Tests for passive voice exemptions on release notes verbs."""
+
+    def test_been_optimized_not_flagged(
+        self, nlp: spacy.language.Language,
+    ) -> None:
+        """'been optimized' should not be flagged — optimize is state-of-being."""
+        from rules.language_and_grammar.verbs_rule import VerbsRule
+
+        rule = VerbsRule()
+        text = "Component images have been optimized by removing unused packages."
+        doc = nlp(text)
+        sentences = [sent.text for sent in doc.sents]
+
+        result: List[Dict[str, Any]] = rule.analyze(
+            text, sentences, nlp=nlp, spacy_doc=doc,
+        )
+        passive = [e for e in result if "passive" in e.get("message", "").lower()]
+        assert passive == [], (
+            f"'been optimized' is a state-of-being and should not be flagged: {passive}"
+        )
+
+    def test_been_improved_not_flagged(
+        self, nlp: spacy.language.Language,
+    ) -> None:
+        """'been improved' should not be flagged — improve is state-of-being."""
+        from rules.language_and_grammar.verbs_rule import VerbsRule
+
+        rule = VerbsRule()
+        text = "Performance has been improved in this release."
+        doc = nlp(text)
+        sentences = [sent.text for sent in doc.sents]
+
+        result: List[Dict[str, Any]] = rule.analyze(
+            text, sentences, nlp=nlp, spacy_doc=doc,
+        )
+        passive = [e for e in result if "passive" in e.get("message", "").lower()]
+        assert passive == [], (
+            f"'been improved' is a state-of-being and should not be flagged: {passive}"
+        )
+
+    def test_been_enhanced_not_flagged(
+        self, nlp: spacy.language.Language,
+    ) -> None:
+        """'been enhanced' should not be flagged — enhance is state-of-being."""
+        from rules.language_and_grammar.verbs_rule import VerbsRule
+
+        rule = VerbsRule()
+        text = "The security posture has been enhanced with new policies."
+        doc = nlp(text)
+        sentences = [sent.text for sent in doc.sents]
+
+        result: List[Dict[str, Any]] = rule.analyze(
+            text, sentences, nlp=nlp, spacy_doc=doc,
+        )
+        passive = [e for e in result if "passive" in e.get("message", "").lower()]
+        assert passive == [], (
+            f"'been enhanced' is a state-of-being and should not be flagged: {passive}"
+        )
+
+    def test_suggest_active_gerund_agent_fallback(
+        self, nlp: spacy.language.Language,
+    ) -> None:
+        """Gerund agent should produce generic fallback, not broken grammar."""
+        from rules.language_and_grammar.verbs_rule import VerbsRule
+
+        rule = VerbsRule()
+        # Use a verb NOT in _STATE_OF_BEING_LEMMAS so it actually fires
+        text = "The data was corrupted by running the script."
+        doc = nlp(text)
+        sentences = [sent.text for sent in doc.sents]
+
+        result: List[Dict[str, Any]] = rule.analyze(
+            text, sentences, nlp=nlp, spacy_doc=doc,
+        )
+        passive = [e for e in result if "passive" in e.get("message", "").lower()]
+        if passive:
+            suggestion = passive[0].get("suggestions", [""])[0]
+            assert "running corrupts" not in suggestion, (
+                "Gerund agent should not produce 'running corrupts ...'"
+            )
+            assert "Rewrite in active voice" in suggestion, (
+                "Should fall back to generic suggestion for gerund agents"
+            )
+
+    def test_passive_push_not_flagged_reference(
+        self, nlp: spacy.language.Language,
+    ) -> None:
+        """'are pushed' should not be flagged in reference content type."""
+        from rules.language_and_grammar.verbs_rule import VerbsRule
+
+        rule = VerbsRule()
+        text = "New images are pushed to ECR registries."
+        doc = nlp(text)
+        sentences = [sent.text for sent in doc.sents]
+
+        result: List[Dict[str, Any]] = rule.analyze(
+            text, sentences, nlp=nlp, spacy_doc=doc,
+            context={"content_type": "reference"},
+        )
+        passive = [e for e in result if "passive" in e.get("message", "").lower()]
+        assert passive == [], (
+            f"'are pushed' should be exempt in reference docs: {passive}"
+        )
+
+    def test_passive_push_not_flagged_release_notes(
+        self, nlp: spacy.language.Language,
+    ) -> None:
+        """'are pushed' should not be flagged in release_notes content type."""
+        from rules.language_and_grammar.verbs_rule import VerbsRule
+
+        rule = VerbsRule()
+        text = "New images are pushed to ECR registries."
+        doc = nlp(text)
+        sentences = [sent.text for sent in doc.sents]
+
+        result: List[Dict[str, Any]] = rule.analyze(
+            text, sentences, nlp=nlp, spacy_doc=doc,
+            context={"content_type": "release_notes"},
+        )
+        passive = [e for e in result if "passive" in e.get("message", "").lower()]
+        assert passive == [], (
+            f"'are pushed' should be exempt in release_notes: {passive}"
+        )
+
+    def test_passive_push_flagged_procedure(
+        self, nlp: spacy.language.Language,
+    ) -> None:
+        """'are pushed' SHOULD be flagged in procedure content type."""
+        from rules.language_and_grammar.verbs_rule import VerbsRule
+
+        rule = VerbsRule()
+        text = "New images are pushed to ECR registries."
+        doc = nlp(text)
+        sentences = [sent.text for sent in doc.sents]
+
+        result: List[Dict[str, Any]] = rule.analyze(
+            text, sentences, nlp=nlp, spacy_doc=doc,
+            context={"content_type": "procedure"},
+        )
+        passive = [e for e in result if "passive" in e.get("message", "").lower()]
+        assert len(passive) >= 1, (
+            "'are pushed' should still be flagged in procedure docs"
+        )
+
+    def test_passive_publish_not_flagged_reference(
+        self, nlp: spacy.language.Language,
+    ) -> None:
+        """'are published' should not be flagged in reference content type."""
+        from rules.language_and_grammar.verbs_rule import VerbsRule
+
+        rule = VerbsRule()
+        text = "Packages are published to the repository."
+        doc = nlp(text)
+        sentences = [sent.text for sent in doc.sents]
+
+        result: List[Dict[str, Any]] = rule.analyze(
+            text, sentences, nlp=nlp, spacy_doc=doc,
+            context={"content_type": "reference"},
+        )
+        passive = [e for e in result if "passive" in e.get("message", "").lower()]
+        assert passive == [], (
+            f"'are published' should be exempt in reference docs: {passive}"
+        )
+
+    def test_passive_release_not_flagged_release_notes(
+        self, nlp: spacy.language.Language,
+    ) -> None:
+        """'is released' should not be flagged in release_notes content type."""
+        from rules.language_and_grammar.verbs_rule import VerbsRule
+
+        rule = VerbsRule()
+        text = "Version 2.0 is released with new features."
+        doc = nlp(text)
+        sentences = [sent.text for sent in doc.sents]
+
+        result: List[Dict[str, Any]] = rule.analyze(
+            text, sentences, nlp=nlp, spacy_doc=doc,
+            context={"content_type": "release_notes"},
+        )
+        passive = [e for e in result if "passive" in e.get("message", "").lower()]
+        assert passive == [], (
+            f"'is released' should be exempt in release_notes: {passive}"
+        )
+
+    def test_passive_built_not_flagged_release_notes(
+        self, nlp: spacy.language.Language,
+    ) -> None:
+        """'are built' should not be flagged in release_notes content type."""
+        from rules.language_and_grammar.verbs_rule import VerbsRule
+
+        rule = VerbsRule()
+        text = "The binaries are built and released through Konflux."
+        doc = nlp(text)
+        sentences = [sent.text for sent in doc.sents]
+
+        result: List[Dict[str, Any]] = rule.analyze(
+            text, sentences, nlp=nlp, spacy_doc=doc,
+            context={"content_type": "release_notes"},
+        )
+        passive = [e for e in result if "passive" in e.get("message", "").lower()]
+        assert passive == [], (
+            f"'are built' should be exempt in release_notes: {passive}"
+        )
+
+    def test_passive_provided_not_flagged_release_notes(
+        self, nlp: spacy.language.Language,
+    ) -> None:
+        """'are provided' should not be flagged in release_notes content type."""
+        from rules.language_and_grammar.verbs_rule import VerbsRule
+
+        rule = VerbsRule()
+        text = "The binaries are provided as standalone executables."
+        doc = nlp(text)
+        sentences = [sent.text for sent in doc.sents]
+
+        result: List[Dict[str, Any]] = rule.analyze(
+            text, sentences, nlp=nlp, spacy_doc=doc,
+            context={"content_type": "release_notes"},
+        )
+        passive = [e for e in result if "passive" in e.get("message", "").lower()]
+        assert passive == [], (
+            f"'are provided' should be exempt in release_notes: {passive}"
+        )
+
+    def test_passive_packaged_not_flagged_release_notes(
+        self, nlp: spacy.language.Language,
+    ) -> None:
+        """'are not packaged' should not be flagged in release_notes content type."""
+        from rules.language_and_grammar.verbs_rule import VerbsRule
+
+        rule = VerbsRule()
+        text = "The binaries are provided as standalone executables and are not packaged as RPMs."
+        doc = nlp(text)
+        sentences = [sent.text for sent in doc.sents]
+
+        result: List[Dict[str, Any]] = rule.analyze(
+            text, sentences, nlp=nlp, spacy_doc=doc,
+            context={"content_type": "release_notes"},
+        )
+        passive = [e for e in result if "passive" in e.get("message", "").lower()]
+        assert passive == [], (
+            f"'are not packaged' should be exempt in release_notes: {passive}"
+        )
+
+    def test_rpms_plural_not_flagged(self) -> None:
+        """'RPMs' should not be flagged as keyword with verb suffix."""
+        from rules.technical_elements.programming_elements_rule import (
+            ProgrammingElementsRule,
+        )
+
+        rule = ProgrammingElementsRule()
+        text = "The binaries are not packaged as RPMs."
+        result: List[Dict[str, Any]] = rule.analyze(
+            text, [text], context={},
+        )
+        assert result == [], f"'RPMs' should not be flagged: {result}"
+
+    def test_cpus_plural_not_flagged(self) -> None:
+        """'CPUs' should not be flagged as keyword with verb suffix."""
+        from rules.technical_elements.programming_elements_rule import (
+            ProgrammingElementsRule,
+        )
+
+        rule = ProgrammingElementsRule()
+        text = "The cluster requires at least 4 CPUs per node."
+        result: List[Dict[str, Any]] = rule.analyze(
+            text, [text], context={},
+        )
+        assert result == [], f"'CPUs' should not be flagged: {result}"
+
+
+# ===================================================================
+# Passive voice — "surface" state-of-being exemption
+# ===================================================================
+
+
+class TestPassiveVoiceSurfaceExemption:
+    """Verify 'is surfaced' is not flagged — 'surface' is a state-of-being lemma."""
+
+    def test_passive_surface_not_flagged(
+        self, nlp: spacy.language.Language,
+    ) -> None:
+        """'is surfaced' should not be flagged — describes a visible state."""
+        from rules.language_and_grammar.verbs_rule import VerbsRule
+
+        rule = VerbsRule()
+        text = "The Progressive Sync state is surfaced correctly."
+        doc = nlp(text)
+        sentences = [sent.text for sent in doc.sents]
+
+        result: List[Dict[str, Any]] = rule.analyze(
+            text, sentences, nlp=nlp, spacy_doc=doc,
+        )
+        passive = [e for e in result if "passive" in e.get("message", "").lower()]
+        assert passive == [], (
+            f"'is surfaced' should be exempt as state-of-being: {passive}"
+        )
+
+    def test_passive_surface_not_flagged_release_notes(
+        self, nlp: spacy.language.Language,
+    ) -> None:
+        """'is surfaced' should not be flagged in release_notes either."""
+        from rules.language_and_grammar.verbs_rule import VerbsRule
+
+        rule = VerbsRule()
+        text = "With this update, the error is surfaced in the UI."
+        doc = nlp(text)
+        sentences = [sent.text for sent in doc.sents]
+
+        result: List[Dict[str, Any]] = rule.analyze(
+            text, sentences, nlp=nlp, spacy_doc=doc,
+            context={"content_type": "release_notes"},
+        )
+        passive = [e for e in result if "passive" in e.get("message", "").lower()]
+        assert passive == [], (
+            f"'is surfaced' should be exempt in release_notes: {passive}"
+        )
+
+
+# ===================================================================
+# ProgrammingElementsRule — SLAs plural FP guard
+# ===================================================================
+
+
+class TestProgrammingElementsRuleFPGuards:
+    """Verify that acronym plurals like SLAs are not falsely flagged."""
+
+    def test_slas_plural_not_flagged(self) -> None:
+        """'SLAs' is a valid plural of 'SLA', not a verb ending."""
+        from rules.technical_elements.programming_elements_rule import ProgrammingElementsRule
+
+        rule = ProgrammingElementsRule()
+        text = "Technology Preview features are not supported with Red Hat production service level agreements (SLAs)."
+        sentences = [text]
+        result: List[Dict[str, Any]] = rule.analyze(text, sentences)
+        verb_suffix = [e for e in result if "verb ending" in e.get("message", "").lower()]
+        assert verb_suffix == [], (
+            f"'SLAs' should NOT be flagged as verb ending: {verb_suffix}"
+        )
+
+    def test_programming_keyword_verb_suffix_still_flagged(self) -> None:
+        """'LOADed' and 'DROPs' should still be flagged as verb endings on keywords."""
+        from rules.technical_elements.programming_elements_rule import ProgrammingElementsRule
+
+        rule = ProgrammingElementsRule()
+        text = "The system LOADed the module and DROPs old records."
+        sentences = [text]
+        result: List[Dict[str, Any]] = rule.analyze(text, sentences)
+        verb_suffix = [e for e in result if "verb ending" in e.get("message", "").lower()]
+        assert len(verb_suffix) == 2, (
+            f"Expected 2 verb-ending flags for LOADed and DROPs, got {len(verb_suffix)}: {verb_suffix}"
         )

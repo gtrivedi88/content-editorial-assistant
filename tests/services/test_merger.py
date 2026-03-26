@@ -15,7 +15,7 @@ from app.models.enums import IssueCategory, IssueSeverity, IssueStatus
 from app.models.schemas import IssueResponse
 from app.services.analysis.merger import (
     _broad_category,
-    _deduplicate_llm_issues,
+    deduplicate_llm_issues,
     _extract_block_boundaries,
     _extract_flagged_texts,
     _extract_valid_spans,
@@ -151,7 +151,7 @@ class TestMergeBasicOperation:
 
 
 # ---------------------------------------------------------------------------
-# _deduplicate_llm_issues()
+# deduplicate_llm_issues()
 # ---------------------------------------------------------------------------
 
 
@@ -162,7 +162,7 @@ class TestDeduplicateLlmIssues:
         """Two LLM issues from the same source with identical text are deduped."""
         issue_a = _make_issue(source="granular", flagged_text="utilize")
         issue_b = _make_issue(source="granular", flagged_text="utilize")
-        result = _deduplicate_llm_issues([issue_a, issue_b])
+        result = deduplicate_llm_issues([issue_a, issue_b])
         assert len(result) == 1
 
     def test_text_dedup_different_source_exact_match_deduped(self) -> None:
@@ -173,7 +173,7 @@ class TestDeduplicateLlmIssues:
         """
         granular = _make_issue(source="granular", flagged_text="utilize")
         global_issue = _make_issue(source="global", flagged_text="utilize")
-        result = _deduplicate_llm_issues([granular, global_issue])
+        result = deduplicate_llm_issues([granular, global_issue])
         assert len(result) == 1
 
     def test_span_overlap_dedup_above_80_percent(self) -> None:
@@ -190,7 +190,7 @@ class TestDeduplicateLlmIssues:
         )
         # Overlap: [104, 120] = 16 chars. Shorter span = 20. 16/20 = 0.80
         # Threshold is > 0.80 so at exactly 0.80 both should be kept
-        result = _deduplicate_llm_issues([issue_a, issue_b])
+        result = deduplicate_llm_issues([issue_a, issue_b])
         assert len(result) == 2
 
     def test_span_overlap_dedup_above_threshold(self) -> None:
@@ -206,14 +206,14 @@ class TestDeduplicateLlmIssues:
             span=[103, 123],
         )
         # Overlap: [103, 120] = 17 chars. Shorter span = 20. 17/20 = 0.85
-        result = _deduplicate_llm_issues([issue_a, issue_b])
+        result = deduplicate_llm_issues([issue_a, issue_b])
         assert len(result) == 1
 
     def test_empty_flagged_text_not_deduped(self) -> None:
         """Issues with empty flagged_text are kept without dedup checks."""
         issue_a = _make_issue(source="granular", flagged_text="")
         issue_b = _make_issue(source="granular", flagged_text="")
-        result = _deduplicate_llm_issues([issue_a, issue_b])
+        result = deduplicate_llm_issues([issue_a, issue_b])
         assert len(result) == 2
 
 
@@ -676,7 +676,7 @@ class TestGlobalGranularCoexistence:
             category=IssueCategory.AUDIENCE,
             rule_name="llm_audience",
         )
-        result = _deduplicate_llm_issues([granular, global_issue])
+        result = deduplicate_llm_issues([granular, global_issue])
         assert len(result) == 1
         assert result[0].source == "granular"
 
@@ -706,7 +706,7 @@ class TestGlobalGranularCoexistence:
 
     def test_global_and_granular_same_span_deduped_by_span(self) -> None:
         """Global and granular issues with identical span are deduped by span
-        overlap in _deduplicate_llm_issues even though text-based dedup
+        overlap in deduplicate_llm_issues even though text-based dedup
         would keep them (source-aware keys). Span-based dedup is not
         source-aware and catches overlapping chunks.
         """
@@ -722,7 +722,7 @@ class TestGlobalGranularCoexistence:
             span=[0, 34],
             confidence=0.85,
         )
-        result = _deduplicate_llm_issues([granular, global_issue])
+        result = deduplicate_llm_issues([granular, global_issue])
         # Span-based dedup removes the second one (>80% overlap)
         assert len(result) == 1
 
