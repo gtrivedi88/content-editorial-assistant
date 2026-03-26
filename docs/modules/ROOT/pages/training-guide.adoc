@@ -382,7 +382,7 @@ Before considering this training complete, verify you can answer YES to all:
 |Content Editorial Assistant AI-assisted writing training
 
 |**Version**
-|0.0.2
+|1.0.0
 
 |**Effective date**
 |March 2026

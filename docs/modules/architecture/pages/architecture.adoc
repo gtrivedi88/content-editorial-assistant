@@ -1,5 +1,5 @@
 = System architecture
-:description: Technical architecture documentation for Content Editorial Assistant v0.0.2
+:description: Technical architecture documentation for Content Editorial Assistant v1.0.0
 :keywords: architecture, analysis, rules, llm, flask
 :sectnums:
 :sectanchors:

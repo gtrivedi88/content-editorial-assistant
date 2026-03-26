@@ -1,6 +1,6 @@
 site:
   title: Content Editorial Assistant Documentation
-  url: https://ccs-ai.pages.gitlab.cee.redhat.com/content-editorial-assistant
+  url: https://content-editorial-assiatant-0f729a.pages.redhat.com/content-editorial-assistant
   start_page: content-editorial-assistant::index.adoc
 
 content:

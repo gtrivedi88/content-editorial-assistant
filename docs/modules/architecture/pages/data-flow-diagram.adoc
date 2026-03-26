@@ -443,7 +443,7 @@ ModelFactory → selects provider based on MODEL_PROVIDER env var
 
 |2.0
 |March 2026
-|Complete rewrite for v0.0.2 three-phase architecture
+|Complete rewrite for v1.0.0 three-phase architecture
 
 |1.0
 |November 2025
