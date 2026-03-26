@@ -26,7 +26,8 @@ coverage.xml
 *.egg-info/
 
 # LightRail secrets (all environments)
-.light/*/secrets.env
+.light/
+
 legacy/.light/*/secrets.env
 
 # IDE files
@@ -67,3 +68,8 @@ poetry.lock
 
 languagetool/
 /deployment/LANGUAGETOOL.md
+
+docs-files/
+
+openshift-deployment-patch.yaml
+openshift-route.yaml
