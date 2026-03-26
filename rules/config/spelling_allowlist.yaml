@@ -24,7 +24,10 @@ terms:
   # -----------------------------------------------------------------------
   - amq
   - ansible
+  - appstream
+  - applixure
   - applixware
+  - argocd
   - asciidoc
   - asciidoctor
   - bootc
@@ -32,89 +35,157 @@ terms:
   - bootloader
   - bootupd
   - buildah
+  - camelk
   - ceph
+  - bluestore
   - cephfs
   - cfme
+  - crushmap
+  - cygmon
+  - codeready
   - coreos
   - crio
   - crictl
+  - cryostat
+  - dex
+  - devspaces
   - devworkspace
   - eap
+  - facter
   - fcos
+  - foreman
   - greenboot
   - graalvm
+  - hotrod
+  - infinispan
   - jbang
   - jboss
+  - kafka
+  - kantra
+  - katello
+  - keycloak
   - knowledgebase
   - lightspeed
+  - lunasa
+  - mandrel
   - microshift
   - minishift
+  - noobaa
+  - oadp
+  - okd
   - operatorhub
   - openshift
   - openrewrite
+  - opentelemetry
+  - otel
   - overcloud
+  - pacemaker
   - podman
   - prithvi
+  - pulp
+  - qdmanage
+  - qdstat
+  - qeth
   - quarkus
+  - quay
+  - redboot
   - redfish
   - resteasy
   - rhcos
   - rhel
   - shadowman
+  - skupper
   - skopeo
   - smallrye
   - softirq
+  - submariner
+  - thermostat
   - undercloud
+  - vertx
   - wildfly
+  - windup
 
   # -----------------------------------------------------------------------
   # Kubernetes / container ecosystem
   # -----------------------------------------------------------------------
+  - apiserver
   - buildconfig
   - buildconfigs
+  - calico
+  - cilium
   - configmap
   - configmaps
   - containerd
+  - containerfile
+  - containerfiles
   - daemonset
   - daemonsets
+  - dockerfile
   - dockerfiles
+  - envoy
   - etcd
+  - falco
   - imagestream
   - imagestreams
+  - istio
+  - knative
   - kubeadm
   - kubeconfig
   - kubectl
   - kubelet
   - kubernetes
+  - kubevirt
   - kustomize
   - machineconfig
   - machineconfigs
   - machineset
   - machinesets
+  - metallb
+  - multus
+  - openvswitch
   - replicaset
   - replicasets
+  - rook
   - statefulset
   - statefulsets
+  - velero
   - deploymentconfig
   - deploymentconfigs
 
   # -----------------------------------------------------------------------
   # Linux / system / networking
   # -----------------------------------------------------------------------
+  - auditd
+  - autofs
   - btrfs
   - cgroup
   - cgroups
   - chrony
+  - chronyc
+  - chronyd
   - coredump
+  - crontab
+  - debuginfo
+  - debuginfod
   - devops
   - diskdruid
+  - dnsmasq
   - dracut
+  - fcoe
+  - filestore
   - firewalld
+  - firewire
   - flatpak
   - flathub
+  - fstab
+  - glibc
+  - gnupg
   - grub
   - grubby
+  - httpd
   - hyperthreading
+  - initramfs
+  - inotify
   - ipsec
   - journald
   - kbase
@@ -131,10 +202,17 @@ terms:
   - namespaced
   - netfilter
   - networkd
+  - nftables
+  - nmcli
+  - nmstate
+  - numa
   - ostree
   - ostreecommit
+  - polkit
   - powerpc
   - ramdisk
+  - rootfs
+  - rsyslog
   - seccomp
   - selinux
   - smartnic
@@ -142,12 +220,18 @@ terms:
   - starttls
   - stateroot
   - stateroots
+  - stratis
   - sysctl
+  - sysfs
+  - sysv
   - systemctl
   - systemd
   - tmpfiles
   - tmpfs
+  - tuned
   - udev
+  - virsh
+  - virtio
   - vlan
   - vlans
   - vnic
@@ -158,46 +242,80 @@ terms:
   # -----------------------------------------------------------------------
   # Programming languages / runtimes / tools
   # -----------------------------------------------------------------------
+  - bazel
+  - cmake
   - clojure
   - dotnet
   - erlang
   - fortran
+  - gcc
+  - gdb
   - golang
+  - gradle
   - grpc
   - gtk
+  - gunicorn
   - javadoc
   - javadocs
   - junit
+  - llvm
+  - makefile
+  - maven
   - microprofile
+  - minio
   - mongodb
   - mysql
+  - nginx
   - nodejs
+  - npm
   - nvidia
+  - openssl
+  - podspec
   - posix
+  - postgresql
   - powershell
+  - pytest
   - redis
+  - rustc
   - samba
   - sqlite
   - subversion
+  - swagger
+  - tomcat
   - webauthn
+  - webpack
   - websocket
   - websockets
   - xterm
+  - yarn
 
   # -----------------------------------------------------------------------
-  # Automation / CI-CD / config management
+  # Hardware / legacy platforms
   # -----------------------------------------------------------------------
+  - itanium
+  - staroffice
+  - ultrasparc
+
+  # -----------------------------------------------------------------------
+  # Automation / CI-CD / config management / GitOps
+  # -----------------------------------------------------------------------
+  - gitops
+  - helm
+  - kustomization
   - playbook
   - playbooks
   - runbook
   - runbooks
   - tekton
+  - terraform
 
   # -----------------------------------------------------------------------
   # Virtualization / cloud
   # -----------------------------------------------------------------------
   - hypervisor
   - hypervisors
+  - kubevirt
+  - qcow
   - vcpu
   - vcpus
   - vdsm
@@ -205,10 +323,30 @@ terms:
   # -----------------------------------------------------------------------
   # Observability / monitoring
   # -----------------------------------------------------------------------
+  - alertmanager
+  - fluentd
   - grafana
   - jaeger
+  - loki
   - prometheus
   - thanos
+  - zipkin
+
+  # -----------------------------------------------------------------------
+  # Identity / authentication / security
+  # -----------------------------------------------------------------------
+  - kerberos
+  - oauth
+  - oidc
+  - saml
+
+  # -----------------------------------------------------------------------
+  # Storage
+  # -----------------------------------------------------------------------
+  - cinder
+  - glusterfs
+  - noobaa
+  - rook
 
   # -----------------------------------------------------------------------
   # File formats / protocols / standards
@@ -218,6 +356,7 @@ terms:
   - exif
   - fqdn
   - grpc
+  - infiniband
   - iso
   - ldap
   - iscsi
@@ -232,6 +371,7 @@ terms:
   # -----------------------------------------------------------------------
   # General technical terms common in docs
   # -----------------------------------------------------------------------
+  - apiserver
   - autoscaler
   - autoscaling
   - backend
@@ -242,12 +382,19 @@ terms:
   - blocklist
   - blocklisted
   - blocklists
+  - codebase
+  - codegen
+  - containerized
   - customizable
+  - datastore
+  - datastores
   - deprovisioned
   - deprovisioning
+  - deserialization
   - failback
   - failover
   - failovers
+  - healthcheck
   - hotfix
   - hotfixes
   - lifecycle
@@ -255,6 +402,8 @@ terms:
   - loadbalancer
   - loadbalancers
   - middleware
+  - microservice
+  - microservices
   - multicluster
   - multicloud
   - multinode
@@ -262,6 +411,8 @@ terms:
   - multitenant
   - namespace
   - namespaces
+  - noop
+  - observability
   - offboarding
   - onboarding
   - precache
@@ -281,6 +432,8 @@ terms:
   - runtimes
   - sidecar
   - sidecars
+  - subdomain
+  - subdomains
   - webhook
   - webhooks
   - workaround
@@ -290,5 +443,6 @@ terms:
   # IDE / editor terms
   # -----------------------------------------------------------------------
   - jetbrains
+  - neovim
   - vscode
   - xemacs
