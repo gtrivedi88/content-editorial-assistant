@@ -70,6 +70,3 @@ languagetool/
 /deployment/LANGUAGETOOL.md
 
 docs-files/
-
-openshift-deployment-patch.yaml
-openshift-route.yaml
