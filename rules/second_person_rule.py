@@ -78,9 +78,10 @@ if isinstance(_context_rules, dict):
     if isinstance(_raw_indicators, list):
         _CONTEXT_INDICATORS = frozenset(w.lower() for w in _raw_indicators)
 
-# Third-person substitutes — suggest 'you' in user-facing docs
+# Third-person substitutes — suggest 'you' in user-facing docs.
+# Captures optional possessive 's so "the user's" → "your".
 _THIRD_PERSON_RE = re.compile(
-    r'\bthe\s+(user|customer|reader|person|individual)\b',
+    r"\bthe\s+(user|customer|reader|person|individual)('s)?\b",
     re.IGNORECASE,
 )
 
@@ -169,16 +170,29 @@ class SecondPersonRule(BaseRule):
             if _has_context_indicator(sentence, match):
                 continue
 
-            error = self._create_error(
-                sentence=sentence, sentence_index=idx,
-                message=(
+            is_possessive = match.group(2) is not None
+            if is_possessive:
+                replacement = "your"
+                message = (
+                    f"Use 'your' instead of 'the {role}'s' in user-facing "
+                    f"documentation. Per IBM Style Guide (Page 119) [Verified]."
+                )
+                suggestions = [replacement]
+            else:
+                replacement = "you"
+                message = (
                     f"Use 'you' instead of 'the {role}' in user-facing "
                     f"documentation. Per IBM Style Guide (Page 119) [Verified]."
-                ),
-                suggestions=[
+                )
+                suggestions = [
                     f"Rewrite using 'you' instead of 'the {role}', "
                     "adjusting verb agreement and possessives as needed"
-                ],
+                ]
+
+            error = self._create_error(
+                sentence=sentence, sentence_index=idx,
+                message=message,
+                suggestions=suggestions,
                 severity='low', text=text, context=context,
                 flagged_text=match.group(0),
                 span=(match.start(), match.end()),

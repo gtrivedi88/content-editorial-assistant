@@ -51,14 +51,17 @@ class ProceduresRule(BaseStructureRule):
             return []
 
         block_type = context.get('block_type', '')
+        content_type = context.get('content_type', '')
         is_procedure = block_type in _PROCEDURE_BLOCKS
 
         code_ranges = context.get("inline_code_ranges", []) if context else []
         errors: List[Dict[str, Any]] = []
         for idx, sentence in enumerate(sentences):
             sent_start = text.find(sentence)
-            # Check 1 & 2 apply broadly but are most relevant in procedures
-            self._check_then(sentence, idx, text, context, code_ranges, sent_start, errors)
+            # Check 1: only in procedure content type (descriptive numbered
+            # lists in concept/reference docs are not procedural steps)
+            if content_type == 'procedure':
+                self._check_then(sentence, idx, text, context, code_ranges, sent_start, errors)
             self._check_please(sentence, idx, text, context, code_ranges, sent_start, errors)
             # Check 3 only in ordered list items with SpaCy
             if is_procedure and nlp:

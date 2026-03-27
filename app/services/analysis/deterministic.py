@@ -257,9 +257,15 @@ def _resolve_span(
 ) -> list[int]:
     """Calculate or extract [start, end] character offsets.
 
-    Uses the span from the error dict if available. Otherwise,
-    searches for flagged_text in the full document text, falling
-    back to the sentence position if the flagged text is not found.
+    Uses the span from the error dict if available.  Rule spans are
+    typically **sentence-relative** (from ``regex.finditer(sentence)``).
+    When the sentence is a proper substring of *text*, the span is
+    adjusted to text-relative coordinates by adding the sentence's
+    position.  A bounds check (``end <= len(sentence)``) prevents
+    double-adjustment for rules that already store text-relative spans.
+
+    Falls back to text search for flagged_text or sentence position
+    when no span is provided.
 
     Args:
         error: Raw error dict (may contain a 'span' key).
@@ -272,7 +278,18 @@ def _resolve_span(
     """
     raw_span = error.get("span")
     if raw_span and isinstance(raw_span, (list, tuple)) and len(raw_span) >= 2:
-        return [int(raw_span[0]), int(raw_span[1])]
+        start, end = int(raw_span[0]), int(raw_span[1])
+
+        if (sentence and text
+                and len(sentence) < len(text)
+                and 0 <= start < len(sentence)
+                and 0 < end <= len(sentence)):
+            sent_pos = text.find(sentence)
+            if sent_pos > 0:
+                start += sent_pos
+                end += sent_pos
+
+        return [start, end]
 
     if flagged_text and flagged_text in text:
         start = text.find(flagged_text)

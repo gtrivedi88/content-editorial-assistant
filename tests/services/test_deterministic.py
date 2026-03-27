@@ -349,3 +349,53 @@ class TestPlaceholderFilter:
 
         issues = analyze("Please utilize the tool.", ["Please utilize the tool."], MagicMock())
         assert len(issues) == 1, "'utilize' should NOT be filtered"
+
+
+# ===================================================================
+# _resolve_span — sentence-relative to text-relative adjustment
+# ===================================================================
+
+
+class TestResolveSpanSentenceRelative:
+    """Verify _resolve_span adjusts sentence-relative spans."""
+
+    def test_multi_sentence_block_adjusts_span(self) -> None:
+        """Span in second sentence is adjusted to text-relative."""
+        from app.services.analysis.deterministic import _resolve_span
+
+        text = "First sentence here. It then sends a request."
+        sentence = "It then sends a request."
+        error = {"span": [3, 7]}
+        result = _resolve_span(error, text, "then", sentence)
+        sent_pos = text.find(sentence)
+        assert result == [sent_pos + 3, sent_pos + 7]
+        assert text[result[0]:result[1]] == "then"
+
+    def test_single_sentence_no_adjustment(self) -> None:
+        """Span at document start (sent_pos=0) is not adjusted."""
+        from app.services.analysis.deterministic import _resolve_span
+
+        text = "It then sends a request."
+        sentence = "It then sends a request."
+        error = {"span": [3, 7]}
+        result = _resolve_span(error, text, "then", sentence)
+        assert result == [3, 7]
+
+    def test_text_relative_span_not_double_adjusted(self) -> None:
+        """Span already text-relative (end > sentence length) stays as-is."""
+        from app.services.analysis.deterministic import _resolve_span
+
+        text = "Hello world. Second sentence. Bold code at end."
+        sentence = "Second sentence."
+        error = {"span": [35, 42]}
+        result = _resolve_span(error, text, "code at", sentence)
+        assert result == [35, 42]
+
+    def test_no_span_falls_back_to_text_search(self) -> None:
+        """Without a span, falls back to text.find(flagged_text)."""
+        from app.services.analysis.deterministic import _resolve_span
+
+        text = "Use active voice instead of passive."
+        error: Dict[str, Any] = {}
+        result = _resolve_span(error, text, "active", "Use active voice instead of passive.")
+        assert result == [4, 10]

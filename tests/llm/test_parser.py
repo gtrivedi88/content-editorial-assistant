@@ -468,6 +468,20 @@ class TestParseSuggestionResponse:
         result = parse_suggestion_response(raw)
         assert "scope" not in result
 
+    def test_scope_sentence_at_boundary_40_chars(self) -> None:
+        """Exactly 40-char rewrite should trigger sentence scope (>= not >)."""
+        rewrite = "The system returns the automation result"
+        assert len(rewrite) == 40
+        raw = json.dumps({
+            "rewritten_text": rewrite,
+            "explanation": "Active voice rewrite.",
+            "confidence": 0.9,
+        })
+        result = parse_suggestion_response(raw, flagged_text="is returned")
+        assert result.get("scope") == "sentence", (
+            "Exactly 40-char rewrite >3x flagged should set sentence scope"
+        )
+
 
 # ---------------------------------------------------------------------------
 # parse_judge_response

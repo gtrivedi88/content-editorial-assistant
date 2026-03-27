@@ -762,6 +762,60 @@ class TestHighlightingCamelCaseFullTextGuard:
 
 
 # ===================================================================
+# Second person — possessive handling
+# ===================================================================
+
+
+class TestSecondPersonPossessive:
+    """Verify 'the user's' → 'your' instead of 'you'."""
+
+    def test_possessive_suggests_your(self) -> None:
+        """'the user's API token' should suggest 'your', not 'you'."""
+        from rules.second_person_rule import SecondPersonRule
+
+        rule = SecondPersonRule()
+        text = "It uses the user's API token to authenticate."
+        sentences = [text]
+        context: Dict[str, Any] = {"block_type": "paragraph"}
+
+        result: List[Dict[str, Any]] = rule.analyze(
+            text, sentences, context=context,
+        )
+
+        sp_issues = [
+            e for e in result
+            if e.get("type") == "second_person"
+        ]
+        assert len(sp_issues) == 1, f"Expected 1 second_person issue: {sp_issues}"
+        issue = sp_issues[0]
+        assert issue["flagged_text"] == "the user's"
+        assert "your" in issue["suggestions"][0].lower()
+        assert "your" in issue["message"].lower()
+
+    def test_non_possessive_suggests_you(self) -> None:
+        """'the user should' should suggest 'you', not 'your'."""
+        from rules.second_person_rule import SecondPersonRule
+
+        rule = SecondPersonRule()
+        text = "The user should configure the settings."
+        sentences = [text]
+        context: Dict[str, Any] = {"block_type": "paragraph"}
+
+        result: List[Dict[str, Any]] = rule.analyze(
+            text, sentences, context=context,
+        )
+
+        sp_issues = [
+            e for e in result
+            if e.get("type") == "second_person"
+        ]
+        assert len(sp_issues) == 1, f"Expected 1 second_person issue: {sp_issues}"
+        issue = sp_issues[0]
+        assert issue["flagged_text"] == "The user"
+        assert "'you'" in issue["message"]
+
+
+# ===================================================================
 # CEA Perfection Plan — Rule coverage tests
 # ===================================================================
 
@@ -1904,3 +1958,238 @@ class TestProgrammingElementsRuleFPGuards:
         assert len(verb_suffix) == 2, (
             f"Expected 2 verb-ending flags for LOADed and DROPs, got {len(verb_suffix)}: {verb_suffix}"
         )
+
+
+# ===================================================================
+# ProceduresRule — content-type guard for "then" check
+# ===================================================================
+
+
+class TestProceduresRuleThenContentTypeGuard:
+    """Verify ProceduresRule Check 1 only fires on procedure content type."""
+
+    def test_then_flagged_in_procedure(self) -> None:
+        """'then' in an ordered list item with procedure content type is flagged."""
+        from rules.structure_and_format.procedures_rule import ProceduresRule
+
+        rule = ProceduresRule()
+        text = "Click Start then select Settings."
+        sentences = [text]
+        context: Dict[str, Any] = {
+            "block_type": "list_item_ordered",
+            "content_type": "procedure",
+        }
+
+        result: List[Dict[str, Any]] = rule.analyze(
+            text, sentences, context=context,
+        )
+
+        then_issues = [
+            e for e in result
+            if "and then" in e.get("message", "").lower()
+        ]
+        assert len(then_issues) >= 1, (
+            "'then' in procedure ordered list should be flagged"
+        )
+
+    def test_then_not_flagged_in_concept(self) -> None:
+        """'then' in an ordered list with concept content type should NOT be flagged."""
+        from rules.structure_and_format.procedures_rule import ProceduresRule
+
+        rule = ProceduresRule()
+        text = "It then sends a structured toolset call to the model."
+        sentences = [text]
+        context: Dict[str, Any] = {
+            "block_type": "list_item_ordered",
+            "content_type": "concept",
+        }
+
+        result: List[Dict[str, Any]] = rule.analyze(
+            text, sentences, context=context,
+        )
+
+        then_issues = [
+            e for e in result
+            if "and then" in e.get("message", "").lower()
+        ]
+        assert then_issues == [], (
+            f"'then' in concept ordered list should not be flagged: {then_issues}"
+        )
+
+    def test_then_not_flagged_in_reference(self) -> None:
+        """'then' in an ordered list with reference content type should NOT be flagged."""
+        from rules.structure_and_format.procedures_rule import ProceduresRule
+
+        rule = ProceduresRule()
+        text = "The system then processes the request."
+        sentences = [text]
+        context: Dict[str, Any] = {
+            "block_type": "list_item_ordered",
+            "content_type": "reference",
+        }
+
+        result: List[Dict[str, Any]] = rule.analyze(
+            text, sentences, context=context,
+        )
+
+        then_issues = [
+            e for e in result
+            if "and then" in e.get("message", "").lower()
+        ]
+        assert then_issues == [], (
+            f"'then' in reference ordered list should not be flagged: {then_issues}"
+        )
+
+    def test_then_not_flagged_no_content_type(self) -> None:
+        """'then' with no content type should NOT be flagged (default is not procedure)."""
+        from rules.structure_and_format.procedures_rule import ProceduresRule
+
+        rule = ProceduresRule()
+        text = "It then sends a request to the server."
+        sentences = [text]
+        context: Dict[str, Any] = {
+            "block_type": "list_item_ordered",
+        }
+
+        result: List[Dict[str, Any]] = rule.analyze(
+            text, sentences, context=context,
+        )
+
+        then_issues = [
+            e for e in result
+            if "and then" in e.get("message", "").lower()
+        ]
+        assert then_issues == [], (
+            f"'then' without content_type should not be flagged: {then_issues}"
+        )
+
+
+# ===================================================================
+# DashesRule — multi-hyphen sequence FP guard
+# ===================================================================
+
+
+class TestDashesRuleMultiHyphenGuard:
+    """Verify DashesRule skips '--' when part of longer hyphen sequences."""
+
+    def test_double_hyphen_em_dash_flagged(self) -> None:
+        """Standalone '--' used as em dash substitute should be flagged."""
+        from rules.punctuation.dashes_rule import DashesRule
+
+        rule = DashesRule()
+        text = "The feature -- while useful -- is deprecated."
+        sentences = [text]
+
+        result: List[Dict[str, Any]] = rule.analyze(text, sentences)
+
+        dash_issues = [
+            e for e in result
+            if e.get("flagged_text") == "--"
+        ]
+        assert len(dash_issues) >= 1, (
+            "Standalone '--' as em dash should be flagged"
+        )
+
+    def test_four_hyphen_code_delimiter_not_flagged(self) -> None:
+        """'----' (code block delimiter) should NOT be flagged."""
+        from rules.punctuation.dashes_rule import DashesRule
+
+        rule = DashesRule()
+        text = "See the following code block ----."
+        sentences = [text]
+
+        result: List[Dict[str, Any]] = rule.analyze(text, sentences)
+
+        dash_issues = [
+            e for e in result
+            if "--" in e.get("flagged_text", "")
+        ]
+        assert dash_issues == [], (
+            f"'----' delimiter should not be flagged: {dash_issues}"
+        )
+
+    def test_triple_hyphen_not_flagged(self) -> None:
+        """'---' should NOT be flagged (multi-hyphen sequence)."""
+        from rules.punctuation.dashes_rule import DashesRule
+
+        rule = DashesRule()
+        text = "Use the --- separator to divide sections."
+        sentences = [text]
+
+        result: List[Dict[str, Any]] = rule.analyze(text, sentences)
+
+        dash_issues = [
+            e for e in result
+            if "--" in e.get("flagged_text", "")
+        ]
+        assert dash_issues == [], (
+            f"'---' should not be flagged: {dash_issues}"
+        )
+
+    def test_cli_flag_not_flagged(self) -> None:
+        """'--enforce' CLI flag should NOT be flagged (existing guard)."""
+        from rules.punctuation.dashes_rule import DashesRule
+
+        rule = DashesRule()
+        text = "Run the command with --enforce flag."
+        sentences = [text]
+
+        result: List[Dict[str, Any]] = rule.analyze(text, sentences)
+
+        dash_issues = [
+            e for e in result
+            if "--" in e.get("flagged_text", "")
+        ]
+        assert dash_issues == [], (
+            f"CLI flag '--enforce' should not be flagged: {dash_issues}"
+        )
+
+    def test_unicode_em_dash_still_flagged(self) -> None:
+        """Unicode em dash (\u2014) should still be flagged."""
+        from rules.punctuation.dashes_rule import DashesRule
+
+        rule = DashesRule()
+        text = "The feature \u2014 while useful \u2014 is deprecated."
+        sentences = [text]
+
+        result: List[Dict[str, Any]] = rule.analyze(text, sentences)
+
+        dash_issues = [
+            e for e in result
+            if e.get("flagged_text") == "\u2014"
+        ]
+        assert len(dash_issues) >= 1, (
+            "Unicode em dash should be flagged"
+        )
+
+
+# ===================================================================
+# LanguageTool — heading exclusion from prose block types
+# ===================================================================
+
+
+class TestLanguageToolHeadingExclusion:
+    """Verify headings are excluded from LanguageTool analysis."""
+
+    def test_heading_not_in_prose_block_types(self) -> None:
+        """'heading' must not be in _PROSE_BLOCK_TYPES."""
+        from app.services.analysis.languagetool_client import _PROSE_BLOCK_TYPES
+
+        assert "heading" not in _PROSE_BLOCK_TYPES, (
+            "'heading' should be excluded from _PROSE_BLOCK_TYPES — "
+            "headings are fragments by nature and should not be sent "
+            "to LanguageTool for sentence-level analysis"
+        )
+
+    def test_paragraph_still_in_prose_block_types(self) -> None:
+        """'paragraph' must still be in _PROSE_BLOCK_TYPES (regression)."""
+        from app.services.analysis.languagetool_client import _PROSE_BLOCK_TYPES
+
+        assert "paragraph" in _PROSE_BLOCK_TYPES
+
+    def test_list_items_still_in_prose_block_types(self) -> None:
+        """List item types must still be in _PROSE_BLOCK_TYPES (regression)."""
+        from app.services.analysis.languagetool_client import _PROSE_BLOCK_TYPES
+
+        assert "list_item_ordered" in _PROSE_BLOCK_TYPES
+        assert "list_item_unordered" in _PROSE_BLOCK_TYPES

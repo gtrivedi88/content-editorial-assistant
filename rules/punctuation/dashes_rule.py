@@ -26,6 +26,32 @@ _SUGGESTIONS = [
 ]
 
 
+def _is_ascii_em_dash_fp(sentence: str, match: re.Match[str]) -> bool:
+    """Return True if a ``--`` match is a CLI flag or multi-hyphen delimiter.
+
+    Guards against false positives on:
+    - CLI flags (``--enforce``, ``--verbose``)
+    - AsciiDoc delimiters (``----``, ``---``)
+    - Any multi-hyphen sequence that is not an em dash substitute
+
+    Args:
+        sentence: The sentence containing the match.
+        match: The regex match object for ``--``.
+
+    Returns:
+        True if the match should be skipped.
+    """
+    start = match.start()
+    end = match.end()
+    if end < len(sentence) and sentence[end].isalpha():
+        return True
+    if end < len(sentence) and sentence[end] == '-':
+        return True
+    if start > 0 and sentence[start - 1] == '-':
+        return True
+    return False
+
+
 class DashesRule(BasePunctuationRule):
     """Flags em dash usage in technical prose."""
 
@@ -53,11 +79,7 @@ class DashesRule(BasePunctuationRule):
             for match in _EM_DASH_RE.finditer(sentence):
                 if in_code_range(sent_start + match.start(), code_ranges):
                     continue
-                # Skip '--' when it is a CLI flag prefix (e.g. --enforce)
-                end = match.end()
-                if match.group(0) == '--' and end < len(sentence) and (
-                    sentence[end].isalpha()
-                ):
+                if match.group(0) == '--' and _is_ascii_em_dash_fp(sentence, match):
                     continue
                 error = self._create_error(
                     sentence=sentence,

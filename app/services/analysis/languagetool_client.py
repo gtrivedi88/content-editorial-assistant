@@ -42,7 +42,6 @@ logger = logging.getLogger(__name__)
 
 _PROSE_BLOCK_TYPES: frozenset[str] = frozenset({
     "paragraph",
-    "heading",
     "list_item_ordered",
     "list_item_unordered",
 })

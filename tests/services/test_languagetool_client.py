@@ -301,7 +301,7 @@ class TestBuildBatches:
         """Multiple blocks in one batch have correct batch_start/batch_end."""
         block_a = _make_block("First block.", block_type="paragraph")
         block_b = _make_block(
-            "Second block.", block_type="heading", start_pos=20,
+            "Second block.", block_type="list_item_ordered", start_pos=20,
         )
         batches = _build_batches([block_a, block_b])
 
@@ -321,13 +321,12 @@ class TestBuildBatches:
         """All prose block types are included in batches."""
         blocks = [
             _make_block("Para.", block_type="paragraph"),
-            _make_block("Head.", block_type="heading", start_pos=10),
-            _make_block("Ordered.", block_type="list_item_ordered", start_pos=20),
-            _make_block("Unordered.", block_type="list_item_unordered", start_pos=30),
+            _make_block("Ordered.", block_type="list_item_ordered", start_pos=10),
+            _make_block("Unordered.", block_type="list_item_unordered", start_pos=20),
         ]
         batches = _build_batches(blocks)
         assert len(batches) == 1
-        assert len(batches[0].entries) == 4
+        assert len(batches[0].entries) == 3
 
 
 # ---------------------------------------------------------------------------
@@ -863,11 +862,14 @@ class TestProseBlockTypes:
     """Tests for prose block type filtering."""
 
     def test_expected_types_included(self) -> None:
-        """All 4 prose block types are in the filter set."""
+        """All 3 prose block types are in the filter set."""
         assert "paragraph" in _PROSE_BLOCK_TYPES
-        assert "heading" in _PROSE_BLOCK_TYPES
         assert "list_item_ordered" in _PROSE_BLOCK_TYPES
         assert "list_item_unordered" in _PROSE_BLOCK_TYPES
+
+    def test_heading_excluded(self) -> None:
+        """Headings are excluded — fragments by nature, not prose sentences."""
+        assert "heading" not in _PROSE_BLOCK_TYPES
 
     def test_non_prose_types_excluded(self) -> None:
         """Code blocks, tables, and admonitions are not prose types."""

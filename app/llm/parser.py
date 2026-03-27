@@ -539,7 +539,7 @@ def _validate_suggestion(
     if flagged_text:
         flagged_len = len(flagged_text)
         rewrite_len = len(str(rewritten))
-        if rewrite_len > flagged_len * 3 and rewrite_len > 40:
+        if rewrite_len > flagged_len * 3 and rewrite_len >= 40:
             result["scope"] = "sentence"
 
     return result
